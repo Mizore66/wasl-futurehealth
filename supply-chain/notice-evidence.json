@@ -1,0 +1,1406 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "name": "@esbuild/aix-ppc64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 5,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/android-arm",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 6,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Separate bundled Go support files package/wasm_exec.js and package/wasm_exec_node.js contain Go Authors copyright lines and refer to a BSD-style licence in a LICENSE file, but that referenced full text is absent. Root and bundled notices remain distinct; binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/android-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 7,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/android-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 8,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Separate bundled Go support files package/wasm_exec.js and package/wasm_exec_node.js contain Go Authors copyright lines and refer to a BSD-style licence in a LICENSE file, but that referenced full text is absent. Root and bundled notices remain distinct; binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/darwin-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 9,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/freebsd-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 10,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/freebsd-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 11,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-arm",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 12,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 13,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-ia32",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 14,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-loong64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 15,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-mips64el",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 16,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-ppc64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 17,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-riscv64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 18,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-s390x",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 19,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 20,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/netbsd-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 21,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/netbsd-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 22,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/openbsd-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 23,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/openbsd-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 24,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/openharmony-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 25,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Separate bundled Go support files package/wasm_exec.js and package/wasm_exec_node.js contain Go Authors copyright lines and refer to a BSD-style licence in a LICENSE file, but that referenced full text is absent. Root and bundled notices remain distinct; binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/sunos-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 26,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/win32-arm64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 27,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/win32-ia32",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 28,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@esbuild/win32-x64",
+      "version": "0.28.2",
+      "declaration": "MIT",
+      "review_row": 29,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+        "commit": "609683d892977362a0f99026cb74b96263d728a9"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member; archived package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though an exact-commit upstream copy exists. No additional notice was found in the plausible text members; native binary/third-party contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/esbuild-mit.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    {
+      "name": "@img/sharp-libvips-darwin-x64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 32,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-arm",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 33,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-arm64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 34,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-ppc64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 35,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-riscv64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 36,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-s390x",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 37,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linux-x64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 38,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linuxmusl-arm64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 39,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-libvips-linuxmusl-x64",
+      "version": "1.3.4",
+      "declaration": "LGPL-3.0-or-later",
+      "review_row": 40,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp-libvips/commit/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp-libvips at npm gitHead ebb95f8add54eee8bed840e3fb587e4cbec857d7 has only an Apache-2.0 root LICENSE (SHA-256 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1), which is not the package-declared LGPL-3.0-or-later text. No full LGPL-3.0-or-later notice was found among root/package-directory candidates, and no notice text is supplied here. Review finding: Full declared LGPL-3.0-or-later copyright/licence notice: absent. No conventional licence member; package/README.md has a third-party licence-name/link table, not full notices. PACKAGING CONCERN: review the missing declared LGPL text and missing full notices for the listed bundled native libraries. README labels/links do not establish that their texts shipped. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-wasm32",
+      "version": "0.35.5",
+      "declaration": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+      "review_row": 49,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp/commit/51a990faa26ade5586a4934ac9673c98d8893326"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp at npm gitHead 51a990faa26ade5586a4934ac9673c98d8893326 has a full Apache-2.0 root LICENSE (SHA-256 73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68), which does not supply the other declared components. No full LGPL-3.0-or-later (or, for wasm32, MIT) text was found in the root or four package directories, and no notice text is supplied here. Review finding: Apache-2.0 full licence text: present in package/LICENSE; package/README.md also carries “Copyright 2013 Lovell Fuller and others.” Full LGPL-3.0-or-later and MIT copyright/licence notice(s): absent. README gives a third-party licence-name/link table, not full component notices. PACKAGING CONCERN: review missing LGPL-3.0-or-later and MIT text(s) and bundled native notices; Apache presence must not be treated as covering the other declared components. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-win32-arm64",
+      "version": "0.35.5",
+      "declaration": "Apache-2.0 AND LGPL-3.0-or-later",
+      "review_row": 51,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp/commit/51a990faa26ade5586a4934ac9673c98d8893326"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp at npm gitHead 51a990faa26ade5586a4934ac9673c98d8893326 has a full Apache-2.0 root LICENSE (SHA-256 73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68), which does not supply the other declared components. No full LGPL-3.0-or-later (or, for wasm32, MIT) text was found in the root or four package directories, and no notice text is supplied here. Review finding: Apache-2.0 full licence text: present in package/LICENSE; package/README.md also carries “Copyright 2013 Lovell Fuller and others.” Full LGPL-3.0-or-later copyright/licence notice(s): absent. README gives a third-party licence-name/link table, not full component notices. PACKAGING CONCERN: review missing LGPL-3.0-or-later text(s) and bundled native notices; Apache presence must not be treated as covering the other declared components. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-win32-ia32",
+      "version": "0.35.5",
+      "declaration": "Apache-2.0 AND LGPL-3.0-or-later",
+      "review_row": 52,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp/commit/51a990faa26ade5586a4934ac9673c98d8893326"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp at npm gitHead 51a990faa26ade5586a4934ac9673c98d8893326 has a full Apache-2.0 root LICENSE (SHA-256 73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68), which does not supply the other declared components. No full LGPL-3.0-or-later (or, for wasm32, MIT) text was found in the root or four package directories, and no notice text is supplied here. Review finding: Apache-2.0 full licence text: present in package/LICENSE; package/README.md also carries “Copyright 2013 Lovell Fuller and others.” Full LGPL-3.0-or-later copyright/licence notice(s): absent. README gives a third-party licence-name/link table, not full component notices. PACKAGING CONCERN: review missing LGPL-3.0-or-later text(s) and bundled native notices; Apache presence must not be treated as covering the other declared components. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@img/sharp-win32-x64",
+      "version": "0.35.5",
+      "declaration": "Apache-2.0 AND LGPL-3.0-or-later",
+      "review_row": 53,
+      "evidence_class": "unresolved-native",
+      "source": {
+        "url": "https://github.com/lovell/sharp/commit/51a990faa26ade5586a4934ac9673c98d8893326"
+      },
+      "limitation": "UNRESOLVED: upstream lovell/sharp at npm gitHead 51a990faa26ade5586a4934ac9673c98d8893326 has a full Apache-2.0 root LICENSE (SHA-256 73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68), which does not supply the other declared components. No full LGPL-3.0-or-later (or, for wasm32, MIT) text was found in the root or four package directories, and no notice text is supplied here. Review finding: Apache-2.0 full licence text: present in package/LICENSE; package/README.md also carries “Copyright 2013 Lovell Fuller and others.” Full LGPL-3.0-or-later copyright/licence notice(s): absent. README gives a third-party licence-name/link table, not full component notices. PACKAGING CONCERN: review missing LGPL-3.0-or-later text(s) and bundled native notices; Apache presence must not be treated as covering the other declared components. Native/bundled third-party scope is not exhaustively audited.",
+      "notices": []
+    },
+    {
+      "name": "@napi-rs/wasm-runtime",
+      "version": "1.2.6",
+      "declaration": "MIT",
+      "review_row": 54,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/napi-rs/napi-rs/4fff029f67693d08be0ff16818eb9ead2637a99e/LICENSE",
+        "commit": "4fff029f67693d08be0ff16818eb9ead2637a99e"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No conventional licence member. Separately, package/dist/fs.js contains bundled labels for ieee754 BSD-3-Clause, buffer MIT, safe-buffer MIT, and code borrowed from cbor-x under MIT, but not their full notices. PACKAGING CONCERN: review both root MIT and bundled-component notices; labels are not full texts. Bundled scope is not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/napi-rs-mit.txt",
+          "sha256": "3f1ce66533302df3a32edbfdfc0b78f0dd34659e4c1f5817162e5ea3c2297215"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-darwin-x64",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 55,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-linux-arm64-gnu",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 56,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-linux-arm64-musl",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 57,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-linux-x64-gnu",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 58,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-linux-x64-musl",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 59,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-win32-arm64-msvc",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 60,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@next/swc-win32-x64-msvc",
+      "version": "16.4.3",
+      "declaration": "MIT",
+      "review_row": 61,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md",
+        "tag": "v16.4.3",
+        "resolved_commit": "29bbeab09981148ade186e8599ecdede15abc281"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/nextjs-mit.txt",
+          "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-android-arm-eabi",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 62,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-android-arm64",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 63,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-darwin-x64",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 64,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-freebsd-x64",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 65,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-arm-gnueabihf",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 66,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-arm64-gnu",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 67,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-arm64-musl",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 68,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-ppc64-gnu",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 69,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-s390x-gnu",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 70,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-x64-gnu",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 71,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-linux-x64-musl",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 72,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-openharmony-arm64",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 73,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-win32-arm64-msvc",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 74,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@rolldown/binding-win32-x64-msvc",
+      "version": "1.2.16",
+      "declaration": "MIT",
+      "review_row": 75,
+      "evidence_class": "tag-candidate",
+      "source": {
+        "url": "https://raw.githubusercontent.com/rolldown/rolldown/de6facf2228279718e042b801dd6b60dd6503918/LICENSE",
+        "tag": "v1.2.16",
+        "resolved_commit": "de6facf2228279718e042b801dd6b60dd6503918"
+      },
+      "qualification": "Tag-based candidate: npm omits gitHead, so tag v1.2.16 (resolved by git ls-remote to de6facf2228279718e042b801dd6b60dd6503918) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence because npm omits gitHead, although the source package version matches; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/rolldown-mit.txt",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-android-arm-eabi",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 88,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-android-arm64",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 89,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-darwin-x64",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 90,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-freebsd-x64",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 91,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-arm-gnueabihf",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 92,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-arm-musleabihf",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 93,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-arm64-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 94,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-arm64-musl",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 95,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-loong64-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 96,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-loong64-musl",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 97,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-ppc64-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 98,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-riscv64-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 99,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-riscv64-musl",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 100,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-s390x-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 101,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-x64-gnu",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 102,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-linux-x64-musl",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 103,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-openharmony-arm64",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 104,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-wasm32-wasi",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 105,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-win32-arm64-msvc",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 106,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-win32-ia32-msvc",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 107,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    },
+    {
+      "name": "@unrs/resolver-binding-win32-x64-msvc",
+      "version": "1.12.2",
+      "declaration": "MIT",
+      "review_row": 108,
+      "evidence_class": "direct-gitHead",
+      "source": {
+        "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+        "commit": "ccb26d205e2938b16069c64a28996b48ee97ff94"
+      },
+      "qualification": "Upstream copy at the npm manifest gitHead; does not prove shipment in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing even though a gitHead-pinned upstream copy exists; native/third-party binary contents were not exhaustively audited.",
+      "notices": [
+        {
+          "path": "notices/unrs-resolver-mit.txt",
+          "sha256": "a9e35996693bd619302922c731fa2f620ad12d5f50b19a37c8a3e0e078c9bd2f"
+        }
+      ]
+    }
+  ]
+}
