@@ -84,14 +84,17 @@ it("blocks a stale-head retry until refreshed case state is mounted", async () =
   await act(async () => {
     retry.click();
   });
-  expect(container!.textContent).toContain("Reload and review the latest case before retrying");
+  const text = container!.textContent;
+  expect(text).toContain("Reload and review the latest case before retrying");
+  expect(text).toContain("Consent actions are paused. Reload the latest case before recording another event.");
+  expect(text).not.toContain("head signature is missing");
+  expect(text).not.toContain("has opted out");
   expect(actions.recordConsent).toHaveBeenCalledTimes(1);
 
-  const controls = [...container!.querySelectorAll("button, textarea")];
-  expect(controls.every((control) => (control as HTMLButtonElement | HTMLTextAreaElement).disabled)).toBe(true);
-  await act(async () => {
-    retry.click();
-  });
+  /* The stale controls are gone, not merely disabled: nothing is left to retry with the stale head. */
+  expect(container!.querySelector('[aria-label="Record demo contact permission"]')).toBeNull();
+  expect(container!.querySelectorAll("button, textarea")).toHaveLength(0);
+  expect(retry.isConnected).toBe(false);
   expect(actions.recordConsent).toHaveBeenCalledTimes(1);
 
   await unmount();
