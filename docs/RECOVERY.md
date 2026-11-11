@@ -83,8 +83,7 @@ scripts/recovery_api_probe.py --secrets "$DRILL/secrets" \
 ```
 
 Wait for the API health check to be healthy before the probe. The probe verifies anonymous rejection (401), reads one
-synthetic case, and records its comparison/content hashes and `loaded_at`. To include mutable history, an authenticated
-reviewer can append a review before backup; the final observed drill did this and returned HTTP 201.
+synthetic case as reviewer, and exports it as auditor (the export role is auditor-only). It records comparison/content hashes and `loaded_at`. To include mutable history, an authenticated reviewer can append a review before backup; the final observed drill did this and returned HTTP 201.
 
 ## Backup
 
@@ -243,9 +242,9 @@ podman run --rm --user 0:0 -v "$BACKUP":/source:ro -v "$TAMPERED":/backup \
   docker.io/library/alpine:3.23 cp -a /source/. /backup/
 # Guarantee a first-line payload change; remove the editor artifact so the payload hash branch is exercised.
 podman run --rm --user 0:0 -v "$TAMPERED":/backup \
-  docker.io/library/alpine:3.23 sed -i.bak 1s/^/X/ /backup/bundle/files/gen.json
+  docker.io/library/alpine:3.23 sed -i.bak 1s/^/X/ /backup/bundle/files/gen.json.aead
 podman run --rm --user 0:0 -v "$TAMPERED":/backup \
-  docker.io/library/alpine:3.23 rm /backup/bundle/files/gen.json.bak
+  docker.io/library/alpine:3.23 rm /backup/bundle/files/gen.json.aead.bak
 
 export COMPOSE_PROJECT_NAME="$NEGATIVE"
 export WASL_SECRETS_VOLUME="$SECRETS"
@@ -324,15 +323,18 @@ The separate clean-checkout target was `waslrecclonecb59036b`, restored from com
   fixed and the final command reported 6/5,868 with matching hashes. An initial payload-edit attempt did not change the
   payload and was not counted as tamper evidence; the guaranteed first-line edit above did fail as required.
 
+## Observed v2 Linux evidence (11 Nov 2026)
+
+See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evidence/linux-recovery-2026-11-11.md): an encrypted v2 bundle restored 8 streams / 7,256 messages into a clean checkout and new empty volumes on Podman; HTTPS hashes matched after restore, restart, file rollback, and correct-key restart. Wrong-key and guaranteed-ciphertext-tamper drills failed closed. The 7,101,707-byte decrypted NATS payload fits the 64 MB tmpfs cap. Original bundle digests are validated before broker write preconditions are normalized for restore/readback; normalized digests can therefore differ from an older bundle's raw logical digest. An offline build was attempted but not proven because no preseeded Go module cache was available.
+
 ## Unresolved hardening and verification limits
 
 - v2 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
   keyring is a local file. Use protected, access-controlled backup storage and managed keys for real data. Rotation adds
   generations but does not re-encrypt old bundles. Temporary plaintext cleanup is logical, not physical erasure.
-- **Not run:** a clean Linux Docker restore of a v2 bundle. The 9 Nov evidence above predates v2 encryption and was
-  produced with HMAC-only bundles on Podman; v2 evidence is local (see
-  `docs/reliability/evidence/confidential-recovery-bundles-2026-11-10.md`). No external exactly-once, production
-  RPO/RTO or 24-hour soak is claimed.
+- **Not run:** a physical second-machine restore, an offline build without preseeded dependencies, or a 24-hour soak.
+  The 11 Nov v2 Podman evidence is a same-host clean empty-volume/container restore (see the evidence link above).
+  No external exactly-once or production RPO/RTO claim is made.
 - This is a same-host clean empty-volume/container restore, not a physical second-machine, object-lock/WORM, or off-site
   recovery test. Docker Engine and other operating systems remain unverified.
 - Durable consumer configuration is restored, but delivered/ack floors are deliberately not forged; consumers replay

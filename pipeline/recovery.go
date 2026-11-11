@@ -52,10 +52,19 @@ func recoveryApplicationHeader(header nats.Header) map[string][]string {
 	// Direct-get adds broker read metadata. Republishing it makes the server append a second value and changes the
 	// logical header set; application headers such as Nats-Msg-Id and KV rollup markers must be retained.
 	brokerOnly := map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
-		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true}
+		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true,
+		"Nats-Expected-Last-Subject-Sequence": true, "Nats-Expected-Last-Sequence": true,
+		"Nats-Expected-Last-Msg-Id": true, "Nats-Expected-Stream": true}
 	out := map[string][]string{}
 	for key, values := range header {
-		if !brokerOnly[key] {
+		brokerOnlyKey := false
+		for candidate := range brokerOnly {
+			if strings.EqualFold(key, candidate) {
+				brokerOnlyKey = true
+				break
+			}
+		}
+		if !brokerOnlyKey {
 			out[key] = append([]string(nil), values...)
 		}
 	}
@@ -71,6 +80,9 @@ func readRecoveryStream(ctx context.Context, stream jetstream.Stream) ([]recover
 		return nil, err
 	}
 	messages := make([]recoveryMessage, 0, info.State.Msgs)
+	if info.State.Msgs == 0 {
+		return messages, nil
+	}
 	for sequence := info.State.FirstSeq; sequence <= info.State.LastSeq; sequence++ {
 		raw, err := stream.GetMsg(ctx, sequence)
 		if errors.Is(err, jetstream.ErrMsgNotFound) {
@@ -174,6 +186,16 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	}
 	if err := validateNATSRecoveryBundle(bundle); err != nil {
 		return recoveryNATSBundle{}, err
+	}
+	for streamIndex, saved := range bundle.Streams {
+		for messageIndex, message := range saved.Messages {
+			saved.Messages[messageIndex].Header = recoveryApplicationHeader(nats.Header(message.Header))
+		}
+		digest, err := recoveryLogicalDigest(saved.Messages)
+		if err != nil {
+			return recoveryNATSBundle{}, err
+		}
+		bundle.Streams[streamIndex].Digest = digest
 	}
 	return bundle, nil
 }

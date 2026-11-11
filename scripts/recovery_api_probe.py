@@ -20,11 +20,14 @@ def main():
         raise SystemExit("recovery probe requires an HTTPS base URL")
     password = (args.secrets / "api_reviewer_password").read_text().strip()
     authorization = "Basic " + base64.b64encode(("reviewer:" + password).encode()).decode()
+    auditor_password = (args.secrets / "api_auditor_password").read_text().strip()
+    auditor_authorization = "Basic " + base64.b64encode(("auditor:" + auditor_password).encode()).decode()
     context = ssl.create_default_context(cafile=str(args.secrets / "ca.crt"))
 
-    def get(path, authenticated=True):
+    def get(path, authenticated=True, auditor=False):
+        credential = auditor_authorization if auditor else authorization
         request = urllib.request.Request(args.base_url + path,
-                                         headers={"Authorization": authorization} if authenticated else {})
+                                         headers={"Authorization": credential} if authenticated else {})
         with urllib.request.urlopen(request, context=context, timeout=10) as response:
             return response.status, json.load(response)
 
@@ -36,7 +39,7 @@ def main():
     status, health = get("/healthz")
     _, listing = get("/api/cases?limit=1")
     case_id = listing["cases"][0]["id"]
-    _, export = get("/api/cases/" + urllib.parse.quote(case_id, safe="") + "/export")
+    _, export = get("/api/cases/" + urllib.parse.quote(case_id, safe="") + "/export", auditor=True)
     result = {
         "health_status": status,
         "unauthenticated_status": unauthenticated_status,
