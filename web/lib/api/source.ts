@@ -368,7 +368,8 @@ export async function getCaseWithToken(id: string, token: string): Promise<Revie
 }
 
 export type ReviewReadResult =
-  | { ok: true; status: 201; response: ReviewResponse }
+  /** `response` is null when the event was appended (201) but its body could not be parsed. */
+  | { ok: true; status: 201; response: ReviewResponse | null }
   | { ok: false; status: 400 | 401 | 403 | 404 | 409; error: string; currentHead?: string };
 
 /** Appends one independent-review read with the reviewer's own token. 400/401/403/404/409 are refusals, never successes. */
@@ -381,7 +382,10 @@ export async function postReviewWithToken(id: string, body: ReviewRequest, token
     bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, token),
   );
   const json = await res.json().catch(() => undefined);
-  if (res.status === 201) return { ok: true, status: 201, response: ReviewResponse.parse(json) };
+  if (res.status === 201) {
+    const saved = ReviewResponse.safeParse(json);
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
   if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
     const e = ReviewError.safeParse(json);
     return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}`, currentHead: e.success ? e.data.current_head : undefined };
