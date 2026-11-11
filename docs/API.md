@@ -51,6 +51,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
+| GET, POST | `/api/cases/{id}/double-review` | Independent double review: blinded r1/r2 reads by two different token-bound actors, senior r3 resolution after a disagreement, per-round `expected_head` ([details](API-DOUBLE-REVIEW.md)) |
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
@@ -249,6 +250,8 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 - 400 for a malformed body or missing actor.
 
 **Append-only:** every action is appended to `<run>/api_reviews.ndjson` as a hash-chained event (`prev` → `hash`). The run's decisions are never modified. Review history shows in `api_reviews` and in `/audit` → `history`.
+
+**Single signer, not double review:** each `/review` event is one actor's answer. One person answering both questions, or the same question twice, is not independent double review. Independent r1/r2 reads with blinding, same-actor refusal and senior r3 resolution use `/double-review` ([API-DOUBLE-REVIEW.md](API-DOUBLE-REVIEW.md)), whose `type: "double_review"` events share this ledger and appear in `api_reviews`, `/audit` and `/export` (initial answers blinded until both are in).
 
 ### POST actions (coordinator, demo mode)
 

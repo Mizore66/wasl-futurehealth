@@ -49,6 +49,14 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
 export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
 
+/**
+ * The server-side variable holding a role's own credential, e.g. `WASL_API_REVIEWER_TOKEN`. Independent double review
+ * (lib/api/double-review.ts) passes only a `Role`, so it never sends the governance credentials (`_2_`, `_3_`).
+ */
+export function credentialName(role: Role): string {
+  return `WASL_API_${role.toUpperCase()}_TOKEN`;
+}
+
 function apiToken(credential: Role | GovernanceCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();

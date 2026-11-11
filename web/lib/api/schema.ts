@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DoubleReviewEvent, blindOpenReads } from "./double-review-schema";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -548,8 +549,21 @@ const tag =
   <L extends string>(ledger: L) =>
   <T extends object>(e: T) => ({ ...e, ledger });
 
+/**
+ * Any entry with `type: "double_review"`: a read when it parses as one, otherwise an explicit `unknown` entry (which
+ * carries no decision or note). Either way it is settled here, first in each union below, so a double-review event
+ * with one wrongly typed field can never fall through to a single-signer review shape and be counted, shown or
+ * offered undo/contest as a sign-off.
+ */
+const DoubleReviewEntry = z.looseObject({ type: z.literal("double_review") }).transform((raw) => {
+  const read = DoubleReviewEvent.safeParse(raw);
+  return read.success ? tag("double_review")(read.data) : UnknownLedgerEvent.parse(raw);
+});
+
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
+  /* Double-review entries first: they carry review-like fields but are never single-signer reviews (block at the end). */
+  DoubleReviewEntry,
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
   ApiReview.transform(tag("review")),
@@ -557,6 +571,7 @@ export const LedgerEvent = z.union([
 ]);
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
+  DoubleReviewEntry,
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReview.transform(tag("review")),
@@ -594,7 +609,7 @@ export const CaseDetail = withMeta({
   review_items: z.array(ReviewItem),
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
-  api_reviews: z.array(LedgerEvent),
+  api_reviews: z.array(LedgerEvent).transform(blindOpenReads),
   /** Separate demo contact overlay; canonical case consent and outreach stay untouched. */
   api_contact: ApiContact.optional(),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
@@ -615,7 +630,7 @@ export const Audit = withMeta({
   /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
   anchors: z.record(z.string(), z.string()).default({}),
   anchor_note: z.string().optional(),
-  history: z.array(AuditLedgerEvent),
+  history: z.array(AuditLedgerEvent).transform(blindOpenReads),
 });
 
 export const CaseList = withMeta({
@@ -885,3 +900,18 @@ export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
 export type ActionResponse = z.infer<typeof ActionResponse>;
+
+/* ---- Independent double review (issue #41; docs/API-DOUBLE-REVIEW.md) ----
+ * The shapes live in ./double-review-schema so the ledger unions above can list the read event first without an import
+ * cycle. A `type: "double_review"` entry in `api_reviews` or audit `history` is tagged `ledger: "double_review"` when
+ * it parses as a read, and `ledger: "unknown"` when it does not; never `ledger: "review"`.
+ */
+export {
+  DoubleReadRequest,
+  DoubleReadResponse,
+  DoubleReviewError,
+  DoubleReviewEvent,
+  DoubleReviewRound,
+  DoubleReviewState,
+} from "./double-review-schema";
+export type { DoubleReadView, Phase as DoubleReviewPhase, ReadName } from "./double-review-schema";
