@@ -325,7 +325,7 @@ The separate clean-checkout target was `waslrecclonecb59036b`, restored from com
 
 ## Observed v2 Linux evidence (11 Nov 2026)
 
-See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evidence/linux-recovery-2026-11-11.md): an encrypted v2 bundle restored 8 streams / 7,256 messages into a clean checkout and new empty volumes on Podman; HTTPS hashes matched after restore, restart, file rollback, and correct-key restart. Wrong-key and guaranteed-ciphertext-tamper drills failed closed. The 7,101,707-byte decrypted NATS payload fits the 64 MB tmpfs cap. An offline build was attempted but not proven because no preseeded Go module cache was available.
+See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evidence/linux-recovery-2026-11-11.md): an encrypted v2 bundle restored 8 streams / 7,256 messages into a clean checkout and new empty volumes on Podman; HTTPS hashes matched after restore, restart, file rollback, and correct-key restart. Wrong-key and guaranteed-ciphertext-tamper drills failed closed. The 7,101,707-byte decrypted NATS payload fits the 64 MB tmpfs cap. Original bundle digests are validated before broker write preconditions are normalized for restore/readback; normalized digests can therefore differ from an older bundle's raw logical digest. An offline build was attempted but not proven because no preseeded Go module cache was available.
 
 ## Unresolved hardening and verification limits
 

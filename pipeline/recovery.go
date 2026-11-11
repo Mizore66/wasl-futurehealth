@@ -57,7 +57,14 @@ func recoveryApplicationHeader(header nats.Header) map[string][]string {
 		"Nats-Expected-Last-Msg-Id": true, "Nats-Expected-Stream": true}
 	out := map[string][]string{}
 	for key, values := range header {
-		if !brokerOnly[key] {
+		brokerOnlyKey := false
+		for candidate := range brokerOnly {
+			if strings.EqualFold(key, candidate) {
+				brokerOnlyKey = true
+				break
+			}
+		}
+		if !brokerOnlyKey {
 			out[key] = append([]string(nil), values...)
 		}
 	}
