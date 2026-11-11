@@ -179,7 +179,7 @@ export function ReviewDesk({
   const hasEvidence = Boolean(view.items.evidence);
   const evidenceOptions: [ReportAnswer, string][] = [
     ...view.evidenceChoices.map((label) => [label, label] as [ReportAnswer, string]),
-    ...(view.programme === "crc" && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
+    ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
   ];
   const pending = outcomeOf(draft, view.items);
   const outcome = done && OUTCOMES[done.outcome];
@@ -285,7 +285,7 @@ export function ReviewDesk({
                   <motion.div key="q2" {...appear} className={hasLink ? "border-t border-rule pt-3" : undefined}>
                     <fieldset
                       className="m-0 min-w-0 border-0 p-0"
-                      aria-describedby={`${q2}-who${view.programme === "crc" ? ` ${q2}-ask` : ""}`}
+                      aria-describedby={`${q2}-who${view.programme === "crc" && hasLink ? ` ${q2}-ask` : ""}`}
                     >
                       <legend className="p-0 text-body font-medium">
                         {evidenceNumber}. {view.evidenceQuestion}
@@ -297,7 +297,7 @@ export function ReviewDesk({
                         Recorded as clinician: {SIGNER.name}
                         {hasLink ? ", the same person as question 1" : ""}.
                       </p>
-                      {view.programme === "crc" && (
+                      {view.programme === "crc" && hasLink && (
                         <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
                           &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
                         </p>

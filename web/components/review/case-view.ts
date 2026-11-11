@@ -114,7 +114,7 @@ export function reviewView(c: CaseDetail): ReviewView {
   const b = downstream && personFor(downstream.registration);
   const linkItem = c.review_items.find((r) => r.kinds.includes("link"));
   const evidenceItem = c.review_items.find((r) => r.kinds.includes("evidence"));
-  const ev = c.evidence[0];
+  const ev = evidenceItem ? c.evidence.find((e) => shortId(e.report) === shortId(evidenceItem.report)) : c.evidence[0];
   const link = c.links[0];
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
