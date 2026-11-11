@@ -50,10 +50,22 @@ test.describe("independent double review, live mode against a mock API", () => {
 
   let ledger: Read[] = [];
   let n = 0;
-  /** Make GET wrongly offer r2 to the author of r1, so the POST refusal itself is exercised. */
+  /** Make GET wrongly offer r2 to the author of r1, so the page's own refusal of a second seat is exercised. */
   let claimMay = false;
   /** Make GET and case detail wrongly include every blinded answer, as a broken API would. */
   let leak = false;
+  /** Make GET report an open round as agreed with a final, and put that final on open reads in case detail. */
+  let lie = false;
+  /** Add a `type: "double_review"` event with one wrongly typed field (and an answer and note) to case detail and audit. */
+  let malformed = false;
+  const FINAL_CANARY = "canaryfinal";
+  const DECISION_CANARY = "canarydecision";
+  const MALFORMED_NOTE = "CANARY-malformed-double-review-note";
+  const malformedEvent = () => ({
+    type: "double_review", kind: "read", case: id, item: LINK, question: "link", read: "r2", role: "reviewer", actor: "mock-other-3",
+    action: "signoff_link", at: "2026-11-11T00:00:00Z", mode: "demo", prev: "genesis", hash: "ee".repeat(32), round_head: "",
+    round_seq: "1", phase_after: "agreed", final: FINAL_CANARY, decision: DECISION_CANARY, note: MALFORMED_NOTE, nonce: "0".repeat(32),
+  });
   /** Every request the mock received: which token, method and path. */
   const seen: { token: string; method: string; path: string; body?: Record<string, string> }[] = [];
   const tokens = new Map<string, { role: string; actor: string }>([
@@ -98,22 +110,28 @@ test.describe("independent double review, live mode against a mock API", () => {
     };
     const by = Object.fromEntries(reads(item).map((r) => [r.read, view(r)]));
     const may = ["r1", "r2", "r3"].filter((rd) => !refusal(item, rd, p) || (claimMay && rd === "r2" && phase(item) === "awaiting_reads" && !by.r2));
-    const final = ph === "agreed" ? reads(item).find((r) => r.read === "r1")!.decision : ph === "resolved" ? reads(item).find((r) => r.read === "r3")!.decision : undefined;
+    const lying = lie && ph === "awaiting_reads" && reads(item).length > 0;
+    const final = lying
+      ? FINAL_CANARY
+      : ph === "agreed" ? reads(item).find((r) => r.read === "r1")!.decision : ph === "resolved" ? reads(item).find((r) => r.read === "r3")!.decision : undefined;
     return {
-      item, question: questionOf[item], action: questionOf[item] === "link" ? "signoff_link" : "signoff_evidence", phase: ph, head: head(item),
+      item, question: questionOf[item], action: questionOf[item] === "link" ? "signoff_link" : "signoff_evidence", phase: lying ? "agreed" : ph, head: head(item),
       seq: reads(item).length, r3_open: ph === "disagreement", viewer_may: may, reads: { r1: by.r1 ?? null, r2: by.r2 ?? null, r3: by.r3 ?? null },
       ...(final ? { final } : {}),
     };
   }
   /** Case detail `api_reviews`, blinded for everyone (the author included) while a round awaits its second initial read. */
-  const apiReviews = () =>
-    ledger.map((r) => {
+  const apiReviews = (): Record<string, unknown>[] => [
+    ...ledger.map((r) => {
       const blind = !leak && phase(r.item) === "awaiting_reads";
+      const lying = lie && phase(r.item) === "awaiting_reads";
       const ev = { type: "double_review", kind: "read", case: id, item: r.item, question: r.question, read: r.read, role: r.role, actor: r.actor,
         action: r.question === "link" ? "signoff_link" : "signoff_evidence", at: r.at, mode: "demo", prev: r.prev, hash: r.hash, round_head: "", round_seq: 1,
-        phase_after: r.phase_after, ...(r.final ? { final: r.final } : {}) };
+        phase_after: lying ? "agreed" : r.phase_after, ...(lying ? { final: FINAL_CANARY } : r.final ? { final: r.final } : {}) };
       return blind ? { ...ev, blinded: true } : { ...ev, decision: r.decision, note: r.note, nonce: "0".repeat(32) };
-    });
+    }),
+    ...(malformed ? [malformedEvent()] : []),
+  ];
 
   test.beforeAll(async () => {
     const env: [string, string, string][] = [
@@ -151,7 +169,7 @@ test.describe("independent double review, live mode against a mock API", () => {
       if (p === "/api/dashboard") return send(200, read("dashboard.json"));
       if (p === "/api/fixtures") return send(200, fx);
       if (p === "/api/cases") return send(200, { meta, cases: [summary], total: 1, limit: 50, offset: 0 });
-      if (p === `/api/cases/${id}/audit`) return send(200, { ...holdAudit, history: [] });
+      if (p === `/api/cases/${id}/audit`) return send(200, { ...holdAudit, history: malformed ? [malformedEvent()] : [] });
       if (p === `/api/cases/${id}/double-review`) {
         if (who.role === "auditor") return send(403, { meta, error: "read permission denied" });
         if (req.method === "GET") {
@@ -172,7 +190,7 @@ test.describe("independent double review, live mode against a mock API", () => {
           r.phase_after = phase(body.item);
           const rd = round(body.item, who);
           if (rd.final) r.final = rd.final;
-          send(201, { meta, event: { ...apiReviews().at(-1), decision: r.decision, note: r.note }, round: rd, canonical_unchanged: true });
+          send(201, { meta, event: { ...apiReviews()[ledger.length - 1], decision: r.decision, note: r.note }, round: rd, canonical_unchanged: true });
         });
         return;
       }
@@ -191,6 +209,8 @@ test.describe("independent double review, live mode against a mock API", () => {
     seen.length = 0;
     claimMay = false;
     leak = false;
+    lie = false;
+    malformed = false;
   });
 
   test.afterEach(() => {
@@ -296,18 +316,16 @@ test.describe("independent double review, live mode against a mock API", () => {
     await expect(panel(page)).toContainText("recorded by the API as mock-reviewer-1");
     await expect(linkRound(page).getByRole("button", { name: "Record your read" })).toHaveCount(0);
 
-    // Even if a response offered the second seat, the API's refusal is what the page shows, and nothing is appended.
+    // Even if a response offers the second seat, the page refuses it itself: no form, nothing posted, nothing appended.
+    // (The mock, like the API, would also refuse it with 403 same_actor.)
     claimMay = true;
     await page.reload();
-    await linkRound(page).getByRole("radio", { name: "Not the same patient" }).check();
-    await linkRound(page).getByRole("button", { name: "Record your read" }).click();
-    await expect(linkRound(page).getByRole("alert")).toContainText("Not saved: the API refused because this deployment's credential belongs to someone who already read this item.");
+    await expect(linkRound(page).getByTestId("read-r1")).toContainText("Same patient · your read, as mock-reviewer-1");
+    await expect(linkRound(page).getByRole("button", { name: "Record your read" })).toHaveCount(0);
+    await expect(linkRound(page).getByTestId("why")).toContainText("You gave r1 as mock-reviewer-1.");
     expect(ledger.map((r) => [r.read, r.actor])).toEqual([["r1", "mock-reviewer-1"]]);
     const posts = seen.filter((s) => s.method === "POST");
-    expect(posts.map((s) => [s.token === deskToken, s.body?.read])).toEqual([
-      [true, "r1"],
-      [true, "r2"],
-    ]);
+    expect(posts.map((s) => [s.token === deskToken, s.body?.read])).toEqual([[true, "r1"]]);
   });
 
   test("a blinded answer that is not the deployment's own never reaches the HTML or RSC payload, even if the API leaks it", async ({ page, request }) => {
@@ -327,5 +345,42 @@ test.describe("independent double review, live mode against a mock API", () => {
     await expect(linkRound(page).getByTestId("read-r1")).not.toContainText("Not the same patient");
     await page.goto(`/app/patients/${encodeURIComponent(id)}`);
     await expect(page.getByRole("region", { name: "Double-review reads" })).toContainText("answer hidden until both initial reads are in");
+  });
+
+  test("a final on an open read, a lying phase and a malformed double_review event never reach the HTML or RSC payload", async ({ page, request }) => {
+    await otherReads(request, OTHER_2, "r1", "different", CANARY);
+    // A broken API: r1's answer is served to everyone, the open round is reported agreed with a final, the open read in
+    // case detail carries that final, and a double_review event with round_seq as a string carries an answer and note.
+    leak = true;
+    lie = true;
+    malformed = true;
+    const served = await (await request.get(`${MOCK}/api/cases/${encodeURIComponent(id)}`, { headers: { authorization: `Bearer ${deskToken}` } })).text();
+    for (const s of [CANARY, FINAL_CANARY, DECISION_CANARY, MALFORMED_NOTE]) expect(served).toContain(s);
+
+    const caseUrl = `/app/patients/${encodeURIComponent(id)}`;
+    for (const url of [desk, caseUrl, `${caseUrl}/audit`]) {
+      for (const body of Object.values(await payloads(request, url))) {
+        expect(body).toContain("mock-other-2");
+        for (const s of [CANARY, MALFORMED_NOTE]) expect(body).not.toContain(s);
+        expect(body).not.toMatch(new RegExp(`${FINAL_CANARY}|${DECISION_CANARY}`, "i"));
+      }
+    }
+
+    // The review page does not believe "agreed" with one read: no answer, no settled answer, no form.
+    await page.goto(`${desk}#double-review`);
+    await expect(linkRound(page)).toContainText("State not recognised");
+    await expect(linkRound(page).getByTestId("read-r1")).toContainText("Answer hidden until both initial reads are in.");
+    await expect(linkRound(page).getByTestId("settled")).toHaveCount(0);
+    await expect(linkRound(page).getByRole("button", { name: "Record your read" })).toHaveCount(0);
+
+    // The case page lists the malformed event as unrecognised, never as a sign-off, and shows no settled answer.
+    await page.goto(caseUrl);
+    const card = page.getByRole("region", { name: "Double-review reads" });
+    await expect(card.getByRole("listitem")).toHaveCount(1);
+    await expect(card).not.toContainText("Settled answer");
+    await expect(page.getByText("Unrecognised ledger event (double_review/read)")).toBeVisible();
+    await page.goto(`${caseUrl}/audit`);
+    await expect(page.getByText("Unrecognised ledger event (double_review/read)")).toBeVisible();
+    await expect(page.getByRole("button", { name: /undo|contest/i })).toHaveCount(0);
   });
 });

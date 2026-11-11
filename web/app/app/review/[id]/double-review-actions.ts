@@ -10,8 +10,8 @@ import { slotFor } from "@/components/review/double-review/model";
  * One double-review read (docs/API-DOUBLE-REVIEW.md). The browser names the item, whether it answers an initial or the
  * senior question, and the answer. It names no seat and no credential: the server always sends this deployment's one
  * credential for the question's role (WASL_API_<ROLE>_TOKEN), and the slot (r1, r2 or r3) is the one the API itself
- * offers that credential now (`viewer_may`). The API records the person bound to the credential, whatever this page
- * believes, and refuses a second initial read by that person.
+ * offers that credential now (`viewer_may`), and never one when the credential's actor already holds r1 or r2. The API
+ * records the actor bound to the credential, whatever this page believes, and refuses a second read by that actor.
  */
 
 const Input = z.object({
@@ -46,7 +46,7 @@ export async function submitDoubleRead(input: DoubleReadInput): Promise<DoubleRe
     refresh(caseId);
     return { ok: false, status: 409, error: "stale expected_head: the round changed since it was read", conflict: "head" };
   }
-  const read = slotFor(round, senior);
+  const read = slotFor(round, senior, state.viewer.actor);
   if (!read) {
     return { ok: false, status: 0, error: `the API offers this deployment (${state.viewer.actor}) no ${senior ? "senior" : "initial"} read of this item now` };
   }
