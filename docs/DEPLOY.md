@@ -201,15 +201,15 @@ package on any host with Docker, put an HTTPS endpoint in front of the loopback 
 
 Every `/api` route needs a bearer token that the API binds to one role and one actor (`WASL_API_TOKENS`, see
 [`SECURITY.md`](SECURITY.md)). The published `scripts/demo.sh` defaults are loopback-only constants: a publicly
-reachable API must not use them, so generate fresh tokens for each role.
+reachable API must not use them, so generate fresh tokens for each role and independent reviewer credential.
 
-1. On the API host, generate one token per role the frontend uses, bind each to a role and the actor the ledger should
+1. On the API host, generate one token per credential the frontend uses, bind each to a role and the actor the ledger should
    record, and start the package detached, then wait for the API:
 
    ```bash
    umask 077
-   for r in reviewer clinician auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
-   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   for r in reviewer reviewer-2 reviewer-3 clinician clinician-2 clinician-3 auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
    scripts/deploy_up.sh -d                            # detached: does not attach to the logs
    until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
    curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
@@ -228,8 +228,12 @@ reachable API must not use them, so generate fresh tokens for each role.
    | Variable | Value | Used for |
    |---|---|---|
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
-   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review |
-   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review actions |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review and governance |
+   | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
+   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | a contest resolver independent of both prior actors |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |
+   | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | independent evidence/contest actions and consent resolution |
+   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | an evidence contest resolver independent of both prior actors |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
 
