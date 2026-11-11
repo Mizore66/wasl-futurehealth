@@ -41,6 +41,98 @@ func TestNATSRecoveryBundleValidatesEveryStreamBeforeRestore(t *testing.T) {
 	}
 }
 
+func TestRecoveryApplicationHeaderDropsWritePreconditions(t *testing.T) {
+	header := nats.Header{}
+	header.Set("Nats-Msg-Id", "message-id")
+	header.Set("KV-Operation", "DEL")
+	header.Set("Nats-Expected-Last-Subject-Sequence", "50")
+	header.Set("Nats-Expected-Last-Sequence", "50")
+	header.Set("nats-expected-last-sequence", "50")
+	header.Set("Nats-Expected-Last-Msg-Id", "prior-id")
+	header.Set("Nats-Expected-Stream", "prior-stream")
+	header.Set("Nats-Stream", "source-stream")
+	got := recoveryApplicationHeader(header)
+	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Sequence", "nats-expected-last-sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Stream"} {
+		if _, found := got[key]; found {
+			t.Errorf("source write precondition %q was retained: %v", key, got[key])
+		}
+	}
+	if nats.Header(got).Get("Nats-Msg-Id") != "message-id" || nats.Header(got).Get("KV-Operation") != "DEL" {
+		t.Fatalf("application/KV headers were lost: %v", got)
+	}
+}
+
+func TestRestoreDropsWritePreconditionsFromExistingBundle(t *testing.T) {
+	env := startTestNATS(t)
+	message := recoveryMessage{Sequence: 1, Subject: "recovery.precondition",
+		Header: map[string][]string{"Nats-Expected-Last-Subject-Sequence": {"0"}, "KV-Operation": {"DEL"}},
+		Data:   []byte("payload")}
+	digest, err := recoveryLogicalDigest([]recoveryMessage{message})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+		Config:   jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION", Subjects: []string{"recovery.precondition"}, Storage: jetstream.FileStorage, AllowDirect: true},
+		Messages: []recoveryMessage{message}, Digest: digest}}}
+	path := filepath.Join(t.TempDir(), "bundle.json")
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	infos, err := listRecoveryStreams(env.ctx, env.js)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, info := range infos {
+		if err := env.js.DeleteStream(env.ctx, info.Config.Name); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := restoreNATS(env.ctx, env.js, path); err != nil {
+		t.Fatal(err)
+	}
+	stream, err := env.js.Stream(env.ctx, "RECOVERY_PRECONDITION")
+	if err != nil {
+		t.Fatal(err)
+	}
+	restoredRaw, err := stream.GetMsg(env.ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restoredRaw.Header.Get("Nats-Expected-Last-Subject-Sequence") != "" {
+		t.Fatalf("write precondition was stored during restore: %v", restoredRaw.Header)
+	}
+	if restoredRaw.Header.Get("KV-Operation") != "DEL" {
+		t.Fatalf("KV operation was lost during restore: %v", restoredRaw.Header)
+	}
+}
+
+func TestExistingBundleTamperFailsBeforeHeaderNormalization(t *testing.T) {
+	message := recoveryMessage{Sequence: 1, Subject: "recovery.precondition",
+		Header: map[string][]string{"Nats-Expected-Last-Subject-Sequence": {"0"}}, Data: []byte("original")}
+	digest, err := recoveryLogicalDigest([]recoveryMessage{message})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+		Config: jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION"}, Messages: []recoveryMessage{message}, Digest: digest}}}
+	bundle.Streams[0].Messages[0].Data = []byte("tampered")
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "bundle.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadNATSRecoveryBundle(path); err == nil || !strings.Contains(err.Error(), "logical hash mismatch") {
+		t.Fatalf("tampered bundle passed original-digest validation: %v", err)
+	}
+}
+
 func TestStructuredLogEmitsOneJSONRecord(t *testing.T) {
 	var output bytes.Buffer
 	writeStructuredLogTo(&output, "info", "recovery complete", "streams", 2)
@@ -53,6 +145,21 @@ func TestStructuredLogEmitsOneJSONRecord(t *testing.T) {
 	}
 	if bytes.Count(output.Bytes(), []byte("\n")) != 1 {
 		t.Fatalf("duplicate or multiline log output: %q", output.String())
+	}
+}
+
+func TestReadRecoveryStreamSkipsEmptyStream(t *testing.T) {
+	env := startTestNATS(t)
+	stream, err := env.js.CreateStream(env.ctx, jetstream.StreamConfig{Name: "RECOVERY_EMPTY", Subjects: []string{"recovery.empty"}, Storage: jetstream.FileStorage, AllowDirect: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	messages, err := readRecoveryStream(env.ctx, stream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(messages) != 0 {
+		t.Fatalf("empty stream returned %d messages, want 0", len(messages))
 	}
 }
 
