@@ -220,7 +220,7 @@ describe("round state per item and read role (one deployment, one credential per
     const own = round("double_review_state_own.json");
     const m = roundModel(own, "reviewer-one", "crc");
     expect(m.cells[0]).toMatchObject({ read: "r1", state: "shown", decision: "same", mine: true });
-    expect([m.form, m.why]).toEqual([undefined, "You gave r1 as reviewer-one. The other initial read must come from a different person."]);
+    expect([m.form, m.why]).toEqual([undefined, "You gave r1 as reviewer-one. The other initial read must come from a different actor."]);
     // A response that wrongly offers the second seat is refused here too, before the API's 403 same_actor.
     expect(slotFor({ ...own, viewer_may: ["r2"] }, false, "reviewer-one")).toBeUndefined();
     expect(slotFor({ ...own, viewer_may: ["r2"] }, false, " Reviewer-One ")).toBeUndefined();
@@ -303,7 +303,7 @@ describe("round state per item and read role (one deployment, one credential per
     expect(slotFor(forged, true, "reviewer-three")).toBeUndefined();
   });
 
-  it("after a disagreement a third person gets the senior form and both initial answers are shown", () => {
+  it("after a disagreement a third actor gets the senior form and both initial answers are shown", () => {
     const m = roundModel(round("double_review_state_disagreement.json"), "reviewer-three", "crc");
     expect(m.phase).toBe("disagreement");
     expect(m.form).toMatchObject({ read: "r3", senior: true });
@@ -314,7 +314,7 @@ describe("round state per item and read role (one deployment, one credential per
     ]);
     // An initial reader has nothing to do now: the API does not offer it r3.
     const initial = roundModel({ ...round("double_review_state_disagreement.json"), viewer_may: [] }, "reviewer-one", "crc");
-    expect([initial.form, initial.why]).toEqual([undefined, "This deployment gave r1 as reviewer-one. The senior read must come from a third person."]);
+    expect([initial.form, initial.why]).toEqual([undefined, "This deployment gave r1 as reviewer-one. The senior read must come from a third actor."]);
   });
 
   it("a resolved round shows every read and the settled answer, with no form", () => {
@@ -356,6 +356,10 @@ describe("rendered reads", () => {
     );
     expect(html).toContain("This deployment is one reader");
     expect(html).toContain("designed, not built");
+    // The API compares actor names, not people: the copy says so and does not promise more.
+    expect(html).toContain("refuses a second read by the same actor");
+    expect(html).toContain("independent only if the operator issues one actor name per person");
+    expect(html).not.toMatch(/Two different people|by the same person/);
     expect(html).toContain("this deployment is recorded by the API as <strong>reviewer-two</strong>");
     expect(html).toContain("given by reviewer-one");
     expect(html).toContain("Answer hidden until both initial reads are in.");
