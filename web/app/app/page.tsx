@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PoolingChart, RegionCapacityChart } from "@/components/programme/capacity-chart";
 import { KpiChart } from "@/components/programme/kpi-chart";
-import { pct, poolingRuns, programmeView } from "@/components/programme/model";
+import { cellText, pct, poolingRuns, programmeView } from "@/components/programme/model";
+import { PatternLinks } from "@/components/programme/patterns";
 import { ProgrammeChart } from "@/components/programme/programme-chart";
 import { SourceHeading } from "@/components/programme/source-toggle";
 import { StallsChart } from "@/components/programme/stalls-chart";
@@ -18,7 +19,7 @@ const card = "rounded-card border border-line bg-surface p-pad";
 export default async function ProgrammePage() {
   const dash = await getDashboard();
   const view = programmeView(dash);
-  const { capacity } = view;
+  const { capacity, levers } = view;
   const safety = result("v2.safety.crc_false_closures");
   const runs = poolingRuns();
   const [enough] = runs;
@@ -116,6 +117,20 @@ export default async function ProgrammePage() {
               ))}
             </dl>
 
+            {levers && (
+              <p data-testid="capacity-levers" className="m-0 mt-4 text-body text-ink-soft tabular-nums">
+                <span className="font-medium text-ink">Queue levers:</span>{" "}
+                {[
+                  levers.direct && `${cellText(levers.direct.cell, levers.direct.of)} suggested direct to colonoscopy`,
+                  levers.highPrepRisk && `${cellText(levers.highPrepRisk.cell, levers.highPrepRisk.of)} at high risk of failed bowel prep`,
+                ]
+                  .filter(Boolean)
+                  .join("; ")}
+                . Counted over the open colorectal cases with a simulated booking suggestion. The patient list cannot filter by pathway or prep risk, so these counts do not link.
+                {levers.requiresClinicianOrder && " A prep regimen change needs a clinician’s order."}
+              </p>
+            )}
+
             <div className="mt-5">
               <RegionCapacityChart regions={capacity.regions} />
             </div>
@@ -138,6 +153,8 @@ export default async function ProgrammePage() {
           </section>
         )}
       </div>
+
+      <PatternLinks patterns={view.patterns} />
 
       {/* Static supporting copy with no object state, so it sits on the page grid unframed (DEC-3); the chart panels above keep their surfaces. */}
       <section aria-labelledby="safety-h" className="mt-8">
