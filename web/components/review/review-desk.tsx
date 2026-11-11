@@ -178,7 +178,10 @@ export function ReviewDesk({
   const hasLink = Boolean(view.items.link);
   const hasEvidence = Boolean(view.items.evidence);
   const evidenceOptions: [ReportAnswer, string][] = [
-    ...view.evidenceChoices.map((label) => [label, label] as [ReportAnswer, string]),
+    ...view.evidenceChoices.map((label) => {
+      const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
+      return [label, display] as [ReportAnswer, string];
+    }),
     ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
   ];
   const pending = outcomeOf(draft, view.items);
@@ -319,7 +322,7 @@ export function ReviewDesk({
               ) : (
                 <p className="m-0 text-small text-muted">
                   {draft.identity === "same" && hasEvidence
-                    ? `Answer the evidence question to sign.`
+                    ? view.programme === "crc" ? `Answer the colonoscopy report question to sign.` : `Answer the evidence question to sign.`
                     : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
                 </p>
               )}
