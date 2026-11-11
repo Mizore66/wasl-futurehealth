@@ -8,7 +8,7 @@ vi.mock("next/cache", () => ({ revalidatePath: revalidateMock }));
 vi.mock("@/lib/api/source", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/api/source")>()), getCase: getCaseMock }));
 
 /** Only what the action reads: the programme and the raised items with their kinds. */
-function caseWith(programme: Programme, items: Record<string, string[]>): CaseDetail {
+function caseWith(programme: Programme, items: Record<string, readonly string[]>): CaseDetail {
   return { case: { programme }, review_items: Object.entries(items).map(([item, kinds]) => ({ item, kinds })) } as unknown as CaseDetail;
 }
 
