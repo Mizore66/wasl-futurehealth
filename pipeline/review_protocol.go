@@ -8,6 +8,8 @@ package main
 // chain-valid but impossible history fails closed exactly where a live write would have been refused.
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -52,8 +54,10 @@ func perr(code int, format string, a ...interface{}) error {
 var reviewProtocolEventKeys = map[string]bool{
 	"case": true, "item": true, "decision": true, "note": true, "role": true, "actor": true, "action": true, "at": true,
 	"head_signed": true, "mode": true, "prev": true, "hash": true,
-	"protocol": true, "read": true, "question": true, "expected_head": true, "resolution_reads": true,
+	"protocol": true, "nonce": true, "read": true, "question": true, "expected_head": true, "resolution_reads": true,
 }
+
+var reviewNonceRE = regexp.MustCompile(`^[0-9a-f]{32}$`)
 
 var reviewHeadRE = regexp.MustCompile(`^(?:[0-9a-f]{64})?$`)
 
@@ -94,7 +98,7 @@ func actForQuestion(question string) string {
 
 // hasProtocolFields reports whether an event carries any protocol field (with or without the marker).
 func hasProtocolFields(ev map[string]interface{}) bool {
-	for _, k := range []string{"protocol", "read", "question", "expected_head", "resolution_reads"} {
+	for _, k := range []string{"protocol", "nonce", "read", "question", "expected_head", "resolution_reads"} {
 		if _, ok := ev[k]; ok {
 			return true
 		}
@@ -147,6 +151,14 @@ func reduceReviewProtocol(states map[reviewQuestionKey]*reviewProtocolState, ev 
 		if !reviewProtocolEventKeys[k] {
 			return perr(http.StatusBadRequest, "unknown protocol event field %q", k)
 		}
+	}
+	for _, k := range []string{"case", "item", "decision", "note", "role", "actor", "action", "at", "head_signed", "mode", "prev", "read", "question"} {
+		if _, ok := ev[k].(string); !ok {
+			return perr(http.StatusBadRequest, "protocol field %q must be a string", k)
+		}
+	}
+	if n, _ := ev["nonce"].(string); !reviewNonceRE.MatchString(n) {
+		return perr(http.StatusBadRequest, "nonce must be 128 random bits as 32 hex characters")
 	}
 	str := func(k string) string { v, _ := ev[k].(string); return v }
 	item, question, read, decision := str("item"), str("question"), str("read"), str("decision")
@@ -381,17 +393,15 @@ func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[st
 	states := s.protoStatesLocked()
 	view := map[reviewQuestionKey]*reviewProtocolState{}
 	for _, it := range s.queue[c.ID] {
-		if s.itemSigned(c.ID, it.ItemID) {
-			continue
-		}
+		signed := s.itemSigned(c.ID, it.ItemID)
 		for _, q := range it.Kinds {
 			if q != "link" && q != "evidence" {
 				continue
 			}
 			key := reviewQuestionKey{it.ItemID, q}
 			if st := states[key]; st != nil {
-				view[key] = st
-			} else {
+				view[key] = st // existing history stays visible after a canonical sign-off (frozen)
+			} else if !signed {
 				view[key] = &reviewProtocolState{Item: it.ItemID, Question: q, State: rsAwaitR1}
 			}
 		}
@@ -512,8 +522,9 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	if it == nil {
 		return fmt.Errorf("protocol read for an item not raised for this case")
 	}
-	if s.itemSigned(id, it.ItemID) {
-		return fmt.Errorf("protocol read for an item with a canonical sign-off")
+	// A canonical sign-off that arrived later freezes the item; it does not invalidate legal earlier reads.
+	if sstr(ev, "head_signed") != c.last.Sig {
+		return fmt.Errorf("protocol read signed against a different case head")
 	}
 	act := reviewActFor(c, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
@@ -557,9 +568,13 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 			return 409, map[string]interface{}{"error": "item already has a canonical sign-off; independent reads are closed"}
 		}
 		states := s.protoStatesLocked()
+		nonce, nerr := newReviewNonce()
+		if nerr != nil {
+			return 500, map[string]interface{}{"error": "could not generate a read nonce; nothing was recorded"}
+		}
 		ev := map[string]interface{}{"case": c.ID, "item": it.ItemID, "decision": decision, "note": note, "role": viewer.role, "actor": viewer.actor,
 			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked(),
-			"protocol": reviewProtocolName, "read": read, "question": question, "expected_head": expected}
+			"protocol": reviewProtocolName, "nonce": nonce, "read": read, "question": question, "expected_head": expected}
 		if st := states[reviewQuestionKey{it.ItemID, question}]; read == "r3" && st != nil && st.State == rsAwaitR3 {
 			ev["resolution_reads"] = []string{st.Reads[0].Hash, st.Reads[1].Hash}
 		}
@@ -591,4 +606,23 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 			"note": "appended to the review ledger as an independent read; canonical decisions and signatures are unchanged"}
 	}()
 	writeJSONResp(w, code, s.envelope(body)) // never write the response while holding s.mu
+}
+
+// shownEventLocked is a stored ledger event as the verified caller may see it in a write response: a concealed first
+// read's hash is removed from every field that repeats it (prev, action_head, target, ...). The stored bytes are untouched.
+func (s *apiServer) shownEventLocked(stored map[string]interface{}, viewer apiPrincipal) map[string]interface{} {
+	if v, ok := viewerEvent(stored, s.concealedHashesLocked(viewer)); ok {
+		return v
+	}
+	return map[string]interface{}{}
+}
+
+// newReviewNonce: 128 random bits per protocol read, so neither the event hash nor anything derived from it can be
+// confirmed by guessing the remaining fields (decision, timestamp). It is persisted but never exported.
+func newReviewNonce() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
