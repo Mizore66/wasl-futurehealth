@@ -1,5 +1,7 @@
 import { z } from "zod";
-import type { Dashboard, Dropoff, Programme } from "@/lib/api/schema";
+import { Count, Dropoff as DropoffEnum, type Dashboard, type Dropoff, type Programme } from "@/lib/api/schema";
+import { filtersHref, type CaseFilters } from "@/components/worklist/filters";
+import { DROPOFF_WORDS, providerLabel } from "@/components/worklist/model";
 import { result } from "@/lib/results";
 
 export type Stall = { dropoff: Dropoff; label: string; count: number };
@@ -50,6 +52,10 @@ export type ProgrammeView = {
   allStalls: StallGroup[];
   /** null when the run has no capacity block this page can read. */
   capacity: CapacityView | null;
+  /** Provider and origin patterns from the dashboard's small-cell suppressed tables. */
+  patterns: Patterns;
+  /** Aggregate queue-lever counts from `capacity.levers`; null when the run has none this page can read. */
+  levers: LeverView | null;
   /** The DoH acceptable level, read from the KPI definition; null when the definition no longer states it. */
   target: number | null;
   /** N in "1 in N on your chase list is already done"; null when the run has no CRC closure metrics. */
@@ -214,6 +220,8 @@ export function programmeView(d: Dashboard): ProgrammeView {
     programmes,
     allStalls,
     capacity: capacityView(d),
+    patterns: patternsView(d),
+    levers: leverView(d),
     target: target ? Number(target[1]) : null,
     chaseOneIn: chaseList > 0 && alreadyDone > 0 ? Math.round(chaseList / alreadyDone) : null,
     stalls,
@@ -232,6 +240,225 @@ export function stallScope(d: Dashboard): { run: string; cases: number; top: Sta
   const group = v.allStalls.find((g) => g.pathway === "Colorectal and cervical")?.stalls ?? [];
   const smaller = group.filter((s) => (s.dropoff === "referral_unanswered" || s.dropoff === "referral_rejected") && !top.some((t) => t.dropoff === s.dropoff));
   return { run: d.meta.run, cases: v.cases, top, smaller };
+}
+
+/* ---------------- Provider and origin patterns, queue levers (issue #45) ---------------- */
+
+/**
+ * One count as the API serves it. The backend suppresses small cells at source (pipeline/audit.go `supp`: 1 to 4 become
+ * the string "<5"), so a suppressed cell carries only its cut-off and never a value.
+ */
+export type Cell = { kind: "count"; value: number } | { kind: "suppressed"; below: number };
+
+/** A number, or a small-cell string such as "<5"; anything else is unreadable (null). */
+export function readCell(v: unknown): Cell | null {
+  const parsed = Count.safeParse(v);
+  if (!parsed.success) return null;
+  const c = parsed.data;
+  if (typeof c === "number") return Number.isFinite(c) && c >= 0 ? { kind: "count", value: c } : null;
+  return { kind: "suppressed", below: Number(c.slice(1)) };
+}
+
+const valueOf = (c: Cell) => (c.kind === "count" ? c.value : 0);
+
+export type PatternKind = "closed" | "notified" | "stall" | "escalation";
+
+export type Pattern = {
+  kind: PatternKind;
+  /** "Closed with evidence", "Notified within 21 days", "Largest stall" or "Most frequent escalation". */
+  title: string;
+  /** Which stall or escalation. null for closure and notification, and when none is recorded or every one is suppressed. */
+  what: string | null;
+  cell: Cell;
+  /** The row's cases, the denominator of every pattern in the row. */
+  of: number;
+  /** Patients filtered to exactly these cases; null when the case list cannot filter to them, or the cell is suppressed or zero. */
+  href: string | null;
+};
+
+export type PatternRow = {
+  /** The provider id or origin key the API uses. */
+  key: string;
+  name: string;
+  /** The cases (loops) the row counts. */
+  loops: Cell;
+  /** Patients filtered to this provider; null for origins (case records carry no origin) and for suppressed or empty rows. */
+  href: string | null;
+  /** Empty when the row's case count is suppressed or zero: there is no denominator to show a pattern against. */
+  patterns: Pattern[];
+};
+
+export type Patterns = { providers: PatternRow[]; origins: PatternRow[]; smallCellRule: string | null };
+
+const ORIGIN_NAME: Record<string, string> = { arab: "Arab", filipino: "Filipino", south_asian: "South Asian", western: "Western" };
+
+/** Plain words for the escalations most likely to lead a row; anything else falls back to its code in words. */
+const ESCALATION_LABEL: Record<string, string> = {
+  overdue_crc_deadline: "Past the colorectal deadline",
+  overdue_cervical_deadline: "Past the cervical deadline",
+  overdue_lung_nodule_window: "Past the lung-nodule follow-up window",
+  overdue_lung_surveillance_ct: "Surveillance CT overdue",
+  overdue_dr_referral: "Eye-clinic referral overdue",
+  overdue_breast_recall: "Breast recall overdue",
+  overdue_ldct_followup: "LDCT follow-up overdue",
+  overdue_ifhas_followup: "IFHAS follow-up overdue",
+  not_notified_21d: "Not notified within 21 days",
+  no_ack_7d: "No acknowledgement within 7 days",
+  referral_unanswered_7d: "Referral unanswered after 7 days",
+  noncompliant_message: "Message flagged before sending",
+  unowned: "No owner",
+  open_econsult: "E-consult opened",
+  rejected_inadequate: "Repeat procedure needed",
+  rejected_no_show: "Did not attend",
+  repeat_photo_overdue: "Repeat retinal photo overdue",
+  refer_specialist_mdt: "Referred to the specialist team",
+};
+
+const words = (code: string) => {
+  const s = code.replaceAll("_", " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+const stallLabel = (k: string) => STALL_LABEL[k as Dropoff] ?? OTHER_STALL_LABEL[k as Dropoff] ?? DROPOFF_WORDS[k as Exclude<Dropoff, "">]?.status ?? words(k);
+
+/**
+ * The largest readable count in a breakdown. A suppressed cell is never ranked (its value is unknown): when every recorded
+ * entry is suppressed the result names none and carries the suppression; when nothing is recorded it is a zero.
+ * null when the breakdown itself is missing.
+ */
+function largest(m: Record<string, unknown> | undefined, skip: (k: string) => boolean): { key: string | null; cell: Cell } | null {
+  if (!m) return null;
+  const cells = Object.entries(m).flatMap(([key, v]) => {
+    const cell = skip(key) ? null : readCell(v);
+    return cell ? [{ key, cell }] : [];
+  });
+  const counted = cells.filter((c) => valueOf(c.cell) > 0).sort((a, b) => valueOf(b.cell) - valueOf(a.cell) || a.key.localeCompare(b.key));
+  if (counted.length > 0) return counted[0];
+  const suppressed = cells.find((c) => c.cell.kind === "suppressed");
+  return { key: null, cell: suppressed ? suppressed.cell : { kind: "count", value: 0 } };
+}
+
+const PatternRowData = z.looseObject({
+  loops: z.unknown(),
+  evidenced_closed: z.unknown().optional(),
+  notified_within_21d: z.unknown().optional(),
+  dropoff: z.record(z.string(), z.unknown()).optional(),
+  escalations: z.record(z.string(), z.unknown()).optional(),
+});
+
+/** One provider or origin row. `provider` is the Patients filter value, or null when the case list cannot filter by the row. */
+function patternRow(raw: unknown, key: string, name: string, provider: string | null): PatternRow | null {
+  const r = PatternRowData.safeParse(raw);
+  if (!r.success) return null;
+  const loops = readCell(r.data.loops);
+  if (!loops) return null;
+  const of = valueOf(loops);
+  if (of === 0) return { key, name, loops, href: null, patterns: [] };
+
+  // Only a positive, unsuppressed count links, and only for a provider: the API's /api/cases filters on provider, state and dropoff.
+  const link = (cell: Cell, f: Omit<CaseFilters, "provider">) => (provider !== null && valueOf(cell) > 0 ? filtersHref("/app/patients", { ...f, provider }) : null);
+  const patterns: Pattern[] = [];
+
+  // Evidenced closure counts decisions in state "closed" (pipeline/analyze.go dashboard), which is the list's state filter.
+  const closed = readCell(r.data.evidenced_closed);
+  if (closed) patterns.push({ kind: "closed", title: "Closed with evidence", what: null, cell: closed, of, href: link(closed, { state: "closed" }) });
+
+  // No case-list filter for notification timing, so it is plain text.
+  const notified = readCell(r.data.notified_within_21d);
+  if (notified) patterns.push({ kind: "notified", title: "Notified within 21 days", what: null, cell: notified, of, href: null });
+
+  // Drop-offs count only cases not closed, and a closed case has no drop-off, so provider + dropoff is the same set.
+  // "" (no drop-off) and in_progress (an appointment is in the record) are not stalls.
+  const stall = largest(r.data.dropoff, (k) => k === "" || k === "in_progress");
+  if (stall) {
+    const code = stall.key === null ? null : DropoffEnum.exclude([""]).safeParse(stall.key);
+    patterns.push({
+      kind: "stall",
+      title: "Largest stall",
+      what: stall.key === null ? null : stallLabel(stall.key),
+      cell: stall.cell,
+      of,
+      // An unknown code would be dropped by the Patients filter parser and show the wrong list, so it never links.
+      href: code?.success ? link(stall.cell, { dropoff: code.data }) : null,
+    });
+  }
+
+  // Case summaries carry no escalation codes, so this is plain text.
+  const esc = largest(r.data.escalations, () => false);
+  if (esc) patterns.push({ kind: "escalation", title: "Most frequent escalation", what: esc.key === null ? null : ESCALATION_LABEL[esc.key] ?? words(esc.key), cell: esc.cell, of, href: null });
+
+  return { key, name, loops, href: provider !== null ? filtersHref("/app/patients", { provider }) : null, patterns };
+}
+
+export function patternsView(d: Dashboard): Patterns {
+  return {
+    providers: d.providers.flatMap((p) => patternRow(p, p.provider, providerLabel(p.provider), p.provider) ?? []),
+    // Origin is an attribute of the synthetic cohort's ground truth, not of the case record, so it never links.
+    origins: d.origins.flatMap((o) => patternRow(o, o.origin, ORIGIN_NAME[o.origin] ?? words(o.origin), null) ?? []),
+    smallCellRule: d.small_cell_rule ?? null,
+  };
+}
+
+const num = (v: number) => v.toLocaleString("en-US");
+
+/** "523 of 1,606", or "fewer than 5 of 70" for a suppressed cell: never the suppressed value itself. */
+export function cellText(c: Cell, of: number): string {
+  return c.kind === "count" ? `${num(c.value)} of ${num(of)}` : `fewer than ${c.below} of ${num(of)}`;
+}
+
+/** One pattern as the dashboard prints it: "Largest stall: Not booked, 195 of 1,606". */
+export function patternText(p: Pattern): string {
+  if (p.what !== null) return `${p.title}: ${p.what}, ${cellText(p.cell, p.of)}`;
+  const ranked = p.kind === "stall" || p.kind === "escalation";
+  if (ranked && p.cell.kind === "suppressed") return `${p.title}: each one ${cellText(p.cell, p.of)}`;
+  if (ranked) return `${p.title}: none recorded`;
+  return `${p.title}: ${cellText(p.cell, p.of)}`;
+}
+
+/** The row's case count: "1,606 cases", "fewer than 5 cases". */
+export function loopsText(c: Cell): string {
+  if (c.kind === "suppressed") return `fewer than ${c.below} cases`;
+  return `${num(c.value)} ${c.value === 1 ? "case" : "cases"}`;
+}
+
+/** An aggregate lever count out of every case the lever was computed for. */
+export type LeverCount = { cell: Cell; of: number };
+
+export type LeverView = {
+  /** Cases suggested for the direct-to-colonoscopy pathway. */
+  direct: LeverCount | null;
+  /** Cases in the high prep-failure risk band. */
+  highPrepRisk: LeverCount | null;
+  requiresClinicianOrder: boolean;
+};
+
+const Levers = z.looseObject({
+  pathway: z.record(z.string(), z.unknown()).optional(),
+  prep_risk_band: z.record(z.string(), z.unknown()).optional(),
+  requires_clinician_order: z.boolean().optional(),
+});
+
+/**
+ * `key`'s count out of the whole breakdown (booking/suggest.py counts every case with a booking suggestion, so a missing
+ * key is zero). null when the breakdown is missing or empty, or any part of it is unreadable or suppressed: the
+ * denominator would not be exact.
+ */
+function leverCount(m: Record<string, unknown> | undefined, key: string): LeverCount | null {
+  if (!m) return null;
+  const cells = Object.values(m).map(readCell);
+  if (cells.some((c) => c === null || c.kind === "suppressed")) return null;
+  const of = cells.reduce((n, c) => n + valueOf(c!), 0);
+  if (of === 0) return null;
+  return { cell: readCell(m[key] ?? 0)!, of };
+}
+
+export function leverView(d: Dashboard): LeverView | null {
+  const parsed = Levers.safeParse((d.capacity as Record<string, unknown>).levers);
+  if (!parsed.success) return null;
+  const direct = leverCount(parsed.data.pathway, "direct");
+  const highPrepRisk = leverCount(parsed.data.prep_risk_band, "high");
+  if (!direct && !highPrepRisk) return null;
+  return { direct, highPrepRisk, requiresClinicianOrder: parsed.data.requires_clinician_order === true };
 }
 
 export const pct = (v: number) => `${v.toFixed(1)}%`;
