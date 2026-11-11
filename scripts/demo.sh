@@ -45,7 +45,9 @@ export WASL_API_REVIEWER_3_TOKEN="${WASL_API_REVIEWER_3_TOKEN:-wasl-demo-reviewe
 export WASL_API_AUDITOR_TOKEN="${WASL_API_AUDITOR_TOKEN:-wasl-demo-auditor-token}"
 export WASL_API_COORDINATOR_TOKEN="${WASL_API_COORDINATOR_TOKEN:-wasl-demo-coordinator-token}"
 export WASL_API_CLINICIAN_TOKEN="${WASL_API_CLINICIAN_TOKEN:-wasl-demo-clinician-token}"
-export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician}"
+export WASL_API_CLINICIAN_2_TOKEN="${WASL_API_CLINICIAN_2_TOKEN:-wasl-demo-clinician-2-token}"
+export WASL_API_CLINICIAN_3_TOKEN="${WASL_API_CLINICIAN_3_TOKEN:-wasl-demo-clinician-3-token}"
+export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician,$WASL_API_CLINICIAN_2_TOKEN:clinician:smoke-clinician-2,$WASL_API_CLINICIAN_3_TOKEN:clinician:smoke-clinician-3}"
 export WASL_API_ORIGINS="${WASL_API_ORIGINS:-}"
 COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
 LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop type); 0 = off

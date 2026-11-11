@@ -9,13 +9,23 @@ import {
   Audit,
   CaseDetail,
   CaseList,
+  CompensationResponse,
+  ContestRequest,
+  ContestResolutionRequest,
   Dashboard,
   Fixtures,
   Healthz,
   ReviewRequest,
   ReviewResponse,
+  UndoProjection,
+  UndoRequest,
   type CaseSummary,
+  type CompensationResponse as CompensationResponseBody,
+  type ContestRequest as ContestRequestBody,
+  type ContestResolutionRequest as ContestResolutionRequestBody,
   type Role,
+  type UndoRequest as UndoRequestBody,
+  type UndoProjection as UndoProjectionBody,
 } from "./schema";
 
 /*
@@ -32,16 +42,18 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-function apiToken(role: Role): string {
-  const name = `WASL_API_${role.toUpperCase()}_TOKEN`;
+export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
+
+function apiToken(credential: Role | GovernanceCredential): string {
+  const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();
   if (!token) throw new Error(`${name} is required for the live synthetic API`);
   return token;
 }
 
-function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
+function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential): RequestInit {
   const headers = new Headers(init?.headers);
-  headers.set("authorization", `Bearer ${apiToken(role)}`);
+  headers.set("authorization", `Bearer ${apiToken(credential)}`);
   return { cache: "no-store", ...init, headers };
 }
 
@@ -191,6 +203,52 @@ export async function postReview(
 
   // Fixtures mode has no log to append to. Fabricating an event with a made-up hash would present a click as a saved review.
   throw new Error("postReview needs WASL_API_URL: fixtures mode cannot append review events");
+}
+
+export type GovernanceResult =
+  | { ok: true; status: 201; response: CompensationResponseBody }
+  | { ok: false; status: 400 | 403 | 404 | 409 | 500 | 503; error: string };
+
+/** The API binds the selected credential to its configured role and immutable actor; the browser supplies neither. */
+async function postGovernance(id: string, body: unknown, credential: GovernanceCredential): Promise<GovernanceResult> {
+  if (apiMode() !== "live") throw new Error("governance actions need WASL_API_URL: fixtures mode cannot append governance events");
+  const res = await fetch(
+    `${liveBase()}/api/cases/${encodeURIComponent(id)}/undo`,
+    authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, credential),
+  );
+  const json = await res.json();
+  if (res.status === 201) return { ok: true, status: 201, response: CompensationResponse.parse(json) };
+  if ([400, 403, 404, 409, 500, 503].includes(res.status)) {
+    return { ok: false, status: res.status as 400 | 403 | 404 | 409 | 500 | 503, error: ApiError.parse(json).error };
+  }
+  throw new Error(`POST undo: HTTP ${res.status}`);
+}
+
+export async function postUndo(id: string, body: UndoRequestBody, credential: GovernanceCredential): Promise<GovernanceResult> {
+  const request = UndoRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  return postGovernance(id, request.data, credential);
+}
+
+export async function postContest(id: string, body: ContestRequestBody, credential: GovernanceCredential): Promise<GovernanceResult> {
+  const request = ContestRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  return postGovernance(id, request.data, credential);
+}
+
+export async function postContestResolution(
+  id: string,
+  body: ContestResolutionRequestBody,
+  credential: GovernanceCredential,
+): Promise<GovernanceResult> {
+  const request = ContestResolutionRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  return postGovernance(id, request.data, credential);
+}
+
+export async function getUndoProjection(id: string): Promise<UndoProjectionBody | null> {
+  if (apiMode() !== "live") throw new Error("getUndoProjection needs WASL_API_URL: fixtures do not include a live governance projection");
+  return live(UndoProjection, `/api/cases/${encodeURIComponent(id)}/undo`);
 }
 
 export type ActionResult =

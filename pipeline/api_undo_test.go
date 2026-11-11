@@ -270,6 +270,30 @@ func TestContestIsSeparateFromCanonicalAndNeedsResolution(t *testing.T) {
 	r.wantCode(code, 409, m, "duplicate resolution")
 }
 
+func TestConsentContestResolutionRequiresThirdActor(t *testing.T) {
+	r := newUndoRig(t)
+	target := r.review(undoCaseA, RoleCoordinator, "coordinator-one", "confirm_contact")
+	code, m := r.undo(undoCaseA, RoleClinician, "clinician-one", `{"target":"`+target+`","contest":true,"note":"independent consent check"}`)
+	r.wantCode(code, 201, m, "consent contest")
+	contest := m["event"].(map[string]interface{})["hash"].(string)
+
+	for _, prior := range []struct{ role, actor string }{{RoleCoordinator, "coordinator-one"}, {RoleClinician, "clinician-one"}} {
+		code, m = r.undo(undoCaseA, prior.role, prior.actor, `{"target":"`+contest+`","resolution":"upheld"}`)
+		r.wantCode(code, 403, m, "prior actor "+prior.actor+" resolving consent contest")
+	}
+	code, m = r.undo(undoCaseA, RoleClinician, "clinician-two", `{"target":"`+contest+`","resolution":"upheld","note":"third consent-authorised actor"}`)
+	r.wantCode(code, 201, m, "independent consent resolution")
+	if event := m["event"].(map[string]interface{}); event["action"] != ActRecordConsent || event["actor"] != "clinician-two" {
+		t.Errorf("consent resolution event: %v", event)
+	}
+	if got := r.status(undoCaseA, target); got != "compensated" {
+		t.Errorf("consent review status=%s, want compensated", got)
+	}
+	if got := r.status(undoCaseA, contest); got != "upheld" {
+		t.Errorf("consent contest status=%s, want upheld", got)
+	}
+}
+
 func TestContestRejectedRestoresActive(t *testing.T) {
 	r := newUndoRig(t)
 	target := r.review(undoCaseA, RoleClinician, "c1", "adequate")
