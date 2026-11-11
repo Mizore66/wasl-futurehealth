@@ -256,7 +256,9 @@ export function ReviewDesk({
           </h2>
           <p className="m-0 mt-0.5 text-small text-muted">
             {live
-              ? `One signer, ${hasLink && hasEvidence ? "two answers" : "one answer"}: ${SIGNER.name} (${SIGNER.title}) records each under its own role. Two roles from one person are not independent double review.`
+              ? hasLink && hasEvidence
+                ? `One signer, two answers: ${SIGNER.name} (${SIGNER.title}) records each under its own role. Two roles from one person are not independent double review.`
+                : `One signer, one answer: ${SIGNER.name} (${SIGNER.title}) records it as ${hasLink ? "reviewer" : "clinician"}.`
               : "A reconstruction: nothing here is appended or saved. Signing needs the live API."}
           </p>
 
