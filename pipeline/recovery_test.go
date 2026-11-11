@@ -56,6 +56,21 @@ func TestStructuredLogEmitsOneJSONRecord(t *testing.T) {
 	}
 }
 
+func TestReadRecoveryStreamSkipsEmptyStream(t *testing.T) {
+	env := startTestNATS(t)
+	stream, err := env.js.CreateStream(env.ctx, jetstream.StreamConfig{Name: "RECOVERY_EMPTY", Subjects: []string{"recovery.empty"}, Storage: jetstream.FileStorage, AllowDirect: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	messages, err := readRecoveryStream(env.ctx, stream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(messages) != 0 {
+		t.Fatalf("empty stream returned %d messages, want 0", len(messages))
+	}
+}
+
 func TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster(t *testing.T) {
 	urls := strings.Split(os.Getenv("WASL_TEST_RECOVERY_NATS"), ",")
 	if len(urls) != 2 {
