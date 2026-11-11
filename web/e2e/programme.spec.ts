@@ -343,8 +343,9 @@ test.describe("Programme charts", () => {
   });
 });
 
-/* Issue #45: provider and origin patterns as filtered Patients links, and the queue-lever counts. */
-const patterns = (page: Page) => page.locator('section[aria-labelledby="patterns-h"]');
+/* Issue #45: provider links into filtered Patients lists, and the queue-lever counts. */
+const providerBlock = (page: Page) => page.getByTestId("provider-links");
+const SHOTS = "/tmp/claude-0/-home-user-wasl-futurehealth/309dfc1c-29a9-5a64-83c9-6308e8ff1d9e/scratchpad/review-64";
 
 type SampleCase = { id: string; provider: string; state: string; dropoff: string };
 
@@ -360,61 +361,59 @@ function sampleCases(): SampleCase[] {
 const sampleCount = (f: Partial<SampleCase>) => sampleCases().filter((c) => (Object.keys(f) as (keyof SampleCase)[]).every((k) => c[k] === f[k])).length;
 const casesWord = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
 
-test.describe("Programme: provider and origin patterns", () => {
-  test("pattern links carry their number and denominator; suppressed or unfilterable counts are plain text", async ({ page }) => {
-    await page.goto("/app");
-    const section = patterns(page);
-    await expect(section.getByRole("heading", { name: "By provider and origin" })).toBeVisible();
-    await expect(section.locator('[data-honesty="simulated"]')).toHaveText("Simulated cohort");
+/** Opens the provider disclosure from the keyboard. */
+async function openProviders(page: Page) {
+  const summary = providerBlock(page).locator("summary");
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(providerBlock(page).locator("details")).toHaveAttribute("open", "");
+}
 
-    const rad = section.getByTestId("pattern-patterns-providers-rad-imaging");
-    await expect(rad.getByRole("link", { name: "rad-imaging, 905 cases (simulated). Opens the patient list for this provider." })).toHaveAttribute(
-      "href",
-      "/app/patients?provider=rad-imaging",
-    );
-    await expect(rad.getByRole("link", { name: /^rad-imaging: Closed with evidence: 168 of 905 \(simulated\)/ })).toHaveAttribute(
-      "href",
-      "/app/patients?state=closed&provider=rad-imaging",
-    );
-    await expect(rad.getByRole("link", { name: /^rad-imaging: Largest stall: No follow-up CT booked, 498 of 905 \(simulated\)/ })).toHaveAttribute(
+test.describe("Programme: provider links", () => {
+  test("one collapsed line; opened, one line per provider whose links carry their number and denominator", async ({ page }) => {
+    await page.goto("/app");
+    const block = providerBlock(page);
+    await expect(block.getByRole("heading", { name: "By provider" })).toBeVisible();
+    await expect(block.locator('[data-honesty="simulated"]')).toHaveText("Simulated cohort");
+    await expect(block.locator("summary")).toHaveText("Closure and largest stall for 7 providers, linked to the patient list");
+    await expect(block.getByRole("link")).toHaveCount(0);
+
+    await openProviders(page);
+    await expect(block.getByRole("listitem")).toHaveCount(7);
+    const rad = block.getByTestId("provider-rad-imaging");
+    for (const shown of ["rad-imaging, 905 cases", "168 of 905 closed", "largest stall: No follow-up CT booked, 498 of 905"]) await expect(rad).toContainText(shown);
+    await expect(rad.getByRole("link", { name: "rad-imaging, 905 cases (simulated)" })).toHaveAttribute("href", "/app/patients?provider=rad-imaging");
+    await expect(rad.getByRole("link", { name: "rad-imaging: 168 of 905 closed (simulated)" })).toHaveAttribute("href", "/app/patients?state=closed&provider=rad-imaging");
+    await expect(rad.getByRole("link", { name: "rad-imaging: largest stall: No follow-up CT booked, 498 of 905 (simulated)" })).toHaveAttribute(
       "href",
       "/app/patients?dropoff=no_followup_ct&provider=rad-imaging",
     );
-    // Notification and escalation have no case-list filter: shown, not linked.
-    await expect(rad).toContainText("Notified within 21 days: 0 of 905");
-    await expect(rad).toContainText("Most frequent escalation: Past the lung-nodule follow-up window, 155 of 905");
-    await expect(rad.getByRole("link")).toHaveCount(3);
 
-    // Every link's accessible name includes its number (out of a denominator for a pattern) and says it is simulated.
-    const links = section.getByRole("link");
-    expect(await links.count()).toBeGreaterThan(10);
-    for (const l of await links.all()) {
+    // Every pattern link's accessible name holds its number out of the provider's cases, and says it is simulated.
+    for (const l of await block.getByRole("link").all()) {
       const href = (await l.getAttribute("href"))!;
-      const pattern = /[?&](state|dropoff)=/.test(href);
-      await expect(l).toHaveAccessibleName(pattern ? / \d[\d,]* of \d[\d,]* \(simulated\)/ : /, \d[\d,]* cases \(simulated\)/);
+      await expect(l).toHaveAccessibleName(/[?&](state|dropoff)=/.test(href) ? / \d[\d,]* of \d[\d,]*( closed)? \(simulated\)$/ : /, \d[\d,]* cases \(simulated\)$/);
       await expect(l).not.toContainText("fewer than");
     }
 
-    // A suppressed small cell is never shown as a number or linked.
-    const breast = section.getByTestId("pattern-patterns-providers-bsu-screen");
-    await expect(breast).toContainText("Closed with evidence: fewer than 5 of 70");
-    await expect(breast).toContainText("Largest stall: each one fewer than 5 of 70");
+    // Suppressed small cells: no number, no link.
+    const breast = block.getByTestId("provider-bsu-screen");
+    await expect(breast).toContainText("fewer than 5 of 70 closed");
+    await expect(breast).toContainText("largest stall: each one fewer than 5 of 70");
     await expect(breast.getByRole("link")).toHaveCount(1);
-    await expect(section).not.toContainText("<5 of");
+    await expect(block).not.toContainText("<5 of");
 
-    // Origin is not on the case record: rows are text only, with the no-causality caveat.
-    const origins = section.getByRole("list", { name: "By origin" });
-    await expect(origins.getByTestId("pattern-patterns-origins-arab")).toContainText("Arab, 2,765 cases");
-    await expect(origins.getByTestId("pattern-patterns-origins-arab")).toContainText("Closed with evidence: 594 of 2,765");
-    await expect(origins.getByRole("link")).toHaveCount(0);
-    await expect(section).toContainText("do not show that origin causes them");
+    // No origin breakdown and no unlinkable timing or escalation patterns.
+    await expect(block).not.toContainText("Notified within");
+    await expect(block).not.toContainText("escalation");
+    await expect(block).toContainText("Origin is not broken down here");
     expect(await unsourced(page)).toEqual([]);
-    await page.screenshot({ path: "test-results/screens/programme-patterns.png", fullPage: true });
   });
 
   test("by keyboard, a stall link lands on Patients filtered to that provider and stall", async ({ page }) => {
     await page.goto("/app");
-    const link = patterns(page).getByRole("link", { name: /^rad-imaging: Largest stall: No follow-up CT booked, 498 of 905/ });
+    await openProviders(page);
+    const link = providerBlock(page).getByRole("link", { name: /^rad-imaging: largest stall: No follow-up CT booked, 498 of 905/ });
     await link.focus();
     await expect(link).toBeFocused();
     await page.keyboard.press("Enter");
@@ -428,7 +427,8 @@ test.describe("Programme: provider and origin patterns", () => {
 
   test("by keyboard, a closure link lands on Patients filtered to that provider's closed cases", async ({ page }) => {
     await page.goto("/app");
-    const link = patterns(page).getByRole("link", { name: /^Al Mushrif: Closed with evidence: 523 of 1,606/ });
+    await openProviders(page);
+    const link = providerBlock(page).getByRole("link", { name: "ahs-mushrif: 523 of 1,606 closed (simulated)" });
     await link.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/app\/patients\?state=closed&provider=ahs-mushrif$/);
@@ -438,30 +438,45 @@ test.describe("Programme: provider and origin patterns", () => {
     await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" })).toHaveAttribute("aria-current", "true");
   });
 
-  test("queue levers: aggregate direct-pathway and prep-risk counts with their denominator, as plain text", async ({ page }) => {
+  test("queue levers: aggregate direct-pathway and prep-risk counts over the open cases needing a slot, as plain text", async ({ page }) => {
     await page.goto("/app");
     const levers = page.getByTestId("capacity-levers");
     await expect(levers).toContainText("683 of 815 suggested direct to colonoscopy");
     await expect(levers).toContainText("238 of 815 at high risk of failed bowel prep");
+    await expect(levers).toContainText("Counted over the 815 open colorectal cases needing a colonoscopy slot.");
     await expect(levers).toContainText("needs a clinician’s order");
     await expect(levers.getByRole("link")).toHaveCount(0);
   });
 
   for (const width of [390, 1440]) {
-    test(`at ${width}px the pattern links fit without sideways scroll`, async ({ browser }) => {
+    test(`at ${width}px the block stays short, opens without sideways scroll and keeps an even rhythm`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width < 768 });
       const page = await context.newPage();
       await page.goto("/app");
-      const section = patterns(page);
-      await section.scrollIntoViewIfNeeded();
+      const block = providerBlock(page);
+      await block.scrollIntoViewIfNeeded();
+      const closed = (await block.boundingBox())!.height;
+      expect(closed, "collapsed block height").toBeLessThan(400);
+      await block.screenshot({ path: `${SHOTS}/after-${width}-closed.png` });
+      await openProviders(page);
+      const open = (await block.boundingBox())!.height;
+      if (width >= 1024) expect(open, "opened block height at desktop width").toBeLessThan(400);
+      test.info().annotations.push({ type: "heights", description: `${width}px: closed ${closed.toFixed(0)}px, open ${open.toFixed(0)}px` });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
-      for (const l of await section.getByRole("link").all()) {
+      // Linked and plain items share one height, 44px on touch widths.
+      const heights = await block.locator("[data-item]").evaluateAll((els) =>
+        els.map((el) => Math.round(el.getBoundingClientRect().height)),
+      );
+      expect(heights.length).toBeGreaterThan(14);
+      if (width < 768) for (const h of heights) expect(h, "touch item height").toBeGreaterThanOrEqual(44);
+      else expect(Math.max(...heights) - Math.min(...heights), "desktop items share one line height").toBeLessThanOrEqual(1);
+      for (const l of await block.getByRole("link").all()) {
         const box = (await l.boundingBox())!;
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(width);
-        if (width < 768) expect(box.height, "touch target").toBeGreaterThanOrEqual(43.5);
       }
-      await page.screenshot({ path: `test-results/screens/programme-patterns-${width}.png`, fullPage: true });
+      await block.screenshot({ path: `${SHOTS}/after-${width}-open.png` });
+      await page.screenshot({ path: `${SHOTS}/after-${width}-page.png`, fullPage: true });
       await context.close();
     });
   }

@@ -126,7 +126,9 @@ export default async function ProgrammePage() {
                 ]
                   .filter(Boolean)
                   .join("; ")}
-                . Counted over the open colorectal cases with a simulated booking suggestion. The patient list cannot filter by pathway or prep risk, so these counts do not link.
+                . Counted over the{" "}
+                {[levers.direct, levers.highPrepRisk].every((l) => !l || l.of === capacity.openCases) && `${capacity.openCases.toLocaleString("en-US")} `}
+                open colorectal cases needing a colonoscopy slot. The patient list cannot filter by pathway or prep risk, so these counts do not link.
                 {levers.requiresClinicianOrder && " A prep regimen change needs a clinician’s order."}
               </p>
             )}
