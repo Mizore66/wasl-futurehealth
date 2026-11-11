@@ -21,6 +21,8 @@ test.describe("shared Button press", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/app/patients");
     await expect(search(page)).toHaveAttribute("data-slot", "button");
+    // Measure the resting width only once web fonts have settled: a late font swap changes the width and would read as a squeeze.
+    await page.evaluate(() => document.fonts.ready);
     rest = await width(search(page));
   });
 
