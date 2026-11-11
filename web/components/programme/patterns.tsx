@@ -3,99 +3,96 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { loopsText, patternText, type PatternRow, type Patterns } from "./model";
 
 /*
- * Provider and origin patterns as compact rows of text (issue #45). The owner chose filtered Patients links over a
- * dedicated breakdown table: a pattern links only when the case list can filter to exactly its cases. Suppressed
- * small cells show as "fewer than 5" and never link.
+ * Provider links (issue #45). The owner chose filtered Patients links over a dedicated breakdown section, so this adds one
+ * collapsed line to the dashboard; opened, it is one line per provider. A count links only when the case list can filter
+ * to the same provider and state or stall. Suppressed small cells show as "fewer than 5" and never link.
  */
 
-const link = "inline-flex min-h-11 items-center md:min-h-0";
+/** Every item is a 44px row on touch widths, linked or not, so the rhythm stays even; compact from md up. */
+const item = "inline-flex min-h-11 items-center md:min-h-0";
 
-function Row({ row, group }: { row: PatternRow; group: string }) {
-  const count = loopsText(row.loops);
+const Dot = () => (
+  <span aria-hidden className="text-muted">
+    ·
+  </span>
+);
+
+function Line({ row }: { row: PatternRow }) {
+  const count = `${row.key}, ${loopsText(row.loops)}`;
   return (
-    <li className="border-b border-rule py-2 last:border-b-0" data-testid={`pattern-${group}-${row.key}`}>
-      <p className="m-0 text-body tabular-nums">
-        {row.href ? (
-          <Link href={row.href} className={`${link} font-medium`}>
-            {row.name}, {count}
-            <span className="sr-only"> (simulated). Opens the patient list for this provider.</span>
-          </Link>
-        ) : (
-          <>
-            <span className="font-medium">{row.name}</span>, {count}
-          </>
-        )}
-      </p>
-      {row.patterns.length > 0 && (
-        <ul className="m-0 mt-0.5 flex list-none flex-col gap-x-4 p-0 text-small text-ink-soft tabular-nums sm:flex-row sm:flex-wrap">
-          {row.patterns.map((p) => {
-            const text = patternText(p);
-            return (
-              <li key={p.kind}>
-                {p.href ? (
-                  <Link href={p.href} className={link}>
-                    <span className="sr-only">{row.name}: </span>
-                    {text}
-                    <span className="sr-only"> (simulated). Opens the patient list filtered to these cases.</span>
-                  </Link>
-                ) : (
-                  text
-                )}
-              </li>
-            );
-          })}
-        </ul>
+    <li data-testid={`provider-${row.key}`} className="flex flex-wrap items-center gap-x-2 border-b border-rule py-1 last:border-b-0 md:py-1.5">
+      {row.href ? (
+        <Link href={row.href} data-item className={`${item} font-medium`}>
+          {count}
+          <span className="sr-only"> (simulated)</span>
+        </Link>
+      ) : (
+        <span data-item className={`${item} font-medium`}>{count}</span>
       )}
+      {row.patterns.map((p) => {
+        const text = patternText(p);
+        return (
+          // The separator travels with its item, so a wrapped line never ends on a dangling dot.
+          <span key={p.kind} className="inline-flex items-center gap-x-2">
+            <Dot />
+            {p.href ? (
+              <Link href={p.href} data-item className={item}>
+                <span className="sr-only">{row.key}: </span>
+                {text}
+                <span className="sr-only"> (simulated)</span>
+              </Link>
+            ) : (
+              <span data-item className={`${item} text-ink-soft`}>{text}</span>
+            )}
+          </span>
+        );
+      })}
     </li>
   );
 }
 
-function Group({ id, title, note, rows }: { id: string; title: string; note: string; rows: PatternRow[] }) {
-  return (
-    <div>
-      <h3 id={`${id}-h`} className="m-0 border-b border-rule pb-1 text-small font-medium text-muted">
-        {title}
-      </h3>
-      <p className="m-0 mt-1 text-small text-muted">{note}</p>
-      <ul aria-labelledby={`${id}-h`} className="m-0 list-none p-0">
-        {rows.map((r) => (
-          <Row key={r.key} row={r} group={id} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** Static supporting rows with no object state, so they sit on the page grid unframed, like Safety (DEC-3). */
+/** Supporting links with no object state, so they sit on the page grid unframed, like Safety (DEC-3). */
 export function PatternLinks({ patterns }: { patterns: Patterns }) {
-  const { providers, origins, smallCellRule } = patterns;
-  if (providers.length === 0 && origins.length === 0) return null;
+  const { providers, smallCellRule } = patterns;
+  if (providers.length === 0) return null;
   return (
-    <section aria-labelledby="patterns-h" className="mt-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section aria-labelledby="patterns-h" className="mt-8" data-testid="provider-links">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id="patterns-h" className="m-0 text-section font-medium">
-          By provider and origin
+          By provider
         </h2>
         <HonestyLabel kind="simulated">Simulated cohort</HonestyLabel>
       </div>
-      <p className="m-0 mt-1 text-body text-ink-soft">
-        Each count is out of the row&apos;s cases, across every programme in the run. Linked counts open the patient list filtered to exactly those
-        cases. Notification counts only the colorectal and cervical result letter; the other pathways record none.
-        {smallCellRule && <> Small cells are suppressed at source ({smallCellRule}) and are never shown or linked.</>}
-      </p>
-      <div className="mt-4 grid items-start gap-gap lg:grid-cols-2">
-        {providers.length > 0 && (
-          <Group id="patterns-providers" title="By provider" note="Closure and the largest stall link to the filtered patient list." rows={providers} />
-        )}
-        {origins.length > 0 && (
-          <Group
-            id="patterns-origins"
-            title="By origin"
-            note="Origin is a synthetic cohort attribute, not part of the case record, so these counts do not link. Groups differ in size and programme mix; differences describe this simulated cohort and do not show that origin causes them."
-            rows={origins}
-          />
-        )}
-      </div>
+      <details className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-body [&::-webkit-details-marker]:hidden">
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="var(--color-muted)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="flex-none transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          >
+            <path d="M6 3.5l4.5 4.5L6 12.5" />
+          </svg>
+          <span>Closure and largest stall for {providers.length} providers, linked to the patient list</span>
+        </summary>
+        <p className="m-0 mt-1 text-small text-muted">
+          Each link opens the patient list filtered to the same provider and state or stall. Counts are out of the provider&apos;s cases across every
+          programme in the run.
+          {smallCellRule && <> Small cells are suppressed at source ({smallCellRule}) and are never shown as a number or linked.</>} Origin is not broken
+          down here: it is a synthetic cohort attribute, not part of the case record, so it cannot open a filtered list.
+        </p>
+        <ul aria-labelledby="patterns-h" className="m-0 mt-2 list-none p-0 text-body tabular-nums">
+          {providers.map((r) => (
+            <Line key={r.key} row={r} />
+          ))}
+        </ul>
+      </details>
     </section>
   );
 }

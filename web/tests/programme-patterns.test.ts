@@ -4,12 +4,11 @@ import { Dashboard } from "@/lib/api/schema";
 import { cellText, leverView, loopsText, patternsView, patternText, programmeView, readCell, type Pattern, type PatternRow } from "@/components/programme/model";
 import { parseCaseFilters } from "@/components/worklist/filters";
 
-/* Issue #45: provider/origin patterns and queue-lever counts on the Programme dashboard. */
+/* Issue #45: provider links and queue-lever counts on the Programme dashboard. */
 
 const dashboard = Dashboard.parse(dashboardJson);
 const raw = dashboardJson as unknown as {
   providers: Record<string, unknown>[];
-  origins: Record<string, unknown>[];
   capacity: { levers: { pathway: Record<string, number>; prep_risk_band: Record<string, number> } };
 };
 
@@ -26,55 +25,35 @@ const query = (href: string) => Object.fromEntries(new URL(href, "http://x").sea
 describe("patternsView over the dashboard fixture", () => {
   const view = programmeView(dashboard).patterns;
 
-  it("projects every provider and origin row the API serves, in its order", () => {
+  it("projects every provider row the API serves, in its order, named by its id", () => {
     expect(view.providers.map((r) => r.key)).toEqual(raw.providers.map((r) => r.provider));
-    expect(view.origins.map((r) => r.key)).toEqual(raw.origins.map((r) => r.origin));
     expect(view.providers.map((r) => r.key)).toEqual(["ahs-mushrif", "bsu-screen", "ifh-screen", "lcs-centre", "medlab", "phc-retina", "rad-imaging"]);
-    expect(view.origins.map((r) => r.name)).toEqual(["Arab", "Filipino", "South Asian", "Western"]);
     expect(view.smallCellRule).toBe("counts 1-4 shown as <5");
+    expect(Object.keys(view)).toEqual(["providers", "smallCellRule"]);
   });
 
-  it("shows every row's values exactly as the fixture states them, out of the row's cases", () => {
-    for (const [group, rows, key] of [
-      ["providers", view.providers, "provider"],
-      ["origins", view.origins, "origin"],
-    ] as const) {
-      for (const row of rows) {
-        const src = raw[group].find((r) => r[key] === row.key)!;
-        expect(row.loops, `${row.key} loops`).toEqual(readCell(src.loops));
-        const of = src.loops as number;
-        expect(typeof of).toBe("number");
-        for (const p of row.patterns) expect(p.of, `${row.key} ${p.kind} denominator`).toBe(of);
-
-        expect(pattern(row, "closed")?.cell).toEqual(readCell(src.evidenced_closed));
-        expect(pattern(row, "notified")?.cell).toEqual(readCell(src.notified_within_21d));
-
-        const stall = rawLargest(src.dropoff as Record<string, unknown>, ["", "in_progress"]);
-        const shownStall = pattern(row, "stall")!;
-        if (stall) expect(shownStall.cell, `${row.key} largest stall`).toEqual({ kind: "count", value: stall[1] });
-        else expect(shownStall.what).toBeNull();
-
-        const esc = rawLargest(src.escalations as Record<string, unknown>);
-        const shownEsc = pattern(row, "escalation")!;
-        if (esc) expect(shownEsc.cell, `${row.key} top escalation`).toEqual({ kind: "count", value: esc[1] });
-        else expect(shownEsc.what).toBeNull();
-      }
+  it("shows only closure and the largest stall, with every value exactly as the fixture states it", () => {
+    for (const row of view.providers) {
+      const src = raw.providers.find((r) => r.provider === row.key)!;
+      expect(row.loops, `${row.key} loops`).toEqual(readCell(src.loops));
+      const of = src.loops as number;
+      expect(row.patterns.map((p) => p.kind)).toEqual(["closed", "stall"]);
+      for (const p of row.patterns) expect(p.of, `${row.key} ${p.kind} denominator`).toBe(of);
+      expect(pattern(row, "closed")!.cell).toEqual(readCell(src.evidenced_closed));
+      const stall = rawLargest(src.dropoff as Record<string, unknown>, ["", "in_progress"]);
+      const shown = pattern(row, "stall")!;
+      if (stall) expect(shown.cell, `${row.key} largest stall`).toEqual({ kind: "count", value: stall[1] });
+      else expect(shown.what).toBeNull();
     }
   });
 
-  it("prints the Al Mushrif row from its fixture numbers", () => {
+  it("prints the ahs-mushrif line from its fixture numbers", () => {
     const row = view.providers.find((r) => r.key === "ahs-mushrif")!;
-    expect(row.name).toBe("Al Mushrif");
     expect(loopsText(row.loops)).toBe("1,606 cases");
-    expect(row.patterns.map(patternText)).toEqual([
-      "Closed with evidence: 523 of 1,606",
-      "Notified within 21 days: 1,404 of 1,606",
-      "Largest stall: No acknowledgement, 293 of 1,606",
-      "Most frequent escalation: Past the colorectal deadline, 591 of 1,606",
-    ]);
+    expect(row.patterns.map(patternText)).toEqual(["523 of 1,606 closed", "largest stall: No acknowledgement, 293 of 1,606"]);
   });
 
-  it("links provider rows, closure and the largest stall to exactly the matching Patients filters", () => {
+  it("links each provider, its closure and its largest stall to the matching Patients filters", () => {
     const row = view.providers.find((r) => r.key === "rad-imaging")!;
     expect(row.href).toBe("/app/patients?provider=rad-imaging");
     expect(pattern(row, "closed")!.href).toBe("/app/patients?state=closed&provider=rad-imaging");
@@ -82,19 +61,10 @@ describe("patternsView over the dashboard fixture", () => {
     expect(pattern(row, "stall")!.cell).toEqual({ kind: "count", value: 498 });
     for (const r of view.providers) {
       for (const href of [r.href, ...r.patterns.map((p) => p.href)].filter((h): h is string => h !== null)) {
-        // Every parameter survives the Patients parser, so the list is filtered to the same set the count describes.
+        // Every parameter survives the Patients parser, so the list is filtered to the same provider and state or stall.
         expect(parseCaseFilters(query(href)), href).toEqual(query(href));
         expect(query(href).provider).toBe(r.key);
       }
-      expect(pattern(r, "notified")!.href, "notification has no case-list filter").toBeNull();
-      expect(pattern(r, "escalation")!.href, "escalations are not on case summaries").toBeNull();
-    }
-  });
-
-  it("never links an origin: case records carry no origin", () => {
-    for (const r of view.origins) {
-      expect(r.href).toBeNull();
-      expect(r.patterns.every((p) => p.href === null)).toBe(true);
     }
   });
 });
@@ -107,57 +77,52 @@ describe("patternsView: small cells", () => {
     const closed = pattern(breast, "closed")!;
     expect(closed.cell).toEqual({ kind: "suppressed", below: 5 });
     expect(closed.href).toBeNull();
-    expect(patternText(closed)).toBe("Closed with evidence: fewer than 5 of 70");
+    expect(patternText(closed)).toBe("fewer than 5 of 70 closed");
   });
 
-  it("names no largest stall or escalation when every recorded one is suppressed", () => {
+  it("names no largest stall when every recorded one is suppressed", () => {
     const stall = pattern(breast, "stall")!;
     expect(stall.what).toBeNull();
     expect(stall.href).toBeNull();
-    expect(patternText(stall)).toBe("Largest stall: each one fewer than 5 of 70");
-    expect(patternText(pattern(breast, "escalation")!)).toBe("Most frequent escalation: each one fewer than 5 of 70");
+    expect(patternText(stall)).toBe("largest stall: each one fewer than 5 of 70");
   });
 
-  it("never ranks a suppressed cell above a counted one, and never prints a suppressed value anywhere", () => {
-    const d = { ...dashboard, providers: [{ provider: "p", loops: 40, evidenced_closed: "<5", notified_within_21d: 9, dropoff: { no_show: "<5", not_booked: 6 }, escalations: { unowned: "<5" } }] };
+  it("never ranks a suppressed cell above a counted one, and never prints a suppressed value", () => {
+    const d = { ...dashboard, providers: [{ provider: "p", loops: 40, evidenced_closed: "<5", dropoff: { no_show: "<5", not_booked: 6 } }] };
     const [row] = patternsView(d).providers;
     expect(pattern(row, "stall")).toMatchObject({ what: "Not booked", cell: { kind: "count", value: 6 }, href: "/app/patients?dropoff=not_booked&provider=p" });
     const text = row.patterns.map(patternText).join(" | ");
     expect(text).not.toMatch(/<5/);
-    expect(text.match(/\d+/g)).toEqual(["5", "40", "21", "9", "40", "6", "40", "5", "40"]);
+    expect(text.match(/\d+/g)).toEqual(["5", "40", "6", "40"]);
     expect(row.patterns.filter((p) => p.cell.kind === "suppressed").every((p) => p.href === null)).toBe(true);
   });
 
-  it("shows a row whose case count is suppressed with no patterns and no link", () => {
+  it("shows a provider whose case count is suppressed with no patterns and no link", () => {
     const d = { ...dashboard, providers: [{ provider: "tiny", loops: "<5", evidenced_closed: "<5", dropoff: { no_show: "<5" } }] };
     const [row] = patternsView(d).providers;
-    expect(row).toEqual({ key: "tiny", name: "tiny", loops: { kind: "suppressed", below: 5 }, href: null, patterns: [] });
+    expect(row).toEqual({ key: "tiny", loops: { kind: "suppressed", below: 5 }, href: null, patterns: [] });
     expect(loopsText(row.loops)).toBe("fewer than 5 cases");
   });
 });
 
 describe("patternsView: zero counts and missing data", () => {
-  it("prints zero counts out of the row and never links them", () => {
-    const d = { ...dashboard, providers: [{ provider: "z", loops: 12, evidenced_closed: 0, notified_within_21d: 0, dropoff: { "": 12 }, escalations: {} }] };
+  it("prints zero counts out of the provider's cases and never links them", () => {
+    const d = { ...dashboard, providers: [{ provider: "z", loops: 12, evidenced_closed: 0, dropoff: { "": 12 } }] };
     const [row] = patternsView(d).providers;
-    expect(row.patterns.map(patternText)).toEqual(["Closed with evidence: 0 of 12", "Notified within 21 days: 0 of 12", "Largest stall: none recorded", "Most frequent escalation: none recorded"]);
+    expect(row.patterns.map(patternText)).toEqual(["0 of 12 closed", "no stall recorded"]);
     expect(row.patterns.every((p) => p.href === null)).toBe(true);
     expect(row.href).toBe("/app/patients?provider=z");
   });
 
-  it("reads a missing or null providers or origins array as empty", () => {
-    const { providers, origins, ...rest } = dashboardJson as Record<string, unknown>;
+  it("reads a missing or null providers array as empty", () => {
+    const { providers, ...rest } = dashboardJson as Record<string, unknown>;
     expect(providers).toBeDefined();
-    expect(origins).toBeDefined();
-    const missing = Dashboard.parse(rest);
-    expect(patternsView(missing)).toEqual({ providers: [], origins: [], smallCellRule: "counts 1-4 shown as <5" });
-    const nulls = Dashboard.parse({ ...rest, providers: null, origins: null });
-    expect(patternsView(nulls).providers).toEqual([]);
-    expect(patternsView(nulls).origins).toEqual([]);
+    expect(patternsView(Dashboard.parse(rest))).toEqual({ providers: [], smallCellRule: "counts 1-4 shown as <5" });
+    expect(patternsView(Dashboard.parse({ ...rest, providers: null, origins: null })).providers).toEqual([]);
   });
 
   it("omits a pattern whose field is missing and skips a row it cannot read", () => {
-    const d = { ...dashboard, providers: [{ provider: "a", loops: 30 }, { provider: "b", loops: "lots" }], origins: [] };
+    const d = { ...dashboard, providers: [{ provider: "a", loops: 30 }, { provider: "b", loops: "lots" }] };
     const v = patternsView(d);
     expect(v.providers).toHaveLength(1);
     expect(v.providers[0].patterns).toEqual([]);
@@ -180,6 +145,12 @@ describe("leverView", () => {
     expect(cellText(v.highPrepRisk!.cell, v.highPrepRisk!.of)).toBe("238 of 815");
     expect(v.requiresClinicianOrder).toBe(true);
     expect(programmeView(dashboard).levers).toEqual(v);
+  });
+
+  it("uses the same denominator as the open cases needing a colonoscopy slot", () => {
+    const v = programmeView(dashboard);
+    expect(v.levers!.direct!.of).toBe(v.capacity!.openCases);
+    expect(v.levers!.highPrepRisk!.of).toBe(v.capacity!.openCases);
   });
 
   it("is null without levers, and drops a lever whose denominator is not exact", () => {
