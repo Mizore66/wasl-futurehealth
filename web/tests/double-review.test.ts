@@ -11,7 +11,7 @@ import { DoubleReviewReadsCard } from "@/components/review/double-review/reads-c
 import { doubleItems } from "@/components/review/double-review/section";
 import { submitDoubleRead } from "@/app/app/review/[id]/double-review-actions";
 import { deskCredentialName, getDoubleReview, postDoubleRead } from "@/lib/api/double-review";
-import { Audit, CaseDetail, DoubleReviewError, DoubleReviewRound, DoubleReviewState, LedgerEvent } from "@/lib/api/schema";
+import { Audit, AuditLedgerEvent, CaseDetail, DoubleReviewError, DoubleReviewRound, DoubleReviewState, LedgerEvent } from "@/lib/api/schema";
 import { caseStage } from "@/lib/domain/stage";
 import { linkTrust } from "@/lib/people/identity";
 
@@ -142,6 +142,58 @@ describe("double review contract (real Go handler output)", () => {
     // Even with every single-signer field present, a double-review read is not a review the client could count as signed.
     const lookalike = LedgerEvent.parse({ ...load("double_review_case_detail.json").api_reviews[0], decision: "same", note: "" });
     expect(lookalike.ledger).toBe("double_review");
+  });
+
+  describe("a double_review entry with one wrongly typed field is unknown, never a single-signer review", () => {
+    const MALFORMED: [string, Record<string, unknown>][] = [
+      ["round_seq as a string", { round_seq: "1" }],
+      ["blinded as a string", { blinded: "false" }],
+      ["phase_after null", { phase_after: null }],
+      ["kind null", { kind: null }],
+      ["final as a number", { final: 1 }],
+    ];
+    // The revealed r2 read: every single-signer field present, so before the fix it fell through to ApiReview/AuditReview.
+    const detailRaw = load("double_review_case_detail.json");
+    const auditRaw = load("double_review_audit.json");
+    const r2 = detailRaw.api_reviews[1];
+    const auditR2 = auditRaw.history[1];
+
+    it.each(MALFORMED)("%s", (_name, patch) => {
+      for (const [schema, raw] of [
+        [LedgerEvent, { ...r2, ...patch }],
+        [AuditLedgerEvent, { ...auditR2, ...patch }],
+      ] as const) {
+        const e = schema.parse(raw);
+        expect(e.ledger).toBe("unknown");
+        expect(e).not.toHaveProperty("decision");
+        expect(e).not.toHaveProperty("note");
+        expect(e.ledger === "unknown" && e.label).toBe(patch.kind === null ? "double_review" : "double_review/read");
+      }
+
+      // Case detail: not a sign-off, not a signed answer for the stage or the link, and its note and decision never render.
+      const detail = CaseDetail.parse({ ...detailRaw, api_reviews: [{ ...r2, ...patch }] });
+      expect(detail.api_reviews.map((e) => e.ledger)).toEqual(["unknown"]);
+      const withItem = { ...detail, review_items: [{ ...detail.review_items[0] }] };
+      expect(caseStage(withItem).technical).toBe("review · link");
+      expect(linkTrust(withItem, { ...detail.links[0], loop: detail.review_items[0].loop })).toBe("held");
+      const signoffs = renderToStaticMarkup(SignoffsCard({ detail }));
+      expect(signoffs).not.toMatch(/synthetic second read note|Not the same patient|reviewer-two/);
+      expect(renderToStaticMarkup(DoubleReviewReadsCard({ detail }) ?? "")).toBe("");
+
+      // Audit history: listed as unrecognised, with no answer and no undo/contest offered even when live and active.
+      const audit = Audit.parse({ ...auditRaw, history: [{ ...auditR2, ...patch }] });
+      const events = audit.history.map((e) => ({ hash: e.hash, kind: "review", actor: "", action: "signoff_link", target: "", status: "active" as const, at: "" }));
+      const projection = { meta: audit.meta, case: audit.case, case_status: "active" as const, canonical_state: "open" as const, note: "", events };
+      const html = renderToStaticMarkup(HistoryCard({ audit, programme: "crc", governance: { caseId: audit.case, projection } }));
+      expect(html).toContain("Unrecognised ledger event");
+      expect(html).not.toMatch(/Not the same patient|Different|synthetic second read note/);
+      expect(html).not.toMatch(/Append compensation|Contest review|Resolve contest|Undo/);
+    });
+
+    it("a well-formed read still parses as double_review in both lists", () => {
+      expect(LedgerEvent.parse(r2).ledger).toBe("double_review");
+      expect(AuditLedgerEvent.parse(auditR2).ledger).toBe("double_review");
+    });
   });
 
   it("does not count a double-review read as a signed single-signer answer in the client projections", () => {
