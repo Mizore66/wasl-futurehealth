@@ -290,7 +290,7 @@ describe("consent card demo overlay", () => {
     expect(html).toContain("Record consent denied");
     expect(html).toContain("Cancels queued demo outreach");
     expect(html).toContain("Record opt-out");
-    expect(html).toContain("blocks a later grant in this demo flow");
+    expect(html).toContain("blocks a later grant or denial in this demo flow");
     expect(html).toContain("No message is sent and the canonical simulation does not change.");
   });
 
