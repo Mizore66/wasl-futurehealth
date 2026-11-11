@@ -373,8 +373,15 @@ func TestDoubleReviewAuditTrailPreservesReadsAndResolution(t *testing.T) {
 	}
 	// A read cannot be undone or contested through Workflow D: it is not a review event.
 	head := drEvents(t, drDo(t, h2, http.MethodGet, drCasePath, drCoord, "").body["api_reviews"].([]interface{}))[0]["hash"].(string)
-	if res := drDo(t, h2, http.MethodPost, drCasePath+"/undo", drRev3, fmt.Sprintf(`{"target":%q,"note":""}`, head)); res.code != 409 {
-		t.Fatalf("undo of a double-review read: %d %s", res.code, res.raw)
+	for _, tok := range []string{drRev1, drRev3} { // the read's author and a third reviewer
+		for _, body := range []string{`{"target":%q,"note":"undo a read"}`, `{"target":%q,"contest":true,"note":"contest a read"}`} {
+			if res := drDo(t, h2, http.MethodPost, drCasePath+"/undo", tok, fmt.Sprintf(body, head)); res.code != 409 || !strings.Contains(fmt.Sprint(res.body["error"]), "only a review event") {
+				t.Fatalf("undo/contest of a double-review read (%s): %d %s", body, res.code, res.raw)
+			}
+		}
+	}
+	if n := len(drLedger(t, run)); n != 3 {
+		t.Fatalf("refused undo/contest appended: %d events", n)
 	}
 }
 
