@@ -8,7 +8,7 @@ import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { apiMode, getAudit, getCase } from "@/lib/api/source";
+import { apiMode, getAudit, getCase, getUndoProjection } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 
 export async function generateMetadata({ params }: PageProps<"/app/review/[id]">) {
@@ -30,8 +30,8 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       ))}
     </>
   ) : undefined;
-  /** The append-only history exists only against the live API; a snapshot has nothing the desk could have added. */
-  const audit = apiMode() === "live" ? await getAudit(id) : null;
+  /** The append-only history and governance projection exist only against the live API. */
+  const [audit, projection] = apiMode() === "live" ? await Promise.all([getAudit(id), getUndoProjection(id)]) : [null, null];
 
   const total = queue.cases.length;
   const at = queue.cases.findIndex((c) => c.case.id === id);
@@ -119,7 +119,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       )}
       {audit && (
         <div className="mt-3">
-          <HistoryCard audit={audit} programme={detail.case.programme} />
+          <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection } : undefined} />
         </div>
       )}
     </>
