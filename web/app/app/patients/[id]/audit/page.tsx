@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { ExportCard } from "@/components/case/audit-export";
 import { AnchorsCard, ChainCard, HistoryCard, SignaturesCard, VerifiedCard } from "@/components/case/audit-view";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { apiMode, getAudit, getCase, getUndoProjection } from "@/lib/api/source";
@@ -53,6 +54,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
             <AnchorsCard audit={audit} />
           </div>
         </div>
+        <ExportCard caseId={detail.case.id} />
       </div>
     </>
   );

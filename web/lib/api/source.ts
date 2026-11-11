@@ -56,13 +56,13 @@ function apiToken(credential: Role | GovernanceCredential): string {
   return token;
 }
 
-function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential): RequestInit {
+export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential): RequestInit {
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${apiToken(credential)}`);
   return { cache: "no-store", ...init, headers };
 }
 
-function liveBase(): string {
+export function liveBase(): string {
   return process.env.WASL_API_URL!.replace(/\/$/, "");
 }
 
