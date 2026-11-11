@@ -519,10 +519,21 @@ const tag =
   <L extends string>(ledger: L) =>
   <T extends object>(e: T) => ({ ...e, ledger });
 
+/**
+ * Any entry with `type: "double_review"`: a read when it parses as one, otherwise an explicit `unknown` entry (which
+ * carries no decision or note). Either way it is settled here, first in each union below, so a double-review event
+ * with one wrongly typed field can never fall through to a single-signer review shape and be counted, shown or
+ * offered undo/contest as a sign-off.
+ */
+const DoubleReviewEntry = z.looseObject({ type: z.literal("double_review") }).transform((raw) => {
+  const read = DoubleReviewEvent.safeParse(raw);
+  return read.success ? tag("double_review")(read.data) : UnknownLedgerEvent.parse(raw);
+});
+
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
-  /* Double-review reads first: they carry review-like fields but are never single-signer reviews (block at the end). */
-  DoubleReviewEvent.transform(tag("double_review")),
+  /* Double-review entries first: they carry review-like fields but are never single-signer reviews (block at the end). */
+  DoubleReviewEntry,
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
   ApiReview.transform(tag("review")),
@@ -530,7 +541,7 @@ export const LedgerEvent = z.union([
 ]);
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
-  DoubleReviewEvent.transform(tag("double_review")),
+  DoubleReviewEntry,
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReview.transform(tag("review")),
@@ -795,7 +806,8 @@ export type ActionResponse = z.infer<typeof ActionResponse>;
 
 /* ---- Independent double review (issue #41; docs/API-DOUBLE-REVIEW.md) ----
  * The shapes live in ./double-review-schema so the ledger unions above can list the read event first without an import
- * cycle. A `type: "double_review"` entry in `api_reviews` or audit `history` is tagged `ledger: "double_review"`.
+ * cycle. A `type: "double_review"` entry in `api_reviews` or audit `history` is tagged `ledger: "double_review"` when
+ * it parses as a read, and `ledger: "unknown"` when it does not; never `ledger: "review"`.
  */
 export {
   DoubleReadRequest,
