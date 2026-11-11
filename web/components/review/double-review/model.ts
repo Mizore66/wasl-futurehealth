@@ -5,9 +5,12 @@ import type { DoubleReadView, DoubleReviewEvent, DoubleReviewPhase, DoubleReview
  * has no per-person sign-in, so a deployment is one reader per question role (lib/api/double-review.ts): there are no
  * seats to switch between. Pure: the API decides what is hidden and which read this credential may submit
  * (`viewer_may`); this only turns that into what the panel shows. Guards are repeated here so a malformed, older or
- * misconfigured response can never put another person's blinded answer on the page or open the wrong form:
- * `ownView` drops every answer that is not this deployment's own while a round awaits its initial reads, there is no
- * senior form before a disagreement, and no initial-read form once both initial reads are in.
+ * misconfigured response cannot put another actor's blinded answer on the page or open a form the API should not
+ * offer: an answer whose author is not this deployment's actor, and the round's settled answer, are shown only when
+ * the reported phase reveals them AND both r1 and r2 are present (`roundPhase`); a form is offered only for a slot the
+ * API lists in `viewer_may`, never to an actor that already holds r1 or r2, never a senior read before a
+ * disagreement, and never an initial read once both are in. "Actor" is the name the API bound to the credential:
+ * these checks compare names, as the API does, not people.
  */
 
 export const READ_LABEL: Record<ReadName, string> = { r1: "First read (r1)", r2: "Second read (r2)", r3: "Senior read (r3)" };
@@ -29,6 +32,16 @@ export function phaseOf(raw: string): Phase {
 /** Phases in which the API reveals both initial answers to every queue reader. Anything else is treated as blinded. */
 const revealed = (phase: Phase) => phase === "agreed" || phase === "disagreement" || phase === "resolved";
 
+/**
+ * The round's phase as this page acts on it. A revealing phase is believed only when both initial reads are present,
+ * the same rule case detail applies (blindOpenReads); otherwise the round is "unknown": every other actor's answer
+ * stays hidden, no settled answer is shown and no form is offered.
+ */
+export function roundPhase(round: Pick<DoubleReviewRound, "phase" | "reads">): Phase {
+  const phase = phaseOf(round.phase);
+  return revealed(phase) && !(round.reads.r1 && round.reads.r2) ? "unknown" : phase;
+}
+
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Whether a read was given by this deployment's own actor (compared as the API does: trimmed, case-insensitive). */
@@ -42,10 +55,10 @@ function readView(v: DoubleReadView | null | undefined, phase: Phase, viewer: st
 }
 
 /**
- * The state as this deployment may render it, rebuilt from known fields only (the response schema is loose). While a
- * round is not yet revealed, every read whose author is not this deployment's actor loses its decision and note, and
- * the round loses any `final`, whatever the API sent. Only this result is rendered, so neither the HTML nor the RSC
- * payload can carry another person's blinded answer.
+ * The state as this deployment may render it, rebuilt from known fields only (the response schema is loose). Unless
+ * the API reports a revealing phase and both r1 and r2 are present (`roundPhase`), every read whose author is not this
+ * deployment's actor loses its decision and note, and the round loses any `final`, whatever the API sent. Only this
+ * result is rendered, so neither the HTML nor the RSC payload can carry another actor's blinded answer.
  */
 export function ownView(state: DoubleReviewState): DoubleReviewState {
   const viewer = state.viewer.actor;
@@ -54,7 +67,7 @@ export function ownView(state: DoubleReviewState): DoubleReviewState {
     case: state.case,
     viewer: { role: state.viewer.role, actor: viewer },
     rounds: state.rounds.map((r) => {
-      const phase = phaseOf(r.phase);
+      const phase = roundPhase(r);
       return {
         item: r.item,
         question: r.question,
@@ -109,12 +122,15 @@ export function choicesFor(question: RoundModel["question"], programme: Programm
 }
 
 /**
- * The slot this deployment's credential would fill now, as the API offers it (`viewer_may`), or undefined. Initial:
- * the first open initial slot, only while the round awaits its initial reads. Senior: r3, only in a disagreement.
+ * The slot this deployment's credential would fill now, as the API offers it (`viewer_may`), or undefined. Nothing at
+ * all once `viewer` (this deployment's actor) holds r1 or r2: the API refuses a second seat to the same actor (403
+ * `same_actor`), and this refuses it before asking. Initial: the first open initial slot, only while the round awaits
+ * its initial reads. Senior: an empty r3, only in a disagreement with both initial reads present.
  */
-export function slotFor(round: Pick<DoubleReviewRound, "phase" | "viewer_may" | "reads">, senior: boolean): ReadName | undefined {
-  const phase = phaseOf(round.phase);
-  if (senior) return phase === "disagreement" && round.viewer_may.includes("r3") ? "r3" : undefined;
+export function slotFor(round: Pick<DoubleReviewRound, "phase" | "viewer_may" | "reads">, senior: boolean, viewer: string): ReadName | undefined {
+  if ([round.reads.r1, round.reads.r2].some((r) => r && isOwn(r.actor, viewer))) return undefined;
+  const phase = roundPhase(round);
+  if (senior) return phase === "disagreement" && !round.reads.r3 && round.viewer_may.includes("r3") ? "r3" : undefined;
   if (phase !== "awaiting_reads") return undefined;
   return (["r1", "r2"] as const).find((r) => !round.reads[r] && round.viewer_may.includes(r));
 }
@@ -128,7 +144,7 @@ function cellOf(read: ReadName, v: DoubleReadView | null | undefined, viewer: st
 
 /** `round` should come from `ownView`; the model applies the same blinding rule again in case it does not. */
 export function roundModel(round: DoubleReviewRound, viewerActor: string, programme: Programme): RoundModel {
-  const phase = phaseOf(round.phase);
+  const phase = roundPhase(round);
   const question = round.question === "link" || round.question === "evidence" ? round.question : "other";
   const view = (r: ReadName) => readView(round.reads[r], phase, viewerActor);
   const cells: ReadCell[] = [cellOf("r1", view("r1"), viewerActor), cellOf("r2", view("r2"), viewerActor)];
@@ -136,7 +152,7 @@ export function roundModel(round: DoubleReviewRound, viewerActor: string, progra
   const model: RoundModel = { item: round.item, question, phase, head: round.head, final: revealed(phase) ? round.final : undefined, cells };
 
   const choices = choicesFor(question, programme);
-  const read = slotFor(round, phase === "disagreement");
+  const read = slotFor(round, phase === "disagreement", viewerActor);
   if (read && choices.length > 0) {
     model.form = { read, senior: read === "r3", choices };
     return model;

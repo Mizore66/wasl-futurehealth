@@ -221,9 +221,56 @@ describe("round state per item and read role (one deployment, one credential per
     const m = roundModel(own, "reviewer-one", "crc");
     expect(m.cells[0]).toMatchObject({ read: "r1", state: "shown", decision: "same", mine: true });
     expect([m.form, m.why]).toEqual([undefined, "You gave r1 as reviewer-one. The other initial read must come from a different person."]);
-    // The form follows the API's viewer_may, and the API refuses the second seat (403 same_actor) if a response lies.
-    expect(slotFor({ ...own, viewer_may: ["r2"] }, false)).toBe("r2");
-    expect(slotFor({ ...own, viewer_may: [] }, false)).toBeUndefined();
+    // A response that wrongly offers the second seat is refused here too, before the API's 403 same_actor.
+    expect(slotFor({ ...own, viewer_may: ["r2"] }, false, "reviewer-one")).toBeUndefined();
+    expect(slotFor({ ...own, viewer_may: ["r2"] }, false, " Reviewer-One ")).toBeUndefined();
+    expect(roundModel({ ...own, viewer_may: ["r2"] }, "reviewer-one", "crc").form).toBeUndefined();
+    expect(slotFor({ ...own, viewer_may: [] }, false, "reviewer-one")).toBeUndefined();
+    // Another actor is still offered the open slot the API lists.
+    expect(slotFor({ ...own, viewer_may: ["r2"] }, false, "reviewer-two")).toBe("r2");
+  });
+
+  it("an actor that holds r1 or r2 is offered no r3, even if the API offers it", () => {
+    const dis = round("double_review_state_disagreement.json");
+    for (const actor of ["reviewer-one", "reviewer-two"]) {
+      expect(slotFor({ ...dis, viewer_may: ["r3"] }, true, actor)).toBeUndefined();
+      expect(roundModel({ ...dis, viewer_may: ["r3"] }, actor, "crc").form).toBeUndefined();
+    }
+    expect(slotFor({ ...dis, viewer_may: ["r3"] }, true, "reviewer-three")).toBe("r3");
+  });
+
+  it("a revealing phase without both initial reads is not believed: no other answer, no settled answer, no form", () => {
+    const blinded = state("double_review_state_blinded.json");
+    const r = blinded.rounds.find((x) => x.item === LINK)!;
+    for (const phase of ["agreed", "disagreement", "resolved"]) {
+      // The API claims the round is revealed, with only another actor's r1 present, and leaks its answer and a final.
+      const lying = {
+        ...r,
+        phase,
+        final: "same",
+        viewer_may: ["r2", "r3"],
+        reads: { ...r.reads, r1: { ...r.reads.r1!, blinded: false, decision: "same", note: "LEAKED-NOTE" } },
+      };
+      const view = ownView({ ...blinded, rounds: [lying] });
+      const r1 = view.rounds[0].reads.r1!;
+      expect([r1.blinded, r1.decision, r1.note, view.rounds[0].final]).toEqual([true, undefined, undefined, undefined]);
+      expect(JSON.stringify(view)).not.toContain("LEAKED-NOTE");
+      // roundModel applies the same rule to a round that did not pass through ownView.
+      const m = roundModel(lying, "reviewer-two", "crc");
+      expect([m.phase, m.cells[0].state, m.final, m.form, m.cells.length]).toEqual(["unknown", "hidden", undefined, undefined, 2]);
+      expect(slotFor(lying, true, "reviewer-two")).toBeUndefined();
+      expect(slotFor(lying, false, "reviewer-two")).toBeUndefined();
+      const html = renderToStaticMarkup(
+        DoubleReviewPanel({
+          caseId: blinded.case,
+          programme: "crc",
+          items: [{ item: LINK, question: "link" }],
+          views: [{ role: "reviewer", credential: "WASL_API_REVIEWER_TOKEN", status: "ok", state: { ...blinded, rounds: [lying] } }],
+        }),
+      );
+      expect(html).not.toMatch(/LEAKED-NOTE|Settled answer|Same patient ·|<form/);
+      expect(html).toContain("State not recognised");
+    }
   });
 
   it("ownView drops every answer that is not the deployment's own while the round awaits its initial reads", () => {
@@ -253,7 +300,7 @@ describe("round state per item and read role (one deployment, one credential per
     const forged: DoubleReviewRound = { ...awaiting, viewer_may: ["r3"] };
     expect(roundModel(forged, "reviewer-three", "crc").form).toBeUndefined();
     expect(roundModel({ ...awaiting, phase: "agreed", viewer_may: ["r3"] }, "reviewer-three", "crc").form).toBeUndefined();
-    expect(slotFor(forged, true)).toBeUndefined();
+    expect(slotFor(forged, true, "reviewer-three")).toBeUndefined();
   });
 
   it("after a disagreement a third person gets the senior form and both initial answers are shown", () => {
@@ -449,7 +496,9 @@ describe("the server action acts through one credential and fills only the slot 
 
   it("the author of r1 is offered no second seat, so nothing is posted", async () => {
     live();
-    const own = load("double_review_state_own.json");
+    const fixture = load("double_review_state_own.json");
+    // Even a response that wrongly offers r2 and r3 to the author of r1: the action refuses before posting.
+    const own = { ...fixture, rounds: fixture.rounds.map((r: { item: string }) => (r.item === LINK ? { ...r, viewer_may: ["r2", "r3"] } : r)) };
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, { meta, ...own })));
     vi.stubGlobal("fetch", fetchMock);
     const head = own.rounds.find((r: { item: string }) => r.item === LINK).head;
