@@ -723,6 +723,9 @@ export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_re
   ifhas: [...ifhasScreenLabels, ...ifhasFollowupLabels()],
 };
 
+/** Programmes the review desk can sign: each has evidence labels. Cervical has none, so its cases cannot be answered there. */
+export const isGuided = (programme: string): programme is keyof typeof GUIDED_EVIDENCE_LABELS => Object.hasOwn(GUIDED_EVIDENCE_LABELS, programme);
+
 export const ReviewDecision = z.union([
   z.enum(CRC_DECISIONS),
   z.enum(LUNG_OUTCOMES),
