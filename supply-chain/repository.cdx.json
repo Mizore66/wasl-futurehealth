@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:1f0a00fb-114e-52cd-9e17-a2bf12724ad3",
+  "serialNumber": "urn:uuid:e3e78dcc-32e5-594f-a0ff-aebdc20478c0",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T03:58:37Z",
+    "timestamp": "2026-11-11T04:27:14Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "90267d9ed50025e29349d0b65cdec213737229c5"
+      "version": "23536198371b5dea19a3419ce832d3cfcc6291cb"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "90267d9ed50025e29349d0b65cdec213737229c5"
+        "value": "23536198371b5dea19a3419ce832d3cfcc6291cb"
       },
       {
         "name": "wasl:source-tree",
@@ -81,11 +81,11 @@
       ]
     },
     {
-      "bom-ref": "container:Dockerfile:9:golang:1.27.3-bookworm",
+      "bom-ref": "container:Dockerfile:9:golang:1.27.4-bookworm",
       "type": "container",
       "name": "golang",
-      "version": "1.27.3-bookworm",
-      "purl": "pkg:docker/library/golang@1.27.3-bookworm",
+      "version": "1.27.4-bookworm",
+      "purl": "pkg:docker/library/golang@1.27.4-bookworm",
       "properties": [
         {
           "name": "wasl:declared-in",
@@ -97,7 +97,7 @@
         },
         {
           "name": "wasl:reference",
-          "value": "golang:1.27.3-bookworm"
+          "value": "golang:1.27.4-bookworm"
         }
       ]
     },
@@ -123,11 +123,11 @@
       ]
     },
     {
-      "bom-ref": "container:deploy/nats/Dockerfile:7:golang:1.27.3-bookworm",
+      "bom-ref": "container:deploy/nats/Dockerfile:7:golang:1.27.4-bookworm",
       "type": "container",
       "name": "golang",
-      "version": "1.27.3-bookworm",
-      "purl": "pkg:docker/library/golang@1.27.3-bookworm",
+      "version": "1.27.4-bookworm",
+      "purl": "pkg:docker/library/golang@1.27.4-bookworm",
       "properties": [
         {
           "name": "wasl:declared-in",
@@ -139,7 +139,7 @@
         },
         {
           "name": "wasl:reference",
-          "value": "golang:1.27.3-bookworm"
+          "value": "golang:1.27.4-bookworm"
         }
       ]
     },
