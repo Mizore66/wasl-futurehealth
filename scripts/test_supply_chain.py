@@ -126,7 +126,7 @@ class AugmentSbomTests(unittest.TestCase):
 class ContainerSecurityTests(unittest.TestCase):
     def test_nats_binary_is_rebuilt_with_patched_toolchain_and_modules(self):
         dockerfile = (ROOT / "deploy" / "nats" / "Dockerfile").read_text()
-        self.assertIn("ARG GO_VERSION=1.27.3", dockerfile)
+        self.assertIn("ARG GO_VERSION=1.27.4", dockerfile)
         self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", dockerfile)
         self.assertIn("ARG NATS_VERSION=2.12.6", dockerfile)
         self.assertIn("golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2", dockerfile)
@@ -137,7 +137,7 @@ class ContainerSecurityTests(unittest.TestCase):
 
     def test_python_runtime_removes_unused_bootstrap_toolchain(self):
         dockerfile = (ROOT / "Dockerfile").read_text()
-        self.assertIn("ARG GO_VERSION=1.27.3", dockerfile)
+        self.assertIn("ARG GO_VERSION=1.27.4", dockerfile)
         self.assertIn("FROM python:${PYTHON_VERSION}-alpine", dockerfile)
         self.assertIn("apk upgrade --no-cache", dockerfile)
         self.assertIn("apk add --no-cache bash util-linux", dockerfile)

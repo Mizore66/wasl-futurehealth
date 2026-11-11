@@ -288,24 +288,48 @@ stale_bin() {
   local newer; newer="$(find "$ROOT/pipeline" -maxdepth 1 \( -name '*.go' -o -name go.mod -o -name go.sum \) -newer "$BIN/wsi7" | head -1)"
   [ -z "$newer" ] || { echo "stale binary: $BIN/wsi7 is older than ${newer#$ROOT/}; run: scripts/demo.sh build" >&2; exit 2; }
 }
+# v2 (encrypted) bundles use the versioned keyring recovery_keys.json. A legacy HMAC-only bundle needs
+# WASL_RECOVERY_LEGACY_HMAC=1 and WASL_RECOVERY_KEY_FILE pointing at the old backup_key; it is never a default.
+recovery_key_file() { echo "${WASL_RECOVERY_KEY_FILE:-/run/secrets/recovery_keys.json}"; }
 recovery_backup() {
-  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
+  [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || { echo "legacy HMAC bundles are read-only; backup always writes v2" >&2; exit 1; }
   mkdir -p "$directory"
   [ ! -e "$directory/bundle" ] || { echo "recovery backup already exists: $directory/bundle" >&2; exit 1; }
-  "$BIN/wsi7" backup-nats -bundle "$directory/nats.json"
-  python3 "$ROOT/scripts/recovery.py" backup "$OUT" "$directory/bundle" --key-file "$key" --nats-json "$directory/nats.json"
-  rm -f "$directory/nats.json"
+  local plain; plain="$(mktemp -d "${TMPDIR:-/tmp}/wasl-nats-backup.XXXXXX")"; chmod 0700 "$plain"
+  local rc=0
+  { "$BIN/wsi7" backup-nats -bundle "$plain/nats.json" &&
+    python3 "$ROOT/scripts/recovery.py" backup "$OUT" "$directory/bundle" --key-file "$key" --nats-json "$plain/nats.json"; } || rc=$?
+  rm -rf "$plain" || { echo "warning: could not remove $plain" >&2; rc=1; }
+  return "$rc"
 }
+# Order: authenticate, stage and decrypt the files, restore NATS, and only then install the file generation. A file-side
+# failure (wrong key, tamper, populated $OUT without WASL_RECOVERY_REPLACE=1, staging error) therefore happens before NATS
+# is touched. If restore-nats itself fails, JetStream may be partly populated: purge it manually before retrying
+# (the empty-target guard is deliberately not relaxed). The decrypted NATS payload lives in a private temp dir that is
+# removed afterwards (logical cleanup, not physical erasure).
 recovery_restore() {
-  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
-  # Authentication and every payload hash are checked before NATS is contacted or the destination is created.
-  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key"
-  "$BIN/wsi7" restore-nats -bundle "$directory/bundle/files/nats/nats.json"
-  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT"
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
+  local extra=()
+  [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || extra+=(--legacy-hmac)
+  [ "${WASL_RECOVERY_REPLACE:-0}" != "1" ] || extra+=(--replace)
+  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT" \
+    --nats-restore-command "$(printf '%q' "$BIN/wsi7") restore-nats -bundle" ${extra[@]+"${extra[@]}"}
 }
 recovery_verify() {
-  local directory="${WASL_RECOVERY_DIR:-/backup}"
-  "$BIN/wsi7" verify-nats -bundle "$directory/bundle/files/nats/nats.json"
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
+  local extra=()
+  [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || extra+=(--legacy-hmac)
+  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key" ${extra[@]+"${extra[@]}"} >/dev/null
+  local tmp rc=0; tmp="$(mktemp -d "${TMPDIR:-/tmp}/wasl-nats-payload.XXXXXX")"; chmod 0700 "$tmp"
+  if [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" = "1" ]; then
+    "$BIN/wsi7" verify-nats -bundle "$directory/bundle/files/nats/nats.json" || rc=$?
+  else
+    { python3 "$ROOT/scripts/recovery.py" extract-nats "$directory/bundle" "$tmp/nats.json" --key-file "$key" >/dev/null &&
+      "$BIN/wsi7" verify-nats -bundle "$tmp/nats.json"; } || rc=$?
+  fi
+  rm -rf "$tmp" || { echo "warning: could not remove $tmp" >&2; rc=1; }
+  return "$rc"
 }
 validate_nats_config
 case "${1:-all}" in

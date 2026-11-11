@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const exportSchema = "wasl-case-export/1"
@@ -130,47 +131,96 @@ var exportOperationalLeaf = &exportAllow{leaf: true, op: true}
 
 // exportCanaryString is a regression tripwire, not a clinical-text classifier. It prevents the synthetic canary from
 // being smuggled through an allowlisted structural field in raw, JSON-escaped, Base64, hex or percent-encoded form.
+func exportLenientPercentDecode(value string) string {
+	var out strings.Builder
+	out.Grow(len(value))
+	for i := 0; i < len(value); i++ {
+		if value[i] == '%' && i+2 < len(value) {
+			if decoded, err := hex.DecodeString(value[i+1 : i+3]); err == nil {
+				out.Write(decoded)
+				i += 2
+				continue
+			}
+		}
+		out.WriteByte(value[i])
+	}
+	return out.String()
+}
+
+func exportBase64Alphabet(value string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || strings.ContainsRune("+/-_=", r) {
+			return r
+		}
+		return -1
+	}, value)
+}
+
 func exportCanaryString(value string) bool {
 	if len(value) > 4096 {
 		return true
 	}
-	candidates := []string{value}
-	if strings.Contains(value, "%") {
-		if decoded, err := url.PathUnescape(value); err == nil {
-			candidates = append(candidates, decoded)
+	frontier := []string{value}
+	seen := map[string]bool{}
+	for depth := 0; depth < 5; depth++ {
+		next := []string{}
+		found := false
+		for _, candidate := range frontier {
+			if seen[candidate] {
+				continue
+			}
+			if len(seen) >= 64 {
+				return true // fail closed rather than spending unbounded work on nested encodings
+			}
+			seen[candidate] = true
+			if strings.Contains(strings.ToUpper(candidate), "CANARY") {
+				return true
+			}
+			appendDecoded := func(decoded string) {
+				if strings.Contains(strings.ToUpper(decoded), "CANARY") {
+					found = true
+				}
+				// Binary output is terminal for further text decoding, but its ASCII canary bytes were checked above.
+				if decoded != candidate && utf8.ValidString(decoded) {
+					next = append(next, decoded)
+				}
+			}
+			if strings.Contains(candidate, "%") {
+				appendDecoded(exportLenientPercentDecode(candidate))
+			}
+			if strings.Contains(candidate, `\u`) {
+				if decoded, err := strconv.Unquote(`"` + candidate + `"`); err == nil {
+					appendDecoded(decoded)
+				}
+			}
+			compact := strings.NewReplacer(" ", "", "\t", "", "\r", "", "\n", "", "\v", "", "\f", "").Replace(candidate)
+			if len(compact) >= 8 {
+				for _, encoding := range []*base64.Encoding{base64.StdEncoding, base64.RawStdEncoding, base64.URLEncoding, base64.RawURLEncoding} {
+					if decoded, err := encoding.DecodeString(compact); err == nil {
+						appendDecoded(string(decoded))
+					} else if alphabet := exportBase64Alphabet(compact); alphabet != compact && len(alphabet) >= 8 {
+						if decoded, alphabetErr := encoding.DecodeString(alphabet); alphabetErr == nil {
+							appendDecoded(string(decoded))
+						}
+					}
+				}
+			}
+			if len(compact) >= 8 && len(compact)%2 == 0 {
+				if decoded, err := hex.DecodeString(compact); err == nil {
+					appendDecoded(string(decoded))
+				}
+			}
 		}
-	}
-	if strings.Contains(value, `\u`) {
-		if decoded, err := strconv.Unquote(`"` + value + `"`); err == nil {
-			candidates = append(candidates, decoded)
-		}
-	}
-	compact := strings.TrimSpace(value)
-	if len(compact) >= 8 {
-		if decoded, err := base64.StdEncoding.DecodeString(compact); err == nil {
-			candidates = append(candidates, string(decoded))
-		}
-		if decoded, err := base64.RawStdEncoding.DecodeString(compact); err == nil {
-			candidates = append(candidates, string(decoded))
-		}
-		if decoded, err := base64.URLEncoding.DecodeString(compact); err == nil {
-			candidates = append(candidates, string(decoded))
-		}
-		if decoded, err := base64.RawURLEncoding.DecodeString(compact); err == nil {
-			candidates = append(candidates, string(decoded))
-		}
-	}
-	if len(compact) >= 8 && len(compact)%2 == 0 {
-		if decoded, err := hex.DecodeString(compact); err == nil {
-			candidates = append(candidates, string(decoded))
-		}
-	}
-	for _, candidate := range candidates {
-		if strings.Contains(strings.ToUpper(candidate), "CANARY") {
+		if found {
 			return true
 		}
+		frontier = next
+		if len(frontier) == 0 {
+			return false
+		}
 	}
-	return false
+	// A still-decodable chain beyond the depth limit is not evidence of safety.
+	return len(frontier) > 0
 }
 
 func exportScalarOK(v interface{}, op bool) bool {

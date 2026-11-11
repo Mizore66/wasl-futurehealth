@@ -20,6 +20,7 @@ OPTIONAL = (
     "TestAPIDRFixtureRun",
     "TestNATSBackupRestorePreservesRepeatedMessageIDs",
     "TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster",
+    "TestSeedReplayFixture",
 )
 
 
@@ -42,7 +43,7 @@ class SkipPolicyTests(unittest.TestCase):
         report, errors = check.evaluate(rows, "integration")
         self.assertEqual(errors, [])
         self.assertEqual(report["summary"]["required_passed"], 4)
-        self.assertEqual(report["summary"]["allowed_skips"], 4)
+        self.assertEqual(report["summary"]["allowed_skips"], len(OPTIONAL))
         self.assertNotIn("Output", json.dumps(report))
 
     def test_deleting_a_required_pass_fails_closed(self):

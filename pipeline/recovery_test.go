@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -248,6 +249,47 @@ func TestRecoveryLogicalDigestExcludesPhysicalMetadata(t *testing.T) {
 	}
 }
 
+// Seeds a disposable single-node JetStream for scripts/test_recovery_replay.py (skipped unless WASL_REPLAY_SEED_URL
+// is set): retained messages, a durable consumer and a KV bucket.
+func TestSeedReplayFixture(t *testing.T) {
+	url := os.Getenv("WASL_REPLAY_SEED_URL")
+	if url == "" {
+		t.Skip("set WASL_REPLAY_SEED_URL to seed the Python replay drill")
+	}
+	nc, err := nats.Connect(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer nc.Close()
+	js, err := jetstream.New(nc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	stream, err := js.CreateStream(ctx, jetstream.StreamConfig{Name: "REPLAY", Subjects: []string{"replay.>"}, Storage: jetstream.FileStorage, AllowDirect: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"one", "two", "three"} {
+		msg := nats.NewMsg("replay." + id)
+		msg.Header.Set("Nats-Msg-Id", id)
+		msg.Data = []byte(`{"synthetic":"` + id + `"}`)
+		if _, err := js.PublishMsg(ctx, msg); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{Durable: "worker", AckPolicy: jetstream.AckExplicitPolicy}); err != nil {
+		t.Fatal(err)
+	}
+	kv, err := js.CreateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "REPLAY_KV"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := kv.Put(ctx, "checkpoint", []byte("sequence-3")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestNATSFileSecretAndTLSOptions(t *testing.T) {
 	dir := t.TempDir()
 	password := filepath.Join(dir, "password")
@@ -323,6 +365,26 @@ func TestAPIAuthenticationDerivesRoleAndActor(t *testing.T) {
 	if resp.Code != http.StatusNoContent || role != RoleReviewer || actor != "dr.sara" {
 		t.Fatalf("authenticated identity: code=%d role=%q actor=%q", resp.Code, role, actor)
 	}
+}
+
+func TestBasicAuthRequiresTLS(t *testing.T) {
+	_, run := contractRun(t, []contractCase{{suffix: "plaintext-startup", item: "rv-plaintext-startup"}})
+	users := filepath.Join(t.TempDir(), "users.json")
+	if err := os.WriteFile(users, []byte(`{"auditor":{"password":"secret","role":"auditor"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("WASL_SYNTHETIC_DATA_ONLY", "1")
+	t.Setenv("WASL_API_USERS_FILE", users)
+	t.Setenv("WASL_API_TLS_CERT_FILE", "")
+	t.Setenv("WASL_API_TLS_KEY_FILE", "")
+	defer func() {
+		got := recover()
+		if got == nil || !strings.Contains(fmt.Sprint(got), "WASL_API_USERS_FILE requires WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE") {
+			t.Fatalf("plaintext Basic-auth startup panic = %v, want explicit TLS refusal", got)
+		}
+	}()
+	// The invalid address keeps the vulnerable path from blocking: before the security check it panics with a listen error.
+	runServe(run, "", "invalid-address")
 }
 
 func TestBasicAuthEnforcesReadRBACAndPreflight(t *testing.T) {

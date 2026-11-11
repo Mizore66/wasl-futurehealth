@@ -11,9 +11,11 @@ Built controls:
 - JetStream stream configuration, durable consumer configuration, KV checkpoints, and every retained message are backed
   up. Restore is refused unless the target JetStream has zero streams. Each restored stream is read back and compared
   using a logical SHA-256 over retained order, subjects, application headers, and payloads.
-- The file bundle contains the materialised run, cohort, anchors, and API review ledger. HMAC-SHA-256 authenticates the
-  manifest and every payload hash with a key held outside the bundle. Verification finishes before restore contacts
-  NATS or creates run files.
+- The file bundle contains the materialised run, cohort, anchors, and API review ledger. New bundles are
+  `wasl-file-backup-v2-aesgcm`: each payload (including the NATS payload) is AES-256-GCM encrypted under a fresh
+  per-bundle data key, which is wrapped by the active generation of a versioned keyring (`recovery_keys.json`) held
+  outside the bundle; the manifest is HMAC-SHA-256 authenticated with that generation's independent key. Verification
+  finishes before restore contacts NATS or creates run files.
 - File replacement stages and fsyncs a complete generation, retains the previous generation, and writes a rollback
   journal. `rollback` swaps the previous generation back without deleting the rejected generation.
 - NATS clients and routes use authenticated mutual TLS. The API uses HTTPS and Basic credentials from a file-backed
@@ -26,8 +28,8 @@ Built controls:
 - Destructive cohort generation exists only behind the explicit `seed` profile. Ordinary `up`, `restart`, and recovery
   commands never regenerate the cohort or delete streams/run files.
 
-Remaining boundaries are listed at the end; in particular, bundles are authenticated but **not encrypted** by this tool.
-Keep the backup and secret volumes in separate protected storage. `comparison_sha256` excludes `meta.loaded_at`;
+Remaining boundaries are listed at the end. v2 bundles are encrypted and authenticated, but the keyring is the single
+secret that unlocks them: keep the backup and secret volumes in separate protected storage. `comparison_sha256` excludes `meta.loaded_at`;
 `content_sha256`, load times, broker physical metadata, and consumer positions are not expected to be restart-stable.
 
 ## Prerequisites and isolated setup
@@ -63,7 +65,7 @@ podman compose -f "$COMPOSE_FILE" config --quiet
 `production_secrets.sh` refuses to overwrite an existing path. `production_volume_load.sh` creates a new external secret
 volume and copies files with `podman cp`; it does not depend on the Podman VM sharing host paths. Preserve that volume
 and a separately protected copy of its recovery keys. Losing the JetStream key makes encrypted retained stores
-unreadable; losing the backup key prevents bundle authentication.
+unreadable; losing the recovery keyring (`recovery_keys.json`, v2 bundles) or the legacy `backup_key` (v1 bundles) prevents bundle authentication and decryption.
 
 ## Optional explicit synthetic seed
 
@@ -95,7 +97,42 @@ podman compose -f "$COMPOSE_FILE" --profile recovery run --rm recovery recovery-
 ```
 
 The output records stream/message counts and per-stream logical hashes. The bundle is at `/backup/bundle` in the
-external backup volume and contains `nats/nats.json`, the run files, and `manifest.json`. The HMAC key is not included.
+external backup volume and contains `manifest.json` and one `files/<path>.aead` ciphertext per run file plus the NATS
+payload. Neither the keyring nor any data key is included.
+
+### Key custody, rotation and legacy bundles
+
+- `rotate-key` (`python3 scripts/recovery.py rotate-key --key-file <keyring>`) adds a new active generation under a
+  lock and prints only its id. Older generations are **read-only and must be retained for as long as any bundle written
+  under them must stay restorable**; pruning a generation makes its bundles permanently unreadable (the tool refuses
+  them with a "key generation ... not in the keyring" error). Rotation does not re-encrypt existing bundles.
+- Back up the keyring separately from the bundles. Losing it, or the generation a bundle names, loses that bundle.
+- Legacy v1 (HMAC-only, unencrypted) bundles are read-only and are accepted only with an explicit opt-in:
+  `--legacy-hmac` on `verify`/`migrate`, or `WASL_RECOVERY_LEGACY_HMAC=1` with `WASL_RECOVERY_KEY_FILE` pointing at the
+  old `backup_key`. It is never a default; `backup` always writes v2.
+- Adding or rotating the keyring on an existing deployment: **in-place change of an existing secrets volume is not
+  supported.** `production_secrets.sh` refuses an existing directory, `production_volume_load.sh` refuses an existing
+  volume, and the `recovery` service mounts the secrets volume read-only. The working path is to create a **new**
+  secret directory and **new** volume: run `production_secrets.sh <new-dir>`, then copy the existing `backup_key`
+  (for legacy reads) and, to keep earlier v2 bundles restorable, the existing `recovery_keys.json` from your protected
+  copy over the new files, run `recovery.py rotate-key --key-file <new-dir>/recovery_keys.json` on that host copy if
+  you want a fresh active generation, load it with `production_volume_load.sh <new-volume> <new-dir>`, and point
+  `WASL_SECRETS_VOLUME` at it. Keep the same `js_key` and TLS/password files if the retained JetStream stores and
+  clients must keep working; replacing only the recovery files means copying the old values for those too. This
+  procedure is documented, not exercised in a container drill.
+- Both **backup** (`recovery-backup` writes the plaintext `wsi7 backup-nats` output to a mode-0700 `mktemp` directory
+  before encrypting it) and **restore** (the decrypted NATS payload handed to `restore-nats`) place a plaintext NATS
+  file under `${TMPDIR:-/tmp}`. Restore also decrypts the run files into a private mode-0700 staging directory beside the
+  destination, so the destination filesystem needs room for one full decrypted copy. **The temp filesystem must hold the
+  plaintext NATS payload for both operations.** In `deploy/production.compose.yml` the
+  `recovery` service is `read_only: true` with `tmpfs: ["/tmp:size=64m,mode=1777"]`, so the cap is **64 MB** for both operations and `/tmp` is
+  the default writable scratch path there (the staging copy goes to the writable `wasl-run:/var/lib` volume beside
+  `/var/lib/wasl`). Keep `TMPDIR` unset or `/tmp` in that container: any path not backed by a writable mount (the root filesystem is
+  read-only; `/var/lib` and `/backup` are writable volumes) makes the operation fail. For a payload larger than 64 MB raise the `size=` on that tmpfs, or mount a larger writable volume (for
+  example at `/scratch`) and set `TMPDIR=/scratch`. The size of the decrypted NATS payload in the 9 Nov drill (6 streams,
+  5,868 messages) was **not recorded** in any artifact, so whether it fits 64 MB is unproven; measure it before relying
+  on the cap (`python3 scripts/recovery.py extract-nats <bundle> <out> --key-file <keyring>; wc -c <out>`).
+  Temporary plaintext is removed logically (unlink), which is **not physical secure erasure**.
 
 ## Restore into empty volumes from a clean checkout
 
@@ -135,8 +172,12 @@ print("clean restore and restart comparison hashes match")
 PY
 ```
 
-`recovery-restore` performs HMAC and payload verification first, refuses a nonempty JetStream, restores and reads each
-message, and only then migrates the run generation. `recovery-verify` independently rereads every retained message after
+`recovery-restore` authenticates the bundle, stages and decrypts the run files, refuses a nonempty JetStream, restores
+and reads each message, and only then installs the run generation. A file-side failure (wrong key, tamper, populated
+destination without `WASL_RECOVERY_REPLACE=1`) therefore leaves NATS untouched. If `restore-nats` itself fails, JetStream
+may be partly populated. **Any failure after the NATS step begins (a `restore-nats` error, a readback error, or a file
+install error after NATS was restored) requires a manual JetStream purge before the restore is retried**, because the
+empty-target guard is deliberately not relaxed and full file/NATS atomicity is not claimed. `recovery-verify` independently rereads every retained message after
 restart. A clean empty-volume/container restore on one Podman host does **not** prove physical second-machine recovery.
 
 ## Reversible file migration and rollback
@@ -147,7 +188,7 @@ Stop the API/workflow writers before replacing a generation. NATS is not modifie
 export COMPOSE_PROJECT_NAME="$TARGET"
 podman compose -f "$COMPOSE_FILE" stop api
 podman compose -f "$COMPOSE_FILE" --profile recovery run --rm --entrypoint python3 recovery \
-  /app/scripts/recovery.py migrate /backup/bundle --key-file /run/secrets/backup_key /var/lib/wasl --replace
+  /app/scripts/recovery.py migrate /backup/bundle --key-file /run/secrets/recovery_keys.json /var/lib/wasl --replace
 podman compose -f "$COMPOSE_FILE" --profile recovery run --rm --entrypoint python3 recovery \
   /app/scripts/recovery.py rollback /var/lib/.wasl.migration.json
 podman compose -f "$COMPOSE_FILE" start api
@@ -238,6 +279,9 @@ rm -rf "$DRILL"   # only this drill's generated secrets, copies, and evidence di
 
 ## Observed evidence (9 Nov 2026 UTC)
 
+> **This block is v1 / HMAC-only evidence**: those bundles were authenticated but not encrypted and used the old
+> `backup_key`. It is not evidence of v2 encryption, the keyring, or the staged-restore order.
+
 The drill used synthetic data, isolated Compose projects `waslrecsrccb59036b`, `waslrecdstcb59036b`,
 `waslrectampercb59036b`, and final review-inclusive source/target `waslrecsrccb59036b` / `waslrecfinalcb59036b`.
 The separate clean-checkout target was `waslrecclonecb59036b`, restored from commit
@@ -282,8 +326,13 @@ The separate clean-checkout target was `waslrecclonecb59036b`, restored from com
 
 ## Unresolved hardening and verification limits
 
-- Bundle HMAC detects modification but does not encrypt contents or provide a signature/KMS identity. Use protected,
-  encrypted, access-controlled backup storage and managed keys for real data. Key rotation is not implemented.
+- v2 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
+  keyring is a local file. Use protected, access-controlled backup storage and managed keys for real data. Rotation adds
+  generations but does not re-encrypt old bundles. Temporary plaintext cleanup is logical, not physical erasure.
+- **Not run:** a clean Linux Docker restore of a v2 bundle. The 9 Nov evidence above predates v2 encryption and was
+  produced with HMAC-only bundles on Podman; v2 evidence is local (see
+  `docs/reliability/evidence/confidential-recovery-bundles-2026-11-10.md`). No external exactly-once, production
+  RPO/RTO or 24-hour soak is claimed.
 - This is a same-host clean empty-volume/container restore, not a physical second-machine, object-lock/WORM, or off-site
   recovery test. Docker Engine and other operating systems remain unverified.
 - Durable consumer configuration is restored, but delivered/ack floors are deliberately not forged; consumers replay

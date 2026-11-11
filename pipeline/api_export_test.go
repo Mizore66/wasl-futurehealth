@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,6 +91,53 @@ func verifyExportComparisonHash(m map[string]interface{}) bool {
 	}
 	cp["meta"] = metaCopy
 	return sha(canon(cp)) == claimed
+}
+
+func TestSuccessfulReadResponsesUseRedactedMetadata(t *testing.T) {
+	encoded := base64.RawStdEncoding.EncodeToString([]byte("CANARY private clinical text"))
+	for name, planted := range map[string]string{
+		"raw": "CANARY private clinical text", "base64": encoded,
+		"hex":           hex.EncodeToString([]byte("CANARY private clinical text")),
+		"percent":       url.QueryEscape("CANARY private clinical text"),
+		"nested_base64": base64.RawStdEncoding.EncodeToString([]byte(encoded)),
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, _ := exportRun(t)
+			s.meta["run"] = planted
+			s.meta["reader_model"] = planted
+			health := httptest.NewRecorder()
+			s.healthz(health, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+			_, audit := fetchBody(t, exportRoutes(s), http.MethodGet, "/api/cases/"+exportLoop+"/audit")
+			for endpoint, raw := range map[string][]byte{"health": health.Body.Bytes(), "audit": audit} {
+				body := string(raw)
+				if strings.Contains(body, "CANARY") || strings.Contains(body, planted) {
+					t.Fatalf("%s leaked planted %s metadata: %s", endpoint, name, body)
+				}
+				meta := decodeMap(t, raw)["meta"].(map[string]interface{})
+				for key, want := range map[string]string{"run": "redacted-internal-audit", "reader_model": "not-disclosed", "policy": "redacted-internal-audit"} {
+					if meta[key] != want {
+						t.Fatalf("%s meta.%s = %v, want %q", endpoint, key, meta[key], want)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestAuditMethodErrorUsesRedactedMetadata(t *testing.T) {
+	s, _ := exportRun(t)
+	s.meta["run"] = "MRN-CANARY-1234"
+	code, raw := fetchBody(t, exportRoutes(s), http.MethodPost, "/api/cases/"+exportLoop+"/audit")
+	if code != http.StatusMethodNotAllowed {
+		t.Fatalf("audit POST code = %d, want 405", code)
+	}
+	if strings.Contains(string(raw), "CANARY") || strings.Contains(string(raw), "MRN-CANARY-1234") {
+		t.Fatalf("audit method error leaked metadata: %s", raw)
+	}
+	meta := decodeMap(t, raw)["meta"].(map[string]interface{})
+	if meta["run"] != "redacted-internal-audit" || meta["reader_model"] != "not-disclosed" {
+		t.Fatalf("audit method error returned raw metadata: %v", meta)
+	}
 }
 
 func TestAuditAnchorNoteReflectsLocalAnchorPresence(t *testing.T) {

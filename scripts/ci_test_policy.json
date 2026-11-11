@@ -12,7 +12,8 @@
     "TestFresh2Reader": "Optional held-out FRESH2_CORPUS reader evidence; do not enable evaluation data to remove a skip.",
     "TestAPIDRFixtureRun": "Optional DR materialized-run fixture; the default integration cohort has no DR loops.",
     "TestNATSBackupRestorePreservesRepeatedMessageIDs": "Optional external-target recovery drill configured only by WASL_TEST_RECOVERY_NATS.",
-    "TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster": "Optional external-target recovery drill configured only by WASL_TEST_RECOVERY_NATS."
+    "TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster": "Optional external-target recovery drill configured only by WASL_TEST_RECOVERY_NATS.",
+    "TestSeedReplayFixture": "Seeder helper for scripts/test_recovery_replay.py, enabled only by WASL_REPLAY_SEED_URL."
   },
   "allowed_skips_by_lane": {
     "go-test": {
