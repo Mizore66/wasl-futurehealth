@@ -276,6 +276,21 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("dependency-review", self.jobs)
         self.assertEqual(self.steps_using("actions/dependency-review-action"), [])
 
+    def test_supply_chain_verification_enforces_the_notice_bundle_and_is_documented(self):
+        script = (ROOT / "scripts" / "supply-chain.sh").read_text(encoding="utf-8")
+        generate_verify = script[script.index("  generate|verify)"):script.index("  image)")]
+        self.assertIn('"$PYTHON" -I "$ROOT/scripts/notices.py" check --root "$ROOT"', generate_verify)
+        self.assertNotIn("notices.py", script[script.index("  image)"):])
+        notices_source = (ROOT / "scripts" / "notices.py").read_text(encoding="utf-8")
+        check_body = notices_source[notices_source.index("def check_bundle"):notices_source.index("def main")]
+        self.assertIn("THIRD-PARTY-NOTICES.txt", notices_source)
+        self.assertIn("render_notice_bundle", check_body)
+        self.assertIn("differs", check_body)
+        docs = (ROOT / "docs" / "CI.md").read_text(encoding="utf-8")
+        self.assertIn("notices.py check --root", docs)
+        self.assertIn("no network", docs.lower())
+        self.assertIn("13 unresolved", docs)
+
     def test_trufflehog_scans_the_pull_request_range(self):
         step = self.steps_using("trufflesecurity/trufflehog")[0]
         self.assertEqual(step["with"]["base"], "${{ github.event.pull_request.base.sha }}")

@@ -165,6 +165,16 @@ docker run --rm -v "$PWD:/tmp" -w /tmp \
 
 GitHub Dependency Review has no exact offline equivalent and is optional only where the repository supports its API. The three language audits and Trivy are the required local vulnerability checks. TruffleHog release tags use a `v` prefix, but its published container tags deliberately do not; `3.92.5` is the verified multi-architecture image for release `v3.92.5`.
 
+### Third-party notice bundle
+
+`scripts/supply-chain.sh generate` and `verify` both run the notice checker after the evidence manifest is written (and, for `verify`, compared with the tracked evidence) and before the vulnerability gate:
+
+```bash
+python3 -I scripts/notices.py check --root "$PWD"
+```
+
+The check needs no network: it validates the notice manifest and the exact generated bundle from files in the checkout. A checker failure exits nonzero and fails the script; it is never ignored. The 13 unresolved rows stay visible in the manifest and bundle rather than being silently dropped, so "13 unresolved" is reported, not hidden. The `image` mode does not run this check.
+
 ### Containers
 
 Use a unique Compose project and never commit or upload the key or rendered Compose configuration:
