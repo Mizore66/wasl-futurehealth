@@ -29,13 +29,13 @@ Dependency Review requires the repository's dependency graph and GitHub's Depend
 
 All three Go lanes emit `go test -json` JSONL and run `scripts/check_go_test_skips.py` with `if: always()`. The exact-name policy is `scripts/ci_test_policy.json`: ordinary/race lanes may skip materialized-output tests because only integration generates those outputs; integration must instead record passes for `TestAPIFixturesAndContracts`, `TestAPIReviewRBACAndAppendOnly`, `TestAPIBookingSupport`, and `TestHL7RoundTripCohort`. A skip in any required test or subtest fails. Package-level failures/skips, unexpected skips, malformed JSON and missing required passes also fail.
 
-The only other allowed skips are the optional `TestFresh2Reader`, `TestAPIDRFixtureRun`, and the two external-target NATS recovery drills. Review `scripts/ci_test_policy.json` on every test rename; do not enable held-out evaluation data or external recovery targets merely to remove a skip. Each lane uploads its raw Go JSON and a `wasl-go-test-skip-manifest/1` manifest containing only test names, counts, required status and errors. `if-no-files-found: error` prevents an evidence upload from passing by omission. A hosted result is claimed only from GitHub, never from this local documentation.
+The only other allowed skips are the optional `TestFresh2Reader`, `TestAPIDRFixtureRun`, the two external-target NATS recovery drills, and `TestSeedReplayFixture` (a seeder helper for `scripts/test_recovery_replay.py`, enabled only by `WASL_REPLAY_SEED_URL`). Review `scripts/ci_test_policy.json` on every test rename; do not enable held-out evaluation data or external recovery targets merely to remove a skip. Each lane uploads its raw Go JSON and a `wasl-go-test-skip-manifest/1` manifest containing only test names, counts, required status and errors. `if-no-files-found: error` prevents an evidence upload from passing by omission. A hosted result is claimed only from GitHub, never from this local documentation.
 
 For a local NATS version check, set `WASL_TEST_NATS_SERVER=/absolute/path/to/nats-server`. An explicitly configured missing or non-starting binary fails the test rather than silently skipping it.
 
 ## Version and cache policy
 
-- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`. Go 1.27.3 is the minimum because GO-2026-6809 affects the Go 1.27.2 standard library; `govulncheck` 1.9.0 carries a Go-1.27-compatible SSA implementation.
+- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`. Go 1.27.4 is the minimum because GO-2026-6859 affects the Go 1.27.3 standard library; `govulncheck` 1.9.0 carries a Go-1.27-compatible SSA implementation.
 - Python is 3.12.16. Direct test and scanner dependencies are pinned in `requirements-ci.txt`; the pip cache is keyed by that file.
 - Node is pinned in `web/.nvmrc`; pnpm is pinned by `web/package.json` and repeated explicitly in the workflow. The pnpm cache is keyed by `web/pnpm-lock.yaml`, and installs always use `--frozen-lockfile`.
 - NATS, actionlint, govulncheck, Trivy, TruffleHog, and pip are pinned to explicit versions in the workflow.

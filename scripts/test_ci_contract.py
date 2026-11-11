@@ -154,7 +154,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertRegex(ref, r"^[^/@]+/[^/@]+@[0-9a-f]{40}$", ref)
 
     def test_go_tests_race_and_real_nats_are_required(self):
-        self.assertIn("\ngo 1.27.3\n", (ROOT / "pipeline" / "go.mod").read_text())
+        self.assertIn("\ngo 1.27.4\n", (ROOT / "pipeline" / "go.mod").read_text())
         self.assertIn("go mod verify", self.runs("go-test"))
         self.assertIn("go test -json -count=1 -timeout=20m .", self.runs("go-test"))
         self.assertIn("go test -json -race -count=1 -timeout=60m .", self.runs("go-race"))
@@ -167,9 +167,37 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(step["with"]["go-version-file"], "pipeline/go.mod")
                 self.assertEqual(step["with"]["cache-dependency-path"], "pipeline/go.sum")
 
-    def test_go_toolchain_includes_crypto_x509_security_fix(self):
-        # GO-2026-6809 is reachable in Go 1.27.2 and fixed in Go 1.27.3.
-        self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.3$")
+    def test_recovery_encryption_dependency_and_v2_keyring_defaults_are_pinned(self):
+        requirements = (ROOT / "requirements-ci.txt").read_text().splitlines()
+        self.assertIn("cryptography==50.0.2", requirements)
+        self.assertIn('"cryptography==50.0.2"', (ROOT / "Dockerfile").read_text())
+        self.assertIn("pip install -r requirements-ci.txt", self.runs("python-test"))
+        demo = (ROOT / "scripts" / "demo.sh").read_text()
+        self.assertIn("/run/secrets/recovery_keys.json", demo)
+        self.assertNotIn("/run/secrets/backup_key", demo)
+        # the legacy flag may only be added behind the explicit WASL_RECOVERY_LEGACY_HMAC=1 opt-in
+        for line in demo.splitlines():
+            if "--legacy-hmac" in line and not line.lstrip().startswith("#"):
+                self.assertIn('WASL_RECOVERY_LEGACY_HMAC:-0}" != "1"', line)
+        compose = (ROOT / "deploy" / "production.compose.yml").read_text()
+        self.assertIn("WASL_RECOVERY_KEY_FILE: /run/secrets/recovery_keys.json", compose)
+        self.assertNotIn("WASL_RECOVERY_LEGACY_HMAC", compose)  # legacy reads are never a deployment default
+        self.assertIn("python3 -m unittest discover -v -s scripts -p 'test_*.py'", self.runs("python-test"))
+
+    def test_no_recovery_key_material_is_tracked(self):
+        try:
+            tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, text=True, stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL, check=True).stdout
+        except (OSError, subprocess.CalledProcessError):
+            self.skipTest("git metadata unavailable; tracked-file check not run")
+        for name in tracked.splitlines():
+            base = Path(name).name
+            self.assertNotIn(base, {"recovery_keys.json", "backup_key", "js_key"}, name)
+            self.assertFalse(base.endswith((".aead", ".pem", ".key")), name)
+
+    def test_go_toolchain_includes_net_http_security_fix(self):
+        # GO-2026-6859 is reachable in Go 1.27.3 and fixed in Go 1.27.4.
+        self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.4$")
 
     def test_all_python_lanes_and_booking_solver_are_required(self):
         commands = self.runs("python-test")

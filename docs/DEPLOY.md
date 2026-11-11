@@ -25,7 +25,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.3 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.4 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
