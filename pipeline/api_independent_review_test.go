@@ -592,3 +592,73 @@ func TestIndependentReviewReplayRejectsForeignHeadSigned(t *testing.T) {
 		t.Fatal("foreign head_signed must fail replay closed")
 	}
 }
+
+// A read written while an older decision was current stays valid after the case advances: restart keeps the history
+// and unrelated writes work.
+func TestIndependentReviewReplayAcceptsOlderCaseHead(t *testing.T) {
+	e := newIR(t)
+	h1 := stateOf(e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201))["head"].(string)
+	oldSig := e.s.cases[ledgerLoop].last.Sig
+	// the case advances: a newer decision for the same loop with a different signature
+	nd := *e.s.cases[ledgerLoop].last
+	nd.ID, nd.Dropoff, nd.InSeq = "dec-2", "advanced", nd.InSeq+1
+	nd.Sig = decSig(&nd)
+	if nd.Sig == oldSig {
+		t.Fatal("test needs a different head")
+	}
+	f, err := os.OpenFile(filepath.Join(e.run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := LogMsg{Seq: 99, Subject: "out.p0", Hdr: map[string]string{}}
+	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: &nd})
+	b, _ := json.Marshal(m)
+	f.Write(append(b, '\n'))
+	f.Close()
+	s2 := loadAPI(e.run, "")
+	if s2.ledgerErr != "" {
+		t.Fatalf("a read signed against an older head must replay: %s", s2.ledgerErr)
+	}
+	if s2.cases[ledgerLoop].last.Sig == oldSig {
+		t.Fatal("case did not advance")
+	}
+	if got := s2.rstates[reviewQuestionKey{irLinkItem, "link"}]; got == nil || got.Head != h1 {
+		t.Fatalf("history lost: %+v", got)
+	}
+	h, err := s2.handler(irTokens, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledgerPost(t, h, e.path+"/actions", irCoord, fmt.Sprintf(`{"action":"note","text":"synthetic","expected_head":%q}`, s2.caseHead(s2.cases[ledgerLoop])), 201)
+	r := httptest.NewRequest(http.MethodPost, e.path+"/review", strings.NewReader(irBody(irLinkItem, "same", "r2", h1)))
+	r.Header.Set("Authorization", "Bearer "+irRevB)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 201 {
+		t.Fatalf("protocol continues after the case advanced: %d %s", w.Code, w.Body.String())
+	}
+}
+
+// A canonically signed item projects frozen:true and may_submit:false for every viewer, with state and head preserved.
+func TestIndependentReviewFrozenProjection(t *testing.T) {
+	e := newIR(t)
+	h1 := stateOf(e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201))["head"].(string)
+	h2 := stateOf(e.must(t, irRevB, irBody(irLinkItem, "different", "r2", h1), 201))["head"].(string)
+	so := fmt.Sprintf(`{"item":%q,"loop":%q,"kinds":["link"],"link":"same","reviewer":"canon","wrong":false}`+"\n", irLinkItem, ledgerLoop)
+	os.WriteFile(filepath.Join(e.run, "reviewer_decisions.ndjson"), []byte(so), 0o644)
+	s2 := loadAPI(e.run, "")
+	h, _ := s2.handler(irTokens, "")
+	d := ledgerGet(t, h, e.path, irSR) // a senior who would otherwise be allowed r3
+	for _, v := range d["api_review_states"].([]interface{}) {
+		m := v.(map[string]interface{})
+		frozen := m["item"] == irLinkItem
+		if m["frozen"] != frozen {
+			t.Errorf("%v/%v frozen=%v, want %v", m["item"], m["question"], m["frozen"], frozen)
+		}
+		if frozen {
+			if m["may_submit"] != false || m["state"] != "awaiting_r3" || m["head"] != h2 {
+				t.Errorf("frozen projection wrong: %v", m)
+			}
+		}
+	}
+}
