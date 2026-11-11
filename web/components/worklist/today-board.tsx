@@ -455,12 +455,11 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-gap">
-              <button
+              <Button
+                variant="cta"
+                size="touch"
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
-                className={cn(
-                  "flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-control px-5 text-section font-medium text-white sm:h-11 sm:w-auto",
-                  callingNow ? "bg-ink-soft" : "bg-cta",
-                )}
+                className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
                 <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5.5 2.5l1.5 3-1.5 1c.8 1.6 2 2.8 3.5 3.5l1-1.5 3 1.5-.5 2c-.2.6-.8 1-1.4.9C6.6 12.4 3.6 9.4 3.1 4.9c-.1-.6.3-1.2.9-1.4z" />
@@ -473,7 +472,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                     Log call<span className="sr-only"> · {first}</span>
                   </span>
                 )}
-              </button>
+              </Button>
               <span className="hidden flex-1 sm:block" />
               <Button
                 variant="quiet"
@@ -596,14 +595,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 </h3>
                 <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
                   {chips.map(([label, pick]) => (
-                    <button
+                    <Button
                       key={label}
+                      variant="chip"
+                      size="touch"
                       disabled={busy || ledgerInvalid}
                       onClick={pick}
-                      className={cn("h-11 cursor-pointer rounded-chip border bg-surface px-4 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
+                      className={chipsLive ? "border-ink" : "border-control"}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
