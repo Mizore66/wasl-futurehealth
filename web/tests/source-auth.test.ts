@@ -50,23 +50,19 @@ describe("live API authentication", () => {
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it("aborts an operations fetch after three seconds instead of retaining stale data", async () => {
-    vi.useFakeTimers();
+  it("keeps the operations request alive beyond the backend's three-second probe budget", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "web-reviewer-secret-1234567890");
-    const fetchMock = vi.fn().mockImplementation((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
-      init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+    const fetchMock = vi.fn().mockImplementation((_url: string, init: RequestInit) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(response(200, loadSample("operations.json"))), 3250);
+      init.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(init.signal?.reason);
+      });
     }));
     vi.stubGlobal("fetch", fetchMock);
-    try {
-      const pending = getOperations();
-      await vi.advanceTimersByTimeAsync(2999);
-      expect(fetchMock).toHaveBeenCalledOnce();
-      await vi.advanceTimersByTimeAsync(1);
-      await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
-    } finally {
-      vi.useRealTimers();
-    }
+
+    await expect(getOperations()).resolves.toMatchObject({ schema: "wasl-operations/1" });
   });
 
   it("reads the published operations snapshot in fixtures mode", async () => {

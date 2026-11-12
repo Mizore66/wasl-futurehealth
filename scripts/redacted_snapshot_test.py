@@ -38,6 +38,7 @@ def valid_public_payload(kind):
             "queue": {"status": "available", "source": "nats_jetstream_consumer_info", "coverage": "known_durable_consumers", "consumers": [
                 {"stream": "FHIRIN", "consumer": "notifications", "status": "available", "num_pending": 2, "num_ack_pending": 1},
                 {"stream": "FHIR", "consumer": "prep", "status": "available", "num_pending": 3, "num_ack_pending": 0},
+                {"stream": "OUT", "consumer": "reviewer", "status": "available", "num_pending": 4, "num_ack_pending": 1},
             ]},
             "run": {"status": "available", "scope": "completed_synthetic_run", "source": "report7.json", "latency_ms": {"n": 2, "p50": 1.5, "p90": 2.5, "p99": 3.5, "max": 4}, "recovery": {"generated_resources": 10, "fhir_msgs": 11, "expected_outputs": 8, "live_outputs": 8, "ingest_lost": 0, "ingest_duplicates": 0, "lost_outputs": 0, "duplicate_outputs": 0}},
             "api_measurements": {"latency": {"status": "unmeasured", "reason": "api_request_latency_not_recorded"}, "error_rate": {"status": "unmeasured", "reason": "api_request_outcomes_not_recorded"}},
@@ -286,6 +287,7 @@ class RedactedSnapshotTest(unittest.TestCase):
         projected = json.loads(proc.stdout)
         self.assertEqual(projected["schema"], "wasl-operations/1")
         self.assertEqual(projected["queue"]["consumers"][0]["num_pending"], 2)
+        self.assertEqual(projected["queue"]["consumers"][2], {"stream": "OUT", "consumer": "reviewer", "status": "available", "num_pending": 4, "num_ack_pending": 1})
         self.assertEqual(projected["backup"], {"status": "unmeasured", "source": "recovery_bundle_manifest", "reason": "backup_manifest_not_configured"})
         self.assertEqual(projected["meta"]["run"], "redacted-internal-audit")
         for secret in ("future_internal", "internal_error", "secret-host", "password", "/secret/manifest", "secret-key", "/private/run", "secret-policy"):

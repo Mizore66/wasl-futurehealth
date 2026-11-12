@@ -29,6 +29,7 @@ const healthy = {
     consumers: [
       { stream: "FHIRIN", consumer: "notifications", status: "available", num_pending: 2, num_ack_pending: 1 },
       { stream: "FHIR", consumer: "prep", status: "available", num_pending: 3, num_ack_pending: 0 },
+      { stream: "OUT", consumer: "reviewer", status: "available", num_pending: 4, num_ack_pending: 1 },
     ],
   },
   run: {
@@ -85,6 +86,7 @@ test.describe("synthetic operational readiness, live mock", () => {
   let nextServer: ChildProcess | undefined;
   let variant: Variant = "healthy";
   let operationsAuthorization = "";
+  let operationsDelayMS = 0;
 
   test.beforeAll(async ({}, testInfo) => {
     if (testInfo.project.name !== "chromium") return;
@@ -103,8 +105,15 @@ test.describe("synthetic operational readiness, live mock", () => {
       }
       if (route === "/api/operations") {
         operationsAuthorization = req.headers.authorization ?? "";
-        if (variant === "invalid") return send(200, { schema: "wasl-operations/1", meta });
-        return send(200, payloads[variant]);
+        const respond = () => {
+          if (variant === "invalid") return send(200, { schema: "wasl-operations/1", meta });
+          return send(200, payloads[variant]);
+        };
+        if (operationsDelayMS > 0) {
+          setTimeout(respond, operationsDelayMS);
+          return;
+        }
+        return respond();
       }
       if (route === "/api/fixtures") return send(200, read("fixtures.json"));
       if (route === "/api/dashboard") return send(200, read("dashboard.json"));
@@ -130,6 +139,7 @@ test.describe("synthetic operational readiness, live mock", () => {
   test.beforeEach(async ({ page }) => {
     variant = "healthy";
     operationsAuthorization = "";
+    operationsDelayMS = 0;
     await page.emulateMedia({ reducedMotion: "reduce" });
   });
 
@@ -144,6 +154,7 @@ test.describe("synthetic operational readiness, live mock", () => {
     await expect(panel.getByTestId("nats-source")).toHaveText(healthy.nats.source);
     await expect(panel.getByTestId("queue-FHIRIN-notifications")).toHaveText("2 pending, 1 unacknowledged");
     await expect(panel.getByTestId("queue-FHIR-prep")).toHaveText("3 pending, 0 unacknowledged");
+    await expect(panel.getByTestId("queue-OUT-reviewer")).toHaveText("4 pending, 1 unacknowledged");
     await expect(panel.getByTestId("api-latency")).toHaveText("Unmeasured");
     await expect(panel.getByTestId("api-error-rate")).toHaveText("Unmeasured");
     await expect(panel.getByTestId("run-latency-p50")).toHaveText("12.5 ms");
@@ -176,6 +187,16 @@ test.describe("synthetic operational readiness, live mock", () => {
     await expect(panel).toContainText("not production monitoring, a hospital live feed, proof of NATS cluster quorum, a verified restore, or an accumulated service-level objective");
     await expect(panel).not.toContainText(/SLO met|production monitoring active|hospital live feed active|cluster quorum verified|restore verified/i);
     await checkAccessibleAndNarrow(page, "degraded");
+  });
+
+  test("a slow degraded backend response renders instead of timing out the whole panel", async ({ page }) => {
+    variant = "degraded";
+    operationsDelayMS = 3250;
+    await page.goto(`${NEXT_URL}/app/pipeline`);
+    const panel = page.getByTestId("health-panel");
+    await expect(panel.getByTestId("nats-status")).toHaveText("unreachable");
+    await expect(panel.getByTestId("queue-status")).toHaveText("unavailable");
+    await expect(panel.getByTestId("health-unavailable")).toHaveCount(0);
   });
 
   test("partial queue and unmeasured metadata preserve measured values without inventing missing ones", async ({ page }) => {

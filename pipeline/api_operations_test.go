@@ -34,16 +34,27 @@ func availableOperationsProbe(t *testing.T) {
 	old := operationsQueueProbe
 	pending, ackPending := uint64(7), uint64(2)
 	otherPending, otherAckPending := uint64(11), uint64(3)
+	reviewPending, reviewAckPending := uint64(13), uint64(4)
 	operationsQueueProbe = func(context.Context) (operationsNATS, operationsQueue) {
 		return operationsNATS{Status: "reachable", Source: "nats_jetstream_consumer_info"}, operationsQueue{
 			Status: "available", Source: "nats_jetstream_consumer_info", Coverage: "known_durable_consumers",
 			Consumers: []operationsConsumer{
 				{Stream: "FHIRIN", Consumer: "notifications", Status: "available", NumPending: &pending, NumAckPending: &otherAckPending},
 				{Stream: "FHIR", Consumer: "prep", Status: "available", NumPending: &otherPending, NumAckPending: &ackPending},
+				{Stream: "OUT", Consumer: "reviewer", Status: "available", NumPending: &reviewPending, NumAckPending: &reviewAckPending},
 			},
 		}
 	}
 	t.Cleanup(func() { operationsQueueProbe = old })
+}
+
+func validOperationsBackupManifest(createdAt string) string {
+	return `{"schema":"wasl-file-backup-v2-aesgcm","created_at":"` + createdAt + `","key_id":"secret-key-id",` +
+		`"nondeterministic_fields":["created_at","file_mtime","nats_sequence","nats_time"],` +
+		`"wrapped_dek":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","wrap_nonce":"AAAAAAAAAAAAAAAA",` +
+		`"dirs":[{"path":"private","mode":448}],` +
+		`"files":[{"path":"private/run","size":1,"mode":384,"sha256":"0000000000000000000000000000000000000000000000000000000000000000","nonce":"AAAAAAAAAAAAAAAA","ciphertext_sha256":"0000000000000000000000000000000000000000000000000000000000000000"}],` +
+		`"hmac_sha256":"0000000000000000000000000000000000000000000000000000000000000000"}`
 }
 
 func operationsRequest(t *testing.T, s *apiServer) (*httptest.ResponseRecorder, operationsResponse) {
@@ -65,7 +76,7 @@ func TestOperationsHealthyUsesObservedQueueRunAndBundleValues(t *testing.T) {
 	operationsNow = func() time.Time { return time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC) }
 	t.Cleanup(func() { operationsNow = oldNow })
 	manifest := filepath.Join(t.TempDir(), "manifest.json")
-	raw := `{"schema":"wasl-file-backup-v2-aesgcm","created_at":"2026-11-13T11:59:57Z","key_id":"secret-key-id","wrapped_dek":"secret-wrapped-key","files":[{"path":"/private/run"}]}`
+	raw := validOperationsBackupManifest("2026-11-13T11:59:57Z")
 	if err := os.WriteFile(manifest, []byte(raw), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +92,7 @@ func TestOperationsHealthyUsesObservedQueueRunAndBundleValues(t *testing.T) {
 	if body.API.Status != "ok" || body.API.Source != "/healthz" || !reflect.DeepEqual(body.API.Dependencies, s.healthBody()["dependencies"]) {
 		t.Fatalf("API health diverged from healthz: %+v", body.API)
 	}
-	if body.NATS.Status != "reachable" || body.Queue.Status != "available" || len(body.Queue.Consumers) != 2 {
+	if body.NATS.Status != "reachable" || body.Queue.Status != "available" || len(body.Queue.Consumers) != 3 {
 		t.Fatalf("queue was not measured: %+v %+v", body.NATS, body.Queue)
 	}
 	if got := *body.Queue.Consumers[0].NumPending; got != 7 {
@@ -89,6 +100,9 @@ func TestOperationsHealthyUsesObservedQueueRunAndBundleValues(t *testing.T) {
 	}
 	if got := *body.Queue.Consumers[1].NumPending; got != 11 {
 		t.Errorf("prep num_pending = %d, want 11", got)
+	}
+	if got := *body.Queue.Consumers[2].NumPending; got != 13 {
+		t.Errorf("reviewer num_pending = %d, want 13", got)
 	}
 	if body.Run.Status != "available" || body.Run.Scope != "completed_synthetic_run" || body.Run.Source != "report7.json" {
 		t.Fatalf("run provenance = %+v", body.Run)
@@ -105,10 +119,28 @@ func TestOperationsHealthyUsesObservedQueueRunAndBundleValues(t *testing.T) {
 	if body.Backup.Status != "available" || body.Backup.BundleSchema != "wasl-file-backup-v2-aesgcm" || body.Backup.CreatedAt != "2026-11-13T11:59:57Z" || body.Backup.AgeSeconds == nil || *body.Backup.AgeSeconds != 3 || body.Backup.VerificationStatus != "not_verified_by_api" {
 		t.Errorf("backup = %+v", body.Backup)
 	}
-	for _, secret := range []string{"secret-key-id", "secret-wrapped-key", "/private/run", manifest} {
+	for _, secret := range []string{"secret-key-id", strings.Repeat("A", 64), "private/run", manifest} {
 		if strings.Contains(rec.Body.String(), secret) {
 			t.Errorf("operations response leaked manifest value %q", secret)
 		}
+	}
+}
+
+func TestOperationsTimestampKeepsBackupAgePrecision(t *testing.T) {
+	s := operationsTestServer(t)
+	availableOperationsProbe(t)
+	oldNow := operationsNow
+	operationsNow = func() time.Time { return time.Date(2026, 11, 13, 12, 0, 0, 900_000_000, time.UTC) }
+	t.Cleanup(func() { operationsNow = oldNow })
+	manifest := filepath.Join(t.TempDir(), "manifest.json")
+	if err := os.WriteFile(manifest, []byte(validOperationsBackupManifest("2026-11-13T12:00:00.500Z")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("WASL_BACKUP_MANIFEST", manifest)
+
+	_, body := operationsRequest(t, s)
+	if body.ObservedAt != "2026-11-13T12:00:00.9Z" || body.Backup.CreatedAt != "2026-11-13T12:00:00.5Z" || body.Backup.AgeSeconds == nil || *body.Backup.AgeSeconds != 0 {
+		t.Fatalf("subsecond observation became inconsistent: observed_at=%q backup=%+v", body.ObservedAt, body.Backup)
 	}
 }
 
@@ -138,12 +170,14 @@ func TestOperationsPartialConsumerKeepsMeasuredCounts(t *testing.T) {
 	s := operationsTestServer(t)
 	old := operationsQueueProbe
 	pending, ackPending := uint64(5), uint64(1)
+	reviewerPending, reviewerAckPending := uint64(0), uint64(0)
 	operationsQueueProbe = func(context.Context) (operationsNATS, operationsQueue) {
 		return operationsNATS{Status: "reachable", Source: "nats_jetstream_consumer_info"}, operationsQueue{
 			Status: "partial", Source: "nats_jetstream_consumer_info", Coverage: "known_durable_consumers", Reason: "consumer_info_unavailable",
 			Consumers: []operationsConsumer{
 				{Stream: "FHIRIN", Consumer: "notifications", Status: "available", NumPending: &pending, NumAckPending: &ackPending},
 				{Stream: "FHIR", Consumer: "prep", Status: "unavailable", Reason: "consumer_not_found"},
+				{Stream: "OUT", Consumer: "reviewer", Status: "available", NumPending: &reviewerPending, NumAckPending: &reviewerAckPending},
 			},
 		}
 	}
@@ -164,6 +198,10 @@ func TestOperationsRealNATSMeasuresPreparationBacklogAndMissingConsumer(t *testi
 	operationsQueueProbe = probeOperationsQueue
 	t.Cleanup(func() { operationsQueueProbe = oldProbe })
 
+	if _, err := env.js.CreateOrUpdateConsumer(env.ctx, "OUT", jetstream.ConsumerConfig{Durable: "reviewer", AckPolicy: jetstream.AckExplicitPolicy}); err != nil {
+		t.Fatal(err)
+	}
+
 	_, before := operationsRequest(t, s)
 	if before.NATS.Status != "reachable" || before.Queue.Status != "available" || *before.Queue.Consumers[1].NumPending != 0 {
 		t.Fatalf("initial real NATS observation: %+v %+v", before.NATS, before.Queue)
@@ -173,9 +211,20 @@ func TestOperationsRealNATSMeasuresPreparationBacklogAndMissingConsumer(t *testi
 			t.Fatal(err)
 		}
 	}
+	for i := 0; i < 4; i++ {
+		if _, err := env.js.Publish(env.ctx, "out.review", []byte(`{"synthetic":true}`)); err != nil {
+			t.Fatal(err)
+		}
+	}
 	_, after := operationsRequest(t, s)
+	if len(after.Queue.Consumers) != 3 {
+		t.Fatalf("known durable consumer coverage = %+v, want three consumers", after.Queue)
+	}
 	if got := *after.Queue.Consumers[1].NumPending; got != 2 {
 		t.Fatalf("FHIR/prep num_pending after publishing = %d, want 2", got)
+	}
+	if after.Queue.Consumers[2].Stream != "OUT" || after.Queue.Consumers[2].Consumer != "reviewer" || after.Queue.Consumers[2].NumPending == nil || *after.Queue.Consumers[2].NumPending != 4 {
+		t.Fatalf("OUT/reviewer backlog was omitted: %+v", after.Queue)
 	}
 	if err := env.js.DeleteConsumer(env.ctx, "FHIR", "prep"); err != nil {
 		t.Fatal(err)
@@ -191,6 +240,9 @@ func TestOperationsRealNATSMeasuresPreparationBacklogAndMissingConsumer(t *testi
 		t.Fatal(err)
 	}
 	if err := env.js.DeleteStream(env.ctx, "FHIRIN"); err != nil {
+		t.Fatal(err)
+	}
+	if err := env.js.DeleteStream(env.ctx, "OUT"); err != nil {
 		t.Fatal(err)
 	}
 	_, noStreams := operationsRequest(t, s)
@@ -220,6 +272,31 @@ func TestOperationsMissingRunMetricsAreUnmeasuredNotZero(t *testing.T) {
 	}
 }
 
+func TestOperationsBackupRejectsIncompleteManifestStructure(t *testing.T) {
+	observedAt := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
+	for _, field := range []string{"key_id", "nondeterministic_fields", "wrapped_dek", "wrap_nonce", "dirs", "files", "hmac_sha256"} {
+		t.Run("missing_"+field, func(t *testing.T) {
+			var manifest map[string]interface{}
+			if err := json.Unmarshal([]byte(validOperationsBackupManifest("2026-11-13T11:59:57Z")), &manifest); err != nil {
+				t.Fatal(err)
+			}
+			delete(manifest, field)
+			raw, err := json.Marshal(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "manifest.json")
+			if err := os.WriteFile(path, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			backup := operationsBackupFromManifest(path, observedAt)
+			if backup.Status != "unavailable" || backup.Reason != "backup_manifest_invalid" || backup.AgeSeconds != nil {
+				t.Fatalf("incomplete manifest received an age: %+v", backup)
+			}
+		})
+	}
+}
+
 func TestOperationsBackupUnavailableAndUnmeasuredStates(t *testing.T) {
 	for _, tc := range []struct {
 		name, contents, status, reason string
@@ -230,8 +307,9 @@ func TestOperationsBackupUnavailableAndUnmeasuredStates(t *testing.T) {
 		{name: "malformed", set: true, contents: `{`, status: "unavailable", reason: "backup_manifest_invalid"},
 		{name: "oversized", set: true, contents: strings.Repeat(" ", maxBackupManifestBytes+1), status: "unavailable", reason: "backup_manifest_invalid"},
 		{name: "schema", set: true, contents: `{"schema":"other","created_at":"2026-11-13T00:00:00Z"}`, status: "unavailable", reason: "backup_manifest_invalid"},
-		{name: "timestamp", set: true, contents: `{"schema":"wasl-file-backup-v1","created_at":"2026-11-13"}`, status: "unavailable", reason: "backup_created_at_invalid"},
-		{name: "future", set: true, contents: `{"schema":"wasl-file-backup-v1","created_at":"2026-11-13T12:00:01Z"}`, status: "unavailable", reason: "backup_created_at_in_future"},
+		{name: "legacy structure", set: true, contents: `{"schema":"wasl-file-backup-v1","created_at":"2026-11-13T00:00:00Z"}`, status: "unavailable", reason: "backup_manifest_invalid"},
+		{name: "timestamp", set: true, contents: validOperationsBackupManifest("2026-11-13"), status: "unavailable", reason: "backup_created_at_invalid"},
+		{name: "future", set: true, contents: validOperationsBackupManifest("2026-11-13T12:00:01Z"), status: "unavailable", reason: "backup_created_at_in_future"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := operationsTestServer(t)

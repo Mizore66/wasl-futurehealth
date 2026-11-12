@@ -110,6 +110,7 @@ const operationsHealthy: z.input<typeof Operations> = {
     consumers: [
       { stream: "FHIRIN", consumer: "notifications", status: "available", num_pending: 2, num_ack_pending: 1 },
       { stream: "FHIR", consumer: "prep", status: "available", num_pending: 3, num_ack_pending: 0 },
+      { stream: "OUT", consumer: "reviewer", status: "available", num_pending: 4, num_ack_pending: 1 },
     ],
   },
   run: {
@@ -128,6 +129,7 @@ describe("operations contract", () => {
   it("parses healthy values without inventing current API metrics", () => {
     const parsed = Operations.parse(operationsHealthy);
     expect(parsed.queue.consumers[1]).toMatchObject({ stream: "FHIR", consumer: "prep", num_pending: 3, num_ack_pending: 0 });
+    expect(parsed.queue.consumers[2]).toMatchObject({ stream: "OUT", consumer: "reviewer", num_pending: 4, num_ack_pending: 1 });
     expect(parsed.run).toMatchObject({ status: "available", latency_ms: { p50: 12.5 }, recovery: { ingest_lost: 1 } });
     expect(parsed.api_measurements.latency).toEqual({ status: "unmeasured", reason: "api_request_latency_not_recorded" });
   });

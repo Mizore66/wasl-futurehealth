@@ -491,6 +491,13 @@ exit 2
                                text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return r.returncode, r.stdout
 
+    def test_production_api_reads_manifest_from_shared_backup_volume(self):
+        import yaml
+        services = yaml.safe_load((ROOT / "deploy/production.compose.yml").read_text())["services"]
+        self.assertEqual(services["api"]["environment"]["WASL_BACKUP_MANIFEST"], "/backup/bundle/manifest.json")
+        self.assertIn("wasl-backup:/backup:ro", services["api"]["volumes"])
+        self.assertIn("wasl-backup:/backup", services["recovery"]["volumes"])
+
     def test_production_nats_user_matches_image_owner(self):
         import yaml
         dockerfile = (ROOT / "deploy/nats/Dockerfile").read_text().splitlines()

@@ -341,9 +341,9 @@ See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evide
 
 ## API backup-age observation
 
-When `WASL_BACKUP_MANIFEST` explicitly names a bundle `manifest.json`, `GET /api/operations` reports the manifest schema and `created_at`, plus its age at the API's `observed_at`. The read is bounded and future or invalid timestamps are rejected. With no configured path, backup metadata is explicitly unmeasured; read, validation, and future-time failures are unavailable without an age.
+When `WASL_BACKUP_MANIFEST` explicitly names a bundle `manifest.json`, `GET /api/operations` reports the manifest schema and `created_at`, plus its age at the API's `observed_at`. The production-shaped Compose API configures `/backup/bundle/manifest.json` and mounts the recovery service's external `wasl-backup` volume read-only at `/backup`, so the documented backup path is observable by the API. The read is bounded; incomplete manifest structures, directory/payload-file records, and future or invalid timestamps are rejected. With no configured path, backup metadata is explicitly unmeasured; read, validation, and future-time failures are unavailable without an age. Observation and age calculation retain subsecond precision.
 
-This observation is **not restore verification**. The API neither mounts nor authenticates the manifest, reads key IDs or key material, decrypts payloads, runs `recovery-verify`, nor performs a restore. `verification_status: "not_verified_by_api"` is deliberate. A creation timestamp is not proof of a successful backup, usable restore, current recovery point, or RPO. The recovery commands above remain the verification path; the operations endpoint does not alter bundles or recovery files.
+This observation is **not restore verification**. The API does not authenticate the manifest or use key material, decrypt payloads, run `recovery-verify`, or perform a restore. `verification_status: "not_verified_by_api"` is deliberate. A structurally valid manifest and creation timestamp are not proof of a successful backup, usable restore, current recovery point, or RPO. The recovery commands above remain the verification path; the operations endpoint does not alter bundles or recovery files.
 
 ## Unresolved hardening and verification limits
 

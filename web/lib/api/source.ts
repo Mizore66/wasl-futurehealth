@@ -390,7 +390,8 @@ export async function getHealthz(): Promise<Healthz> {
 /** Authenticated point-in-time operational data. Failures propagate so the whole panel becomes unavailable. */
 export async function getOperations(): Promise<Operations> {
   if (apiMode() === "live") {
-    const operations = await live(Operations, "/api/operations", { signal: AbortSignal.timeout(3000) });
+    // The API allows three seconds for JetStream, then still needs time for health, backup metadata and serialization.
+    const operations = await live(Operations, "/api/operations", { signal: AbortSignal.timeout(5000) });
     if (!operations) throw new Error("/api/operations: not found");
     return operations;
   }

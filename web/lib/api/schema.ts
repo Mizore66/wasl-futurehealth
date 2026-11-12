@@ -765,11 +765,11 @@ const OperationsNATS = z.discriminatedUnion("status", [
 ]);
 const OperationsConsumer = z.discriminatedUnion("status", [
   z.strictObject({
-    stream: z.enum(["FHIRIN", "FHIR"]), consumer: z.enum(["notifications", "prep"]), status: z.literal("available"),
+    stream: z.enum(["FHIRIN", "FHIR", "OUT"]), consumer: z.enum(["notifications", "prep", "reviewer"]), status: z.literal("available"),
     num_pending: z.number().int().nonnegative(), num_ack_pending: z.number().int().nonnegative(),
   }),
   z.strictObject({
-    stream: z.enum(["FHIRIN", "FHIR"]), consumer: z.enum(["notifications", "prep"]), status: z.literal("unavailable"),
+    stream: z.enum(["FHIRIN", "FHIR", "OUT"]), consumer: z.enum(["notifications", "prep", "reviewer"]), status: z.literal("unavailable"),
     reason: z.enum(["consumer_not_found", "consumer_info_failed"]),
   }),
 ]);
