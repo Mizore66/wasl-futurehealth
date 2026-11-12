@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
 import { caseDeadlineDays } from "@/components/worklist/days";
+import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
 import { Refine } from "@/components/patients/refine";
 import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
@@ -86,6 +87,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
   if (page > pages) redirect(filtersHref("/app/patients", filters, pages));
   const rows = list.cases.map((c) => ({ c, it: workItem(c, now, hasRecord(c)) }));
+  // Replay failure is server-wide, so any case the API listed saying so makes every status here a partial view.
+  const ledgerPartial = listLedgerInvalid(rows.map((r) => r.it)) || everything.cases.some((c) => c.api_overlay?.ledger_status === "invalid");
   const from = list.total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = (page - 1) * PAGE_SIZE + rows.length;
   const chip = "inline-flex min-h-11 items-center rounded-chip border px-3 text-body no-underline";
@@ -119,6 +122,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           <HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>
         </div>
       </header>
+
+      {ledgerPartial && <LedgerInvalidBanner what="this list" className="mb-6" />}
 
       <section aria-label="Cases" className="rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-gap border-b border-line px-4 py-3">

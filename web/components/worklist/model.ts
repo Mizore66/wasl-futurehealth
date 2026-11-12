@@ -1,6 +1,7 @@
 import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
+import { compareInstants } from "@/lib/domain/instant";
 import { caseStage } from "@/lib/domain/stage";
 import { plain } from "@/lib/domain/terms";
 import { personForLoop } from "@/lib/people";
@@ -176,7 +177,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     }
   }
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
-  const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || ov!.snooze!.at > lc.at);
+  const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
   const snoozed = snoozeRunning || sinks;
   return {

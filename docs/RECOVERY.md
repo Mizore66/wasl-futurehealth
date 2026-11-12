@@ -10,7 +10,19 @@ Built controls:
 
 - JetStream stream configuration, durable consumer configuration, KV checkpoints, and every retained message are backed
   up. Restore is refused unless the target JetStream has zero streams. Each restored stream is read back and compared
-  using a logical SHA-256 over retained order, subjects, application headers, and payloads.
+  using a logical SHA-256 over retained order, subjects, headers, and payloads. That digest **excludes broker
+  headers**, i.e. the direct-get read metadata (`Nats-Stream`, `Nats-Sequence`, ...) and every key beginning with the
+  exact, case-sensitive prefix `Nats-Expected-` or `Nats-Batch-` (the families nats-server 2.12.6 itself strips when
+  sourcing or mirroring). `Nats-Expected-*` are optimistic-concurrency write preconditions. `Nats-Batch-*` are
+  atomic-batch publish control headers, which the server stores on each batched message; a restored atomic-batch
+  message therefore loses its stored `Nats-Batch-*` metadata and is republished on its own, not as part of a batch.
+  Wasl publishes no atomic batches. Matching is case-sensitive like the server's, so a look-alike such as
+  `nats-expected-stream` is ordinary application data and is kept. `Nats-Msg-Id`, `Nats-Rollup`, and `KV-Operation`
+  are kept. Restore first validates each stream's stored digest over the bundle's headers **exactly as backed up**,
+  including any preconditions an older bundle carries. It then refuses any message with a header key that has no
+  values, a key nats.go would not encode, or a value containing a NUL byte, because the unprefixed digest cannot
+  tell such shapes apart from a different header split. Only then does it drop broker headers for publish and readback.
+  Built and tested with Go unit tests and local single-node NATS 2.12.6 only.
 - The file bundle contains the materialised run, cohort, anchors, and API review ledger. New bundles are
   `wasl-file-backup-v2-aesgcm`: each payload (including the NATS payload) is AES-256-GCM encrypted under a fresh
   per-bundle data key, which is wrapped by the active generation of a versioned keyring (`recovery_keys.json`) held
@@ -345,5 +357,14 @@ See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evide
 - NATS monitoring is HTTPS on the private Compose network but is not separately password-authenticated or host-published.
   MLLP/FHIR external feed hardening, live production worker entrypoints, provider mappings, key rotation, readiness
   quorum checks, centralized log export, alerts, and resource sizing remain outside this recovery slice.
+- Other server-interpreted headers are still kept and replayed as stored: `Nats-TTL`, `Nats-Incr`, `Nats-Schedule-*`
+  and `Nats-Marker-Reason`. Wasl uses none of them: it sets no AllowMsgTTL, counter, schedule or marker options, so no
+  stored Wasl message carries them. A stream that did use them could be re-interpreted on restore (for example a
+  fresh TTL clock or a counter increment); this path does not handle that.
+- The v1 logical digest is not length-prefixed. The header-shape refusal above closes the empty-value split, but
+  valid keys with non-empty values can still be regrouped without changing the digest (for example
+  `{"A":["a","Nats-Expected-X","x"]}` and `{"A":["a"],"Nats-Expected-X":["x"]}`). It is a consistency check, not
+  tamper protection; v2 bundle authentication (HMAC plus AES-GCM) is what rejects deliberate edits. A length-prefixed
+  digest would need a new bundle format.
 - The bundle format uses JSON and loads one stream's messages in memory; measured drill size was small. Large-run
   streaming/chunking and restore RPO/RTO objectives still need measurement.

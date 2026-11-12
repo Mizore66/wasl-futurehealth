@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CaseList } from "@/lib/api/schema";
-import { getAudit, getDashboard, postAction, postReview } from "@/lib/api/source";
+import { COORDINATOR_TOKEN_MISSING, getAudit, getDashboard, postAction, postReview } from "@/lib/api/source";
 import { HANDOFF_OWNER, workItem } from "@/components/worklist/model";
 import { loadSample } from "./samples";
 
@@ -47,7 +47,10 @@ describe("live API per-role tokens", () => {
     vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "");
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    await expect(postAction("c", { action: "note", text: "x" }, "h")).rejects.toThrow("WASL_API_COORDINATOR_TOKEN is required");
+    // A write says so as a refusal Today can show; a read throws.
+    expect(await postAction("c", { action: "note", text: "x" }, "h")).toEqual({ ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING });
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "");
+    await expect(getDashboard()).rejects.toThrow("WASL_API_WEB_REVIEWER_TOKEN is required");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

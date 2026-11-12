@@ -27,7 +27,7 @@ beforeEach(() => {
 describe("gatedHistory", () => {
   it("does not request history while an initial read is concealed (review page)", async () => {
     const out = await gatedHistory("c", { before: viewer([concealed]) });
-    expect(out).toEqual({ status: "concealed", audit: null, projection: null });
+    expect(out).toEqual({ status: "concealed", audit: null, projection: null, signedIn: true });
     expect(m.getAudit).not.toHaveBeenCalled();
   });
 
@@ -73,12 +73,21 @@ describe("gatedHistory for the audit route", () => {
     expect(out.audit?.history).toEqual([]);
   });
 
-  it("legacy history is unchanged with no cookie", async () => {
+  it("legacy history is unchanged with no cookie, and reports signed out so governance shows a sign-in prompt", async () => {
     m.getAudit.mockResolvedValue(audit([legacyEvent]));
     m.getReviewCase.mockResolvedValue(signedOut);
     const out = await gatedHistory("c", { needAudit: true });
     expect(out.status).toBe("ok");
     expect(out.audit?.history).toHaveLength(1);
+    expect(out.signedIn).toBe(false);
+  });
+
+  it("reports signed in only from the re-read after the fetch (a token rejected meanwhile is signed out)", async () => {
+    m.getAudit.mockResolvedValue(audit([legacyEvent]));
+    m.getReviewCase.mockResolvedValueOnce(viewer([])).mockResolvedValueOnce(signedOut);
+    expect((await gatedHistory("c", { needAudit: true })).signedIn).toBe(false);
+    m.getReviewCase.mockResolvedValue(viewer([]));
+    expect((await gatedHistory("c", { needAudit: true })).signedIn).toBe(true);
   });
 
   it("closes the race on the audit route too", async () => {

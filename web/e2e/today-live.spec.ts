@@ -35,6 +35,16 @@ test.describe("Today, live mode against a mock API", () => {
   const ledger = new Map<string, Ev[]>();
   let chain: Ev[] = [];
   let invalid: string | null = null;
+  /** Case details the mock answers with 503, as if the API were briefly down for them. */
+  const unavailable = new Set<string>();
+  /** Case details the mock holds back until `release` runs, so a test can see what Today shows while a read is running. */
+  const held = new Map<string, Promise<void>>();
+  let release = () => {};
+  function hold(id: string) {
+    held.set(id, new Promise<void>((resolve) => (release = () => (held.delete(id), resolve()))));
+  }
+  /** When set, the mock answers coordinator writes with the Go API's 401, as if the server's token were not accepted. */
+  let refuseWrites = false;
   let n = 0;
   const principals = new Map<string, { role: string; actor: string }>();
   let server: Server;
@@ -98,6 +108,7 @@ test.describe("Today, live mode against a mock API", () => {
       const principal = scheme === "Bearer" && token ? principals.get(token) : undefined;
       if (!principal) return send(401, { error: "authentication required" });
       if (req.method === "POST" && p.endsWith("/actions")) {
+        if (refuseWrites) return send(401, { error: "authentication required" });
         const id = p.replace(/^\/api\/cases\//, "").replace(/\/actions$/, "");
         let raw = "";
         req.on("data", (c) => (raw += c));
@@ -125,19 +136,29 @@ test.describe("Today, live mode against a mock API", () => {
       const summary = byId.get(id);
       const known = details.find((d) => (d.case as { id: string }).id === id);
       if (!summary && !known) return send(404, { meta, error: "unknown case" });
-      const base = known ?? { ...template, case: summary };
-      return send(200, {
-        ...base,
-        case: { ...(base.case as object), api_overlay: overlay(id, false) },
-        api_reviews: (ledger.get(id) ?? []).map((e) => apiEvent(id, e)),
-        api_overlay: overlay(id, true),
-        review_ledger: invalid ? { status: "invalid", detail: invalid, events_applied: chain.length, note: "api_overlay reflects only the ledger events before the failure; coordinator writes are refused" } : { status: "ok", events_applied: chain.length },
-      });
+      const gate = held.get(id);
+      if (gate) return void gate.then(() => answerDetail(id, summary, known, send));
+      return answerDetail(id, summary, known, send);
     });
     await new Promise<void>((resolve) => server.listen(MOCK_PORT, "127.0.0.1", resolve));
   });
 
+  /** The case-detail answer, sent now or once a held read is released (it reads the ledger state at that moment). */
+  function answerDetail(id: string, summary: Record<string, unknown> | undefined, known: Record<string, unknown> | undefined, send: (status: number, body: unknown) => void) {
+    if (unavailable.has(id)) return send(503, { error: "unavailable" });
+    const base = known ?? { ...template, case: summary };
+    return send(200, {
+      ...base,
+      case: { ...(base.case as object), api_overlay: overlay(id, false) },
+      api_reviews: (ledger.get(id) ?? []).map((e) => apiEvent(id, e)),
+      api_overlay: overlay(id, true),
+      review_ledger: invalid ? { status: "invalid", detail: invalid, events_applied: chain.length, note: "api_overlay reflects only the ledger events before the failure; coordinator writes are refused" } : { status: "ok", events_applied: chain.length },
+    });
+  }
+
   test.afterAll(async () => {
+    // A read still held by a failed test would keep its connection open, and close() waits for it.
+    release();
     await new Promise((resolve) => server.close(resolve));
   });
 
@@ -145,6 +166,10 @@ test.describe("Today, live mode against a mock API", () => {
     ledger.clear();
     chain = [];
     invalid = null;
+    unavailable.clear();
+    release();
+    held.clear();
+    refuseWrites = false;
   });
 
   const first = "ahs-mushrif/ServiceRequest/AHS-sr-1002";
@@ -198,11 +223,18 @@ test.describe("Today, live mode against a mock API", () => {
     invalid = "line 3: head does not follow the case's previous event";
 
     await page.goto("/app/today");
+    // Replay failure is server-wide: the board says so before any patient's detail is read.
+    const board = page.getByTestId("ledger-invalid-board");
+    await expect(board).toHaveAttribute("role", "alert");
+    await expect(board).toContainText("nothing on this board is authoritative");
     const open = page.getByRole("region", { name: "Open patient" });
     await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ }).click();
     const warning = open.getByTestId("ledger-invalid");
     await expect(warning).toBeVisible();
-    await expect(warning).toHaveAttribute("role", "alert");
+    // The board banner is the one alert; the per-patient box adds detail without a second announcement.
+    await expect(warning).not.toHaveAttribute("role", "alert");
+    // (Next.js keeps an empty route-announcer alert on every page, so count only alerts about the ledger.)
+    await expect(page.getByRole("alert").filter({ hasText: /ledger/i })).toHaveCount(1);
     await expect(warning).toContainText("not authoritative");
     await expect(warning).toContainText("API: line 3: head does not follow the case's previous event");
     await expect(open).toContainText("No answer (phone)");
@@ -210,5 +242,113 @@ test.describe("Today, live mode against a mock API", () => {
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
     await expect(open.getByRole("button", { name: "Reached" })).toBeDisabled();
     await expect(open.getByRole("button", { name: /^Hand to/ })).toBeDisabled();
+
+    // A row the open patient's detail never touched is no more authoritative, and the board still says so.
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(board).toBeVisible();
+    await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
+
+    await page.goto("/app/patients");
+    await expect(page.getByTestId("ledger-invalid-board")).toContainText("nothing on this list is authoritative");
+  });
+
+  test("a failed ledger read is not kept: Retry and reselecting the case read it again", async ({ page }) => {
+    append(first, "note", { text: "Prefers a morning call" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
+    unavailable.add(first);
+
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    const failed = open.getByTestId("ledger-read-failed");
+    await expect(failed).toContainText("Could not read the case ledger");
+    await expect(open).not.toContainText("Prefers a morning call");
+
+    // Retry while the API is still down fails again, and says so again.
+    await failed.getByRole("button", { name: "Retry" }).click();
+    await expect(failed).toBeVisible();
+
+    unavailable.delete(first);
+    await failed.getByRole("button", { name: "Retry" }).click();
+    await expect(open).toContainText("Note: “Prefers a morning call”");
+    await expect(failed).toHaveCount(0);
+
+    // Reselection reads a failed case again, without Retry.
+    unavailable.add(second);
+    const list = page.getByRole("region", { name: "Your list" });
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(failed).toBeVisible();
+    unavailable.delete(second);
+    await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(failed).toHaveCount(0);
+    await expect(open).toContainText("No contact on the case ledger yet");
+  });
+
+  test("reselecting a failed case by search shows 'Reading…' while it is read again, not the old error", async ({ page }) => {
+    append(first, "note", { text: "Prefers a morning call" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
+    unavailable.add(first);
+
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    const failed = open.getByTestId("ledger-read-failed");
+    await expect(failed).toContainText("Could not read the case ledger");
+
+    // The API is back but slow for this case. Search away from it and back: no row click, no Retry.
+    unavailable.delete(first);
+    hold(first);
+    const search = page.getByRole("searchbox", { name: "Search" });
+    await search.fill("1023");
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
+    await search.fill("");
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open).toContainText("Reading the case ledger…");
+    await expect(failed).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Retry" })).toHaveCount(0);
+
+    release();
+    await expect(open).toContainText("Note: “Prefers a morning call”");
+    await expect(failed).toHaveCount(0);
+  });
+
+  test("the board warning follows the latest read: a restored ledger clears it, a failed one sets it again", async ({ page }) => {
+    invalid = "append failed and the ledger file state is unknown: disk full";
+    await page.goto("/app/today");
+    const board = page.getByTestId("ledger-invalid-board");
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(board).toBeVisible();
+    await expect(open.getByTestId("ledger-invalid")).toContainText("API: append failed and the ledger file state is unknown");
+    await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
+
+    // An operator restores the ledger. The next read (selecting another case) clears the warning without a reload.
+    invalid = null;
+    const list = page.getByRole("region", { name: "Your list" });
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
+    await expect(board).toHaveCount(0);
+    await expect(open.getByTestId("ledger-invalid")).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeEnabled();
+
+    // Reselecting a case reads it again: a ledger that fails again brings the warning back.
+    invalid = "ledger changed under another writer: hash mismatch";
+    await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
+    await expect(board).toBeVisible();
+    await expect(open.getByTestId("ledger-invalid")).toContainText("API: ledger changed under another writer");
+  });
+
+  test("a 401 on a write is a refusal that names the credential, not 'the API did not answer'", async ({ page }) => {
+    refuseWrites = true;
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(open).toContainText("No contact on the case ledger yet");
+    await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
+    const refused = open.getByTestId("action-refused");
+    await expect(refused).toContainText("Not saved: the API did not accept this server's coordinator credential");
+    await expect(refused).not.toContainText("did not answer");
+    expect(ledger.get(first)).toBeUndefined();
+  });
+
+  test("a valid ledger shows no board-level warning", async ({ page }) => {
+    await page.goto("/app/today");
+    await expect(page.getByRole("region", { name: "Open patient" }).getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(page.getByTestId("ledger-invalid-board")).toHaveCount(0);
   });
 });

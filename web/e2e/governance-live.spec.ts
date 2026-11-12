@@ -1,12 +1,15 @@
 import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import fixtures from "../data/api/fixtures.json";
 
 /*
- * Browser -> server action -> authenticated API consent contest/resolution. Start next start with WASL_API_URL
- * pointing at 127.0.0.1:3295 and the credentials below, then run with GOVERNANCE_LIVE_MOCK=1 and PLAYWRIGHT_BASE_URL.
+ * Browser -> sign-in -> server action -> authenticated API consent contest/resolution, acting only as the signed-in
+ * token. Start `next start` with WASL_API_URL=http://127.0.0.1:3295 and the server-held shared read credentials
+ * (WASL_API_WEB_REVIEWER_TOKEN and WASL_API_AUDITOR_TOKEN, at least 16 characters each), then run this spec with the
+ * same two variables, GOVERNANCE_LIVE_MOCK=1 and PLAYWRIGHT_BASE_URL. The clinicians' own tokens below are typed into
+ * the sign-in form, as an operator would issue them to two people; the Next.js server never holds them.
  * The mock mirrors the Go API's role binding and independent-actor checks; the real handler is covered in pipeline.
  */
 const LIVE = !!process.env.GOVERNANCE_LIVE_MOCK;
@@ -34,13 +37,15 @@ type Event = {
   [key: string]: unknown;
 };
 
-const credentialActors: Record<string, [string, string]> = {
-  WASL_API_REVIEWER_TOKEN: ["reviewer", "reviewer-one"],
+/** Server-held shared read credentials: [role, actor]. Neither may append governance events. */
+const sharedActors: Record<string, [string, string]> = {
+  WASL_API_WEB_REVIEWER_TOKEN: ["reviewer", "web-reviewer"],
   WASL_API_AUDITOR_TOKEN: ["auditor", "auditor-one"],
-  WASL_API_COORDINATOR_TOKEN: ["coordinator", "coordinator-one"],
-  WASL_API_CLINICIAN_TOKEN: ["clinician", "clinician-one"],
-  WASL_API_CLINICIAN_2_TOKEN: ["clinician", "clinician-two"],
-  WASL_API_CLINICIAN_3_TOKEN: ["clinician", "clinician-three"],
+};
+/** Each person's own assigned token, issued by the operator and typed into the sign-in form. */
+const people = {
+  clinicianOne: { token: "governance-clinician-one-0001", role: "clinician", actor: "clinician-one" },
+  clinicianTwo: { token: "governance-clinician-two-0002", role: "clinician", actor: "clinician-two" },
 };
 
 function seedConsent(): Event {
@@ -103,15 +108,18 @@ test.describe("consent governance through the UI", () => {
 
   let server: Server;
   let events: Event[];
-  let posted: { credential: string; body: Record<string, unknown> }[];
+  let posted: { actor: string; identityHeaders: boolean; body: Record<string, unknown> }[];
+  /** Tokens the operator revoked after they signed in: the mock answers 401 to them, as the API would. */
+  let revoked: Set<string>;
 
   test.beforeAll(async () => {
-    const principals = new Map<string, { credential: string; role: string; actor: string }>();
-    for (const [name, [role, actor]] of Object.entries(credentialActors)) {
+    const principals = new Map<string, { role: string; actor: string }>();
+    for (const [name, [role, actor]] of Object.entries(sharedActors)) {
       const token = process.env[name]?.trim();
       if (!token) throw new Error(`${name} must be set for the governance live mock`);
-      principals.set(token, { credential: name, role, actor });
+      principals.set(token, { role, actor });
     }
+    for (const person of Object.values(people)) principals.set(person.token, { role: person.role, actor: person.actor });
     server = createServer((req, res) => {
       const send = (status: number, body: unknown) => {
         res.writeHead(status, { "content-type": "application/json" });
@@ -119,7 +127,7 @@ test.describe("consent governance through the UI", () => {
       };
       const p = decodeURIComponent(new URL(req.url ?? "/", "http://mock").pathname);
       const token = (req.headers.authorization ?? "").split(" ")[1];
-      const principal = token ? principals.get(token) : undefined;
+      const principal = token && !revoked.has(token) ? principals.get(token) : undefined;
       if (!principal) return send(401, { meta, error: "authentication required" });
       if (req.method === "GET" && p === "/api/fixtures") return send(200, read("fixtures.json"));
       if (req.method === "GET" && p === "/api/cases") return send(200, { meta, cases: [], total: 0, limit: 50, offset: 0 });
@@ -134,7 +142,7 @@ test.describe("consent governance through the UI", () => {
         req.on("data", (chunk) => (raw += chunk));
         req.on("end", () => {
           const body = JSON.parse(raw);
-          posted.push({ credential: principal.credential, body });
+          posted.push({ actor: principal.actor, identityHeaders: "x-wasl-role" in req.headers || "x-wasl-actor" in req.headers, body });
           const target = events.find((event) => event.hash === body.target);
           if (!target) return send(404, { meta, error: "target is not a review event of this case" });
           const authorised = target.action === "record_consent"
@@ -186,28 +194,90 @@ test.describe("consent governance through the UI", () => {
   test.beforeEach(() => {
     events = [seedConsent()];
     posted = [];
+    revoked = new Set();
   });
 
   test.afterAll(async () => {
     await new Promise((resolve) => server.close(resolve));
   });
 
-  test("a consent contest can be resolved by a third independent authorised credential", async ({ page }) => {
+  async function signIn(page: Page, token: string) {
+    const prompt = page.getByTestId("governance-signin");
+    await expect(prompt).toBeVisible();
+    await prompt.getByLabel("Your token").fill(token);
+    await prompt.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.getByTestId("governance-identity")).toBeVisible();
+  }
+
+  test("signed out, the page offers a sign-in prompt and no governance control", async ({ page }) => {
     await page.goto(auditPath);
+    await expect(page.getByTestId("governance-signin")).toContainText("signs in separately");
+    await expect(page.getByText("Contest review")).toHaveCount(0);
+    await expect(page.getByText("Append compensation")).toHaveCount(0);
+    await expect(page.locator('select[name="credential"]')).toHaveCount(0);
+    await page.getByTestId("governance-signin").getByLabel("Your token").fill("not-an-issued-token-0000");
+    await page.getByTestId("governance-signin").getByRole("button", { name: "Sign in" }).click();
+    await expect(page.getByTestId("governance-signin").getByRole("alert")).toContainText("Sign-in failed");
+    expect(posted).toEqual([]);
+  });
+
+  test("a session the API rejects is signed out, with the reason, and nothing retries", async ({ page, context }) => {
+    await page.goto(auditPath);
+    await signIn(page, people.clinicianOne.token);
+    revoked.add(people.clinicianOne.token);
+
+    const contestForm = page.locator(`#review-event-${originalHash}`).locator("details").filter({ hasText: "Contest review" });
+    await contestForm.locator("summary").click();
+    await contestForm.getByLabel("Reason").fill("Contest with a revoked token");
+    await contestForm.getByRole("button", { name: "Contest review" }).click();
+
+    const prompt = page.getByTestId("governance-signin");
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByTestId("signed-out-notice")).toContainText("you were signed out");
+    await expect(page.getByTestId("governance-identity")).toHaveCount(0);
+    await expect(page.getByText("Contest review")).toHaveCount(0);
+    expect((await context.cookies()).map((cookie) => cookie.name)).not.toContain("wasl_review_token");
+    expect(posted).toEqual([]);
+
+    /* No loop: the prompt stays put until someone signs in, and a valid token then works as usual. */
+    await page.waitForTimeout(500);
+    await expect(prompt).toBeVisible();
+    await signIn(page, people.clinicianTwo.token);
+    await expect(page.getByTestId("signed-out-notice")).toHaveCount(0);
+  });
+
+  test("a consent contest is resolved only by a separately signed-in, different actor", async ({ page }) => {
+    await page.goto(auditPath);
+    await signIn(page, people.clinicianOne.token);
+    await expect(page.locator('select[name="credential"]')).toHaveCount(0);
     const original = page.locator(`#review-event-${originalHash}`);
     const contestForm = original.locator("details").filter({ hasText: "Contest review" });
     await contestForm.locator("summary").click();
-    await contestForm.getByLabel("Authorised credential").selectOption("clinician");
     await contestForm.getByLabel("Reason").fill("Consent needs an independent check");
     await contestForm.getByRole("button", { name: "Contest review" }).click();
     await expect(page.locator(`#review-event-${contestHash}`)).toContainText("Contest status: open");
 
+    /* The same sign-in cannot also resolve: no default resolution, and the API refuses the contester as resolver. */
     await page.reload();
     const contest = page.locator(`#review-event-${contestHash}`);
-    const resolutionForm = contest.locator("details").filter({ hasText: "Resolve contest" });
+    let resolutionForm = contest.locator("details").filter({ hasText: "Resolve contest" });
     await expect(contest).toContainText("Contest status: open");
     await resolutionForm.locator("summary").click();
-    await resolutionForm.getByLabel("Authorised credential").selectOption("clinician_2");
+    await expect(resolutionForm.getByLabel("Resolution")).toHaveValue("");
+    await resolutionForm.getByLabel("Reason").fill("Resolving my own contest");
+    await resolutionForm.getByRole("button", { name: "Resolve contest" }).click();
+    expect(await resolutionForm.getByLabel("Resolution").evaluate((el: HTMLSelectElement) => el.validity.valueMissing)).toBe(true);
+    await resolutionForm.getByLabel("Resolution").selectOption("upheld");
+    await resolutionForm.getByRole("button", { name: "Resolve contest" }).click();
+    await expect(resolutionForm.getByRole("alert")).toContainText("actor must differ");
+    await expect(page.locator(`#review-event-${resolutionHash}`)).toHaveCount(0);
+
+    /* A different person signs in with their own token, in a fresh session on this browser. */
+    await page.getByTestId("governance-identity").getByRole("button", { name: "Sign out" }).click();
+    await signIn(page, people.clinicianTwo.token);
+    resolutionForm = page.locator(`#review-event-${contestHash}`).locator("details").filter({ hasText: "Resolve contest" });
+    await resolutionForm.locator("summary").click();
+    await expect(resolutionForm.getByLabel("Resolution")).toHaveValue("");
     await resolutionForm.getByLabel("Resolution").selectOption("upheld");
     await resolutionForm.getByLabel("Reason").fill("Independent clinician upholds the contest");
     await resolutionForm.getByRole("button", { name: "Resolve contest" }).click();
@@ -215,11 +285,18 @@ test.describe("consent governance through the UI", () => {
 
     expect(posted).toEqual([
       {
-        credential: "WASL_API_CLINICIAN_TOKEN",
+        actor: "clinician-one",
+        identityHeaders: false,
         body: { target: originalHash, contest: true, note: "Consent needs an independent check" },
       },
       {
-        credential: "WASL_API_CLINICIAN_2_TOKEN",
+        actor: "clinician-one",
+        identityHeaders: false,
+        body: { target: contestHash, resolution: "upheld", note: "Resolving my own contest" },
+      },
+      {
+        actor: "clinician-two",
+        identityHeaders: false,
         body: { target: contestHash, resolution: "upheld", note: "Independent clinician upholds the contest" },
       },
     ]);
