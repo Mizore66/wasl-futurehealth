@@ -26,6 +26,14 @@ describe("dayToDate", () => {
     expect(formatDay(c.case.closed_day)).toBe("20 Jun");
   });
 
+  it("formatDay uses the app's three-letter months, not ICU's en-GB \"Sept\"", () => {
+    expect(formatDay(136)).toBe("14 Sep");
+    expect(formatDay(136.9)).toBe("14 Sep");
+    expect(formatDay(123)).toBe("1 Sep");
+    expect(formatDay(-1)).toBe("30 Apr");
+    for (let day = 0; day < 366; day++) expect(formatDay(day)).toBe(formatDayYear(day).replace(/ \d{4}$/, ""));
+  });
+
   it("formatDayYear uses the app's three-letter months, not ICU's en-GB \"Sept\"", () => {
     expect(formatDayYear(136)).toBe("14 Sep 2026");
     expect(formatDayYear(136.9)).toBe("14 Sep 2026");

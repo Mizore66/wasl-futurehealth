@@ -48,8 +48,6 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
-
 /**
  * `web_reviewer` is the credential for generic shared reads (dashboard, lists, case detail on shared pages). It is bound
  * to its own non-reader actor, so a first read concealed from everyone but its author is concealed from these pages too.
@@ -57,14 +55,33 @@ export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "re
  */
 export type WebCredential = "web_reviewer";
 
-function apiToken(credential: Role | GovernanceCredential | WebCredential): string {
+/** The web server has no token for this credential: a configuration fault here, not an API outage. */
+export class MissingCredentialError extends Error {
+  constructor(readonly variable: string) {
+    super(`${variable} is required for the live synthetic API`);
+    this.name = "MissingCredentialError";
+  }
+}
+
+/** The API answered a read with a status other than 2xx or 404. */
+export class ApiStatusError extends Error {
+  constructor(
+    route: string,
+    readonly status: number,
+  ) {
+    super(`${route}: HTTP ${status}`);
+    this.name = "ApiStatusError";
+  }
+}
+
+function apiToken(credential: Role | WebCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();
-  if (!token) throw new Error(`${name} is required for the live synthetic API`);
+  if (!token) throw new MissingCredentialError(name);
   return token;
 }
 
-export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential | WebCredential): RequestInit {
+export function authenticated(init: RequestInit | undefined, credential: Role | WebCredential): RequestInit {
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${apiToken(credential)}`);
   return { cache: "no-store", ...init, headers };
@@ -77,7 +94,7 @@ export function liveBase(): string {
 async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role | WebCredential = "web_reviewer"): Promise<z.infer<S> | null> {
   const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
+  if (!res.ok) throw new ApiStatusError(route, res.status);
   return schema.parse(await res.json());
 }
 
@@ -260,43 +277,48 @@ export async function postConsent(id: string, body: ConsentRequestInput): Promis
 
 export type GovernanceResult =
   | { ok: true; status: 201; response: CompensationResponseBody }
-  | { ok: false; status: 400 | 403 | 404 | 409 | 500 | 503; error: string };
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500 | 503; error: string };
 
-/** The API binds the selected credential to its configured role and immutable actor; the browser supplies neither. */
-async function postGovernance(id: string, body: unknown, credential: GovernanceCredential): Promise<GovernanceResult> {
+/**
+ * Undo, contest and contest resolution are sent with the signed-in person's own assigned token (the reviewer-session
+ * cookie), never with a server-held role credential. The API binds that token to its configured role and immutable
+ * actor and checks independence; no identity header is sent.
+ */
+async function postGovernanceWithToken(id: string, body: unknown, token: string): Promise<GovernanceResult> {
   if (apiMode() !== "live") throw new Error("governance actions need WASL_API_URL: fixtures mode cannot append governance events");
   const res = await fetch(
     `${liveBase()}/api/cases/${encodeURIComponent(id)}/undo`,
-    authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, credential),
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, token),
   );
-  const json = await res.json();
+  const json = await res.json().catch(() => undefined);
   if (res.status === 201) return { ok: true, status: 201, response: CompensationResponse.parse(json) };
-  if ([400, 403, 404, 409, 500, 503].includes(res.status)) {
-    return { ok: false, status: res.status as 400 | 403 | 404 | 409 | 500 | 503, error: ApiError.parse(json).error };
+  if ([400, 401, 403, 404, 409, 500, 503].includes(res.status)) {
+    const e = ApiError.safeParse(json);
+    return { ok: false, status: res.status as 400 | 401 | 403 | 404 | 409 | 500 | 503, error: e.success ? e.data.error : `HTTP ${res.status}` };
   }
   throw new Error(`POST undo: HTTP ${res.status}`);
 }
 
-export async function postUndo(id: string, body: UndoRequestBody, credential: GovernanceCredential): Promise<GovernanceResult> {
+export async function postUndoWithToken(id: string, body: UndoRequestBody, token: string): Promise<GovernanceResult> {
   const request = UndoRequest.safeParse(body);
   if (!request.success) return { ok: false, status: 400, error: request.error.message };
-  return postGovernance(id, request.data, credential);
+  return postGovernanceWithToken(id, request.data, token);
 }
 
-export async function postContest(id: string, body: ContestRequestBody, credential: GovernanceCredential): Promise<GovernanceResult> {
+export async function postContestWithToken(id: string, body: ContestRequestBody, token: string): Promise<GovernanceResult> {
   const request = ContestRequest.safeParse(body);
   if (!request.success) return { ok: false, status: 400, error: request.error.message };
-  return postGovernance(id, request.data, credential);
+  return postGovernanceWithToken(id, request.data, token);
 }
 
-export async function postContestResolution(
+export async function postContestResolutionWithToken(
   id: string,
   body: ContestResolutionRequestBody,
-  credential: GovernanceCredential,
+  token: string,
 ): Promise<GovernanceResult> {
   const request = ContestResolutionRequest.safeParse(body);
   if (!request.success) return { ok: false, status: 400, error: request.error.message };
-  return postGovernance(id, request.data, credential);
+  return postGovernanceWithToken(id, request.data, token);
 }
 
 export async function getUndoProjection(id: string): Promise<UndoProjectionBody | null> {
@@ -306,27 +328,40 @@ export async function getUndoProjection(id: string): Promise<UndoProjectionBody 
 
 export type ActionResult =
   | { ok: true; status: 201; response: ActionResponse }
-  | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+
+/** Today's words for a 401 on a coordinator action: the API did not accept the server-side coordinator token. */
+export const COORDINATOR_TOKEN_REFUSED = "the API did not accept this server's coordinator credential; an operator must fix the server configuration";
+/** Today's words when this server has no coordinator token at all, so nothing was sent. */
+export const COORDINATOR_TOKEN_MISSING = "this server has no coordinator credential configured, so nothing was sent; an operator must fix the server configuration";
 
 /**
  * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
  * Sent with the server-side coordinator credential (WASL_API_COORDINATOR_TOKEN); the API binds that token to its role
  * and actor and records that actor, so no identity header is sent from here. `expectedHead` is the case's
  * `api_overlay.head`; a stale head returns 409 with the current one. A 500 that the API explains (its ledger failed
- * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown.
+ * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown. So are a 401 (the API
+ * did not accept the coordinator token) and a missing coordinator token (nothing is sent), both as status 401 with
+ * words that say which.
  */
 export async function postAction(id: string, action: CaseAction, expectedHead: string): Promise<ActionResult> {
   const body = CaseAction.safeParse(action);
   if (!body.success) return { ok: false, status: 400, error: body.error.message };
   if (apiMode() !== "live") throw new Error("postAction needs WASL_API_URL: fixtures mode cannot append coordinator events");
 
-  const res = await fetch(
-    `${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`,
-    authenticated(
+  let init: RequestInit;
+  try {
+    init = authenticated(
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, expected_head: expectedHead }) },
       "coordinator",
-    ),
-  );
+    );
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`, init);
+  // The Go API's 401 body ({"error": "authentication required"}, no meta) says only that the token was not accepted.
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
   const json = await res.json();
   if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
   if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
