@@ -13,6 +13,7 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, STANDARD_DAYS } from "./days";
+import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
 import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus } from "./model";
@@ -28,7 +29,7 @@ import type { CaseAction } from "@/lib/api/schema";
  *
  * Live API, after a reload: the board position comes from the persisted overlay in the case list (model.ts workItem),
  * and the open patient's trail from that ONE case's detail overlay (GET /app/today/ledger), never from session state.
- * If ledger replay stopped part-way, the trail shows only the valid prefix under a warning and writes are disabled.
+ * If the API reports its ledger as not trustworthy (ledger_status: invalid), the board and trail say so and writes are disabled.
  */
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
@@ -51,6 +52,17 @@ type State = {
 };
 
 type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
+
+/** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
+type LedgerRead = PersistedLedger | { error: string };
+const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
+const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
+  const next = { ...reads };
+  delete next[id];
+  return next;
+};
+/** A ledger read the route answered and refused: its message is shown as given. */
+class ReadError extends Error {}
 
 const TABS: [View, string][] = [
   ["call", "To call"],
@@ -75,8 +87,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
-  /** Live API: the open patient's persisted trail and ledger status, fetched once per case when it is opened. */
-  const [persisted, setPersisted] = useState<Record<string, PersistedLedger | "error">>({});
+  /**
+   * Live API: each case's last ledger read. Every selection of a case reads it again (however it was selected: row
+   * click, keyboard, tab change or search) and so does Retry; a successful read is shown until the new one lands, a
+   * failed one is kept only to say why and is dropped as soon as the next read starts. A failure never retries by itself.
+   */
+  const [persisted, setPersisted] = useState<Record<string, LedgerRead>>({});
+  /** Bumped by Retry so the same selected case is read again. */
+  const [attempt, setAttempt] = useState(0);
+  /** The case the current read is for: when the selection moves, a read starts for the new one. */
+  const [readFor, setReadFor] = useState<string | undefined>(undefined);
+  /**
+   * `ledger_status` of the most recent successful detail read, or null before the first. The API's flag is server-wide
+   * and the latest read is the newest word on it, so it decides the board once there is one: a ledger an operator has
+   * restored clears the warning on the next read, and one that fails again sets it.
+   */
+  const [lastStatus, setLastStatus] = useState<PersistedLedger["status"] | null>(null);
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -117,22 +143,50 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
 
   /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
   const selId = live ? p?.id : undefined;
-  const known = !!selId && persisted[selId] !== undefined;
+  /*
+   * A read starts whenever the selected case changes, whichever way it was selected: drop that case's failed read now
+   * (React's adjust-state-during-render pattern) so it shows "Reading…", not the old error and Retry, while it runs.
+   */
+  if (selId !== readFor) {
+    setReadFor(selId);
+    if (selId && persisted[selId] && !isLedger(persisted[selId])) setPersisted((prev) => withoutRead(prev, selId));
+  }
   useEffect(() => {
-    if (!selId || known) return;
+    if (!selId) return;
     const ac = new AbortController();
     fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
-      .then((r) => (r.ok ? (r.json() as Promise<PersistedLedger>) : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((ledger) => setPersisted((prev) => ({ ...prev, [selId]: ledger })))
-      .catch(() => {
-        if (!ac.signal.aborted) setPersisted((prev) => ({ ...prev, [selId]: "error" }));
+      .then(async (r) => {
+        if (r.ok) return (await r.json()) as PersistedLedger;
+        const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
+        throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
+      })
+      .then((ledger) => {
+        setPersisted((prev) => ({ ...prev, [selId]: ledger }));
+        setLastStatus(ledger.status);
+      })
+      .catch((e: unknown) => {
+        if (ac.signal.aborted) return;
+        const error = e instanceof ReadError ? e.message : "the web server did not answer";
+        setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
-  }, [selId, known]);
+  }, [selId, attempt]);
+  /** Forget a failed read of `id` and read it again; a successful read is kept (selecting the case reads it again). */
+  const retryLedger = (id: string) => {
+    if (!persisted[id] || isLedger(persisted[id])) return;
+    setPersisted((prev) => withoutRead(prev, id));
+    setAttempt((n) => n + 1);
+  };
   const ledger = selId ? persisted[selId] : undefined;
-  const ledgerRead = ledger && ledger !== "error" ? ledger : null;
-  /* The list says so for every case when replay failed; the detail says why. Either way the API refuses writes. */
-  const ledgerInvalid = live && !!p && (p.ledgerStatus === "invalid" || ledgerRead?.status === "invalid");
+  const ledgerRead = isLedger(ledger) ? ledger : null;
+  const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
+  /*
+   * An untrustworthy ledger is server-wide: if the latest detail read (or, before any, a listed case) says so, no row on
+   * the board is authoritative and the API refuses every write. The board says so once; the open patient's detail says why.
+   * The list overlay is from page load, so a newer detail read overrides it in either direction.
+   */
+  const boardInvalid = live && (lastStatus ? lastStatus === "invalid" : listLedgerInvalid(items));
+  const ledgerInvalid = !!p && boardInvalid;
 
   const top = toCall[0];
   const finding = !top
@@ -181,7 +235,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       .then((res) => {
         if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
-        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
+        // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
+        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
       .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
       .finally(() => setBusy(false));
@@ -304,7 +359,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     ? "No contact logged this session"
     : ledger === undefined
       ? "Reading the case ledger…"
-      : ledger === "error"
+      : ledgerError
         ? "Could not read the case ledger"
         : "No contact on the case ledger yet";
   const trail: ChainNode[] = p
@@ -332,6 +387,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           {aside}
         </div>
       </header>
+
+      {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-6" />}
 
       <div className="flex flex-wrap items-stretch gap-gap">
         <section
@@ -374,7 +431,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   <button
                     ref={on ? rowRef : undefined}
                     aria-pressed={on}
-                    onClick={() => setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }))}
+                    onClick={() => {
+                      retryLedger(r.id);
+                      setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }));
+                    }}
                     className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 pr-2 text-left after:absolute after:inset-0 after:rounded-control"
                   >
                     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
@@ -527,12 +587,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             </div>
 
             {ledgerInvalid && (
-              <div role="alert" data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-                <p className="m-0 font-medium text-warning">Case ledger incomplete: this patient&rsquo;s state here is not authoritative</p>
+              /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
+              <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
+                <p className="m-0 font-medium text-warning">Case ledger not trustworthy: this patient&rsquo;s state here is not authoritative</p>
                 <p className="m-0 mt-1">
-                  The API stopped replaying the shared ledger at an invalid entry. Only the actions before it are shown
+                  The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
                   {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
-                  operator repairs the ledger.
+                  operator restores the ledger.
                 </p>
                 {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
               </div>
@@ -619,7 +680,25 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             </dl>
 
             <div className="mt-7">
-              <h3 className="m-0 mb-3 text-section font-medium">Contacts</h3>
+              <h3 data-focus="contacts" tabIndex={-1} className="m-0 mb-3 text-section font-medium outline-none">
+                Contacts
+              </h3>
+              {ledgerError && (
+                <div role="status" data-testid="ledger-read-failed" className="mb-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+                  <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+                  <Button
+                    variant="quiet"
+                    size="touch"
+                    onClick={() => {
+                      // The button goes while the ledger is read again; focus stays in the Contacts section.
+                      setWant({ k: "contacts" });
+                      retryLedger(p.id);
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
               <div aria-live="polite">
                 <SealedChain nodes={trail} />
               </div>

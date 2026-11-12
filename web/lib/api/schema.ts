@@ -548,18 +548,29 @@ const tag =
   <L extends string>(ledger: L) =>
   <T extends object>(e: T) => ({ ...e, ledger });
 
+/*
+ * What makes a ledger entry a review in Go: no `type` key (replay treats any typed event as a coordinator action,
+ * pipeline/api.go replayLedgerLine) and no `kind`, or an empty one (pipeline/api_undo.go evKind). Review writers (POST review,
+ * consent, independent reads) set neither. Without this, an event of a type or kind the frontend does not know that
+ * happens to carry the core fields (case, role, action, at, mode, prev, hash) would be shown as a review.
+ * Deliberately stricter than Go: evKind also treats a non-string `kind` and a literal `kind: "review"` as a review, while
+ * this schema shows both as `unknown`. No Go writer produces either, and showing an event as unknown is the safe side of
+ * that disagreement.
+ */
+const reviewOnly = { type: z.never().optional(), kind: z.literal("").optional() };
+
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
-  ApiReview.transform(tag("review")),
+  ApiReview.extend(reviewOnly).transform(tag("review")),
   UnknownLedgerEvent,
 ]);
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
-  AuditReview.transform(tag("review")),
+  AuditReview.extend(reviewOnly).transform(tag("review")),
   UnknownLedgerEvent,
 ]);
 
