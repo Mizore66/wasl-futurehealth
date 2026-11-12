@@ -2,15 +2,15 @@
 
 ## Scope and revision
 
-Synthetic Wasl pipeline/API image on one macOS/Podman host. Base `main` was `2d595e4c348c6156803094fd8a1cc796d7fa3c50`; tested implementation was `f876d7f`. Podman client 5.8.2, server 5.8.9, Linux/arm64. No second physical machine or Docker Engine result is claimed here.
+Synthetic Wasl pipeline/API image on one macOS/Podman host. Base `main` was `2d595e4c348c6156803094fd8a1cc796d7fa3c50`; tested implementation was `3dc9969`. Podman client 5.8.2, server 5.8.9, Linux/arm64. No second physical machine or Docker Engine result is claimed here.
 
 ## Verified
 
 1. Generated `pipeline/vendor` with `go -C pipeline mod vendor`: 215 files, approximately 3.1 MB. `scripts/test_offline_build.py` regenerates it and compares the complete tree recursively.
 2. Built once online as `wasl-offline-seed:local` to preseed the base images and Alpine/Python package layer.
 3. Ran `scripts/offline_build.sh`. It created a new `/tmp` context and invoked Podman with `--network=none`, `--pull-never` and a fresh `OFFLINE_BUILD_ID`.
-4. The Go `RUN ... go vet ... go build ...` layer executed without cache and completed with `GOFLAGS=-mod=vendor GOPROXY=off`. No module proxy or download was used.
-5. The preseeded Alpine/Python package layer was reused. The complete image committed successfully as `wasl-offline:local` with image ID `3631e4c202e4d7b2eeb27425087028e9486ff5111774d24728835bfb781f5923`, identical to the online seed build.
+4. The Go `RUN ... go vet ... go build ...` layer executed without cache and completed with `GOFLAGS=-mod=vendor GOPROXY=off`. No module proxy or download was used. Its outbound-TCP probe failed closed when networking was deliberately enabled, and passed only when the connection was unavailable as expected offline.
+5. The preseeded Alpine/Python package layer was reused. The complete image committed successfully as `wasl-offline:local` with image ID `05382587662617ea5c11b4a55b14b9f624efa5bcbc106677ae25d5b705c84ac2`; `wsi7 -h` ran successfully from that image.
 6. Full Go tests and vet passed on the vendored tree. Offline/CI contract tests passed 28/28; deployment static checks and the licence-notice bundle check passed.
 
 ## Failed attempts retained as limitations
