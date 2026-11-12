@@ -7,10 +7,16 @@ export function dayToDate(day: number): Date {
 }
 
 /**
- * The app's one month table. formatDay, formatDayYear and formatUtcInstant all use it rather than Intl, because Node's ICU
- * formats en-GB September as "Sept" and the app writes "Sep" everywhere.
+ * The app's one month table. formatDay, formatDayYear, formatUtcInstant and formatWeekdayDay all use it rather than Intl,
+ * because Node's ICU formats en-GB September as "Sept" and the app writes "Sep" everywhere.
  */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Thu 3 Sep" in UTC, for an instant: the call-back labels on Today. */
+export function formatWeekdayDay(d: Date): string {
+  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+}
 
 /** "14 Sep" style label for an API day. */
 export function formatDay(day: number): string {
