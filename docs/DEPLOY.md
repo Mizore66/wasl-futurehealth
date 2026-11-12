@@ -264,12 +264,12 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    |---|---|---|
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
    | `WASL_API_WEB_REVIEWER_TOKEN` | a token bound to a reviewer-role actor that is **not** an assigned reader | dashboard, lists and case detail on shared pages; never an r1/r2 credential |
-   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | link/evidence review and governance |
-   | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
-   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | the senior_reviewer: r3 resolution of a disagreement (and contest resolver) independent of both initial readers |
-   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |
-   | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | independent evidence/contest actions and consent resolution |
-   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | the senior_clinician: r3 resolution of an evidence disagreement (and contest resolver) independent of both initial readers |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | only the `postReview` helper, which no page calls; for review or governance, issue it to a person, who signs in with it |
+   | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | not read by the web server; issue it to a person, who signs in with it |
+   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | not read by the web server; the senior_reviewer signs in with it for r3 and contest resolution |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | only the `postReview` helper, which no page calls; for review or governance, issue it to a person, who signs in with it |
+   | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | not read by the web server; issue it to a person, who signs in with it |
+   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | not read by the web server; the senior_clinician signs in with it for r3 and contest resolution |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
 
@@ -278,9 +278,12 @@ reachable API must not use them, so generate fresh tokens for each role and inde
 
 The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
 `X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the
-action, so every Today action is recorded as the coordinator token's actor and every review as the reviewer or clinician
-token's actor. Anyone who can use the hosted site can therefore act with those identities on the synthetic run: protect
-the Vercel deployment (Vercel Authentication or a password). Review and coordinator events are appended to
+action, so every Today action is recorded as the coordinator token's actor. Anyone who can use the hosted site can
+therefore act with that identity on the synthetic run: protect the Vercel deployment (Vercel Authentication or a
+password). Independent review reads and undo, contest and contest resolution are different: they act only as the token
+a person typed into the page's sign-in form (one HttpOnly cookie, one identity per browser), never a server-held one,
+and the page offers no credential choice. Their independence still rests on separate sign-ins with distinct tokens that
+the operator issued to distinct people. Review and coordinator events are appended to
 `api_reviews.ndjson` on the `wasl-run` volume and survive an API restart; a new pipeline run that changes case heads
 makes the old ledger invalid (see `API.md`). To rotate a credential, change both `WASL_API_TOKENS` on the API host
 (then rerun `scripts/deploy_up.sh -d` with the original `WASL_JS_KEY` exported) and the matching Vercel variable.
