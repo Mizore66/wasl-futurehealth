@@ -37,6 +37,8 @@ test.describe("Today, live mode against a mock API", () => {
   let invalid: string | null = null;
   /** Case details the mock answers with 503, as if the API were briefly down for them. */
   const unavailable = new Set<string>();
+  /** When set, the mock answers coordinator writes with the Go API's 401, as if the server's token were not accepted. */
+  let refuseWrites = false;
   let n = 0;
   const principals = new Map<string, { role: string; actor: string }>();
   let server: Server;
@@ -100,6 +102,7 @@ test.describe("Today, live mode against a mock API", () => {
       const principal = scheme === "Bearer" && token ? principals.get(token) : undefined;
       if (!principal) return send(401, { error: "authentication required" });
       if (req.method === "POST" && p.endsWith("/actions")) {
+        if (refuseWrites) return send(401, { error: "authentication required" });
         const id = p.replace(/^\/api\/cases\//, "").replace(/\/actions$/, "");
         let raw = "";
         req.on("data", (c) => (raw += c));
@@ -149,6 +152,7 @@ test.describe("Today, live mode against a mock API", () => {
     chain = [];
     invalid = null;
     unavailable.clear();
+    refuseWrites = false;
   });
 
   const first = "ahs-mushrif/ServiceRequest/AHS-sr-1002";
@@ -257,6 +261,18 @@ test.describe("Today, live mode against a mock API", () => {
     await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
     await expect(failed).toHaveCount(0);
     await expect(open).toContainText("No contact on the case ledger yet");
+  });
+
+  test("a 401 on a write is a refusal that names the credential, not 'the API did not answer'", async ({ page }) => {
+    refuseWrites = true;
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(open).toContainText("No contact on the case ledger yet");
+    await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
+    const refused = open.getByTestId("action-refused");
+    await expect(refused).toContainText("Not saved: the API did not accept this server's coordinator credential");
+    await expect(refused).not.toContainText("did not answer");
+    expect(ledger.get(first)).toBeUndefined();
   });
 
   test("a valid ledger shows no board-level warning", async ({ page }) => {
