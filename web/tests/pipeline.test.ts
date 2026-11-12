@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { HealthPanel } from "@/components/pipeline/health-panel";
 import replayJson from "@/data/replay.json";
 import readerJson from "@/data/reader.json";
 import { FEED_ROWS, ROWS, SLOTS, flowView, replayTrack } from "@/components/pipeline/flow";
-import { DEPENDENCY_ORDER, loadHealth, stepAnnouncement } from "@/components/pipeline/health";
-import { Healthz } from "@/lib/api/schema";
-import { getHealthz } from "@/lib/api/source";
+import { DEPENDENCY_ORDER, completedRunRate, loadOperations, stepAnnouncement } from "@/components/pipeline/health";
+import { Operations } from "@/lib/api/schema";
+import { getOperations } from "@/lib/api/source";
+import operationsJson from "@/data/api/operations.json";
 import { playback,type Playback, type PlaybackAction } from "@/components/pipeline/playback";
 import { readerFrames, readerStart, readerTrack, readerView } from "@/components/pipeline/reader-timeline";
 import { NOT_ASKED, type ReaderData } from "@/components/pipeline/reader-types";
@@ -239,44 +243,80 @@ describe("step announcement (issue #16)", () => {
   });
 });
 
-describe("health state (issue #11)", () => {
-  const ok: Healthz = {
-    status: "ok",
-    cases: 7,
-    dependencies: { materialised_run: "loaded", nats: "not_required_for_read_api", reader: "cached", ingest_adapter: "fhir" },
-    meta: { api: "wasl-api/1", data_mode: "simulated", loaded_at: "2026-10-31T23:47:27Z", note: "", policy: "p", reader_model: "m", run: "r" },
-  };
+describe("operational readiness state", () => {
+  const ok = Operations.parse(operationsJson);
 
   it("is a published snapshot, dated by meta.loaded_at, in fixtures mode", async () => {
-    expect(await loadHealth(async () => ok, "fixtures")).toEqual({ kind: "snapshot", health: ok, takenAt: "2026-10-31T23:47:27Z" });
+    expect(await loadOperations(async () => ok, "fixtures")).toEqual({ kind: "snapshot", operations: ok, takenAt: ok.meta.loaded_at });
   });
 
-  it("is a live check, dated by the fetch, in live mode", async () => {
-    const state = await loadHealth(async () => ok, "live", () => new Date("2026-11-07T10:00:00Z"));
-    expect(state).toEqual({ kind: "live", health: ok, fetchedAt: "2026-11-07T10:00:00.000Z" });
+  it("is a live synthetic check, dated by the fetch, in live mode", async () => {
+    const state = await loadOperations(async () => ok, "live", () => new Date("2026-11-07T10:00:00Z"));
+    expect(state).toEqual({ kind: "live", operations: ok, fetchedAt: "2026-11-07T10:00:00.000Z" });
   });
 
-  it("is explicitly unavailable when the health call fails", async () => {
-    const state = await loadHealth(() => Promise.reject(new Error("/healthz: HTTP 503")), "live");
-    expect(state).toEqual({ kind: "unavailable", reason: "/healthz: HTTP 503" });
+  it("replaces the whole operational panel when the operations call fails", async () => {
+    const state = await loadOperations(() => Promise.reject(new Error("/api/operations: HTTP 503")), "live");
+    expect(state).toEqual({ kind: "unavailable", reason: "/api/operations: HTTP 503" });
+    expect(state).not.toHaveProperty("operations");
   });
 
   it("is unavailable when the payload does not parse", async () => {
-    const state = await loadHealth(async () => Healthz.parse({ status: "ok" }), "fixtures");
+    const state = await loadOperations(async () => Operations.parse({ schema: "wasl-operations/1" }), "fixtures");
     expect(state.kind).toBe("unavailable");
   });
 
-  it("getHealthz fails in live mode when the API is unreachable, and the state is unavailable", async () => {
+  it("getOperations fails in live mode when the API is unreachable, and the state is unavailable", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:1");
     try {
-      expect((await loadHealth(getHealthz, "live")).kind).toBe("unavailable");
+      expect((await loadOperations(getOperations, "live")).kind).toBe("unavailable");
     } finally {
       vi.unstubAllEnvs();
     }
   });
 
-  it("getHealthz reads the published snapshot, which carries the four dependencies", async () => {
-    const h = await getHealthz();
-    for (const k of DEPENDENCY_ORDER) expect(h.dependencies[k]).toBeTruthy();
+  it("getOperations reads all five health dependencies and never invents current API measurements", async () => {
+    const operations = await getOperations();
+    for (const k of DEPENDENCY_ORDER) expect(operations.api.dependencies[k]).toBeTruthy();
+    expect(operations.api_measurements.latency.status).toBe("unmeasured");
+    expect(operations.api_measurements.error_rate.status).toBe("unmeasured");
+    expect(operations.queue.consumers).toEqual([]);
+  });
+
+  it("derives only completed-run rates and reports a zero denominator as Unmeasured", () => {
+    expect(completedRunRate(1, 4)).toBe("25%");
+    expect(completedRunRate(0, 4)).toBe("0%");
+    expect(completedRunRate(1, 0)).toBe("Unmeasured");
+    expect(completedRunRate(0, 0)).toBe("Unmeasured");
+    expect(completedRunRate(1, 3)).not.toContain("NaN");
+  });
+
+  it("renders the exact observation/source inputs and no queue zeros for the degraded snapshot", () => {
+    const html = renderToStaticMarkup(createElement(HealthPanel, { state: { kind: "snapshot", operations: ok, takenAt: ok.meta.loaded_at } }));
+    expect(html).toContain(`dateTime="${ok.observed_at}"`);
+    expect(html).toContain(`dateTime="${ok.meta.loaded_at}"`);
+    expect(html).toContain("nats_jetstream_consumer_info");
+    expect(html).toContain("report7.json");
+    expect(html).toContain("recovery_bundle_manifest");
+    expect(html).toContain("Published snapshot, not live");
+    expect(html).toContain("Durable-consumer pending and unacknowledged counts");
+    expect(html).not.toContain("0 pending");
+    expect(html).not.toContain("NaN");
+  });
+
+  it("renders zero-denominator completed-run rates as Unmeasured rather than 0%", () => {
+    if (ok.run.status !== "available") throw new Error("expected completed-run metrics");
+    const zeroed = Operations.parse({
+      ...ok,
+      run: {
+        ...ok.run,
+        recovery: { generated_resources: 0, fhir_msgs: 0, expected_outputs: 0, live_outputs: 0, ingest_lost: 0, ingest_duplicates: 0, lost_outputs: 0, duplicate_outputs: 0 },
+      },
+    });
+    const html = renderToStaticMarkup(createElement(HealthPanel, { state: { kind: "snapshot", operations: zeroed, takenAt: zeroed.meta.loaded_at } }));
+    expect(html).not.toContain("0%");
+    expect(html).not.toContain("NaN");
+    expect(html).toContain("Ingest lost / generated resources");
+    expect(html.match(/Unmeasured/g)?.length).toBeGreaterThanOrEqual(6);
   });
 });

@@ -30,6 +30,8 @@ func TestAPIProductionHandlerRouteInventory(t *testing.T) {
 		want               int
 	}{
 		{name: "health", method: http.MethodGet, path: "/healthz", want: http.StatusOK},
+		{name: "operations", method: http.MethodGet, path: "/api/operations", want: http.StatusOK},
+		{name: "operations method", method: http.MethodPost, path: "/api/operations", want: http.StatusMethodNotAllowed},
 		{name: "dashboard", method: http.MethodGet, path: "/api/dashboard", want: http.StatusOK},
 		{name: "cases", method: http.MethodGet, path: "/api/cases", want: http.StatusOK},
 		{name: "fixtures", method: http.MethodGet, path: "/api/fixtures", want: http.StatusOK},
@@ -175,6 +177,7 @@ func TestAPIContractReadSchemasAndErrors(t *testing.T) {
 		keys []string
 	}{
 		{path: "/healthz", keys: []string{"status", "cases", "dependencies"}},
+		{path: "/api/operations", keys: []string{"schema", "observed_at", "api", "nats", "queue", "run", "api_measurements", "backup"}},
 		{path: "/api/dashboard", keys: []string{"cases", "closed", "overdue", "states", "dropoff", "review", "by_programme", "fixtures", "capacity"}},
 		{path: "/api/cases", keys: []string{"cases", "total", "offset", "limit"}},
 		{path: "/api/fixtures", keys: []string{"fixtures"}},
@@ -200,13 +203,13 @@ func TestAPIContractReadSchemasAndErrors(t *testing.T) {
 			t.Errorf("unknown case%s: got %d, want 404", suffix, res.code)
 		}
 	}
-	for _, path := range []string{"/api/agentshadow/status", "/api/cases/" + id + "/export", "/api/cases/" + id + "/audit", "/api/cases/" + id + "/review", "/api/cases/" + id + "/consent", "/api/cases/" + id + "/undo"} {
+	for _, path := range []string{"/api/operations", "/api/agentshadow/status", "/api/cases/" + id + "/export", "/api/cases/" + id + "/audit", "/api/cases/" + id + "/review", "/api/cases/" + id + "/consent", "/api/cases/" + id + "/undo"} {
 		res := contractRequest(t, h, http.MethodDelete, path, "", "", "", nil)
 		if res.code != http.StatusMethodNotAllowed {
 			t.Errorf("DELETE %s: got %d, want 405", path, res.code)
 		}
 	}
-	for _, path := range []string{"/healthz", "/api/dashboard", "/api/cases", "/api/fixtures", "/api/agentshadow/status", "/api/cases/" + id + "/export"} {
+	for _, path := range []string{"/healthz", "/api/operations", "/api/dashboard", "/api/cases", "/api/fixtures", "/api/agentshadow/status", "/api/cases/" + id + "/export"} {
 		res := contractRequest(t, h, http.MethodOptions, path, "", "", "", nil)
 		if res.code != http.StatusNoContent || res.head.Get("Access-Control-Allow-Origin") != "https://contract.test" {
 			t.Errorf("OPTIONS %s: code=%d CORS=%v", path, res.code, res.head)

@@ -41,6 +41,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/healthz` | `status`, case count, `dependencies` (materialised_run, nats, reader, ingest_adapter) |
+| GET | `/api/operations` | Authenticated `wasl-operations/1` point-in-time API/NATS/durable-queue observation, completed synthetic-run metrics, explicit current-API unmeasured states, and latest completed bundle metadata age |
 | GET | `/api/dashboard` | KPI and SLA, `states`, `dropoff`, `review` counts, `by_programme`, per-provider and per-origin tables (small-cell suppressed), headline `metrics` (31-day KPI, closure P/R, consent invariant, forged, provenance, exactly-once), `fixtures`, `capacity` (simulated booking: condition adequate, misallocated or short_overall, slots per case by region, pooling_relevant, summary, `levers`: pathway and prep-risk counts; `inputs.optimiser` appears only when the booking stage ran with a non-default optimiser or stress test, e.g. {optimiser: lookahead, lookahead_days, gamma, forecast, method}; absent = the default myopic engine) |
 | GET | `/api/fixtures` | The demo cases (summaries): three CRC cases, plus `dr_exam_closure` when the run has DR loops. `review_hold` falls back to a closed, signed loop whose outreach was stopped by the consent hold or the second-identifier guard when no loop had consent held then granted |
 | GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast\|lung_ldct), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
@@ -54,6 +55,25 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
+
+### Synthetic operational readiness
+
+`GET /api/operations` requires the same bearer authentication and `ActReadQueue` permission as other shared reads; an auditor receives 403. Only GET is allowed (other methods return 405). `/healthz` remains anonymous and its response is unchanged. Both handlers use one health-body implementation, so the nested `api.status` and `api.dependencies` cannot diverge from `/healthz`.
+
+The top-level response contains `schema: "wasl-operations/1"`, the ordinary `meta`, and `observed_at`. `observed_at` is the API/NATS/queue/backup observation time in RFC3339 format with subsecond precision when present; `meta.loaded_at` remains the separate freshness timestamp for the loaded completed-run data. The sections are:
+
+- `api`: `status`, `source: "/healthz"`, and the five dependency strings `materialised_run`, `nats`, `reader`, `ingest_adapter`, `review_ledger`. The dependency `nats` string retains the existing health-endpoint meaning; it is not a JetStream readiness result.
+- `nats`: `status: reachable|unreachable`, `source: "nats_jetstream_consumer_info"`, and `reason: "jetstream_probe_failed"` when unreachable. This is one bounded authenticated JetStream probe, not cluster-quorum proof.
+- `queue`: `status: available|partial|unavailable`, the same source, `coverage: "known_durable_consumers"`, optional `reason: nats_unreachable|consumer_info_unavailable`, and `consumers`. Only `FHIRIN/notifications`, `FHIR/prep`, and `OUT/reviewer` are covered; ordered ephemeral consumers are not continuously measured. An available consumer has non-negative integer `num_pending` and `num_ack_pending`. An unavailable consumer has `reason: consumer_not_found|consumer_info_failed` and no counts. Partial data preserves other measured consumers. If NATS is unreachable, `consumers` is `[]`; failed observations never become zero backlog or completed-run backlog.
+- `run`: `status: available|unmeasured`, `scope: "completed_synthetic_run"`, `source: "report7.json"`, and, only when fully recorded, `latency_ms` (`n`, `p50`, `p90`, `p99`, `max`) and `recovery` (`generated_resources`, `fhir_msgs`, `expected_outputs`, `live_outputs`, `ingest_lost`, `ingest_duplicates`, `lost_outputs`, `duplicate_outputs`). Otherwise it has `reason: "run_metrics_not_recorded"` and no zero-filled metrics. These are accumulated synthetic-run observations, not current API latency/error rates or an SLO.
+- `api_measurements`: current `latency` and `error_rate` are explicitly `unmeasured`, with `api_request_latency_not_recorded` and `api_request_outcomes_not_recorded`; the API does not infer them from `run`.
+- `backup`: `source: "recovery_bundle_manifest"` and one of three states. `unmeasured` means no manifest was configured (`backup_manifest_not_configured`). `unavailable` uses `backup_manifest_unreadable`, `backup_manifest_invalid`, `backup_created_at_invalid`, or `backup_created_at_in_future`, without `age_seconds`. `available` includes `bundle_schema` (`wasl-file-backup-v1` or `wasl-file-backup-v2-aesgcm`), `created_at`, non-negative integer `age_seconds`, and `verification_status: "not_verified_by_api"`.
+
+Set `WASL_BACKUP_MANIFEST` to one explicit `manifest.json` path to enable the backup observation. The production-shaped Compose API sets it to `/backup/bundle/manifest.json` and mounts the recovery service's external `wasl-backup` volume read-only at `/backup`. Input is bounded at 64 KiB; the required v1/v2 manifest fields and directory/payload-file records must be structurally valid, and `created_at` must be valid RFC3339, not later than `observed_at`; age is computed server-side. The response exposes only schema, creation time, age, and stable reason codes—not paths, key IDs, wrapped keys, payloads, hosts, credentials, or internal errors.
+
+**The backup value is the latest structurally valid bundle manifest's age only.** The API does not authenticate the manifest, read recovery keys, open or decrypt payload files, perform a restore, or verify bundle integrity. It does not claim a verified backup, successful restore, stale threshold, or RPO. See [RECOVERY.md](RECOVERY.md).
+
+The default-deny snapshot projector accepts this same contract for `docs/api-samples/operations.json`; unknown/internal fields are discarded rather than published. The pipeline page labels published snapshots separately from live checks and replaces the whole operational panel with an unavailable state on fetch or schema failure.
 
 ### Case summary
 

@@ -1,31 +1,40 @@
-import type { Healthz } from "@/lib/api/schema";
+import type { Operations } from "@/lib/api/schema";
 
-/** What the health panel can say. `snapshot` is the published file, `live` a fetch made when this page rendered. */
-export type HealthState =
-  | { kind: "snapshot"; health: Healthz; takenAt: string }
-  | { kind: "live"; health: Healthz; fetchedAt: string }
+/** The entire operations panel succeeds or becomes unavailable together; no earlier values are retained. */
+export type OperationsState =
+  | { kind: "snapshot"; operations: Operations; takenAt: string }
+  | { kind: "live"; operations: Operations; fetchedAt: string }
   | { kind: "unavailable"; reason: string };
 
-/** Load `/healthz` through `get`. Any failure becomes an explicit unavailable state; nothing is guessed. */
-export async function loadHealth(get: () => Promise<Healthz>, mode: "live" | "fixtures", now: () => Date = () => new Date()): Promise<HealthState> {
+export async function loadOperations(
+  get: () => Promise<Operations>,
+  mode: "live" | "fixtures",
+  now: () => Date = () => new Date(),
+): Promise<OperationsState> {
   try {
-    const health = await get();
+    const operations = await get();
     return mode === "live"
-      ? { kind: "live", health, fetchedAt: now().toISOString() }
-      : { kind: "snapshot", health, takenAt: health.meta.loaded_at };
+      ? { kind: "live", operations, fetchedAt: now().toISOString() }
+      : { kind: "snapshot", operations, takenAt: operations.meta.loaded_at };
   } catch (e) {
     return { kind: "unavailable", reason: e instanceof Error ? e.message : "unknown error" };
   }
 }
 
-/** The four dependencies the backend reports, with what each value means. */
-export const DEPENDENCY_ORDER = ["materialised_run", "nats", "reader", "ingest_adapter"] as const;
+/** Only a recorded completed-run numerator/denominator may reach this helper. */
+export function completedRunRate(numerator: number, denominator: number): string {
+  if (denominator === 0) return "Unmeasured";
+  return `${Number(((numerator / denominator) * 100).toFixed(2))}%`;
+}
+
+export const DEPENDENCY_ORDER = ["materialised_run", "nats", "reader", "ingest_adapter", "review_ledger"] as const;
 
 export const DEPENDENCY_GLOSS: Record<(typeof DEPENDENCY_ORDER)[number], { label: string; note: string }> = {
   materialised_run: { label: "Recorded run", note: "The saved run the read API serves from." },
-  nats: { label: "Message bus (NATS)", note: "Not required for the saved-run read API; it matters only when a run is processed live." },
+  nats: { label: "Health endpoint NATS dial", note: "Only the existing health endpoint's dependency string; the authenticated JetStream probe below is separate." },
   reader: { label: "Report reader", note: "The canonical reader's answers are cached, so reading does not call a model while you browse." },
   ingest_adapter: { label: "Ingest adapter", note: "The hospital-message format this run was loaded through." },
+  review_ledger: { label: "Review ledger", note: "Whether the materialised API review ledger replayed without a validation error." },
 };
 
 /** Concise text for the screen-reader status region after the user presses Step. */

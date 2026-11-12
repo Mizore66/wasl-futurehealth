@@ -18,6 +18,7 @@ import {
   ContestResolutionRequest,
   Dashboard,
   Fixtures,
+  Operations,
   Healthz,
   ReviewError,
   ReviewRequest,
@@ -384,6 +385,17 @@ export async function getHealthz(): Promise<Healthz> {
     return health;
   }
   return fixture(Healthz, "healthz.json");
+}
+
+/** Authenticated point-in-time operational data. Failures propagate so the whole panel becomes unavailable. */
+export async function getOperations(): Promise<Operations> {
+  if (apiMode() === "live") {
+    // The API allows three seconds for JetStream, then still needs time for health, backup metadata and serialization.
+    const operations = await live(Operations, "/api/operations", { signal: AbortSignal.timeout(5000) });
+    if (!operations) throw new Error("/api/operations: not found");
+    return operations;
+  }
+  return fixture(Operations, "operations.json");
 }
 
 /**

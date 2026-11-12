@@ -335,11 +335,51 @@ def _read_summary_map(value, path):
     return out
 
 
+def _strict_read(fields, optional=()):
+    """Read required fields and discard every unlisted field, including nested secrets."""
+    required = set(fields) - set(optional)
+    return lambda value, path: _read_fields(value, fields, path, required=required)
+
+
 _HEALTH_DEPENDENCIES = {key: None for key in ("materialised_run", "nats", "reader", "ingest_adapter", "review_ledger")}
 
 
 def _read_health_dependencies(value, path):
     return _read_fields(value, _HEALTH_DEPENDENCIES, path, required=("materialised_run", "nats", "reader", "ingest_adapter"))
+
+
+_OPERATIONS_CONSUMER = _strict_read({
+    "stream": None, "consumer": None, "status": None, "num_pending": None, "num_ack_pending": None, "reason": None,
+}, optional=("num_pending", "num_ack_pending", "reason"))
+_OPERATIONS_RECOVERY = _strict_read({key: None for key in (
+    "generated_resources", "fhir_msgs", "expected_outputs", "live_outputs",
+    "ingest_lost", "ingest_duplicates", "lost_outputs", "duplicate_outputs",
+)})
+_OPERATIONS_UNMEASURED = _strict_read({"status": None, "reason": None})
+
+
+_OPERATIONS_SCHEMA = {
+    "schema": None, "observed_at": None,
+    "api": _strict_read({
+        "status": None, "source": None,
+        "dependencies": _strict_read(_HEALTH_DEPENDENCIES),
+    }),
+    "nats": _strict_read({"status": None, "source": None, "reason": None}, optional=("reason",)),
+    "queue": _strict_read({
+        "status": None, "source": None, "coverage": None, "reason": None,
+        "consumers": _read_list(_OPERATIONS_CONSUMER),
+    }, optional=("reason",)),
+    "run": _strict_read({
+        "status": None, "scope": None, "source": None, "reason": None,
+        "latency_ms": _strict_read({key: None for key in ("n", "p50", "p90", "p99", "max")}),
+        "recovery": _OPERATIONS_RECOVERY,
+    }, optional=("reason", "latency_ms", "recovery")),
+    "api_measurements": _strict_read({"latency": _OPERATIONS_UNMEASURED, "error_rate": _OPERATIONS_UNMEASURED}),
+    "backup": _strict_read({
+        "status": None, "source": None, "bundle_schema": None, "created_at": None,
+        "age_seconds": None, "verification_status": None, "reason": None,
+    }, optional=("bundle_schema", "created_at", "age_seconds", "verification_status", "reason")),
+}
 
 
 _READ_SCHEMAS = {
@@ -358,6 +398,7 @@ _READ_SCHEMAS = {
     },
     "fixtures": {"fixtures": _read_summary_map},
     "cases": {"total": None, "offset": None, "limit": None, "cases": _read_list(_read_summary)},
+    "operations": _OPERATIONS_SCHEMA,
 }
 
 
@@ -410,6 +451,8 @@ def scan_snapshot_directory(directory):
             kind = None
             if path.name == "healthz.json":
                 kind = "health"
+            elif path.name == "operations.json":
+                kind = "operations"
             elif path.name in {"dashboard.json", "fixtures.json"}:
                 kind = path.stem
             elif re.fullmatch(r"cases_[a-z_]+_page1\.json", path.name):
@@ -427,7 +470,7 @@ def scan_snapshot_directory(directory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=("detail", "audit", "health", "dashboard", "fixtures", "cases", "scan-dir"))
+    parser.add_argument("kind", choices=("detail", "audit", "health", "operations", "dashboard", "fixtures", "cases", "scan-dir"))
     parser.add_argument("path", nargs="?")
     args = parser.parse_args(argv)
     try:

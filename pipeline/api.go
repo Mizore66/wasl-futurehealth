@@ -89,6 +89,7 @@ type apiServer struct {
 func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
@@ -508,7 +509,7 @@ func (s *apiServer) envelope(body map[string]interface{}) map[string]interface{}
 
 // ---------- handlers ----------
 
-func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
+func (s *apiServer) healthBody() map[string]interface{} {
 	nats := "not_required_for_read_api"
 	if conn, err := net.DialTimeout("tcp", natsFirstHostPort(), 300*time.Millisecond); err == nil {
 		conn.Close()
@@ -522,8 +523,12 @@ func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 	if st := readStatus(s.run, "hl7mllp"); st != nil {
 		src = "hl7v2"
 	}
-	writeJSONResp(w, 200, s.exportEnvelope(map[string]interface{}{"status": "ok", "cases": len(s.cases),
-		"dependencies": map[string]string{"materialised_run": "loaded", "nats": nats, "reader": reader, "ingest_adapter": src, "review_ledger": s.ledgerStatus()}}))
+	return map[string]interface{}{"status": "ok", "cases": len(s.cases),
+		"dependencies": map[string]string{"materialised_run": "loaded", "nats": nats, "reader": reader, "ingest_adapter": src, "review_ledger": s.ledgerStatus()}}
+}
+
+func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
+	writeJSONResp(w, 200, s.exportEnvelope(s.healthBody()))
 }
 
 func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {

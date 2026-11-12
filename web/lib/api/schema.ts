@@ -751,6 +751,90 @@ export const Healthz = z.looseObject({
   meta: Meta,
 });
 
+const OperationsInstant = z.iso.datetime();
+const OperationsDependencies = z.strictObject({
+  materialised_run: z.string(),
+  nats: z.string(),
+  reader: z.string(),
+  ingest_adapter: z.string(),
+  review_ledger: z.string(),
+});
+const OperationsNATS = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("reachable"), source: z.literal("nats_jetstream_consumer_info") }),
+  z.strictObject({ status: z.literal("unreachable"), source: z.literal("nats_jetstream_consumer_info"), reason: z.literal("jetstream_probe_failed") }),
+]);
+const OperationsConsumer = z.discriminatedUnion("status", [
+  z.strictObject({
+    stream: z.enum(["FHIRIN", "FHIR", "OUT"]), consumer: z.enum(["notifications", "prep", "reviewer"]), status: z.literal("available"),
+    num_pending: z.number().int().nonnegative(), num_ack_pending: z.number().int().nonnegative(),
+  }),
+  z.strictObject({
+    stream: z.enum(["FHIRIN", "FHIR", "OUT"]), consumer: z.enum(["notifications", "prep", "reviewer"]), status: z.literal("unavailable"),
+    reason: z.enum(["consumer_not_found", "consumer_info_failed"]),
+  }),
+]);
+const OperationsQueue = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("available"), source: z.literal("nats_jetstream_consumer_info"), coverage: z.literal("known_durable_consumers"),
+    consumers: z.array(OperationsConsumer),
+  }),
+  z.strictObject({
+    status: z.literal("partial"), source: z.literal("nats_jetstream_consumer_info"), coverage: z.literal("known_durable_consumers"),
+    reason: z.literal("consumer_info_unavailable"), consumers: z.array(OperationsConsumer),
+  }),
+  z.strictObject({
+    status: z.literal("unavailable"), source: z.literal("nats_jetstream_consumer_info"), coverage: z.literal("known_durable_consumers"),
+    reason: z.enum(["nats_unreachable", "consumer_info_unavailable"]), consumers: z.array(OperationsConsumer),
+  }),
+]);
+const OperationsLatency = z.strictObject({ n: z.number().nonnegative(), p50: z.number().nonnegative(), p90: z.number().nonnegative(), p99: z.number().nonnegative(), max: z.number().nonnegative() });
+const OperationsRecovery = z.strictObject({
+  generated_resources: z.number().int().nonnegative(), fhir_msgs: z.number().int().nonnegative(),
+  expected_outputs: z.number().int().nonnegative(), live_outputs: z.number().int().nonnegative(),
+  ingest_lost: z.number().int().nonnegative(), ingest_duplicates: z.number().int().nonnegative(),
+  lost_outputs: z.number().int().nonnegative(), duplicate_outputs: z.number().int().nonnegative(),
+});
+const OperationsRun = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("available"), scope: z.literal("completed_synthetic_run"), source: z.literal("report7.json"),
+    latency_ms: OperationsLatency, recovery: OperationsRecovery,
+  }),
+  z.strictObject({
+    status: z.literal("unmeasured"), scope: z.literal("completed_synthetic_run"), source: z.literal("report7.json"),
+    reason: z.literal("run_metrics_not_recorded"),
+  }),
+]);
+const OperationsUnmeasured = z.strictObject({ status: z.literal("unmeasured"), reason: z.string() });
+const OperationsBackup = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("available"), source: z.literal("recovery_bundle_manifest"),
+    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm"]),
+    created_at: OperationsInstant, age_seconds: z.number().int().nonnegative(), verification_status: z.literal("not_verified_by_api"),
+  }),
+  z.strictObject({
+    status: z.literal("unavailable"), source: z.literal("recovery_bundle_manifest"),
+    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm"]).optional(), created_at: OperationsInstant.optional(),
+    reason: z.enum(["backup_manifest_unreadable", "backup_manifest_invalid", "backup_created_at_invalid", "backup_created_at_in_future"]),
+  }),
+  z.strictObject({
+    status: z.literal("unmeasured"), source: z.literal("recovery_bundle_manifest"), reason: z.literal("backup_manifest_not_configured"),
+  }),
+]);
+
+/** Authenticated point-in-time operational observations, with no fallback from failed probes to zero or run history. */
+export const Operations = z.strictObject({
+  schema: z.literal("wasl-operations/1"), meta: Meta, observed_at: OperationsInstant,
+  api: z.strictObject({ status: z.string(), source: z.literal("/healthz"), dependencies: OperationsDependencies }),
+  nats: OperationsNATS,
+  queue: OperationsQueue,
+  run: OperationsRun,
+  api_measurements: z.strictObject({
+    latency: OperationsUnmeasured.extend({ reason: z.literal("api_request_latency_not_recorded") }),
+    error_rate: OperationsUnmeasured.extend({ reason: z.literal("api_request_outcomes_not_recorded") }),
+  }),
+  backup: OperationsBackup,
+});
+
 const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "confirm_contact"] as const;
 const LUNG_OUTCOMES = [
   "stable",
@@ -922,6 +1006,7 @@ export type CaseList = z.infer<typeof CaseList>;
 export type Fixtures = z.infer<typeof Fixtures>;
 export type Dashboard = z.infer<typeof Dashboard>;
 export type Healthz = z.infer<typeof Healthz>;
+export type Operations = z.infer<typeof Operations>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ReviewRead = z.infer<typeof ReviewRead>;

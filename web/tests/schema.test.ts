@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
-import { Audit, CaseDetail, CaseList, Dashboard, Fixtures, Healthz, ReviewRequest } from "@/lib/api/schema";
+import { Audit, CaseDetail, CaseList, Dashboard, Fixtures, Healthz, Operations, ReviewRequest } from "@/lib/api/schema";
 import { loadSample, sampleFiles } from "./samples";
 
 function schemaFor(file: string): z.ZodType {
   if (file === "dashboard.json") return Dashboard;
   if (file === "fixtures.json") return Fixtures;
   if (file === "healthz.json") return Healthz;
+  if (file === "operations.json") return Operations;
   if (file.startsWith("cases_")) return CaseList;
   if (file.endsWith("_audit.json")) return Audit;
   if (file.startsWith("case_")) return CaseDetail;
@@ -96,6 +97,100 @@ describe("docs/api-samples contract", () => {
       expect(CaseList.safeParse(page).success).toBe(true);
     },
   );
+});
+
+const operationsHealthy: z.input<typeof Operations> = {
+  schema: "wasl-operations/1",
+  meta: { api: "wasl-api/1", data_mode: "simulated", run: "r", policy: "p", reader_model: "m", loaded_at: "2026-11-13T11:00:00Z", note: "synthetic" },
+  observed_at: "2026-11-13T12:00:00Z",
+  api: { status: "ok", source: "/healthz", dependencies: { materialised_run: "loaded", nats: "up", reader: "cached", ingest_adapter: "fhir", review_ledger: "ok" } },
+  nats: { status: "reachable", source: "nats_jetstream_consumer_info" },
+  queue: {
+    status: "available", source: "nats_jetstream_consumer_info", coverage: "known_durable_consumers",
+    consumers: [
+      { stream: "FHIRIN", consumer: "notifications", status: "available", num_pending: 2, num_ack_pending: 1 },
+      { stream: "FHIR", consumer: "prep", status: "available", num_pending: 3, num_ack_pending: 0 },
+      { stream: "OUT", consumer: "reviewer", status: "available", num_pending: 4, num_ack_pending: 1 },
+    ],
+  },
+  run: {
+    status: "available", scope: "completed_synthetic_run", source: "report7.json",
+    latency_ms: { n: 4, p50: 12.5, p90: 30.25, p99: 48.75, max: 50 },
+    recovery: { generated_resources: 100, fhir_msgs: 120, expected_outputs: 80, live_outputs: 79, ingest_lost: 1, ingest_duplicates: 2, lost_outputs: 3, duplicate_outputs: 4 },
+  },
+  api_measurements: {
+    latency: { status: "unmeasured", reason: "api_request_latency_not_recorded" },
+    error_rate: { status: "unmeasured", reason: "api_request_outcomes_not_recorded" },
+  },
+  backup: { status: "available", source: "recovery_bundle_manifest", bundle_schema: "wasl-file-backup-v2-aesgcm", created_at: "2026-11-13T11:59:57Z", age_seconds: 3, verification_status: "not_verified_by_api" },
+};
+
+describe("operations contract", () => {
+  it("parses healthy values without inventing current API metrics", () => {
+    const parsed = Operations.parse(operationsHealthy);
+    expect(parsed.queue.consumers[1]).toMatchObject({ stream: "FHIR", consumer: "prep", num_pending: 3, num_ack_pending: 0 });
+    expect(parsed.queue.consumers[2]).toMatchObject({ stream: "OUT", consumer: "reviewer", num_pending: 4, num_ack_pending: 1 });
+    expect(parsed.run).toMatchObject({ status: "available", latency_ms: { p50: 12.5 }, recovery: { ingest_lost: 1 } });
+    expect(parsed.api_measurements.latency).toEqual({ status: "unmeasured", reason: "api_request_latency_not_recorded" });
+  });
+
+  it("parses partial queue data without zero-filling the missing consumer", () => {
+    const value = structuredClone(operationsHealthy);
+    value.queue = {
+      status: "partial", source: "nats_jetstream_consumer_info", coverage: "known_durable_consumers",
+      reason: "consumer_info_unavailable", consumers: value.queue.consumers,
+    };
+    value.queue.consumers[1] = { stream: "FHIR", consumer: "prep", status: "unavailable", reason: "consumer_not_found" };
+    const parsed = Operations.parse(value);
+    expect(parsed.queue.consumers[0]).toMatchObject({ num_pending: 2 });
+    expect(parsed.queue.consumers[1]).not.toHaveProperty("num_pending");
+  });
+
+  it("parses unreachable NATS with an explicitly empty queue", () => {
+    const value = structuredClone(operationsHealthy);
+    value.nats = { status: "unreachable", source: "nats_jetstream_consumer_info", reason: "jetstream_probe_failed" };
+    value.queue = { status: "unavailable", source: "nats_jetstream_consumer_info", coverage: "known_durable_consumers", reason: "nats_unreachable", consumers: [] };
+    expect(Operations.parse(value).queue.consumers).toEqual([]);
+  });
+
+  it("parses unmeasured run and backup states", () => {
+    const value = structuredClone(operationsHealthy);
+    value.run = { status: "unmeasured", scope: "completed_synthetic_run", source: "report7.json", reason: "run_metrics_not_recorded" };
+    value.backup = { status: "unmeasured", source: "recovery_bundle_manifest", reason: "backup_manifest_not_configured" };
+    const parsed = Operations.parse(value);
+    expect(parsed.run).not.toHaveProperty("latency_ms");
+    expect(parsed.backup).not.toHaveProperty("age_seconds");
+  });
+
+  it("parses unavailable backup metadata without an age", () => {
+    const value = structuredClone(operationsHealthy);
+    value.backup = { status: "unavailable", source: "recovery_bundle_manifest", reason: "backup_manifest_unreadable" };
+    expect(Operations.parse(value).backup).not.toHaveProperty("age_seconds");
+  });
+
+  it.each([
+    ["nats", "unreachable"],
+    ["queue", "unavailable"],
+    ["run", "unmeasured"],
+    ["backup", "unavailable"],
+  ])("rejects %s %s without its reason", (section, status) => {
+    const value = structuredClone(operationsHealthy) as unknown as Record<string, Record<string, unknown>>;
+    value[section] = { ...value[section], status };
+    delete value[section].reason;
+    expect(Operations.safeParse(value).success).toBe(false);
+  });
+
+  it("rejects negative queue counts, zero-fill on unavailable consumers and unknown fields", () => {
+    const negative = structuredClone(operationsHealthy);
+    const measured = negative.queue.consumers[0];
+    if (measured.status !== "available") throw new Error("expected measured consumer");
+    measured.num_pending = -1;
+    expect(Operations.safeParse(negative).success).toBe(false);
+    const zero = structuredClone(operationsHealthy);
+    zero.queue.consumers[0] = { ...zero.queue.consumers[0], status: "unavailable", reason: "consumer_info_failed" } as (typeof zero.queue.consumers)[number];
+    expect(Operations.safeParse(zero).success).toBe(false);
+    expect(Operations.safeParse({ ...operationsHealthy, internal_error: "secret" }).success).toBe(false);
+  });
 });
 
 describe("ReviewRequest", () => {

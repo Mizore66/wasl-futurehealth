@@ -104,7 +104,8 @@ test.describe("Today", () => {
       const seen: string[] = [];
       const look = async () => {
         seen.push(await page.locator("main").innerText());
-        for (const b of await page.getByRole("button").all()) seen.push((await b.getAttribute("aria-label")) ?? (await b.textContent()) ?? "");
+        const labels = await page.getByRole("button").evaluateAll((buttons) => buttons.map((b) => b.getAttribute("aria-label") ?? b.textContent ?? ""));
+        seen.push(...labels);
       };
       await look();
       await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
