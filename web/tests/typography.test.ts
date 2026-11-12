@@ -32,6 +32,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "components/pipeline/technical.tsx", line: /\{children\}/, why: "technical details disclosure (machine trace)" },
   { file: "components/agent/banner.tsx", line: /\{meta\.run\}/, why: "run id" },
   { file: "components/agent/decision.tsx", line: /\{reads\.join/, why: "raw read codes beside their plain words" },
+  { file: "components/review/ifhas-label-composer.tsx", line: /<code className="font-mono[^"]*">\{label\}<\/code>/, why: "the exact IFHAS evidence label the controls compose" },
   { file: "components/agent/investigation.tsx", line: /refWords\(c\.arg\)/, why: "tool-call argument reference" },
   { file: "components/agent/investigation.tsx", line: /\{prov\.(model|prompt_ver|schema_ver)\}/, why: "model, prompt and schema versions" },
   { file: "components/case/sections.tsx", line: /\{h\.(state|reason)\}/, why: "system state and reason codes" },
