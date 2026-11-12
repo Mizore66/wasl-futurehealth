@@ -6,7 +6,7 @@ import { HistoryCard } from "@/components/case/audit-view";
 import { LedgerCard, SignoffsCard } from "@/components/case/sections";
 import { runClock } from "@/components/worklist/run-clock";
 import { workItem } from "@/components/worklist/model";
-import { Audit, CaseDetail, CaseList, LedgerEvent } from "@/lib/api/schema";
+import { Audit, AuditLedgerEvent, CaseDetail, CaseList, LedgerEvent } from "@/lib/api/schema";
 import { caseStage } from "@/lib/domain/stage";
 import { loadSample } from "./samples";
 
@@ -306,6 +306,30 @@ describe("unknown or malformed ledger events", () => {
     expect(tail[0]).toMatchObject({ label: "coordinator_action/callback_booked", hash: "h-future" });
     const html = renderToStaticMarkup(LedgerCard({ detail: r.data! }));
     expect(html).toContain("Unrecognised ledger event (coordinator_action/callback_booked)");
+  });
+
+  it("an event of an unrecognised type or kind is never read as a review, even with every review field", () => {
+    // Real Go review events carry neither `type` nor `kind` (fixture rows 0 and 2).
+    const review = rawDetail.api_reviews[2];
+    const auditReview = rawAudit.history[2];
+    expect([review.type, review.kind, auditReview.type, auditReview.kind]).toEqual([undefined, undefined, undefined, undefined]);
+    expect(LedgerEvent.parse(review).ledger).toBe("review");
+    expect(AuditLedgerEvent.parse(auditReview).ledger).toBe("review");
+
+    const futureType = { type: "escalation", kind: "raised" };
+    const futureKind = { kind: "retract" };
+    for (const extra of [futureType, futureKind, { type: "" }, { kind: null }]) {
+      expect(LedgerEvent.parse({ ...review, ...extra }).ledger).toBe("unknown");
+      expect(AuditLedgerEvent.parse({ ...auditReview, ...extra }).ledger).toBe("unknown");
+    }
+    expect(AuditLedgerEvent.parse({ ...auditReview, ...futureType })).toMatchObject({ ledger: "unknown", label: "escalation/raised" });
+    // Go's evKind treats an empty kind as a review, so the frontend does too.
+    expect(LedgerEvent.parse({ ...review, kind: "" }).ledger).toBe("review");
+
+    // A whole audit with one such event still parses, and shows it as unrecognised rather than as a review.
+    const audit = Audit.parse({ ...rawAudit, history: [...rawAudit.history, { ...auditReview, ...futureKind, hash: "h-retract" }] });
+    expect(audit.history.at(-1)).toMatchObject({ ledger: "unknown", hash: "h-retract", label: "retract" });
+    expect(audit.history.filter((e) => e.ledger === "review")).toHaveLength(rawAudit.history.filter((e: { type?: unknown; kind?: unknown }) => !e.type && !e.kind).length);
   });
 
   it("an actual review still needs every review field", () => {

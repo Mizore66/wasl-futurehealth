@@ -55,10 +55,29 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
  */
 export type WebCredential = "web_reviewer";
 
+/** The web server has no token for this credential: a configuration fault here, not an API outage. */
+export class MissingCredentialError extends Error {
+  constructor(readonly variable: string) {
+    super(`${variable} is required for the live synthetic API`);
+    this.name = "MissingCredentialError";
+  }
+}
+
+/** The API answered a read with a status other than 2xx or 404. */
+export class ApiStatusError extends Error {
+  constructor(
+    route: string,
+    readonly status: number,
+  ) {
+    super(`${route}: HTTP ${status}`);
+    this.name = "ApiStatusError";
+  }
+}
+
 function apiToken(credential: Role | WebCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();
-  if (!token) throw new Error(`${name} is required for the live synthetic API`);
+  if (!token) throw new MissingCredentialError(name);
   return token;
 }
 
@@ -75,7 +94,7 @@ export function liveBase(): string {
 async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role | WebCredential = "web_reviewer"): Promise<z.infer<S> | null> {
   const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
+  if (!res.ok) throw new ApiStatusError(route, res.status);
   return schema.parse(await res.json());
 }
 
@@ -309,27 +328,40 @@ export async function getUndoProjection(id: string): Promise<UndoProjectionBody 
 
 export type ActionResult =
   | { ok: true; status: 201; response: ActionResponse }
-  | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+
+/** Today's words for a 401 on a coordinator action: the API did not accept the server-side coordinator token. */
+export const COORDINATOR_TOKEN_REFUSED = "the API did not accept this server's coordinator credential; an operator must fix the server configuration";
+/** Today's words when this server has no coordinator token at all, so nothing was sent. */
+export const COORDINATOR_TOKEN_MISSING = "this server has no coordinator credential configured, so nothing was sent; an operator must fix the server configuration";
 
 /**
  * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
  * Sent with the server-side coordinator credential (WASL_API_COORDINATOR_TOKEN); the API binds that token to its role
  * and actor and records that actor, so no identity header is sent from here. `expectedHead` is the case's
  * `api_overlay.head`; a stale head returns 409 with the current one. A 500 that the API explains (its ledger failed
- * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown.
+ * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown. So are a 401 (the API
+ * did not accept the coordinator token) and a missing coordinator token (nothing is sent), both as status 401 with
+ * words that say which.
  */
 export async function postAction(id: string, action: CaseAction, expectedHead: string): Promise<ActionResult> {
   const body = CaseAction.safeParse(action);
   if (!body.success) return { ok: false, status: 400, error: body.error.message };
   if (apiMode() !== "live") throw new Error("postAction needs WASL_API_URL: fixtures mode cannot append coordinator events");
 
-  const res = await fetch(
-    `${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`,
-    authenticated(
+  let init: RequestInit;
+  try {
+    init = authenticated(
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, expected_head: expectedHead }) },
       "coordinator",
-    ),
-  );
+    );
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`, init);
+  // The Go API's 401 body ({"error": "authentication required"}, no meta) says only that the token was not accepted.
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
   const json = await res.json();
   if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
   if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
