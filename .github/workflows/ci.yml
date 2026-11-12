@@ -436,6 +436,8 @@ jobs:
         run: |
           docker build --no-cache --tag wasl:local .
           docker build --no-cache --tag wasl-nats:local deploy/nats
+      - name: Clean offline build with no layer cache and no network
+        run: DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh
       - name: Rebuild offline from preseeded images and package layers
         run: |
           DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh

@@ -21,7 +21,7 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | npm dependency vulnerabilities | Audit both production and development dependencies with `pnpm audit`. |
 | Filesystem dependency and configuration vulnerabilities | Scan lockfiles and deployment configuration with Trivy; fixable HIGH/CRITICAL findings fail. |
 | TruffleHog pull request secrets | Scan the pull-request commit range, including verified, unverified, and unknown results. |
-| Clean container build and API smoke | Build both images without cache, rebuild the Wasl image with `--network=none` using tracked Go modules and the preseeded package layers, scan both images, start the isolated Compose deployment, verify pipeline success and materialized health, run the real API smoke, and verify the API and all NATS nodes run as UID 10001 with writable data volumes. |
+| Clean container build and API smoke | Build both images without cache, run `scripts/offline_build_clean.sh` (both images, `--no-cache --network=none`, tracked dependency bundles, preloaded base images; BuildKit required) and the seeded Wasl-only `scripts/offline_build.sh`, scan both images, start the isolated Compose deployment, verify pipeline success and materialized health, run the real API smoke, and verify the API and all NATS nodes run as UID 10001 with writable data volumes. |
 
 Dependency Review requires the repository's dependency graph and GitHub's Dependency Review API. This repository does not support that API, so the original brief's optional Dependency Review lane is not in the required workflow. The supported Go, Python, npm, and Trivy scanners above remain fail-closed; enabling Dependency Review later can add an advisory lane without replacing them. Container smoke is functional verification, not production security sign-off.
 
@@ -188,6 +188,7 @@ python3 scripts/check_deploy.py
 docker compose config --quiet
 docker build --no-cache --tag wasl:local .
 docker build --no-cache --tag wasl-nats:local deploy/nats
+DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh
 trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 wasl:local
 trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 wasl-nats:local
 docker compose up --detach --no-build
