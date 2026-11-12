@@ -6,7 +6,8 @@ import { apiMode, ApiStatusError, getCase, MissingCredentialError } from "@/lib/
 /** Why a read failed, in words Today shows as given, and the status this route answers with. */
 function failure(e: unknown): { status: number; error: string } {
   if (e instanceof MissingCredentialError) return { status: 500, error: "this server has no API read credential configured" };
-  if (e instanceof ZodError) return { status: 502, error: "the API answered in a shape this page does not recognise" };
+  // A 2xx body that is not JSON (res.json() throws SyntaxError) is an answer too, just not one this page can read.
+  if (e instanceof ZodError || e instanceof SyntaxError) return { status: 502, error: "the API answered in a shape this page does not recognise" };
   if (e instanceof ApiStatusError) {
     if (e.status === 401 || e.status === 403) return { status: 502, error: `the API refused this server's read credential (HTTP ${e.status})` };
     return { status: 502, error: `the API answered HTTP ${e.status}` };
