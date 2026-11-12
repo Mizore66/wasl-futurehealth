@@ -3,6 +3,8 @@ import path from "node:path";
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/app/today/ledger/route";
+import { renderToStaticMarkup } from "react-dom/server";
+import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
 import { BOOKING_NEEDED, DECLINED_STATUS, noAnswerStatus, workItem } from "@/components/worklist/model";
 import { CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
@@ -95,6 +97,16 @@ describe("board position from persisted outcomes", () => {
     expect([it.view, it.status]).toEqual(["waiting", DECLINED_STATUS]);
     const p = workItem(partialList.cases[0], 40, true, NOW);
     expect([p.ledgerStatus, p.view]).toEqual(["invalid", "waiting"]);
+  });
+
+  it("one listed case reporting a partial replay flags the whole board, since replay failure is server-wide", () => {
+    const ok = fullList.cases.map((c) => workItem(c, 40, true, NOW));
+    expect(listLedgerInvalid(ok)).toBe(false);
+    expect(listLedgerInvalid([...ok, workItem(partialList.cases[0], 40, true, NOW)])).toBe(true);
+    expect(listLedgerInvalid([])).toBe(false);
+    const html = renderToStaticMarkup(LedgerInvalidBanner({ what: "this board" }));
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("nothing on this board is authoritative");
   });
 });
 

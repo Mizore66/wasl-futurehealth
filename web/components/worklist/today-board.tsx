@@ -13,6 +13,7 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, STANDARD_DAYS } from "./days";
+import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
 import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus } from "./model";
@@ -131,8 +132,12 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   }, [selId, known]);
   const ledger = selId ? persisted[selId] : undefined;
   const ledgerRead = ledger && ledger !== "error" ? ledger : null;
-  /* The list says so for every case when replay failed; the detail says why. Either way the API refuses writes. */
-  const ledgerInvalid = live && !!p && (p.ledgerStatus === "invalid" || ledgerRead?.status === "invalid");
+  /*
+   * Replay failure is server-wide: if any listed case or any detail read says so, no row on the board is authoritative
+   * and the API refuses every write. The board says so once; the open patient's detail says why.
+   */
+  const boardInvalid = live && (listLedgerInvalid(items) || Object.values(persisted).some((l) => l !== "error" && l.status === "invalid"));
+  const ledgerInvalid = !!p && boardInvalid;
 
   const top = toCall[0];
   const finding = !top
@@ -332,6 +337,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           {aside}
         </div>
       </header>
+
+      {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-6" />}
 
       <div className="flex flex-wrap items-stretch gap-gap">
         <section

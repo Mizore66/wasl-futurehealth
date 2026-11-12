@@ -198,6 +198,10 @@ test.describe("Today, live mode against a mock API", () => {
     invalid = "line 3: head does not follow the case's previous event";
 
     await page.goto("/app/today");
+    // Replay failure is server-wide: the board says so before any patient's detail is read.
+    const board = page.getByTestId("ledger-invalid-board");
+    await expect(board).toHaveAttribute("role", "alert");
+    await expect(board).toContainText("nothing on this board is authoritative");
     const open = page.getByRole("region", { name: "Open patient" });
     await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ }).click();
     const warning = open.getByTestId("ledger-invalid");
@@ -210,5 +214,19 @@ test.describe("Today, live mode against a mock API", () => {
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
     await expect(open.getByRole("button", { name: "Reached" })).toBeDisabled();
     await expect(open.getByRole("button", { name: /^Hand to/ })).toBeDisabled();
+
+    // A row the open patient's detail never touched is no more authoritative, and the board still says so.
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(board).toBeVisible();
+    await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
+
+    await page.goto("/app/patients");
+    await expect(page.getByTestId("ledger-invalid-board")).toContainText("nothing on this list is authoritative");
+  });
+
+  test("a valid ledger shows no board-level warning", async ({ page }) => {
+    await page.goto("/app/today");
+    await expect(page.getByRole("region", { name: "Open patient" }).getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(page.getByTestId("ledger-invalid-board")).toHaveCount(0);
   });
 });
