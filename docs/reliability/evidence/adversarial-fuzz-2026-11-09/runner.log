@@ -9,7 +9,7 @@ fuzz: elapsed: 4s, execs: 20425 (0/sec), new interesting: 5 (total: 315)
 === NAME  
 PASS
 ok  	wsi	4.952s
-generated executions: 20115 (total 20425, baseline 310); raw log: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzNormaliseNeverPanics.log
+generated executions: 20115 (total 20425, baseline 310); raw log: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzNormaliseNeverPanics.log
 
 == FuzzHL7ParseAndResourceNeverPanics (3s per target) ==
 === RUN   FuzzHL7ParseAndResourceNeverPanics
@@ -21,7 +21,7 @@ fuzz: elapsed: 3s, execs: 34493 (0/sec), new interesting: 4 (total: 77)
 === NAME  
 PASS
 ok  	wsi	3.630s
-generated executions: 34420 (total 34493, baseline 73); raw log: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzHL7ParseAndResourceNeverPanics.log
+generated executions: 34420 (total 34493, baseline 73); raw log: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzHL7ParseAndResourceNeverPanics.log
 
 == FuzzMLLPBoundedFrame (3s per target) ==
 === RUN   FuzzMLLPBoundedFrame
@@ -33,7 +33,7 @@ fuzz: elapsed: 3s, execs: 26752 (0/sec), new interesting: 0 (total: 6)
 === NAME  
 PASS
 ok  	wsi	3.540s
-generated executions: 26746 (total 26752, baseline 6); raw log: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzMLLPBoundedFrame.log
+generated executions: 26746 (total 26752, baseline 6); raw log: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzMLLPBoundedFrame.log
 
 == FuzzSubscriptionStatusNeverPanics (3s per target) ==
 === RUN   FuzzSubscriptionStatusNeverPanics
@@ -45,7 +45,7 @@ fuzz: elapsed: 4s, execs: 21249 (0/sec), new interesting: 3 (total: 292)
 === NAME  
 PASS
 ok  	wsi	4.431s
-generated executions: 20960 (total 21249, baseline 289); raw log: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzSubscriptionStatusNeverPanics.log
+generated executions: 20960 (total 21249, baseline 289); raw log: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzSubscriptionStatusNeverPanics.log
 
 == FuzzAPIReviewBodyNeverPanics (3s per target) ==
 === RUN   FuzzAPIReviewBodyNeverPanics
@@ -57,6 +57,6 @@ fuzz: elapsed: 4s, execs: 5294 (0/sec), new interesting: 3 (total: 246)
 === NAME  
 PASS
 ok  	wsi	4.394s
-generated executions: 5051 (total 5294, baseline 243); raw log: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzAPIReviewBodyNeverPanics.log
+generated executions: 5051 (total 5294, baseline 243); raw log: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzAPIReviewBodyNeverPanics.log
 
-All fuzz targets generated executions and passed. Raw logs: /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_8f88c96a-5c9-1/docs/reliability/evidence/adversarial-fuzz-2026-11-09
+All fuzz targets generated executions and passed. Raw logs: <repo>/docs/reliability/evidence/adversarial-fuzz-2026-11-09

@@ -1,0 +1,1 @@
+Path scrub (2026-11-12): in `samples.jsonl` (29 lines) and `provenance.json` (`source_run_dir`), the absolute developer worktree prefix before `pipeline/results/soak/runs/20261109T073913Z-ff7af9` was replaced with `<repo>/`. No other byte changed; sample counts, timings and the failed status are unchanged.

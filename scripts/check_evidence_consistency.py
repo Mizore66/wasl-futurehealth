@@ -4,8 +4,9 @@
 Checks that submission-facing documents agree with the authoritative data
 (pipeline/RESULTS.md final seven-programme section, docs/labelling/agreement.json,
 data/evidence/reports43.json) and do not turn built/simulated/designed claims
-into clinical or human-validated claims. It changes nothing and computes no
-new metrics.
+into clinical or human-validated claims. It also rejects tracked text files
+that contain a developer's absolute home-directory path. It changes nothing
+and computes no new metrics.
 
 Usage: python3 scripts/check_evidence_consistency.py [repo_root]
 Exit status 0 when consistent, 1 when findings exist.
@@ -14,6 +15,7 @@ import datetime
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from collections import namedtuple
 from pathlib import Path
@@ -373,6 +375,7 @@ def check(root):
                     add("overclaim", rel, n, "clinical/validated/deployed claim without negation")
     check_annotation_provenance(root, add)
     check_kpi_evidence(root, add)
+    check_home_paths(root, add)
     return f
 
 
@@ -403,6 +406,58 @@ def check_kpi_evidence(root, add):
             add("kpi-evidence", rel, 0, "missing five-seed v1 'about 1 point under v1' wording")
         if not KPI_V2_GAP.search(t):
             add("kpi-evidence", rel, 0, "missing five-seed v2 '3.1 points under independent v2' wording")
+
+
+# A developer's absolute home-directory path (macOS /Users/<name>, Linux /home/<name>, Windows C:\Users\<name>,
+# including JSON-escaped \/Users\/<name> and C:\\Users\\<name>) must not be committed; write repo-relative paths or
+# the <repo>/... and <home>/... placeholders instead. The name is matched case-insensitively and may end the value
+# or token. Generic CI, container and dev-image homes are allowed. The name needs at least two characters, so test
+# fixtures such as /home/u stay legal.
+HOME_PATH_GENERIC = ("runner", "runneradmin", "user", "node", "ubuntu", "vscode", "linuxbrew", "codespace")
+_HOME_NAME_END = r"""(?:[/\\"'`\s),:;\]>]|$)"""
+HOME_PATH = re.compile(
+    r"(?:\\?/(?:Users|home)\\?/|(?<![A-Za-z])[A-Za-z]:\\{1,2}Users\\{1,2})"
+    r"(?!(?i:" + "|".join(HOME_PATH_GENERIC) + ")" + _HOME_NAME_END + ")"
+    r"(?i:[a-z][a-z0-9_.-]+)" + _HOME_NAME_END)
+# Byte-frozen fresh4 evaluation records. Their SHA-256 values are bound into the frozen labels commit
+# (data/fresh4/FREEZE.json) and the PROTOCOL_PROTECTED templates in scripts/fresh4_eval/fresh4.py, so they
+# record exactly what each labeller/adjudicator Agent was sent and cannot be rewritten in place.
+HOME_PATH_FROZEN = frozenset((
+    "data/fresh4/adjudication_prompt.md",
+    "data/fresh4/labels/labeller_a_prompt.md",
+    "data/fresh4/labels/labeller_b_failed_attempt_1_prompt.md",
+    "data/fresh4/labels/labeller_b_prompt.md",
+    "scripts/fresh4_eval/ADJUDICATOR-PROMPT-TEMPLATE.md",
+    "scripts/fresh4_eval/AUTHOR-PROMPT.md",
+    "scripts/fresh4_eval/LABELLER-PROMPT-TEMPLATE.md",
+))
+
+
+def tracked_files(root):
+    """Tracked paths under root, or [] when root is not a Git checkout (e.g. a test fixture)."""
+    try:
+        out = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    return [p for p in out.decode("utf-8", "surrogateescape").split("\0") if p]
+
+
+def check_home_paths(root, add, rels=None):
+    for rel in tracked_files(root) if rels is None else rels:
+        if rel in HOME_PATH_FROZEN:
+            continue
+        p = Path(root) / rel
+        try:
+            if not p.is_file() or p.is_symlink():
+                continue
+            data = p.read_bytes()
+        except OSError:
+            continue
+        if b"\0" in data[:8192]:
+            continue  # binary
+        for n, line in enumerate(data.decode("utf-8", "replace").splitlines(), 1):
+            if HOME_PATH.search(line):
+                add("home-path", rel, n, "absolute developer home path; use a repo-relative path or <repo>/ or <home>/")
 
 
 KPI_DOCS = ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/PITCH.md", "docs/WRITEUP.md",
