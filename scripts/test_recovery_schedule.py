@@ -12,7 +12,9 @@ from unittest import mock
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 
-from recovery_catalog import write_exclusive  # noqa: E402
+from recovery import write_file_bundle  # noqa: E402
+from recovery_catalog import Catalog, write_exclusive  # noqa: E402
+from recovery_crypto import new_keyring  # noqa: E402
 from recovery_schedule import (  # noqa: E402
     CommandResult,
     CommandRunner,
@@ -221,6 +223,33 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(self.scheduler.run_due(), [])
         self.assertNotIn("encrypted-generation-backup", self.names())
 
+    def test_crash_after_temporary_start_restores_initially_stopped_source_api(self):
+        run = self.state / "runs" / "backup-2-bbbbbbbbbbbb"
+        run.mkdir()
+        write_exclusive(run / "started.json", {
+            "attempt_id": run.name, "kind": "backup", "automatic": True, "slot": "2",
+            "generation": "gen-2-bbbbbbbbbbbb", "target_project": None})
+        write_exclusive(run / "source-api-intent.json", {"should_be_running": False})
+        self.scheduler.reconcile()
+        stop = [call for call in self.scheduler.calls if call[0] == "reconcile-restore-initially-stopped-source-api"]
+        self.assertEqual(len(stop), 1)
+        self.assertEqual(stop[0][1][-2:], ["stop", "api"])
+        self.assertNotIn("reconcile-restore-source-api", self.names())
+        self.assertEqual(load_json(run / "result.json")["status"], "interrupted")
+        self.assertFalse((self.state / "halted.json").exists())
+
+    def test_crash_stopped_source_api_restore_failure_halts_scheduler(self):
+        run = self.state / "runs" / "backup-3-cccccccccccc"
+        run.mkdir()
+        write_exclusive(run / "started.json", {
+            "attempt_id": run.name, "kind": "backup", "automatic": True, "slot": "3",
+            "generation": "gen-3-cccccccccccc", "target_project": None})
+        write_exclusive(run / "source-api-intent.json", {"should_be_running": False})
+        self.scheduler.timeout_command = "reconcile-restore-initially-stopped-source-api"
+        self.scheduler.reconcile()
+        self.assertTrue((self.state / "halted.json").is_file())
+        self.assertIn("source API restoration failed", load_json(run / "result.json")["error"])
+
     def test_daemon_and_operation_lock_contention_have_no_attempt_side_effects(self):
         before = set((self.state / "runs").iterdir())
         for name in ("run.lock", "serve.lock"):
@@ -285,6 +314,49 @@ class SchedulerTests(unittest.TestCase):
         self.assertLess(self.names().index("ordinary-target-restart"), self.names().index("remove-successful-target-only"))
         cleanup = load_json(self.state / "cleanup" / attempt / "result.json")
         self.assertFalse(cleanup["external_volumes_removed"])
+
+    def test_full_automatic_latest_verification_selects_marks_good_and_cleans_target(self):
+        backup_root = self.root / "backup"
+        source = self.root / "source"
+        backup_root.mkdir()
+        source.mkdir()
+        (source / "synthetic.txt").write_text("synthetic latest generation\n")
+        (backup_root / "scheduler-v1/generations").mkdir(parents=True)
+        keys = self.root / "keys.json"
+        new_keyring(keys)
+        catalog = Catalog(backup_root, self.state, keys)
+        catalog.prepare("gen-fixture")
+        nats = self.root / "nats.json"
+        nats.write_text('{"schema":"wasl-nats-backup-v1","streams":[]}\n')
+        write_file_bundle(source, catalog.bundle("gen-fixture"), keys, nats_json=nats)
+        backup_run = self.state / "runs/backup-fixture"
+        write_exclusive(backup_run / "result.json", {
+            "attempt_id": "backup-fixture", "status": "success", "finished_at": "2026-01-01T00:00:00+00:00"})
+        Scheduler.finalize_evidence(backup_run)
+        catalog.register("gen-fixture", "fixture", REVISION, "backup-fixture")
+        catalog.publish("gen-fixture")
+        fake_catalog = self.scheduler.catalog
+
+        def real_selected_catalog(runner, action, generation=None, extra=None):
+            self.scheduler.catalog_calls.append((action, generation, list(extra or [])))
+            if action == "resolve":
+                return catalog.resolve(generation)
+            if action == "export":
+                return catalog.export_manifest(generation, runner.run_dir / "bundle-manifest.json")
+            if action == "mark-good":
+                return catalog.mark_good(generation, extra[1])
+            return fake_catalog(runner, action, generation, extra)
+
+        self.scheduler.catalog = real_selected_catalog
+        attempt = self.scheduler.verify("latest", slot="0", automatic=True)
+        run = self.state / "runs" / attempt
+        self.assertIsNone(load_json(run / "started.json")["generation"])
+        self.assertEqual(load_json(run / "selection.json")["generation"], "gen-fixture")
+        self.assertEqual(load_json(run / "result.json")["status"], "success")
+        mark_good = [call for call in self.scheduler.catalog_calls if call[0] == "mark-good"]
+        self.assertEqual(mark_good, [("mark-good", "gen-fixture", ["--attempt-id", attempt])])
+        self.assertEqual(catalog.good_record("gen-fixture")["attempt_id"], attempt)
+        self.assertIn("remove-successful-target-only", self.names())
 
     def test_empty_or_malformed_api_comparison_fields_do_not_pass(self):
         backup = {"summary": {"logical_sha256_by_stream": {"FACTS": HASH_A}}}

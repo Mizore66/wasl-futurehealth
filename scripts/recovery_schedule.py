@@ -482,11 +482,19 @@ class Scheduler:
             intent_path = run_dir / "source-api-intent.json"
             if intent_path.is_file():
                 intent = load_json(intent_path)
-                if intent.get("should_be_running") is True:
+                should_be_running = intent.get("should_be_running")
+                if type(should_be_running) is not bool:
+                    restoration_error = "persisted source API intent is invalid"
+                    atomic_json(self.state / "halted.json",
+                                {"schema": "wasl-recovery-scheduler-halt-v1", "reason": restoration_error,
+                                 "attempt_id": started["attempt_id"], "created_at": now_iso()})
+                else:
+                    name = ("reconcile-restore-source-api" if should_be_running
+                            else "reconcile-restore-initially-stopped-source-api")
+                    action = ["up", "-d", "--wait", "api"] if should_be_running else ["stop", "api"]
                     try:
-                        runner.run("reconcile-restore-source-api",
-                                   self.compose(self.config.source["project"]) + ["up", "-d", "--wait", "api"],
-                                   self.config.timeouts["target_start_seconds"],
+                        runner.run(name, self.compose(self.config.source["project"]) + action,
+                                   self.config.timeouts["target_start_seconds" if should_be_running else "command_seconds"],
                                    env=self.compose_env(self.config.source["project"],
                                                         urlsplit(self.config.source["api_url"]).port))
                     except OperationalError as exc:

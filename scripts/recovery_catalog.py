@@ -14,11 +14,13 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from recovery import SCHEMA_V2, verify_bundle  # noqa: E402
+from recovery import SCHEMA_V2, _v2_check_manifest, verify_bundle  # noqa: E402
+from recovery_crypto import load_keyring  # noqa: E402
 
 SCHEMA = "wasl-recovery-generation-v1"
 GOOD_SCHEMA = "wasl-recovery-verified-good-v1"
@@ -45,6 +47,146 @@ def sha256(path: Path) -> str:
         while chunk := handle.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _open_directory(parent_fd: int | None, name: str | Path) -> int:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        if parent_fd is None:
+            descriptor = os.open(name, flags)
+        else:
+            descriptor = os.open(name, flags, dir_fd=parent_fd)
+    except OSError:
+        raise ValueError("retention directory is unavailable, symbolic, or not a directory") from None
+    if not stat.S_ISDIR(os.fstat(descriptor).st_mode):
+        os.close(descriptor)
+        raise ValueError("retention path component is not a real directory")
+    return descriptor
+
+
+def _open_bundle(root: Path, generation: str) -> int:
+    descriptor = _open_directory(None, root)
+    try:
+        for component in (*NAMESPACE.parts, generation, "bundle"):
+            next_descriptor = _open_directory(descriptor, component)
+            os.close(descriptor)
+            descriptor = next_descriptor
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_regular_at(parent_fd: int, name: str) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent_fd)
+    except OSError:
+        raise ValueError("retention manifest is unavailable or not a regular file") from None
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("retention manifest is not a regular file")
+        with os.fdopen(descriptor, "rb") as handle:
+            descriptor = -1
+            return handle.read()
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def _payload_parent(files_fd: int, relative: str) -> tuple[int | None, str]:
+    parts = relative.split("/")
+    descriptor = os.dup(files_fd)
+    try:
+        for component in parts[:-1]:
+            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+            try:
+                next_descriptor = os.open(component, flags, dir_fd=descriptor)
+            except FileNotFoundError:
+                os.close(descriptor)
+                descriptor = -1
+                return None, parts[-1]  # a prior crash may already have removed this empty payload directory
+            except OSError:
+                raise ValueError("retention payload parent is symbolic or unreadable") from None
+            if not stat.S_ISDIR(os.fstat(next_descriptor).st_mode):
+                os.close(next_descriptor)
+                raise ValueError("retention payload parent is not a real directory")
+            os.close(descriptor)
+            descriptor = next_descriptor
+        return descriptor, parts[-1]
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _hash_descriptor(descriptor: int) -> str:
+    digest = hashlib.sha256()
+    with os.fdopen(descriptor, "rb", closefd=False) as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _payload_at(files_fd: int, relative: str, expected_digest: str, delete: bool) -> bool:
+    parent_fd, name = _payload_parent(files_fd, relative)
+    if parent_fd is None:
+        return False
+    try:
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(name, flags, dir_fd=parent_fd)
+        except FileNotFoundError:
+            return False
+        except OSError:
+            raise ValueError("retention payload is symbolic or unreadable") from None
+        try:
+            opened = os.fstat(descriptor)
+            if not stat.S_ISREG(opened.st_mode):
+                raise ValueError("retention payload is not a regular file")
+            if _hash_descriptor(descriptor) != expected_digest:
+                raise ValueError("retention ciphertext changed after authentication; refusing deletion")
+            if delete:
+                current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+                if not stat.S_ISREG(current.st_mode) or (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino):
+                    raise ValueError("retention payload changed while being checked; refusing deletion")
+                os.unlink(name, dir_fd=parent_fd)
+                os.fsync(parent_fd)
+        finally:
+            os.close(descriptor)
+        return True
+    finally:
+        os.close(parent_fd)
+
+
+def _scan_payload_tree(files_fd: int, expected_files: set[str], expected_dirs: set[str]) -> list[str]:
+    actual_files, actual_dirs = set(), set()
+
+    def visit(descriptor: int, prefix: str = ""):
+        for name in os.listdir(descriptor):
+            relative = prefix + name
+            info = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            if stat.S_ISLNK(info.st_mode):
+                raise ValueError("retention payload tree contains a symbolic link")
+            if stat.S_ISDIR(info.st_mode):
+                if relative not in expected_dirs:
+                    raise ValueError("retention payload tree contains an unexpected directory")
+                actual_dirs.add(relative)
+                child = _open_directory(descriptor, name)
+                try:
+                    visit(child, relative + "/")
+                finally:
+                    os.close(child)
+            elif stat.S_ISREG(info.st_mode):
+                if relative not in expected_files:
+                    raise ValueError("unexpected file remains in exact-generation payload tree")
+                actual_files.add(relative)
+            else:
+                raise ValueError("retention payload tree contains a non-regular entry")
+
+    visit(files_fd)
+    if not actual_files.issubset(expected_files) or not actual_dirs.issubset(expected_dirs):
+        raise ValueError("retention payload tree differs from its authenticated manifest")
+    return sorted(actual_dirs, key=lambda item: item.count("/"), reverse=True)
 
 
 def fsync_dir(path: Path) -> None:
@@ -315,7 +457,6 @@ class Catalog:
             selection = read_json(run_dir / "selection.json")
             if selection.get("generation") != generation:
                 raise ValueError("verification selection does not match the generation")
-            raise ValueError("verification attempt evidence is incomplete or unsuccessful")
         evidence_manifest(run_dir)
         source_revision = started.get("source_revision")
         if source_revision == "HEAD":
@@ -336,6 +477,9 @@ class Catalog:
         if not isinstance(good["verified_at"], str):
             raise ValueError("verification result lacks a completion timestamp")
         parse_time(good["verified_at"])
+        existing = self.good_record(generation)
+        if existing is not None:
+            return existing  # a later successful verification of the same immutable generation changes no catalog state
         write_exclusive(self.state / "catalog" / generation / "verified-good.json", good)
         return good
 
@@ -398,23 +542,11 @@ class Catalog:
     def _pruned(self, generation: str) -> bool:
         return (self.state / "catalog" / generation / "retention-result.json").is_file()
 
-    def _reconcile_pruning(self) -> None:
-        catalog_root = self.state / "catalog"
-        for directory in sorted(catalog_root.iterdir()) if catalog_root.is_dir() else []:
-            intent = directory / "retention-intent.json"
-            result = directory / "retention-result.json"
-            if intent.is_file() and not result.exists():
-                record = read_json(intent)
-                if record.get("schema") != INTENT_SCHEMA:
-                    raise ValueError("invalid retention intent")
-                self.prune(check_id(record.get("generation")), record.get("manifest_sha256", ""))
-
     def retention(self, max_age_days: int, keep_newest: int, minimum_good: int, now: datetime | None = None,
                   apply: bool = False) -> dict:
         self.require_init()
         if type(max_age_days) is not int or max_age_days <= 0 or not keep_newest >= minimum_good >= 1:
             raise ValueError("invalid retention policy")
-        self._reconcile_pruning()
         now = now or datetime.now(timezone.utc)
         states = self.attempt_states()
         bad_global = [dict(item, generation=generation) for generation, items in states.items()
@@ -464,8 +596,9 @@ class Catalog:
         # Reauthenticate every protected survivor before planning or performing any deletion.
         for generation in survivors:
             self.authenticate(generation)
+        # Preflight every exact candidate, including crash-resume manifests and remaining ciphertext, before any unlink.
         for candidate in candidates:
-            self.authenticate(candidate["generation"])
+            self._prune(candidate["generation"], candidate["manifest_sha256"], apply=False)
         if not apply:
             return {"status": "dry-run", "candidates": candidates, "protected_survivors": survivors}
         pruned = []
@@ -473,66 +606,116 @@ class Catalog:
             pruned.append(self.prune(candidate["generation"], candidate["manifest_sha256"]))
         return {"status": "applied", "candidates": candidates, "pruned": pruned, "protected_survivors": survivors}
 
-    def prune(self, generation: str, expected_manifest_sha256: str) -> dict:
-        """Delete only authenticated ciphertext paths for one exact generation; retain manifest and host evidence."""
+    def _prune(self, generation: str, expected_manifest_sha256: str, apply: bool) -> dict | None:
+        """Validate one exact generation and optionally unlink only dirfd-authenticated ciphertext paths."""
         check_id(generation)
         record = self.record(generation)
         if record["manifest_sha256"] != expected_manifest_sha256:
             raise ValueError("retention expected manifest digest differs from catalog")
         directory = self.state / "catalog" / generation
-        directory.mkdir(parents=True, exist_ok=True)
         intent_path = directory / "retention-intent.json"
         result_path = directory / "retention-result.json"
         if result_path.exists():
             result = read_json(result_path)
-            if result.get("generation") != generation or result.get("manifest_sha256") != expected_manifest_sha256:
+            if (result.get("schema") != RESULT_SCHEMA or result.get("generation") != generation
+                    or result.get("manifest_sha256") != expected_manifest_sha256):
                 raise ValueError("retention result identity mismatch")
-            return result
-        manifest = read_json(self.bundle(generation) / "manifest.json")
-        if sha256(self.bundle(generation) / "manifest.json") != expected_manifest_sha256:
-            raise ValueError("retention manifest digest mismatch")
-        if intent_path.exists():
-            intent = read_json(intent_path)
-            if (intent.get("generation") != generation
-                    or intent.get("manifest_sha256") != expected_manifest_sha256):
-                raise ValueError("retention intent identity mismatch")
-        else:
-            intent = {"schema": INTENT_SCHEMA, "generation": generation,
-                      "manifest_sha256": expected_manifest_sha256, "started_at": now_iso(),
-                      "ciphertext_paths": [r["path"] + ".aead" for r in manifest["files"]]}
-            write_exclusive(intent_path, intent)
-        files_root = self.bundle(generation) / "files"
-        for file_record in manifest["files"]:
-            relative = file_record["path"] + ".aead"
-            target = files_root / relative
-            if not target.exists() and not target.is_symlink():
-                continue  # crash reconciliation: this exact payload was already unlinked
-            if target.is_symlink() or not target.is_file():
-                raise ValueError("retention payload is not a regular file")
-            if sha256(target) != file_record["ciphertext_sha256"]:
-                raise ValueError("retention ciphertext changed after authentication; refusing deletion")
-            target.unlink()
-            fsync_dir(target.parent)
-        # Remove only now-empty directories below files/, deepest first. The manifest remains beside files/.
-        if files_root.exists():
-            directories = []
-            for root, dirs, files in os.walk(files_root):
-                if files:
-                    raise ValueError("unexpected file remains after exact-generation pruning")
-                for name in dirs:
-                    path = Path(root) / name
-                    if path.is_symlink():
-                        raise ValueError("unexpected symlink after pruning")
-                    directories.append(path)
-            for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
-                path.rmdir()
-            files_root.rmdir()
-            fsync_dir(self.bundle(generation))
+            return result if apply else None
+
+        bundle_fd = _open_bundle(self.root, generation)
+        files_fd = None
+        try:
+            manifest_bytes = _read_regular_at(bundle_fd, "manifest.json")
+            if hashlib.sha256(manifest_bytes).hexdigest() != expected_manifest_sha256:
+                raise ValueError("retention manifest digest mismatch")
+            try:
+                manifest = json.loads(manifest_bytes)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                raise ValueError("retention manifest is invalid") from None
+            if self.key_file is None:
+                raise ValueError("a recovery keyring is required")
+            keyring, _, _ = load_keyring(self.key_file)
+            _, records = _v2_check_manifest(keyring, manifest)  # authenticates the manifest even after a partial prune
+            expected_files = {item["path"] + ".aead" for item in records}
+            expected_dirs = {"/".join(path.split("/")[:index]) for path in expected_files
+                             for index in range(1, len(path.split("/")))}
+            intent = None
+            if intent_path.exists():
+                intent = read_json(intent_path)
+                if (set(intent) != {"schema", "generation", "manifest_sha256", "started_at", "ciphertext_paths"}
+                        or intent["schema"] != INTENT_SCHEMA or intent["generation"] != generation
+                        or intent["manifest_sha256"] != expected_manifest_sha256
+                        or not isinstance(intent["ciphertext_paths"], list)
+                        or set(intent["ciphertext_paths"]) != expected_files
+                        or len(intent["ciphertext_paths"]) != len(expected_files)):
+                    raise ValueError("retention intent identity or ciphertext path mismatch")
+                parse_time(intent["started_at"])
+            else:
+                # A new intent is written only after the complete encrypted v2 bundle has authenticated successfully.
+                self.authenticate(generation)
+
+            try:
+                files_info = os.stat("files", dir_fd=bundle_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                if intent is None:
+                    raise ValueError("retention payload root is missing before intent creation") from None
+                # A crash after the final empty-directory removal still needs its durable result record.
+                files_info = None
+            if files_info is not None:
+                if not stat.S_ISDIR(files_info.st_mode) or stat.S_ISLNK(files_info.st_mode):
+                    raise ValueError("retention payload root is not a real directory")
+                files_fd = _open_directory(bundle_fd, "files")
+            if files_fd is not None:
+                directories = _scan_payload_tree(files_fd, expected_files, expected_dirs)
+                for item in records:
+                    relative = item["path"] + ".aead"
+                    present = _payload_at(files_fd, relative, item["ciphertext_sha256"], delete=False)
+                    if not present and intent is None:
+                        raise ValueError("retention payload is missing before intent creation")
+                if not apply:
+                    return None
+
+                if intent is None:
+                    directory.mkdir(parents=True, exist_ok=True)
+                    intent = {"schema": INTENT_SCHEMA, "generation": generation,
+                              "manifest_sha256": expected_manifest_sha256, "started_at": now_iso(),
+                              "ciphertext_paths": [item["path"] + ".aead" for item in records]}
+                    write_exclusive(intent_path, intent)
+                # Reopen and rehash every remaining exact payload immediately before its unlink.
+                for item in records:
+                    _payload_at(files_fd, item["path"] + ".aead", item["ciphertext_sha256"], delete=True)
+                remaining_dirs = _scan_payload_tree(files_fd, expected_files, expected_dirs)
+                if remaining_dirs != directories:
+                    raise ValueError("retention payload directories changed during pruning")
+                for relative in remaining_dirs:
+                    parent_fd, name = _payload_parent(files_fd, relative)
+                    if parent_fd is None:
+                        continue
+                    try:
+                        os.rmdir(name, dir_fd=parent_fd)
+                        os.fsync(parent_fd)
+                    finally:
+                        os.close(parent_fd)
+                os.close(files_fd)
+                files_fd = None
+                os.rmdir("files", dir_fd=bundle_fd)
+                os.fsync(bundle_fd)
+            elif not apply:
+                return None
+        finally:
+            if files_fd is not None:
+                os.close(files_fd)
+            os.close(bundle_fd)
+
         result = {"schema": RESULT_SCHEMA, "generation": generation,
                   "manifest_sha256": expected_manifest_sha256, "pruned_at": now_iso(),
                   "manifest_retained": True, "evidence_retained": True}
         write_exclusive(result_path, result)
         return result
+
+    def prune(self, generation: str, expected_manifest_sha256: str) -> dict:
+        """Delete only authenticated ciphertext paths for one exact generation; retain manifest and host evidence."""
+        return self._prune(generation, expected_manifest_sha256, apply=True)
 
 
 def main(argv=None) -> None:

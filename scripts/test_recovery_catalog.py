@@ -68,6 +68,8 @@ class CatalogTests(unittest.TestCase):
         source = self.root / f"source-{number}"
         source.mkdir()
         (source / "synthetic.txt").write_text(f"synthetic generation {number}\n")
+        (source / "nested").mkdir()
+        (source / "nested" / "inner.txt").write_text(f"nested synthetic generation {number}\n")
         nats = self.root / f"nats-{number}.json"
         nats.write_text('{"schema":"wasl-nats-backup-v1","streams":[]}\n')
         write_file_bundle(source, self.catalog.bundle(generation), self.keys, nats_json=nats)
@@ -83,6 +85,16 @@ class CatalogTests(unittest.TestCase):
         attempt_id = f"verify-{number:03d}"
         self.attempt(attempt_id, "verify", generation, comparison=True)
         return self.catalog.mark_good(generation, attempt_id)
+
+    def retention_intent(self, generation: str):
+        manifest_path = self.catalog.bundle(generation) / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        directory = self.state / "catalog" / generation
+        write_exclusive(directory / "retention-intent.json", {
+            "schema": INTENT_SCHEMA, "generation": generation, "manifest_sha256": digest,
+            "started_at": now_iso(), "ciphertext_paths": [record["path"] + ".aead" for record in manifest["files"]]})
+        return manifest
 
     def test_register_export_and_atomic_namespace_publication(self):
         generation = self.generation(1)
@@ -163,8 +175,29 @@ class CatalogTests(unittest.TestCase):
         self.seal(run_dir)
         good = self.catalog.mark_good(generation, attempt_id)
         self.assertEqual(good["generation"], generation)
-        with self.assertRaises(OSError):
-            self.catalog.mark_good(generation, attempt_id)
+        repeated = self.catalog.mark_good(generation, attempt_id)
+        self.assertEqual(repeated, good)
+
+    def test_automatic_latest_selection_is_good_and_repeat_verification_is_idempotent(self):
+        generation = self.generation(2, publish=True)
+        first_attempt = "verify-0-aaaaaaaaaaaaaaaa"
+        for attempt_id in (first_attempt, "verify-1-bbbbbbbbbbbbbbbb"):
+            run_dir = self.attempt(attempt_id, "verify", None, comparison=True)
+            started = json.loads((run_dir / "started.json").read_text())
+            started.update({"automatic": True, "slot": "0" if attempt_id == first_attempt else "1"})
+            (run_dir / "started.json").write_text(json.dumps(started) + "\n")
+            write_exclusive(run_dir / "selection.json", {
+                "generation": generation,
+                "bundle": str(self.catalog.bundle(generation)),
+                "record": self.catalog.record(generation),
+            })
+            # Reseal after adding the automatic-latest selection evidence.
+            (run_dir / "evidence-manifest.json").unlink()
+            self.seal(run_dir)
+            good = self.catalog.mark_good(generation, attempt_id)
+            self.assertEqual(good["generation"], generation)
+            self.assertEqual(good["manifest_sha256"], self.catalog.record(generation)["manifest_sha256"])
+        self.assertEqual(self.catalog.good_record(generation)["attempt_id"], first_attempt)
 
     def test_retention_dry_run_then_apply_prunes_only_eligible_ciphertext(self):
         generations = [self.generation(number, publish=number == 3) for number in (1, 2, 3)]
@@ -227,23 +260,78 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse((self.state / "catalog" / generations[0] / "retention-intent.json").exists())
 
     def test_interrupted_exact_prune_is_reconciled_without_touching_manifest_or_evidence(self):
-        generation = self.generation(40, publish=True)
-        self.verify_good(generation, 40)
-        manifest_path = self.catalog.bundle(generation) / "manifest.json"
-        manifest = json.loads(manifest_path.read_text())
-        digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-        directory = self.state / "catalog" / generation
-        write_exclusive(directory / "retention-intent.json", {
-            "schema": INTENT_SCHEMA, "generation": generation, "manifest_sha256": digest,
-            "started_at": now_iso(), "ciphertext_paths": [record["path"] + ".aead" for record in manifest["files"]]})
+        generations = [self.generation(number, publish=number == 41) for number in (40, 41)]
+        for number, generation in zip((40, 41), generations):
+            self.verify_good(generation, number)
+        generation = generations[0]
+        manifest = self.retention_intent(generation)
         first = self.catalog.bundle(generation) / "files" / (manifest["files"][0]["path"] + ".aead")
         first.unlink()  # simulated crash after one exact payload unlink and before the result record
+        manifest_path = self.catalog.bundle(generation) / "manifest.json"
         before_manifest = manifest_path.read_bytes()
-        self.catalog._reconcile_pruning()
+        applied = self.catalog.retention(30, 1, 1, datetime.now(timezone.utc) + timedelta(days=100), apply=True)
+        self.assertEqual([item["generation"] for item in applied["pruned"]], [generation])
+        directory = self.state / "catalog" / generation
         self.assertTrue((directory / "retention-result.json").is_file())
         self.assertFalse((self.catalog.bundle(generation) / "files").exists())
         self.assertEqual(manifest_path.read_bytes(), before_manifest)
         self.assertTrue((directory / "verified-good.json").is_file())
+        self.assertTrue((self.catalog.bundle(generations[1]) / "files").is_dir())
+
+    def test_interrupted_prune_resumes_after_empty_payload_directory_removal(self):
+        generations = [self.generation(number, publish=number == 46) for number in (45, 46)]
+        for number, generation in zip((45, 46), generations):
+            self.verify_good(generation, number)
+        self.retention_intent(generations[0])
+        files = self.catalog.bundle(generations[0]) / "files"
+        (files / "synthetic.txt.aead").unlink()
+        (files / "nested/inner.txt.aead").unlink()
+        (files / "nested").rmdir()  # crash in the empty-directory removal phase
+        applied = self.catalog.retention(30, 1, 1, datetime.now(timezone.utc) + timedelta(days=100), apply=True)
+        self.assertEqual([item["generation"] for item in applied["pruned"]], [generations[0]])
+        self.assertFalse(files.exists())
+
+    def test_interrupted_prune_rechecks_survivor_before_any_unlink(self):
+        generations = [self.generation(number, publish=number == 51) for number in (50, 51)]
+        for number, generation in zip((50, 51), generations):
+            self.verify_good(generation, number)
+        self.retention_intent(generations[0])
+        flip_last_byte(self.catalog.bundle(generations[1]) / "files/synthetic.txt.aead")
+        with self.assertRaises(ValueError):
+            self.catalog.retention(30, 1, 1, datetime.now(timezone.utc) + timedelta(days=100), apply=True)
+        self.assertTrue((self.catalog.bundle(generations[0]) / "files/synthetic.txt.aead").is_file())
+        self.assertTrue((self.catalog.bundle(generations[0]) / "files/nested/inner.txt.aead").is_file())
+        self.assertFalse((self.state / "catalog" / generations[0] / "retention-result.json").exists())
+
+    def assert_interrupted_prune_refuses_symlink(self, kind: str):
+        generations = [self.generation(number, publish=number == 61) for number in (60, 61)]
+        for number, generation in zip((60, 61), generations):
+            self.verify_good(generation, number)
+        self.retention_intent(generations[0])
+        files = self.catalog.bundle(generations[0]) / "files"
+        outside = self.root / f"outside-{kind}"
+        outside.mkdir()
+        if kind == "files-root":
+            shutil.copytree(files, outside, dirs_exist_ok=True)
+            shutil.rmtree(files)
+            files.symlink_to(outside, target_is_directory=True)
+            outside_payloads = [outside / "synthetic.txt.aead", outside / "nested/inner.txt.aead"]
+        else:
+            shutil.copytree(files / "nested", outside, dirs_exist_ok=True)
+            shutil.rmtree(files / "nested")
+            (files / "nested").symlink_to(outside, target_is_directory=True)
+            outside_payloads = [outside / "inner.txt.aead"]
+        with self.assertRaises(ValueError):
+            self.catalog.retention(30, 1, 1, datetime.now(timezone.utc) + timedelta(days=100), apply=True)
+        for payload in outside_payloads:
+            self.assertTrue(payload.is_file(), "retention must never unlink through a symbolic link")
+        self.assertFalse((self.state / "catalog" / generations[0] / "retention-result.json").exists())
+
+    def test_interrupted_prune_refuses_symlinked_files_root(self):
+        self.assert_interrupted_prune_refuses_symlink("files-root")
+
+    def test_interrupted_prune_refuses_symlinked_intermediate_directory(self):
+        self.assert_interrupted_prune_refuses_symlink("intermediate")
 
 
 if __name__ == "__main__":
