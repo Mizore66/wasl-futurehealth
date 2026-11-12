@@ -6,6 +6,8 @@
 
 **Mode:** research only; no implementation or verification commands were run.
 
+**Citation note (2026-11-12):** `file:line` citations were renumbered to the current files. The cited `ADVERSARIAL.md` lines now record the later follow-ups for the hook, clinical-normalization and reviewer-restart findings; the wording quoted here is from the research base.
+
 ## Recommendation
 
 **Do item 1 first: make FHIR Subscription HTTP acknowledgement contingent on durable ingest, with recoverable reorder/overflow handling.** It closes a demonstrated accepted-data-loss window in the built ingest path. The other items are independent follow-ups, not prerequisites for one another.
@@ -28,7 +30,7 @@ Deliberately excluded: Basic/CORS mutation tests, licence-notice review, supply-
 
 ### Current evidence
 
-- The unresolved-findings register says the hook queues in memory before responding, so a process crash can lose accepted-but-unpublished notifications; reorder overflow also has no durable dead-letter: `docs/reliability/ADVERSARIAL.md:88`.
+- The unresolved-findings register says the hook queues in memory before responding, so a process crash can lose accepted-but-unpublished notifications; reorder overflow also has no durable dead-letter: `docs/reliability/ADVERSARIAL.md:104`.
 - The built handler sends the decoded body to `c.inbox` and immediately returns 200; only a full channel receives 503: `pipeline/fhirsub.go:213-237`.
 - The channel is drained asynchronously by `processLoop`: `pipeline/fhirsub.go:342-351`. Reordered events beyond `maxSubscriptionReorder` increment a counter and are dropped from the process-local buffer: `pipeline/fhirsub.go:364-380`.
 - The machine-readable matrix records the same boundary, not a passing durability result: `docs/reliability/adversarial-matrix.json:40-48` and `:148-156`.
@@ -62,7 +64,7 @@ HL7's Subscriptions Backport IG defines rest-hook delivery as HTTP POST and give
 
 ### Current evidence
 
-- Clinical semantics remain an explicit safety concern: day-0 timestamp defaults, unrecognized-program defaults and non-final report-status gating are unresolved: `docs/reliability/ADVERSARIAL.md:87`.
+- Clinical semantics remain an explicit safety concern: day-0 timestamp defaults, unrecognized-program defaults and non-final report-status gating are unresolved: `docs/reliability/ADVERSARIAL.md:103`.
 - `tsToDay` returns `0` for every parse failure: `pipeline/types.go:17-22`.
 - `progOfText` defaults any unrecognized text to `crc`: `pipeline/rules.go:96-114`; the linker has another empty-programme-to-CRC fallback: `pipeline/linker.go:735-749`.
 - The DiagnosticReport normalizer copies `status` but extracts report timing/text without a final-status validity gate: `pipeline/fhir.go:59-60` and `:160-203`.
@@ -93,10 +95,10 @@ Base FHIR R4 makes some fields optional, so the required-field profile is a Wasl
 
 ### Current evidence
 
-- The executed matrix marks reviewer crash/restart **not run** and says reviewer progress is not durable under all such restarts: `docs/reliability/ADVERSARIAL.md:74` and `:89`.
+- The executed matrix marks reviewer crash/restart **not run** and says reviewer progress is not durable under all such restarts: `docs/reliability/ADVERSARIAL.md:90` and `:105`.
 - The built reviewer uses an ordered consumer, then initializes `seen` and both worklists as process-local maps: `pipeline/services.go:697-710`.
 - It marks an item seen before review/publish: `pipeline/services.go:727-751`. Sign-off publish occurs before an unchecked local NDJSON write: `pipeline/services.go:797-805`.
-- The local full regression passed with six asset-dependent skips; it did not supply reviewer crash evidence: `docs/reliability/evidence/verification-2026-11-09.manifest.json:178-200`.
+- The local full regression passed with six asset-dependent skips; it did not supply reviewer crash evidence: `docs/reliability/evidence/verification-2026-11-09.manifest.json:179-201`.
 
 ### Concrete deliverable
 
@@ -122,7 +124,7 @@ NATS documents ordered consumers as ephemeral, without individual acknowledgemen
 
 ### Current evidence
 
-- The recorded full run explicitly skipped six asset-dependent tests, including API contract/RBAC, booking and HL7 cohort coverage: `docs/reliability/ADVERSARIAL.md:56`; exact names are in `docs/reliability/evidence/verification-2026-11-09.manifest.json:192-199`.
+- The recorded full run explicitly skipped six asset-dependent tests, including API contract/RBAC, booking and HL7 cohort coverage: `docs/reliability/ADVERSARIAL.md:70`; exact names are in `docs/reliability/evidence/verification-2026-11-09.manifest.json:193-200`.
 - The hosted Go lane currently treats `go test` exit status as sufficient: `.github/workflows/ci.yml:45-60`. The integrated lane generates a demo and reruns tests, but has no skip assertion: `.github/workflows/ci.yml:145-157`.
 - The aggregate `required` job requires job success without skipped jobs, not individual Go tests: `.github/workflows/ci.yml:476-506`.
 
@@ -179,6 +181,6 @@ RFC 5116 defines AEAD as providing confidentiality plus authentication and requi
 
 - No tests, fuzzing, containers, Docker/Podman, Linux/AMD64 checks, soak, model tuning, evaluation, seed/corpus consumption, deployment, external service, or buyer/organiser contact was performed for this research.
 - No repository code, workflow, recovery tool or submission claim was changed. Existing passing results were read as historical evidence, not rerun or extended.
-- The cited local adversarial environment is macOS arm64 with a real single-node NATS server, not clean Linux Docker: `docs/reliability/ADVERSARIAL.md:35-56`.
+- The cited local adversarial environment is macOS arm64 with a real single-node NATS server, not clean Linux Docker: `docs/reliability/ADVERSARIAL.md:49-70`.
 - Existing submission evidence already distinguishes cached frozen evaluation, separate live-reader/HL7 runs and simulated patients/reviewers: `docs/SUBMISSION-DRAFT.md:49-83` and `:111-120`. These proposals do not alter those denominators or limitations.
 - Hosted gate status was not independently queried. Per the task constraint, all implementation remains paused while hosted gates are red; the report itself is the only committed change.

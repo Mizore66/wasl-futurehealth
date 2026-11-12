@@ -5,6 +5,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -397,6 +398,65 @@ class HomePaths(unittest.TestCase):
         text = "\n".join(("/home/runner/work/wasl", "/home/user/wasl", "/home/node/app", "<repo>/pipeline",
                           "<home>/models/gemma.gguf", '"/home/u/leak": 1', "pipeline/results/soak"))
         self.assertEqual([], self.findings(text))
+
+    # Split literals so this file does not itself contain a home path for the guard to flag.
+    U, H, BS = "/Us" + "ers/", "/ho" + "me/", "\\"
+
+    def assertFlagged(self, *lines):
+        for line in lines:
+            with self.subTest(line=line):
+                found = self.findings("ok\n" + line + "\n")
+                self.assertEqual([("home-path", "docs/evidence.md", 2)], [(x.rule, x.file, x.line) for x in found])
+
+    def assertAllowed(self, *lines):
+        for line in lines:
+            with self.subTest(line=line):
+                self.assertEqual([], self.findings(line + "\n"))
+
+    def test_username_matched_case_insensitively(self):
+        self.assertFlagged(self.U + "John/src/wasl", self.H + "DevName/src", self.U + "JDOE/x")
+
+    def test_path_ending_the_value_or_token_flagged(self):
+        u, h = self.U, self.H
+        self.assertFlagged(u + "jdoe", h + "jdoe", '"cwd": "' + u + 'jdoe"', "cd '" + h + "jdoe' && ls",
+                           "HOME=" + h + "jdoe make", "`" + u + "jdoe`")
+
+    def test_json_escaped_paths_flagged(self):
+        esc_u, esc_h = self.U.replace("/", "\\/"), self.H.replace("/", "\\/")
+        self.assertFlagged('{"p": "' + esc_u + 'jdoe\\/src\\/wasl"}', '{"p": "' + esc_h + 'jdoe\\/x"}',
+                           '{"p": "' + esc_u + 'jdoe"}')
+
+    def test_windows_paths_flagged(self):
+        b = self.BS
+        self.assertFlagged("C:" + b + "Users" + b + "jdoe" + b + "src", '"C:' + b * 2 + "Users" + b * 2 + 'jdoe' + b * 2 + 'x"',
+                           "C:" + b + "Users" + b + "JDoe", "C:" + self.U + "jdoe/src")
+
+    def test_generic_ci_and_container_homes_allowed(self):
+        lines = []
+        for name in chk.HOME_PATH_GENERIC:
+            lines += [self.H + name + "/app", self.H + name, '"' + self.U + name + '"', "C:" + self.BS + "Users" + self.BS + name + self.BS + "x"]
+        lines += [self.H + "linuxbrew/.linuxbrew/bin/brew", self.H + "Ubuntu/app", self.H.replace("/", "\\/") + "vscode\\/x"]
+        self.assertAllowed(*lines)
+        for name in ("runner", "user", "node", "ubuntu", "vscode", "linuxbrew", "runneradmin", "codespace"):
+            self.assertIn(name, chk.HOME_PATH_GENERIC)
+
+    def test_names_merely_starting_with_a_generic_home_flagged(self):
+        self.assertFlagged(self.H + "ubuntu2/x", self.H + "runnerx", self.H + "nodejs-dev/x", self.U + "users/x")
+
+    def test_single_character_fixture_names_allowed(self):
+        self.assertAllowed('"' + self.H + 'u/leak": 1', self.H + "u", self.H.replace("/", "\\/") + "u\\/x",
+                           "C:" + self.BS + "Users" + self.BS + "u" + self.BS)
+
+    def test_whole_tree_flags_only_the_frozen_exceptions(self):
+        files = chk.tracked_files(REAL)
+        self.assertTrue(files, "repository checkout required")
+        with mock.patch.object(chk, "HOME_PATH_FROZEN", frozenset()):
+            f = []
+            chk.check_home_paths(REAL, lambda *a: f.append(chk.Finding(*a)), rels=files)
+        self.assertEqual(set(chk.HOME_PATH_FROZEN), {x.file for x in f})
+        f = []
+        chk.check_home_paths(REAL, lambda *a: f.append(chk.Finding(*a)), rels=files)
+        self.assertEqual([], f)
 
     def test_binary_files_ignored(self):
         p = self.root / "blob.bin"

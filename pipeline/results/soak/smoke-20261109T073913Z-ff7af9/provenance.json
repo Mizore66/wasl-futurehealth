@@ -1,5 +1,6 @@
 {
   "reason": "non-current JetStream replicas persisted after measured rolling and full NATS restarts; 24-hour soak not launched",
+  "redaction": "Path scrub (2026-11-12): the absolute developer worktree prefix in source_run_dir was replaced with <repo>/; see REDACTION.md for samples.jsonl. No other value changed.",
   "schema": "wasl-soak-smoke-evidence/1",
   "secret_exclusions": [
     ".env",
