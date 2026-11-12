@@ -408,10 +408,17 @@ def check_kpi_evidence(root, add):
             add("kpi-evidence", rel, 0, "missing five-seed v2 '3.1 points under independent v2' wording")
 
 
-# A developer's absolute home-directory path (macOS /Users/<name>/ or Linux /home/<name>/) must not be
-# committed; write repo-relative paths or the <repo>/... and <home>/... placeholders instead. Generic CI and
-# container homes are allowed. The name needs at least two characters, so test fixtures such as /home/u stay legal.
-HOME_PATH = re.compile(r"/(?:Users|home)/(?!(?:runner|user|node)/)[a-z][a-z0-9_.-]+/")
+# A developer's absolute home-directory path (macOS /Users/<name>, Linux /home/<name>, Windows C:\Users\<name>,
+# including JSON-escaped \/Users\/<name> and C:\\Users\\<name>) must not be committed; write repo-relative paths or
+# the <repo>/... and <home>/... placeholders instead. The name is matched case-insensitively and may end the value
+# or token. Generic CI, container and dev-image homes are allowed. The name needs at least two characters, so test
+# fixtures such as /home/u stay legal.
+HOME_PATH_GENERIC = ("runner", "runneradmin", "user", "node", "ubuntu", "vscode", "linuxbrew", "codespace")
+_HOME_NAME_END = r"""(?:[/\\"'`\s),:;\]>]|$)"""
+HOME_PATH = re.compile(
+    r"(?:\\?/(?:Users|home)\\?/|(?<![A-Za-z])[A-Za-z]:\\{1,2}Users\\{1,2})"
+    r"(?!(?i:" + "|".join(HOME_PATH_GENERIC) + ")" + _HOME_NAME_END + ")"
+    r"(?i:[a-z][a-z0-9_.-]+)" + _HOME_NAME_END)
 # Byte-frozen fresh4 evaluation records. Their SHA-256 values are bound into the frozen labels commit
 # (data/fresh4/FREEZE.json) and the PROTOCOL_PROTECTED templates in scripts/fresh4_eval/fresh4.py, so they
 # record exactly what each labeller/adjudicator Agent was sent and cannot be rewritten in place.
