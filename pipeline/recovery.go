@@ -48,23 +48,37 @@ type recoverySummary struct {
 	Digests  map[string]string `json:"logical_sha256_by_stream"`
 }
 
+// recoveryDirectGetHeaders is the broker read metadata a direct get adds. Republishing it makes the server append a
+// second value and changes the logical header set.
+var recoveryDirectGetHeaders = map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
+	"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true}
+
+// recoveryWritePreconditionPrefixes are the publish-control header families that nats-server 2.12.6 itself strips
+// when it sources or mirrors a stored message (server/stream.go, removeHeaderIfPrefixPresent): Nats-Expected-*
+// optimistic-concurrency preconditions, including Nats-Expected-Last-Subject-Sequence-Subject, and Nats-Batch-*
+// atomic-batch control. Republishing them asks the target to re-check the source's state or join a batch.
+var recoveryWritePreconditionPrefixes = []string{"Nats-Expected-", "Nats-Batch-"}
+
+// recoveryBrokerHeader reports whether key is broker metadata or a write precondition rather than application data.
+// Matching is exact and case-sensitive, as in nats-server: a lowercase look-alike such as "nats-expected-stream" is
+// never interpreted by the server and is therefore retained as opaque application data.
+func recoveryBrokerHeader(key string) bool {
+	if recoveryDirectGetHeaders[key] {
+		return true
+	}
+	for _, prefix := range recoveryWritePreconditionPrefixes {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// recoveryApplicationHeader keeps application headers, including Nats-Msg-Id, Nats-Rollup and KV-Operation.
 func recoveryApplicationHeader(header nats.Header) map[string][]string {
-	// Direct-get adds broker read metadata. Republishing it makes the server append a second value and changes the
-	// logical header set; application headers such as Nats-Msg-Id and KV rollup markers must be retained.
-	brokerOnly := map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
-		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true,
-		"Nats-Expected-Last-Subject-Sequence": true, "Nats-Expected-Last-Sequence": true,
-		"Nats-Expected-Last-Msg-Id": true, "Nats-Expected-Stream": true}
 	out := map[string][]string{}
 	for key, values := range header {
-		brokerOnlyKey := false
-		for candidate := range brokerOnly {
-			if strings.EqualFold(key, candidate) {
-				brokerOnlyKey = true
-				break
-			}
-		}
-		if !brokerOnlyKey {
+		if !recoveryBrokerHeader(key) {
 			out[key] = append([]string(nil), values...)
 		}
 	}
@@ -175,6 +189,46 @@ func validateNATSRecoveryBundle(bundle recoveryNATSBundle) error {
 	return nil
 }
 
+// recoveryHeaderKeyValid applies nats.go v1.54.0 isHeaderKeyValid: non-empty, printable ASCII 33-126, and none of
+// the characters it forbids (which include ':'). Whitespace and control characters fall outside 33-126.
+func recoveryHeaderKeyValid(key string) bool {
+	if key == "" {
+		return false
+	}
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		if c < 33 || c > 126 || strings.IndexByte(`"()/,:;<=>?@[\]{}`, c) >= 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// validateRecoveryHeaderShape refuses headers that no stored NATS message produces and that make the unprefixed v1
+// digest ambiguous: a key with no values, a key nats.go would not encode, or a value containing the digest's NUL
+// separator.
+func validateRecoveryHeaderShape(header map[string][]string) error {
+	keys := make([]string, 0, len(header))
+	for key := range header {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if !recoveryHeaderKeyValid(key) {
+			return fmt.Errorf("invalid NATS header key %q", key)
+		}
+		if len(header[key]) == 0 {
+			return fmt.Errorf("NATS header %q has no values", key)
+		}
+		for _, value := range header[key] {
+			if strings.IndexByte(value, 0) >= 0 {
+				return fmt.Errorf("NATS header %q value contains a NUL byte", key)
+			}
+		}
+	}
+	return nil
+}
+
 func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	encoded, err := os.ReadFile(path)
 	if err != nil {
@@ -186,6 +240,20 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	}
 	if err := validateNATSRecoveryBundle(bundle); err != nil {
 		return recoveryNATSBundle{}, err
+	}
+	// The v1 digest is not length-prefixed, so it cannot tell a value from a following key: it hashes
+	// {"App-Key":["a","Nats-Expected-X"]} and {"App-Key":["a"],"Nats-Expected-X":[]} identically, and normalising
+	// the second form would then drop an application value without any hash mismatch. The format is kept so existing
+	// bundles still load; header shapes that a stored NATS message cannot carry are refused before normalisation
+	// instead. This does not make v1 injective: valid keys with non-empty values can still be regrouped, e.g.
+	// {"A":["a","Nats-Expected-X","x"]} and {"A":["a"],"Nats-Expected-X":["x"]} hash alike. The v2 file bundle's
+	// HMAC and AES-GCM authentication, not this digest, is what rules out deliberate edits.
+	for _, saved := range bundle.Streams {
+		for _, message := range saved.Messages {
+			if err := validateRecoveryHeaderShape(message.Header); err != nil {
+				return recoveryNATSBundle{}, fmt.Errorf("NATS backup stream %s sequence %d: %w", saved.Config.Name, message.Sequence, err)
+			}
+		}
 	}
 	for streamIndex, saved := range bundle.Streams {
 		for messageIndex, message := range saved.Messages {
