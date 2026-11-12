@@ -8,7 +8,7 @@ import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/le
 import { persistedLedger } from "@/components/worklist/ledger-trail";
 import { BOOKING_NEEDED, DECLINED_STATUS, noAnswerStatus, workItem } from "@/components/worklist/model";
 import { CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
-import { postAction } from "@/lib/api/source";
+import { COORDINATOR_TOKEN_MISSING, COORDINATOR_TOKEN_REFUSED, postAction } from "@/lib/api/source";
 import { compareInstants } from "@/lib/domain/instant";
 import { loadSample } from "./samples";
 
@@ -158,6 +158,33 @@ describe("GET /app/today/ledger", () => {
     expect(fetchMock.mock.calls[0][0]).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(partial.case.id)}`);
   });
 
+  it("says which kind of failure it was: no credential here, an unrecognised answer, an API refusal, or no answer", async () => {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const missing = await GET(req("?id=x"));
+    expect([missing.status, (await missing.json()).error]).toEqual([500, "this server has no API read credential configured"]);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ meta: {}, case: "not a case" }), { status: 200 }));
+    const shape = await GET(req("?id=x"));
+    expect([shape.status, (await shape.json()).error]).toEqual([502, "the API answered in a shape this page does not recognise"]);
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "authentication required" }), { status: 401 }));
+    const refused = await GET(req("?id=x"));
+    expect([refused.status, (await refused.json()).error]).toEqual([502, "the API refused this server's read credential (HTTP 401)"]);
+
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 503 }));
+    const down = await GET(req("?id=x"));
+    expect([down.status, (await down.json()).error]).toEqual([502, "the API answered HTTP 503"]);
+
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    const silent = await GET(req("?id=x"));
+    expect([silent.status, (await silent.json()).error]).toEqual([502, "the API did not answer"]);
+  });
+
   it("is not available without a live API, and needs an id", async () => {
     vi.stubEnv("WASL_API_URL", "");
     expect((await GET(req("?id=x"))).status).toBe(404);
@@ -173,6 +200,27 @@ describe("writes while the ledger is invalid", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(load("ledger_partial_action_refused.json")), { status: 500 })));
     const res = await postAction(partial.case.id, { action: "note", text: "x" }, "h");
     expect(res).toEqual({ ok: false, status: 500, error: "review ledger failed validation; writes refused" });
+  });
+});
+
+describe("coordinator credential refusals", () => {
+  it("a 401 from the API is returned as a refusal that names the credential, not thrown as no answer", async () => {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
+    // The Go API's 401 body: no meta (pipeline/api_security.go authenticate).
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "authentication required" }), { status: 401 })));
+    const res = await postAction(partial.case.id, { action: "note", text: "x" }, "h");
+    expect(res).toEqual({ ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED });
+  });
+
+  it("a missing coordinator token sends nothing and says so", async () => {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await postAction(partial.case.id, { action: "note", text: "x" }, "h");
+    expect(res).toEqual({ ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

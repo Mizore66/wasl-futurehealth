@@ -215,7 +215,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       .then((res) => {
         if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
-        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
+        // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
+        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
       .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
       .finally(() => setBusy(false));
