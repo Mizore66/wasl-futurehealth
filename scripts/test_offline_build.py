@@ -181,6 +181,16 @@ class CleanRunnerContractTests(unittest.TestCase):
         self.assertLess(online, clean)
         self.assertLess(clean, self.ci.index("Scan the pipeline image"))
 
+    def test_startup_stages_are_reported_and_ci_preloads_base_images(self):
+        self.assertIn("failed (exit $rc) during stage: $STAGE", self.runner)
+        for stage in ("base-image preflight", "fresh context", "build wasl", "build nats", "verify images"):
+            self.assertIn(stage, self.runner)
+        pull = self.ci.index("Preload base images into the Docker image store")
+        run = self.ci.index("DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh")
+        self.assertLess(pull, run)
+        for image in ("golang:1.27.4-bookworm", "python:3.12-alpine", "nats:2.12.6-alpine"):
+            self.assertIn("docker pull " + image, self.ci[pull:run])
+
     def test_dockerfiles_do_not_resolve_a_syntax_frontend(self):
         for path in ("Dockerfile", "deploy/nats/Dockerfile"):
             self.assertNotIn("# syntax=", (ROOT / path).read_text())
