@@ -13,7 +13,7 @@ WASL_CONTAINER_ENGINE=podman scripts/offline_build_clean.sh
 The runner:
 
 1. Requires `golang:1.27.4-bookworm`, `python:3.12-alpine` and `nats:2.12.6-alpine` to exist locally (preloaded base images; it never pulls). Local IDs: golang `4cfad6c86f52...`, python `99019a77a487...`, nats `4564348acc3c...`. Alpine releases were 3.24.4 (Wasl) and 3.22.3 (NATS), matching the bundles.
-2. Extracts tracked files plus untracked non-ignored bundle directories into a new `/tmp/wasl-offline-clean.*` context.
+2. Extracts tracked files only into a new `/tmp/wasl-offline-clean.*` context.
 3. Builds both images with `--no-cache --network=none --pull-never --build-arg OFFLINE_PACKAGES=1 --build-arg OFFLINE_BUILD_ID=$(date +%s)`; Wasl also gets `OFFLINE_RUNTIME=0`. Tags: `wasl-offline-clean:local`, `wasl-nats-offline-clean:local`.
 4. Checks `.Config.User == 10001:10001` on both, runs `wsi7 -h` and `id -u` (Wasl) and `nats-server -v` (must equal `v2.12.6`) and `id -u` (NATS) with overridden entrypoints and `--network=none`.
 
