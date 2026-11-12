@@ -3,9 +3,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getUndoProjection,
-  postContest,
-  postContestResolution,
-  postUndo,
+  postContestWithToken,
+  postContestResolutionWithToken,
+  postUndoWithToken,
 } from "@/lib/api/source";
 import { Audit } from "@/lib/api/schema";
 
@@ -63,6 +63,7 @@ const created = () => json(201, {
   note: "contest resolved in the review ledger only",
 });
 
+/* Server-held role credentials are set, so a test can prove governance never falls back to any of them. */
 const TOKENS = {
   WASL_API_REVIEWER_TOKEN: "reviewer-one-token-123456",
   WASL_API_WEB_REVIEWER_TOKEN: "web-reviewer-token-123456",
@@ -71,6 +72,8 @@ const TOKENS = {
   WASL_API_CLINICIAN_TOKEN: "clinician-token-1234567890",
   WASL_API_COORDINATOR_TOKEN: "coordinator-token-1234567890",
 };
+/** The signed-in person's own assigned token, as the reviewer-session cookie holds it. */
+const SIGNED_IN = "signed-in-reviewer-token-0001";
 function live() {
   vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
   for (const [key, value] of Object.entries(TOKENS)) vi.stubEnv(key, value);
@@ -82,19 +85,27 @@ afterEach(() => {
 });
 
 describe("governance API clients", () => {
-  it("undo appends a compensation with a required reason and the selected role-bound credential", async () => {
+  it("undo appends a compensation with a required reason, sent with the signed-in token and no identity header", async () => {
     live();
     const fetchMock = vi.fn().mockResolvedValue(created());
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await postUndo("case/1", { target: originalHash, note: "The identity match was incorrect" }, "reviewer_2");
+    const result = await postUndoWithToken("case/1", { target: originalHash, note: "The identity match was incorrect" }, SIGNED_IN);
     expect(result.ok).toBe(true);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://127.0.0.1:8088/api/cases/case%2F1/undo");
     expect(JSON.parse(init.body)).toEqual({ target: originalHash, contest: false, note: "The identity match was incorrect" });
-    expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${TOKENS.WASL_API_REVIEWER_2_TOKEN}`);
+    expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${SIGNED_IN}`);
+    for (const shared of Object.values(TOKENS)) expect(new Headers(init.headers).get("authorization")).not.toContain(shared);
     expect(new Headers(init.headers).has("x-wasl-actor")).toBe(false);
     expect(new Headers(init.headers).has("x-wasl-role")).toBe(false);
+  });
+
+  it("returns a rejected sign-in as a 401 refusal, never a success", async () => {
+    live();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(401, { meta, error: "authentication required" })));
+    const result = await postContestWithToken("case/1", { target: originalHash, note: "Contest this" }, SIGNED_IN);
+    expect(result).toEqual({ ok: false, status: 401, error: "authentication required" });
   });
 
   it("contest appends a visible contest event rather than changing the original review", async () => {
@@ -102,7 +113,7 @@ describe("governance API clients", () => {
     const fetchMock = vi.fn().mockResolvedValue(created());
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await postContest("case/1", { target: originalHash, note: "A second reviewer should check this link" }, "reviewer_2");
+    const result = await postContestWithToken("case/1", { target: originalHash, note: "A second reviewer should check this link" }, SIGNED_IN);
     expect(result.ok).toBe(true);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       target: originalHash,
@@ -115,10 +126,10 @@ describe("governance API clients", () => {
     live();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(403, { meta, error: "actor must differ from the actor(s) of the event being undone, contested or resolved" })));
 
-    const result = await postContestResolution(
+    const result = await postContestResolutionWithToken(
       "case/1",
       { target: contestHash, resolution: "upheld", note: "Attempted self-resolution" },
-      "reviewer_2",
+      SIGNED_IN,
     );
     expect(result).toEqual({ ok: false, status: 403, error: "actor must differ from the actor(s) of the event being undone, contested or resolved" });
   });
@@ -128,10 +139,10 @@ describe("governance API clients", () => {
     const fetchMock = vi.fn().mockResolvedValue(created());
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await postContestResolution(
+    const result = await postContestResolutionWithToken(
       "case/1",
       { target: contestHash, resolution: "upheld", note: "Independent review agrees the contest is correct" },
-      "reviewer_3",
+      SIGNED_IN,
     );
     expect(result.ok && result.response.event.hash).toBe(resolutionHash);
     expect(result.ok && result.response.projection.events[0]).toMatchObject({ hash: originalHash, status: "compensated" });
@@ -153,7 +164,7 @@ describe("governance API clients", () => {
     live();
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const result = await postUndo("case/1", { target: originalHash, note: "   " }, "reviewer_2");
+    const result = await postUndoWithToken("case/1", { target: originalHash, note: "   " }, SIGNED_IN);
     expect(result.ok).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -164,7 +175,7 @@ describe("governance API clients", () => {
     await expect(getUndoProjection("case/1")).resolves.toMatchObject({ case_status: "compensated", canonical_state: "open" });
 
     vi.stubEnv("WASL_API_URL", "");
-    await expect(postContest("case/1", { target: originalHash, note: "Contest this" }, "reviewer_2")).rejects.toThrow(
+    await expect(postContestWithToken("case/1", { target: originalHash, note: "Contest this" }, SIGNED_IN)).rejects.toThrow(
       "fixtures mode cannot append governance events",
     );
   });

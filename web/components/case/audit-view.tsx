@@ -3,9 +3,8 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
 import type { Audit, Programme, UndoProjection } from "@/lib/api/schema";
-import type { GovernanceCredential } from "@/lib/api/source";
 import { Card } from "./sections";
-import { GovernanceControls } from "./governance-controls";
+import { GovernanceControls, GovernanceIdentity, GovernanceSignIn } from "./governance-controls";
 import { cn } from "@/lib/utils";
 import { protocolRead, READ_LABEL } from "@/lib/domain/stage";
 import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
@@ -151,6 +150,9 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
   );
 }
 
+/** Review actions that /undo accepts as targets; each keeps its own RBAC at the API. */
+const GOVERNED_ACTIONS = new Set(["signoff_link", "signoff_evidence", "record_consent"]);
+
 /** Review actions appended through the API: append-only, each linked to the one before. */
 export function HistoryCard({
   audit,
@@ -159,7 +161,11 @@ export function HistoryCard({
 }: {
   audit: Audit;
   programme: Programme;
-  governance?: { caseId: string; projection: UndoProjection };
+  /**
+   * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
+   * `hostSignOut`: the host page already shows a sign-out for this session, so the history card does not repeat it.
+   */
+  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean };
 }) {
   const status = new Map(governance?.projection.events.map((event) => [event.hash, event.status]));
   const rejectedContests = new Set(
@@ -169,14 +175,19 @@ export function HistoryCard({
       return contest?.ledger === "compensation" ? [contest.target] : [];
     }),
   );
-  const credentialsFor = (action: string): GovernanceCredential[] =>
-    action === "signoff_link"
-      ? ["reviewer", "reviewer_2", "reviewer_3"]
-      : action === "record_consent"
-        ? ["coordinator", "clinician", "clinician_2"]
-        : action === "signoff_evidence"
-          ? ["clinician", "clinician_2", "clinician_3"]
-          : [];
+  /*
+   * Which events can be undone, contested or resolved. The page does not know the signed-in role: the API applies the
+   * target action's RBAC and the independent-actor rules, and its refusal is shown as-is.
+   */
+  const governable = (r: Audit["history"][number]): "review" | "contest" | undefined => {
+    if (!governance || (r.ledger !== "review" && r.ledger !== "compensation") || !GOVERNED_ACTIONS.has(r.action)) return undefined;
+    const eventStatus = status.get(r.hash);
+    if (r.ledger === "review" && !protocolRead(r) && eventStatus === "active") return "review";
+    if (r.ledger === "compensation" && r.kind === "contest" && eventStatus === "open") return "contest";
+    return undefined;
+  };
+  const anyGovernable = audit.history.some((r) => governable(r));
+  const controls = !!governance?.signedIn;
 
   return (
     <Card
@@ -190,6 +201,7 @@ export function HistoryCard({
           Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
         </p>
       )}
+      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} /> : <GovernanceSignIn caseId={governance.caseId} />)}
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
           Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.
@@ -200,7 +212,6 @@ export function HistoryCard({
             const eventStatus = status.get(r.hash);
             const target = r.ledger === "compensation" ? r.target : "";
             const resolving = audit.history.filter((event) => event.ledger === "compensation" && event.target === r.hash);
-            const credentials = r.ledger === "review" || r.ledger === "compensation" ? credentialsFor(r.action) : [];
             return (
               <li key={r.hash || `unknown-${i}`} id={r.hash ? `review-event-${r.hash}` : undefined} className="scroll-mt-4 border-t border-rule py-3">
                 {r.ledger === "review" ? (
@@ -243,14 +254,14 @@ export function HistoryCard({
                   {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
                   {r.hash && <Hash label="Hash" value={r.hash} />}
                 </p>
-                {governance && r.ledger === "review" && !protocolRead(r) && eventStatus === "active" && credentials.length > 1 && (
+                {governance && controls && governable(r) === "review" && (
                   <div className="mt-1 grid gap-2 sm:grid-cols-2">
-                    <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" credentials={credentials} />
-                    {!rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" credentials={credentials} />}
+                    <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" />
+                    {!rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" />}
                   </div>
                 )}
-                {governance && r.ledger === "compensation" && r.kind === "contest" && eventStatus === "open" && credentials.length > 1 && (
-                  <GovernanceControls caseId={governance.caseId} target={r.hash} operation="resolve" credentials={credentials} />
+                {governance && controls && governable(r) === "contest" && (
+                  <GovernanceControls caseId={governance.caseId} target={r.hash} operation="resolve" />
                 )}
               </li>
             );
