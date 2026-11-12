@@ -1,5 +1,6 @@
 import { atWords, outcomeWords } from "@/components/case/words";
 import type { CaseDetail } from "@/lib/api/schema";
+import { compareInstants } from "@/lib/domain/instant";
 
 /**
  * One entry of Today's contact trail. Session records and persisted ledger records share this shape. `who` is the
@@ -44,7 +45,7 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
       hash: n.event || undefined,
     })),
   ];
-  timed.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  timed.sort((a, b) => compareInstants(a.at, b.at));
   return {
     status,
     detail: status === "invalid" ? (rl?.detail ?? "") : "",

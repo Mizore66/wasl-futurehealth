@@ -9,6 +9,7 @@ import { persistedLedger } from "@/components/worklist/ledger-trail";
 import { BOOKING_NEEDED, DECLINED_STATUS, noAnswerStatus, workItem } from "@/components/worklist/model";
 import { CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
 import { postAction } from "@/lib/api/source";
+import { compareInstants } from "@/lib/domain/instant";
 import { loadSample } from "./samples";
 
 /*
@@ -53,6 +54,23 @@ describe("persisted trail from the case-detail overlay", () => {
     expect(l.entries.map((e) => e.what)).toEqual(["No answer (phone)", "Reached (phone): “synthetic call note”", "Note: “synthetic coordinator note”", "Declined the procedure (phone)"]);
   });
 
+  it("orders entries by instant, not text: a zero-nanosecond time (no fraction) sorts before a later fraction", () => {
+    const ov = full.api_overlay!;
+    const l = persistedLedger({
+      ...full,
+      api_overlay: {
+        ...ov,
+        // Go writes RFC3339Nano: at zero nanoseconds the fraction is dropped, so "…:00Z" > "…:00.25Z" as text.
+        contact_outcomes: [{ at: "2026-11-09T08:00:00Z", event: "e1", outcome: "reached", channel: "phone", actor: "a" }],
+        notes: [
+          { at: "2026-11-09T08:00:00.25Z", event: "e2", actor: "a", text: "second" },
+          { at: "2026-11-09T07:59:59.999999999Z", event: "e0", actor: "a", text: "first" },
+        ],
+      },
+    });
+    expect(l.entries.map((e) => e.hash)).toEqual(["e0", "e1", "e2"]);
+  });
+
   it("a detail with no overlay (an older snapshot) has no entries and is not flagged", () => {
     const older = { ...full, api_overlay: undefined, review_ledger: undefined, api_reviews: [] };
     expect(persistedLedger(older)).toEqual({ status: "ok", detail: "", applied: null, entries: [] });
@@ -90,6 +108,20 @@ describe("board position from persisted outcomes", () => {
       snooze: { until: new Date(NOW + 86_400_000).toISOString(), reason: "Call back Sat 21 Nov", at: at(1) },
     });
     expect([it.view, it.snoozed, it.status]).toEqual(["call", true, "Call back Sat 21 Nov"]);
+  });
+
+  it("a snooze saved before the last outcome in the same second does not set the status (zero-nanosecond snooze time)", () => {
+    const until = new Date(NOW + 86_400_000).toISOString();
+    const earlier = withOverlay({
+      last_contact: { at: "2026-11-20T10:00:00.5Z", event: "e", outcome: "reached", channel: "phone" },
+      snooze: { until, reason: "Call back Sat 21 Nov", at: "2026-11-20T10:00:00Z" },
+    });
+    expect(earlier.status).toBe(`Reached · ${earlier.next}`);
+    const later = withOverlay({
+      last_contact: { at: "2026-11-20T10:00:00Z", event: "e", outcome: "reached", channel: "phone" },
+      snooze: { until, reason: "Call back Sat 21 Nov", at: "2026-11-20T10:00:00.000000001Z" },
+    });
+    expect(later.status).toBe("Call back Sat 21 Nov");
   });
 
   it("the served lists place the real fixtures: the last outcome was a decline", () => {
@@ -141,6 +173,29 @@ describe("writes while the ledger is invalid", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(load("ledger_partial_action_refused.json")), { status: 500 })));
     const res = await postAction(partial.case.id, { action: "note", text: "x" }, "h");
     expect(res).toEqual({ ok: false, status: 500, error: "review ledger failed validation; writes refused" });
+  });
+});
+
+describe("compareInstants", () => {
+  const sorted = (xs: string[]) => [...xs].sort(compareInstants);
+
+  it("orders RFC3339Nano times by instant, including the zero-nanosecond form with no fraction", () => {
+    expect(sorted(["2026-11-09T08:00:00.1Z", "2026-11-09T08:00:00Z", "2026-11-09T08:00:00.000000001Z", "2026-11-09T07:59:59.9Z"])).toEqual([
+      "2026-11-09T07:59:59.9Z",
+      "2026-11-09T08:00:00Z",
+      "2026-11-09T08:00:00.000000001Z",
+      "2026-11-09T08:00:00.1Z",
+    ]);
+  });
+
+  it("keeps nanoseconds within one millisecond, treats equal instants as equal and honours offsets", () => {
+    expect(compareInstants("2026-11-09T08:00:00.000000002Z", "2026-11-09T08:00:00.000000001Z")).toBeGreaterThan(0);
+    expect(compareInstants("2026-11-09T08:00:00.100Z", "2026-11-09T08:00:00.1Z")).toBe(0);
+    expect(compareInstants("2026-11-09T12:00:00+04:00", "2026-11-09T08:00:00.5Z")).toBeLessThan(0);
+  });
+
+  it("sorts an unparseable time after every real one", () => {
+    expect(sorted(["garbage", "2026-11-09T08:00:00Z"])).toEqual(["2026-11-09T08:00:00Z", "garbage"]);
   });
 });
 
