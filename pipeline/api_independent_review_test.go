@@ -84,11 +84,32 @@ func (e *irEnv) post(t *testing.T, token, body string) (int, map[string]interfac
 }
 
 func irBody(item, decision, read, head string) string {
-	return fmt.Sprintf(`{"item":%q,"decision":%q,"note":"synthetic","read":%q,"expected_head":%q}`, item, decision, read, head)
+	return fmt.Sprintf(`{"item":%q,"decision":%q,"note":"synthetic","read":%q,"expected_head":%q,"claim_head":%q}`, item, decision, read, head, strings.Repeat("0", 64))
 }
 
+// must keeps the pre-claim success-path fixtures concise: a zero claim head means acquire the current slot first.
+// Refusal requests retain the syntactically valid zero head and exercise the server's original protocol validation.
 func (e *irEnv) must(t *testing.T, token, body string, want int) map[string]interface{} {
 	t.Helper()
+	if want == 201 {
+		var req map[string]interface{}
+		if json.Unmarshal([]byte(body), &req) == nil && req["claim_head"] == strings.Repeat("0", 64) && req["read"] != nil {
+			item, _ := req["item"].(string)
+			decision, _ := req["decision"].(string)
+			question := "evidence"
+			if decision == "same" || decision == "different" {
+				question = "link"
+			}
+			expected := ""
+			if cl := e.s.claims[reviewQuestionKey{item, question}]; cl != nil {
+				expected = cl.Head
+			}
+			claimed := e.claim(t, token, item, question, "claim", expected, 201)
+			req["claim_head"] = claimHead(claimed)
+			encoded, _ := json.Marshal(req)
+			body = string(encoded)
+		}
+	}
 	code, m := e.post(t, token, body)
 	if code != want {
 		t.Fatalf("POST %s: got %d, want %d: %v", body, code, want, m)
@@ -215,7 +236,10 @@ func TestIndependentReviewCombinedItemHasTwoMachines(t *testing.T) {
 func TestIndependentReviewBlindingInSerializedResponses(t *testing.T) {
 	e := newIR(t)
 	const noteCanary = "CANARY-R1-NOTE-ZZ"
-	code, m := e.post(t, irRevA, fmt.Sprintf(`{"item":%q,"decision":"different","note":%q,"read":"r1","expected_head":""}`, irLinkItem, noteCanary))
+	claimed := e.claim(t, irRevA, irLinkItem, "link", "claim", "", 201)
+	body := irBodyWithClaim(irLinkItem, "different", "r1", "", claimHead(claimed))
+	body = strings.Replace(body, `"note":"synthetic"`, fmt.Sprintf(`"note":%q`, noteCanary), 1)
+	code, m := e.post(t, irRevA, body)
 	if code != 201 {
 		t.Fatal(m)
 	}
@@ -263,7 +287,7 @@ func TestIndependentReviewBlindingInSerializedResponses(t *testing.T) {
 		}
 	}
 	// a non-author's refused POST must not echo it either
-	_, refused := e.post(t, irRevA2, irBody(irLinkItem, "same", "r2", r1Head))
+	_, refused := e.post(t, irRevB, irBody(irLinkItem, "same", "r2", r1Head))
 	if b := fmt.Sprint(refused); strings.Contains(b, noteCanary) || strings.Contains(b, r1Hash) {
 		t.Errorf("refusal leaks r1: %v", refused)
 	}
@@ -315,21 +339,23 @@ func TestIndependentReviewLegacyBypassAndUndo(t *testing.T) {
 func TestIndependentReviewConcurrentSameHead(t *testing.T) {
 	e := newIR(t)
 	head := stateOf(e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201))["head"].(string)
+	previousClaimHead := e.states(t, irRevB)[irLinkItem+"/link"]["claim_head"].(string)
+	claimed := e.claim(t, irRevB, irLinkItem, "link", "claim", previousClaimHead, 201)
 	var wg sync.WaitGroup
 	codes := make([]int, 2)
 	for i, tok := range []string{irRevB, irRevB} {
 		wg.Add(1)
 		go func(i int, tok string) {
 			defer wg.Done()
-			codes[i], _ = e.post(t, tok, irBody(irLinkItem, "same", "r2", head))
+			codes[i], _ = e.post(t, tok, irBodyWithClaim(irLinkItem, "same", "r2", head, claimHead(claimed)))
 		}(i, tok)
 	}
 	wg.Wait()
 	if !(codes[0] == 201 && codes[1] == 409) && !(codes[0] == 409 && codes[1] == 201) {
 		t.Fatalf("want exactly one 201 and one 409, got %v", codes)
 	}
-	if n := len(e.s.reviews); n != 2 {
-		t.Fatalf("ledger has %d events, want 2", n)
+	if n := len(e.s.reviews); n != 4 {
+		t.Fatalf("ledger has %d events, want two claims and two reads", n)
 	}
 }
 
@@ -346,14 +372,16 @@ func TestIndependentReviewReplayAndFailClosed(t *testing.T) {
 		t.Fatalf("replayed state: %+v", got)
 	}
 	// append failure leaves memory unchanged
+	r2ClaimHead := e.states(t, irSR)[irLinkItem+"/link"]["claim_head"].(string)
+	seniorClaim := e.claim(t, irSR, irLinkItem, "link", "claim", r2ClaimHead, 201)
 	before, nBefore := h2, len(e.s.reviews)
 	e.s.appendLine = func([]byte) error { return fmt.Errorf("disk full") }
-	e.must(t, irSR, irBody(irLinkItem, "same", "r3", h2), 500)
+	e.must(t, irSR, irBodyWithClaim(irLinkItem, "same", "r3", h2, claimHead(seniorClaim)), 500)
 	e.s.appendLine = func(l []byte) error { return appendLedgerLine(filepath.Join(e.run, "api_reviews.ndjson"), l) }
-	if len(e.s.reviews) != nBefore || e.s.rstates[reviewQuestionKey{irLinkItem, "link"}].Head != before {
+	if len(e.s.reviews) != nBefore || e.s.rstates[reviewQuestionKey{irLinkItem, "link"}].Head != before || !e.s.claims[reviewQuestionKey{irLinkItem, "link"}].Active {
 		t.Fatal("failed append changed memory")
 	}
-	e.must(t, irSR, irBody(irLinkItem, "same", "r3", h2), 201)
+	e.must(t, irSR, irBodyWithClaim(irLinkItem, "same", "r3", h2, claimHead(seniorClaim)), 201)
 
 	// impossible but chain-valid history fails closed: a second r1 for the same question
 	run := irRun(t)
@@ -630,7 +658,9 @@ func TestIndependentReviewReplayAcceptsOlderCaseHead(t *testing.T) {
 		t.Fatal(err)
 	}
 	ledgerPost(t, h, e.path+"/actions", irCoord, fmt.Sprintf(`{"action":"note","text":"synthetic","expected_head":%q}`, s2.caseHead(s2.cases[ledgerLoop])), 201)
-	r := httptest.NewRequest(http.MethodPost, e.path+"/review", strings.NewReader(irBody(irLinkItem, "same", "r2", h1)))
+	e2 := &irEnv{s: s2, h: h, run: e.run, path: e.path}
+	claimed := e2.claim(t, irRevB, irLinkItem, "link", "claim", s2.claims[reviewQuestionKey{irLinkItem, "link"}].Head, 201)
+	r := httptest.NewRequest(http.MethodPost, e.path+"/review", strings.NewReader(irBodyWithClaim(irLinkItem, "same", "r2", h1, claimHead(claimed))))
 	r.Header.Set("Authorization", "Bearer "+irRevB)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)

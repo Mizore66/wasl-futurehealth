@@ -131,7 +131,7 @@ a parser that converts integers above 2^53 to doubles will not reproduce either 
 
 ### Independent-review events
 
-Protocol events keep `protocol`, `read`, `question`, `expected_head`, `resolution_reads`, `prev` and `hash` so slot order and the `r3` links to `r1`/`r2` stay verifiable; `actor`, `target_actor` and `note` are removed as for every other event. Decisions of unresolved questions are not served to the second reader; the export is auditor-only. `scripts/api_smoke.py` checks this with planted note and actor canaries.
+Protocol events keep `protocol`, `read`, `question`, `expected_head`, `claim_head`, `resolution_reads`, `prev` and `hash` so slot order, lease fencing and the `r3` links to `r1`/`r2` stay verifiable; `actor`, `target_actor` and `note` are removed as for every other event. Claim events keep `type`, `kind`, `case`, `item`, `question`, `read`, `role`, `action`, `claimed_at`, `heartbeat_at`, `expires_at`, `expected_claim_head`, `mode`, `prev` and `hash`, with the same actor/note redaction. Viewer filtering also removes a `prev` that would reveal a concealed r1 hash. Decisions of unresolved questions are not served to the second reader; the export is auditor-only. `scripts/api_smoke.py` checks this with planted note and actor canaries.
 
 ## Remaining privacy limits
 

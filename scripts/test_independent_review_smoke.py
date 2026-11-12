@@ -27,11 +27,22 @@ class FakeProtocolTests(unittest.TestCase):
         role, actor = t.PRINCIPALS[token]
         return self.fake.route("POST", f"/api/cases/{cid or self.cid}/review", {}, body, role, actor)
 
-    def body(self, decision, read, head):
-        return {"item": self.item, "decision": decision, "note": "", "read": read, "expected_head": head}
+    def claim(self, token, cid=None):
+        cid = cid or self.cid
+        role, actor = t.PRINCIPALS[token]
+        cl = self.fake.claims.get((cid, self.item, "link"))
+        code, response = self.fake.route("POST", f"/api/cases/{cid}/review/claim", {},
+                                         {"item": self.item, "question": "link", "operation": "claim",
+                                          "expected_claim_head": cl["head"] if cl else ""}, role, actor)
+        self.assertEqual(code, 201, response)
+        return response["review_state"]["claim_head"]
+
+    def body(self, decision, read, head, claim_head=""):
+        return {"item": self.item, "decision": decision, "note": "", "read": read, "expected_head": head,
+                "claim_head": claim_head}
 
     def test_distinct_initial_actors_blinding_and_agreement(self):
-        code, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", ""))
+        code, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", "", self.claim("reviewer-token-1234567890")))
         self.assertEqual(code, 201)
         self.assertEqual(r1["review_state"]["state"], "awaiting_r2")
         head = r1["review_state"]["head"]
@@ -41,33 +52,33 @@ class FakeProtocolTests(unittest.TestCase):
         code, view = self.fake.route("GET", f"/api/cases/{self.cid}", {}, None, "reviewer", "smoke-reviewer-2")
         text = json.dumps(view)
         self.assertNotIn(r1["review"]["hash"], text)
-        code, r2 = self.post("reviewer-2-token-1234567890", self.body("same", "r2", head))
+        code, r2 = self.post("reviewer-2-token-1234567890", self.body("same", "r2", head, self.claim("reviewer-2-token-1234567890")))
         self.assertEqual((code, r2["review_state"]["state"]), (201, "resolved_agreed"))
         self.assertEqual(self.post("reviewer-3-token-1234567890", self.body("same", "r3", r2["review_state"]["head"]))[0], 409)
 
     def test_normalised_same_actor_is_refused_across_tokens(self):
-        code, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", ""))
+        code, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", "", self.claim("reviewer-token-1234567890")))
         t.PRINCIPALS["alias-token-1234567890"] = ("reviewer", "  SMOKE-REVIEWER-1 ")
         self.addCleanup(t.PRINCIPALS.pop, "alias-token-1234567890")
         code, _ = self.post("alias-token-1234567890", self.body("same", "r2", r1["review_state"]["head"]))
         self.assertEqual(code, 403)
 
     def test_senior_resolution_links_both_reads_and_needs_a_third_authorised_actor(self):
-        _, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", ""))
-        _, r2 = self.post("reviewer-2-token-1234567890", self.body("different", "r2", r1["review_state"]["head"]))
+        _, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", "", self.claim("reviewer-token-1234567890")))
+        _, r2 = self.post("reviewer-2-token-1234567890", self.body("different", "r2", r1["review_state"]["head"], self.claim("reviewer-2-token-1234567890")))
         head = r2["review_state"]["head"]
         self.assertEqual(r2["review_state"]["state"], "awaiting_r3")
         self.assertEqual(self.post("reviewer-token-1234567890", self.body("same", "r3", head))[0], 403)
         self.assertEqual(self.post("clinician-3-token-1234567890", self.body("same", "r3", head))[0], 403)
         self.assertEqual(self.post("reviewer-3-token-1234567890", self.body("same", "r3", "0" * 64))[0], 409)
-        code, r3 = self.post("reviewer-3-token-1234567890", self.body("same", "r3", head))
+        code, r3 = self.post("reviewer-3-token-1234567890", self.body("same", "r3", head, self.claim("reviewer-3-token-1234567890")))
         self.assertEqual(code, 201)
         self.assertEqual(r3["review"]["resolution_reads"], [r1["review"]["hash"], r2["review"]["hash"]])
         self.assertEqual(r3["review_state"]["state"], "resolved_senior")
         self.assertEqual(self.post("reviewer-3-token-1234567890", self.body("same", "r3", r3["review_state"]["head"]))[0], 409)
 
     def test_undo_of_protocol_read_is_409(self):
-        _, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", ""))
+        _, r1 = self.post("reviewer-token-1234567890", self.body("same", "r1", "", self.claim("reviewer-token-1234567890")))
         code, _ = self.fake.route("POST", f"/api/cases/{self.cid}/undo", {}, {"target": r1["review"]["hash"]},
                                   "reviewer", "smoke-reviewer-2")
         self.assertEqual(code, 409)
@@ -131,7 +142,14 @@ class IndependentSmokeDetectsViolations(unittest.TestCase):
             def lax(cid, body, role, actor):  # accepts a well-formed but stale head by substituting the real one
                 if body.get("expected_head") == "0" * 64:
                     item = body["item"]
-                    body = dict(body, expected_head=f.shown_head(cid, item, f.raised[cid][item]))
+                    question = f.raised[cid][item]
+                    cl = f.claims.get((cid, item, question))
+                    code, claimed = f.protocol_claim(cid, {"item": item, "question": question, "operation": "claim",
+                                                           "expected_claim_head": cl["head"] if cl else ""}, role, actor)
+                    if code != 201:
+                        return code, claimed
+                    body = dict(body, expected_head=f.shown_head(cid, item, question),
+                                claim_head=claimed["review_state"]["claim_head"])
                 return orig(cid, body, role, actor)
             f.protocol_review = lax
         self.assertFails(m, "expected 409")
