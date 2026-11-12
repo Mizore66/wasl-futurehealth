@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { SqliteSessionStore } from "@/lib/auth/oidc-store";
 
 const { store, revalidateMock, notFoundMock } = vi.hoisted(() => ({
   store: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
@@ -11,9 +15,11 @@ vi.mock("next/headers", () => ({ cookies: async () => store }));
 vi.mock("next/cache", () => ({ revalidatePath: revalidateMock }));
 vi.mock("next/navigation", () => ({ notFound: notFoundMock }));
 
-import { getReviewCase, signInReviewer, signOutReviewer } from "@/lib/api/reviewer-session";
+import { getReviewCase, resolveReviewer, signInReviewer, signOutReviewer } from "@/lib/api/reviewer-session";
 
 const TOKEN = "reviewer-one-token-1234567890";
+const oidcStores: SqliteSessionStore[] = [];
+const oidcDirectories: string[] = [];
 const meta = { api: "wasl-api/1", data_mode: "simulated", run: "r", policy: "p", reader_model: "m", loaded_at: "2026-11-12T00:00:00Z", note: "synthetic" };
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
@@ -33,6 +39,8 @@ afterEach(() => {
   store.set.mockReset();
   store.delete.mockReset();
   revalidateMock.mockReset();
+  while (oidcStores.length) oidcStores.pop()!.close();
+  while (oidcDirectories.length) rmSync(oidcDirectories.pop()!, { recursive: true, force: true });
 });
 
 describe("signInReviewer", () => {
@@ -117,5 +125,94 @@ describe("getReviewCase", () => {
   it("ignores a malformed cookie value", async () => {
     store.get.mockReturnValue({ value: "short" });
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false });
+  });
+});
+
+describe("OIDC reviewer sessions", () => {
+  const MAPPED_TOKEN = "mapped-r1-server-token-123456";
+  function configure(options: { subject?: string; credential?: "reviewer" | "reviewer_2"; now?: number } = {}) {
+    const directory = mkdtempSync(path.join(tmpdir(), "wasl-reviewer-oidc-"));
+    oidcDirectories.push(directory);
+    const file = path.join(directory, "session.sqlite");
+    const values = {
+      WASL_REVIEW_AUTH_MODE: "oidc",
+      WASL_OIDC_ISSUER: "https://id.example.test",
+      WASL_OIDC_CLIENT_ID: "review-client",
+      WASL_OIDC_CLIENT_SECRET: "server-only-client-secret",
+      WASL_OIDC_REDIRECT_URI: "https://wasl.example.test/app/auth/oidc/callback",
+      WASL_OIDC_SUBJECT_MAP_JSON: '{"synthetic-r1":"reviewer","synthetic-r2":"reviewer_2"}',
+      WASL_OIDC_SESSION_DB: file,
+      WASL_API_REVIEWER_TOKEN: MAPPED_TOKEN,
+      WASL_API_REVIEWER_2_TOKEN: "mapped-r2-server-token-123456",
+    };
+    for (const [name, value] of Object.entries(values)) vi.stubEnv(name, value);
+    const sessions = new SqliteSessionStore(file);
+    oidcStores.push(sessions);
+    const { sessionId } = sessions.createSession({ issuer: "https://id.example.test", subject: options.subject ?? "synthetic-r1", credential: options.credential ?? "reviewer", now: options.now });
+    store.get.mockImplementation((name: string) => name === "__Secure-wasl_review_session" ? { value: sessionId } : undefined);
+    return { sessions, sessionId };
+  }
+
+  it("maps the verified stored subject to only its current configured bearer token", async () => {
+    configure();
+    const fetchMock = vi.fn().mockResolvedValue(json(200, detailBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await getReviewCase("c1");
+    expect(result).toMatchObject({ authenticated: true, session: { method: "oidc", expiresAt: expect.any(String) } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1].headers.get("authorization")).toBe(`Bearer ${MAPPED_TOKEN}`);
+    expect(JSON.stringify(result)).not.toContain(MAPPED_TOKEN);
+    expect(JSON.stringify(result)).not.toContain("synthetic-r1");
+  });
+
+  it("does not call the API for an unmapped subject or changed credential mapping", async () => {
+    const first = configure({ subject: "synthetic-unmapped" });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "unmapped" });
+    first.sessions.close();
+    oidcStores.pop();
+
+    configure({ subject: "synthetic-r1", credential: "reviewer" });
+    vi.stubEnv("WASL_OIDC_SUBJECT_MAP_JSON", '{"synthetic-r1":"reviewer_2","synthetic-r2":"reviewer"}');
+    expect(await resolveReviewer()).toEqual({ ok: false, reason: "unmapped" });
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "unmapped" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("withholds case data for revoked, expired, malformed or unknown sessions", async () => {
+    const { sessions, sessionId } = configure();
+    sessions.revokeSession(sessionId);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "revoked" });
+    sessions.close();
+    oidcStores.pop();
+
+    configure({ now: Date.now() - 9 * 60 * 60 * 1000 });
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "expired" });
+    store.get.mockReturnValue({ value: "malformed" });
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("revokes the server-side session on logout and refuses an old replayed cookie", async () => {
+    const { sessions, sessionId } = configure();
+    await signOutReviewer("c1");
+    expect(sessions.resolveSession(sessionId)).toEqual({ ok: false, reason: "revoked" });
+    expect(store.set).toHaveBeenCalledWith("__Secure-wasl_review_session", "", { httpOnly: true, secure: true, sameSite: "strict", path: "/app", maxAge: 0 });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "revoked" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("disables demo token entry in OIDC mode", async () => {
+    configure();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await signInReviewer("c1", TOKEN)).ok).toBe(false);
+    expect(store.set).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

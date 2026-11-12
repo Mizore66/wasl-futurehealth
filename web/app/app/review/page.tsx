@@ -9,7 +9,8 @@ import { caseHref } from "@/lib/domain/ids";
 
 export const metadata = { title: "Review" };
 
-export default async function Page() {
+export default async function Page({ searchParams }: PageProps<"/app/review">) {
+  const query = await searchParams;
   const queue = await reviewQueue();
   const rows = queue.cases.map((c) => ({ detail: c, view: reviewView(c) }));
   /** The API's fallback for review_hold: outreach stopped by the guard, and no consent log entry anywhere in the case. */
@@ -29,6 +30,12 @@ export default async function Page() {
         </div>
         <QueueLabel source={queue.source} />
       </header>
+
+      {query.oidc_error === "1" && (
+        <p role="status" className="m-0 mt-3 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
+          OIDC sign-in could not be completed. Try again from a review case or contact the operator.
+        </p>
+      )}
 
       {queue.source === "rebuilt" && (
         <div className="mt-3 max-w-[72ch] text-muted">

@@ -3,6 +3,7 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
 import type { Audit, Programme, UndoProjection } from "@/lib/api/schema";
+import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 import { Card } from "./sections";
 import { GovernanceControls, GovernanceIdentity, GovernanceSignIn } from "./governance-controls";
 import { cn } from "@/lib/utils";
@@ -165,7 +166,7 @@ export function HistoryCard({
    * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
    * `hostSignOut`: the host page already shows a sign-out for this session, so the history card does not repeat it.
    */
-  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean };
+  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean; mode?: ReviewAuthMode; expiresAt?: string };
 }) {
   const status = new Map(governance?.projection.events.map((event) => [event.hash, event.status]));
   const rejectedContests = new Set(
@@ -201,7 +202,7 @@ export function HistoryCard({
           Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
         </p>
       )}
-      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} /> : <GovernanceSignIn caseId={governance.caseId} />)}
+      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} mode={governance.mode} expiresAt={governance.expiresAt} /> : <GovernanceSignIn caseId={governance.caseId} mode={governance.mode} />)}
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
           Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.

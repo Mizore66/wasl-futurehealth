@@ -41,7 +41,7 @@ export type SubmitReadResult =
   | { ok: true; committed: true; read: string; states?: ReviewState[]; hash?: undefined }
   | { ok: false; failure: ReadFailure; states?: ReviewState[] };
 
-const ReadInput = z.object({
+const ReadInput = z.strictObject({
   item: z.string().min(1),
   question: z.enum(["link", "evidence"]),
   decision: ReviewDecision.refine((decision) => decision !== "confirm_contact", "confirm_contact is not a review-desk signature"),

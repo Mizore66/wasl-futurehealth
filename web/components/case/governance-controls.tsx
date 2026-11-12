@@ -1,7 +1,10 @@
 "use client";
 
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
+import Link from "next/link";
 import { appendGovernanceAction, signInForGovernance, signOutForGovernance } from "@/lib/api/governance-actions";
+import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
+import { oidcStartHref } from "@/components/review/auth";
 import { clearSignedOutNotice, SESSION_REJECTED, setSignedOutNotice, signedOutNotice } from "@/components/review/signed-out-notice";
 
 export type GovernanceOperation = "undo" | "contest" | "resolve";
@@ -92,14 +95,16 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
   );
 }
 
-const INDEPENDENCE =
-  "Independence holds only when each actor signs in separately, in their own session, with a distinct token the operator issued to them. A token proves a configured demo identity, not that a separate person is present; one person holding several tokens defeats it.";
+const INDEPENDENCE = {
+  demo: "Independence holds only when each actor signs in separately, in their own session, with a distinct token the operator issued to them. A token proves a configured demo identity, not that a separate person is present; one person holding several tokens defeats it.",
+  oidc: "Independence requires separately authenticated provider subjects. OIDC maps a verified subject to a configured actor; it does not by itself prove separate real-world people.",
+} as const;
 
 /**
  * Shown instead of the controls when nobody is signed in. The same assigned-token sign-in as the review desk: the token is
  * sent once to a server action, kept in an HttpOnly cookie and never returned. No role or credential is offered.
  */
-export function GovernanceSignIn({ caseId }: { caseId: string }) {
+export function GovernanceSignIn({ caseId, mode = "demo" }: { caseId: string; mode?: ReviewAuthMode }) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
@@ -129,46 +134,52 @@ export function GovernanceSignIn({ caseId }: { caseId: string }) {
         Sign in to undo, contest or resolve
       </h3>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-        Enter the token assigned to you. Undo, contest and resolve act only as that credential: it decides who you are and what you may do,
-        and this page never offers a choice of credential. {INDEPENDENCE}
+        {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} Undo, contest and resolve act only as that signed-in credential;
+        this page never offers a role or credential choice. {INDEPENDENCE[mode]}
       </p>
       {notice && (
         <p role="status" className="m-0 mt-2 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
           {notice}
         </p>
       )}
-      <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
-        <div>
-          <label htmlFor={`${id}-token`} className="block text-small font-medium">
-            Your token
-          </label>
-          <input
-            ref={field}
-            id={`${id}-token`}
-            name="token"
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            required
-            aria-describedby={error ? `${id}-err` : undefined}
-            aria-invalid={error ? true : undefined}
-            className="mt-1 min-h-11 w-full rounded-control border border-control bg-surface px-3 text-ink"
-          />
-        </div>
-        {error && (
-          <p id={`${id}-err`} role="alert" className="m-0 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          aria-disabled={pending}
-          onClick={(event) => pending && event.preventDefault()}
-          className="min-h-11 self-start rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
-        >
-          {pending ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+      {mode === "oidc" ? (
+        <Link href={oidcStartHref(caseId)} className="mt-3 inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white">
+          Sign in with OIDC
+        </Link>
+      ) : (
+        <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
+          <div>
+            <label htmlFor={`${id}-token`} className="block text-small font-medium">
+              Your token
+            </label>
+            <input
+              ref={field}
+              id={`${id}-token`}
+              name="token"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              required
+              aria-describedby={error ? `${id}-err` : undefined}
+              aria-invalid={error ? true : undefined}
+              className="mt-1 min-h-11 w-full rounded-control border border-control bg-surface px-3 text-ink"
+            />
+          </div>
+          {error && (
+            <p id={`${id}-err`} role="alert" className="m-0 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            aria-disabled={pending}
+            onClick={(event) => pending && event.preventDefault()}
+            className="min-h-11 self-start rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
+          >
+            {pending ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      )}
     </section>
   );
 }
@@ -177,13 +188,16 @@ export function GovernanceSignIn({ caseId }: { caseId: string }) {
  * Who acts, said plainly, with a way to end the session so a different actor can sign in. `signOut={false}` when the
  * host page already offers the same sign-out (the review desk), so the page has one "Sign out" control, not two.
  */
-export function GovernanceIdentity({ caseId, signOut = true }: { caseId: string; signOut?: boolean }) {
+export function GovernanceIdentity({ caseId, signOut = true, mode = "demo", expiresAt }: { caseId: string; signOut?: boolean; mode?: ReviewAuthMode; expiresAt?: string }) {
   const [pending, start] = useTransition();
   return (
     <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-control bg-ground px-3 py-3" data-testid="governance-identity">
       <p className="m-0 max-w-[64ch] text-small text-muted">
-        Undo, contest and resolve act as the token you signed in with; the API decides your role and actor from it.
-        {!signOut && " To act as someone else, use Sign out on the review desk."} {INDEPENDENCE}
+        {mode === "oidc"
+          ? "Undo, contest and resolve act as your OIDC-mapped credential; the API decides your role and actor from it."
+          : "Undo, contest and resolve act as the token you signed in with; the API decides your role and actor from it."}
+        {expiresAt && <> Session expires at <time dateTime={expiresAt}>{expiresAt}</time>.</>}
+        {!signOut && " To act as someone else, use Sign out on the review desk."} {INDEPENDENCE[mode]}
       </p>
       {signOut && (
         <button
