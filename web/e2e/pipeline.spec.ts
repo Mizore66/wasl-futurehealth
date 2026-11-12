@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import replay from "../data/replay.json";
 import evidenceAudit from "../data/api/case_evidence_closure_audit.json";
+import operations from "../data/api/operations.json";
 
 // The tamper demo rewrites the readers' step of the closed fixture; its hash is the one the server sealed (first 12 hex digits).
 const READERS_HASH = evidenceAudit.chain.find((e) => e.type === "evidence")!.hash.slice(0, 12);
@@ -433,24 +434,35 @@ test("pipeline: Step announces the new step and decision once per press; autopla
   await expect(announcer, "playing again does not announce").toHaveText(spoken);
 });
 
-test("pipeline: backend health sits apart from the replay and says it is a snapshot (#11)", async ({ page }) => {
+test("pipeline: operational readiness is a clearly non-live published snapshot", async ({ page }) => {
   await freezeClock(page);
   await page.goto("/app/pipeline");
   const panel = page.getByTestId("health-panel");
-  await expect(panel.getByRole("heading", { name: "Backend health" })).toBeVisible();
-  await expect(panel.getByTestId("health-status")).toHaveText("ok");
-  await expect(panel.getByTestId("health-cases")).toHaveText("5,280");
+  await expect(panel.getByRole("heading", { name: "Synthetic operational readiness" })).toBeVisible();
+  await expect(panel.getByText("Published snapshot, not live", { exact: true })).toBeVisible();
+  await expect(panel.getByTestId("health-status")).toHaveText(operations.api.status);
   await expect(panel.getByTestId("dep-materialised_run")).toHaveText("loaded");
   await expect(panel.getByTestId("dep-nats")).toHaveText("not_required_for_read_api");
   await expect(panel.getByTestId("dep-reader")).toHaveText("cached");
   await expect(panel.getByTestId("dep-ingest_adapter")).toHaveText("fhir");
-  await expect(panel.getByTestId("health-source")).toContainText("published snapshot taken 6 Nov 2026, 13:56 UTC");
-  await expect(panel.getByTestId("health-source")).toContainText("not a live check");
-  await expect(panel).toContainText("not required to read a saved run");
+  await expect(panel.getByTestId("dep-review_ledger")).toHaveText("ok");
+  await expect(panel.getByTestId("observed-at").locator("time")).toHaveAttribute("datetime", operations.observed_at);
+  await expect(panel.getByTestId("loaded-at").locator("time")).toHaveAttribute("datetime", operations.meta.loaded_at);
+  await expect(panel.getByTestId("health-source")).toContainText("Published snapshot, not live");
+  await expect(panel.getByTestId("health-source")).toContainText("Observed 12 Nov 2026, 16:49 UTC");
+  await expect(panel).toContainText("Checks do not auto-refresh");
+  await expect(panel.getByTestId("nats-status")).toHaveText("unreachable");
+  await expect(panel.getByTestId("queue-unmeasured")).toHaveText("Unmeasured");
+  await expect(panel.getByTestId("api-latency")).toHaveText("Unmeasured");
+  await expect(panel.getByTestId("api-error-rate")).toHaveText("Unmeasured");
+  await expect(panel.getByTestId("run-source")).toHaveText("report7.json");
+  await expect(panel.getByTestId("backup-status")).toHaveText("unmeasured");
+  await expect(panel.getByTestId("backup-age")).toHaveText("Unmeasured");
+  await expect(panel).toContainText("not production monitoring");
+  await expect(panel).toContainText("not proof of a successful backup or restore");
   await expect(panel.getByTestId("health-unavailable")).toHaveCount(0);
   await expect(page.locator("main")).not.toContainText(/servers? on/i);
   await expect(page.getByTestId("server-result")).toContainText("not the state of any server now");
-  await expect(page.locator('[data-honesty="replay"]').first()).toBeVisible();
 });
 
 test("pipeline: health panel fits 390px and keeps 44px targets", async ({ page }) => {

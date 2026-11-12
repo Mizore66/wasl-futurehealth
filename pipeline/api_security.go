@@ -161,6 +161,7 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)

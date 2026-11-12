@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAudit, getHealthz, postReview } from "@/lib/api/source";
+import { getAudit, getHealthz, getOperations, postReview } from "@/lib/api/source";
+import { loadSample } from "./samples";
 
 const health = {
   status: "ok",
@@ -32,6 +33,48 @@ describe("live API authentication", () => {
     await getAudit("missing");
     expect(fetchMock.mock.calls[0][1].headers.get("authorization")).toBe("Bearer reviewer-secret-1234567890");
     expect(fetchMock.mock.calls[1][1].headers.get("authorization")).toBe("Bearer auditor-secret-1234567890");
+  });
+
+  it("gets operations with the shared web-reviewer bearer, no-store and an abort signal", async () => {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "web-reviewer-secret-1234567890");
+    const fetchMock = vi.fn().mockResolvedValue(response(200, loadSample("operations.json")));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const operations = await getOperations();
+    expect(operations.schema).toBe("wasl-operations/1");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://127.0.0.1:8088/api/operations");
+    const init = fetchMock.mock.calls[0][1];
+    expect(init.headers.get("authorization")).toBe("Bearer web-reviewer-secret-1234567890");
+    expect(init.cache).toBe("no-store");
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("aborts an operations fetch after three seconds instead of retaining stale data", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "web-reviewer-secret-1234567890");
+    const fetchMock = vi.fn().mockImplementation((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const pending = getOperations();
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(fetchMock).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(1);
+      await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reads the published operations snapshot in fixtures mode", async () => {
+    vi.stubEnv("WASL_API_URL", "");
+    vi.stubGlobal("fetch", vi.fn());
+    const operations = await getOperations();
+    expect(operations.backup).toMatchObject({ status: "unmeasured", reason: "backup_manifest_not_configured" });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("binds writes to a role token and does not send self-asserted identity headers", async () => {
