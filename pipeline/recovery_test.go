@@ -45,20 +45,134 @@ func TestRecoveryApplicationHeaderDropsWritePreconditions(t *testing.T) {
 	header := nats.Header{}
 	header.Set("Nats-Msg-Id", "message-id")
 	header.Set("KV-Operation", "DEL")
+	header.Set("Nats-Rollup", "sub")
 	header.Set("Nats-Expected-Last-Subject-Sequence", "50")
+	header.Set("Nats-Expected-Last-Subject-Sequence-Subject", "kv.bucket.key")
 	header.Set("Nats-Expected-Last-Sequence", "50")
-	header.Set("nats-expected-last-sequence", "50")
 	header.Set("Nats-Expected-Last-Msg-Id", "prior-id")
 	header.Set("Nats-Expected-Stream", "prior-stream")
+	header.Set("Nats-Expected-Future-Precondition", "unknown-to-this-client")
+	header.Set("Nats-Batch-Id", "batch-1")
+	header.Set("Nats-Batch-Sequence", "1")
+	header.Set("Nats-Batch-Commit", "1")
 	header.Set("Nats-Stream", "source-stream")
+	header.Set("Nats-Time-Stamp", "2026-11-11T00:00:00Z")
+	// nats-server matches header keys case-sensitively, so these were never broker preconditions or read metadata.
+	lookAlikes := map[string]string{"nats-expected-last-sequence": "50", "NATS-EXPECTED-STREAM": "app-stream",
+		"nats-batch-id": "app-batch", "nats-stream": "app-value", "Nats-Expected": "no-dash-suffix"}
+	for key, value := range lookAlikes {
+		header.Set(key, value)
+	}
 	got := recoveryApplicationHeader(header)
-	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Sequence", "nats-expected-last-sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Stream"} {
+	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Subject-Sequence-Subject",
+		"Nats-Expected-Last-Sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Expected-Future-Precondition",
+		"Nats-Batch-Id", "Nats-Batch-Sequence", "Nats-Batch-Commit", "Nats-Stream", "Nats-Time-Stamp"} {
 		if _, found := got[key]; found {
-			t.Errorf("source write precondition %q was retained: %v", key, got[key])
+			t.Errorf("broker header %q was retained: %v", key, got[key])
 		}
 	}
-	if nats.Header(got).Get("Nats-Msg-Id") != "message-id" || nats.Header(got).Get("KV-Operation") != "DEL" {
-		t.Fatalf("application/KV headers were lost: %v", got)
+	for key, value := range map[string]string{"Nats-Msg-Id": "message-id", "KV-Operation": "DEL", "Nats-Rollup": "sub"} {
+		if nats.Header(got).Get(key) != value {
+			t.Errorf("application/KV header %q was lost: %v", key, got)
+		}
+	}
+	for key, value := range lookAlikes {
+		if nats.Header(got).Get(key) != value {
+			t.Errorf("case-different application header %q was dropped: %v", key, got)
+		}
+	}
+	if want := 3 + len(lookAlikes); len(got) != want {
+		t.Fatalf("retained %d headers, want %d: %v", len(got), want, got)
+	}
+}
+
+// writeRecoveryTestBundle stores a single-stream bundle whose digest covers the raw, unnormalised headers, as an
+// older backup would have.
+func writeRecoveryTestBundle(t *testing.T, config jetstream.StreamConfig, messages []recoveryMessage) string {
+	t.Helper()
+	digest, err := recoveryLogicalDigest(messages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+		Config: config, Messages: messages, Digest: digest}}}
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "bundle.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func deleteAllRecoveryTestStreams(t *testing.T, env *natsEnv) {
+	t.Helper()
+	infos, err := listRecoveryStreams(env.ctx, env.js)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, info := range infos {
+		if err := env.js.DeleteStream(env.ctx, info.Config.Name); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// nats-server 2.12.6 rejects Nats-Expected-Last-Subject-Sequence-Subject without its partner header (err_code=10193),
+// so restore must drop the whole Nats-Expected-* family, not a fixed list that can drift behind the server.
+func TestRestoreDropsSubjectSequenceCompanionAndKeepsLookAlikes(t *testing.T) {
+	env := startTestNATS(t)
+	config := jetstream.StreamConfig{Name: "RECOVERY_COMPANION", Subjects: []string{"recovery.companion.>"},
+		Storage: jetstream.FileStorage, AllowDirect: true, AllowRollup: true}
+	messages := []recoveryMessage{
+		{Sequence: 1, Subject: "recovery.companion.a", Data: []byte("first"), Header: map[string][]string{
+			"Nats-Expected-Last-Subject-Sequence":         {"0"},
+			"Nats-Expected-Last-Subject-Sequence-Subject": {"recovery.companion.a"},
+			"Nats-Msg-Id": {"first"}, "KV-Operation": {"PUT"}}},
+		// Only the -Subject companion: the exact header shape that produced err_code=10193.
+		{Sequence: 2, Subject: "recovery.companion.b", Data: []byte("second"), Header: map[string][]string{
+			"Nats-Expected-Last-Subject-Sequence-Subject": {"recovery.companion.b"}, "Nats-Rollup": {"sub"}}},
+		// Values the server would reject if it read them; it does not, because the keys differ in case.
+		{Sequence: 3, Subject: "recovery.companion.c", Data: []byte("third"), Header: map[string][]string{
+			"nats-expected-last-subject-sequence": {"999"}, "nats-expected-stream": {"NOT_THIS_STREAM"},
+			"NATS-BATCH-ID": {"app-batch"}}},
+	}
+	path := writeRecoveryTestBundle(t, config, messages)
+	deleteAllRecoveryTestStreams(t, env)
+	summary, err := restoreNATS(env.ctx, env.js, path)
+	if err != nil {
+		t.Fatalf("bundle carrying the -Subject companion did not restore: %v", err)
+	}
+	if summary.Streams != 1 || summary.Messages != 3 {
+		t.Fatalf("restored %d streams/%d messages, want 1/3", summary.Streams, summary.Messages)
+	}
+	stream, err := env.js.Stream(env.ctx, config.Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := readRecoveryStream(env.ctx, stream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, message := range restored {
+		for key := range message.Header {
+			if strings.HasPrefix(key, "Nats-Expected-") || strings.HasPrefix(key, "Nats-Batch-") {
+				t.Errorf("%s stored write precondition %q", message.Subject, key)
+			}
+		}
+	}
+	first, second, third := nats.Header(restored[0].Header), nats.Header(restored[1].Header), nats.Header(restored[2].Header)
+	if first.Get("Nats-Msg-Id") != "first" || first.Get("KV-Operation") != "PUT" || second.Get("Nats-Rollup") != "sub" {
+		t.Fatalf("application headers were lost: %v / %v", restored[0].Header, restored[1].Header)
+	}
+	if third.Get("nats-expected-last-subject-sequence") != "999" || third.Get("nats-expected-stream") != "NOT_THIS_STREAM" ||
+		third.Get("NATS-BATCH-ID") != "app-batch" {
+		t.Fatalf("case-different application headers were not preserved: %v", restored[2].Header)
+	}
+	if _, err := verifyNATS(env.ctx, env.js, path); err != nil {
+		t.Fatalf("independent readback of the restored companion bundle failed: %v", err)
 	}
 }
 
@@ -111,25 +225,61 @@ func TestRestoreDropsWritePreconditionsFromExistingBundle(t *testing.T) {
 }
 
 func TestExistingBundleTamperFailsBeforeHeaderNormalization(t *testing.T) {
-	message := recoveryMessage{Sequence: 1, Subject: "recovery.precondition",
-		Header: map[string][]string{"Nats-Expected-Last-Subject-Sequence": {"0"}}, Data: []byte("original")}
-	digest, err := recoveryLogicalDigest([]recoveryMessage{message})
+	original := recoveryMessage{Sequence: 1, Subject: "recovery.precondition", Header: map[string][]string{
+		"Nats-Expected-Last-Subject-Sequence":         {"0"},
+		"Nats-Expected-Last-Subject-Sequence-Subject": {"recovery.precondition"},
+		"nats-expected-stream":                        {"application-value"},
+	}, Data: []byte("original")}
+	clone := func() recoveryMessage {
+		m := original
+		m.Header = map[string][]string{}
+		for key, values := range original.Header {
+			m.Header[key] = append([]string(nil), values...)
+		}
+		return m
+	}
+	digest, err := recoveryLogicalDigest([]recoveryMessage{original})
 	if err != nil {
 		t.Fatal(err)
 	}
-	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
-		Config: jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION"}, Messages: []recoveryMessage{message}, Digest: digest}}}
-	bundle.Streams[0].Messages[0].Data = []byte("tampered")
-	raw, err := json.Marshal(bundle)
+	// Each tamper is either in the payload or in a header that normalisation would later drop or keep. All must be
+	// caught by the original digest; none may be hidden by normalising first.
+	for name, tamper := range map[string]func(*recoveryMessage){
+		"payload":                    func(m *recoveryMessage) { m.Data = []byte("tampered") },
+		"dropped precondition value": func(m *recoveryMessage) { m.Header["Nats-Expected-Last-Subject-Sequence-Subject"] = []string{"other"} },
+		"removed precondition":       func(m *recoveryMessage) { delete(m.Header, "Nats-Expected-Last-Subject-Sequence") },
+		"added precondition":         func(m *recoveryMessage) { m.Header["Nats-Batch-Id"] = []string{"injected"} },
+		"retained look-alike value":  func(m *recoveryMessage) { m.Header["nats-expected-stream"] = []string{"tampered"} },
+		"look-alike recased to drop": func(m *recoveryMessage) {
+			m.Header["Nats-Expected-Stream"] = m.Header["nats-expected-stream"]
+			delete(m.Header, "nats-expected-stream")
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			message := clone()
+			tamper(&message)
+			bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+				Config: jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION"}, Messages: []recoveryMessage{message}, Digest: digest}}}
+			raw, err := json.Marshal(bundle)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "bundle.json")
+			if err := os.WriteFile(path, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := loadNATSRecoveryBundle(path); err == nil || !strings.Contains(err.Error(), "logical hash mismatch") {
+				t.Fatalf("tampered bundle passed original-digest validation: %v", err)
+			}
+		})
+	}
+	untampered := writeRecoveryTestBundle(t, jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION"}, []recoveryMessage{clone()})
+	loaded, err := loadNATSRecoveryBundle(untampered)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("untampered bundle was refused: %v", err)
 	}
-	path := filepath.Join(t.TempDir(), "bundle.json")
-	if err := os.WriteFile(path, raw, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := loadNATSRecoveryBundle(path); err == nil || !strings.Contains(err.Error(), "logical hash mismatch") {
-		t.Fatalf("tampered bundle passed original-digest validation: %v", err)
+	if got := loaded.Streams[0].Messages[0].Header; len(got) != 1 || got["nats-expected-stream"][0] != "application-value" {
+		t.Fatalf("normalised headers = %v, want only the lowercase application header", got)
 	}
 }
 
