@@ -10,7 +10,13 @@ Built controls:
 
 - JetStream stream configuration, durable consumer configuration, KV checkpoints, and every retained message are backed
   up. Restore is refused unless the target JetStream has zero streams. Each restored stream is read back and compared
-  using a logical SHA-256 over retained order, subjects, application headers, and payloads.
+  using a logical SHA-256 over retained order, subjects, headers, and payloads. That digest **excludes broker
+  headers**: direct-get read metadata (`Nats-Stream`, `Nats-Sequence`, ...) and broker write preconditions, i.e. every
+  key beginning with the exact, case-sensitive prefix `Nats-Expected-` or `Nats-Batch-` (the families nats-server
+  2.12.6 itself strips when sourcing or mirroring). Matching is case-sensitive like the server's, so a look-alike such
+  as `nats-expected-stream` is ordinary application data and is kept. `Nats-Msg-Id`, `Nats-Rollup`, and `KV-Operation`
+  are kept. Restore first validates each stream's stored digest over the bundle's headers **exactly as backed up**,
+  including any preconditions an older bundle carries, and only then drops broker headers for publish and readback.
 - The file bundle contains the materialised run, cohort, anchors, and API review ledger. New bundles are
   `wasl-file-backup-v2-aesgcm`: each payload (including the NATS payload) is AES-256-GCM encrypted under a fresh
   per-bundle data key, which is wrapped by the active generation of a versioned keyring (`recovery_keys.json`) held

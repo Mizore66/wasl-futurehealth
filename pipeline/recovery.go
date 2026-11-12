@@ -48,23 +48,37 @@ type recoverySummary struct {
 	Digests  map[string]string `json:"logical_sha256_by_stream"`
 }
 
+// recoveryDirectGetHeaders is the broker read metadata a direct get adds. Republishing it makes the server append a
+// second value and changes the logical header set.
+var recoveryDirectGetHeaders = map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
+	"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true}
+
+// recoveryWritePreconditionPrefixes are the publish-control header families that nats-server 2.12.6 itself strips
+// when it sources or mirrors a stored message (server/stream.go, removeHeaderIfPrefixPresent): Nats-Expected-*
+// optimistic-concurrency preconditions, including Nats-Expected-Last-Subject-Sequence-Subject, and Nats-Batch-*
+// atomic-batch control. Republishing them asks the target to re-check the source's state or join a batch.
+var recoveryWritePreconditionPrefixes = []string{"Nats-Expected-", "Nats-Batch-"}
+
+// recoveryBrokerHeader reports whether key is broker metadata or a write precondition rather than application data.
+// Matching is exact and case-sensitive, as in nats-server: a lowercase look-alike such as "nats-expected-stream" is
+// never interpreted by the server and is therefore retained as opaque application data.
+func recoveryBrokerHeader(key string) bool {
+	if recoveryDirectGetHeaders[key] {
+		return true
+	}
+	for _, prefix := range recoveryWritePreconditionPrefixes {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// recoveryApplicationHeader keeps application headers, including Nats-Msg-Id, Nats-Rollup and KV-Operation.
 func recoveryApplicationHeader(header nats.Header) map[string][]string {
-	// Direct-get adds broker read metadata. Republishing it makes the server append a second value and changes the
-	// logical header set; application headers such as Nats-Msg-Id and KV rollup markers must be retained.
-	brokerOnly := map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
-		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true,
-		"Nats-Expected-Last-Subject-Sequence": true, "Nats-Expected-Last-Sequence": true,
-		"Nats-Expected-Last-Msg-Id": true, "Nats-Expected-Stream": true}
 	out := map[string][]string{}
 	for key, values := range header {
-		brokerOnlyKey := false
-		for candidate := range brokerOnly {
-			if strings.EqualFold(key, candidate) {
-				brokerOnlyKey = true
-				break
-			}
-		}
-		if !brokerOnlyKey {
+		if !recoveryBrokerHeader(key) {
 			out[key] = append([]string(nil), values...)
 		}
 	}
