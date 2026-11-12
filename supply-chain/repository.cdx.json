@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:9bb303d5-bf5b-5ece-9740-f48e11fd0cd4",
+  "serialNumber": "urn:uuid:c9e6f349-141c-569b-8877-0972ddbb66c4",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T08:33:30Z",
+    "timestamp": "2026-11-12T01:00:06Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "7ad364c71862a8a4567f701e11df6468b81a4dc2"
+      "version": "c88438f0a7ba4db7526944e874601a24e1084745"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "7ad364c71862a8a4567f701e11df6468b81a4dc2"
+        "value": "c88438f0a7ba4db7526944e874601a24e1084745"
       },
       {
         "name": "wasl:source-tree",
@@ -60,7 +60,7 @@
   },
   "components": [
     {
-      "bom-ref": "container:Dockerfile:16:python:3.12-alpine",
+      "bom-ref": "container:Dockerfile:23:python:3.12-alpine",
       "type": "container",
       "name": "python",
       "version": "3.12-alpine",
@@ -68,7 +68,7 @@
       "properties": [
         {
           "name": "wasl:declared-in",
-          "value": "Dockerfile:16"
+          "value": "Dockerfile:23"
         },
         {
           "name": "wasl:image-role",
