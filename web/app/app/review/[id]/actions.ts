@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { apiMode, getCaseWithToken, postReviewWithToken } from "@/lib/api/source";
+import { apiMode, getCaseWithToken, postReviewClaimWithToken, postReviewWithToken } from "@/lib/api/source";
 import * as session from "@/lib/api/reviewer-session";
 import { type SignInResult } from "@/components/review/auth";
-import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
 import type { SaveFailure, Signature } from "@/components/review/decision";
 
 /**
@@ -46,6 +46,7 @@ const ReadInput = z.strictObject({
   question: z.enum(["link", "evidence"]),
   decision: ReviewDecision.refine((decision) => decision !== "confirm_contact", "confirm_contact is not a review-desk signature"),
   expectedHead: z.string(),
+  claimHead: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
 function refresh(caseId: string) {
@@ -69,7 +70,7 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const latest = await getCaseWithToken(caseId, token);
   if (!latest.ok) return { ok: false, failure: { status: latest.status, error: latest.status === 404 ? "case not found" : "sign in to review" } };
   const detail = latest.detail;
-  const { item, question, decision, expectedHead } = parsed.data;
+  const { item, question, decision, expectedHead, claimHead } = parsed.data;
   const bad = refusal(detail, { item, decision });
   if (bad) return { ok: false, failure: { status: bad.status as 400 | 404, error: bad.error } };
   const raised = detail.review_items.find((r) => r.item === item)!;
@@ -80,12 +81,17 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const states = detail.api_review_states ?? [];
   const state = states.find((s) => s.item === item && s.question === question);
   if (!state) return { ok: false, failure: { status: 404, error: "no independent review is open for this question" }, states };
+  if (state.head !== expectedHead || state.claim_head !== claimHead) {
+    return { ok: false, failure: { status: 409, error: "the review or claim changed; check the current state" }, states };
+  }
   if (!state.may_submit || !state.next_read) return { ok: false, failure: { status: 403, error: "you may not submit the next read for this question" }, states };
-  if (state.head !== expectedHead) return { ok: false, failure: { status: 409, error: "the review changed; check the current state" }, states };
+  if (state.claim?.status !== "active" || state.claim.read !== state.next_read) {
+    return { ok: false, failure: { status: 409, error: "an active claim is required before submitting a read" }, states };
+  }
 
   const res = await postReviewWithToken(
     caseId,
-    { item, decision, note: "", read: state.next_read, expected_head: expectedHead },
+    { item, decision, note: "", read: state.next_read, expected_head: expectedHead, claim_head: claimHead },
     token,
   );
   if (res.ok && res.response === null) {
@@ -106,4 +112,39 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
     fresh = again?.ok ? again.detail.api_review_states : undefined;
   }
   return { ok: false, failure: { status: res.status, error: res.error }, states: fresh };
+}
+
+const ClaimInput = z.object({
+  item: z.string().min(1),
+  question: z.enum(["link", "evidence"]),
+  operation: z.enum(["claim", "renew", "release", "takeover"]),
+  expectedClaimHead: z.string().regex(/^(?:[0-9a-f]{64})?$/),
+});
+
+export type SubmitClaimResult =
+  | { ok: true; states?: ReviewState[]; committed?: true }
+  | { ok: false; failure: ReadFailure; states?: ReviewState[] };
+
+/** Claim, heartbeat, release or takeover. A 409 refreshes once; a committed unreadable 201 is never retried. */
+export async function claimReviewQuestion(caseId: string, input: ReviewClaimInput): Promise<SubmitClaimResult> {
+  if (apiMode() !== "live") throw new Error("claimReviewQuestion needs WASL_API_URL: fixtures mode is a non-persisting preview");
+  const parsed = ClaimInput.safeParse(input);
+  if (!parsed.success) return { ok: false, failure: { status: 400, error: "malformed claim operation" } };
+  const token = await session.reviewerToken();
+  if (!token) return { ok: false, failure: { status: 401, error: "sign in to review" } };
+  const { item, question, operation, expectedClaimHead } = parsed.data;
+  const res = await postReviewClaimWithToken(caseId, { item, question, operation, expected_claim_head: expectedClaimHead }, token);
+  if (res.ok) {
+    refresh(caseId);
+    if (res.response) return { ok: true, states: res.response.api_review_states };
+    const again = await getCaseWithToken(caseId, token).catch(() => undefined);
+    return { ok: true, committed: true, states: again?.ok ? again.detail.api_review_states : undefined };
+  }
+  let states: ReviewState[] | undefined;
+  if (res.status === 409) {
+    refresh(caseId);
+    const again = await getCaseWithToken(caseId, token).catch(() => undefined);
+    states = again?.ok ? again.detail.api_review_states : undefined;
+  }
+  return { ok: false, failure: { status: res.status, error: res.error }, states };
 }

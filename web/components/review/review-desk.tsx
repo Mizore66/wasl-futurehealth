@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { submitReviewRead } from "@/app/app/review/[id]/actions";
+import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { ApiMode } from "@/lib/api/source";
@@ -12,9 +13,12 @@ import { allQuestionsResolved, finalDecisions, READ_LABEL, resolutionProgress } 
 import type { ReviewView } from "./case-view";
 import {
   answerWords,
+  canAnswerClaim,
+  claimSummary,
   draftKey,
   orderedStates,
   outcomeOf,
+  questionAnchor,
   OUTCOMES,
   readFailureSentence,
   readLine,
@@ -97,6 +101,7 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
 }
 
 type Drafts = Record<string, string>;
+type ClaimOperationResult = "success" | "busy" | "terminal" | "transient";
 
 /** One card per (item, question): the server decides what is shown, what may be submitted and by whom. */
 function QuestionCard({
@@ -109,6 +114,8 @@ function QuestionCard({
   busy,
   error,
   onSubmit,
+  onClaim,
+  claimBusy,
   headingRef,
   locked,
 }: {
@@ -121,6 +128,8 @@ function QuestionCard({
   busy: boolean;
   error: string | undefined;
   onSubmit: () => void;
+  onClaim: (operation: "claim" | "renew" | "release" | "takeover") => void;
+  claimBusy: boolean;
   headingRef: (el: HTMLHeadingElement | null) => void;
   /** The server committed a read here but its fresh state could not be read: no form until a reload. */
   locked: boolean;
@@ -131,7 +140,8 @@ function QuestionCard({
   const reads = submittedReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
-  const canAnswer = state.may_submit && next !== null && !terminal && !locked;
+  const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const actions = state.claim_actions;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
@@ -140,6 +150,8 @@ function QuestionCard({
   return (
     <section
       aria-labelledby={`${id}-h`}
+      id={questionAnchor(state.item, state.question)}
+      data-item={state.item}
       data-question={state.question}
       data-state={state.state}
       className={position > 0 ? "border-t border-rule pt-3" : undefined}
@@ -154,6 +166,38 @@ function QuestionCard({
           {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
         </span>
       </p>
+
+      {!terminal && (state.claim === undefined || actions === undefined) && (
+        <p className="m-0 mt-2 text-small text-muted" data-testid={`claim-unavailable-${state.question}`}>
+          This API does not provide review claims, so this question is not actionable.
+        </p>
+      )}
+      {!terminal && state.claim !== undefined && actions !== undefined && (
+        <div className="m-0 mt-2 flex flex-wrap items-center gap-2 text-small" data-testid={`claim-status-${state.question}`}>
+          <span className={state.claim?.status === "expired" ? "text-warning" : "text-muted"}>{claimSummary(state)}</span>
+          {state.claim?.status === "active" && actions.renew && <span className="text-muted">Heartbeat every 60 seconds</span>}
+          {actions.claim && next && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("claim")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
+              {claimBusy ? "Claiming…" : `Claim ${READ_LABEL[next].toLowerCase()}`}
+            </button>
+          )}
+          {actions.takeover && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("takeover")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
+              {claimBusy ? "Taking over…" : "Take over claim"}
+            </button>
+          )}
+          {actions.renew && state.claim?.status === "active" && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("renew")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
+              {claimBusy ? "Renewing…" : "Renew claim"}
+            </button>
+          )}
+          {actions.release && state.claim?.status === "active" && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("release")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
+              {claimBusy ? "Releasing…" : "Release claim"}
+            </button>
+          )}
+        </div>
+      )}
 
       {reads.length > 0 && (
         <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 mt-2 list-none p-0 text-small">
@@ -195,7 +239,7 @@ function QuestionCard({
       {state.state === "awaiting_r2" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
       )}
-      {state.state === "awaiting_r1" && !canAnswer && !locked && (
+      {state.state === "awaiting_r1" && !canAnswer && !locked && !actions?.claim && !actions?.takeover && !state.claim && (
         <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
       )}
 
@@ -248,6 +292,65 @@ function QuestionCard({
   );
 }
 
+/** Each owned lease keeps its own interval across unrelated question-state updates. */
+function ClaimHeartbeat({
+  state,
+  latestStates,
+  haltedLeases,
+  onRenew,
+}: {
+  state: ReviewState;
+  latestStates: { current: ReviewState[] };
+  haltedLeases: { current: Record<string, true> };
+  onRenew: (state: ReviewState, operation: "renew") => Promise<ClaimOperationResult>;
+}) {
+  const qk = `${state.item}:${state.question}`;
+  const active = state.may_submit && state.claim?.status === "active" && Boolean(state.claim_actions?.renew);
+  useEffect(() => {
+    if (!active) return;
+    const timer = setInterval(() => {
+      const latest = latestStates.current.find((candidate) => `${candidate.item}:${candidate.question}` === qk);
+      if (!latest || haltedLeases.current[qk] || !canAnswerClaim(latest) || !latest.claim_actions?.renew) {
+        clearInterval(timer);
+        return;
+      }
+      void onRenew(latest, "renew").then((result) => {
+        if (result === "terminal") clearInterval(timer);
+      });
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [active, qk, state.claim_head, latestStates, haltedLeases, onRenew]);
+  return null;
+}
+
+/* Re-read active leases at expiry, including another reviewer's claim, and retry until the server state changes. */
+function ClaimExpiryRefresher({ states, refreshRevision }: { states: ReviewState[]; refreshRevision: number }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (refreshRevision > 0) router.refresh();
+  }, [refreshRevision, router]);
+  useEffect(() => {
+    const expiries = states.flatMap((state) => {
+      if (state.claim?.status !== "active") return [];
+      const expiresAt = Date.parse(state.claim.expires_at);
+      return Number.isFinite(expiresAt) ? [expiresAt] : [];
+    });
+    if (expiries.length === 0) return;
+    const remaining = Math.min(...expiries) - Date.now();
+    let interval: ReturnType<typeof setInterval> | undefined;
+    /* An active lease already past its local expiry means clock skew: retry later, never in a zero-delay refresh loop. */
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => router.refresh(), 60_000);
+      router.refresh();
+    }, remaining > 0 ? remaining : 60_000);
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [states, router]);
+  return null;
+}
+
 export function ReviewDesk({
   view,
   mode,
@@ -278,7 +381,13 @@ export function ReviewDesk({
   const [locked, setLocked] = useState<Record<string, true>>({});
   const lockedAt = useRef<Record<string, string>>({});
   const [announcement, setAnnouncement] = useState("");
-  const [busy, setBusy] = useState<string>();
+  const [busy, setBusy] = useState<Record<string, true>>({});
+  const busyRef = useRef<Record<string, true>>({});
+  const latestStates = useRef<ReviewState[]>([]);
+  const draftHeads = useRef<Record<string, string | undefined>>({});
+  const haltedLeases = useRef<Record<string, true>>({});
+  const reconcileAfterOperations = useRef(false);
+  const [refreshRevision, setRefreshRevision] = useState(0);
   const [notice, setNotice] = useState<string>();
   const [seen, setSeen] = useState(states);
   const [override, setOverride] = useState<ReviewState[]>();
@@ -298,7 +407,7 @@ export function ReviewDesk({
       Object.fromEntries(Object.entries(l).filter(([qk]) => (states ?? []).some((x) => `${x.item}:${x.question}` === qk && x.head === lockedAt.current[qk]))),
     );
   }
-  const current = live ? orderedStates(override ?? states ?? []) : [];
+  const current = useMemo(() => (live ? orderedStates(override ?? states ?? []) : []), [live, override, states]);
   const resolved = live && allQuestionsResolved({ api_review_states: current });
   const evidenceFinal = finalDecisions({ api_review_states: current }, "evidence")[0];
 
@@ -339,19 +448,87 @@ export function ReviewDesk({
     setDone({ outcome: pending, next });
   }
 
+  /** Merge only the question acted on so a slower whole-case response cannot regress another question's concurrent operation. */
+  const applyQuestionStates = useCallback((incoming: ReviewState[], item: string, question: ReviewState["question"]) => {
+    setOverride((previous) => {
+      const base = previous ?? latestStates.current;
+      return [
+        ...base.filter((state) => state.item !== item || state.question !== question),
+        ...incoming.filter((state) => state.item === item && state.question === question),
+      ];
+    });
+  }, []);
+
+  const applyOperationStates = useCallback((incoming: ReviewState[], item: string, question: ReviewState["question"]) => {
+    if (reconcileAfterOperations.current) applyQuestionStates(incoming, item, question);
+    else setOverride(incoming);
+  }, [applyQuestionStates]);
+
+  /** Applies one server-projected lease operation. No response is retried, and fresh state replaces the changed card. */
+  const changeClaim = useCallback(async (state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<ClaimOperationResult> => {
+    const qk = `${state.item}:${state.question}`;
+    const busyKey = `claim:${qk}`;
+    if (busyRef.current[qk]) return "busy";
+    if (Object.keys(busyRef.current).length > 0) reconcileAfterOperations.current = true;
+    busyRef.current[qk] = true;
+    setBusy((current) => ({ ...current, [busyKey]: true }));
+    setNotice(undefined);
+    setErrors((e) => ({ ...e, [qk]: "" }));
+    try {
+      const res = await claimReviewQuestion(view.caseId, { item: state.item, question: state.question, operation, expectedClaimHead: state.claim_head ?? "" });
+      if (res.states) applyOperationStates(res.states, state.item, state.question);
+      if (res.ok) {
+        delete haltedLeases.current[qk];
+        if (operation === "renew") {
+          const renewed = res.states?.find((candidate) => candidate.item === state.item && candidate.question === state.question);
+          if (renewed) {
+            for (const key of Object.keys(draftHeads.current)) {
+              if (key.startsWith(`${qk}:`)) draftHeads.current[key] = renewed.claim_head;
+            }
+          }
+        } else {
+          setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
+        }
+        if (res.committed && !res.states) setNotice("The server recorded the claim operation, but its confirmation could not be read. Reload before continuing.");
+        setAnnouncement(`${state.question === "link" ? "Identity" : "Evidence"} claim ${operation} recorded. The current server state is shown.`);
+        return "success";
+      }
+      if (res.failure.status === 401 || res.failure.status === 403 || res.failure.status === 409) haltedLeases.current[qk] = true;
+      setErrors((e) => ({ ...e, [qk]: `Not saved: ${res.failure.error}` }));
+      return "terminal";
+    } catch {
+      setErrors((e) => ({ ...e, [qk]: "Not saved: the claim request failed. Check the current state before trying again." }));
+      return "transient";
+    } finally {
+      delete busyRef.current[qk];
+      setBusy((current) => {
+        const next = { ...current };
+        delete next[busyKey];
+        return next;
+      });
+      if (Object.keys(busyRef.current).length === 0 && reconcileAfterOperations.current) {
+        reconcileAfterOperations.current = false;
+        setRefreshRevision((revision) => revision + 1);
+      }
+    }
+  }, [view.caseId, applyOperationStates]);
+
   /** Submits exactly one read. Only that question's draft is cleared; the server's answer is what the card then shows. */
   async function submitRead(state: ReviewState) {
-    if (busy || !state.next_read) return;
+    if (!state.next_read || !canAnswerClaim(state)) return;
+    const qk = `${state.item}:${state.question}`;
+    if (busyRef.current[qk]) return;
     const key = draftKey(state.item, state.question, state.next_read);
     const decision = drafts[key];
     if (!decision) return;
-    setBusy(key);
+    if (Object.keys(busyRef.current).length > 0) reconcileAfterOperations.current = true;
+    busyRef.current[qk] = true;
+    setBusy((current) => ({ ...current, [key]: true }));
     setNotice(undefined);
-    const qk = `${state.item}:${state.question}`;
     setErrors((e) => ({ ...e, [qk]: "" }));
     try {
-      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head });
-      if (res.states) setOverride(res.states);
+      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head, claimHead: state.claim_head ?? "" });
+      if (res.states) applyOperationStates(res.states, state.item, state.question);
       if (res.ok) {
         setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
         if (res.committed) {
@@ -372,9 +549,33 @@ export function ReviewDesk({
     } catch {
       setErrors((e) => ({ ...e, [qk]: "Not saved: the request failed. Check the current state before trying again." }));
     } finally {
-      setBusy(undefined);
+      delete busyRef.current[qk];
+      setBusy((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+      if (Object.keys(busyRef.current).length === 0 && reconcileAfterOperations.current) {
+        reconcileAfterOperations.current = false;
+        setRefreshRevision((revision) => revision + 1);
+      }
     }
   }
+
+  useEffect(() => {
+    latestStates.current = current;
+  }, [current]);
+
+  /* Clear a draft if its lease owner/head changed while the reviewer was answering. */
+  useEffect(() => {
+    setDrafts((existing) => Object.fromEntries(Object.entries(existing).filter(([key]) => {
+      const [item, question, slot] = key.split(":");
+      const state = current.find((s) => s.item === item && s.question === question && s.next_read === slot);
+      return state && draftHeads.current[key] === state.claim_head;
+    })));
+    // A fresh current array is produced exactly when server or lease state changes.
+  }, [current]);
+
 
   if (live && current.length === 0) {
     return (
@@ -406,6 +607,20 @@ export function ReviewDesk({
 
   return (
     <MotionConfig reducedMotion="user">
+      {live && (
+        <>
+          <ClaimExpiryRefresher states={current} refreshRevision={refreshRevision} />
+          {current.map((state) => (
+            <ClaimHeartbeat
+              key={`${state.item}:${state.question}`}
+              state={state}
+              latestStates={latestStates}
+              haltedLeases={haltedLeases}
+              onRenew={changeClaim}
+            />
+          ))}
+        </>
+      )}
       <div className="mt-4 grid items-start gap-3 md:mt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* The decision comes first in reading order and on a phone; the evidence it rests on follows. On a wide screen it sits to the right. */}
         <aside aria-labelledby="decision-h" className="min-w-0 rounded-card border border-line bg-surface p-4 md:p-6 xl:col-start-2 xl:row-start-1">
@@ -434,13 +649,16 @@ export function ReviewDesk({
                     total={current.length}
                     draft={drafts[key]}
                     onDraft={(value) => {
+                      draftHeads.current[key] = state.claim_head;
                       setDrafts((d) => ({ ...d, [key]: value }));
                       setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
                     }}
-                    busy={busy === key}
+                    busy={Boolean(busy[key] || busy[`claim:${state.item}:${state.question}`])}
+                    claimBusy={Boolean(busy[`claim:${state.item}:${state.question}`])}
                     error={errors[`${state.item}:${state.question}`] || undefined}
                     locked={Boolean(locked[`${state.item}:${state.question}`])}
                     onSubmit={() => submitRead(state)}
+                    onClaim={(operation) => void changeClaim(state, operation)}
                     headingRef={(el) => {
                       headings.current[`${state.item}:${state.question}`] = el;
                     }}

@@ -282,6 +282,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 type LedgerLike =
   | { ledger: "coordinator"; kind: string; data: { owner?: string; until?: string; outcome?: string; channel?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
+  | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
   | { ledger: "unknown"; label: string };
 
@@ -289,6 +290,7 @@ type LedgerLike =
 export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
   if (e.ledger === "compensation") return e.kind;
+  if (e.ledger === "claim") return `review_claim/${e.kind}`;
   if (e.ledger === "unknown") return e.label || "unrecognised";
   return e.action ?? "review";
 }
@@ -308,6 +310,10 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "contest") return "Contested an earlier sign-off";
     if (e.kind === "contest_resolution") return e.resolution ? `Contest resolved: ${e.resolution}` : "Contest resolved";
     return plain(e.kind);
+  }
+  if (e.ledger === "claim") {
+    const operation = { claim: "Claimed", renew: "Renewed", release: "Released", takeover: "Taken over" }[e.kind] ?? plain(e.kind);
+    return `Review question ${operation.toLowerCase()}`;
   }
   if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
   return e.decision ? plain(e.decision) : "Review";

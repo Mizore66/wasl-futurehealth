@@ -82,6 +82,8 @@ type apiServer struct {
 	mu         sync.Mutex
 	reviews    []map[string]interface{}
 	rstates    map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	claims     map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
+	now        func() time.Time                           // UTC clock; replaceable in lease tests
 	ledgerErr  string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 }
@@ -185,7 +187,8 @@ func cors(h http.Handler) http.Handler {
 
 func loadAPI(run, data string) *apiServer {
 	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{},
-		signoffs: map[string][]map[string]interface{}{}, facts: map[string][]map[string]interface{}{}, ids: map[string][]map[string]string{}}
+		signoffs: map[string][]map[string]interface{}{}, facts: map[string][]map[string]interface{}{}, ids: map[string][]map[string]string{},
+		claims: map[reviewQuestionKey]*reviewClaimState{}, now: time.Now}
 	s.appendLine = func(line []byte) error { return appendLedgerLine(filepath.Join(run, "api_reviews.ndjson"), line) }
 	readJSON := func(name string, v interface{}) { b, _ := os.ReadFile(filepath.Join(run, name)); json.Unmarshal(b, v) }
 	readJSON("dashboard.json", &s.dashboard)
@@ -642,7 +645,9 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/cases/")
 	sub := ""
-	if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
+	if strings.HasSuffix(rest, "/review/claim") {
+		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -663,6 +668,11 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
 		s.caseReview(w, r, c)
+	case sub == "review/claim" && r.Method == http.MethodPost:
+		s.caseReviewClaim(w, r, c)
+	case sub == "review/claim":
+		w.Header().Set("Allow", "POST")
+		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	case sub == "actions" && r.Method == http.MethodPost:
 		s.caseAction(w, r, c)
 	case sub == "actions":
@@ -716,6 +726,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		Note         string  `json:"note"`
 		Read         string  `json:"read"`
 		ExpectedHead *string `json:"expected_head"`
+		ClaimHead    *string `json:"claim_head"`
 	}
 	if err := decodeAPIBody(w, r, maxReviewBodyBytes, &req); err != nil || req.Decision == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note (and read with expected_head for an independent read); duplicate or unknown fields and oversized/trailing data are rejected"}))
@@ -748,12 +759,12 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
-	if req.Read != "" || req.ExpectedHead != nil { // independent double review; without these fields the legacy path below is unchanged
-		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, act); msg != "" {
+	if req.Read != "" || req.ExpectedHead != nil || req.ClaimHead != nil { // independent double review; without these fields the legacy path below is unchanged
+		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, req.ClaimHead, act); msg != "" {
 			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": msg}))
 			return
 		}
-		s.protocolReview(w, c, s.queueItem(c.ID, req.Item), act, req.Read, *req.ExpectedHead, req.Decision, req.Note, apiPrincipal{role: role, actor: actor})
+		s.protocolReview(w, c, s.queueItem(c.ID, req.Item), act, req.Read, *req.ExpectedHead, *req.ClaimHead, req.Decision, req.Note, apiPrincipal{role: role, actor: actor})
 		return
 	}
 	code, body := func() (int, map[string]interface{}) {
@@ -1593,6 +1604,13 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
 		return errors.New("hash mismatch")
+	}
+	if ev["type"] == reviewClaimEventType {
+		if err := s.replayClaim(ev); err != nil {
+			return fmt.Errorf("review claim: %v", err)
+		}
+		s.reviews = append(s.reviews, ev)
+		return nil
 	}
 	if _, isCoord := ev["type"]; !isCoord {
 		if hasProtocolFields(ev) {

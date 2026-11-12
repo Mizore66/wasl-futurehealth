@@ -20,6 +20,8 @@ import {
   Fixtures,
   Operations,
   Healthz,
+  ReviewClaimRequest,
+  ReviewClaimResponse,
   ReviewError,
   ReviewRequest,
   ReviewResponse,
@@ -445,4 +447,36 @@ export async function postReviewWithToken(id: string, body: ReviewRequest, token
     return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}`, currentHead: e.success ? e.data.current_head : undefined };
   }
   throw new Error(`POST review: HTTP ${res.status}`);
+}
+
+export type ReviewClaimResult =
+  /** `response` is null when the claim event was appended (201) but its body could not be parsed. */
+  | { ok: true; status: 201; response: ReviewClaimResponse | null }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409; error: string; currentHead?: string; currentClaimHead?: string };
+
+/** Appends exactly one lease operation with the caller's raw assigned token. No identity header is sent. */
+export async function postReviewClaimWithToken(id: string, body: ReviewClaimRequest, token: string): Promise<ReviewClaimResult> {
+  const request = ReviewClaimRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  const route = `/api/cases/${encodeURIComponent(id)}/review/claim`;
+  const res = await fetch(
+    liveBase() + route,
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, token),
+  );
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) {
+    const saved = ReviewClaimResponse.safeParse(json);
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
+  if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const e = ReviewError.safeParse(json);
+    return {
+      ok: false,
+      status: res.status,
+      error: e.success ? e.data.error : `HTTP ${res.status}`,
+      currentHead: e.success ? e.data.current_head : undefined,
+      currentClaimHead: e.success ? e.data.current_claim_head : undefined,
+    };
+  }
+  throw new Error(`POST review claim: HTTP ${res.status}`);
 }

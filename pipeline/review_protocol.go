@@ -54,7 +54,7 @@ func perr(code int, format string, a ...interface{}) error {
 var reviewProtocolEventKeys = map[string]bool{
 	"case": true, "item": true, "decision": true, "note": true, "role": true, "actor": true, "action": true, "at": true,
 	"head_signed": true, "mode": true, "prev": true, "hash": true,
-	"protocol": true, "nonce": true, "read": true, "question": true, "expected_head": true, "resolution_reads": true,
+	"protocol": true, "nonce": true, "read": true, "question": true, "expected_head": true, "claim_head": true, "resolution_reads": true,
 }
 
 var reviewNonceRE = regexp.MustCompile(`^[0-9a-f]{32}$`)
@@ -98,7 +98,7 @@ func actForQuestion(question string) string {
 
 // hasProtocolFields reports whether an event carries any protocol field (with or without the marker).
 func hasProtocolFields(ev map[string]interface{}) bool {
-	for _, k := range []string{"protocol", "nonce", "read", "question", "expected_head", "resolution_reads"} {
+	for _, k := range []string{"protocol", "nonce", "read", "question", "expected_head", "claim_head", "resolution_reads"} {
 		if _, ok := ev[k]; ok {
 			return true
 		}
@@ -175,6 +175,12 @@ func reduceReviewProtocol(states map[reviewQuestionKey]*reviewProtocolState, ev 
 	eh, ok := ev["expected_head"].(string)
 	if !ok || !reviewHeadRE.MatchString(eh) {
 		return perr(http.StatusBadRequest, "expected_head must be present and empty or a 64-hex digest")
+	}
+	if raw, present := ev["claim_head"]; present {
+		ch, ok := raw.(string)
+		if !ok || ch == "" || !reviewHeadRE.MatchString(ch) {
+			return perr(http.StatusBadRequest, "claim_head must be a 64-hex digest")
+		}
 	}
 	var wantRole string
 	switch read {
@@ -301,7 +307,7 @@ func nextRead(st *reviewProtocolState) interface{} {
 
 // projectReviewStates is the viewer-facing read model, sorted by item then question. While a question awaits r2,
 // the first read's decision, note, actor and hash are visible only to its author; others see "first read submitted".
-func projectReviewStates(states map[reviewQuestionKey]*reviewProtocolState, viewer apiPrincipal) []map[string]interface{} {
+func projectReviewStates(states map[reviewQuestionKey]*reviewProtocolState, claims map[reviewQuestionKey]*reviewClaimState, viewer apiPrincipal, now time.Time) []map[string]interface{} {
 	keys := make([]reviewQuestionKey, 0, len(states))
 	for k := range states {
 		keys = append(keys, k)
@@ -336,8 +342,9 @@ func projectReviewStates(states map[reviewQuestionKey]*reviewProtocolState, view
 			reads = append(reads, e)
 		}
 		m := map[string]interface{}{"item": st.Item, "question": st.Question, "state": st.State, "head": st.Head,
-			"next_read": nextRead(st), "may_submit": viewerMaySubmit(st, viewer), "reads": reads,
+			"next_read": nextRead(st), "may_submit": false, "reads": reads,
 			"disagreement": false, "final_decision": "", "resolution_basis": "", "canonical_unchanged": true}
+		addClaimProjection(m, st, claims[k], viewer, now, false)
 		switch st.State {
 		case rsAwaitR3:
 			m["disagreement"] = true
@@ -403,18 +410,17 @@ func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[st
 			key := reviewQuestionKey{it.ItemID, q}
 			if st := states[key]; st != nil {
 				view[key] = st // existing history stays visible after a canonical sign-off (frozen)
-			} else if !signed {
+			} else if s.claimsLocked()[key] != nil || !signed {
 				view[key] = &reviewProtocolState{Item: it.ItemID, Question: q, State: rsAwaitR1}
 			}
 		}
 	}
-	out := projectReviewStates(view, viewer)
+	out := projectReviewStates(view, s.claimsLocked(), viewer, s.clock())
 	for _, m := range out {
 		// A canonical sign-off freezes the item: history stays, but no form is actionable.
 		m["frozen"] = frozen[m["item"].(string)]
-		if m["frozen"] == true {
-			m["may_submit"] = false
-		}
+		key := reviewQuestionKey{Item: m["item"].(string), Question: m["question"].(string)}
+		addClaimProjection(m, view[key], s.claimsLocked()[key], viewer, s.clock(), m["frozen"] == true)
 	}
 	return out
 }
@@ -545,18 +551,27 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
 	}
-	return applyReviewProtocol(s.protoStatesLocked(), ev)
+	if err := checkClaimedProtocolRead(s.claimsLocked(), ev, false); err != nil {
+		return err
+	}
+	if err := applyReviewProtocol(s.protoStatesLocked(), ev); err != nil {
+		return err
+	}
+	consumeClaimedProtocolRead(s.claimsLocked(), ev)
+	return nil
 }
 
 // protocolShapeErr: 400-class validation of a protocol request body before any authorisation or state lookup.
-func protocolShapeErr(item, read string, expected *string, act string) string {
+func protocolShapeErr(item, read string, expected, claimHead *string, act string) string {
 	switch {
-	case read == "" || expected == nil:
-		return "read and expected_head must be given together"
+	case read == "" || expected == nil || claimHead == nil:
+		return "read, expected_head and claim_head must be given together"
 	case read != "r1" && read != "r2" && read != "r3":
 		return "read must be r1|r2|r3"
 	case !reviewHeadRE.MatchString(*expected):
 		return "expected_head must be empty or the head returned by the previous response"
+	case *claimHead == "" || !reviewHeadRE.MatchString(*claimHead):
+		return "claim_head must be the active 64-hex claim head"
 	case item == "":
 		return "item is required for an independent read"
 	case act != ActSignLink && act != ActSignEvidence:
@@ -567,7 +582,7 @@ func protocolShapeErr(item, read string, expected *string, act string) string {
 
 // protocolReview handles an accepted-shape, authorised protocol request: all transition checking, the append and the
 // state commit happen under s.mu, and a failed append leaves memory unchanged.
-func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *ReviewItem, act, read, expected, decision, note string, viewer apiPrincipal) {
+func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *ReviewItem, act, read, expected, claimHead, decision, note string, viewer apiPrincipal) {
 	question := questionForAct(act)
 	if !itemHasKind(it, question) {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision does not answer a question this item raised", "item": it.ItemID}))
@@ -588,17 +603,16 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 			return 500, map[string]interface{}{"error": "could not generate a read nonce; nothing was recorded"}
 		}
 		ev := map[string]interface{}{"case": c.ID, "item": it.ItemID, "decision": decision, "note": note, "role": viewer.role, "actor": viewer.actor,
-			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked(),
-			"protocol": reviewProtocolName, "nonce": nonce, "read": read, "question": question, "expected_head": expected}
+			"action": act, "at": s.clock().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked(),
+			"protocol": reviewProtocolName, "nonce": nonce, "read": read, "question": question, "expected_head": expected, "claim_head": claimHead}
 		if st := states[reviewQuestionKey{it.ItemID, question}]; read == "r3" && st != nil && st.State == rsAwaitR3 {
 			ev["resolution_reads"] = []string{st.Reads[0].Hash, st.Reads[1].Hash}
 		}
 		if err := checkReviewProtocol(states, ev); err != nil {
-			pe, _ := err.(*protocolError)
-			if pe == nil {
-				pe = &protocolError{code: 400, msg: err.Error()}
-			}
-			return pe.code, map[string]interface{}{"error": pe.msg, "item": it.ItemID, "question": question, "read": read}
+			return s.claimFailureLocked(c, viewer, reviewQuestionKey{it.ItemID, question}, err)
+		}
+		if err := checkClaimedProtocolRead(s.claimsLocked(), ev, true); err != nil {
+			return s.claimFailureLocked(c, viewer, reviewQuestionKey{it.ItemID, question}, err)
 		}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
@@ -608,6 +622,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 			s.ledgerErr = "protocol state could not apply an appended read: " + err.Error()
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}
+		consumeClaimedProtocolRead(s.claimsLocked(), stored)
 		conc := s.concealedHashesLocked(viewer)
 		shown, _ := viewerEvent(stored, conc)
 		all := s.reviewStatesLocked(c, viewer)

@@ -4,6 +4,8 @@ import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { apiMode } from "@/lib/api/source";
+import { reviewerToken } from "@/lib/api/reviewer-session";
+import { claimActionLabel, claimSummary, questionAnchor } from "@/components/review/decision";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
 
@@ -11,7 +13,9 @@ export const metadata = { title: "Review" };
 
 export default async function Page({ searchParams }: PageProps<"/app/review">) {
   const query = await searchParams;
-  const queue = await reviewQueue();
+  const live = apiMode() === "live";
+  const token = live ? await reviewerToken() : undefined;
+  const queue = await reviewQueue(token);
   const rows = queue.cases.map((c) => ({ detail: c, view: reviewView(c) }));
   /** The API's fallback for review_hold: outreach stopped by the guard, and no consent log entry anywhere in the case. */
   const guardOnly =
@@ -36,6 +40,8 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
           OIDC sign-in could not be completed. Try again from a review case or contact the operator.
         </p>
       )}
+
+      {live && !token && <p className="m-0 mt-3 max-w-[72ch] text-muted">Open a case on the review desk and sign in to claim or answer a question.</p>}
 
       {queue.source === "rebuilt" && (
         <div className="mt-3 max-w-[72ch] text-muted">
@@ -83,6 +89,19 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
                 {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
               </span>
             </Link>
+            {(detail.api_review_states ?? []).filter((s) => s.next_read !== null && !s.frozen && s.claim_actions).map((state) => {
+              const action = token ? claimActionLabel(state) : undefined;
+              return (
+                <div key={`${state.item}:${state.question}`} className="ml-[4.5rem] flex flex-wrap items-center gap-x-3 gap-y-1 pb-3 text-small md:ml-[5.5rem]" data-queue-question={`${state.item}:${state.question}`}>
+                  <span className="text-muted">{state.question === "link" ? "Identity" : "Evidence"}: {claimSummary(state)}</span>
+                  {action && (
+                    <Link href={`${caseHref("/app/review", view.caseId)}#${questionAnchor(state.item, state.question)}`} className="inline-flex min-h-11 items-center rounded-control border border-control px-3 text-ink no-underline hover:bg-active">
+                      {action}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
             <span className="pointer-events-none absolute left-[17px] top-1/2 flex -translate-y-1/2 items-center md:left-[25px]">
               <RecordAvatar id={view.caseId} name={view.name} linked className="pointer-events-auto">
                 <Avatar {...view.faces.referral} size={32} label="" />

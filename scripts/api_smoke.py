@@ -300,8 +300,13 @@ def workflow_smoke(c, cid):
 PROTOCOL = "wasl-independent-review/1"
 STALE_HEAD = "0" * 64   # well-formed but never a real head: must reach stale handling (409)
 MALFORMED_HEAD = "not-a-head"  # not empty and not 64 hex: must be rejected as malformed (400)
-PROTOCOL_FIELDS = ("protocol", "read", "question", "expected_head", "resolution_reads")
+PROTOCOL_FIELDS = ("protocol", "read", "question", "expected_head", "claim_head", "resolution_reads")
 STATES = {"awaiting_r1", "awaiting_r2", "awaiting_r3", "resolved_agreed", "resolved_senior"}
+
+
+def review_claim_head(item, question, event_hash):
+    return hashlib.sha256(canonical_json(["wasl-review-claim-head/1", item, question, event_hash])).hexdigest()
+
 # question -> credentials (r1, r2, senior), decisions (first, second), and a credential of the other discipline.
 DISCIPLINES = {
     "link": {"r1": "WASL_API_REVIEWER_TOKEN", "r2": "WASL_API_REVIEWER_2_TOKEN", "senior": "WASL_API_REVIEWER_3_TOKEN",
@@ -341,7 +346,7 @@ def discover_independent_items(c, programmes, need=2):
                 code, detail = c.request("GET", case_path(cid), token_env=env)
                 check(code == 200, f"independent discovery: GET {cid} returned {code}")
                 for st in detail.get("api_review_states", []):
-                    if st.get("question") == question and st.get("state") == "awaiting_r1" and st.get("may_submit") is True:
+                    if st.get("question") == question and st.get("state") == "awaiting_r1" and st.get("claim_actions", {}).get("claim") is True:
                         found.append((cid, st["item"], question))
             if len(found) >= need:
                 return found[:need]
@@ -359,11 +364,18 @@ class Reader:
         check(code == 200, f"GET {cid} as {self.env}: expected 200, got {code}")
         return body
 
-    def read(self, cid, item, decision, slot, head, note="", expected=201, raw_body=None):
+    def read(self, cid, item, decision, slot, head, note="", expected=201, raw_body=None, claim_head=None):
         body = raw_body if raw_body is not None else {"item": item, "decision": decision, "note": note,
-                                                     "read": slot, "expected_head": head}
+                                                     "read": slot, "expected_head": head,
+                                                     "claim_head": claim_head if claim_head is not None else STALE_HEAD}
         code, payload = self.c.request("POST", case_path(cid, "/review"), body, token_env=self.env)
         check(code == expected, f"POST {slot} {item} as {self.env}: expected {expected}, got {code} ({payload.get('error', '')})")
+        return payload
+
+    def claim(self, cid, item, question, operation, expected_head, expected=201):
+        body = {"item": item, "question": question, "operation": operation, "expected_claim_head": expected_head}
+        code, payload = self.c.request("POST", case_path(cid, "/review/claim"), body, token_env=self.env)
+        check(code == expected, f"POST {operation} {item}/{question} as {self.env}: expected {expected}, got {code} ({payload.get('error', '')})")
         return payload
 
 
@@ -372,6 +384,7 @@ def protocol_event(response, slot, question, label):
     check(isinstance(event, dict), f"{label}: response has no review event")
     check(event.get("protocol") == PROTOCOL and event.get("read") == slot and event.get("question") == question,
           f"{label}: event does not carry protocol/read/question {PROTOCOL}/{slot}/{question}")
+    check(isinstance(event.get("claim_head"), str) and len(event["claim_head"]) == 64, f"{label}: read lost its claim fence")
     return event
 
 
@@ -390,7 +403,34 @@ def independent_review_smoke(c, programmes):
         a = c.ok(case_path(cid, "/audit"), "auditor")
         canon[cid] = (canonical_view(d), a.get("decision_signatures"), a.get("chain"), a.get("chain_length"), len(a.get("history", [])))
     accepted = []   # (case, item, question, slot, event) in acceptance order
+    accepted_claims = []  # (case, item, question, operation, event), interleaved with reads in the ledger
     chain_prev = [None]
+
+    def accept_claim(response, cid, item, question, operation, label):
+        event = response.get("claim_event")
+        check(isinstance(event, dict) and event.get("type") == "review_claim" and event.get("kind") == operation,
+              f"{label}: response has no review_claim/{operation} event")
+        check(event.get("case") == cid and event.get("item") == item and event.get("question") == question,
+              f"{label}: claim event targets the wrong question")
+        if chain_prev[0] is None:
+            check_event_hash(event, label)
+        else:
+            if "prev" in event:
+                check(event.get("prev") == chain_prev[0], f"{label}: claim prev does not link to the prior accepted event")
+            else:
+                # viewerEvent deliberately removes a concealed r1 hash from prev. Reinsert only the already-known
+                # synthetic predecessor to verify the sealed bytes without expecting the secret in this response.
+                check_event_hash({**event, "prev": chain_prev[0]}, label + " with redacted prev restored for verification")
+        chain_prev[0] = event["hash"]
+        accepted_claims.append((cid, item, question, operation, event))
+        state = response.get("review_state")
+        check(isinstance(state, dict) and state.get("claim_head") == review_claim_head(item, question, event["hash"]),
+              f"{label}: projection has the wrong claim_head")
+        if operation == "release":
+            check(state.get("claim") is None and state.get("may_submit") is False, f"{label}: release left an actionable lease")
+        else:
+            check(state.get("claim", {}).get("status") == "active", f"{label}: claim is not active")
+        return event, state
 
     def accept(response, cid, item, question, slot, label):
         event = protocol_event(response, slot, question, label)
@@ -403,6 +443,8 @@ def independent_review_smoke(c, programmes):
         check(isinstance(state, dict) and state.get("item") == item and state.get("question") == question,
               f"{label}: response has no matching review_state")
         check(state.get("canonical_unchanged") is True, f"{label}: review_state does not disclose canonical_unchanged")
+        check(state.get("claim") is None and state.get("claim_head") == event.get("claim_head"),
+              f"{label}: successful read did not consume exactly its current lease")
         return event, state
 
     # A: disagreement -> senior r3.        B: agreement -> no r3.
@@ -414,8 +456,9 @@ def independent_review_smoke(c, programmes):
         tag = f"{outcome} {item}/{question}"
         note1 = f"SMOKE-INDEP-R1-NOTE-{outcome}"
         start = review_state(r1.detail(cid), item, question, tag + " initial")
-        check(start.get("state") == "awaiting_r1" and start.get("next_read") == "r1" and not start.get("head"),
-              f"{tag}: initial state is not awaiting_r1 with an empty head")
+        check(start.get("state") == "awaiting_r1" and start.get("next_read") == "r1" and not start.get("head")
+              and start.get("claim_actions", {}).get("claim") is True and start.get("may_submit") is False,
+              f"{tag}: initial state is not an unclaimed awaiting_r1 slot")
 
         # Requests that must be refused without consuming the slot.
         r1.read(cid, item, first, "r1", "", raw_body={"item": item, "decision": first, "note": "", "read": "r1"}, expected=400)
@@ -425,7 +468,19 @@ def independent_review_smoke(c, programmes):
         senior.read(cid, item, first, "r1", "", expected=403)       # senior is not an initial reader
         check(review_state(r1.detail(cid), item, question, tag).get("state") == "awaiting_r1", f"{tag}: refused writes moved the state")
 
-        e1, s1 = accept(r1.read(cid, item, first, "r1", "", note=note1), cid, item, question, "r1", tag + " r1")
+        # Real-HTTP lease lifecycle: a competitor cannot claim an active slot; the owner renews and releases, then
+        # re-claims and submits with both optimistic-concurrency heads. No timing waits are needed here.
+        first_claim, _ = accept_claim(r1.claim(cid, item, question, "claim", start["claim_head"]), cid, item, question, "claim", tag + " initial claim")
+        first_fence = review_claim_head(item, question, first_claim["hash"])
+        competing = r2.claim(cid, item, question, "claim", first_fence, expected=409)
+        check(competing.get("conflict") == "claim_active", f"{tag}: competing active claim did not return claim_active")
+        renewed, _ = accept_claim(r1.claim(cid, item, question, "renew", first_fence), cid, item, question, "renew", tag + " renew")
+        renewed_fence = review_claim_head(item, question, renewed["hash"])
+        released, _ = accept_claim(r1.claim(cid, item, question, "release", renewed_fence), cid, item, question, "release", tag + " release")
+        released_fence = review_claim_head(item, question, released["hash"])
+        reclaimed, _ = accept_claim(r1.claim(cid, item, question, "claim", released_fence), cid, item, question, "claim", tag + " re-claim")
+        reclaimed_fence = review_claim_head(item, question, reclaimed["hash"])
+        e1, s1 = accept(r1.read(cid, item, first, "r1", "", note=note1, claim_head=reclaimed_fence), cid, item, question, "r1", tag + " r1")
         check(s1.get("state") == "awaiting_r2" and s1.get("next_read") == "r2", f"{tag}: r1 did not open awaiting_r2")
         r1_own_state = review_state(r1.detail(cid), item, question, tag + " own view")
         r1_own = read_entry(r1_own_state, "r1")
@@ -436,16 +491,17 @@ def independent_review_smoke(c, programmes):
         r2.read(cid, item, second if outcome == "disagree" else first, "r1", "", expected=409)
         blind = r2.detail(cid)
         blind_state = review_state(blind, item, question, tag + " blinded view")
-        check(blind_state.get("state") == "awaiting_r2" and blind_state.get("may_submit") is True,
-              f"{tag}: second reader is not offered r2")
+        check(blind_state.get("state") == "awaiting_r2" and blind_state.get("may_submit") is False
+              and blind_state.get("claim_actions", {}).get("claim") is True,
+              f"{tag}: second reader is not offered an unclaimed r2 slot")
         entry = read_entry(blind_state, "r1")
         check(entry is None or (entry.get("submitted") is True and "decision" not in entry and "hash" not in entry),
               f"{tag}: blinded r1 entry exposes decision or hash")
         full = json.dumps(blind, sort_keys=True)
         check(note1 not in full, f"{tag}: r1 note leaked to the second reader")
         check(e1["hash"] not in full, f"{tag}: r1 event hash leaked to the second reader")
-        check(not any(e.get("hash") == e1["hash"] or (e.get("item") == item and e.get("read") == "r1")
-                      for e in blind.get("api_reviews", [])), f"{tag}: r1 event present in the second reader's api_reviews")
+        check(not any(e.get("hash") == e1["hash"] or (e.get("protocol") and e.get("item") == item and e.get("read") == "r1")
+                      for e in blind.get("api_reviews", [])), f"{tag}: r1 protocol event present in the second reader's api_reviews")
         senior.read(cid, item, first, "r3", blind_state["head"], expected=409)      # premature r3
         # Mid-state: a hidden r1 cannot be undone or contested by another ordinary actor (the target hash is not disclosed
         # to them, so a guessed/known hash must not be actionable), and the second reader's view carries no r1 event.
@@ -463,9 +519,11 @@ def independent_review_smoke(c, programmes):
         check(note1 not in json.dumps(stale) and e1["hash"] not in json.dumps(stale), f"{tag}: stale-head refusal leaked r1")
 
         decision2 = second if outcome == "disagree" else first
-        e2, s2 = accept(r2.read(cid, item, decision2, "r2", blind_state["head"], note=f"SMOKE-INDEP-R2-NOTE-{outcome}"),
+        second_claim, _ = accept_claim(r2.claim(cid, item, question, "claim", blind_state["claim_head"]), cid, item, question, "claim", tag + " r2 claim")
+        second_fence = review_claim_head(item, question, second_claim["hash"])
+        e2, s2 = accept(r2.read(cid, item, decision2, "r2", blind_state["head"], note=f"SMOKE-INDEP-R2-NOTE-{outcome}", claim_head=second_fence),
                         cid, item, question, "r2", tag + " r2")
-        check(e2.get("prev") == e1["hash"], f"{tag}: r2 is not chained after r1")
+        check(e2.get("prev") == second_claim["hash"], f"{tag}: r2 is not chained after its claim event")
         revealed = review_state(r1.detail(cid), item, question, tag + " after r2")
         slots = {r["read"]: r for r in revealed.get("reads", [])}
         check(slots.get("r1", {}).get("decision") == first and slots.get("r2", {}).get("decision") == decision2
@@ -485,15 +543,18 @@ def independent_review_smoke(c, programmes):
         check(review_state(r1.detail(cid), item, question, tag).get("may_submit") is False
               and review_state(r2.detail(cid), item, question, tag).get("may_submit") is False,
               f"{tag}: an initial reader is offered r3")
-        check(review_state(senior.detail(cid), item, question, tag).get("may_submit") is True,
-              f"{tag}: the senior is not offered r3")
+        senior_start = review_state(senior.detail(cid), item, question, tag)
+        check(senior_start.get("may_submit") is False and senior_start.get("claim_actions", {}).get("claim") is True,
+              f"{tag}: the senior is not offered an unclaimed r3 slot")
         r1.read(cid, item, first, "r3", head3, expected=403)         # ordinary role, initial actor
         r2.read(cid, item, first, "r3", head3, expected=403)
         other.read(cid, item, first, "r3", head3, expected=403)      # wrong discipline
         senior.read(cid, item, first, "r3", STALE_HEAD, expected=409)
-        e3, s3 = accept(senior.read(cid, item, first, "r3", head3, note=f"SMOKE-INDEP-R3-NOTE-{outcome}"),
+        senior_claim, _ = accept_claim(senior.claim(cid, item, question, "claim", senior_start["claim_head"]), cid, item, question, "claim", tag + " r3 claim")
+        senior_fence = review_claim_head(item, question, senior_claim["hash"])
+        e3, s3 = accept(senior.read(cid, item, first, "r3", head3, note=f"SMOKE-INDEP-R3-NOTE-{outcome}", claim_head=senior_fence),
                         cid, item, question, "r3", tag + " r3")
-        check(e3.get("resolution_reads") == [e1["hash"], e2["hash"]] and e3.get("prev") == e2["hash"],
+        check(e3.get("resolution_reads") == [e1["hash"], e2["hash"]] and e3.get("prev") == senior_claim["hash"],
               f"{tag}: r3 does not link both initial reads")
         check(s3.get("state") == "resolved_senior" and s3.get("next_read") is None and s3.get("final_decision") == first
               and bool(s3.get("resolution_basis")), f"{tag}: r3 did not produce resolved_senior with a basis")
@@ -521,6 +582,18 @@ def independent_review_smoke(c, programmes):
         proto = [e for e in history if e.get("protocol")]
         check([e.get("hash") for e in proto if e.get("hash") in {a[4]["hash"] for a in mine}] == [a[4]["hash"] for a in mine],
               f"{cid}: audit history lacks the accepted protocol events in order")
+        mine_claims = [a for a in accepted_claims if a[0] == cid]
+        claim_history = [e for e in history if e.get("type") == "review_claim"]
+        check([e.get("hash") for e in claim_history if e.get("hash") in {a[4]["hash"] for a in mine_claims}] == [a[4]["hash"] for a in mine_claims],
+              f"{cid}: audit history lacks accepted claim events in hash-chain order")
+        for e in claim_history:
+            if e.get("hash") not in {a[4]["hash"] for a in mine_claims}:
+                continue
+            check(e.get("kind") in {"claim", "renew", "release", "takeover"} and e.get("read") in {"r1", "r2", "r3"},
+                  f"{cid}: audit claim lost operation/read metadata")
+            for field in ("claimed_at", "heartbeat_at", "expires_at", "expected_claim_head", "prev", "hash"):
+                check(field in e, f"{cid}: audit claim lost {field}")
+            check(not ({"actor", "note", "target_actor"} & set(e)), f"{cid}: audit claim exposes actor or note")
         for e in proto:
             if e.get("hash") not in {a[4]["hash"] for a in mine}:
                 continue
@@ -548,7 +621,7 @@ def independent_review_smoke(c, programmes):
         check(audit.get("decision_signatures") == before[1] and audit.get("chain") == before[2]
               and audit.get("chain_length") == before[3], f"{cid}: canonical audit chain or decision signatures changed")
         check(audit.get("chain_verified") is True, f"{cid}: canonical audit chain no longer verifies")
-        check(len(history) >= before[4] + len(mine), f"{cid}: audit history did not grow by the accepted reads")
+        check(len(history) >= before[4] + len(mine) + len(mine_claims), f"{cid}: audit history did not grow by every accepted claim and read")
     return len(accepted)
 
 

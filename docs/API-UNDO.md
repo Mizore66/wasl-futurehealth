@@ -39,7 +39,7 @@ Headers as for `/review`: `X-Wasl-Role`, `X-Wasl-Actor` (both required).
 
 ## Independent-review reads
 
-Events with `protocol: "wasl-independent-review/1"` (reads `r1`, `r2`, `r3`) cannot be undone or contested in this version: a target that is a protocol read returns 409. Undoing one would need dependent invalidation of the later reads, which is not designed. Legacy `/review` events keep the behaviour in this document.
+Events with `protocol: "wasl-independent-review/1"` (reads `r1`, `r2`, `r3`) cannot be undone or contested in this version: a target that is a protocol read returns 409. `type:"review_claim"` claim, renew, release and takeover events likewise return 409: lease history is append-only, and expiry does not delete or compensate it. Undoing a read would need dependent invalidation of the later reads, which is not designed. Legacy `/review` events keep the behaviour in this document.
 
 ## Event
 
