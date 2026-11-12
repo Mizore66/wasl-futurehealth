@@ -87,6 +87,8 @@ def _docker_components(root: Path) -> tuple[list[dict], list[dict]]:
             if not match:
                 continue
             reference = match.group(1)
+            if reference == "scratch":
+                continue  # Empty bundle stage, not an image
             # ARG defaults may reference earlier ARGs (PYTHON_IMAGE uses PYTHON_VERSION); resolve until stable.
             for _ in range(len(args) + 1):
                 resolved = reference
@@ -179,12 +181,33 @@ def augment_sbom(raw: dict, root: Path, *, revision: str, committed_at: str, dir
     if old_root_ref:
         reference_map[old_root_ref] = "wasl:source-root"
     root_component["bom-ref"] = "wasl:source-root"
+    uuid_ref = re.compile(r"[0-9a-fA-F-]{36}")
+    by_ref = {c.get("bom-ref", ""): c for c in bom["components"]}
+    children = {d.get("ref"): d.get("dependsOn", []) for d in bom.get("dependencies", [])}
+    # Scanner UUIDs on libraries repeat per manifest (for example two Go modules sharing x/sys). Name each by package
+    # identity plus the manifest whose dependency tree reaches it.
+    owner: dict[str, str] = {}
+    for component in sorted((c for c in bom["components"] if uuid_ref.fullmatch(c.get("bom-ref", ""))
+                             and c.get("type") == "application" and c.get("name")), key=lambda c: c["name"]):
+        pending = list(children.get(component["bom-ref"], []))
+        seen = set()
+        while pending:
+            child = pending.pop()
+            if child in seen:
+                continue
+            seen.add(child)
+            if uuid_ref.fullmatch(child):
+                owner.setdefault(child, component["name"])
+            pending.extend(children.get(child, []))
     for component in bom["components"]:
         reference = component.get("bom-ref", "")
-        if re.fullmatch(r"[0-9a-fA-F-]{36}", reference):
-            if component.get("type") != "application" or not component.get("name"):
+        if uuid_ref.fullmatch(reference):
+            if component.get("type") == "application" and component.get("name"):
+                replacement = "wasl:manifest:" + component["name"]
+            elif component.get("type") == "library" and component.get("purl") and reference in owner:
+                replacement = f"wasl:library:{component['purl']}@{owner[reference]}"
+            else:
                 raise ValueError(f"Cannot stabilize scanner component reference: {reference}")
-            replacement = "wasl:manifest:" + component["name"]
             reference_map[reference] = replacement
             component["bom-ref"] = replacement
     for dependency in bom.get("dependencies", []):

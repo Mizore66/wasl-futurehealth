@@ -115,6 +115,32 @@ class AugmentSbomTests(unittest.TestCase):
         for dependency in bom["dependencies"]:
             self.assertEqual(dependency["dependsOn"], sorted(dependency["dependsOn"]))
 
+    def test_duplicate_library_uuid_refs_are_named_by_package_and_parent_manifest(self):
+        raw = copy.deepcopy(self.raw)
+        lib = lambda ref: {"bom-ref": ref, "type": "library", "name": "golang.org/x/sys",
+                           "purl": "pkg:golang/golang.org/x/sys@v0.49.0"}
+        raw["components"] += [
+            {"bom-ref": "11111111-1111-4111-8111-111111111111", "type": "application", "name": "pipeline/go.mod"},
+            {"bom-ref": "22222222-2222-4222-8222-222222222222", "type": "application", "name": "deploy/nats/build/go.mod"},
+            lib("33333333-3333-4333-8333-333333333333"), lib("44444444-4444-4444-8444-444444444444"),
+        ]
+        raw["dependencies"] = [
+            {"ref": "11111111-1111-4111-8111-111111111111", "dependsOn": ["33333333-3333-4333-8333-333333333333"]},
+            {"ref": "22222222-2222-4222-8222-222222222222", "dependsOn": ["44444444-4444-4444-8444-444444444444"]},
+        ]
+        bom = supply_chain.augment_sbom(raw, ROOT, revision="a" * 40,
+                                        committed_at="2026-11-09T01:02:03Z", dirty=False)
+        refs = [c["bom-ref"] for c in bom["components"] if c["bom-ref"].startswith("wasl:library:")]
+        self.assertEqual(len(refs), len(set(refs)))
+        self.assertEqual(len(refs), 2)
+        a = "wasl:library:pkg:golang/golang.org/x/sys@v0.49.0@pipeline/go.mod"
+        b = "wasl:library:pkg:golang/golang.org/x/sys@v0.49.0@deploy/nats/build/go.mod"
+        self.assertIn(a, refs)
+        self.assertIn(b, refs)
+        deps = {d["ref"]: d["dependsOn"] for d in bom["dependencies"]}
+        self.assertEqual(deps["wasl:manifest:pipeline/go.mod"], [a])
+        self.assertEqual(deps["wasl:manifest:deploy/nats/build/go.mod"], [b])
+
     def test_refuses_a_dirty_tree_as_clean_release_evidence(self):
         with self.assertRaisesRegex(ValueError, "dirty"):
             supply_chain.augment_sbom(
@@ -129,11 +155,15 @@ class ContainerSecurityTests(unittest.TestCase):
         self.assertIn("ARG GO_VERSION=1.27.4", dockerfile)
         self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", dockerfile)
         self.assertIn("ARG NATS_VERSION=2.12.6", dockerfile)
-        self.assertIn("golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2", dockerfile)
-        self.assertIn("golang.org/x/sys@v0.49.0", dockerfile)
-        self.assertIn("github.com/klauspost/compress@v1.20.0", dockerfile)
+        self.assertIn("ENV GOFLAGS=-mod=vendor GOPROXY=off", dockerfile)
+        self.assertNotIn("go get", dockerfile)
+        gomod = (ROOT / "deploy" / "nats" / "build" / "go.mod").read_text()
+        self.assertIn("golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2", gomod)
+        self.assertIn("golang.org/x/sys v0.49.0", gomod)
+        self.assertIn("github.com/klauspost/compress v1.20.0", gomod)
         self.assertIn("COPY --from=build /out/nats-server /usr/local/bin/nats-server", dockerfile)
         self.assertIn("apk upgrade --no-cache", dockerfile)
+        self.assertIn("apk add --no-cache --no-network", dockerfile)
 
     def test_python_runtime_removes_unused_bootstrap_toolchain(self):
         dockerfile = (ROOT / "Dockerfile").read_text()
