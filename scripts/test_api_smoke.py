@@ -22,6 +22,7 @@ SMOKE = ROOT / "scripts" / "api_smoke.py"
 DEMO = ROOT / "scripts" / "demo.sh"
 TOKENS = {
     "WASL_API_REVIEWER_TOKEN": "reviewer-token-1234567890",
+    "WASL_API_WEB_REVIEWER_TOKEN": "web-reviewer-token-1234567890",
     "WASL_API_REVIEWER_2_TOKEN": "reviewer-2-token-1234567890",
     "WASL_API_REVIEWER_3_TOKEN": "reviewer-3-token-1234567890",
     "WASL_API_AUDITOR_TOKEN": "auditor-token-1234567890",
@@ -32,6 +33,7 @@ TOKENS = {
 }
 PRINCIPALS = {
     "reviewer-token-1234567890": ("reviewer", "smoke-reviewer-1"),
+    "web-reviewer-token-1234567890": ("reviewer", "smoke-web-reviewer"),
     "reviewer-2-token-1234567890": ("reviewer", "smoke-reviewer-2"),
     "reviewer-3-token-1234567890": ("senior_reviewer", "smoke-reviewer-3"),
     "auditor-token-1234567890": ("auditor", "smoke-auditor"),
@@ -60,6 +62,7 @@ class Fake:
 
     def __init__(self, mutate=None):
         self.health = load("healthz.json")
+        self.operations = load("operations.json")
         self.dash = load("dashboard.json")
         self.fix = load("fixtures.json")
         self.detail, self.audit = {}, {}
@@ -284,6 +287,12 @@ class Fake:
                     return 403, {"error": "read permission denied"}
                 if not audit_route and role == "auditor":
                     return 403, {"error": "read permission denied"}
+        if path == "/api/operations":
+            if role == "auditor":
+                return 403, {"error": "read permission denied"}
+            if method != "GET":
+                return 405, {"error": "method not allowed"}
+            return 200, self.operations
         if path == "/api/dashboard":
             return 200, self.dash
         if path == "/api/fixtures":
