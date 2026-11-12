@@ -23,13 +23,15 @@ describe("submitReviewRead", async () => {
   const TOKEN = "reviewer-one-token-1234567890";
   const state = (over: Record<string, unknown> = {}) => ({
     item: "rv-1", question: "link", state: "awaiting_r1", head: "", next_read: "r1", may_submit: true,
+    claim_head: "c".repeat(64), claim: { owner: "Rev-A", role: "reviewer", read: "r1", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" },
+    claim_actions: { claim: false, renew: true, release: true, takeover: false },
     reads: [{ read: "r1", submitted: false }], disagreement: false, canonical_unchanged: true, ...over,
   });
   const detail = (states: unknown[]) => {
     const base = loadSample("case_evidence_closure.json") as Record<string, unknown> & { case: Record<string, unknown> };
     return { ...base, case: { ...base.case, programme: "crc" }, review_items: [{ ...(base.review_items as object[])[0], item: "rv-1", kinds: ["link"] }], api_review_states: states };
   };
-  const input = { item: "rv-1", question: "link" as const, decision: "same", expectedHead: "" };
+  const input = { item: "rv-1", question: "link" as const, decision: "same", expectedHead: "", claimHead: "c".repeat(64) };
   const cookieStore = { get: () => ({ value: TOKEN }), set: vi.fn(), delete: vi.fn() };
 
   beforeEach(() => {
@@ -61,7 +63,7 @@ describe("submitReviewRead", async () => {
       expect(call[1].headers.has("x-wasl-role")).toBe(false);
       expect(call[1].headers.has("x-wasl-actor")).toBe(false);
     }
-    expect(JSON.parse(post[1].body)).toEqual({ item: "rv-1", decision: "same", note: "", read: "r1", expected_head: "" });
+    expect(JSON.parse(post[1].body)).toEqual({ item: "rv-1", decision: "same", note: "", read: "r1", expected_head: "", claim_head: "c".repeat(64) });
     expect(revalidateMock).toHaveBeenCalledWith("/app/review/c1");
   });
 
@@ -131,6 +133,14 @@ describe("submitReviewRead", async () => {
     expect(revalidateMock).toHaveBeenCalledWith("/app/review/c1");
   });
 
+  it("refuses a read locally without an active owned claim", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValue(json(200, detail([state({ claim: null })])));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", input)).toMatchObject({ ok: false, failure: { status: 409 } });
+    expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
+  });
+
   it("returns 401 without any request when signed out", async () => {
     const submit = await load();
     cookieStore.get = () => undefined as never;
@@ -139,5 +149,63 @@ describe("submitReviewRead", async () => {
     expect(await submit("c1", input)).toMatchObject({ ok: false, failure: { status: 401 } });
     expect(fetchMock).not.toHaveBeenCalled();
     cookieStore.get = () => ({ value: TOKEN });
+  });
+});
+
+describe("claimReviewQuestion", () => {
+  const TOKEN = "reviewer-claim-token-1234567890";
+  const cookieStore = { get: () => ({ value: TOKEN }) };
+  const claimEvent = (operation: string) => ({
+    type: "review_claim", kind: operation, case: "c1", item: "rv-1", question: "link", read: "r1", role: "reviewer", actor: "Rev-A",
+    action: "signoff_link", at: "2026-11-13T10:00:00Z", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z",
+    expires_at: "2026-11-13T10:05:00Z", expected_claim_head: "", mode: "demo", prev: "p", hash: "h-claim",
+  });
+  const response = (operation: string) => ({ meta, claim_event: claimEvent(operation), review_state: undefined, api_review_states: [], note: "appended" });
+
+  beforeEach(() => vi.resetModules());
+  async function load() {
+    vi.doMock("next/headers", () => ({ cookies: async () => cookieStore }));
+    vi.doMock("next/cache", () => ({ revalidatePath: revalidateMock }));
+    return (await import("@/app/app/review/[id]/actions")).claimReviewQuestion;
+  }
+
+  it.each(["claim", "renew", "release", "takeover"] as const)("posts one %s with only the bearer credential and contract fields", async (operation) => {
+    const claim = await load();
+    const fetchMock = vi.fn().mockResolvedValue(json(201, response(operation)));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await claim("c1", { item: "rv-1", question: "link", operation, expectedClaimHead: "" });
+    expect(result).toMatchObject({ ok: true, states: [] });
+    expect(JSON.stringify(result)).not.toContain(TOKEN);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:8088/api/cases/c1/review/claim");
+    expect(init.method).toBe("POST");
+    expect(init.headers.get("authorization")).toBe(`Bearer ${TOKEN}`);
+    expect(init.headers.has("x-wasl-role")).toBe(false);
+    expect(init.headers.has("x-wasl-actor")).toBe(false);
+    expect(JSON.parse(init.body)).toEqual({ item: "rv-1", question: "link", operation, expected_claim_head: "" });
+  });
+
+  it("on 409 refreshes and re-reads once without retrying", async () => {
+    const claim = await load();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json(409, { meta, error: "claim active", conflict: "claim_active", current_claim_head: "new" }))
+      .mockResolvedValueOnce(json(200, { ...(loadSample("case_evidence_closure.json") as Record<string, unknown>), api_review_states: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await claim("c1", { item: "rv-1", question: "link", operation: "claim", expectedClaimHead: "" });
+    expect(result).toMatchObject({ ok: false, failure: { status: 409, error: "claim active" }, states: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(1);
+  });
+
+  it("reports a committed unreadable 201, refreshes and never retries", async () => {
+    const claim = await load();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json(201, { meta, claim_event: null }))
+      .mockResolvedValueOnce(json(200, { ...(loadSample("case_evidence_closure.json") as Record<string, unknown>), api_review_states: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await claim("c1", { item: "rv-1", question: "link", operation: "claim", expectedClaimHead: "" })).toMatchObject({ ok: true, committed: true, states: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(1);
   });
 });

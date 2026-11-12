@@ -518,11 +518,26 @@ const compensationShape = {
   head_signed: z.string().optional(),
   resolution: z.enum(["upheld", "rejected"]).optional(),
 };
+const claimShape = {
+  ...ledgerCore,
+  type: z.literal("review_claim"),
+  kind: z.enum(["claim", "renew", "release", "takeover"]),
+  item: z.string(),
+  question: z.enum(["link", "evidence"]),
+  read: z.enum(["r1", "r2", "r3"]),
+  claimed_at: z.string(),
+  heartbeat_at: z.string(),
+  expires_at: z.string(),
+  expected_claim_head: z.string(),
+};
 
 /** A coordinator action as case detail serves it (actor and free text included). */
 export const CoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string() });
 /** An undo, contest or contest resolution as case detail serves it. */
 export const CompensationEvent = z.looseObject({ ...compensationShape, actor: z.string(), target_actor: z.string(), note: z.string() });
+/** A lease operation in case detail; audit/export use the actor-redacted variant below. */
+export const ReviewClaimEvent = z.looseObject({ ...claimShape, actor: z.string() });
+export const AuditReviewClaimEvent = z.looseObject({ ...claimShape, actor: z.string().optional() });
 /** The auditor's redacted forms: no actor, note or target actor (exportReviewEventAllow in pipeline/api_export.go). */
 export const AuditCoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string().optional() });
 export const AuditCompensationEvent = z.looseObject({ ...compensationShape, actor: z.string().optional(), note: z.string().optional() });
@@ -563,6 +578,7 @@ const reviewOnly = { type: z.never().optional(), kind: z.literal("").optional() 
 export const LedgerEvent = z.union([
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
+  ReviewClaimEvent.transform(tag("claim")),
   ApiReview.extend(reviewOnly).transform(tag("review")),
   UnknownLedgerEvent,
 ]);
@@ -570,6 +586,7 @@ export const LedgerEvent = z.union([
 export const AuditLedgerEvent = z.union([
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
+  AuditReviewClaimEvent.transform(tag("claim")),
   AuditReview.extend(reviewOnly).transform(tag("review")),
   UnknownLedgerEvent,
 ]);
@@ -603,6 +620,25 @@ export const ReviewRead = z.looseObject({
   hash: z.string().optional(),
 });
 
+/** A server-owned five-minute lease for one independent-review question. */
+export const ReviewClaim = z.looseObject({
+  owner: z.string(),
+  role: z.string(),
+  read: ReviewSlot,
+  claimed_at: z.string(),
+  heartbeat_at: z.string(),
+  expires_at: z.string(),
+  status: z.enum(["active", "expired"]),
+});
+export const ReviewClaimActions = z.looseObject({ claim: z.boolean(), renew: z.boolean(), release: z.boolean(), takeover: z.boolean() });
+export const ReviewClaimOperation = z.enum(["claim", "renew", "release", "takeover"]);
+export const ReviewClaimRequest = z.object({
+  item: z.string().min(1),
+  question: z.enum(["link", "evidence"]),
+  operation: ReviewClaimOperation,
+  expected_claim_head: z.string().regex(/^(?:[0-9a-f]{64})?$/),
+});
+
 /** One (item, question) independent-review state machine as the API projects it for the calling credential. */
 export const ReviewState = z.looseObject({
   item: z.string(),
@@ -611,6 +647,11 @@ export const ReviewState = z.looseObject({
   head: z.string(),
   next_read: ReviewSlot.nullable(),
   may_submit: z.boolean(),
+  /** Optional for old fixture snapshots. A live desk treats their absence as no claim support, never ownership. */
+  claim_head: z.string().optional(),
+  claim: ReviewClaim.nullable().optional(),
+  claim_actions: ReviewClaimActions.optional(),
+  frozen: z.boolean().optional(),
   reads: z.array(ReviewRead),
   disagreement: z.boolean(),
   final_decision: z.string().optional(),
@@ -837,16 +878,32 @@ export const ReviewRequest = z.object({
   note: z.string().default(""),
   read: ReviewSlot.optional(),
   expected_head: z.string().optional(),
+  claim_head: z.string().regex(/^[0-9a-f]{64}$/).optional(),
 });
 
 export const ReviewResponse = withMeta({
   review: ApiReview,
+  review_state: ReviewState.optional(),
   note: z.string().optional(),
   api_review_states: z.array(ReviewState).optional(),
 });
 
+export const ReviewClaimResponse = withMeta({
+  claim_event: ReviewClaimEvent,
+  review_state: ReviewState.optional(),
+  api_review_states: z.array(ReviewState),
+  note: z.string(),
+});
+
 /** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
-export const ReviewError = withMeta({ error: z.string(), current_head: z.string().optional() });
+export const ReviewError = withMeta({
+  error: z.string(),
+  conflict: z.enum(["claim_active", "claim_required", "claim_expired", "claim_head", "review_state", "head"]).optional(),
+  current_head: z.string().optional(),
+  current_claim_head: z.string().optional(),
+  review_state: ReviewState.optional(),
+  api_review_states: z.array(ReviewState).optional(),
+});
 
 /** GET /api/cases/{id}/undo: a projection only; canonical_state is reported for comparison, never rewritten. */
 export const UndoStatus = z.enum(["", "active", "contested", "compensated", "open", "upheld", "rejected", "applied"]);
@@ -927,7 +984,13 @@ export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ReviewRead = z.infer<typeof ReviewRead>;
 export type ReviewState = z.infer<typeof ReviewState>;
 export type ReviewSlot = z.infer<typeof ReviewSlot>;
-export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string };
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string };
+export type ReviewClaimInput = { item: string; question: "link" | "evidence"; operation: "claim" | "renew" | "release" | "takeover"; expectedClaimHead: string };
+export type ReviewClaim = z.infer<typeof ReviewClaim>;
+export type ReviewClaimActions = z.infer<typeof ReviewClaimActions>;
+export type ReviewClaimRequest = z.input<typeof ReviewClaimRequest>;
+export type ReviewClaimResponse = z.infer<typeof ReviewClaimResponse>;
+export type ReviewClaimEvent = z.infer<typeof ReviewClaimEvent>;
 export type UndoRequest = z.input<typeof UndoRequest>;
 export type ContestRequest = z.input<typeof ContestRequest>;
 export type ContestResolutionRequest = z.input<typeof ContestResolutionRequest>;

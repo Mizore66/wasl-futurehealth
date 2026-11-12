@@ -146,7 +146,7 @@ describe("ReviewRequest", () => {
 });
 
 describe("independent review contracts", async () => {
-  const { ReviewState, ReviewRead, ReviewResponse } = await import("@/lib/api/schema");
+  const { ReviewState, ReviewRead, ReviewResponse, ReviewClaimRequest } = await import("@/lib/api/schema");
   const state = { item: "i", question: "link", state: "awaiting_r2", head: "h", next_read: "r2", may_submit: false, reads: [{ read: "r1", submitted: true }, { read: "r2", submitted: false }], disagreement: false, canonical_unchanged: true };
 
   it("parses a concealed projection and keeps unknown fields", () => {
@@ -164,6 +164,16 @@ describe("independent review contracts", async () => {
   it("keeps the legacy request valid and accepts additive protocol fields", () => {
     expect(ReviewRequest.parse({ item: "i", decision: "same" })).toEqual({ item: "i", decision: "same", note: "" });
     expect(ReviewRequest.parse({ item: "i", decision: "same", read: "r1", expected_head: "" })).toMatchObject({ read: "r1", expected_head: "" });
+    expect(ReviewRequest.parse({ item: "i", decision: "same", read: "r1", expected_head: "", claim_head: "c".repeat(64) })).toMatchObject({ claim_head: "c".repeat(64) });
     expect(ReviewResponse).toBeDefined();
+  });
+
+  it("parses active, expired and null claims and rejects unknown lease values", () => {
+    const claim = { owner: "Rev-A", role: "reviewer", read: "r2", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:01:00Z", expires_at: "2026-11-13T10:06:00Z", status: "active" };
+    expect(ReviewState.parse({ ...state, claim, claim_head: "c".repeat(64), claim_actions: { claim: false, renew: true, release: true, takeover: false } }).claim?.status).toBe("active");
+    expect(ReviewState.parse({ ...state, claim: { ...claim, status: "expired" } }).claim?.status).toBe("expired");
+    expect(ReviewState.parse({ ...state, claim: null }).claim).toBeNull();
+    expect(ReviewState.safeParse({ ...state, claim: { ...claim, status: "released" } }).success).toBe(false);
+    expect(ReviewClaimRequest.safeParse({ item: "i", question: "link", operation: "steal", expected_claim_head: "" }).success).toBe(false);
   });
 });
