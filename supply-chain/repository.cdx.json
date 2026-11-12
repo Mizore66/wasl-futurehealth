@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:c9e6f349-141c-569b-8877-0972ddbb66c4",
+  "serialNumber": "urn:uuid:0953e60d-2ba1-563e-9c87-b47e93c81f26",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-12T01:00:06Z",
+    "timestamp": "2026-11-12T01:45:31Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "c88438f0a7ba4db7526944e874601a24e1084745"
+      "version": "1798c18bec08b47bcaef7d38cc04b9bb4fd8f86f"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "c88438f0a7ba4db7526944e874601a24e1084745"
+        "value": "1798c18bec08b47bcaef7d38cc04b9bb4fd8f86f"
       },
       {
         "name": "wasl:source-tree",
@@ -60,28 +60,7 @@
   },
   "components": [
     {
-      "bom-ref": "container:Dockerfile:23:python:3.12-alpine",
-      "type": "container",
-      "name": "python",
-      "version": "3.12-alpine",
-      "purl": "pkg:docker/library/python@3.12-alpine",
-      "properties": [
-        {
-          "name": "wasl:declared-in",
-          "value": "Dockerfile:23"
-        },
-        {
-          "name": "wasl:image-role",
-          "value": "runtime"
-        },
-        {
-          "name": "wasl:reference",
-          "value": "python:3.12-alpine"
-        }
-      ]
-    },
-    {
-      "bom-ref": "container:Dockerfile:9:golang:1.27.4-bookworm",
+      "bom-ref": "container:Dockerfile:10:golang:1.27.4-bookworm",
       "type": "container",
       "name": "golang",
       "version": "1.27.4-bookworm",
@@ -89,7 +68,7 @@
       "properties": [
         {
           "name": "wasl:declared-in",
-          "value": "Dockerfile:9"
+          "value": "Dockerfile:10"
         },
         {
           "name": "wasl:image-role",
@@ -98,6 +77,27 @@
         {
           "name": "wasl:reference",
           "value": "golang:1.27.4-bookworm"
+        }
+      ]
+    },
+    {
+      "bom-ref": "container:Dockerfile:24:python:${PYTHON_VERSION}-alpine",
+      "type": "container",
+      "name": "python",
+      "version": "${PYTHON_VERSION}-alpine",
+      "purl": "pkg:docker/library/python@${PYTHON_VERSION}-alpine",
+      "properties": [
+        {
+          "name": "wasl:declared-in",
+          "value": "Dockerfile:24"
+        },
+        {
+          "name": "wasl:image-role",
+          "value": "runtime"
+        },
+        {
+          "name": "wasl:reference",
+          "value": "python:${PYTHON_VERSION}-alpine"
         }
       ]
     },
