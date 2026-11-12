@@ -35,6 +35,10 @@ Negative checks of the runner: `GO_VERSION=9.9.9` exits 1 with "base image ... i
 - `scripts/test_deploy.py::test_nats_image_wires_entrypoint` and `scripts/test_supply_chain.py::test_nats_binary_is_rebuilt_with_patched_toolchain_and_modules` initially failed because they asserted the old `go get` text; both now assert the vendored build (`COPY build/`, `-mod=vendor`, versions in `deploy/nats/build/go.mod`). `supply-chain.sh generate` initially failed with `Cannot stabilize scanner component reference` because the second Go module produced duplicate UUID-ref libraries; `scripts/supply_chain.py` now names them `wasl:library:<purl>@<manifest>` (regression test added first) and ignores `FROM scratch` bundle stages. Evidence was regenerated at 808799a and `verify` passes.
 - `scripts/test_production_deploy.py::test_nats_starts_fresh_with_both_passwords_digit_leading` failed with `faccessat .../deploy/nats: connection refused`: the Podman VM cannot read this worktree path (the same cause as the `$TMPDIR` problem in the earlier record). It is an environment limitation, not a build result.
 
+## Fix-round run (run of record)
+
+After the review fixes (matching `GO_VERSION`/`PYTHON_VERSION`/`NATS_VERSION`/`PYTHON_IMAGE` build args, tracked-files-only context, removal of the `# syntax=docker/dockerfile:1` line from both Dockerfiles) the runner was rerun with `WASL_CONTAINER_ENGINE=podman scripts/offline_build_clean.sh` at commit `755032792642735b14bde0f5813e0d585293ae61` with a clean tree (`git status --short` empty). Exit 0; no frontend image was resolved. Wasl `42aaf9cf484972292fa66cce5936de51b866cc7f921804586f416cfcf101cac4`, NATS `db5a11b5e15bb04d4cac75fbb408b787935d938355476bd90a76e3ed38cecfd4` (both arm64). The earlier runs above were at `bc569f2` plus an uncommitted runner edit (run 1) and `bc569f2` pre-commit (run 2), so this run supersedes them. Supply-chain evidence was regenerated afterwards.
+
 ## Limits
 
 - Base images must be preloaded locally. Preparing them (and the bundles) required online access and is out of scope. This is not an empty-host build.
