@@ -307,6 +307,23 @@ class EvidenceComparisonTests(unittest.TestCase):
         generated["licenses.json"]["packages"][0]["licenses"] = []
         supply_chain.compare_evidence(generated, self.tracked)
 
+    def test_cross_platform_graph_only_variants_compare_equal_but_component_changes_fail(self):
+        self.tracked["repository.cdx.json"]["dependencies"] = [{"ref": "a", "dependsOn": ["b"]}]
+        generated = copy.deepcopy(self.tracked)
+        generated["repository.cdx.json"]["metadata"]["properties"][0]["value"] = "linux"
+        generated["licenses.json"]["scan_environment"] = {"system": "linux", "machine": "x86_64"}
+        generated["repository.cdx.json"]["dependencies"] = [{"ref": "a", "dependsOn": []}]
+        supply_chain.compare_evidence(generated, self.tracked)
+        generated["repository.cdx.json"]["components"][0]["version"] = "4.6.8"
+        with self.assertRaisesRegex(ValueError, "source SBOM changed"):
+            supply_chain.compare_evidence(generated, self.tracked)
+
+    def test_same_platform_graph_drift_is_still_rejected(self):
+        generated = copy.deepcopy(self.tracked)
+        generated["repository.cdx.json"]["dependencies"] = [{"ref": "a", "dependsOn": []}]
+        with self.assertRaisesRegex(ValueError, "repository.cdx.json"):
+            supply_chain.compare_evidence(generated, self.tracked)
+
     def test_same_platform_license_drift_is_rejected(self):
         generated = copy.deepcopy(self.tracked)
         generated["licenses.json"]["packages"][0]["licenses"] = []
