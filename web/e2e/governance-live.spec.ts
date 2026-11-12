@@ -109,6 +109,8 @@ test.describe("consent governance through the UI", () => {
   let server: Server;
   let events: Event[];
   let posted: { actor: string; identityHeaders: boolean; body: Record<string, unknown> }[];
+  /** Tokens the operator revoked after they signed in: the mock answers 401 to them, as the API would. */
+  let revoked: Set<string>;
 
   test.beforeAll(async () => {
     const principals = new Map<string, { role: string; actor: string }>();
@@ -125,7 +127,7 @@ test.describe("consent governance through the UI", () => {
       };
       const p = decodeURIComponent(new URL(req.url ?? "/", "http://mock").pathname);
       const token = (req.headers.authorization ?? "").split(" ")[1];
-      const principal = token ? principals.get(token) : undefined;
+      const principal = token && !revoked.has(token) ? principals.get(token) : undefined;
       if (!principal) return send(401, { meta, error: "authentication required" });
       if (req.method === "GET" && p === "/api/fixtures") return send(200, read("fixtures.json"));
       if (req.method === "GET" && p === "/api/cases") return send(200, { meta, cases: [], total: 0, limit: 50, offset: 0 });
@@ -192,6 +194,7 @@ test.describe("consent governance through the UI", () => {
   test.beforeEach(() => {
     events = [seedConsent()];
     posted = [];
+    revoked = new Set();
   });
 
   test.afterAll(async () => {
@@ -216,6 +219,31 @@ test.describe("consent governance through the UI", () => {
     await page.getByTestId("governance-signin").getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByTestId("governance-signin").getByRole("alert")).toContainText("Sign-in failed");
     expect(posted).toEqual([]);
+  });
+
+  test("a session the API rejects is signed out, with the reason, and nothing retries", async ({ page, context }) => {
+    await page.goto(auditPath);
+    await signIn(page, people.clinicianOne.token);
+    revoked.add(people.clinicianOne.token);
+
+    const contestForm = page.locator(`#review-event-${originalHash}`).locator("details").filter({ hasText: "Contest review" });
+    await contestForm.locator("summary").click();
+    await contestForm.getByLabel("Reason").fill("Contest with a revoked token");
+    await contestForm.getByRole("button", { name: "Contest review" }).click();
+
+    const prompt = page.getByTestId("governance-signin");
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByTestId("signed-out-notice")).toContainText("you were signed out");
+    await expect(page.getByTestId("governance-identity")).toHaveCount(0);
+    await expect(page.getByText("Contest review")).toHaveCount(0);
+    expect((await context.cookies()).map((cookie) => cookie.name)).not.toContain("wasl_review_token");
+    expect(posted).toEqual([]);
+
+    /* No loop: the prompt stays put until someone signs in, and a valid token then works as usual. */
+    await page.waitForTimeout(500);
+    await expect(prompt).toBeVisible();
+    await signIn(page, people.clinicianTwo.token);
+    await expect(page.getByTestId("signed-out-notice")).toHaveCount(0);
   });
 
   test("a consent contest is resolved only by a separately signed-in, different actor", async ({ page }) => {

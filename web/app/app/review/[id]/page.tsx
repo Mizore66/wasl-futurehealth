@@ -143,7 +143,12 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       )}
       {audit && (
         <div className="mt-3">
-          <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection, signedIn: history.signedIn } : undefined} />
+          {/* A guided live desk always shows its own reviewer sign-out; the history card then does not add a second one. */}
+          <HistoryCard
+            audit={audit}
+            programme={detail.case.programme}
+            governance={projection ? { caseId: id, projection, signedIn: history.signedIn, hostSignOut: view.guided } : undefined}
+          />
         </div>
       )}
     </>

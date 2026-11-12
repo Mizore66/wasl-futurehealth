@@ -217,7 +217,7 @@ test.describe("independent double review, live mock", () => {
     const { context, page } = await viewer(browser, "r1");
     await expect(card(page, "link")).toContainText("First read due");
     await expect(card(page, "evidence")).toContainText("First read due");
-    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await expect(rail(page).getByRole("button", { name: "Sign out" })).toBeVisible();
 
     await card(page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
@@ -316,7 +316,9 @@ test.describe("independent double review, live mock", () => {
     await page.screenshot({ path: "test-results/screens/review-independent-resolved.png", fullPage: true });
     await noSeriousAxe(page);
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    /* One sign-out on the page: the desk's. The governance history card does not repeat it. */
+    await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(1);
+    await rail(page).getByRole("button", { name: "Sign out" }).click();
     await expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();
     await context.close();
     expect(sharedReviewGets).toBe(0);

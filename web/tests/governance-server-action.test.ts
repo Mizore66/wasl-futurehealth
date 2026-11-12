@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { refresh, revalidatePath } from "next/cache";
 import { appendGovernanceAction, signInForGovernance, signOutForGovernance } from "@/lib/api/governance-actions";
 import { reviewerToken, signInReviewer, signOutReviewer } from "@/lib/api/reviewer-session";
@@ -18,11 +18,35 @@ vi.mock("@/lib/api/source", async (importOriginal) => {
 const SESSION = "signed-in-clinician-two-token";
 const posts = () => [postUndoWithToken, postContestWithToken, postContestResolutionWithToken].map((fn) => vi.mocked(fn));
 const created = (hash: string) => ({ ok: true, status: 201, response: { event: { hash } } }) as never;
+/*
+ * Every server-held credential `source.ts` reads (`WASL_API_${Role | "web_reviewer"}_TOKEN`), plus the numbered tokens the
+ * removed credential picker used. They are all present, so a fallback such as `reviewerToken() ?? process.env...` would
+ * find a token and append: the no-session tests below must still see no request.
+ */
+const SERVER_TOKENS = {
+  WASL_API_REVIEWER_TOKEN: "server-reviewer-token-1234567890",
+  WASL_API_WEB_REVIEWER_TOKEN: "server-web-reviewer-token-1234567890",
+  WASL_API_CLINICIAN_TOKEN: "server-clinician-token-1234567890",
+  WASL_API_COORDINATOR_TOKEN: "server-coordinator-token-1234567890",
+  WASL_API_AUDITOR_TOKEN: "server-auditor-token-1234567890",
+  WASL_API_REVIEWER_2_TOKEN: "server-reviewer-two-token-1234567890",
+  WASL_API_REVIEWER_3_TOKEN: "server-reviewer-three-token-1234567890",
+  WASL_API_CLINICIAN_2_TOKEN: "server-clinician-two-token-1234567890",
+  WASL_API_CLINICIAN_3_TOKEN: "server-clinician-three-token-1234567890",
+};
+const fetchMock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+  for (const [name, value] of Object.entries(SERVER_TOKENS)) vi.stubEnv(name, value);
+  vi.stubGlobal("fetch", fetchMock);
   vi.mocked(reviewerToken).mockResolvedValue(SESSION);
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("appendGovernanceAction acts only as the signed-in identity", () => {
@@ -80,13 +104,24 @@ describe("appendGovernanceAction acts only as the signed-in identity", () => {
     for (const post of posts()) expect(post).not.toHaveBeenCalled();
   });
 
-  it("without a session, appends nothing and asks for a sign-in", async () => {
-    vi.mocked(reviewerToken).mockResolvedValue(undefined);
-    const result = await appendGovernanceAction({ caseId: "c1", target: "review-hash", operation: "contest", reason: "Contest this" });
-    expect(result).toMatchObject({ ok: false, signIn: true });
-    for (const post of posts()) expect(post).not.toHaveBeenCalled();
-    expect(revalidatePath).not.toHaveBeenCalled();
-  });
+  it.each(["undo", "contest", "resolve"] as const)(
+    "without a session, %s appends nothing and asks for a sign-in, although server-held tokens are configured",
+    async (operation) => {
+      vi.mocked(reviewerToken).mockResolvedValue(undefined);
+      for (const name of Object.keys(SERVER_TOKENS)) expect(process.env[name]).toBeTruthy();
+      const result = await appendGovernanceAction({
+        caseId: "c1",
+        target: "review-hash",
+        operation,
+        ...(operation === "resolve" ? { resolution: "upheld" } : {}),
+        reason: "No session",
+      });
+      expect(result).toMatchObject({ ok: false, signIn: true });
+      for (const post of posts()) expect(post).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(revalidatePath).not.toHaveBeenCalled();
+    },
+  );
 
   it("treats an API-rejected session token as signed out", async () => {
     vi.mocked(postUndoWithToken).mockResolvedValue({ ok: false, status: 401, error: "authentication required" });
