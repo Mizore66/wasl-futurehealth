@@ -51,7 +51,7 @@ class RecoveryProbeTests(unittest.TestCase):
                     return Response({"cases": [{"id": "case-1"}]})
                 if path == "/api/cases/case-1/export":
                     return Response({"comparison_sha256": "a" * 64, "content_sha256": "b" * 64,
-                                     "meta": {"loaded_at": "2026-11-11T00:00:00Z"}})
+                                     "meta": {"loaded_at": "2026-11-11T00:00:00Z", "data_mode": "simulated"}})
                 raise AssertionError(path)
 
             argv = ["recovery_api_probe.py", "--secrets", str(secrets),
@@ -64,7 +64,9 @@ class RecoveryProbeTests(unittest.TestCase):
             self.assertEqual(identities["/healthz"], "reviewer:reviewer-secret")
             self.assertEqual(identities["/api/cases?limit=1"], "reviewer:reviewer-secret")
             self.assertEqual(identities["/api/cases/case-1/export"], "auditor:auditor-secret")
-            self.assertEqual(json.loads(output.read_text())["unauthenticated_status"], 401)
+            probe = json.loads(output.read_text())
+            self.assertEqual(probe["unauthenticated_status"], 401)
+            self.assertEqual(probe["data_mode"], "simulated")
 
 
 if __name__ == "__main__":
