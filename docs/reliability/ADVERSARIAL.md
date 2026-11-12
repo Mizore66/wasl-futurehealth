@@ -8,6 +8,8 @@ The machine-readable source of truth is [`adversarial-matrix.json`](adversarial-
 
 The [verification manifest](evidence/verification-2026-11-09.manifest.json) binds the final raw logs, artifact hashes, commands, and matrix SHA-256 to `tested_source.code_commit`, the final code-only commit `3e1c3733ec44525baf95cc169b22aad189a51fde`. `tested_source.code_tree` is that commit's full Git tree. Every listed test command ran with no working-tree changes under `pipeline/` or `scripts/`; later evidence-only commits change only `docs/reliability/`.
 
+Path scrub (2026-11-12): absolute developer worktree paths in `evidence/adversarial-fuzz-2026-11-09/runner.log` were replaced with `<repo>/`, and that log's `sha256` and `bytes` pin in the verification manifest was refreshed to the scrubbed file; no recorded result changed.
+
 `tested_source.tree` has explicit source-only semantics: it is the deterministic Git tree of the final evidence revision with the complete `docs/reliability/evidence/` directory removed. It covers the final tracked source and reliability documentation, including this document and the matrix, without attempting a self-referential hash of evidence or of the containing commit. Reproduce it from the final evidence revision with a temporary index:
 
 ```sh

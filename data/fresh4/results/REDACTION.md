@@ -1,0 +1,1 @@
+Path scrub (2026-11-12): in `integrated-run.log` (line 1), the absolute developer worktree prefix before `scripts/final_manifest.py` was replaced with `<repo>/`. No other byte changed; the recorded run output is unchanged.
