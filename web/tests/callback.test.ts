@@ -29,6 +29,9 @@ describe("callbackChoice", () => {
     }
     expect(callbackChoice(1, wall).label).toBe("Wed 11 Nov");
     expect(callbackChoice(3, wall).label).toBe("Fri 13 Nov");
+    // The app writes "Sep", not ICU's en-GB "Sept", in the label and in the saved snooze reason.
+    const sept = callbackChoice(0, Date.UTC(2026, 8, 3, 9));
+    expect([sept.label, sept.action.reason]).toEqual(["Thu 3 Sep", "Call back Thu 3 Sep"]);
   });
 
   it("names the UTC date of `until` at a UTC day boundary", () => {

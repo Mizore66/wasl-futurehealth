@@ -271,7 +271,7 @@ test.describe("Referrals", () => {
     await expect(pane.getByText("Choose a reason to return it.")).toBeVisible();
     await pane.getByRole("button", { name: "Wrong unit" }).click();
     await pane.getByRole("button", { name: "Return to GP" }).click();
-    await expect(pane.getByRole("status")).toContainText("Returned to the Al Mushrif GP. Reason: wrong unit. Act by 1 Sept.");
+    await expect(pane.getByRole("status")).toContainText("Returned to the Al Mushrif GP. Reason: wrong unit. Act by 1 Sep.");
     await expect(page.getByRole("tab", { name: "Waiting on GP 1" })).toBeVisible();
     await shot(page, "referrals-returned");
   });
