@@ -7,13 +7,14 @@ ARG NATS_VERSION=2.12.6
 FROM golang:${GO_VERSION}-bookworm AS build
 ARG NATS_VERSION
 WORKDIR /src
-RUN go mod init wasl-nats-build \
- && go get github.com/nats-io/nats-server/v2@v${NATS_VERSION} \
-    golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 \
-    golang.org/x/sys@v0.49.0 \
-    github.com/klauspost/compress@v1.20.0 \
- && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
-    -o /out/nats-server github.com/nats-io/nats-server/v2
+ENV GOFLAGS=-mod=vendor GOPROXY=off
+COPY build/ ./
+ARG OFFLINE_BUILD_ID=0
+RUN command -v timeout >/dev/null && command -v bash >/dev/null \
+ && if [ "$OFFLINE_BUILD_ID" != "0" ] && timeout 3 bash -c 'exec 3<>/dev/tcp/proxy.golang.org/443' 2>/dev/null; then \
+      echo "offline build unexpectedly reached proxy.golang.org" >&2; exit 1; \
+    fi \
+ && go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/nats-server github.com/nats-io/nats-server/v2
 
 # NATS with the Wasl cluster config baked in. A host bind mount of nats.conf is unreadable when the container VM
 # (for example a Podman machine) does not share the checkout directory, so the config is copied into the image.

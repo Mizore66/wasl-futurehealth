@@ -28,6 +28,26 @@ class OfflineBuildTests(unittest.TestCase):
         self.assertIn('image inspect "$RUNTIME_IMAGE"', runner)
         self.assertIn("ls-files -coz --exclude-standard -- pipeline/vendor", runner)
 
+    def test_nats_build_is_pinned_vendored_and_offline(self):
+        build = ROOT / "deploy/nats/build"
+        for name in ("go.mod", "go.sum", "main.go", "vendor/modules.txt"):
+            self.assertTrue((build / name).is_file(), name)
+        dockerfile = (ROOT / "deploy/nats/Dockerfile").read_text()
+        self.assertNotIn("go get", dockerfile)
+        self.assertNotIn("go mod init", dockerfile)
+        self.assertIn("COPY build/ ./", dockerfile)
+        self.assertIn("GOFLAGS=-mod=vendor GOPROXY=off", dockerfile)
+        self.assertIn("ARG OFFLINE_BUILD_ID=0", dockerfile)
+        self.assertIn("proxy.golang.org/443", dockerfile)
+        self.assertIn("go vet . && CGO_ENABLED=0 go build -trimpath", dockerfile)
+        self.assertIn("USER 10001:10001", dockerfile)
+
+    def test_tracked_nats_vendor_matches_go_mod_vendor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "vendor"
+            subprocess.run(["go", "-C", str(ROOT / "deploy/nats/build"), "mod", "vendor", "-o", str(out)], check=True)
+            self.assert_vendor_tree_equal(ROOT / "deploy/nats/build/vendor", out)
+
     def assert_vendor_tree_equal(self, left, right):
         comparison = filecmp.dircmp(left, right, ignore=[])
         self.assertEqual([], comparison.left_only)
