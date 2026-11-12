@@ -1,5 +1,7 @@
-/** Weekday, day and month in UTC: the timezone the API stores `until` in. */
-export const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+import { formatWeekdayDay } from "@/lib/domain/day";
+
+/** Weekday, day and month in UTC (the timezone the API stores `until` in), from the app's month table: "Thu 3 Sep". */
+export const WEEKDAY = { format: formatWeekdayDay };
 
 /**
  * A wall-clock RFC 3339 time `days` after `nowMs`, to the second. The API checks a snooze `until` against its own wall
