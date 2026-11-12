@@ -23,6 +23,8 @@ Production-shaped recovery drill using synthetic data and Linux containers on on
 
 Partially restored targets were preserved for diagnosis and not reused. Every successful restore used a new empty project/volumes and the exact committed fix revision. Bundle digests are validated before normalization; broker write preconditions are then excluded from normalized restore/readback digests, so those normalized digests can differ from the original bundle's raw logical digest.
 
+**Drilled revision boundary:** only `b2c01b8` was drilled. Later changes to the recovery header filter (`3a5585d`, and the switch to the server's case-sensitive `Nats-Expected-`/`Nats-Batch-` prefix rule that also drops `Nats-Expected-Last-Subject-Sequence-Subject`) are covered by unit and local single-node NATS tests only, not by a repeated container drill.
+
 ## Not proven / remaining limits
 
 - **Offline build was not proven in this drill.** `podman build --network=none`, including with the existing image as layer cache, stopped at `go mod download` because no preseeded Go module cache was available (`proxy.golang.org ... network is unreachable`). A [12 Nov follow-up](offline-container-build-2026-11-12.md) completed the full rebuild using tracked Go modules and preseeded base images/package layers; that separate evidence does not claim an empty-cache or second-machine build.
