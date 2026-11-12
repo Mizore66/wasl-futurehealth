@@ -21,14 +21,15 @@ class OfflineBuildTests(unittest.TestCase):
         self.assertIn("--pull-never", runner)
         self.assertIn("--pull=false", runner)
         self.assertIn('OFFLINE_BUILD_ID=$(date +%s)', runner)
-        self.assertIn("ls-files -co --exclude-standard", runner)
+        self.assertIn("ls-files -coz --exclude-standard -- pipeline/vendor", runner)
 
     def assert_vendor_tree_equal(self, left, right):
-        comparison = filecmp.dircmp(left, right)
+        comparison = filecmp.dircmp(left, right, ignore=[])
         self.assertEqual([], comparison.left_only)
         self.assertEqual([], comparison.right_only)
-        self.assertEqual([], comparison.diff_files)
         self.assertEqual([], comparison.funny_files)
+        for name in comparison.common_files:
+            self.assertTrue(filecmp.cmp(Path(left) / name, Path(right) / name, shallow=False), name)
         for directory in comparison.common_dirs:
             self.assert_vendor_tree_equal(Path(left) / directory, Path(right) / directory)
 

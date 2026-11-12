@@ -14,7 +14,11 @@ COPY pipeline/vendor ./vendor
 ENV GOFLAGS=-mod=vendor GOPROXY=off
 COPY pipeline/ ./
 ARG OFFLINE_BUILD_ID=0
-RUN test -n "$OFFLINE_BUILD_ID" && go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
+RUN command -v timeout >/dev/null && command -v bash >/dev/null \
+ && if [ "$OFFLINE_BUILD_ID" != "0" ] && timeout 3 bash -c 'exec 3<>/dev/tcp/proxy.golang.org/443' 2>/dev/null; then \
+      echo "offline build unexpectedly reached proxy.golang.org" >&2; exit 1; \
+    fi \
+ && go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
 
 FROM python:${PYTHON_VERSION}-alpine
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
