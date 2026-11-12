@@ -223,10 +223,19 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 	byHash := map[string]map[string]interface{}{}
 	var prior []map[string]interface{}
 	proto := map[reviewQuestionKey]*reviewProtocolState{}
+	claims := map[reviewQuestionKey]*reviewClaimState{}
 	for i, ev := range evs {
 		bad := func(msg string) error { return fmt.Errorf("review ledger event %d: %s", i+1, msg) }
 		// Coordinator events share the hash chain but are schema-validated by loadReviews, not by undo semantics.
 		if sstr(ev, "type") == coordEventType {
+			byHash[sstr(ev, "hash")] = ev
+			prior = append(prior, ev)
+			continue
+		}
+		if sstr(ev, "type") == reviewClaimEventType {
+			if err := applyReviewClaim(claims, proto, ev); err != nil {
+				return bad("review claim: " + err.Error())
+			}
 			byHash[sstr(ev, "hash")] = ev
 			prior = append(prior, ev)
 			continue
@@ -237,9 +246,13 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 				return bad(err.Error())
 			}
 			if hasProtocolFields(ev) { // the same transition validator the POST handler and the replay use
+				if err := checkClaimedProtocolRead(claims, ev, false); err != nil {
+					return bad("independent review claim: " + err.Error())
+				}
 				if err := applyReviewProtocol(proto, ev); err != nil {
 					return bad("independent review: " + err.Error())
 				}
+				consumeClaimedProtocolRead(claims, ev)
 			}
 		} else {
 			if kind != evKindUndo && kind != evKindContest && kind != evKindResolution {
@@ -253,8 +266,8 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 			if t == nil || sstr(t, "case") != sstr(ev, "case") {
 				return bad("target is not an earlier event of the same case")
 			}
-			if isProtocolEvent(t) {
-				return bad("an independent review read cannot be undone or contested")
+			if isProtocolEvent(t) || sstr(t, "type") == reviewClaimEventType {
+				return bad("an independent review read or claim cannot be undone or contested")
 			}
 			events := caseOf(prior, sstr(ev, "case"))
 			status, _ := foldUndo(events)
@@ -529,8 +542,8 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		fail(404, "target is not a review event of this case", "target", req.Target)
 		return
 	}
-	if isProtocolEvent(target) {
-		fail(409, "an independent review read cannot be undone or contested in this version", "target", req.Target)
+	if isProtocolEvent(target) || sstr(target, "type") == reviewClaimEventType {
+		fail(409, "an independent review read or claim cannot be undone or contested in this version", "target", req.Target)
 		return
 	}
 	status, _ := foldUndo(events)

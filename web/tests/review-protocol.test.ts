@@ -23,11 +23,20 @@ const EVID = "rv-d55f7ccf9f12c409";
 
 const base = CaseDetail.parse(hold);
 const open = (): CaseDetail => ({ ...base, case: { ...base.case, closed: false, review: "open" }, signoffs: [], api_reviews: [] });
-const state = (over: Partial<ReviewState> & Pick<ReviewState, "item" | "question" | "state">): ReviewState =>
-  ReviewState.parse({ head: "", next_read: null, may_submit: false, reads: [], disagreement: false, canonical_unchanged: true, ...over });
+const state = (over: Partial<ReviewState> & Pick<ReviewState, "item" | "question" | "state">): ReviewState => {
+  const value = { head: "", next_read: null, may_submit: false, reads: [], disagreement: false, canonical_unchanged: true, ...over };
+  if (value.may_submit && value.next_read && value.claim === undefined) {
+    value.claim_head = "c".repeat(64);
+    value.claim = { owner: "Rev-A", role: "reviewer", read: value.next_read, claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" };
+    value.claim_actions = { claim: false, renew: true, release: true, takeover: false };
+  }
+  return ReviewState.parse(value);
+};
 
 const awaitingR1 = (item: string, question: "link" | "evidence", may = true) =>
   state({ item, question, state: "awaiting_r1", next_read: "r1", may_submit: may, reads: [{ read: "r1", submitted: false }] });
+const unclaimed = (item: string, question: "link" | "evidence") =>
+  state({ item, question, state: "awaiting_r1", next_read: "r1", may_submit: false, claim: null, claim_head: "", claim_actions: { claim: true, renew: false, release: false, takeover: false }, reads: [{ read: "r1", submitted: false }] });
 /** What the second reader receives: the first read exists but carries no decision or hash. */
 const concealedR2 = (item: string, question: "link" | "evidence", may = true) =>
   state({ item, question, state: "awaiting_r2", head: "h1", next_read: "r2", may_submit: may, reads: [{ read: "r1", submitted: true }, { read: "r2", submitted: false }] });
@@ -91,6 +100,51 @@ describe("blinded review desk markup", () => {
     expect(html).toContain("First read due");
     expect(html).toContain("Submit first read");
     expect(html).not.toContain("Close the case");
+  });
+
+  it("an unclaimed eligible question has a claim button and no answer form", () => {
+    const html = desk([unclaimed(LINK, "link")]);
+    expect(html).toContain("Unclaimed");
+    expect(html).toContain("Claim first read");
+    expect(html).not.toContain("Submit first read");
+    expect(html).toContain(`id="review-question-${LINK}-link"`);
+  });
+
+  it("another actor's active claim shows owner and expiry but no answer or claim control", () => {
+    const other = state({ item: LINK, question: "link", state: "awaiting_r1", next_read: "r1", may_submit: false,
+      claim_head: "c".repeat(64), claim: { owner: "Rev-B", role: "reviewer", read: "r1", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" },
+      claim_actions: { claim: false, renew: false, release: false, takeover: false }, reads: [{ read: "r1", submitted: false }] });
+    const html = desk([other]);
+    expect(html).toContain("Claimed by Rev-B until");
+    expect(html).not.toContain("Submit first read");
+    expect(html).not.toContain("Claim first read");
+  });
+
+  it("an expired eligible claim offers takeover without exposing a stale answer form", () => {
+    const expired = state({ item: LINK, question: "link", state: "awaiting_r1", next_read: "r1", may_submit: false,
+      claim_head: "c".repeat(64), claim: { owner: "Rev-B", role: "reviewer", read: "r1", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "expired" },
+      claim_actions: { claim: false, renew: false, release: false, takeover: true }, reads: [{ read: "r1", submitted: false }] });
+    const html = desk([expired]);
+    expect(html).toContain("Claim by Rev-B expired at");
+    expect(html).toContain("Take over claim");
+    expect(html).not.toContain("Submit first read");
+  });
+
+  it("an owned active claim shows the answer form and release control", () => {
+    const html = desk([awaitingR1(LINK, "link")]);
+    expect(html).toContain("Claimed by Rev-A until");
+    expect(html).toContain("Release claim");
+    expect(html).toContain("Submit first read");
+    expect(html).toContain("Heartbeat every 60 seconds");
+  });
+
+  it("released and frozen states expose no stale answer form or mutation", () => {
+    const released = state({ ...unclaimed(LINK, "link"), claim_head: "b".repeat(64), claim_actions: { claim: false, renew: false, release: false, takeover: false } });
+    const frozen = state({ ...released, item: EVID, question: "evidence", frozen: true });
+    const html = desk([released, frozen]);
+    expect(html).not.toContain("Submit first read");
+    expect(html).not.toContain("Release claim");
+    expect(html).not.toContain("Take over claim");
   });
 
   it("offers no credential choice or role selector", () => {

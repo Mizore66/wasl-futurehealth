@@ -231,6 +231,41 @@ export function failureSentence(sig: Signature, failure: SaveFailure): string {
 
 export type Question = "link" | "evidence";
 
+export const questionAnchor = (item: string, question: Question) => `review-question-${item.replace(/[^A-Za-z0-9_-]/g, "-")}-${question}`;
+
+function leaseTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : `${date.toISOString().slice(0, 10)} ${date.toISOString().slice(11, 16)} UTC`;
+}
+
+/** Server-projected ownership, formatted consistently on the queue and desk. */
+export function claimSummary(state: Pick<ReviewState, "claim">): string {
+  const claim = state.claim;
+  if (!claim) return "Unclaimed";
+  return claim.status === "expired"
+    ? `Claim by ${claim.owner} expired at ${leaseTime(claim.expires_at)}`
+    : `Claimed by ${claim.owner} until ${leaseTime(claim.expires_at)}`;
+}
+
+export function claimActionLabel(state: Pick<ReviewState, "claim_actions">): string | undefined {
+  const actions = state.claim_actions;
+  if (actions?.claim) return "Claim";
+  if (actions?.takeover) return "Take over";
+  if (actions?.renew || actions?.release) return "Renew or release";
+  return undefined;
+}
+
+export function canAnswerClaim(state: ReviewState): boolean {
+  return Boolean(
+    state.may_submit &&
+      state.next_read &&
+      state.claim?.status === "active" &&
+      state.claim.read === state.next_read &&
+      state.claim_head &&
+      !state.frozen,
+  );
+}
+
 /** The draft for a question is keyed by the read it will become, so a changed server state never reuses a stale answer. */
 export const draftKey = (item: string, question: Question, nextRead: ReviewSlot) => `${item}:${question}:${nextRead}`;
 
@@ -249,14 +284,15 @@ export function orderedStates(states: readonly ReviewState[]): ReviewState[] {
 /** What this question needs now, from the viewer's side. Concealment is the server's: this only words what arrived. */
 export function stateHeadline(s: ReviewState): { text: string; tone: "positive" | "negative" | "warning" | "muted" } {
   const own = s.reads.some((r) => r.read === "r1" && r.submitted && r.decision !== undefined);
+  const actionable = s.may_submit || Boolean(s.claim_actions?.claim || s.claim_actions?.takeover);
   switch (s.state) {
     case "awaiting_r1":
-      return s.may_submit ? { text: "First read due", tone: "warning" } : { text: "Waiting for a first read", tone: "muted" };
+      return actionable ? { text: "First read due", tone: "warning" } : { text: "Waiting for a first read", tone: "muted" };
     case "awaiting_r2":
-      if (s.may_submit) return { text: "Second read due", tone: "warning" };
+      if (actionable) return { text: "Second read due", tone: "warning" };
       return { text: own ? "Your first read is in; waiting for a different reviewer" : "Waiting for a second read", tone: "muted" };
     case "awaiting_r3":
-      return s.may_submit ? { text: "Disagreement: senior resolution due", tone: "warning" } : { text: "Disagreement: waiting for a senior", tone: "negative" };
+      return actionable ? { text: "Disagreement: senior resolution due", tone: "warning" } : { text: "Disagreement: waiting for a senior", tone: "negative" };
     case "resolved_agreed":
       return { text: "Resolved: both reads agree", tone: "positive" };
     case "resolved_senior":

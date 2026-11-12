@@ -132,6 +132,7 @@ func exportSafeOpValue(v string) bool { return exportStaticText[v] || exportOpCo
 
 type exportAllow struct {
 	leaf      bool                    // a scalar, or a list of scalars, is kept
+	empty     bool                    // an empty string is part of the field's operational contract (first claim head)
 	op        bool                    // string leaves must be server operational codes or fixed static text
 	items     *exportAllow            // an array of objects projected with this schema
 	chain     bool                    // an array of hash-chain blocks, projected according to block type
@@ -307,7 +308,7 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		}
 		return out, true
 	default:
-		if a.leaf && exportScalarOK(v, a.op) {
+		if a.leaf && ((a.empty && v == "") || exportScalarOK(v, a.op)) {
 			return v, true
 		}
 	}
@@ -498,8 +499,9 @@ var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "ch
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head",
-		"protocol", "read", "question", "expected_head", "resolution_reads")
+		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head")
 	m["data"] = exportCoordinatorDataAllow
+	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m
 }())
 

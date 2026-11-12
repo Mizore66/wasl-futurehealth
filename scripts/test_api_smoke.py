@@ -2,6 +2,7 @@
 """Tests for scripts/api_smoke.py and `demo.sh smoke`. A stateful fake HTTP server replays the committed samples and workflow routes; no model calls."""
 import base64
 import copy
+from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
@@ -53,6 +54,11 @@ def norm_actor(actor):
     return actor.strip().lower()
 
 
+def claim_head(item, question, event_hash):
+    raw = json.dumps(["wasl-review-claim-head/1", item, question, event_hash], sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
 def load(name):
     return json.loads((SAMPLES / name).read_text())
 
@@ -79,6 +85,7 @@ class Fake:
         self.extra_cases = 0
         self.events = []
         self.protocol = {}          # (case, item, question) -> accepted protocol events in order
+        self.claims = {}            # (case, item, question) -> latest lease projection, including released/consumed leases
         self.raised = {}            # case -> {item: question}; clones of a synthetic fixture with one raised, unsigned item
         self._viewer = ("", "")
         template = next(iter(self.fix["fixtures"].values()))["id"]
@@ -93,8 +100,12 @@ class Fake:
         if mutate:
             mutate(self)
 
+    def next_at(self):
+        return datetime(2026, 11, 9, tzinfo=timezone.utc) + timedelta(seconds=len(self.events))
+
     def event(self, values):
-        ev = dict(values, at=f"2026-11-09T00:00:{len(self.events):02d}Z", mode="demo",
+        at = values.get("at") or self.next_at().isoformat().replace("+00:00", "Z")
+        ev = dict(values, at=at, mode="demo",
                   prev=self.events[-1]["hash"] if self.events else "genesis")
         unsigned = json.dumps(ev, sort_keys=True, separators=(",", ":")).encode()
         ev["hash"] = hashlib.sha256(unsigned).hexdigest()
@@ -166,8 +177,8 @@ class Fake:
         initial = {norm_actor(e["actor"]) for e in events[:2]}
         mine = norm_actor(actor)
         nxt = {"awaiting_r1": "r1", "awaiting_r2": "r2", "awaiting_r3": "r3"}.get(state)
-        may = ((nxt in ("r1", "r2") and role == ordinary and mine != first) or
-               (nxt == "r3" and role == senior and mine not in initial))
+        eligible = bool((nxt in ("r1", "r2") and role == ordinary and mine != first) or
+                        (nxt == "r3" and role == senior and mine not in initial))
         concealed = state == "awaiting_r2" and mine != first
         reads = []
         for e in events:
@@ -176,9 +187,18 @@ class Fake:
                 row.update(decision=e["decision"], hash=e["hash"])
             reads.append(row)
         disagreement = len(events) >= 2 and events[0]["decision"] != events[1]["decision"]
+        cl = self.claims.get((cid, item, question))
+        active = bool(cl and cl["active"] and nxt)
+        owned = active and cl["role"] == role and norm_actor(cl["owner"]) == mine and cl["read"] == nxt
+        actions = {"claim": eligible and not active, "renew": owned, "release": owned, "takeover": False}
+        claim = None
+        if active:
+            claim = {k: cl[k] for k in ("owner", "role", "read", "claimed_at", "heartbeat_at", "expires_at")}
+            claim["status"] = "active"
         out = {"item": item, "question": question, "state": state, "head": self.shown_head(cid, item, question),
-               "next_read": nxt, "may_submit": bool(may), "reads": reads, "disagreement": disagreement,
-               "canonical_unchanged": True}
+               "next_read": nxt, "may_submit": eligible and owned, "reads": reads, "disagreement": disagreement,
+               "canonical_unchanged": True, "claim_head": cl["head"] if cl else "", "claim": claim,
+               "claim_actions": actions}
         if state == "resolved_agreed":
             out.update(final_decision=events[0]["decision"], resolution_basis="agreement")
         if state == "resolved_senior":
@@ -194,6 +214,56 @@ class Fake:
                     continue
             out.append(e)
         return out
+
+    def protocol_claim(self, cid, body, role, actor):
+        item, question, operation = body.get("item"), body.get("question"), body.get("operation")
+        if self.raised.get(cid, {}).get(item) != question:
+            return 404, {"error": "review question not raised for this case"}
+        if operation not in {"claim", "renew", "release", "takeover"}:
+            return 400, {"error": "invalid claim operation"}
+        events = self.protocol.get((cid, item, question), [])
+        state, _ = self.pstate(cid, item, question)
+        nxt = {"awaiting_r1": "r1", "awaiting_r2": "r2", "awaiting_r3": "r3"}.get(state)
+        ordinary, senior, _ = QUESTIONS[question]
+        first = norm_actor(events[0]["actor"]) if events else None
+        initial = {norm_actor(e["actor"]) for e in events[:2]}
+        mine = norm_actor(actor)
+        eligible = ((nxt in ("r1", "r2") and role == ordinary and mine != first) or
+                    (nxt == "r3" and role == senior and mine not in initial))
+        if not eligible:
+            return 403, {"error": "role or actor is not eligible for the current independent read"}
+        key = (cid, item, question)
+        cl = self.claims.get(key)
+        expected = body.get("expected_claim_head")
+        current_head = cl["head"] if cl else ""
+        if expected != current_head:
+            return 409, {"error": "stale expected_claim_head", "conflict": "claim_head", "current_claim_head": current_head}
+        active = bool(cl and cl["active"])
+        owned = active and cl["role"] == role and norm_actor(cl["owner"]) == mine
+        if operation == "claim" and active:
+            return 409, {"error": "claim is owned by another actor", "conflict": "claim_active"}
+        if operation == "takeover":
+            return 409, {"error": "claim has not expired" if active else "there is no claim to take over",
+                         "conflict": "claim_active" if active else "claim_required"}
+        if operation in {"renew", "release"}:
+            if not active:
+                return 409, {"error": "there is no active claim", "conflict": "claim_required"}
+            if not owned:
+                return 403, {"error": "only the active claim owner may renew or release"}
+        at = self.next_at()
+        stamp = at.isoformat().replace("+00:00", "Z")
+        claimed_at = cl["claimed_at"] if operation in {"renew", "release"} else stamp
+        heartbeat_at = cl["heartbeat_at"] if operation == "release" else stamp
+        expires_at = cl["expires_at"] if operation == "release" else (at + timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
+        ev = self.event({"type": "review_claim", "kind": operation, "case": cid, "item": item, "question": question,
+                         "read": nxt, "role": role, "actor": actor,
+                         "action": "signoff_link" if question == "link" else "signoff_evidence", "at": stamp,
+                         "claimed_at": claimed_at, "heartbeat_at": heartbeat_at, "expires_at": expires_at,
+                         "expected_claim_head": expected})
+        self.claims[key] = {"active": operation != "release", "owner": actor, "role": role, "read": nxt,
+                            "claimed_at": claimed_at, "heartbeat_at": heartbeat_at, "expires_at": expires_at,
+                            "head": claim_head(item, question, ev["hash"])}
+        return 201, {"claim_event": ev, "review_state": self.review_state(cid, item, question, role, actor)}
 
     def protocol_review(self, cid, body, role, actor):
         current = self.detail[cid]["current"]
@@ -219,14 +289,23 @@ class Fake:
         blocked = {norm_actor(e["actor"]) for e in events}
         if norm_actor(actor) in blocked:
             return 403, {"error": "actor already read this question"}
+        key = (cid, item, question)
+        cl = self.claims.get(key)
+        if not cl or not cl["active"]:
+            return 409, {"error": "an active claim is required", "conflict": "claim_required"}
+        if body.get("claim_head") != cl["head"]:
+            return 409, {"error": "stale claim_head", "conflict": "claim_head"}
+        if cl["role"] != role or norm_actor(cl["owner"]) != norm_actor(actor) or cl["read"] != read:
+            return 403, {"error": "only the active claim owner may submit this read"}
         values = {"case": cid, "item": item, "decision": body["decision"], "note": body.get("note", ""),
                   "role": role, "actor": actor, "action": "signoff_link" if question == "link" else "signoff_evidence",
                   "head_signed": current["sig"], "protocol": PROTOCOL, "read": read, "question": question,
-                  "expected_head": head}
+                  "expected_head": head, "claim_head": cl["head"]}
         if read == "r3":
             values["resolution_reads"] = [events[0]["hash"], events[1]["hash"]]
         ev = self.event(values)
         events.append(ev)
+        self.claims[key]["active"] = False
         return 201, {"review": ev, "review_state": self.review_state(cid, item, question, role, actor)}
 
     def live_detail(self, cid):
@@ -254,7 +333,8 @@ class Fake:
         audit = self.live_audit(cid)
         safe_keys = {"case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash",
                      "type", "kind", "head", "seq", "target", "target_action", "resolution", "action_head",
-                     "protocol", "read", "question", "expected_head", "resolution_reads"}
+                     "protocol", "read", "question", "expected_head", "claim_head", "resolution_reads",
+                     "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head"}
         safe_events = [{k: v for k, v in e.items() if k in safe_keys} for e in self.case_events(cid)]
         overlay = self.consent_overlay(cid)
         overlay.pop("canonical_consent", None)  # keep the fake projection small; structural fields remain
@@ -317,7 +397,7 @@ class Fake:
             return 200, page
         if path.startswith("/api/cases/"):
             rest = path[len("/api/cases/"):]
-            for suffix in ("/actions", "/consent", "/review", "/undo", "/export"):
+            for suffix in ("/actions", "/consent", "/review/claim", "/review", "/undo", "/export"):
                 if rest.endswith(suffix):
                     cid = rest[:-len(suffix)]
                     if cid not in self.detail:
@@ -343,6 +423,8 @@ class Fake:
                         ev = self.event({"case": cid, "item": "", "decision": body["event"], "note": body["note"],
                                          "role": role, "actor": actor, "action": "record_consent", "head_signed": current["sig"]})
                         return 201, {"review": ev, "overlay": self.consent_overlay(cid)}
+                    if suffix == "/review/claim":
+                        return self.protocol_claim(cid, body, role, actor)
                     if suffix == "/review" and "read" in body:
                         return self.protocol_review(cid, body, role, actor)
                     if suffix == "/review":
@@ -489,7 +571,8 @@ class SmokeValidatorTests(unittest.TestCase):
             orig = f.live_audit
             def redacted(cid):
                 doc = orig(cid)
-                allowed = {"case", "type", "kind", "at", "hash", "protocol", "read", "question", "expected_head", "resolution_reads"}
+                allowed = {"case", "type", "kind", "at", "hash", "prev", "protocol", "read", "question", "expected_head",
+                           "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head"}
                 doc["history"] = [{k: v for k, v in event.items() if k in allowed}
                                   for event in doc["history"]]
                 return doc

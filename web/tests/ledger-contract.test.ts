@@ -151,6 +151,22 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(() => caseStage(detail)).not.toThrow();
   });
 
+  it("tags claim history separately from clinical answers and accepts actor-redacted audit claims", () => {
+    const claim = {
+      type: "review_claim", kind: "renew", case: rawDetail.case.id, item: "rv-1", question: "link", read: "r1", role: "reviewer", actor: "Rev-A",
+      action: "signoff_link", at: "2026-11-13T10:01:00Z", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:01:00Z",
+      expires_at: "2026-11-13T10:06:00Z", expected_claim_head: "a".repeat(64), mode: "demo", prev: "p", hash: "h-claim",
+    };
+    const detail = CaseDetail.parse({ ...rawDetail, api_reviews: [claim] });
+    expect(detail.api_reviews[0]).toMatchObject({ ledger: "claim", kind: "renew", actor: "Rev-A" });
+    const redacted = Object.fromEntries(Object.entries(claim).filter(([key]) => key !== "actor"));
+    const audit = Audit.parse({ ...rawAudit, history: [redacted] });
+    expect(audit.history[0]).toMatchObject({ ledger: "claim", kind: "renew" });
+    expect(audit.history[0]).not.toHaveProperty("actor");
+    expect(detail.api_reviews[0]).not.toHaveProperty("decision");
+    expect(() => caseStage(detail)).not.toThrow();
+  });
+
   it("renders compensation status and links between original and resolving events without deanonymising audit history", () => {
     const audit = Audit.parse(rawAudit);
     const undo = rawAudit.history.find((event: { kind?: string }) => event.kind === "undo");
