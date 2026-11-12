@@ -27,8 +27,14 @@ function detailFor(programme: GuidedProgramme): CaseDetail {
 }
 
 const lungOutcomes = ["stable", "resolved", "growing", "suspicious_solid", "not_assessable", "pet_low", "pet_avid", "benign", "nondiagnostic", "malignant"];
+/** pipeline/fleischner.go sizeBand, from a rounded mean diameter in mm. */
+function sizeBand(type: string, mm: number): string {
+  if (type === "solid") return mm < 6 ? "<6" : mm <= 8 ? "6-8" : ">8";
+  return mm < 6 ? "<6" : ">=6";
+}
+/** Every index-CT label the pipeline can write (lungread.go and genlung.go: type + "/" + sizeBand(type, mean) + "/" + count), in band order. */
 const lungIndex = ["solid", "ground_glass", "part_solid"].flatMap((type) =>
-  ["<6", "6-8", ">8", ">=6"].flatMap((size) => ["single", "multiple"].map((count) => `${type}/${size}/${count}`)),
+  [...new Set(Array.from({ length: 101 }, (_, mm) => sizeBand(type, mm)))].flatMap((size) => ["single", "multiple"].map((count) => `${type}/${size}/${count}`)),
 );
 const drGrades = ["0", "1", "2", "3A", "3S"].flatMap((r) =>
   ["0", "1"].flatMap((m) => [`R${r}M${m}`, `R${r}M${m}/urgent`]),
@@ -66,6 +72,16 @@ describe("programme evidence vocabulary", () => {
       ]),
     );
     for (const label of view.evidenceChoices) expect(ReviewDecision.safeParse(label).success).toBe(true);
+  });
+
+  it("offers only the 14 lung index labels sizeBand can produce", () => {
+    const offered = reviewView(detailFor("lung_nodule")).evidenceChoices.filter((label) => label.includes("/"));
+    expect(offered).toEqual(lungIndex);
+    expect(offered).toHaveLength(14);
+    for (const impossible of ["ground_glass/6-8/single", "ground_glass/>8/multiple", "part_solid/6-8/single", "solid/>=6/single", "solid/>=6/multiple"]) {
+      expect(offered).not.toContain(impossible);
+      expect(ReviewDecision.safeParse(impossible).success).toBe(true); // the API still parses it; the desk just never offers it
+    }
   });
 
   it("keeps the two CRC evidence answers and the no-API ask action separate", () => {
