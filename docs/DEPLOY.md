@@ -38,6 +38,17 @@ The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12
 cohort augmentation, booking and summary scripts. Alpine updates, Bash and util-linux are installed; the unused pip/ensurepip toolchain is removed after wheel installation. It runs as uid 10001. It contains the committed synthetic inputs and
 JSON model weights only: no keys, no patient data, no run outputs.
 
+## Offline rebuild with preseeded dependencies
+
+Go modules are tracked in `pipeline/vendor`; the build uses `GOFLAGS=-mod=vendor` and `GOPROXY=off`, never `go mod download`. After changing `pipeline/go.mod` or `go.sum`, regenerate and review that directory with `go -C pipeline mod vendor`. `scripts/test_offline_build.py` checks it for drift.
+
+```bash
+podman build --tag wasl:local .                # one online build to seed the runtime image
+scripts/offline_build.sh                       # full rebuild with networking disabled
+```
+
+The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, requires the online-seeded `wasl:local` runtime image, refuses base-image pulls and passes `--network=none`. It starts from that image with `OFFLINE_RUNTIME=1`, verifies the required Python packages, Bash, `flock` and UID 10001, deletes inherited `/app` and run-output contents, and only then copies the checkout. No Alpine or Python package command runs. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. A no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. Set `WASL_RUNTIME_IMAGE` to use a different preseeded runtime tag. This covers the Wasl pipeline/API image, not `deploy/nats/Dockerfile`, whose NATS rebuild still fetches modules.
+
 ## Ports and volumes
 
 | | Where | Notes |
