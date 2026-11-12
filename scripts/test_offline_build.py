@@ -21,6 +21,9 @@ class OfflineBuildTests(unittest.TestCase):
         self.assertIn("--pull-never", runner)
         self.assertIn("--pull=false", runner)
         self.assertIn('OFFLINE_BUILD_ID=$(date +%s)', runner)
+        self.assertIn('PYTHON_IMAGE=$RUNTIME_IMAGE', runner)
+        self.assertIn("OFFLINE_RUNTIME=1", runner)
+        self.assertIn('image inspect "$RUNTIME_IMAGE"', runner)
         self.assertIn("ls-files -coz --exclude-standard -- pipeline/vendor", runner)
 
     def assert_vendor_tree_equal(self, left, right):

@@ -43,11 +43,11 @@ JSON model weights only: no keys, no patient data, no run outputs.
 Go modules are tracked in `pipeline/vendor`; the build uses `GOFLAGS=-mod=vendor` and `GOPROXY=off`, never `go mod download`. After changing `pipeline/go.mod` or `go.sum`, regenerate and review that directory with `go -C pipeline mod vendor`. `scripts/test_offline_build.py` checks it for drift.
 
 ```bash
-podman build --tag wasl-offline-seed:local .   # one online build to seed base images and package layers
+podman build --tag wasl:local .                # one online build to seed the runtime image
 scripts/offline_build.sh                       # full rebuild with networking disabled
 ```
 
-The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, refuses base-image pulls and passes `--network=none`. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. Alpine/Python package layers and base images must already be cached; a no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. This covers the Wasl pipeline/API image, not `deploy/nats/Dockerfile`, whose NATS rebuild still fetches modules.
+The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, requires the online-seeded `wasl:local` runtime image, refuses base-image pulls and passes `--network=none`. It starts from that image with `OFFLINE_RUNTIME=1`, so no Alpine or Python package command runs. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. A no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. Set `WASL_RUNTIME_IMAGE` to use a different preseeded runtime tag. This covers the Wasl pipeline/API image, not `deploy/nats/Dockerfile`, whose NATS rebuild still fetches modules.
 
 ## Ports and volumes
 
