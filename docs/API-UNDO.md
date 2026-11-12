@@ -61,6 +61,12 @@ Append is durable and atomic: the full line is written, fsynced and closed, and 
 
 `runServe` mounts `s.undoRoutes(s.caseRoutes)` inside the consent wrapper and loads through `loadAPIVerified`.
 
+## Web controls
+
+**Built.** The audit and review pages offer undo, contest and resolve only to a signed-in person, and only as that person's own assigned token: the reviewer-session cookie from independent double review (PR #69), entered in a sign-in form on the page. There is no credential, role or actor picker, and the server action (`web/lib/api/governance-actions.ts`) reads the token from the HttpOnly cookie and refuses any client-supplied `credential`, `token`, `role` or `actor` field. Without a session the page shows a sign-in prompt instead of controls. The resolution has an empty placeholder and is required; nothing is upheld by default. Coordinators follow the same model: a coordinator signs in with their own token, and the API's RBAC decides what it may do. The Next.js server no longer uses server-held role credentials for these writes.
+
+Independence still depends on separate sign-ins with distinct tokens that an operator issued to distinct people. A token proves a configured actor, not a person; one person holding several tokens can still sign out and in again as a second actor.
+
 ## Limits
 
 - Demo-mode actor identity is a header, not authentication.

@@ -39,11 +39,12 @@ const ORDER = [
 const order = (events: { ledger: string; kind?: unknown; decision?: unknown }[]) =>
   events.map((e) => `${e.ledger}:${String(e.ledger === "review" ? e.decision : e.kind)}`);
 
-function renderGovernanceHistory(events: Record<string, unknown>[], statuses: [string, string][]) {
+function renderGovernanceHistory(events: Record<string, unknown>[], statuses: [string, string][], signedIn = true) {
   const audit = Audit.parse({ ...rawAudit, history: events });
   const byHash = new Map(events.map((event) => [event.hash, event]));
   const governance = {
     caseId: rawAudit.case,
+    signedIn,
     projection: {
       ...rawAudit.meta,
       case: rawAudit.case,
@@ -154,6 +155,7 @@ describe("shared ledger contract (real Go handler output)", () => {
     const undo = rawAudit.history.find((event: { kind?: string }) => event.kind === "undo");
     const governance = {
       caseId: rawAudit.case,
+      signedIn: true,
       projection: {
         ...rawAudit.meta,
         case: rawAudit.case,
@@ -186,6 +188,7 @@ describe("shared ledger contract (real Go handler output)", () => {
     const audit = Audit.parse({ ...rawAudit, history: [review, contest] });
     const governance = {
       caseId: rawAudit.case,
+      signedIn: true,
       projection: {
         ...rawAudit.meta,
         case: rawAudit.case,
@@ -202,7 +205,10 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(html).toContain("Contest status: open");
     expect(html).toContain("Resolve contest");
     expect(html).toContain("different authorised actor");
-    expect(html).toContain("Reviewer 3");
+    expect(html).toContain("signed-in credential");
+    expect(html).not.toContain('name="credential"');
+    expect(html).toContain('<option value="" selected="">Choose a resolution</option>');
+    expect(html).toMatch(/<select[^>]*name="resolution"[^>]*required/);
     expect(html).toMatch(/<textarea[^>]*required/);
   });
 
@@ -211,6 +217,7 @@ describe("shared ledger contract (real Go handler output)", () => {
     const audit = Audit.parse({ ...rawAudit, history: [review] });
     const governance = {
       caseId: rawAudit.case,
+      signedIn: true,
       projection: {
         ...rawAudit.meta,
         case: rawAudit.case,
@@ -229,30 +236,49 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(fixtureHtml).not.toContain("Contest review");
   });
 
-  it("offers a third consent-authorised actor to resolve a contest independently", () => {
+  it("offers a consent contest's resolution to the signed-in actor, with no credential choice", () => {
     const review = reviewFor("record_consent");
     const contest = contestFor(review);
     const html = renderGovernanceHistory([review, contest], [[review.hash, "contested"], [contest.hash, "open"]]);
     expect(html).toContain("Resolve contest");
-    expect(html).toContain('<option value="coordinator">Coordinator</option>');
-    expect(html).toContain('<option value="clinician">Clinician 1</option>');
-    expect(html).toContain('<option value="clinician_2">Clinician 2</option>');
+    expect(html).not.toMatch(/name="credential"|Coordinator<\/option>|Clinician \d/);
   });
 
-  it("offers undo and contest controls with independent clinicians for an active evidence review", () => {
+  it("offers undo and contest controls for an active evidence review and says who acts", () => {
     const review = reviewFor("signoff_evidence");
     const html = renderGovernanceHistory([review], [[review.hash, "active"]]);
     expect(html).toContain("Append compensation");
     expect(html).toContain("Contest review");
-    for (const credential of ["clinician", "clinician_2", "clinician_3"]) expect(html).toContain(`value="${credential}"`);
+    expect(html).toContain('data-testid="governance-identity"');
+    expect(html).toContain("act as the token you signed in with");
+    expect(html).toContain("signs in separately");
+    expect(html).toContain("distinct token the operator issued");
+    expect(html).toContain("Sign out");
+    expect(html).not.toContain('name="credential"');
   });
 
-  it("offers a third independent clinician to resolve an evidence contest", () => {
+  it.each([
+    ["an active review", "signoff_evidence", false],
+    ["an open contest", "record_consent", true],
+  ] as const)("signed out, %s shows a sign-in prompt instead of any control", (_label, action, contested) => {
+    const review = reviewFor(action);
+    const events = contested ? [review, contestFor(review)] : [review];
+    const statuses: [string, string][] = contested ? [[review.hash, "contested"], [contestFor(review).hash, "open"]] : [[review.hash, "active"]];
+    const html = renderGovernanceHistory(events, statuses, false);
+    expect(html).toContain('data-testid="governance-signin"');
+    expect(html).toContain("Sign in to undo, contest or resolve");
+    expect(html).toContain('type="password"');
+    expect(html).toContain("signs in separately");
+    expect(html).not.toContain('data-testid="governance-identity"');
+    for (const control of ["Append compensation", "Contest review", "Resolve contest", 'name="reason"', 'name="resolution"', 'name="credential"']) {
+      expect(html).not.toContain(control);
+    }
+  });
+
+  it("shows no sign-in prompt when nothing can be undone, contested or resolved", () => {
     const review = reviewFor("signoff_evidence");
-    const contest = contestFor(review);
-    const html = renderGovernanceHistory([review, contest], [[review.hash, "contested"], [contest.hash, "open"]]);
-    expect(html).toContain("Resolve contest");
-    for (const credential of ["clinician", "clinician_2", "clinician_3"]) expect(html).toContain(`value="${credential}"`);
+    const html = renderGovernanceHistory([review], [[review.hash, "compensated"]], false);
+    expect(html).not.toContain('data-testid="governance-signin"');
   });
 });
 

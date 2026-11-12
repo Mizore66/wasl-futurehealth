@@ -12,24 +12,30 @@ import { concealsInitialRead, protocolRead } from "@/lib/domain/stage";
  * Legacy history (no protocol events) is unchanged.
  */
 export type HistoryStatus = "ok" | "signin" | "concealed";
-export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null };
+/**
+ * `signedIn`: the viewer's reviewer-session token was accepted for this case on the latest read. Governance controls
+ * (undo, contest, resolve) act only as that token, so without it the page shows a sign-in prompt instead.
+ */
+export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null; signedIn: boolean };
 
 type Viewer = Awaited<ReturnType<typeof getReviewCase>>;
 const hidden = (v: Viewer) => v.authenticated && concealsInitialRead(v.detail.api_review_states ?? []);
 
 export async function gatedHistory(id: string, opts: { before?: Viewer; needAudit?: boolean } = {}): Promise<GatedHistory> {
-  if (apiMode() !== "live") return { status: "ok", audit: await getAudit(id), projection: null };
+  // Fixtures mode has no session and no governance projection.
+  if (apiMode() !== "live") return { status: "ok", audit: await getAudit(id), projection: null, signedIn: false };
   const before = opts.before ?? (await getReviewCase(id));
   // The review page has nothing to show for history while concealed: do not even request it.
-  if (hidden(before) && !opts.needAudit) return { status: "concealed", audit: null, projection: null };
+  if (hidden(before) && !opts.needAudit) return { status: "concealed", audit: null, projection: null, signedIn: before.authenticated };
 
   const [audit, projection] = await Promise.all([getAudit(id), getUndoProjection(id)]);
   const after = await getReviewCase(id);
-  if (!audit) return { status: "ok", audit: null, projection: null };
+  const signedIn = after.authenticated;
+  if (!audit) return { status: "ok", audit: null, projection: null, signedIn };
 
   const hasProtocol = audit.history.some((e) => protocolRead(e) !== undefined);
   const concealed = hidden(before) || hidden(after);
   const status: HistoryStatus = concealed ? "concealed" : hasProtocol && !after.authenticated ? "signin" : "ok";
-  if (status === "ok") return { status, audit, projection };
-  return { status, audit: { ...audit, history: [] }, projection: null };
+  if (status === "ok") return { status, audit, projection, signedIn };
+  return { status, audit: { ...audit, history: [] }, projection: null, signedIn };
 }
