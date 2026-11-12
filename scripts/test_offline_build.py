@@ -142,5 +142,49 @@ class OfflineBuildTests(unittest.TestCase):
             self.assert_vendor_tree_equal(ROOT / "pipeline/vendor", out)
 
 
+class CleanRunnerContractTests(unittest.TestCase):
+    def setUp(self):
+        self.runner = (ROOT / "scripts/offline_build_clean.sh").read_text()
+        self.ci = (ROOT / ".github/workflows/ci.yml").read_text()
+
+    def test_runner_flags_and_both_builds(self):
+        for needle in ("--no-cache", "--network=none", "--pull-never", "--pull=false",
+                       "OFFLINE_PACKAGES=1", "OFFLINE_RUNTIME=0", 'OFFLINE_BUILD_ID=$BUILD_ID',
+                       'BUILD_ID="$(date +%s)"', "wasl-offline-clean:local", "wasl-nats-offline-clean:local"):
+            self.assertIn(needle, self.runner)
+        self.assertEqual(len(re.findall(r'^"\$ENGINE" build "\$\{COMMON\[@\]\}"', self.runner, re.M)), 2)
+        self.assertIn('"$CONTEXT/deploy/nats"', self.runner)
+
+    def test_runner_checks_binaries_uid_and_context_is_tracked_only(self):
+        for needle in ("10001:10001", "/app/bin/wsi7", " -h", "/usr/local/bin/nats-server", '"nats-server: v${NATS_VERSION}"',
+                       "image inspect"):
+            self.assertIn(needle, self.runner)
+        self.assertEqual(self.runner.count("--entrypoint id"), 2)
+        self.assertIn('git -C "$ROOT" ls-files -z |', self.runner)
+        self.assertNotIn("-coz", self.runner)
+
+    def test_preflight_versions_match_build_args(self):
+        for needle in ('"GO_VERSION=$GO_VERSION"', '"PYTHON_VERSION=$PYTHON_VERSION"', '"PYTHON_IMAGE=$PY_IMAGE"',
+                       '"NATS_VERSION=$NATS_VERSION"', 'GO_IMAGE="golang:${GO_VERSION}-bookworm"',
+                       'PY_IMAGE="python:${PYTHON_VERSION}-alpine"', 'NATS_IMAGE="nats:${NATS_VERSION}-alpine"'):
+            self.assertIn(needle, self.runner)
+        wasl_line = next(l for l in self.runner.splitlines() if '--tag "$WASL_TAG"' in l)
+        nats_line = next(l for l in self.runner.splitlines() if '--tag "$NATS_TAG"' in l)
+        self.assertIn("GO_VERSION=$GO_VERSION", wasl_line)
+        self.assertIn("PYTHON_VERSION=$PYTHON_VERSION", wasl_line)
+        self.assertIn("GO_VERSION=$GO_VERSION", nats_line)
+        self.assertIn("NATS_VERSION=$NATS_VERSION", nats_line)
+
+    def test_ci_runs_clean_runner_after_online_builds_with_buildkit(self):
+        online = self.ci.index("docker build --no-cache --tag wasl-nats:local deploy/nats")
+        clean = self.ci.index("DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh")
+        self.assertLess(online, clean)
+        self.assertLess(clean, self.ci.index("Scan the pipeline image"))
+
+    def test_dockerfiles_do_not_resolve_a_syntax_frontend(self):
+        for path in ("Dockerfile", "deploy/nats/Dockerfile"):
+            self.assertNotIn("# syntax=", (ROOT / path).read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

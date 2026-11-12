@@ -199,6 +199,7 @@ def augment_sbom(raw: dict, root: Path, *, revision: str, committed_at: str, dir
             if uuid_ref.fullmatch(child):
                 owner.setdefault(child, component["name"])
             pending.extend(children.get(child, []))
+    stabilized: set[str] = set()
     for component in bom["components"]:
         reference = component.get("bom-ref", "")
         if uuid_ref.fullmatch(reference):
@@ -208,6 +209,9 @@ def augment_sbom(raw: dict, root: Path, *, revision: str, committed_at: str, dir
                 replacement = f"wasl:library:{component['purl']}@{owner[reference]}"
             else:
                 raise ValueError(f"Cannot stabilize scanner component reference: {reference}")
+            if replacement in stabilized:
+                raise ValueError(f"Duplicate stabilized component reference: {replacement}")
+            stabilized.add(replacement)
             reference_map[reference] = replacement
             component["bom-ref"] = replacement
     for dependency in bom.get("dependencies", []):

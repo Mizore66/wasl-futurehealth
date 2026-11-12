@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Wasl pipeline + API image (docs/DEPLOY.md). Multi-stage: a static Go build, then an Alpine Python runtime for the
 # cohort augmentation, booking and summary scripts. Runs as a non-root user. No keys or secrets are baked in: the
 # JetStream encryption key lives only in the NATS containers' environment (docker-compose.yml).

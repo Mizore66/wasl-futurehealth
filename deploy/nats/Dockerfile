@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Rebuild NATS with a supported Go toolchain and patched modules: the upstream 2.12.6 image still bundles an older
 # Go runtime and x/crypto. The final stage retains the official image layout and receives Alpine security updates.
 ARG GO_VERSION=1.27.4
