@@ -21,16 +21,25 @@ RUN command -v timeout >/dev/null && command -v bash >/dev/null \
 # It holds no key: the JetStream key is read from $WASL_JS_KEY in the container environment.
 # entrypoint.sh refuses to start on retained stores with a wrong or missing key (nats-server would otherwise start,
 # fail to decrypt them and let the cluster reset the streams).
+# Offline dependency bundle: a throwaway stage, bind-mounted into the package RUN so no layer of the final image holds it.
+FROM scratch AS offline-bundle
+COPY offline/ /
+
 FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine
 ARG OFFLINE_PACKAGES=0
 ARG TARGETARCH
-COPY offline/apk/${TARGETARCH} /vendor/apk
-RUN if [ "$OFFLINE_PACKAGES" = "1" ]; then \
-      apk add --no-cache --no-network /vendor/apk/*.apk; \
+# The bundle is bind-mounted read-only for this RUN only, so it never enters an image layer.
+RUN --mount=type=bind,from=offline-bundle,source=/,target=/vendor,readonly \
+    if [ "$OFFLINE_PACKAGES" = "1" ]; then \
+      case "$TARGETARCH" in amd64|arm64) ;; \
+        *) echo "OFFLINE_PACKAGES=1 requires TARGETARCH amd64 or arm64 (got '$TARGETARCH')" >&2; exit 1 ;; esac \
+   && case "$(cat /etc/alpine-release)" in 3.22.*) ;; \
+        *) echo "offline NATS bundle requires Alpine 3.22.*, base is $(cat /etc/alpine-release)" >&2; exit 1 ;; esac \
+   && (cd /vendor && sha256sum -c SHA256SUMS) \
+   && apk add --no-cache --no-network /vendor/apk/${TARGETARCH}/*.apk; \
     else \
       apk upgrade --no-cache && apk add --no-cache ca-certificates; \
     fi \
-    && rm -rf /vendor \
     && addgroup -g 10001 -S wasl \
     && adduser -S -D -H -u 10001 -G wasl wasl \
     && mkdir -p /data \
