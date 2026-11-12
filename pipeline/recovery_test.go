@@ -242,8 +242,10 @@ func TestExistingBundleTamperFailsBeforeHeaderNormalization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Each tamper is either in the payload or in a header that normalisation would later drop or keep. All must be
-	// caught by the original digest; none may be hidden by normalising first.
+	// Each tamper is either in the payload or in a header that normalisation would later drop or keep, and each
+	// changes the bytes the digest covers, so the original digest catches it before normalisation. The v1 digest has
+	// no length prefixes, so a tamper that keeps those bytes identical (moving a value into an empty-valued key) is
+	// not caught here; the header-shape check covers it (TestAmbiguousHeaderSplitIsRefusedBeforeNormalisation).
 	for name, tamper := range map[string]func(*recoveryMessage){
 		"payload":                    func(m *recoveryMessage) { m.Data = []byte("tampered") },
 		"dropped precondition value": func(m *recoveryMessage) { m.Header["Nats-Expected-Last-Subject-Sequence-Subject"] = []string{"other"} },
@@ -280,6 +282,82 @@ func TestExistingBundleTamperFailsBeforeHeaderNormalization(t *testing.T) {
 	}
 	if got := loaded.Streams[0].Messages[0].Header; len(got) != 1 || got["nats-expected-stream"][0] != "application-value" {
 		t.Fatalf("normalised headers = %v, want only the lowercase application header", got)
+	}
+}
+
+// The v1 digest writes key\0value\0... without lengths, so moving the last value of one key into a following
+// empty-valued key leaves the digest unchanged. If the moved key is one normalisation drops, the application value
+// would vanish with every hash still matching; the loader must refuse the bundle instead.
+func TestAmbiguousHeaderSplitIsRefusedBeforeNormalisation(t *testing.T) {
+	original := recoveryMessage{Sequence: 1, Subject: "recovery.split", Data: []byte("payload"),
+		Header: map[string][]string{"App-Key": {"a", "Nats-Expected-Hidden"}}}
+	forged := recoveryMessage{Sequence: 1, Subject: "recovery.split", Data: []byte("payload"),
+		Header: map[string][]string{"App-Key": {"a"}, "Nats-Expected-Hidden": {}}}
+	originalDigest, err := recoveryLogicalDigest([]recoveryMessage{original})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forgedDigest, err := recoveryLogicalDigest([]recoveryMessage{forged})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if originalDigest != forgedDigest {
+		t.Fatalf("precondition: the v1 digest no longer collides (%s != %s); revisit this test", originalDigest, forgedDigest)
+	}
+	config := jetstream.StreamConfig{Name: "RECOVERY_SPLIT"}
+	if _, err := loadNATSRecoveryBundle(writeRecoveryTestBundle(t, config, []recoveryMessage{original})); err != nil {
+		t.Fatalf("the genuine two-value header was refused: %v", err)
+	}
+	// The forged bundle carries the genuine bundle's digest, so it passes the hash check and must fail on shape.
+	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+		Config: config, Messages: []recoveryMessage{forged}, Digest: originalDigest}}}
+	if err := validateNATSRecoveryBundle(bundle); err != nil {
+		t.Fatalf("precondition: forged bundle should pass the digest check: %v", err)
+	}
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "bundle.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := loadNATSRecoveryBundle(path)
+	if err == nil || !strings.Contains(err.Error(), `"Nats-Expected-Hidden" has no values`) {
+		t.Fatalf("colliding bundle loaded (streams %v), want empty-values refusal: %v", loaded.Streams, err)
+	}
+}
+
+func TestRecoveryBundleRefusesMalformedHeaders(t *testing.T) {
+	for name, tc := range map[string]struct {
+		header map[string][]string
+		want   string
+	}{
+		"empty values":           {map[string][]string{"App-Key": {"a"}, "Other-Key": {}}, `"Other-Key" has no values`},
+		"nil values":             {map[string][]string{"App-Key": nil}, `"App-Key" has no values`},
+		"empty key":              {map[string][]string{"": {"a"}}, `invalid NATS header key ""`},
+		"colon in key":           {map[string][]string{"App:Key": {"a"}}, `invalid NATS header key "App:Key"`},
+		"space in key":           {map[string][]string{"App Key": {"a"}}, `invalid NATS header key "App Key"`},
+		"tab in key":             {map[string][]string{"App\tKey": {"a"}}, `invalid NATS header key "App\tKey"`},
+		"NUL in key":             {map[string][]string{"App\x00Key": {"a"}}, `invalid NATS header key "App\x00Key"`},
+		"non-ASCII key":          {map[string][]string{"Kl\u00fcssel": {"a"}}, "invalid NATS header key"},
+		"nats.go forbidden char": {map[string][]string{"App/Key": {"a"}}, `invalid NATS header key "App/Key"`},
+		"NUL separator in value": {map[string][]string{"App-Key": {"a\x00Nats-Expected-Hidden\x00b"}}, `"App-Key" value contains a NUL byte`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			message := recoveryMessage{Sequence: 7, Subject: "recovery.malformed", Header: tc.header, Data: []byte("x")}
+			path := writeRecoveryTestBundle(t, jetstream.StreamConfig{Name: "RECOVERY_MALFORMED"}, []recoveryMessage{message})
+			_, err := loadNATSRecoveryBundle(path)
+			if err == nil || !strings.Contains(err.Error(), tc.want) || !strings.Contains(err.Error(), "RECOVERY_MALFORMED sequence 7") {
+				t.Fatalf("malformed header %q: got %v, want refusal containing %q", tc.header, err, tc.want)
+			}
+		})
+	}
+	// Keys the pipeline and KV write, a case look-alike, and a repeated header with an empty value stay valid.
+	valid := map[string][]string{"Nats-Msg-Id": {"id"}, "KV-Operation": {"DEL"}, "Nats-Rollup": {"sub"},
+		"nats-expected-stream": {"app"}, "X_Custom.Key-1": {"", "two"}}
+	if err := validateRecoveryHeaderShape(valid); err != nil {
+		t.Fatalf("valid header refused: %v", err)
 	}
 }
 
