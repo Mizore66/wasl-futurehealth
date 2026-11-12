@@ -38,6 +38,17 @@ The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12
 cohort augmentation, booking and summary scripts. Alpine updates, Bash and util-linux are installed; the unused pip/ensurepip toolchain is removed after wheel installation. It runs as uid 10001. It contains the committed synthetic inputs and
 JSON model weights only: no keys, no patient data, no run outputs.
 
+## Offline rebuild with preseeded dependencies
+
+Go modules are tracked in `pipeline/vendor`; the build uses `GOFLAGS=-mod=vendor` and `GOPROXY=off`, never `go mod download`. After changing `pipeline/go.mod` or `go.sum`, regenerate and review that directory with `go -C pipeline mod vendor`. `scripts/test_offline_build.py` checks it for drift.
+
+```bash
+podman build --tag wasl-offline-seed:local .   # one online build to seed base images and package layers
+scripts/offline_build.sh                       # full rebuild with networking disabled
+```
+
+The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), refuses base-image pulls and passes `--network=none`. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache. Alpine/Python package layers and base images must already be cached; a no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`.
+
 ## Ports and volumes
 
 | | Where | Notes |

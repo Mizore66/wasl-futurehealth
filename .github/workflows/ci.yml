@@ -436,6 +436,8 @@ jobs:
         run: |
           docker build --no-cache --tag wasl:local .
           docker build --no-cache --tag wasl-nats:local deploy/nats
+      - name: Rebuild offline from preseeded images and package layers
+        run: WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh
       - name: Scan the pipeline image
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
