@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
@@ -100,6 +101,7 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
 }
 
 type Drafts = Record<string, string>;
+type ClaimOperationResult = "success" | "busy" | "terminal" | "transient";
 
 /** One card per (item, question): the server decides what is shown, what may be submitted and by whom. */
 function QuestionCard({
@@ -290,6 +292,65 @@ function QuestionCard({
   );
 }
 
+/** Each owned lease keeps its own interval across unrelated question-state updates. */
+function ClaimHeartbeat({
+  state,
+  latestStates,
+  haltedLeases,
+  onRenew,
+}: {
+  state: ReviewState;
+  latestStates: { current: ReviewState[] };
+  haltedLeases: { current: Record<string, true> };
+  onRenew: (state: ReviewState, operation: "renew") => Promise<ClaimOperationResult>;
+}) {
+  const qk = `${state.item}:${state.question}`;
+  const active = state.may_submit && state.claim?.status === "active" && Boolean(state.claim_actions?.renew);
+  useEffect(() => {
+    if (!active) return;
+    const timer = setInterval(() => {
+      const latest = latestStates.current.find((candidate) => `${candidate.item}:${candidate.question}` === qk);
+      if (!latest || haltedLeases.current[qk] || !canAnswerClaim(latest) || !latest.claim_actions?.renew) {
+        clearInterval(timer);
+        return;
+      }
+      void onRenew(latest, "renew").then((result) => {
+        if (result === "terminal") clearInterval(timer);
+      });
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [active, qk, state.claim_head, latestStates, haltedLeases, onRenew]);
+  return null;
+}
+
+/* Re-read active leases at expiry, including another reviewer's claim, and retry until the server state changes. */
+function ClaimExpiryRefresher({ states, refreshRevision }: { states: ReviewState[]; refreshRevision: number }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (refreshRevision > 0) router.refresh();
+  }, [refreshRevision, router]);
+  useEffect(() => {
+    const expiries = states.flatMap((state) => {
+      if (state.claim?.status !== "active") return [];
+      const expiresAt = Date.parse(state.claim.expires_at);
+      return Number.isFinite(expiresAt) ? [expiresAt] : [];
+    });
+    if (expiries.length === 0) return;
+    const remaining = Math.min(...expiries) - Date.now();
+    let interval: ReturnType<typeof setInterval> | undefined;
+    /* An active lease already past its local expiry means clock skew: retry later, never in a zero-delay refresh loop. */
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => router.refresh(), 60_000);
+      router.refresh();
+    }, remaining > 0 ? remaining : 60_000);
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [states, router]);
+  return null;
+}
+
 export function ReviewDesk({
   view,
   mode,
@@ -320,11 +381,13 @@ export function ReviewDesk({
   const [locked, setLocked] = useState<Record<string, true>>({});
   const lockedAt = useRef<Record<string, string>>({});
   const [announcement, setAnnouncement] = useState("");
-  const [busy, setBusy] = useState<string>();
-  const busyRef = useRef<string | undefined>(undefined);
+  const [busy, setBusy] = useState<Record<string, true>>({});
+  const busyRef = useRef<Record<string, true>>({});
   const latestStates = useRef<ReviewState[]>([]);
   const draftHeads = useRef<Record<string, string | undefined>>({});
-  const haltedLeases = useRef<Record<string, string>>({});
+  const haltedLeases = useRef<Record<string, true>>({});
+  const reconcileAfterOperations = useRef(false);
+  const [refreshRevision, setRefreshRevision] = useState(0);
   const [notice, setNotice] = useState<string>();
   const [seen, setSeen] = useState(states);
   const [override, setOverride] = useState<ReviewState[]>();
@@ -385,52 +448,87 @@ export function ReviewDesk({
     setDone({ outcome: pending, next });
   }
 
-  /** Applies one server-projected lease operation. No response is retried, and fresh state replaces every card. */
-  const changeClaim = useCallback(async (state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<boolean> => {
+  /** Merge only the question acted on so a slower whole-case response cannot regress another question's concurrent operation. */
+  const applyQuestionStates = useCallback((incoming: ReviewState[], item: string, question: ReviewState["question"]) => {
+    setOverride((previous) => {
+      const base = previous ?? latestStates.current;
+      return [
+        ...base.filter((state) => state.item !== item || state.question !== question),
+        ...incoming.filter((state) => state.item === item && state.question === question),
+      ];
+    });
+  }, []);
+
+  const applyOperationStates = useCallback((incoming: ReviewState[], item: string, question: ReviewState["question"]) => {
+    if (reconcileAfterOperations.current) applyQuestionStates(incoming, item, question);
+    else setOverride(incoming);
+  }, [applyQuestionStates]);
+
+  /** Applies one server-projected lease operation. No response is retried, and fresh state replaces the changed card. */
+  const changeClaim = useCallback(async (state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<ClaimOperationResult> => {
     const qk = `${state.item}:${state.question}`;
     const busyKey = `claim:${qk}`;
-    if (busyRef.current) return false;
-    busyRef.current = busyKey;
-    setBusy(busyKey);
+    if (busyRef.current[qk]) return "busy";
+    if (Object.keys(busyRef.current).length > 0) reconcileAfterOperations.current = true;
+    busyRef.current[qk] = true;
+    setBusy((current) => ({ ...current, [busyKey]: true }));
     setNotice(undefined);
     setErrors((e) => ({ ...e, [qk]: "" }));
     try {
       const res = await claimReviewQuestion(view.caseId, { item: state.item, question: state.question, operation, expectedClaimHead: state.claim_head ?? "" });
-      if (res.states) setOverride(res.states);
+      if (res.states) applyOperationStates(res.states, state.item, state.question);
       if (res.ok) {
         delete haltedLeases.current[qk];
-        setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
+        if (operation === "renew") {
+          const renewed = res.states?.find((candidate) => candidate.item === state.item && candidate.question === state.question);
+          if (renewed) {
+            for (const key of Object.keys(draftHeads.current)) {
+              if (key.startsWith(`${qk}:`)) draftHeads.current[key] = renewed.claim_head;
+            }
+          }
+        } else {
+          setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
+        }
         if (res.committed && !res.states) setNotice("The server recorded the claim operation, but its confirmation could not be read. Reload before continuing.");
         setAnnouncement(`${state.question === "link" ? "Identity" : "Evidence"} claim ${operation} recorded. The current server state is shown.`);
-        return true;
+        return "success";
       }
-      if (res.failure.status === 401 || res.failure.status === 403 || res.failure.status === 409) haltedLeases.current[qk] = state.claim_head ?? "";
+      if (res.failure.status === 401 || res.failure.status === 403 || res.failure.status === 409) haltedLeases.current[qk] = true;
       setErrors((e) => ({ ...e, [qk]: `Not saved: ${res.failure.error}` }));
-      return false;
+      return "terminal";
     } catch {
-      haltedLeases.current[qk] = state.claim_head ?? "";
       setErrors((e) => ({ ...e, [qk]: "Not saved: the claim request failed. Check the current state before trying again." }));
-      return false;
+      return "transient";
     } finally {
-      busyRef.current = undefined;
-      setBusy(undefined);
+      delete busyRef.current[qk];
+      setBusy((current) => {
+        const next = { ...current };
+        delete next[busyKey];
+        return next;
+      });
+      if (Object.keys(busyRef.current).length === 0 && reconcileAfterOperations.current) {
+        reconcileAfterOperations.current = false;
+        setRefreshRevision((revision) => revision + 1);
+      }
     }
-  }, [view.caseId]);
+  }, [view.caseId, applyOperationStates]);
 
   /** Submits exactly one read. Only that question's draft is cleared; the server's answer is what the card then shows. */
   async function submitRead(state: ReviewState) {
-    if (busyRef.current || !state.next_read || !canAnswerClaim(state)) return;
+    if (!state.next_read || !canAnswerClaim(state)) return;
+    const qk = `${state.item}:${state.question}`;
+    if (busyRef.current[qk]) return;
     const key = draftKey(state.item, state.question, state.next_read);
     const decision = drafts[key];
     if (!decision) return;
-    busyRef.current = key;
-    setBusy(key);
+    if (Object.keys(busyRef.current).length > 0) reconcileAfterOperations.current = true;
+    busyRef.current[qk] = true;
+    setBusy((current) => ({ ...current, [key]: true }));
     setNotice(undefined);
-    const qk = `${state.item}:${state.question}`;
     setErrors((e) => ({ ...e, [qk]: "" }));
     try {
       const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head, claimHead: state.claim_head ?? "" });
-      if (res.states) setOverride(res.states);
+      if (res.states) applyOperationStates(res.states, state.item, state.question);
       if (res.ok) {
         setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
         if (res.committed) {
@@ -451,8 +549,16 @@ export function ReviewDesk({
     } catch {
       setErrors((e) => ({ ...e, [qk]: "Not saved: the request failed. Check the current state before trying again." }));
     } finally {
-      busyRef.current = undefined;
-      setBusy(undefined);
+      delete busyRef.current[qk];
+      setBusy((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+      if (Object.keys(busyRef.current).length === 0 && reconcileAfterOperations.current) {
+        reconcileAfterOperations.current = false;
+        setRefreshRevision((revision) => revision + 1);
+      }
     }
   }
 
@@ -470,27 +576,6 @@ export function ReviewDesk({
     // A fresh current array is produced exactly when server or lease state changes.
   }, [current]);
 
-  /* One non-overlapping heartbeat per active owned lease. The latest head is read at each tick. */
-  useEffect(() => {
-    if (!live) return;
-    const timers: ReturnType<typeof setInterval>[] = [];
-    for (const initial of current) {
-      const qk = `${initial.item}:${initial.question}`;
-      if (!initial.may_submit || initial.claim?.status !== "active" || !initial.claim_actions?.renew) continue;
-      const timer = setInterval(() => {
-        const latest = latestStates.current.find((s) => s.item === initial.item && s.question === initial.question);
-        if (!latest || haltedLeases.current[qk] === (latest.claim_head ?? "") || !canAnswerClaim(latest) || !latest.claim_actions?.renew) {
-          clearInterval(timer);
-          return;
-        }
-        void changeClaim(latest, "renew").then((ok) => {
-          if (!ok) clearInterval(timer);
-        });
-      }, 60_000);
-      timers.push(timer);
-    }
-    return () => timers.forEach(clearInterval);
-  }, [live, current, changeClaim]);
 
   if (live && current.length === 0) {
     return (
@@ -522,6 +607,20 @@ export function ReviewDesk({
 
   return (
     <MotionConfig reducedMotion="user">
+      {live && (
+        <>
+          <ClaimExpiryRefresher states={current} refreshRevision={refreshRevision} />
+          {current.map((state) => (
+            <ClaimHeartbeat
+              key={`${state.item}:${state.question}`}
+              state={state}
+              latestStates={latestStates}
+              haltedLeases={haltedLeases}
+              onRenew={changeClaim}
+            />
+          ))}
+        </>
+      )}
       <div className="mt-4 grid items-start gap-3 md:mt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* The decision comes first in reading order and on a phone; the evidence it rests on follows. On a wide screen it sits to the right. */}
         <aside aria-labelledby="decision-h" className="min-w-0 rounded-card border border-line bg-surface p-4 md:p-6 xl:col-start-2 xl:row-start-1">
@@ -554,8 +653,8 @@ export function ReviewDesk({
                       setDrafts((d) => ({ ...d, [key]: value }));
                       setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
                     }}
-                    busy={busy === key || busy === `claim:${state.item}:${state.question}`}
-                    claimBusy={busy === `claim:${state.item}:${state.question}`}
+                    busy={Boolean(busy[key] || busy[`claim:${state.item}:${state.question}`])}
+                    claimBusy={Boolean(busy[`claim:${state.item}:${state.question}`])}
                     error={errors[`${state.item}:${state.question}`] || undefined}
                     locked={Boolean(locked[`${state.item}:${state.question}`])}
                     onSubmit={() => submitRead(state)}
