@@ -9,9 +9,12 @@ ARG PYTHON_VERSION=3.12
 FROM golang:${GO_VERSION}-bookworm AS build
 WORKDIR /src/pipeline
 COPY pipeline/go.mod pipeline/go.sum ./
-RUN go mod download
+COPY pipeline/vendor ./vendor
+# Dependencies are tracked in pipeline/vendor; compilation must never contact a module proxy.
+ENV GOFLAGS=-mod=vendor GOPROXY=off
 COPY pipeline/ ./
-RUN go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
+ARG OFFLINE_BUILD_ID=0
+RUN test -n "$OFFLINE_BUILD_ID" && go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
 
 FROM python:${PYTHON_VERSION}-alpine
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
