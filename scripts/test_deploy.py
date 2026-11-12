@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Focused deployment shell tests; a fake docker CLI avoids requiring Docker."""
+import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -297,7 +299,25 @@ exit 2
         bindir = Path(tmp) / "bin"
         bindir.mkdir()
         curl = bindir / "curl"
-        curl.write_text("#!/usr/bin/env bash\n" + curl_body)
+        operations = {
+            "schema": "wasl-operations/1", "observed_at": "2026-11-13T12:00:00Z",
+            "api": {"status": "ok", "source": "/healthz", "dependencies": {
+                "materialised_run": "loaded", "nats": "not_required_for_read_api", "reader": "cached",
+                "ingest_adapter": "fhir", "review_ledger": "ok",
+            }},
+            "nats": {"status": "unreachable", "source": "nats_jetstream_consumer_info", "reason": "jetstream_probe_failed"},
+            "queue": {"status": "unavailable", "source": "nats_jetstream_consumer_info", "coverage": "known_durable_consumers",
+                      "reason": "nats_unreachable", "consumers": []},
+            "run": {"status": "unmeasured", "scope": "completed_synthetic_run", "source": "report7.json",
+                    "reason": "run_metrics_not_recorded"},
+            "api_measurements": {
+                "latency": {"status": "unmeasured", "reason": "api_request_latency_not_recorded"},
+                "error_rate": {"status": "unmeasured", "reason": "api_request_outcomes_not_recorded"},
+            },
+            "backup": {"status": "unmeasured", "source": "recovery_bundle_manifest", "reason": "backup_manifest_not_configured"},
+        }
+        curl.write_text("#!/usr/bin/env bash\ncase \"$*\" in *operations*) echo " + shlex.quote(json.dumps(operations)) +
+                        " && exit 0;; esac\n" + curl_body)
         curl.chmod(0o755)
         samples = Path(tmp) / "api-samples"
         samples.mkdir()
