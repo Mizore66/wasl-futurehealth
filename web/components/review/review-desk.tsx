@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { submitReviewRead } from "@/app/app/review/[id]/actions";
+import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { ApiMode } from "@/lib/api/source";
@@ -12,9 +12,12 @@ import { allQuestionsResolved, finalDecisions, READ_LABEL, resolutionProgress } 
 import type { ReviewView } from "./case-view";
 import {
   answerWords,
+  canAnswerClaim,
+  claimSummary,
   draftKey,
   orderedStates,
   outcomeOf,
+  questionAnchor,
   OUTCOMES,
   readFailureSentence,
   readLine,
@@ -109,6 +112,8 @@ function QuestionCard({
   busy,
   error,
   onSubmit,
+  onClaim,
+  claimBusy,
   headingRef,
   locked,
 }: {
@@ -121,6 +126,8 @@ function QuestionCard({
   busy: boolean;
   error: string | undefined;
   onSubmit: () => void;
+  onClaim: (operation: "claim" | "renew" | "release" | "takeover") => void;
+  claimBusy: boolean;
   headingRef: (el: HTMLHeadingElement | null) => void;
   /** The server committed a read here but its fresh state could not be read: no form until a reload. */
   locked: boolean;
@@ -131,7 +138,8 @@ function QuestionCard({
   const reads = submittedReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
-  const canAnswer = state.may_submit && next !== null && !terminal && !locked;
+  const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const actions = state.claim_actions;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
@@ -140,6 +148,8 @@ function QuestionCard({
   return (
     <section
       aria-labelledby={`${id}-h`}
+      id={questionAnchor(state.item, state.question)}
+      data-item={state.item}
       data-question={state.question}
       data-state={state.state}
       className={position > 0 ? "border-t border-rule pt-3" : undefined}
@@ -154,6 +164,38 @@ function QuestionCard({
           {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
         </span>
       </p>
+
+      {!terminal && (state.claim === undefined || actions === undefined) && (
+        <p className="m-0 mt-2 text-small text-muted" data-testid={`claim-unavailable-${state.question}`}>
+          This API does not provide review claims, so this question is not actionable.
+        </p>
+      )}
+      {!terminal && state.claim !== undefined && actions !== undefined && (
+        <div className="m-0 mt-2 flex flex-wrap items-center gap-2 text-small" data-testid={`claim-status-${state.question}`}>
+          <span className={state.claim?.status === "expired" ? "text-warning" : "text-muted"}>{claimSummary(state)}</span>
+          {state.claim?.status === "active" && actions.renew && <span className="text-muted">Heartbeat every 60 seconds</span>}
+          {actions.claim && next && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("claim")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
+              {claimBusy ? "Claiming…" : `Claim ${READ_LABEL[next].toLowerCase()}`}
+            </button>
+          )}
+          {actions.takeover && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("takeover")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
+              {claimBusy ? "Taking over…" : "Take over claim"}
+            </button>
+          )}
+          {actions.renew && state.claim?.status === "active" && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("renew")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
+              {claimBusy ? "Renewing…" : "Renew claim"}
+            </button>
+          )}
+          {actions.release && state.claim?.status === "active" && (
+            <button type="button" disabled={claimBusy} onClick={() => onClaim("release")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
+              {claimBusy ? "Releasing…" : "Release claim"}
+            </button>
+          )}
+        </div>
+      )}
 
       {reads.length > 0 && (
         <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 mt-2 list-none p-0 text-small">
@@ -195,7 +237,7 @@ function QuestionCard({
       {state.state === "awaiting_r2" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
       )}
-      {state.state === "awaiting_r1" && !canAnswer && !locked && (
+      {state.state === "awaiting_r1" && !canAnswer && !locked && !actions?.claim && !actions?.takeover && !state.claim && (
         <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
       )}
 
@@ -279,6 +321,10 @@ export function ReviewDesk({
   const lockedAt = useRef<Record<string, string>>({});
   const [announcement, setAnnouncement] = useState("");
   const [busy, setBusy] = useState<string>();
+  const busyRef = useRef<string | undefined>(undefined);
+  const latestStates = useRef<ReviewState[]>([]);
+  const draftHeads = useRef<Record<string, string | undefined>>({});
+  const haltedLeases = useRef<Record<string, string>>({});
   const [notice, setNotice] = useState<string>();
   const [seen, setSeen] = useState(states);
   const [override, setOverride] = useState<ReviewState[]>();
@@ -299,6 +345,7 @@ export function ReviewDesk({
     );
   }
   const current = live ? orderedStates(override ?? states ?? []) : [];
+  latestStates.current = current;
   const resolved = live && allQuestionsResolved({ api_review_states: current });
   const evidenceFinal = finalDecisions({ api_review_states: current }, "evidence")[0];
 
@@ -339,18 +386,51 @@ export function ReviewDesk({
     setDone({ outcome: pending, next });
   }
 
+  /** Applies one server-projected lease operation. No response is retried, and fresh state replaces every card. */
+  async function changeClaim(state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<boolean> {
+    const qk = `${state.item}:${state.question}`;
+    const busyKey = `claim:${qk}`;
+    if (busyRef.current) return false;
+    busyRef.current = busyKey;
+    setBusy(busyKey);
+    setNotice(undefined);
+    setErrors((e) => ({ ...e, [qk]: "" }));
+    try {
+      const res = await claimReviewQuestion(view.caseId, { item: state.item, question: state.question, operation, expectedClaimHead: state.claim_head ?? "" });
+      if (res.states) setOverride(res.states);
+      if (res.ok) {
+        delete haltedLeases.current[qk];
+        setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
+        if (res.committed && !res.states) setNotice("The server recorded the claim operation, but its confirmation could not be read. Reload before continuing.");
+        setAnnouncement(`${state.question === "link" ? "Identity" : "Evidence"} claim ${operation} recorded. The current server state is shown.`);
+        return true;
+      }
+      if (res.failure.status === 401 || res.failure.status === 403 || res.failure.status === 409) haltedLeases.current[qk] = state.claim_head ?? "";
+      setErrors((e) => ({ ...e, [qk]: `Not saved: ${res.failure.error}` }));
+      return false;
+    } catch {
+      haltedLeases.current[qk] = state.claim_head ?? "";
+      setErrors((e) => ({ ...e, [qk]: "Not saved: the claim request failed. Check the current state before trying again." }));
+      return false;
+    } finally {
+      busyRef.current = undefined;
+      setBusy(undefined);
+    }
+  }
+
   /** Submits exactly one read. Only that question's draft is cleared; the server's answer is what the card then shows. */
   async function submitRead(state: ReviewState) {
-    if (busy || !state.next_read) return;
+    if (busyRef.current || !state.next_read || !canAnswerClaim(state)) return;
     const key = draftKey(state.item, state.question, state.next_read);
     const decision = drafts[key];
     if (!decision) return;
+    busyRef.current = key;
     setBusy(key);
     setNotice(undefined);
     const qk = `${state.item}:${state.question}`;
     setErrors((e) => ({ ...e, [qk]: "" }));
     try {
-      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head });
+      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head, claimHead: state.claim_head ?? "" });
       if (res.states) setOverride(res.states);
       if (res.ok) {
         setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
@@ -372,9 +452,44 @@ export function ReviewDesk({
     } catch {
       setErrors((e) => ({ ...e, [qk]: "Not saved: the request failed. Check the current state before trying again." }));
     } finally {
+      busyRef.current = undefined;
       setBusy(undefined);
     }
   }
+
+  const leaseSignature = current.map((s) => `${s.item}:${s.question}:${s.claim_head ?? ""}:${s.claim?.status ?? "none"}`).join("|");
+
+  /* Clear a draft if its lease owner/head changed while the reviewer was answering. */
+  useEffect(() => {
+    setDrafts((existing) => Object.fromEntries(Object.entries(existing).filter(([key]) => {
+      const [item, question, slot] = key.split(":");
+      const state = current.find((s) => s.item === item && s.question === question && s.next_read === slot);
+      return state && draftHeads.current[key] === state.claim_head;
+    })));
+    // The signature changes exactly when a lease head or status changes.
+  }, [leaseSignature]);
+
+  /* One non-overlapping heartbeat per active owned lease. The latest head is read at each tick. */
+  useEffect(() => {
+    if (!live) return;
+    const timers: ReturnType<typeof setInterval>[] = [];
+    for (const initial of current) {
+      const qk = `${initial.item}:${initial.question}`;
+      if (!initial.may_submit || initial.claim?.status !== "active" || !initial.claim_actions?.renew) continue;
+      const timer = setInterval(() => {
+        const latest = latestStates.current.find((s) => s.item === initial.item && s.question === initial.question);
+        if (!latest || haltedLeases.current[qk] === (latest.claim_head ?? "") || !canAnswerClaim(latest) || !latest.claim_actions?.renew) {
+          clearInterval(timer);
+          return;
+        }
+        void changeClaim(latest, "renew").then((ok) => {
+          if (!ok) clearInterval(timer);
+        });
+      }, 60_000);
+      timers.push(timer);
+    }
+    return () => timers.forEach(clearInterval);
+  }, [live, leaseSignature]);
 
   if (live && current.length === 0) {
     return (
@@ -434,13 +549,16 @@ export function ReviewDesk({
                     total={current.length}
                     draft={drafts[key]}
                     onDraft={(value) => {
+                      draftHeads.current[key] = state.claim_head;
                       setDrafts((d) => ({ ...d, [key]: value }));
                       setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
                     }}
-                    busy={busy === key}
+                    busy={busy === key || busy === `claim:${state.item}:${state.question}`}
+                    claimBusy={busy === `claim:${state.item}:${state.question}`}
                     error={errors[`${state.item}:${state.question}`] || undefined}
                     locked={Boolean(locked[`${state.item}:${state.question}`])}
                     onSubmit={() => submitRead(state)}
+                    onClaim={(operation) => void changeClaim(state, operation)}
                     headingRef={(el) => {
                       headings.current[`${state.item}:${state.question}`] = el;
                     }}

@@ -81,12 +81,12 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const states = detail.api_review_states ?? [];
   const state = states.find((s) => s.item === item && s.question === question);
   if (!state) return { ok: false, failure: { status: 404, error: "no independent review is open for this question" }, states };
+  if (state.head !== expectedHead || state.claim_head !== claimHead) {
+    return { ok: false, failure: { status: 409, error: "the review or claim changed; check the current state" }, states };
+  }
   if (!state.may_submit || !state.next_read) return { ok: false, failure: { status: 403, error: "you may not submit the next read for this question" }, states };
   if (state.claim?.status !== "active" || state.claim.read !== state.next_read) {
     return { ok: false, failure: { status: 409, error: "an active claim is required before submitting a read" }, states };
-  }
-  if (state.head !== expectedHead || state.claim_head !== claimHead) {
-    return { ok: false, failure: { status: 409, error: "the review or claim changed; check the current state" }, states };
   }
 
   const res = await postReviewWithToken(
