@@ -3,8 +3,8 @@
  "created_after_labels_commit": "1c16f5d201011fed8b91cba3cc4707869e685be4",
  "reader_url": "http://127.0.0.1:8791",
  "model": "gemma-3-4b-it-Q4_K_M",
- "model_file": "/Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf",
- "server_command": "llama-server -m /Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4",
+ "model_file": "<home>/models/gemma/gemma-3-4b-it-Q4_K_M.gguf",
+ "server_command": "llama-server -m <home>/models/gemma/gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4",
  "settings": "shipped prompts and JSON schemas; temperature 0; seed 1; no tuning or retries to improve answers",
  "ldct": {
   "command": "bin/wsi7 ldctcache -ldctdata data/fresh4/reader-inputs/ldct -reader-url http://127.0.0.1:8791 -out data/fresh4/reader-cache/ldct_gemma_cache.json",
@@ -22,5 +22,6 @@
   "log_sha256": "29330ef85a0a80032d99b8844bb966d8a6743f34758e5f22ab0a564381702681"
  },
  "diagnostic_logs_not_scores": "The shipped cache commands also print key-free diagnostics with want=<nil>. Those are not evaluation scores and were not used to tune anything. The official scored reader replay has not run.",
- "official_results_directory_exists": false
+ "official_results_directory_exists": false,
+ "redaction": "Path scrub (2026-11-12): the developer's absolute home directory in model_file and server_command was replaced with <home>/. No other value changed; the cache and log sha256 values above are unaffected."
 }

@@ -22,7 +22,7 @@
     "go": "go version go1.27.3 darwin/arm64",
     "nats_server": "nats-server: v2.15.2",
     "nats_test_wiring": "Worktree-local bin/nats-server symlink to /opt/homebrew/bin/nats-server; ignored, not a source change.",
-    "platform": "Darwin anas-qumhiyeh-JTVX4M32GC 27.2.0 Darwin Kernel Version 27.2.0: Thu Oct 15 00:00:57 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T6020 arm64"
+    "platform": "Darwin <host> 27.2.0 Darwin Kernel Version 27.2.0: Thu Oct 15 00:00:57 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T6020 arm64"
   },
   "commands": [
     {
@@ -51,8 +51,9 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/runner.log",
-        "sha256": "0fc1c7717a8b8e8906b9bd1a30e2519ae55b30b1414ca13d49c4a11f3fcd93b6",
-        "bytes": 3738
+        "sha256": "c11a399be6684a86abc9bc3fe077a70b0612b4c0b696584a5cb2a4ecc95b0cc0",
+        "bytes": 3282,
+        "redaction": "2026-11-12: absolute developer worktree paths in this log were replaced with <repo>/; sha256 and bytes refreshed for the scrubbed file. Only those path prefixes changed; execution counts and results are unchanged. The machine hostname in environment.platform was also replaced with <host>; OS release, kernel build and arch are unchanged."
       }
     },
     {

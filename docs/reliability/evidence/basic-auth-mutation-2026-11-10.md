@@ -21,28 +21,28 @@ No existing assertion was removed or relaxed.
 
 ## Commands and clean-tree results
 
-All commands were run in this worktree. `-count=1` disabled Go test caching.
+All commands were run in this worktree. `-count=1` disabled Go test caching. The worktree's absolute local path was replaced with the repo-relative `pipeline` on 2026-11-12; the commands are otherwise as run.
 
 ```sh
-go -C /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/agent-a995dc5d570db8135/pipeline test . -run '^(TestBasicAuthEnforcesReadRBACAndPreflight|TestAPIAuthenticationDerivesRoleAndActor|TestAPIAuthenticationRejectsMissingAndWrongCredentials)$' -count=1 -v
+go -C pipeline test . -run '^(TestBasicAuthEnforcesReadRBACAndPreflight|TestAPIAuthenticationDerivesRoleAndActor|TestAPIAuthenticationRejectsMissingAndWrongCredentials)$' -count=1 -v
 ```
 
 Baseline before the added CORS cases: `PASS`, `ok wsi 1.122s`; all three selected tests and all seven RBAC subtests passed.
 
 ```sh
-go -C /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/agent-a995dc5d570db8135/pipeline test . -run '^TestBasicAuth' -count=1 -v
+go -C pipeline test . -run '^TestBasicAuth' -count=1 -v
 ```
 
 Strengthened baseline: `PASS`, `ok wsi 3.879s`; both Basic-auth tests and every subtest passed.
 
 ```sh
-go -C /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/agent-a995dc5d570db8135/pipeline test . -run '^TestBasicAuth' -count=1
+go -C pipeline test . -run '^TestBasicAuth' -count=1
 ```
 
 Final focused run after restoring every production mutant: `PASS`, `ok wsi 0.453s`.
 
 ```sh
-go -C /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/agent-a995dc5d570db8135/pipeline test . -count=1
+go -C pipeline test . -count=1
 ```
 
 Broader package runs: `PASS`, `ok wsi 140.552s`; fresh pre-commit rerun `PASS`, `ok wsi 150.212s`.
@@ -52,7 +52,7 @@ Broader package runs: `PASS`, `ok wsi 140.552s`; fresh pre-commit rerun `PASS`, 
 Each mutant was applied alone, tested with the exact command below, and restored before the next mutant. Expected result for every row was a security-test failure (`FAIL`, exit 1); that is what occurred. `KILLED` below means the listed failure was directly observed, not inferred.
 
 ```sh
-go -C /Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/agent-a995dc5d570db8135/pipeline test . -run '^TestBasicAuth' -count=1 -v
+go -C pipeline test . -run '^TestBasicAuth' -count=1 -v
 ```
 
 | Mutant | Exact production mutation | Raw summarized actual result | Outcome |
