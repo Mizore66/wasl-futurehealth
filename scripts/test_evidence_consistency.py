@@ -372,5 +372,47 @@ class Round1Findings(Fixture):
         self.assertEqual("", out.strip())
 
 
+class HomePaths(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def findings(self, text, rel="docs/evidence.md"):
+        p = self.root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding="utf-8")
+        f = []
+        chk.check_home_paths(self.root, lambda *a: f.append(chk.Finding(*a)), rels=[rel])
+        return f
+
+    def test_macos_and_linux_home_paths_flagged(self):
+        for prefix in ("/Us" + "ers/", "/ho" + "me/"):
+            found = self.findings("ok\nrun go -C " + prefix + "dev.name/src/wasl/pipeline test\n")
+            self.assertEqual([("home-path", "docs/evidence.md", 2)], [(x.rule, x.file, x.line) for x in found])
+
+    def test_generic_homes_placeholders_and_short_fixtures_allowed(self):
+        text = "\n".join(("/home/runner/work/wasl", "/home/user/wasl", "/home/node/app", "<repo>/pipeline",
+                          "<home>/models/gemma.gguf", '"/home/u/leak": 1', "pipeline/results/soak"))
+        self.assertEqual([], self.findings(text))
+
+    def test_binary_files_ignored(self):
+        p = self.root / "blob.bin"
+        p.write_bytes(b"\0\1/Us" + b"ers/someone/x")
+        f = []
+        chk.check_home_paths(self.root, lambda *a: f.append(a), rels=["blob.bin"])
+        self.assertEqual([], f)
+
+    def test_frozen_exceptions_are_tracked(self):
+        tracked = set(chk.tracked_files(REAL))
+        self.assertTrue(tracked, "repository checkout required")
+        self.assertEqual(set(), set(chk.HOME_PATH_FROZEN) - tracked)
+
+    def test_non_git_root_has_no_tracked_files(self):
+        self.assertEqual([], chk.tracked_files(self.root))
+
+
 if __name__ == "__main__":
     unittest.main()

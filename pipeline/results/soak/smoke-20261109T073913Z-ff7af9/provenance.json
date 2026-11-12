@@ -9,7 +9,7 @@
     "cohort/run exports"
   ],
   "selected_samples": 56,
-  "source_run_dir": "/Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_61c763e6-7e4-3/pipeline/results/soak/runs/20261109T073913Z-ff7af9",
+  "source_run_dir": "<repo>/pipeline/results/soak/runs/20261109T073913Z-ff7af9",
   "source_samples": 392,
   "status": "failed"
 }

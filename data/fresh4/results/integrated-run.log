@@ -1,4 +1,4 @@
-/Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_3ae621fd-a2c-1/scripts/final_manifest.py:76: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+<repo>/scripts/final_manifest.py:76: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
   "frozen_at": datetime.datetime.utcnow().isoformat() + "Z",
 frozen bc25c6968ebf seeds [1103, 1109, 1117, 1121, 1123]
 done v1-s1117: crc       with review : P 1.000  R 0.822  false closures 0/647

@@ -51,8 +51,9 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/runner.log",
-        "sha256": "0fc1c7717a8b8e8906b9bd1a30e2519ae55b30b1414ca13d49c4a11f3fcd93b6",
-        "bytes": 3738
+        "sha256": "c11a399be6684a86abc9bc3fe077a70b0612b4c0b696584a5cb2a4ecc95b0cc0",
+        "bytes": 3282,
+        "redaction": "2026-11-12: absolute developer worktree paths in this log were replaced with <repo>/; sha256 and bytes refreshed for the scrubbed file. Only those path prefixes changed; execution counts and results are unchanged."
       }
     },
     {
