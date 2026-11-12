@@ -141,6 +141,20 @@ class AugmentSbomTests(unittest.TestCase):
         self.assertEqual(deps["wasl:manifest:pipeline/go.mod"], [a])
         self.assertEqual(deps["wasl:manifest:deploy/nats/build/go.mod"], [b])
 
+    def test_rejects_two_libraries_with_the_same_package_and_parent_manifest(self):
+        raw = copy.deepcopy(self.raw)
+        lib = lambda ref: {"bom-ref": ref, "type": "library", "name": "golang.org/x/sys",
+                           "purl": "pkg:golang/golang.org/x/sys@v0.49.0"}
+        raw["components"] += [
+            {"bom-ref": "11111111-1111-4111-8111-111111111111", "type": "application", "name": "pipeline/go.mod"},
+            lib("33333333-3333-4333-8333-333333333333"), lib("44444444-4444-4444-8444-444444444444"),
+        ]
+        raw["dependencies"] = [{"ref": "11111111-1111-4111-8111-111111111111",
+                                "dependsOn": ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"]}]
+        with self.assertRaisesRegex(ValueError, "Duplicate stabilized"):
+            supply_chain.augment_sbom(raw, ROOT, revision="a" * 40,
+                                      committed_at="2026-11-09T01:02:03Z", dirty=False)
+
     def test_refuses_a_dirty_tree_as_clean_release_evidence(self):
         with self.assertRaisesRegex(ValueError, "dirty"):
             supply_chain.augment_sbom(

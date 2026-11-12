@@ -11,9 +11,12 @@ fi
 case "$ENGINE" in docker|podman) ;; *) echo "WASL_CONTAINER_ENGINE must be docker or podman" >&2; exit 2 ;; esac
 WASL_TAG="${WASL_CLEAN_TAG:-wasl-offline-clean:local}"
 NATS_TAG="${WASL_NATS_CLEAN_TAG:-wasl-nats-offline-clean:local}"
-GO_IMAGE="golang:${GO_VERSION:-1.27.4}-bookworm"
-PY_IMAGE="python:${PYTHON_VERSION:-3.12}-alpine"
-NATS_IMAGE="nats:${NATS_VERSION:-2.12.6}-alpine"
+GO_VERSION="${GO_VERSION:-1.27.4}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
+NATS_VERSION="${NATS_VERSION:-2.12.6}"
+GO_IMAGE="golang:${GO_VERSION}-bookworm"
+PY_IMAGE="python:${PYTHON_VERSION}-alpine"
+NATS_IMAGE="nats:${NATS_VERSION}-alpine"
 
 # Base images must be preloaded: the build never pulls.
 for img in "$GO_IMAGE" "$PY_IMAGE" "$NATS_IMAGE"; do
@@ -22,11 +25,9 @@ done
 
 CONTEXT="$(mktemp -d "/tmp/wasl-offline-clean.XXXXXXXX")"
 trap 'rm -rf "$CONTEXT"' EXIT
-# Fresh context (under /tmp so a Podman VM can read it): tracked files plus untracked, non-ignored generated bundles.
-# Never .git, build outputs or prior caches.
-{ git -C "$ROOT" ls-files -z
-  git -C "$ROOT" ls-files -coz --exclude-standard -- pipeline/vendor deploy/nats/build deploy/offline deploy/nats/offline
-} | tar -C "$ROOT" --null -T - -cf - | tar -C "$CONTEXT" -xf -
+# Fresh context (under /tmp so a Podman VM can read it): tracked files only; every bundle is committed.
+# Never .git, untracked files, build outputs or prior caches.
+git -C "$ROOT" ls-files -z | tar -C "$ROOT" --null -T - -cf - | tar -C "$CONTEXT" -xf -
 test -s "$CONTEXT/pipeline/vendor/modules.txt"
 test -s "$CONTEXT/deploy/nats/build/vendor/modules.txt"
 test -s "$CONTEXT/deploy/offline/SHA256SUMS"
@@ -38,8 +39,8 @@ BUILD_ID="$(date +%s)"
 COMMON=(--no-cache --network=none "${PULL[@]}" --build-arg OFFLINE_PACKAGES=1 --build-arg "OFFLINE_BUILD_ID=$BUILD_ID")
 
 echo "== engine: $ENGINE; build id: $BUILD_ID"
-"$ENGINE" build "${COMMON[@]}" --build-arg OFFLINE_RUNTIME=0 --tag "$WASL_TAG" "$CONTEXT"
-"$ENGINE" build "${COMMON[@]}" --tag "$NATS_TAG" "$CONTEXT/deploy/nats"
+"$ENGINE" build "${COMMON[@]}" --build-arg OFFLINE_RUNTIME=0 --build-arg "GO_VERSION=$GO_VERSION" --build-arg "PYTHON_VERSION=$PYTHON_VERSION" --build-arg "PYTHON_IMAGE=$PY_IMAGE" --tag "$WASL_TAG" "$CONTEXT"
+"$ENGINE" build "${COMMON[@]}" --build-arg "GO_VERSION=$GO_VERSION" --build-arg "NATS_VERSION=$NATS_VERSION" --tag "$NATS_TAG" "$CONTEXT/deploy/nats"
 
 check_uid() {
   local uid
@@ -52,7 +53,7 @@ check_uid "$NATS_TAG"
 [ "$("$ENGINE" run --rm --network=none --entrypoint id "$WASL_TAG" -u)" = 10001 ]
 NATS_OUT="$("$ENGINE" run --rm --network=none --entrypoint /usr/local/bin/nats-server "$NATS_TAG" -v)"
 echo "$NATS_OUT"
-[ "$NATS_OUT" = "nats-server: v${NATS_VERSION:-2.12.6}" ] || { echo "unexpected NATS version" >&2; exit 1; }
+[ "$NATS_OUT" = "nats-server: v${NATS_VERSION}" ] || { echo "unexpected NATS version" >&2; exit 1; }
 [ "$("$ENGINE" run --rm --network=none --entrypoint id "$NATS_TAG" -u)" = 10001 ]
 echo "== image IDs"
 "$ENGINE" image inspect --format '{{.Id}} {{.Architecture}}' "$WASL_TAG" "$NATS_TAG"
