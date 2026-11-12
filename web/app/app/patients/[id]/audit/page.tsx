@@ -49,7 +49,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
           <div className="flex min-w-0 flex-col gap-gap">
             <SignaturesCard audit={audit} />
             {status === "ok" ? (
-              <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection, signedIn: history.signedIn } : undefined} />
+              <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection, signedIn: history.signedIn, mode: history.session?.method, expiresAt: history.session?.expiresAt } : undefined} />
             ) : (
               <section aria-labelledby="history-withheld-h" className="rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="history-withheld">
                 <h2 id="history-withheld-h" className="m-0 text-section font-medium">

@@ -16,7 +16,7 @@ export type HistoryStatus = "ok" | "signin" | "concealed";
  * `signedIn`: the viewer's reviewer-session token was accepted for this case on the latest read. Governance controls
  * (undo, contest, resolve) act only as that token, so without it the page shows a sign-in prompt instead.
  */
-export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null; signedIn: boolean };
+export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null; signedIn: boolean; session?: import("@/components/review/auth").ReviewSessionInfo };
 
 type Viewer = Awaited<ReturnType<typeof getReviewCase>>;
 const hidden = (v: Viewer) => v.authenticated && concealsInitialRead(v.detail.api_review_states ?? []);
@@ -37,6 +37,6 @@ export async function gatedHistory(id: string, opts: { before?: Viewer; needAudi
   const hasProtocol = audit.history.some((e) => protocolRead(e) !== undefined);
   const concealed = hidden(before) || hidden(after);
   const status: HistoryStatus = concealed ? "concealed" : hasProtocol && !after.authenticated ? "signin" : "ok";
-  if (status === "ok") return { status, audit, projection, signedIn };
+  if (status === "ok") return { status, audit, projection, signedIn, session: after.authenticated ? after.session : undefined };
   return { status, audit: { ...audit, history: [] }, projection: null, signedIn };
 }

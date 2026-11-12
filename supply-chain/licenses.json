@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "ad7a02726c90cbeb177ff66a1a5054cf882dc528",
-    "committed_at": "2026-11-12T15:55:13Z"
+    "revision": "0f47647cba6e5271a5cbe1813f1b2712481c100f",
+    "committed_at": "2026-11-12T22:21:32Z"
   },
   "scanner": {
     "name": "trivy",
@@ -13,8 +13,8 @@
     "machine": "arm64"
   },
   "summary": {
-    "packages": 778,
-    "with_discovered_license": 650,
+    "packages": 783,
+    "with_discovered_license": 655,
     "without_discovered_license": 128,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
@@ -27,7 +27,7 @@
       "CC0-1.0": 1,
       "ISC": 20,
       "LGPL-3.0-or-later": 1,
-      "MIT": 549,
+      "MIT": 554,
       "MPL-2.0": 6,
       "Python-2.0": 1
     }
@@ -2438,6 +2438,16 @@
       "name": "@types/node",
       "version": "20.19.43",
       "purl": "pkg:npm/%40types/node@20.19.43",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@types/node",
+      "version": "24.19.2",
+      "purl": "pkg:npm/%40types/node@24.19.2",
       "development": false,
       "licenses": [
         "MIT"
@@ -5193,6 +5203,16 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "jose",
+      "version": "6.2.17",
+      "purl": "pkg:npm/jose@6.2.17",
+      "development": false,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "js-tokens",
       "version": "4.0.0",
       "purl": "pkg:npm/js-tokens@4.0.0",
@@ -5903,6 +5923,16 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "oauth4webapi",
+      "version": "3.8.8",
+      "purl": "pkg:npm/oauth4webapi@3.8.8",
+      "development": false,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "object-assign",
       "version": "4.1.1",
       "purl": "pkg:npm/object-assign@4.1.1",
@@ -6037,6 +6067,16 @@
       "version": "8.4.2",
       "purl": "pkg:npm/open@8.4.2",
       "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "openid-client",
+      "version": "6.8.9",
+      "purl": "pkg:npm/openid-client@6.8.9",
+      "development": false,
       "licenses": [
         "MIT"
       ]
@@ -7276,6 +7316,16 @@
       "name": "undici-types",
       "version": "6.21.0",
       "purl": "pkg:npm/undici-types@6.21.0",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "undici-types",
+      "version": "7.24.6",
+      "purl": "pkg:npm/undici-types@7.24.6",
       "development": false,
       "licenses": [
         "MIT"

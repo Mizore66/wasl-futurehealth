@@ -8,17 +8,20 @@ import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { ReviewerLogin } from "@/components/review/reviewer-login";
+import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { gatedHistory } from "@/lib/api/protocol-history";
 import { getReviewCase } from "@/lib/api/reviewer-session";
 import { apiMode } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
+import { reviewAuthMode } from "@/lib/auth/oidc-config";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
 export const metadata = { title: "Review" };
 
-export default async function Page({ params }: PageProps<"/app/review/[id]">) {
+export default async function Page({ params, searchParams }: PageProps<"/app/review/[id]">) {
   const id = caseIdFromParam((await params).id);
+  const query = await searchParams;
+  const authMode = reviewAuthMode();
   const live = apiMode() === "live";
   /* The viewer's own credential reads the case. Without one, live review shows the sign-in form and nothing else. */
   const viewer = await getReviewCase(id);
@@ -26,7 +29,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
     return (
       <>
         <h1 className="m-0 text-title font-semibold">Review</h1>
-        <ReviewerLogin caseId={id} />
+        <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} />
       </>
     );
   }
@@ -91,6 +94,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           {queue && <QueueLabel source={queue.source} />}
         </div>
       </header>
+      {viewer.session && <ReviewerSessionStatus session={viewer.session} />}
       {view.guided ? (
         <ReviewDesk
           view={view}
@@ -147,7 +151,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           <HistoryCard
             audit={audit}
             programme={detail.case.programme}
-            governance={projection ? { caseId: id, projection, signedIn: history.signedIn, hostSignOut: view.guided } : undefined}
+            governance={projection ? { caseId: id, projection, signedIn: history.signedIn, hostSignOut: view.guided, mode: viewer.session?.method, expiresAt: viewer.session?.expiresAt } : undefined}
           />
         </div>
       )}

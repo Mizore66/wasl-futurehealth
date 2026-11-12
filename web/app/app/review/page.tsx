@@ -11,7 +11,8 @@ import { caseHref } from "@/lib/domain/ids";
 
 export const metadata = { title: "Review" };
 
-export default async function Page() {
+export default async function Page({ searchParams }: PageProps<"/app/review">) {
+  const query = await searchParams;
   const live = apiMode() === "live";
   const token = live ? await reviewerToken() : undefined;
   const queue = await reviewQueue(token);
@@ -33,6 +34,12 @@ export default async function Page() {
         </div>
         <QueueLabel source={queue.source} />
       </header>
+
+      {query.oidc_error === "1" && (
+        <p role="status" className="m-0 mt-3 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
+          OIDC sign-in could not be completed. Try again from a review case or contact the operator.
+        </p>
+      )}
 
       {live && !token && <p className="m-0 mt-3 max-w-[72ch] text-muted">Open a case on the review desk and sign in to claim or answer a question.</p>}
 

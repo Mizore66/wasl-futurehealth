@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:7c1573eb-fb2e-5c97-b950-f307247ca5b7",
+  "serialNumber": "urn:uuid:e96ee62a-529e-5e71-88d5-3684eeddd7fc",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-12T15:55:13Z",
+    "timestamp": "2026-11-12T22:21:32Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "ad7a02726c90cbeb177ff66a1a5054cf882dc528"
+      "version": "0f47647cba6e5271a5cbe1813f1b2712481c100f"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "ad7a02726c90cbeb177ff66a1a5054cf882dc528"
+        "value": "0f47647cba6e5271a5cbe1813f1b2712481c100f"
       },
       {
         "name": "wasl:source-tree",
@@ -7259,6 +7259,37 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/%40types/node@24.19.2",
+      "type": "library",
+      "group": "@types",
+      "name": "node",
+      "version": "24.19.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40types/node@24.19.2",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@types/node@24.19.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "f77778f700962640b237ceccc4ba4d37a2973c2c05c3b6d5520efd986515d4e4b8d09196c150abf27eb50d7092ab3ec257afd57cf91bef179ceee3f633e40759"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/%40types/react-dom@19.3.0",
       "type": "library",
       "group": "@types",
@@ -8368,7 +8399,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@vitest/mocker@5.0.5(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
+          "value": "@vitest/mocker@5.0.5(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -15524,6 +15555,36 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/jose@6.2.17",
+      "type": "library",
+      "name": "jose",
+      "version": "6.2.17",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jose@6.2.17",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "jose@6.2.17"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "c0eb8af55d72ba34051f94b465698b70364defe20a87d6d4082d993c27f61c39689775961f2f8f3f2363108ef915744b329def0ca41cba93f9f7185553de6172"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/js-tokens@4.0.0",
       "type": "library",
       "name": "js-tokens",
@@ -17469,7 +17530,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "next@16.4.3(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)"
+          "value": "next@16.4.3(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -17630,6 +17691,36 @@
         {
           "alg": "SHA-512",
           "content": "3029c8986e10e6f3f08525e7a2fe7a9cebb2c8a9fa2c2f9077b208d5488a73e00246dba0e6202d9f4f82c17371337f000b9952a30118fa8604b595f6a8c9d4cb"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/oauth4webapi@3.8.8",
+      "type": "library",
+      "name": "oauth4webapi",
+      "version": "3.8.8",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/oauth4webapi@3.8.8",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "oauth4webapi@3.8.8"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "f0ddbc13e6bfa317d758180e32df993ff2547ff5d1f8815bbe40043cfde0ce75ce32ff41a400308888f44c5373ded1933dcd1943cce65813603759c0cacd209e"
         }
       ]
     },
@@ -18050,6 +18141,36 @@
         {
           "alg": "SHA-512",
           "content": "ef1f353422fbd7da0d6ecabfde687e855ac05a616e11852aaeafc8c37914cc7f117b2a53f5043404ba094bbfc6f64e8df355e35b8a875ad8d6c1effd78bcb511"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/openid-client@6.8.9",
+      "type": "library",
+      "name": "openid-client",
+      "version": "6.8.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/openid-client@6.8.9",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "openid-client@6.8.9"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "ea65cc44d2710ce7fa05f94458b5ee975530ccb173fbef4e7f3d4f6303f0c2c26cc9706c6df90ef89a36e79496d6a9c534b633e042561f3e365f838926bc9afe"
         }
       ]
     },
@@ -19929,7 +20050,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "sharp@0.35.5(@types/node@20.19.43)"
+          "value": "sharp@0.35.5(@types/node@24.19.2)"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -21742,6 +21863,36 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/undici-types@7.24.6",
+      "type": "library",
+      "name": "undici-types",
+      "version": "7.24.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/undici-types@7.24.6",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "undici-types@7.24.6"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "591356fac2608f9381378ff42691c5aadab38696e75741ae07e3a8cc0f6008bedaf7ddd2994fb5241642ccb37162c6cc7c87832fe953b29843e6337937e9f4ce"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/undici@7.30.1",
       "type": "library",
       "name": "undici",
@@ -22057,7 +22208,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)"
+          "value": "vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -22087,7 +22238,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "vitest@5.0.5(@types/node@20.19.43)(happy-dom@21.0.4)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
+          "value": "vitest@5.0.5(@types/node@24.19.2)(happy-dom@21.0.4)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -24872,6 +25023,12 @@
       ]
     },
     {
+      "ref": "pkg:npm/%40types/node@24.19.2",
+      "dependsOn": [
+        "pkg:npm/undici-types@7.24.6"
+      ]
+    },
+    {
       "ref": "pkg:npm/%40types/react-dom@19.3.0",
       "dependsOn": [
         "pkg:npm/%40types/react@19.3.0"
@@ -26710,6 +26867,10 @@
       "dependsOn": []
     },
     {
+      "ref": "pkg:npm/jose@6.2.17",
+      "dependsOn": []
+    },
+    {
       "ref": "pkg:npm/js-tokens@4.0.0",
       "dependsOn": []
     },
@@ -27120,6 +27281,10 @@
       ]
     },
     {
+      "ref": "pkg:npm/oauth4webapi@3.8.8",
+      "dependsOn": []
+    },
+    {
       "ref": "pkg:npm/object-assign@4.1.1",
       "dependsOn": []
     },
@@ -27214,6 +27379,13 @@
         "pkg:npm/define-lazy-prop@2.0.0",
         "pkg:npm/is-docker@2.2.1",
         "pkg:npm/is-wsl@2.2.0"
+      ]
+    },
+    {
+      "ref": "pkg:npm/openid-client@6.8.9",
+      "dependsOn": [
+        "pkg:npm/jose@6.2.17",
+        "pkg:npm/oauth4webapi@3.8.8"
       ]
     },
     {
@@ -27744,7 +27916,7 @@
         "pkg:npm/%40img/sharp-win32-arm64@0.35.5",
         "pkg:npm/%40img/sharp-win32-ia32@0.35.5",
         "pkg:npm/%40img/sharp-win32-x64@0.35.5",
-        "pkg:npm/%40types/node@20.19.43",
+        "pkg:npm/%40types/node@24.19.2",
         "pkg:npm/detect-libc@2.1.2",
         "pkg:npm/semver@7.8.5"
       ]
@@ -28135,6 +28307,10 @@
       "dependsOn": []
     },
     {
+      "ref": "pkg:npm/undici-types@7.24.6",
+      "dependsOn": []
+    },
+    {
       "ref": "pkg:npm/undici@7.30.1",
       "dependsOn": []
     },
@@ -28216,7 +28392,7 @@
     {
       "ref": "pkg:npm/vite@8.3.5",
       "dependsOn": [
-        "pkg:npm/%40types/node@20.19.43",
+        "pkg:npm/%40types/node@24.19.2",
         "pkg:npm/esbuild@0.28.2",
         "pkg:npm/fsevents@2.3.3",
         "pkg:npm/jiti@2.7.0",
@@ -28232,7 +28408,7 @@
       "ref": "pkg:npm/vitest@5.0.5",
       "dependsOn": [
         "pkg:npm/%40types/chai@5.2.3",
-        "pkg:npm/%40types/node@20.19.43",
+        "pkg:npm/%40types/node@24.19.2",
         "pkg:npm/%40vitest/mocker@5.0.5",
         "pkg:npm/chai@6.3.0",
         "pkg:npm/es-module-lexer@2.3.2",
@@ -28416,7 +28592,7 @@
         "pkg:npm/%40number-flow/react@0.6.2",
         "pkg:npm/%40playwright/test@1.64.1",
         "pkg:npm/%40tailwindcss/turbopack@4.3.3",
-        "pkg:npm/%40types/node@20.19.43",
+        "pkg:npm/%40types/node@24.19.2",
         "pkg:npm/%40types/react-dom@19.3.0",
         "pkg:npm/%40types/react@19.3.0",
         "pkg:npm/%40types/three@0.187.0",
@@ -28425,9 +28601,11 @@
         "pkg:npm/eslint-config-next@16.4.3",
         "pkg:npm/eslint@9.39.5",
         "pkg:npm/happy-dom@21.0.4",
+        "pkg:npm/jose@6.2.17",
         "pkg:npm/lucide-react@1.66.0",
         "pkg:npm/motion@14.9.0",
         "pkg:npm/next@16.4.3",
+        "pkg:npm/openid-client@6.8.9",
         "pkg:npm/radix-ui@1.8.1",
         "pkg:npm/react-dom@19.3.0",
         "pkg:npm/react@19.3.0",
