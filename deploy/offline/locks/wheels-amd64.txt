@@ -1,0 +1,7 @@
+# alpine-release: 3.24.4
+cffi==2.1.1 --hash=sha256:210019b6c7cf07f081b4c54635c8cf744377001350e29cc0f81c4377b4797735  # cffi-2.1.1-cp312-cp312-musllinux_1_2_x86_64.whl
+cryptography==50.0.2 --hash=sha256:85d0d9a31b9098e98534226d5686b47264b95e62ce459dc2e62fdfc809f9fe93  # cryptography-50.0.2-cp311-abi3-musllinux_1_2_x86_64.whl
+numpy==2.3.5 --hash=sha256:b46b4ec24f7293f23adcd2d146960559aaf8020213de8ad1909dba6c013bf89c  # numpy-2.3.5-cp312-cp312-musllinux_1_2_x86_64.whl
+pip==26.3 --hash=sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13  # pip-26.3-py3-none-any.whl
+pycparser==3.12 --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e  # pycparser-3.12-py3-none-any.whl
+scipy==1.16.3 --hash=sha256:c5192722cffe15f9329a3948c4b1db789fbb1f05c97899187dcf009b283aea70  # scipy-1.16.3-cp312-cp312-musllinux_1_2_x86_64.whl
