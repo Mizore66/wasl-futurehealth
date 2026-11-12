@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
@@ -344,8 +344,7 @@ export function ReviewDesk({
       Object.fromEntries(Object.entries(l).filter(([qk]) => (states ?? []).some((x) => `${x.item}:${x.question}` === qk && x.head === lockedAt.current[qk]))),
     );
   }
-  const current = live ? orderedStates(override ?? states ?? []) : [];
-  latestStates.current = current;
+  const current = useMemo(() => (live ? orderedStates(override ?? states ?? []) : []), [live, override, states]);
   const resolved = live && allQuestionsResolved({ api_review_states: current });
   const evidenceFinal = finalDecisions({ api_review_states: current }, "evidence")[0];
 
@@ -387,7 +386,7 @@ export function ReviewDesk({
   }
 
   /** Applies one server-projected lease operation. No response is retried, and fresh state replaces every card. */
-  async function changeClaim(state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<boolean> {
+  const changeClaim = useCallback(async (state: ReviewState, operation: "claim" | "renew" | "release" | "takeover"): Promise<boolean> => {
     const qk = `${state.item}:${state.question}`;
     const busyKey = `claim:${qk}`;
     if (busyRef.current) return false;
@@ -416,7 +415,7 @@ export function ReviewDesk({
       busyRef.current = undefined;
       setBusy(undefined);
     }
-  }
+  }, [view.caseId]);
 
   /** Submits exactly one read. Only that question's draft is cleared; the server's answer is what the card then shows. */
   async function submitRead(state: ReviewState) {
@@ -457,7 +456,9 @@ export function ReviewDesk({
     }
   }
 
-  const leaseSignature = current.map((s) => `${s.item}:${s.question}:${s.claim_head ?? ""}:${s.claim?.status ?? "none"}`).join("|");
+  useEffect(() => {
+    latestStates.current = current;
+  }, [current]);
 
   /* Clear a draft if its lease owner/head changed while the reviewer was answering. */
   useEffect(() => {
@@ -466,8 +467,8 @@ export function ReviewDesk({
       const state = current.find((s) => s.item === item && s.question === question && s.next_read === slot);
       return state && draftHeads.current[key] === state.claim_head;
     })));
-    // The signature changes exactly when a lease head or status changes.
-  }, [leaseSignature]);
+    // A fresh current array is produced exactly when server or lease state changes.
+  }, [current]);
 
   /* One non-overlapping heartbeat per active owned lease. The latest head is read at each tick. */
   useEffect(() => {
@@ -489,7 +490,7 @@ export function ReviewDesk({
       timers.push(timer);
     }
     return () => timers.forEach(clearInterval);
-  }, [live, leaseSignature]);
+  }, [live, current, changeClaim]);
 
   if (live && current.length === 0) {
     return (

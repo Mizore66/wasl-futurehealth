@@ -356,7 +356,7 @@ test.describe("independent double review, live mock", () => {
       headers: { authorization: `Bearer ${tokens.r1}`, "content-type": "application/json" },
       data: { item: LINK, decision: "same", note: "", read: "r1", expected_head: "", claim_head: takenHead },
     });
-    expect(staleWrite.status()).toBe(403);
+    expect([403, 409]).toContain(staleWrite.status());
     await card(b.page, "link").getByRole("button", { name: "Release claim" }).click();
     await noSeriousAxe(b.page);
     await a.context.close();

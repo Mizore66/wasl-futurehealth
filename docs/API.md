@@ -47,6 +47,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registration pseudonyms), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
 | GET | `/api/cases/{id}/audit` | Redacted `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; redacted review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
+| POST | `/api/cases/{id}/review/claim` | Append an independent-review claim, renew, release or takeover event (below) |
 | POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note (below) |
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
@@ -254,7 +255,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 **Status: built for the synthetic demo; verified by Go handler tests and the real-HTTP smoke (`scripts/api_smoke.py`, `independent_review_smoke`) only where that smoke has actually been run.** It does not change the pipeline, canonical case state, `out_log.ndjson`, `fhir_log.ndjson` or `reviewer_decisions.ndjson`; every response carries `canonical_unchanged: true`.
 
-A body with `read` (`r1` | `r2` | `r3`) uses the protocol; a body without it is the legacy append-only event above. A legacy event never advances protocol state and stays labelled as not independently double-reviewed. Protocol bodies also need `expected_head` (a string; empty for the first read). `read` is a workflow slot, not a role. The server derives `question` (`link` or `evidence`) from the raised item and decision; a combined-kind item has one independent state machine per question.
+A body with `read` (`r1` | `r2` | `r3`) uses the protocol; a body without it is the legacy append-only event above. A legacy event never advances protocol state and stays labelled as not independently double-reviewed. Protocol bodies also need `expected_head` (a string; empty for the first read) and `claim_head` (the active 64-lowercase-hex lease head). `read` is a workflow slot, not a role. The server derives `question` (`link` or `evidence`) from the raised item and decision; a combined-kind item has one independent state machine per question. Only the verified owner of an active lease for that exact `(item, question, read)` can submit; a successful read consumes the lease.
 
 | State | Accepted write | Result |
 |---|---|---|
@@ -267,21 +268,61 @@ An agreement never opens `r3`. A disagreement alone opens it. `r3` records `reso
 
 **Status codes:** 400 malformed input (unknown `read`, missing `expected_head`, decision that does not answer the question); 401 no valid token; 403 role not allowed for the slot or discipline, or the same normalised actor already read the question (two tokens bound to one actor are not independent); 404 unknown case or item; 409 wrong state, duplicate slot, premature `r3`, stale head or terminal state; 500 ledger append failure (memory is left unchanged). Validation and append happen under the server mutex, so two writers at one head get one 201 and one 409.
 
-**Response:** 201 with `review` (the event, with additive fields `protocol`, `read`, `question`, `expected_head`, `resolution_reads` on `r3`) and `review_state`. Case detail adds `api_review_states`, sorted by item then question: `item`, `question`, `state`, `head`, `next_read`, `may_submit`, `reads`, `disagreement`, `final_decision`, `resolution_basis`, `canonical_unchanged`.
+**Response:** 201 with `review` (the event, with additive fields `protocol`, `read`, `question`, `expected_head`, `claim_head`, `resolution_reads` on `r3`) and `review_state`. Case detail adds `api_review_states`, sorted by item then question: `item`, `question`, `state`, `head`, `next_read`, `may_submit`, `reads`, `disagreement`, `final_decision`, `resolution_basis`, `canonical_unchanged`, plus `claim_head`, `claim` and viewer-specific `claim_actions`. `claim` is `null` when unclaimed, released, consumed, frozen or terminal. Otherwise it carries `owner`, `role`, `read`, `claimed_at`, `heartbeat_at`, `expires_at` and `status` (`active` or `expired`). `claim_head` remains the last claim-event head even when `claim` is null. `claim_actions` has booleans for `claim`, `renew`, `release` and `takeover`; clients render those rather than inferring permission. `may_submit` is true only for the eligible owner of an unexpired active lease.
 
-**Blinding:** while a question is `awaiting_r2`, any actor other than the `r1` author receives no `r1` decision, note, event hash or `api_reviews` entry, in detail or in POST responses. They see only that a first read was submitted. After `r2` both initial answers are visible. Auditor history is actor- and note-redacted but keeps `protocol`, `read`, `question`, `expected_head`, `resolution_reads`, `prev` and `hash`; the web review page suppresses the embedded auditor history while any initial answer is concealed.
+**Blinding:** while a question is `awaiting_r2`, any actor other than the `r1` author receives no `r1` decision, note, event hash or `api_reviews` entry, in detail or in POST responses. They see only that a first read was submitted. After `r2` both initial answers are visible. Auditor history is actor- and note-redacted but keeps `protocol`, `read`, `question`, `expected_head`, `claim_head`, `resolution_reads`, `prev` and `hash`; the web review page suppresses the embedded auditor history while any initial answer is concealed. Claim events receive the same viewer filtering, so their `prev` cannot disclose a concealed r1 hash.
 
 **Senior authority:** `senior_reviewer` and `senior_clinician` hold the sign and queue-read capabilities of their discipline, and only they may submit `r3`; only the ordinary roles may submit `r1`/`r2`. In `scripts/demo.sh` the third reviewer and clinician tokens are the seniors. No header, browser-selected role or actor label grants authority.
 
-**Mixed ledgers:** legacy and protocol events share `api_reviews.ndjson` and its hash chain. Start-up replay applies the same transition validator as live writes, so a chain-valid but impossible history fails closed (`review_ledger: invalid`, writes 500).
+**Mixed ledgers:** legacy, protocol and claim events share `api_reviews.ndjson` and its hash chain. Start-up replay applies the same transition and lease validators as live writes, so a chain-valid but impossible history fails closed (`review_ledger: invalid`, writes 500). Old protocol events without `claim_head` replay only while that question has no earlier claim history; after its first claim event every protocol read must carry valid fencing. Expiry during replay compares each event's `at` with the stored expiry, never the restart wall clock.
 
-**Undo and contest:** targeting a protocol read returns 409 in this version (dependent invalidation is not designed). Legacy compensation is unchanged.
+**Undo and contest:** targeting a protocol read or a `review_claim` event returns 409 in this version (dependent invalidation is not designed). Legacy compensation is unchanged.
 
 **Web sign-in (cookie scope):** the review page uses a reviewer-supplied assigned API token. A Next.js server action verifies it with an authenticated API request, then stores it in an `HttpOnly; Secure; SameSite=Strict` cookie (`wasl_review_token`) scoped to the review path. Review reads and writes send that exact credential; the browser never supplies actor or role headers. Sign-out clears the cookie. This is the synthetic-demo path: the Basic-auth production-shaped package (`WASL_API_USERS_FILE`) serves the protocol through the API, but its passwords are not bearer tokens and do not work in the web form. Fixture mode requests no credential and persists nothing.
 
-**Smoke coverage:** the real-HTTP smoke checks mid-state blinding for a second ordinary reader, undo/contest of a concealed r1 (409) and that a reviewer credential cannot read `/audit` or `/export` (403). Auditor audit/export are not blinded; the review desk must not fetch them mid-state. Same-actor-via-two-tokens and concurrent duplicate writes are covered by Go handler tests, not the smoke.
+**Smoke coverage:** the real-HTTP smoke checks claim, competing-claim refusal, renew, release, re-claim and fenced r1/r2/r3 reads in hash-chain order, plus mid-state blinding, actor/note-redacted claim metadata and unchanged canonical data. It does not sleep for expiry; fake-clock Go tests cover the exact expiry boundary, takeover and lease races. Same-actor-via-two-tokens and concurrent duplicate writes are covered by Go handler tests, not the smoke.
 
 **Limits:** tokens establish configured actor identities, not proof that separate humans (or real clinicians) participated. The ledger is a hash chain, not WORM storage. There is no OIDC, professional identity proof or live Malaffi. Canonical state is never rewritten by interactive review. Deployment must use HTTPS.
+
+### POST review claims: five-minute leases
+
+`POST /api/cases/{id}/review/claim` requires the assigned bearer token and a strict JSON body. Unknown, duplicate, oversized or trailing fields are rejected. Other methods return 405 with `Allow: POST`.
+
+```json
+{"item":"rv-123","question":"link","operation":"claim","expected_claim_head":""}
+```
+
+`question` is `link` or `evidence`; `operation` is `claim`, `renew`, `release` or `takeover`. `expected_claim_head` is empty before the question's first claim event and otherwise equals the current `api_review_states[].claim_head`. The server derives the current `read`, role and immutable actor from protocol state and the verified token. Callers cannot select a read, owner, role, actor or expiry.
+
+Every success is **201**, because it appends a `type:"review_claim"` event to the shared hash chain. The response has `claim_event`, `review_state`, `api_review_states` and `note:"claim event appended; canonical decisions and signatures are unchanged"`. Claim events retain `kind`, `case`, `item`, `question`, `read`, `role`, `actor`, `action`, `at`, `claimed_at`, `heartbeat_at`, `expires_at`, `expected_claim_head`, `mode`, `prev` and `hash`.
+
+| Operation | Rule | `claimed_at` | `heartbeat_at` | `expires_at` |
+|---|---|---|---|---|
+| `claim` | Acquire an unclaimed, released or consumed slot. An expired active lease requires takeover instead. | event `at` | event `at` | `at + 5m` |
+| `renew` | Active owner only, strictly before expiry. | preserved | event `at` | `at + 5m` |
+| `release` | Active owner only, strictly before expiry. | preserved | preserved | preserved |
+| `takeover` | Any otherwise eligible viewer, including the former owner, only at or after expiry. Independence rules still apply. | event `at` | event `at` | `at + 5m` |
+
+The server lease constant is **5 minutes**. A lease is active only when its latest event is not release/consumption and `now < expires_at`; at exactly `expires_at` it is expired. Expiry is lazy: no events are deleted and no background mutation occurs. The Next.js desk renews each active owned lease every **60 seconds** with the latest head, never overlaps a renewal for one question, and stops on release, consumption, expiry, ownership change, sign-out or unmount. A 401/403/409 stops that heartbeat; the UI never automatically takes over.
+
+`expected_claim_head` fences claim operations only; `expected_head` fences protocol state only. A read sends both `expected_head` and `claim_head`. Its event timestamp must be before expiry and its verified actor/role must match the owner. Append and lease consumption happen in the same server critical section. Release and read consumption leave `claim_head` unchanged until the next claim operation.
+
+Claim owner and expiry are visible in queue-authorized case projections. They are demo overlay metadata, not canonical ownership or clinical sign-offs. Sign-out does not silently release a lease: explicitly release it or let it expire safely.
+
+Failures retain the normal envelope and, for conflicts, include `conflict`, `current_head`, `current_claim_head`, `review_state` and viewer-aware `api_review_states`. `conflict` is `claim_active`, `claim_required`, `claim_expired`, `claim_head`, `review_state` or the existing `head`.
+
+| Condition | Status / conflict |
+|---|---|
+| Malformed body, missing/malformed head, unknown operation | 400 |
+| Missing/invalid bearer | 401 |
+| Wrong discipline/slot role, independence violation, non-owner renew/release/read | 403 |
+| Unknown case/item or question not raised | 404 |
+| Claim or takeover while unexpired | 409 `claim_active` |
+| Claim instead of takeover after expiry; renew/release/read after expiry | 409 `claim_expired` |
+| Read with no active lease | 409 `claim_required` |
+| Stale `expected_claim_head` or read `claim_head` | 409 `claim_head` |
+| Terminal/frozen/wrong read state | 409 `review_state` or existing `head` |
+| Ledger validation or append failure | Existing 500/503 behaviour |
 
 ### POST actions (coordinator, demo mode)
 
