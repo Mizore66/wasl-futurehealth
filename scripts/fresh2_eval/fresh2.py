@@ -446,6 +446,44 @@ def _git(repo, *args):
     return None if p.returncode else p.stdout
 
 
+# The authorized author-history rewrite changed every commit id. Evidence files keep the ids they were written with
+# (they are historical identifiers). data/history-rewrite-map.json lists, for ids whose root tree hash AND committer
+# timestamp match exactly one current commit, that commit ("rewritten"); every other pre-rewrite id is "unmatched":
+# still a valid historical identifier, never remapped, never an ancestor of anything current.
+REWRITE_MAP_PATH = "data/history-rewrite-map.json"
+_SHA = re.compile(r"[0-9a-f]{40}")
+
+
+def load_rewrite_map(repo):
+    try:
+        with open(os.path.join(repo, REWRITE_MAP_PATH), encoding="utf-8") as f:
+            m = json.load(f)
+    except OSError:
+        return {"rewritten": {}, "unmatched": {}}
+    if m.get("schema") != "wasl-history-rewrite-map-v1":
+        raise HarnessError(f"{REWRITE_MAP_PATH} has an unknown schema")
+    return m
+
+
+def resolve_commit(repo, c):
+    """Commit to use for git operations on historical id c: its exact rewritten equivalent, c itself if the id was
+    never rewritten, or None for an unmatched pre-rewrite id (callers must not invent a counterpart)."""
+    m = load_rewrite_map(repo)
+    if c in m["rewritten"]:
+        return m["rewritten"][c]
+    if c in m["unmatched"]:
+        return None
+    return c
+
+
+def historical_id(repo, c):
+    """Inverse of resolve_commit for a current commit: the historical id evidence files use, if the map has one."""
+    for old, new in load_rewrite_map(repo)["rewritten"].items():
+        if new == c:
+            return old
+    return c
+
+
 def _commit_ok(repo, c):
     return isinstance(c, str) and re.fullmatch(r"[0-9a-f]{40}", c) is not None and _git(repo, "cat-file", "-e", c + "^{commit}") is not None
 
@@ -464,11 +502,18 @@ def check_freeze(repo, manifest, paths=None, protected=None, pre_score=True):
     P = paths or DEFAULT_PATHS
     prot = protected or DEFAULT_PROTECTED
     errs = []
+    historical, manifest = manifest, dict(manifest)
     for k in MANIFEST_KEYS:
         if k not in manifest:
             errs.append(f"manifest missing {k}")
-        elif not _commit_ok(repo, manifest[k]):
+            continue
+        r = resolve_commit(repo, manifest[k]) if isinstance(manifest[k], str) and _SHA.fullmatch(manifest[k]) else manifest[k]
+        if r is None:
+            errs.append(f"{k} {manifest[k]!r} is a pre-rewrite id with no exact rewritten counterpart; its ancestry cannot be checked")
+        elif not _commit_ok(repo, r):
             errs.append(f"{k} {manifest[k]!r} is not a commit in this repository")
+        else:
+            manifest[k] = r
     if errs:
         return errs
     chain = [("reader_code_commit", "corpus_commit"), ("corpus_commit", "labels_commit"), ("labels_commit", "reader_cache_commit")]

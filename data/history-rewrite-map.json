@@ -1,0 +1,77 @@
+{
+ "schema": "wasl-history-rewrite-map-v1",
+ "note": "Authorized author-history rewrite. 'rewritten' maps a pre-rewrite commit to its rewritten equivalent ONLY where the root tree hash and the committer timestamp both match exactly. 'unmatched' pre-rewrite commits have no exact counterpart; they stay valid historical identifiers (recorded in score.json etc.), are not ancestors of any current commit, and are never remapped.",
+ "rewritten": {
+  "002a27b1e612331ed7c97ecbe08521957d0bc769": "a5dd4cd9b5c9cf851967aa9b6fb4a827d88c71dd",
+  "1c16f5d201011fed8b91cba3cc4707869e685be4": "6e947ff843befef586dd07e1f6d09af647ef8bc4",
+  "3086fdfb11750024da85badc64042cd53d6b95a8": "58aaba6a57ab12463588c6e2836e45ff1a5faeb6",
+  "4a277c6e3df04bcb86331957cd1a50b7635b6074": "ba8036d6f9bb9a21a01f47a658c20270ab9d4d2b",
+  "5b00feb765673a60370e9c07645d0570d0ffe7d7": "d1cb725fd88937eeab665685bbdc82dbb9928744",
+  "634c447eeb8948d2af511aeaae4bf7a3fe3ae894": "43c12a1aa9a7e8dac73366f5713009c39e3a7c8e",
+  "636b261bb18d0f12594b1ec3377080033afad4c4": "43d48ae85361b4855ee41052760a50644abf5c6f",
+  "70190efb27b8eec9c236bc4d829959e1d3532c7d": "f217804abf517f105e5c69f9adba84b1c553881a",
+  "78b1fcadf79f29e975bb9b3afdaa59a57a7ec6c1": "5aadc84b11baa119f78f0b90fe69fca64333ebc9",
+  "85ddc5fa91c3ecf4455f3590ff9d4566ece0bce4": "c2e70efa579a56ab945ac876d253b07d51fbeed0",
+  "9d653b4b1f6a2871651dbbcc64ef62e8b8c92fd0": "54b873565a262e208a08915078ea25477c4fef5e",
+  "9fccd5c77e8fd28d9437e2e385e9e355cef42510": "53d9198204c5adaaa998d62cc0f9ad024e204335",
+  "b91e5d21ecdef10039f6737d6c9800177bd33b66": "f64a8985e7fe750aa4cfc6df16033cddea4b875a",
+  "bc25c6968ebf914d5ef53a2c1b069a15d90c4184": "ba99068d9444aee7f827902a6e5c317d487e510c",
+  "d3222328fc1cbfeff40faf4731fa09f4e3cc19b8": "4fc4a46347d2ed9bfc84909d26a776617deda14d",
+  "e955ff884205d63a62ffeeeea683d5e6cc7a1c12": "2980393ac6b193f31100ea539eec985191f491fc",
+  "fa53c499beb2aec06886ed988542235e083b91f1": "a2d00cfeaa895afc8fcad4df7a9b90a9bd2f9ff8"
+ },
+ "unmatched": {
+  "14469f386ac58e662da51f5a9b27152c78c023b5": {
+   "subject": "Freeze blind label agreement and unadjudicated items",
+   "committed_at": 1793996429
+  },
+  "19e8da41f38ab8df6766e9f3192bed576873dcff": {
+   "subject": "Freeze fresh Gemma reader caches",
+   "committed_at": 1793997135
+  },
+  "23ff6f6cd077dc676757ae3eb277df438bceebf7": {
+   "subject": "Freeze fresh3 blind label agreement",
+   "committed_at": 1794004852
+  },
+  "2fe3a75bf3a041c37d990b48c99db3507eb82e28": {
+   "subject": "Add fresh LDCT/IFHAS evaluation and annotation harness (no corpus, labels or scores)",
+   "committed_at": 1793995299
+  },
+  "8a883fc1a5b8e3758a27bebdb81d4e90a06ff07b": {
+   "subject": "Score fresh LDCT and IFHAS readers once",
+   "committed_at": 1793997503
+  },
+  "8c675c121938dfccb0a13155f60df40bce7a0e8c": {
+   "subject": "Harden LDCT context and surveillance safeguards",
+   "committed_at": 1794002743
+  },
+  "93c5bef8fbcb3e01b802ee8bb72d4063945ba256": {
+   "subject": "data: normalize fresh3 corpus to canonical data/fresh3/corpus.json (50 LDCT + 50 IFHAS) and metadata-free labeller input",
+   "committed_at": 1794004374
+  },
+  "94504af4876c4ce622f109e55c4e413e9d498860": {
+   "subject": "data: normalize fresh2 corpus to canonical data/fresh2/corpus.json (60 LDCT + 60 IFHAS)",
+   "committed_at": 1793995568
+  },
+  "9f2d02060586dafa85ce9bd431eafa05de912188": {
+   "subject": "Score fresh3 readers once on agreed labels",
+   "committed_at": 1794005112
+  },
+  "c0b18986626663b820b9a6112ad94583eb71a931": {
+   "subject": "feat: add production-shaped recovery and transport security",
+   "committed_at": 1794212553
+  },
+  "c4fcf9c475ed051f641c971f600730e62661d199": {
+   "subject": "Freeze fresh corpus evaluation manifest",
+   "committed_at": 1793997438
+  },
+  "c656b200cce3a0640eb78d89a45f27d8a2d2160e": {
+   "subject": "Freeze fresh3 evaluation manifest",
+   "committed_at": 1794005062
+  },
+  "e5a9e8a8cc4dc997b7aeaaac6bb4501ec7fd8fba": {
+   "subject": "Freeze fresh3 Gemma reader caches",
+   "committed_at": 1794005046
+  }
+ }
+}

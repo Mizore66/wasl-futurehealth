@@ -268,13 +268,14 @@ REPLAY = {
 
 def verification(repo, key, raw, stored, res):
     m = A.load(P3["manifest"], repo)
-    derived = F.build_manifest(repo, m["reader_code_commit"], paths=P3)
+    derived = {k: F.historical_id(repo, v) for k, v in F.build_manifest(repo, F.resolve_commit(repo, m["reader_code_commit"]), paths=P3).items()}
+    score = F.resolve_commit(repo, SCORE_COMMIT)
     errs = [e for e in F.check_freeze(repo, m, paths=P3, pre_score=False) if not e.startswith("uncommitted change")]
     core = {k: v for k, v in stored.items() if k != "frozen"}
     prot = list(F.DEFAULT_PROTECTED) + [P3["corpus"], P3["key"], P3["agreement"], P3["manifest"]] + list(P3["labels"]) + \
         list(P3["reader_caches"]) + ORIGINAL_RESULTS
-    changed = [p for p in (A.git(repo, "diff", "--name-only", SCORE_COMMIT, "--", *prot) or "").split() if p]
-    since_reader = [p for p in (A.git(repo, "diff", "--name-only", m["reader_code_commit"], SCORE_COMMIT, "--", *F.DEFAULT_PROTECTED) or "").split() if p]
+    changed = [p for p in (A.git(repo, "diff", "--name-only", score, "--", *prot) or "").split() if p]
+    since_reader = [p for p in (A.git(repo, "diff", "--name-only", F.resolve_commit(repo, m["reader_code_commit"]), score, "--", *F.DEFAULT_PROTECTED) or "").split() if p]
     return {"score_json_matches_recomputation": res == core, "manifest_rederived_equal": derived == m,
             "check_freeze_after_score_errors": errs, "files_compared": len(prot),
             "changed_since_scoring_commit": changed, "protected_changed_since_reader_code_commit": since_reader,

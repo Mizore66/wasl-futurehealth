@@ -456,8 +456,9 @@
    ],
    "current_history_scoring_equivalent": "d3222328fc1cbfeff40faf4731fa09f4e3cc19b8",
    "disclosure": "reader implementation changed after scoring; results do not apply to current integration",
-   "historical_results_match_original_scoring_commit": true,
+   "historical_results_match_original_scoring_commit": null,
    "original_scoring_commit": "9f2d02060586dafa85ce9bd431eafa05de912188",
+   "original_scoring_commit_status": "pre-rewrite id with no exact rewritten counterpart; comparison not verifiable",
    "stored_score_and_raw_results_unchanged": true
   },
   "manifest_rederived_equal": true,

@@ -1423,6 +1423,31 @@ func TestReviewerConflictsStopWithoutAckOrPublish(t *testing.T) {
 	})
 }
 
+const (
+	dedupeTestWindow = 100 * time.Millisecond // the server minimum
+	dedupeNudgeAfter = time.Second            // wall clock a stale dedupe entry must survive, 10x the window, before re-arming
+)
+
+// nudgedDedupeWindow returns a different valid window (>= the 100ms server minimum, still tiny) so UpdateStream sees
+// a real change and re-arms the server's dedupe purge timer.
+func nudgedDedupeWindow(cur time.Duration) time.Duration {
+	if cur == dedupeTestWindow {
+		return dedupeTestWindow + 10*time.Millisecond
+	}
+	return dedupeTestWindow
+}
+
+func TestNudgedDedupeWindowAlternatesAndStaysValid(t *testing.T) {
+	w := dedupeTestWindow
+	for i := 0; i < 4; i++ {
+		next := nudgedDedupeWindow(w)
+		if next == w || next < dedupeTestWindow || next > dedupeTestWindow+50*time.Millisecond {
+			t.Fatalf("nudge %d: %v -> %v, want a different window in [100ms,150ms]", i, w, next)
+		}
+		w = next
+	}
+}
+
 // Control for the post-dedupe-window case: after the window lapses a raw republish of the same Nats-Msg-Id is
 // stored again, which is why recovery must scan the retained stream instead of relying on JetStream dedupe.
 func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
@@ -1434,7 +1459,7 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := stream.CachedInfo().Config
-	cfg.Duplicates = 100 * time.Millisecond
+	cfg.Duplicates = dedupeTestWindow
 	if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -1442,8 +1467,8 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Config.Duplicates != 100*time.Millisecond {
-		t.Fatalf("dedupe config = %v, want 100ms", info.Config.Duplicates)
+	if info.Config.Duplicates != dedupeTestWindow {
+		t.Fatalf("dedupe config = %v, want %v", info.Config.Duplicates, dedupeTestWindow)
 	}
 	if info.State.Msgs != 1 || reviewerSignoffCount(t, env, "rv-raw") != 1 {
 		t.Fatalf("precondition: stream has %d messages, want exactly one sign-off", info.State.Msgs)
@@ -1459,7 +1484,14 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 	}
 	ledgerHashBefore := sha256.Sum256(ledgerBefore)
 	rec := storedReviewer(t, s, "rv-raw")
-	deadline := time.Now().Add(30 * time.Second)
+	// The window is judged by wall clock, not attempt count. nats-server 2.12 has a race in UpdateStream: it resets
+	// the dedupe timer before it stores the new config, so on a loaded runner the purge can read the old 1h window and
+	// re-arm for an hour. Once the configured window has really elapsed, re-apply a changed window to re-arm the
+	// timer; the republish must still be accepted by the server, never forced.
+	start := time.Now()
+	deadline := start.Add(30 * time.Second)
+	lastNudge := start
+	nudges := 0
 	lastDuplicate := false
 	for attempt := 1; ; attempt++ {
 		msg := nats.NewMsg("fhir.review")
@@ -1482,7 +1514,16 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 			t.Fatalf("republish sequence=%d, prior=%d; expected duplicate suppression or one new message", sequence, info.State.LastSeq)
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("dedupe window did not expire after %d attempts: still one retained copy (PubAck.Duplicate=%v, server=%s)", attempt, lastDuplicate, env.nc.ConnectedServerVersion())
+			t.Fatalf("dedupe window %v did not expire after %v, %d attempts, %d timer nudges: still one retained copy (PubAck.Duplicate=%v, server=%s)",
+				dedupeTestWindow, time.Since(start).Round(time.Millisecond), attempt, nudges, lastDuplicate, env.nc.ConnectedServerVersion())
+		}
+		if time.Since(lastNudge) >= dedupeNudgeAfter {
+			nudges++
+			lastNudge = time.Now()
+			cfg.Duplicates = nudgedDedupeWindow(cfg.Duplicates)
+			if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
+				t.Fatal(err)
+			}
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
