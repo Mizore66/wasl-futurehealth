@@ -189,6 +189,46 @@ func validateNATSRecoveryBundle(bundle recoveryNATSBundle) error {
 	return nil
 }
 
+// recoveryHeaderKeyValid applies nats.go v1.54.0 isHeaderKeyValid: non-empty, printable ASCII 33-126, and none of
+// the characters it forbids (which include ':'). Whitespace and control characters fall outside 33-126.
+func recoveryHeaderKeyValid(key string) bool {
+	if key == "" {
+		return false
+	}
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		if c < 33 || c > 126 || strings.IndexByte(`"()/,:;<=>?@[\]{}`, c) >= 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// validateRecoveryHeaderShape refuses headers that no stored NATS message produces and that make the unprefixed v1
+// digest ambiguous: a key with no values, a key nats.go would not encode, or a value containing the digest's NUL
+// separator.
+func validateRecoveryHeaderShape(header map[string][]string) error {
+	keys := make([]string, 0, len(header))
+	for key := range header {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if !recoveryHeaderKeyValid(key) {
+			return fmt.Errorf("invalid NATS header key %q", key)
+		}
+		if len(header[key]) == 0 {
+			return fmt.Errorf("NATS header %q has no values", key)
+		}
+		for _, value := range header[key] {
+			if strings.IndexByte(value, 0) >= 0 {
+				return fmt.Errorf("NATS header %q value contains a NUL byte", key)
+			}
+		}
+	}
+	return nil
+}
+
 func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	encoded, err := os.ReadFile(path)
 	if err != nil {
@@ -200,6 +240,20 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	}
 	if err := validateNATSRecoveryBundle(bundle); err != nil {
 		return recoveryNATSBundle{}, err
+	}
+	// The v1 digest is not length-prefixed, so it cannot tell a value from a following key: it hashes
+	// {"App-Key":["a","Nats-Expected-X"]} and {"App-Key":["a"],"Nats-Expected-X":[]} identically, and normalising
+	// the second form would then drop an application value without any hash mismatch. The format is kept so existing
+	// bundles still load; header shapes that a stored NATS message cannot carry are refused before normalisation
+	// instead. This does not make v1 injective: valid keys with non-empty values can still be regrouped, e.g.
+	// {"A":["a","Nats-Expected-X","x"]} and {"A":["a"],"Nats-Expected-X":["x"]} hash alike. The v2 file bundle's
+	// HMAC and AES-GCM authentication, not this digest, is what rules out deliberate edits.
+	for _, saved := range bundle.Streams {
+		for _, message := range saved.Messages {
+			if err := validateRecoveryHeaderShape(message.Header); err != nil {
+				return recoveryNATSBundle{}, fmt.Errorf("NATS backup stream %s sequence %d: %w", saved.Config.Name, message.Sequence, err)
+			}
+		}
 	}
 	for streamIndex, saved := range bundle.Streams {
 		for messageIndex, message := range saved.Messages {
