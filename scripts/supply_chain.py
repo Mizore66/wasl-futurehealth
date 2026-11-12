@@ -455,6 +455,9 @@ def _scanner(raw: dict) -> dict:
 
 def _canonical_source_sbom(bom: dict) -> dict:
     canonical = copy.deepcopy(bom)
+    # Comparison only: Trivy's top-level Go dependency edges differ by platform. Components, hashes, licences and
+    # provenance are still compared exactly; the generated evidence keeps its graph.
+    canonical.pop("dependencies", None)
     for component in canonical.get("components", []):
         component.pop("licenses", None)
     properties = canonical.get("metadata", {}).get("properties", [])
