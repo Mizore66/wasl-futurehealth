@@ -6,19 +6,19 @@ export function dayToDate(day: number): Date {
   return new Date(COHORT_EPOCH_MS + Math.round(day * DAY_MS));
 }
 
-const SHORT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+/**
+ * The app's one month table. formatDay, formatDayYear and formatUtcInstant all use it rather than Intl, because Node's ICU
+ * formats en-GB September as "Sept" and the app writes "Sep" everywhere.
+ */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "14 Sep" style label for an API day. */
 export function formatDay(day: number): string {
-  return SHORT.format(dayToDate(day));
+  const d = dayToDate(day);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/**
- * "14 Sep 2027": for windows and due dates that can fall in another year. Uses the same month table as
- * formatUtcInstant, because Node's ICU formats en-GB September as "Sept".
- */
+/** "14 Sep 2027": for windows and due dates that can fall in another year. */
 export function formatDayYear(day: number): string {
   const d = dayToDate(day);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
