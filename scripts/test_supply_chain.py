@@ -138,7 +138,8 @@ class ContainerSecurityTests(unittest.TestCase):
     def test_python_runtime_removes_unused_bootstrap_toolchain(self):
         dockerfile = (ROOT / "Dockerfile").read_text()
         self.assertIn("ARG GO_VERSION=1.27.4", dockerfile)
-        self.assertIn("FROM python:${PYTHON_VERSION}-alpine", dockerfile)
+        self.assertIn("ARG PYTHON_IMAGE=python:${PYTHON_VERSION}-alpine", dockerfile)
+        self.assertIn("FROM ${PYTHON_IMAGE}", dockerfile)
         self.assertIn("apk upgrade --no-cache", dockerfile)
         self.assertIn("apk add --no-cache bash util-linux", dockerfile)
         self.assertIn('"pip==26.3"', dockerfile)

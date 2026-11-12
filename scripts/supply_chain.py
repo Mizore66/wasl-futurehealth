@@ -87,8 +87,14 @@ def _docker_components(root: Path) -> tuple[list[dict], list[dict]]:
             if not match:
                 continue
             reference = match.group(1)
-            for key, value in args.items():
-                reference = reference.replace("${" + key + "}", value)
+            # ARG defaults may reference earlier ARGs (PYTHON_IMAGE uses PYTHON_VERSION); resolve until stable.
+            for _ in range(len(args) + 1):
+                resolved = reference
+                for key, value in args.items():
+                    resolved = resolved.replace("${" + key + "}", value)
+                if resolved == reference:
+                    break
+                reference = resolved
             name, separator, version = reference.rpartition(":")
             if not separator:
                 name, version = reference, "latest"
