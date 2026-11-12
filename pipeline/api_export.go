@@ -498,7 +498,7 @@ var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "ch
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head",
-		"protocol", "read", "question", "expected_head", "resolution_reads")
+		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head")
 	m["data"] = exportCoordinatorDataAllow
 	return m
 }())
