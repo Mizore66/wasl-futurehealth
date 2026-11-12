@@ -337,14 +337,14 @@ The separate clean-checkout target was `waslrecclonecb59036b`, restored from com
 
 ## Observed v2 Linux evidence (11 Nov 2026)
 
-See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evidence/linux-recovery-2026-11-11.md): an encrypted v2 bundle restored 8 streams / 7,256 messages into a clean checkout and new empty volumes on Podman; HTTPS hashes matched after restore, restart, file rollback, and correct-key restart. Wrong-key and guaranteed-ciphertext-tamper drills failed closed. The 7,101,707-byte decrypted NATS payload fits the 64 MB tmpfs cap. Original bundle digests are validated before broker write preconditions are normalized for restore/readback; normalized digests can therefore differ from an older bundle's raw logical digest. That drill could not complete an offline build. A [12 Nov follow-up](reliability/evidence/offline-container-build-2026-11-12.md) completed the full rebuild with tracked Go modules and preseeded base images/package layers; an empty-cache offline build remains unproven.
+See [`docs/reliability/evidence/linux-recovery-2026-11-11.md`](reliability/evidence/linux-recovery-2026-11-11.md): an encrypted v2 bundle restored 8 streams / 7,256 messages into a clean checkout and new empty volumes on Podman; HTTPS hashes matched after restore, restart, file rollback, and correct-key restart. Wrong-key and guaranteed-ciphertext-tamper drills failed closed. The 7,101,707-byte decrypted NATS payload fits the 64 MB tmpfs cap. Original bundle digests are validated before broker write preconditions are normalized for restore/readback; normalized digests can therefore differ from an older bundle's raw logical digest. That drill could not complete an offline build. A [12 Nov follow-up](reliability/evidence/offline-container-build-2026-11-12.md) completed the full rebuild with tracked Go modules and preseeded base images/package layers; a later [clean-build record](reliability/evidence/offline-clean-build-2026-11-12.md) covers `--no-cache --network=none` builds of both images on Podman/arm64 with preloaded base images; that is still not an empty-host or hosted Docker claim.
 
 ## Unresolved hardening and verification limits
 
 - v2 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
   keyring is a local file. Use protected, access-controlled backup storage and managed keys for real data. Rotation adds
   generations but does not re-encrypt old bundles. Temporary plaintext cleanup is logical, not physical erasure.
-- **Not run:** a physical second-machine restore, an offline build without preseeded dependencies, or a 24-hour soak.
+- **Not run:** a physical second-machine restore, an offline build on a host without preloaded base images (the Podman/arm64 clean build assumes them), or a 24-hour soak.
   The 11 Nov v2 Podman evidence is a same-host clean empty-volume/container restore (see the evidence link above).
   No external exactly-once or production RPO/RTO claim is made.
 - This is a same-host clean empty-volume/container restore, not a physical second-machine, object-lock/WORM, or off-site

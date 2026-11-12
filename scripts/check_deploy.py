@@ -168,7 +168,7 @@ def included(path):
 
 for l in df:
     if l.startswith("COPY ") and "--from=" not in l:
-        srcs = l.split()[1:-1]
+        srcs = [x.replace("${TARGETARCH}", a) for x in l.split()[1:-1] for a in (("amd64", "arm64") if "${TARGETARCH}" in x else ("",))]
         for s in srcs:
             s = s.rstrip("/")
             if not os.path.exists(os.path.join(ROOT, s)):

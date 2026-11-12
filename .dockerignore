@@ -8,6 +8,7 @@
 !patient-parsers/teachback_testset.json
 !booking/
 !scripts/
+!deploy/offline/
 pipeline/wsi
 pipeline/wsi7
 pipeline/run/
