@@ -22,6 +22,7 @@ RUN command -v timeout >/dev/null && command -v bash >/dev/null \
  && go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
 
 FROM ${PYTHON_IMAGE}
+USER root
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     WASL_BIN=/app/bin WASL_OUT=/var/lib/wasl
 # Offline rebuilds start from the complete online-seeded image and skip all package downloads.
@@ -36,6 +37,15 @@ RUN if [ "$OFFLINE_RUNTIME" != "1" ]; then \
    && rm -rf /usr/local/lib/python3.12/ensurepip \
    && adduser -D -u 10001 -h /nonexistent -s /sbin/nologin wasl \
    && mkdir -p /var/lib/wasl && chown wasl:wasl /var/lib /var/lib/wasl; \
+    fi
+# A reused runtime supplies packages only. Validate it, then remove every inherited app/run file before copying the checkout.
+RUN if [ "$OFFLINE_RUNTIME" = "1" ]; then \
+      python -c "import numpy, scipy, cryptography" \
+   && command -v bash >/dev/null && command -v flock >/dev/null \
+   && test "$(id -u wasl)" = 10001 \
+   && mkdir -p /app /var/lib/wasl \
+   && find /app /var/lib/wasl -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + \
+   && chown wasl:wasl /var/lib /var/lib/wasl; \
     fi
 WORKDIR /app
 # synthetic cohort inputs and model weights (committed in the repo; no patient data)
