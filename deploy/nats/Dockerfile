@@ -22,8 +22,15 @@ RUN command -v timeout >/dev/null && command -v bash >/dev/null \
 # entrypoint.sh refuses to start on retained stores with a wrong or missing key (nats-server would otherwise start,
 # fail to decrypt them and let the cluster reset the streams).
 FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine
-RUN apk upgrade --no-cache \
-    && apk add --no-cache ca-certificates \
+ARG OFFLINE_PACKAGES=0
+ARG TARGETARCH
+COPY offline/apk/${TARGETARCH} /vendor/apk
+RUN if [ "$OFFLINE_PACKAGES" = "1" ]; then \
+      apk add --no-cache --no-network /vendor/apk/*.apk; \
+    else \
+      apk upgrade --no-cache && apk add --no-cache ca-certificates; \
+    fi \
+    && rm -rf /vendor \
     && addgroup -g 10001 -S wasl \
     && adduser -S -D -H -u 10001 -G wasl wasl \
     && mkdir -p /data \

@@ -27,14 +27,25 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     WASL_BIN=/app/bin WASL_OUT=/var/lib/wasl
 # Offline rebuilds start from the complete online-seeded image and skip all package downloads.
 ARG OFFLINE_RUNTIME=0
+# OFFLINE_PACKAGES=1 installs the committed APK/wheel bundles for TARGETARCH with no index or network.
+ARG OFFLINE_PACKAGES=0
+ARG TARGETARCH
+COPY deploy/offline/wheels/${TARGETARCH} /vendor/wheels
+COPY deploy/offline/apk/${TARGETARCH} /vendor/apk
 RUN if [ "$OFFLINE_RUNTIME" != "1" ]; then \
-      apk upgrade --no-cache \
-   && apk add --no-cache bash util-linux \
-   && pip install --no-cache-dir --upgrade "pip==26.3" \
-   && pip install --no-cache-dir "numpy==2.3.5" "scipy==1.16.3" "cryptography==50.0.2" \
+      if [ "$OFFLINE_PACKAGES" = "1" ]; then \
+        apk add --no-cache --no-network /vendor/apk/*.apk \
+     && pip install --no-cache-dir --no-index --find-links /vendor/wheels "pip==26.3" \
+     && pip install --no-cache-dir --no-index --find-links /vendor/wheels "numpy==2.3.5" "scipy==1.16.3" "cryptography==50.0.2"; \
+      else \
+        apk upgrade --no-cache \
+     && apk add --no-cache bash util-linux \
+     && pip install --no-cache-dir --upgrade "pip==26.3" \
+     && pip install --no-cache-dir "numpy==2.3.5" "scipy==1.16.3" "cryptography==50.0.2"; \
+      fi \
    && pip uninstall -y pip \
    && rm -f /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12 \
-   && rm -rf /usr/local/lib/python3.12/ensurepip \
+   && rm -rf /usr/local/lib/python3.12/ensurepip /vendor \
    && adduser -D -u 10001 -h /nonexistent -s /sbin/nologin wasl \
    && mkdir -p /var/lib/wasl && chown wasl:wasl /var/lib /var/lib/wasl; \
     fi
@@ -43,7 +54,7 @@ RUN if [ "$OFFLINE_RUNTIME" = "1" ]; then \
       python -c "import numpy, scipy, cryptography" \
    && command -v bash >/dev/null && command -v flock >/dev/null \
    && test "$(id -u wasl)" = 10001 \
-   && mkdir -p /app /var/lib/wasl \
+   && rm -rf /vendor && mkdir -p /app /var/lib/wasl \
    && find /app /var/lib/wasl -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + \
    && chown wasl:wasl /var/lib /var/lib/wasl; \
     fi

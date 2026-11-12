@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline-build contracts; the container build itself is scripts/offline_build.sh."""
 import filecmp
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -41,6 +42,52 @@ class OfflineBuildTests(unittest.TestCase):
         self.assertIn("proxy.golang.org/443", dockerfile)
         self.assertIn("go vet . && CGO_ENABLED=0 go build -trimpath", dockerfile)
         self.assertIn("USER 10001:10001", dockerfile)
+
+    def test_wasl_runtime_has_offline_package_branch(self):
+        df = (ROOT / "Dockerfile").read_text()
+        for needle in ("ARG TARGETARCH", "ARG OFFLINE_PACKAGES=0",
+                       "COPY deploy/offline/wheels/${TARGETARCH} /vendor/wheels",
+                       "COPY deploy/offline/apk/${TARGETARCH} /vendor/apk",
+                       "--no-index --find-links /vendor/wheels", "/vendor/apk/*.apk",
+                       "USER 10001:10001"):
+            self.assertIn(needle, df)
+        offline = df.split('"$OFFLINE_PACKAGES" = "1"')[1].split("else")[0]
+        self.assertNotIn("apk upgrade", offline)
+        self.assertNotIn("--repository", offline)
+        self.assertIn("--no-network", offline)
+        self.assertNotRegex(offline, r"pip install(?![^;]*--no-index)")
+        online = df.split("else", 1)[1].split("pip uninstall")[0]
+        self.assertIn("apk upgrade --no-cache", online)
+        self.assertIn("apk add --no-cache bash util-linux", online)
+
+    def test_nats_runtime_has_offline_package_branch(self):
+        df = (ROOT / "deploy/nats/Dockerfile").read_text()
+        for needle in ("ARG TARGETARCH", "ARG OFFLINE_PACKAGES=0",
+                       "COPY offline/apk/${TARGETARCH} /vendor/apk", "USER 10001:10001",
+                       "chown -R 10001:10001 /data"):
+            self.assertIn(needle, df)
+        branch = df.split('"$OFFLINE_PACKAGES" = "1"')[1]
+        offline, online = branch.split("else", 1)
+        self.assertNotIn("apk upgrade", offline)
+        self.assertIn("--no-network /vendor/apk/*.apk", offline)
+        self.assertIn("apk upgrade --no-cache && apk add --no-cache ca-certificates", online)
+
+    def test_offline_bundles_exist_per_arch(self):
+        for arch in ("amd64", "arm64"):
+            self.assertEqual(7, len(list((ROOT / "deploy/nats/offline/apk" / arch).glob("*.apk"))))
+            self.assertTrue(list((ROOT / "deploy/offline/apk" / arch).glob("*.apk")))
+            self.assertTrue(list((ROOT / "deploy/offline/wheels" / arch).glob("*.whl")))
+
+    def test_nats_version_matches_go_mod_and_tools_module_is_vendored(self):
+        df = (ROOT / "deploy/nats/Dockerfile").read_text()
+        arg = re.search(r"^ARG NATS_VERSION=(\S+)$", df, re.M).group(1)
+        build = ROOT / "deploy/nats/build"
+        mod = re.search(r"github\.com/nats-io/nats-server/v2 v(\S+)", (build / "go.mod").read_text()).group(1)
+        self.assertEqual(mod, arg)
+        self.assertIn("github.com/nats-io/nats-server/v2", (build / "tools.go").read_text())
+        modules = (build / "vendor/modules.txt").read_text()
+        self.assertIn("# github.com/nats-io/nats-server/v2 v%s" % mod, modules)
+        self.assertTrue((build / "vendor/github.com/nats-io/nats-server/v2").is_dir())
 
     def test_tracked_nats_vendor_matches_go_mod_vendor(self):
         with tempfile.TemporaryDirectory() as tmp:
