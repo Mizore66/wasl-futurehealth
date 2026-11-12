@@ -53,6 +53,12 @@ type State = {
 
 type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
 
+/** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
+type LedgerRead = PersistedLedger | { error: string };
+const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
+/** A ledger read the route answered and refused: its message is shown as given. */
+class ReadError extends Error {}
+
 const TABS: [View, string][] = [
   ["call", "To call"],
   ["waiting", "Waiting"],
@@ -76,8 +82,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
-  /** Live API: the open patient's persisted trail and ledger status, fetched once per case when it is opened. */
-  const [persisted, setPersisted] = useState<Record<string, PersistedLedger | "error">>({});
+  /**
+   * Live API: the open patient's persisted trail and ledger status, kept once read. A failed read is kept only to say
+   * why; it is read again when the case is selected again or on Retry, never cached for the session.
+   */
+  const [persisted, setPersisted] = useState<Record<string, LedgerRead>>({});
+  /** Bumped by Retry so the same selected case is read again. */
+  const [attempt, setAttempt] = useState(0);
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -118,25 +129,43 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
 
   /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
   const selId = live ? p?.id : undefined;
-  const known = !!selId && persisted[selId] !== undefined;
+  /* Only a successful read counts as known: a failed one is read again on reselection (selId changes) or Retry (attempt). */
+  const known = !!selId && isLedger(persisted[selId]);
   useEffect(() => {
     if (!selId || known) return;
     const ac = new AbortController();
     fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
-      .then((r) => (r.ok ? (r.json() as Promise<PersistedLedger>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(async (r) => {
+        if (r.ok) return (await r.json()) as PersistedLedger;
+        const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
+        throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
+      })
       .then((ledger) => setPersisted((prev) => ({ ...prev, [selId]: ledger })))
-      .catch(() => {
-        if (!ac.signal.aborted) setPersisted((prev) => ({ ...prev, [selId]: "error" }));
+      .catch((e: unknown) => {
+        if (ac.signal.aborted) return;
+        const error = e instanceof ReadError ? e.message : "the web server did not answer";
+        setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
-  }, [selId, known]);
+  }, [selId, known, attempt]);
+  /** Forget a failed read of `id` so it is read again; a successful read is kept. */
+  const retryLedger = (id: string) => {
+    if (!persisted[id] || isLedger(persisted[id])) return;
+    setPersisted((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setAttempt((n) => n + 1);
+  };
   const ledger = selId ? persisted[selId] : undefined;
-  const ledgerRead = ledger && ledger !== "error" ? ledger : null;
+  const ledgerRead = isLedger(ledger) ? ledger : null;
+  const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
   /*
    * Replay failure is server-wide: if any listed case or any detail read says so, no row on the board is authoritative
    * and the API refuses every write. The board says so once; the open patient's detail says why.
    */
-  const boardInvalid = live && (listLedgerInvalid(items) || Object.values(persisted).some((l) => l !== "error" && l.status === "invalid"));
+  const boardInvalid = live && (listLedgerInvalid(items) || Object.values(persisted).some((l) => isLedger(l) && l.status === "invalid"));
   const ledgerInvalid = !!p && boardInvalid;
 
   const top = toCall[0];
@@ -309,7 +338,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     ? "No contact logged this session"
     : ledger === undefined
       ? "Reading the case ledger…"
-      : ledger === "error"
+      : ledgerError
         ? "Could not read the case ledger"
         : "No contact on the case ledger yet";
   const trail: ChainNode[] = p
@@ -381,7 +410,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   <button
                     ref={on ? rowRef : undefined}
                     aria-pressed={on}
-                    onClick={() => setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }))}
+                    onClick={() => {
+                      retryLedger(r.id);
+                      setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }));
+                    }}
                     className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 pr-2 text-left after:absolute after:inset-0 after:rounded-control"
                   >
                     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
@@ -626,7 +658,25 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             </dl>
 
             <div className="mt-7">
-              <h3 className="m-0 mb-3 text-section font-medium">Contacts</h3>
+              <h3 data-focus="contacts" tabIndex={-1} className="m-0 mb-3 text-section font-medium outline-none">
+                Contacts
+              </h3>
+              {ledgerError && (
+                <div role="status" data-testid="ledger-read-failed" className="mb-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+                  <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+                  <Button
+                    variant="quiet"
+                    size="touch"
+                    onClick={() => {
+                      // The button goes while the ledger is read again; focus stays in the Contacts section.
+                      setWant({ k: "contacts" });
+                      retryLedger(p.id);
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
               <div aria-live="polite">
                 <SealedChain nodes={trail} />
               </div>
