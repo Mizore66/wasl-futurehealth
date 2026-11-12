@@ -48,6 +48,7 @@ def main():
         "comparison_sha256": export["comparison_sha256"],
         "content_sha256": export["content_sha256"],
         "loaded_at": export["meta"]["loaded_at"],
+        "data_mode": export["meta"]["data_mode"],
         "nondeterministic_fields": ["meta.loaded_at", "content_sha256"],
     }
     args.output.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")

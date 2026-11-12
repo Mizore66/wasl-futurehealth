@@ -345,6 +345,132 @@ When `WASL_BACKUP_MANIFEST` explicitly names a bundle `manifest.json`, `GET /api
 
 This observation is **not restore verification**. The API does not authenticate the manifest or use key material, decrypt payloads, run `recovery-verify`, or perform a restore. `verification_status: "not_verified_by_api"` is deliberate. A structurally valid manifest and creation timestamp are not proof of a successful backup, usable restore, current recovery point, or RPO. The recovery commands above remain the verification path; the operations endpoint does not alter bundles or recovery files.
 
+## Operator-run scheduled backup and clean-target verification
+
+**Built:** `scripts/recovery_schedule.py` and `scripts/recovery_catalog.py` provide UTC-slot scheduling, immutable generation
+publication, isolated clean-target verification, crash classification, and explicitly applied ciphertext retention. The
+implementation uses the existing encrypted v2 `recovery-backup`, `recovery-restore`, and `recovery-verify` paths and the
+authenticated reviewer/auditor HTTPS probe. The scheduler never invokes the `seed` profile, never sets
+`WASL_RECOVERY_REPLACE`, does not install cron/systemd timers, and does not change deployment workflows.
+
+The example configuration is [`recovery-scheduler.example.json`](recovery-scheduler.example.json). Use a dedicated
+synthetic source deployment, dedicated secret/backup volumes, and a new evidence directory. The source repository and
+`wasl:local` image must contain the scheduler scripts; the catalog helper bind-mounts the configured repository read-only
+and never receives secret values as arguments. `HEAD` is resolved and recorded for every attempt, but a pinned full commit
+SHA is recommended for steady operation. The target checkout is cloned with `git clone --no-hardlinks` at that resolved
+revision.
+
+Initialize only a **new empty backup volume and new empty evidence directory**:
+
+```bash
+export ROOT=/srv/wasl/repo
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json init
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json run-due
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json serve
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json verify --generation latest
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json retention
+python3 "$ROOT/scripts/recovery_schedule.py" --config /srv/wasl/scheduler.json retention --apply
+```
+
+`serve` is an operator-run foreground loop, not an installed service. `run-due` is the one-shot equivalent for an external
+scheduler chosen by the operator. Configuration validation requires absolute disjoint paths, an HTTPS loopback source URL,
+safe project/volume identifiers, positive intervals/timeouts, and `keep_newest_verified >= min_verified_good >= 1`.
+
+### Backup generations and source availability
+
+Each scheduled backup first requires the pipeline/workflow writer to be stopped. It records whether the source API was
+running and stops a running API to exclude review-ledger writes. After encrypted backup and complete v2 authentication,
+the API is returned to its prior state. An initially running API is restarted; an initially stopped API is started only
+for the authenticated source evidence probe and then stopped again. **The source API therefore has a deliberate temporary
+outage during backup.** If its prior state cannot be restored, `halted.json` prevents later scheduled operations until an
+operator intervenes.
+
+The dedicated volume layout is:
+
+```text
+/backup/scheduler-v1/generations/<generation-id>/bundle/
+/backup/bundle -> scheduler-v1/generations/<current-id>/bundle
+```
+
+The existing backup command receives a generation-specific `WASL_RECOVERY_DIR`. The catalog authenticates the complete
+bundle before atomically moving only the `bundle` symlink, preserving `/backup/bundle/manifest.json` as the existing API
+observation path. Publication refuses an ordinary file/directory or a symlink outside the scheduler namespace. A failed
+or partial generation is never published or reused.
+
+UTC slots are calculated from `epoch`; only the current slot is eligible. Missed-slot ranges are recorded and never
+caught up. Each automatic backup/verification slot gets at most one attempt, whether it succeeds or fails. Repeated
+`run-due` calls in one slot do not create another backup or target. Manual `verify` is always a new attempt and target.
+Configured intervals are scheduling controls, **not measured RPO or RTO**.
+
+### Clean-target verification
+
+Verification resolves and authenticates the selected encrypted v2 generation before creating target resources. It then:
+
+1. clones the resolved revision into an attempt-private checkout;
+2. generates a unique target project and requires its `nats-0`, `nats-1`, `nats-2`, and `wasl-run` volumes and Compose
+   containers not to exist;
+3. starts new target NATS volumes, restores without replacement, starts the API, independently rereads stream hashes, and
+   runs authenticated/anonymous HTTPS probes;
+4. ordinarily restarts target NATS/API and probes again; and
+5. requires backup/restore/independent-verification stream-hash maps to match and source/target/restart `case_id` and
+   `comparison_sha256` to match. Every anonymous probe must return 401 and every export must report
+   `meta.data_mode: "simulated"`. `content_sha256` and `meta.loaded_at` are recorded but are not expected to match.
+
+`deploy/recovery-verification.compose.yml` mounts the selected backup generation read-only in the recovery service. Secret
+and backup external volumes are inputs only. Only after all comparisons and sealed evidence succeed is the generation
+marked `verified_good`; only then does `down -v` run, scoped to the generated target project. External secret/backup
+volumes are not removed. Post-verification cleanup evidence is sealed separately under `cleanup/<attempt-id>/` so cleanup
+logs cannot alter the sealed verification attempt.
+
+A failed target is left intact. Compose status/logs and resource identities are captured before the attempt is sealed;
+the scheduler never automatically issues `down`, volume deletion, or purge for it. A partial NATS restore remains subject
+to the **manual JetStream purge rule** above. Diagnose or remove that explicitly named target only through a separate,
+operator-reviewed command. Wrong keys, modified manifests/ciphertexts, preexisting targets, hash mismatches, timeouts, and
+partial restores all fail closed without target cleanup.
+
+### Crash handling, locks, and evidence
+
+`serve.lock` prevents duplicate foreground daemons. A separate `run.lock` serializes `run-due`, manual verification,
+backup, catalog, retention, and deletion activity. Both use nonblocking `flock`; contention exits 75 before attempt or
+resource creation, and process death releases the locks.
+
+Every attempt has an exclusively created `runs/<attempt-id>/started.json` and at most one `result.json`. On restart, a
+missing result is classified `interrupted`, its automatic slot is not retried, and its target/generation is never reused.
+Persisted source-API intent is reconciled before other work. Evidence includes the resolved nonsecret configuration and
+revision, generation/target identities, source/target/restart probes, backup/restore/verify summaries, explicit hash
+comparisons, exported manifest and SHA-256, sanitized per-command stdout/stderr, timestamps, durations, exit statuses,
+and failure diagnostics. `evidence-manifest.json` authenticates the final file set with SHA-256; files and directories
+are fsynced. Scheduler transitions are appended to `events.jsonl` under `run.lock`. Environment dumps, rendered Compose
+configuration, passwords, keys, wrapped key material, decrypted payloads, and secret-file contents are not evidence
+fields.
+
+Exit states are 0 for success/no due slot, 1 for operational failure, 2 for invalid configuration/safety preconditions,
+3 for evidence-finalization failure (cleanup and retention are skipped), and 75 for lock contention.
+
+### Retention review and explicit apply
+
+`retention` without `--apply` is a dry run. Automatic deletion is limited to scheduler-created ciphertext whose complete
+immutable evidence previously passed clean-target verification and which is older than `max_age_days`, outside the newest
+`keep_newest_verified`, not published, and has no failed/interrupted/pending/unknown/corrupted attempt state. Failed or
+unknown evidence blocks the entire retention pass. Unverified generations, failed-run artifacts/logs, exported manifests,
+and host evidence are never automatically deleted.
+
+At least `min_verified_good` generations must survive, including the newest known-good restore. The only known-good
+restore can never be pruned. Before any deletion, every protected survivor is authenticated again; any failure aborts the
+whole pass. Each candidate is deleted individually by exact generation ID and expected manifest SHA-256, never by wildcard
+or volume-wide cleanup. A retention intent is fsynced before deletion and a result afterward; the next pass reconciles a
+crash by inspecting only that exact generation path. Pruning removes ciphertext payloads but retains the bundle manifest,
+hashes, verification evidence, and pruning history on the host.
+
+The scheduler does not rotate or prune recovery key generations. Keep every key generation needed by every retained bundle
+in separately protected custody; pruning a key generation can make even retained ciphertext permanently unreadable.
+
+**Verification status:** focused synthetic unit/state-machine tests exercise scheduling, locking, wrong-key/tamper refusal,
+clean-target preconditions, restart hash comparison, failure preservation, and retention. A manually approved Linux/Podman
+end-to-end scheduler drill has **not been run or recorded** in this change. Same-host clean restores do not prove
+second-machine recovery or production readiness, and neither configured intervals nor a successful restore establishes a
+production RPO/RTO.
+
 ## Unresolved hardening and verification limits
 
 - v2 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
