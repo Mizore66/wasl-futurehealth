@@ -252,6 +252,15 @@ func TestReviewClaimRejectsImpossibleHistory(t *testing.T) {
 	if s := loadAPI(e.run, ""); s.ledgerErr == "" {
 		t.Fatal("post-claim read without claim fencing must fail startup replay")
 	}
+	badActor := make(map[string]interface{}, len(claim))
+	for k, v := range claim {
+		badActor[k] = v
+	}
+	badActor["actor"] = strings.Repeat("x", maxActorRunes+1)
+	badActor["hash"] = apiEventHash(badActor)
+	if err := applyReviewClaim(map[reviewQuestionKey]*reviewClaimState{}, map[reviewQuestionKey]*reviewProtocolState{}, badActor); err == nil {
+		t.Fatal("oversized claim actor must fail semantic validation")
+	}
 }
 
 func TestReviewClaimBlindingAndRedactedHistory(t *testing.T) {

@@ -102,6 +102,9 @@ func reduceReviewClaim(claims map[reviewQuestionKey]*reviewClaimState, protocols
 	if item == "" || sstr(ev, "case") == "" || normActor(sstr(ev, "actor")) == "" {
 		return cerr(http.StatusBadRequest, "", "claim needs case, item and actor")
 	}
+	if _, err := cleanText(sstr(ev, "actor"), maxActorRunes, true, false); err != nil {
+		return cerr(http.StatusBadRequest, "", "invalid claim actor")
+	}
 	if question != "link" && question != "evidence" {
 		return cerr(http.StatusBadRequest, "", "question must be link|evidence")
 	}
