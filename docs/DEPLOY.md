@@ -47,7 +47,24 @@ podman build --tag wasl:local .                # one online build to seed the ru
 scripts/offline_build.sh                       # full rebuild with networking disabled
 ```
 
-The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, requires the online-seeded `wasl:local` runtime image, refuses base-image pulls and passes `--network=none`. It starts from that image with `OFFLINE_RUNTIME=1`, verifies the required Python packages, Bash, `flock` and UID 10001, deletes inherited `/app` and run-output contents, and only then copies the checkout. No Alpine or Python package command runs. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. A no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. Set `WASL_RUNTIME_IMAGE` to use a different preseeded runtime tag. This covers the Wasl pipeline/API image, not `deploy/nats/Dockerfile`, whose NATS rebuild still fetches modules.
+The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, requires the online-seeded `wasl:local` runtime image, refuses base-image pulls and passes `--network=none`. It starts from that image with `OFFLINE_RUNTIME=1`, verifies the required Python packages, Bash, `flock` and UID 10001, deletes inherited `/app` and run-output contents, and only then copies the checkout. No Alpine or Python package command runs. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. A no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. Set `WASL_RUNTIME_IMAGE` to use a different preseeded runtime tag. This seeded path covers only the Wasl pipeline/API image; use the clean build below for both images.
+
+## Clean offline build (no layer cache, no network)
+
+```bash
+WASL_CONTAINER_ENGINE=podman scripts/offline_build_clean.sh                      # Podman
+DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh    # Docker Engine
+```
+
+This builds both the Wasl image (`wasl-offline-clean:local`) and the NATS image (`wasl-nats-offline-clean:local`) from a fresh `/tmp` context with `--no-cache --network=none`, `OFFLINE_PACKAGES=1`, `OFFLINE_RUNTIME=0` and a new `OFFLINE_BUILD_ID`, using `--pull-never` (Podman) or `--pull=false` (Docker). No seeded runtime image is used. Dependencies come from tracked bundles: `pipeline/vendor`, `deploy/nats/build/vendor`, `deploy/offline/{apk,wheels}/<arch>` and `deploy/nats/offline/apk/<arch>`, mounted at build time from scratch stages and hash-checked before install. The runner then runs `wsi7 -h` and `nats-server -v` with overridden entrypoints and checks that both final images run as UID 10001.
+
+Requirements and limits:
+
+- **BuildKit is required on Docker** (`--mount=type=bind,from=...` in both Dockerfiles). Podman/Buildah supports it natively.
+- **Base images must already be loaded**: `golang:1.27.4-bookworm`, `python:3.12-alpine` and `nats:2.12.6-alpine`. The runner refuses to pull and exits if one is missing. Their Alpine releases must match the bundles (Wasl 3.24.*, NATS 3.22.*) or the build fails closed.
+- **Clean vs seeded**: the clean build has no layer cache and no runtime seed. The older `scripts/offline_build.sh` path above reuses an online-built runtime image (`OFFLINE_RUNTIME=1`) and is faster but weaker; it is not the clean-build proof.
+- **Not an empty-host claim**: base-image archives are out of scope, so a host with no images cannot do this.
+- **Bundle maintenance**: bundles are pinned to their generation date and to linux/amd64 and linux/arm64. Regenerate them online with the generation scripts, review the SHA-256 manifests, and regenerate for security updates or a new architecture; stale bundles are not updated by the offline build.
 
 ## Ports and volumes
 
