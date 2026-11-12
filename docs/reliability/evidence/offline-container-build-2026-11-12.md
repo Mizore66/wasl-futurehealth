@@ -2,16 +2,17 @@
 
 ## Scope and revision
 
-Synthetic Wasl pipeline/API image on one macOS/Podman host. Base `main` was `2d595e4c348c6156803094fd8a1cc796d7fa3c50`; tested implementation was `da0335a`. Podman client 5.8.2, server 5.8.9, Linux/arm64. No second physical machine or Docker Engine result is claimed here.
+Synthetic Wasl pipeline/API image on one macOS/Podman host. Base `main` was `2d595e4c348c6156803094fd8a1cc796d7fa3c50`; tested implementation was `9fb8586`. Podman client 5.8.2, server 5.8.9, Linux/arm64. No second physical machine or Docker Engine result is claimed here.
 
 ## Verified
 
 1. Generated `pipeline/vendor` with `go -C pipeline mod vendor`: 215 files, approximately 3.1 MB. `scripts/test_offline_build.py` regenerates it and compares the complete tree recursively.
 2. Built once online as `wasl:local` to preseed the complete runtime image, including Alpine/Python packages.
-3. Ran `scripts/offline_build.sh`. It created a new `/tmp` context, required `wasl:local`, and invoked Podman with `--network=none`, `--pull-never`, `PYTHON_IMAGE=wasl:local`, `OFFLINE_RUNTIME=1` and a fresh `OFFLINE_BUILD_ID`. No APK or pip command ran in the offline build.
+3. Ran `scripts/offline_build.sh`. It created a new `/tmp` context, required `wasl:local`, and invoked Podman with `--network=none`, `--pull-never`, `PYTHON_IMAGE=wasl:local`, `OFFLINE_RUNTIME=1` and a fresh `OFFLINE_BUILD_ID`. No APK or pip command ran in the offline build. The runtime was checked for `numpy`, `scipy`, `cryptography`, Bash, `flock` and UID 10001; inherited `/app` and run-output contents were removed before the current checkout was copied.
 4. The Go `RUN ... go vet ... go build ...` layer executed without cache and completed with `GOFLAGS=-mod=vendor GOPROXY=off`. No module proxy or download was used. Its outbound-TCP probe failed closed when networking was deliberately enabled, and passed only when the connection was unavailable as expected offline.
-5. The complete image committed successfully as `wasl-offline:local` with image ID `6cc5cddf3e3c21518fc112d229c6b47b72ed67dcf3b2ba9b5cc83c7f185a8ed0`; `wsi7 -h` ran successfully from that image.
-6. Full Go tests and vet passed on the vendored tree. Offline/CI contract tests passed 28/28; deployment static checks and the licence-notice bundle check passed.
+5. The complete image committed successfully as `wasl-offline:local` with image ID `4de38d1363d082eb4e09e6247a5aa02ff3d3c8322bf8d83a02450d0bdae56b06`; `wsi7 -h` ran successfully from that image.
+6. A separate seed with a planted `/app/stale-artifact` rebuilt successfully and the artifact was absent from the offline image. A plain `python:3.12-alpine` seed was rejected at `import numpy` as required.
+7. Full Go tests and vet passed on the vendored tree. Offline/CI contract tests passed 28/28; deployment static checks and the licence-notice bundle check passed.
 
 ## Failed attempts retained as limitations
 
