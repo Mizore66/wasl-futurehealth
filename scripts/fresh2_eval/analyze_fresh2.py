@@ -213,7 +213,8 @@ def unavailable_section(raw_rows, key_items, corpus_items, ifhas_cache):
 # ------------------------------------------------------------------ verification
 def verify_manifest(repo):
     m = load(F.make_paths(F.DEFAULT_EVAL_DIR)["manifest"], repo)
-    derived = F.build_manifest(repo, m["reader_code_commit"])
+    current_code = F.resolve_commit(repo, m["reader_code_commit"])
+    derived = {k: F.historical_id(repo, v) for k, v in F.build_manifest(repo, current_code).items()}  # historical ids, as stored
     return {"manifest_file": m, "rederived": derived, "equal": derived == m,
             "check_freeze_after_score_errors": [e for e in F.check_freeze(repo, m, pre_score=False)
                                                 if not e.startswith("uncommitted change")],
@@ -223,15 +224,16 @@ def verify_manifest(repo):
 
 def verify_protected(repo):
     """Every frozen/original file must be byte-identical to the scoring commit and to its freeze commit."""
-    if git(repo, "cat-file", "-e", SCORE_COMMIT + "^{commit}") is None:
+    score = F.resolve_commit(repo, SCORE_COMMIT)
+    if score is None or git(repo, "cat-file", "-e", score + "^{commit}") is None:
         return {"skipped": f"scoring commit {SCORE_COMMIT} not in this repository", "changed": [], "checked": []}
     m = load(F.make_paths(F.DEFAULT_EVAL_DIR)["manifest"], repo)
     P = F.make_paths(F.DEFAULT_EVAL_DIR)
     paths = (list(F.DEFAULT_PROTECTED) + [P["corpus"], P["key"], P["agreement"], P["manifest"]] + list(P["labels"]) +
              list(P["reader_caches"]) + ORIGINAL_RESULTS + ["scripts/fresh2_eval/fresh2.py", "scripts/fresh2_eval/LABELLING-GUIDE.md"])
-    paths = [p for p in paths if git(repo, "cat-file", "-e", f"{SCORE_COMMIT}:{p}") is not None]
-    changed = [p for p in git(repo, "diff", "--name-only", SCORE_COMMIT, "--", *paths).split() if p]
-    since_reader = [p for p in git(repo, "diff", "--name-only", m["reader_code_commit"], SCORE_COMMIT, "--", *F.DEFAULT_PROTECTED).split() if p]
+    paths = [p for p in paths if git(repo, "cat-file", "-e", f"{score}:{p}") is not None]
+    changed = [p for p in git(repo, "diff", "--name-only", score, "--", *paths).split() if p]
+    since_reader = [p for p in git(repo, "diff", "--name-only", F.resolve_commit(repo, m["reader_code_commit"]), score, "--", *F.DEFAULT_PROTECTED).split() if p]
     dirty = []  # working-tree cleanliness is checked live by fresh2.py check-freeze, not recorded here
     return {"scoring_commit": SCORE_COMMIT, "checked": paths, "changed_since_scoring_commit": changed,
             "protected_changed_since_reader_code_commit": since_reader, "uncommitted": dirty, "changed": changed + since_reader + dirty}
@@ -241,15 +243,21 @@ def integration_staleness(repo, original_commit, score_commit, root):
     """Describe current-code drift without changing or reassigning the historical scoring revisions."""
     results = [root + "/results/SCORE.md", root + "/results/score.json", root + "/results/reader_raw.json"]
     stored = [root + "/results/score.json", root + "/results/reader_raw.json"]
+    historical_score, historical_original = score_commit, original_commit
+    score_commit, original_commit = F.resolve_commit(repo, score_commit), F.resolve_commit(repo, original_commit)
     changed = (git(repo, "diff", "--name-only", score_commit, "HEAD", "--", *READER_IMPLEMENTATION_FILES) or "").splitlines()
-    original_diff = (git(repo, "diff", "--name-only", original_commit, score_commit, "--", *results) or "").splitlines()
+    # An unmatched pre-rewrite original scoring id has no counterpart to diff against: the comparison is unverifiable
+    # (None), never silently true. The stored result files themselves are still checked against the scoring equivalent.
+    original_diff = None if original_commit is None else (git(repo, "diff", "--name-only", original_commit, score_commit, "--", *results) or "").splitlines()
     stored_diff = (git(repo, "diff", "--name-only", score_commit, "--", *stored) or "").splitlines()
+    score_commit, original_commit = historical_score, historical_original
     return {
         "disclosure": STALENESS_DISCLOSURE if changed else "reader implementation matches the historical scoring blobs",
         "original_scoring_commit": original_commit,
         "current_history_scoring_equivalent": score_commit,
         "changed_reader_files": changed,
-        "historical_results_match_original_scoring_commit": not original_diff,
+        "historical_results_match_original_scoring_commit": None if original_diff is None else not original_diff,
+        "original_scoring_commit_status": "pre-rewrite id with no exact rewritten counterpart; comparison not verifiable" if original_diff is None else "mapped",
         "stored_score_and_raw_results_unchanged": not stored_diff,
     }
 

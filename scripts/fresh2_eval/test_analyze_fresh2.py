@@ -138,7 +138,9 @@ class Analysis(unittest.TestCase):
         self.assertEqual(s["changed_reader_files"], sorted(INTEGRATION_CHANGED_AFTER_SCORING))
         self.assertEqual(s["original_scoring_commit"], "8a883fc1a5b8e3758a27bebdb81d4e90a06ff07b")
         self.assertEqual(s["current_history_scoring_equivalent"], A.SCORE_COMMIT)
-        self.assertTrue(s["historical_results_match_original_scoring_commit"])
+        # 8a883fc has no exact rewritten counterpart: kept as a historical id, comparison reported unverifiable, not true
+        self.assertIsNone(s["historical_results_match_original_scoring_commit"])
+        self.assertIn("no exact rewritten counterpart", s["original_scoring_commit_status"])
         self.assertTrue(s["stored_score_and_raw_results_unchanged"])
         self.assertTrue(v["original_scores"]["score_json_matches_recomputation"])
         rendered = A.render(self.a)
@@ -160,7 +162,7 @@ class Analysis(unittest.TestCase):
         # the real protocol: protected reader files and production caches are identical from reader_code_commit to scoring commit
         self.assertEqual(v["protected_files"]["protected_changed_since_reader_code_commit"], [])
         self.assertEqual(
-            A.git(REPO, "diff", "--name-only", v["manifest"]["manifest_file"]["reader_code_commit"], A.SCORE_COMMIT,
+            A.git(REPO, "diff", "--name-only", F.resolve_commit(REPO, v["manifest"]["manifest_file"]["reader_code_commit"]), F.resolve_commit(REPO, A.SCORE_COMMIT),
                   "--", *F.DEFAULT_PROTECTED).strip(), "")
         # Every post-score difference must be disclosed; none may be silently ignored or treated as current-code evidence.
         self.assertEqual(set(self.live_changed), POST_SCORE_CHANGES)

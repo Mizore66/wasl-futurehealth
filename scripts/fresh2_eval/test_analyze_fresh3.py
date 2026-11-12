@@ -44,7 +44,8 @@ class Fresh3Analysis(unittest.TestCase):
         self.assertEqual(s["changed_reader_files"], INTEGRATION_CHANGED_AFTER_SCORING)
         self.assertEqual(s["original_scoring_commit"], "9f2d02060586dafa85ce9bd431eafa05de912188")
         self.assertEqual(s["current_history_scoring_equivalent"], A3.SCORE_COMMIT)
-        self.assertTrue(s["historical_results_match_original_scoring_commit"])
+        self.assertIsNone(s["historical_results_match_original_scoring_commit"])  # 9f2d020 is unmatched, see data/history-rewrite-map.json
+        self.assertIn("no exact rewritten counterpart", s["original_scoring_commit_status"])
         self.assertTrue(s["stored_score_and_raw_results_unchanged"])
         self.assertTrue(v["score_json_matches_recomputation"])
         rendered = A3.render(self.a)
