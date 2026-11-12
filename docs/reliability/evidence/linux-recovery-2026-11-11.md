@@ -25,7 +25,7 @@ Partially restored targets were preserved for diagnosis and not reused. Every su
 
 ## Not proven / remaining limits
 
-- **Offline build is not proven.** `podman build --network=none`, including with the existing image as layer cache, stopped at `go mod download` because no preseeded Go module cache was available (`proxy.golang.org ... network is unreachable`). No offline-build success is claimed.
+- **Offline build was not proven in this drill.** `podman build --network=none`, including with the existing image as layer cache, stopped at `go mod download` because no preseeded Go module cache was available (`proxy.golang.org ... network is unreachable`). A [12 Nov follow-up](offline-container-build-2026-11-12.md) completed the full rebuild using tracked Go modules and preseeded base images/package layers; that separate evidence does not claim an empty-cache or second-machine build.
 - This was one Linux/Podman host, not a physical second machine. No cross-machine recovery claim.
 - No 24-hour soak, real Malaffi feed, external professional security review, or independent clinical annotation was performed.
 - Live container key-rotation/custody migration was not exercised; rotation behavior has unit coverage only.
