@@ -35,6 +35,8 @@ test.describe("Today, live mode against a mock API", () => {
   const ledger = new Map<string, Ev[]>();
   let chain: Ev[] = [];
   let invalid: string | null = null;
+  /** Case details the mock answers with 503, as if the API were briefly down for them. */
+  const unavailable = new Set<string>();
   let n = 0;
   const principals = new Map<string, { role: string; actor: string }>();
   let server: Server;
@@ -125,6 +127,7 @@ test.describe("Today, live mode against a mock API", () => {
       const summary = byId.get(id);
       const known = details.find((d) => (d.case as { id: string }).id === id);
       if (!summary && !known) return send(404, { meta, error: "unknown case" });
+      if (unavailable.has(id)) return send(503, { error: "unavailable" });
       const base = known ?? { ...template, case: summary };
       return send(200, {
         ...base,
@@ -145,6 +148,7 @@ test.describe("Today, live mode against a mock API", () => {
     ledger.clear();
     chain = [];
     invalid = null;
+    unavailable.clear();
   });
 
   const first = "ahs-mushrif/ServiceRequest/AHS-sr-1002";
@@ -222,6 +226,37 @@ test.describe("Today, live mode against a mock API", () => {
 
     await page.goto("/app/patients");
     await expect(page.getByTestId("ledger-invalid-board")).toContainText("nothing on this list is authoritative");
+  });
+
+  test("a failed ledger read is not kept: Retry and reselecting the case read it again", async ({ page }) => {
+    append(first, "note", { text: "Prefers a morning call" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
+    unavailable.add(first);
+
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    const failed = open.getByTestId("ledger-read-failed");
+    await expect(failed).toContainText("Could not read the case ledger");
+    await expect(open).not.toContainText("Prefers a morning call");
+
+    // Retry while the API is still down fails again, and says so again.
+    await failed.getByRole("button", { name: "Retry" }).click();
+    await expect(failed).toBeVisible();
+
+    unavailable.delete(first);
+    await failed.getByRole("button", { name: "Retry" }).click();
+    await expect(open).toContainText("Note: “Prefers a morning call”");
+    await expect(failed).toHaveCount(0);
+
+    // Reselection reads a failed case again, without Retry.
+    unavailable.add(second);
+    const list = page.getByRole("region", { name: "Your list" });
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(failed).toBeVisible();
+    unavailable.delete(second);
+    await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(failed).toHaveCount(0);
+    await expect(open).toContainText("No contact on the case ledger yet");
   });
 
   test("a valid ledger shows no board-level warning", async ({ page }) => {
