@@ -3,8 +3,8 @@
  "created_after_labels_commit": "1c16f5d201011fed8b91cba3cc4707869e685be4",
  "reader_url": "http://127.0.0.1:8791",
  "model": "gemma-3-4b-it-Q4_K_M",
- "model_file": "/Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf",
- "server_command": "llama-server -m /Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4",
+ "model_file": "<home>/models/gemma/gemma-3-4b-it-Q4_K_M.gguf",
+ "server_command": "llama-server -m <home>/models/gemma/gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4",
  "settings": "shipped prompts and JSON schemas; temperature 0; seed 1; no tuning or retries to improve answers",
  "ldct": {
   "command": "bin/wsi7 ldctcache -ldctdata data/fresh4/reader-inputs/ldct -reader-url http://127.0.0.1:8791 -out data/fresh4/reader-cache/ldct_gemma_cache.json",
