@@ -3,6 +3,7 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { signInReviewer, signOutReviewer } from "@/app/app/review/[id]/actions";
+import { clearSignedOutNotice, signedOutNotice } from "./signed-out-notice";
 
 /*
  * The reviewer's own assigned API token is the web credential. It is typed here, sent once to a server action, stored by
@@ -14,11 +15,15 @@ export function ReviewerLogin({ caseId }: { caseId: string }) {
   const router = useRouter();
   const field = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
+  /* Set when a governance action on this page found the session rejected and signed out. */
+  const [notice, setNotice] = useState(() => signedOutNotice(caseId));
   const [pending, start] = useTransition();
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const token = field.current?.value ?? "";
+    clearSignedOutNotice(caseId);
+    setNotice(undefined);
     start(async () => {
       const res = await signInReviewer(caseId, token);
       if (field.current) field.current.value = "";
@@ -41,6 +46,11 @@ export function ReviewerLogin({ caseId }: { caseId: string }) {
         Enter the review token assigned to you. Your token decides who you are and what you may answer; this page never offers a choice of
         credential. It proves a configured demo identity, not that a separate person is present.
       </p>
+      {notice && (
+        <p role="status" className="m-0 mt-2 rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
+          {notice}
+        </p>
+      )}
       <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
         <div>
           <label htmlFor={`${id}-token`} className="block font-medium">
