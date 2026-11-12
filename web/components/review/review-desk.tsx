@@ -9,7 +9,6 @@ import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { ApiMode } from "@/lib/api/source";
 import type { ReviewState } from "@/lib/api/schema";
 import { allQuestionsResolved, finalDecisions, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
-import { cn } from "@/lib/utils";
 import type { ReviewView } from "./case-view";
 import {
   answerWords,
@@ -32,6 +31,8 @@ import {
   type OutcomeKey,
   type ReportAnswer,
 } from "./decision";
+import { Chips } from "./chips";
+import { IfhasLabelComposer } from "./ifhas-label-composer";
 import { ReviewerSignOut } from "./reviewer-login";
 import { IdentityBridge } from "./identity-bridge";
 import { Pill } from "./marks";
@@ -43,59 +44,22 @@ type Done = { outcome: OutcomeKey; next: NextCase };
 
 const appear = { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0 }, transition: { duration: 0.16 } };
 
-/** Native radios in a fieldset: arrow keys, Space and the group name come from the browser. */
-function Chips<T extends string>({
-  name,
-  options,
-  value,
-  onPick,
-  disabled,
-}: {
-  name: string;
-  options: [T, string][];
-  value: T | undefined;
-  onPick: (v: T) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {options.map(([v, label]) => (
-        <label
-          key={v}
-          className={cn(
-            "relative flex min-h-11 min-w-[7rem] flex-1 cursor-pointer items-center justify-center rounded-chip px-3 py-1 text-center text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-hue",
-            value === v ? "border-2 border-ink bg-active font-medium" : "border border-control bg-surface hover:bg-active",
-          )}
-        >
-          <input
-            type="radio"
-            name={name}
-            value={v}
-            checked={value === v}
-            disabled={disabled}
-            onChange={() => onPick(v)}
-            className="absolute -inset-0.5 m-0 size-[calc(100%+4px)] cursor-pointer opacity-0"
-          />
-          {label}
-        </label>
-      ))}
-    </div>
-  );
-}
-
 function EvidenceChoices({
   name,
+  programme,
   options,
   value,
   onPick,
   disabled,
 }: {
   name: string;
+  programme: string;
   options: [ReportAnswer, string][];
   value: ReportAnswer | undefined;
   onPick: (value: ReportAnswer) => void;
   disabled: boolean;
 }) {
+  if (programme === "ifhas") return <IfhasLabelComposer name={name} value={value} onPick={onPick} disabled={disabled} />;
   if (options.length <= 3) return <Chips name={name} options={options} value={value} onPick={onPick} disabled={disabled} />;
   return (
     <select
@@ -261,7 +225,7 @@ function QuestionCard({
                 disabled={busy}
               />
             ) : (
-              <EvidenceChoices name={`${id}-a`} options={evidenceOptions} value={draft} onPick={onDraft} disabled={busy} />
+              <EvidenceChoices name={`${id}-a`} programme={view.programme} options={evidenceOptions} value={draft} onPick={onDraft} disabled={busy} />
             )}
           </fieldset>
           <button
@@ -552,7 +516,7 @@ export function ReviewDesk({
                           &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
                         </p>
                       )}
-                      <EvidenceChoices name={`${q2}-report`} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
+                      <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
                     </fieldset>
                   </motion.div>
                 )}
