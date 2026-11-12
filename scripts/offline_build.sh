@@ -11,7 +11,7 @@ TAG="${WASL_OFFLINE_TAG:-wasl-offline:local}"
 CONTEXT="$(mktemp -d "/tmp/wasl-offline.XXXXXXXX")"
 trap 'rm -rf "$CONTEXT"' EXIT
 # Include every tracked file plus non-ignored new files (notably a newly generated vendor directory), never .git or out.
-git -C "$ROOT" ls-files -co --exclude-standard -z | tar -C "$ROOT" --null -T - -cf - | tar -C "$CONTEXT" -xf -
+{ git -C "$ROOT" ls-files -z; git -C "$ROOT" ls-files -coz --exclude-standard -- pipeline/vendor; } | tar -C "$ROOT" --null -T - -cf - | tar -C "$CONTEXT" -xf -
 test -s "$CONTEXT/pipeline/vendor/modules.txt"
 PULL=(--pull=false)
 if [ "$ENGINE" = podman ]; then PULL=(--pull-never); fi

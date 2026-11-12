@@ -47,7 +47,7 @@ podman build --tag wasl-offline-seed:local .   # one online build to seed base i
 scripts/offline_build.sh                       # full rebuild with networking disabled
 ```
 
-The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), refuses base-image pulls and passes `--network=none`. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache. Alpine/Python package layers and base images must already be cached; a no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`.
+The second command creates a fresh `/tmp` build context (including on macOS, where the Podman VM cannot read the default `$TMPDIR`), includes only tracked files plus the vendor directory, refuses base-image pulls and passes `--network=none`. It changes `OFFLINE_BUILD_ID` so the Go vet/compile layer actually reruns rather than succeeding only from cache; that layer also fails if it can open a TCP connection to the Go module proxy. Alpine/Python package layers and base images must already be cached; a no-cache build on a new or empty-cache host is **not** an offline build. Docker Engine uses the same runner after its ordinary online CI build: `WASL_CONTAINER_ENGINE=docker scripts/offline_build.sh`. This covers the Wasl pipeline/API image, not `deploy/nats/Dockerfile`, whose NATS rebuild still fetches modules.
 
 ## Ports and volumes
 
