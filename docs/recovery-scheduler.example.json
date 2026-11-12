@@ -1,0 +1,31 @@
+{
+  "schema": "wasl-recovery-scheduler-v1",
+  "repository": "/srv/wasl/repo",
+  "revision": "HEAD",
+  "engine": "podman",
+  "source": {
+    "project": "waslrecsrc-scheduler",
+    "secrets_volume": "wasl-recovery-scheduler-secrets",
+    "secrets_dir": "/srv/wasl/secrets",
+    "backup_volume": "wasl-recovery-scheduler-backups",
+    "api_url": "https://127.0.0.1:19443"
+  },
+  "state_dir": "/srv/wasl/recovery-evidence",
+  "schedule": {
+    "epoch": "2026-01-01T00:00:00Z",
+    "backup_interval_seconds": 86400,
+    "verify_interval_seconds": 604800,
+    "poll_seconds": 60
+  },
+  "retention": {
+    "enabled": true,
+    "max_age_days": 30,
+    "keep_newest_verified": 7,
+    "min_verified_good": 2
+  },
+  "timeouts": {
+    "command_seconds": 900,
+    "backup_seconds": 1800,
+    "target_start_seconds": 300
+  }
+}

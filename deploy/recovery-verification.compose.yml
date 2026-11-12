@@ -1,0 +1,11 @@
+# Clean-target verification override. Use together with production.compose.yml and a unique generated project.
+# The selected immutable generation is a read-only input. Target NATS/run volumes remain project-scoped and new.
+# WASL_RECOVERY_REPLACE is deliberately never set; the existing empty-target restore guard stays in force.
+services:
+  recovery:
+    environment:
+      WASL_RECOVERY_DIR: /backup/scheduler-v1/generations/${WASL_RECOVERY_GENERATION:?set the selected generation}
+    volumes:
+      - wasl-run:/var/lib
+      - wasl-backup:/backup:ro
+      - wasl-secrets:/run/secrets:ro
