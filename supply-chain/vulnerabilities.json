@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "1798c18bec08b47bcaef7d38cc04b9bb4fd8f86f",
-    "committed_at": "2026-11-12T01:45:31Z"
+    "revision": "136ae0c460831f2f166c6085044a07be71b236be",
+    "committed_at": "2026-11-12T01:52:46Z"
   },
   "scanner": {
     "name": "trivy",
