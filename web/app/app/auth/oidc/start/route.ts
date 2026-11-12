@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server";
 import { calculatePKCECodeChallenge, randomPKCECodeVerifier } from "openid-client";
 import { oidcConfig, reviewAuthMode } from "@/lib/auth/oidc-config";
 import { beginAuthorization, discoverProvider, hasIdentityParameters, oidcFailureRedirect, safeReturnTo } from "@/lib/auth/oidc";
-import { defaultSessionStore, nonceForVerifier, randomOpaqueId } from "@/lib/auth/oidc-store";
+import { defaultSessionStore, LOGIN_LIFETIME_MS, nonceForVerifier, randomOpaqueId } from "@/lib/auth/oidc-store";
+import { OIDC_CORRELATION_COOKIE, OIDC_CORRELATION_COOKIE_PATH } from "@/components/review/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,12 +22,22 @@ export async function GET(request: Request): Promise<Response> {
     const config = oidcConfig();
     const provider = await discoverProvider(config);
     const state = randomOpaqueId();
+    const correlation = randomOpaqueId();
     const pkceVerifier = randomPKCECodeVerifier();
     const nonce = nonceForVerifier(pkceVerifier);
     const codeChallenge = await calculatePKCECodeChallenge(pkceVerifier);
-    defaultSessionStore(config.sessionDb).createLogin({ state, nonce, pkceVerifier, returnTo });
+    defaultSessionStore(config.sessionDb).createLogin({ state, correlation, nonce, pkceVerifier, returnTo });
     const destination = beginAuthorization(provider, config, { state, nonce, codeChallenge });
-    return new Response(null, { status: 303, headers: { location: destination.href, "cache-control": "no-store" } });
+    const response = NextResponse.redirect(destination, 303);
+    response.headers.set("cache-control", "no-store");
+    response.cookies.set(OIDC_CORRELATION_COOKIE, correlation, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: OIDC_CORRELATION_COOKIE_PATH,
+      maxAge: LOGIN_LIFETIME_MS / 1000,
+    });
+    return response;
   } catch {
     return oidcFailureRedirect(request, returnTo);
   }

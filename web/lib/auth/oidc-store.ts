@@ -29,8 +29,8 @@ export type SessionResolution =
   | { ok: false; reason: "anonymous" | "expired" | "revoked" };
 
 export interface SessionStore {
-  createLogin(input: { state: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction;
-  consumeLogin(state: string, now?: number): LoginTransaction | undefined;
+  createLogin(input: { state: string; correlation: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction;
+  consumeLogin(state: string, correlation: string, now?: number): LoginTransaction | undefined;
   createSession(input: { issuer: string; subject: string; credential: OidcCredential; now?: number }): { sessionId: string; session: ReviewSession };
   resolveSession(sessionId: string | undefined, now?: number): SessionResolution;
   revokeSession(sessionId: string | undefined): boolean;
@@ -72,6 +72,7 @@ export class SqliteSessionStore implements SessionStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS login_transaction (
         state_hash TEXT PRIMARY KEY,
+        correlation_hash TEXT NOT NULL,
         nonce_hash TEXT NOT NULL,
         pkce_verifier TEXT NOT NULL,
         return_to TEXT NOT NULL,
@@ -89,31 +90,36 @@ export class SqliteSessionStore implements SessionStore {
       );
       CREATE INDEX IF NOT EXISTS review_session_subject ON review_session(issuer, subject);
     `);
+    const loginColumns = this.db.prepare("PRAGMA table_info(login_transaction)").all() as { name: string }[];
+    if (!loginColumns.some((column) => column.name === "correlation_hash")) {
+      /* Existing transactions have no browser binding and therefore fail closed after this additive migration. */
+      this.db.exec("ALTER TABLE login_transaction ADD COLUMN correlation_hash TEXT");
+    }
   }
 
-  createLogin({ state, nonce, pkceVerifier, returnTo, now = Date.now() }: { state: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction {
-    if (state.length < 32 || nonce.length < 32 || pkceVerifier.length < 43) throw new Error("OIDC login parameters are too short");
+  createLogin({ state, correlation, nonce, pkceVerifier, returnTo, now = Date.now() }: { state: string; correlation: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction {
+    if (state.length < 32 || correlation.length < 32 || nonce.length < 32 || pkceVerifier.length < 43) throw new Error("OIDC login parameters are too short");
     const transaction = { nonceHash: sha256(nonce), pkceVerifier, returnTo, expiresAt: now + LOGIN_LIFETIME_MS };
     this.db.prepare("DELETE FROM login_transaction WHERE expires_at <= ?").run(now);
     this.db
-      .prepare("INSERT INTO login_transaction (state_hash, nonce_hash, pkce_verifier, return_to, expires_at, consumed_at) VALUES (?, ?, ?, ?, ?, NULL)")
-      .run(sha256(state), transaction.nonceHash, pkceVerifier, returnTo, transaction.expiresAt);
+      .prepare("INSERT INTO login_transaction (state_hash, correlation_hash, nonce_hash, pkce_verifier, return_to, expires_at, consumed_at) VALUES (?, ?, ?, ?, ?, ?, NULL)")
+      .run(sha256(state), sha256(correlation), transaction.nonceHash, pkceVerifier, returnTo, transaction.expiresAt);
     return transaction;
   }
 
-  consumeLogin(state: string, now = Date.now()): LoginTransaction | undefined {
+  consumeLogin(state: string, correlation: string, now = Date.now()): LoginTransaction | undefined {
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const row = this.db
-        .prepare("SELECT nonce_hash, pkce_verifier, return_to, expires_at FROM login_transaction WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ?")
-        .get(sha256(state), now) as LoginRow | undefined;
+        .prepare("SELECT nonce_hash, pkce_verifier, return_to, expires_at FROM login_transaction WHERE state_hash = ? AND correlation_hash = ? AND consumed_at IS NULL AND expires_at > ?")
+        .get(sha256(state), sha256(correlation), now) as LoginRow | undefined;
       if (!row) {
         this.db.exec("COMMIT");
         return undefined;
       }
       const consumed = this.db
-        .prepare("UPDATE login_transaction SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ?")
-        .run(now, sha256(state), now);
+        .prepare("UPDATE login_transaction SET consumed_at = ? WHERE state_hash = ? AND correlation_hash = ? AND consumed_at IS NULL AND expires_at > ?")
+        .run(now, sha256(state), sha256(correlation), now);
       if (consumed.changes !== 1) throw new Error("OIDC login transaction was already consumed");
       this.db.exec("COMMIT");
       return { nonceHash: row.nonce_hash, pkceVerifier: row.pkce_verifier, returnTo: row.return_to, expiresAt: row.expires_at };

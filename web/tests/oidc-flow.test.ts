@@ -41,9 +41,19 @@ async function begin(returnTo = "/app/review/case-1") {
   const response = await start(new Request(`${APP}/app/auth/oidc/start?returnTo=${encodeURIComponent(returnTo)}`));
   expect(response.status).toBe(303);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  const authorize = response.headers.get("location");
-  expect(authorize).toBeTruthy();
-  return authorize!;
+  const authorizationUrl = response.headers.get("location");
+  expect(authorizationUrl).toBeTruthy();
+  const cookies = response.headers.getSetCookie();
+  expect(cookies).toHaveLength(1);
+  const correlation = cookies[0];
+  expect(correlation).toMatch(/^__Secure-wasl_oidc_correlation=[A-Za-z0-9_-]{43};/);
+  expect(correlation).toContain("Path=/app/auth/oidc/callback");
+  expect(correlation).toContain("Max-Age=600");
+  expect(correlation).toContain("HttpOnly");
+  expect(correlation).toContain("Secure");
+  expect(correlation.toLowerCase()).toContain("samesite=lax");
+  expect(correlation.toLowerCase()).not.toContain("domain=");
+  return { authorizationUrl: authorizationUrl!, cookie: correlation.split(";", 1)[0] };
 }
 
 async function authorize(authorizationUrl: string) {
@@ -52,9 +62,10 @@ async function authorize(authorizationUrl: string) {
   return response.headers.get("location")!;
 }
 
-async function complete(authorizationUrl?: string) {
-  const callbackUrl = await authorize(authorizationUrl ?? (await begin()));
-  return { response: await callback(new Request(callbackUrl)), callbackUrl };
+async function complete(login?: Awaited<ReturnType<typeof begin>>) {
+  const current = login ?? (await begin());
+  const callbackUrl = await authorize(current.authorizationUrl);
+  return { response: await callback(new Request(callbackUrl, { headers: { cookie: current.cookie } })), callbackUrl, cookie: current.cookie };
 }
 
 function expectRefusal(response: Response) {
@@ -65,8 +76,9 @@ function expectRefusal(response: Response) {
 }
 
 describe("OIDC authorization-code flow", () => {
-  it("uses discovery/JWKS, code, state, nonce and S256 PKCE and sets only an opaque strict cookie", async () => {
-    const authorizationUrl = await begin();
+  it("uses discovery/JWKS, code, state, nonce and S256 PKCE and rotates to an opaque strict session cookie", async () => {
+    const login = await begin();
+    const { authorizationUrl } = login;
     const parameters = new URL(authorizationUrl).searchParams;
     expect([...parameters.keys()].sort()).toEqual(["client_id", "code_challenge", "code_challenge_method", "nonce", "redirect_uri", "response_type", "scope", "state"].sort());
     expect(parameters.get("code_challenge_method")).toBe("S256");
@@ -75,10 +87,12 @@ describe("OIDC authorization-code flow", () => {
     expect(parameters.get("nonce")!.length).toBeGreaterThanOrEqual(43);
     expect(authorizationUrl).not.toContain(provider.clientSecret);
 
-    const { response, callbackUrl } = await complete(authorizationUrl);
+    const { response, callbackUrl } = await complete(login);
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(`${APP}/app/review/case-1`);
-    const cookie = response.headers.get("set-cookie")!;
+    const cookies = response.headers.getSetCookie();
+    expect(cookies).toHaveLength(2);
+    const cookie = cookies.find((value) => value.startsWith("__Secure-wasl_review_session="))!;
     expect(cookie).toMatch(/^__Secure-wasl_review_session=[A-Za-z0-9_-]{43};/);
     expect(cookie).toContain("Path=/app");
     expect(cookie).toContain("HttpOnly");
@@ -87,6 +101,13 @@ describe("OIDC authorization-code flow", () => {
     expect(Number(cookie.match(/Max-Age=(\d+)/)?.[1])).toBeGreaterThanOrEqual(28790);
     expect(Number(cookie.match(/Max-Age=(\d+)/)?.[1])).toBeLessThanOrEqual(28800);
     expect(cookie.toLowerCase()).not.toContain("domain=");
+    const expiredCorrelation = cookies.find((value) => value.startsWith("__Secure-wasl_oidc_correlation="))!;
+    expect(expiredCorrelation).toMatch(/^__Secure-wasl_oidc_correlation=;/);
+    expect(expiredCorrelation).toContain("Max-Age=0");
+    expect(expiredCorrelation).toContain("Path=/app/auth/oidc/callback");
+    expect(expiredCorrelation).toContain("HttpOnly");
+    expect(expiredCorrelation).toContain("Secure");
+    expect(expiredCorrelation.toLowerCase()).toContain("samesite=lax");
     for (const secret of [provider.clientSecret, "synthetic-server-r1-token-0001", "code_verifier", "access_token", "id_token"]) {
       expect(callbackUrl).not.toContain(secret);
       expect([...response.headers].toString()).not.toContain(secret);
@@ -94,42 +115,59 @@ describe("OIDC authorization-code flow", () => {
   });
 
   it.each(["issuer", "audience", "azp", "nonce", "tamperToken", "expiry"] as const)("refuses an invalid ID-token %s", async (override) => {
-    const authorizationUrl = await begin();
+    const login = await begin();
     if (override === "issuer") provider.overrides.issuer = `${provider.issuer}/wrong`;
     if (override === "audience") provider.overrides.audience = "wrong-client";
     if (override === "azp") provider.overrides.azp = "wrong-client";
     if (override === "expiry") provider.overrides.expiresIn = -300;
     if (override === "nonce") provider.overrides.nonce = "wrong-nonce";
     if (override === "tamperToken") provider.overrides.tamperToken = true;
-    const { response } = await complete(authorizationUrl);
+    const { response } = await complete(login);
     expectRefusal(response);
     expect(provider.tokenRequests).toBe(1);
   });
 
   it("refuses a token signed by an unknown key", async () => {
-    const authorizationUrl = await begin();
+    const login = await begin();
     provider.overrides.signingKey = "unknown";
-    expectRefusal((await complete(authorizationUrl)).response);
+    expectRefusal((await complete(login)).response);
   });
 
   it("refuses a verified but unmapped subject", async () => {
-    const authorizationUrl = await begin();
+    const login = await begin();
     provider.subject = "synthetic-unmapped";
-    expectRefusal((await complete(authorizationUrl)).response);
+    expectRefusal((await complete(login)).response);
   });
 
   it("refuses wrong state before calling the token endpoint", async () => {
-    const callbackUrl = new URL(await authorize(await begin()));
+    const login = await begin();
+    const callbackUrl = new URL(await authorize(login.authorizationUrl));
     callbackUrl.searchParams.set("state", "x".repeat(43));
-    expectRefusal(await callback(new Request(callbackUrl)));
+    expectRefusal(await callback(new Request(callbackUrl, { headers: { cookie: login.cookie } })));
     expect(provider.tokenRequests).toBe(0);
   });
 
+  it("rejects an attacker's callback in a victim browser without swapping the session", async () => {
+    const attacker = await begin();
+    const victim = await begin();
+    expect(victim.cookie).not.toBe(attacker.cookie);
+    const callbackUrl = await authorize(attacker.authorizationUrl);
+
+    expectRefusal(await callback(new Request(callbackUrl)));
+    expectRefusal(await callback(new Request(callbackUrl, { headers: { cookie: victim.cookie } })));
+    expect(provider.tokenRequests).toBe(0);
+
+    const initiatingBrowser = await callback(new Request(callbackUrl, { headers: { cookie: attacker.cookie } }));
+    expect(initiatingBrowser.headers.getSetCookie().some((cookie) => cookie.startsWith("__Secure-wasl_review_session="))).toBe(true);
+    expect(provider.tokenRequests).toBe(1);
+  });
+
   it("refuses expired state before discovery or token exchange", async () => {
-    const callbackUrl = await authorize(await begin());
+    const login = await begin();
+    const callbackUrl = await authorize(login.authorizationUrl);
     vi.useFakeTimers();
     vi.setSystemTime(Date.now() + 11 * 60 * 1000);
-    expectRefusal(await callback(new Request(callbackUrl)));
+    expectRefusal(await callback(new Request(callbackUrl, { headers: { cookie: login.cookie } })));
     expect(provider.tokenRequests).toBe(0);
   });
 
@@ -137,15 +175,16 @@ describe("OIDC authorization-code flow", () => {
     const first = await complete();
     expect(first.response.headers.get("set-cookie")).toBeTruthy();
     const requests = provider.tokenRequests;
-    expectRefusal(await callback(new Request(first.callbackUrl)));
+    expectRefusal(await callback(new Request(first.callbackUrl, { headers: { cookie: first.cookie } })));
     expect(provider.tokenRequests).toBe(requests);
   });
 
   it("refuses identity-bearing callback and start parameters", async () => {
-    const authorizationUrl = await begin();
+    const login = await begin();
+    const { authorizationUrl } = login;
     const callbackUrl = new URL(await authorize(authorizationUrl));
     callbackUrl.searchParams.set("actor", "synthetic-r2");
-    expectRefusal(await callback(new Request(callbackUrl)));
+    expectRefusal(await callback(new Request(callbackUrl, { headers: { cookie: login.cookie } })));
     expect(provider.tokenRequests).toBe(0);
     expectRefusal(await start(new Request(`${APP}/app/auth/oidc/start?returnTo=%2Fapp%2Freview%2Fx&role=reviewer`)));
   });
@@ -169,14 +208,15 @@ describe("OIDC authorization-code flow", () => {
   });
 
   it("synthetic provider rejects a wrong PKCE verifier", async () => {
-    const callbackUrl = new URL(await authorize(await begin()));
+    const login = await begin();
+    const callbackUrl = new URL(await authorize(login.authorizationUrl));
     const response = await fetch(`${provider.issuer}/token`, {
       method: "POST",
       headers: { authorization: `Basic ${Buffer.from(`${provider.clientId}:${provider.clientSecret}`).toString("base64")}`, "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ grant_type: "authorization_code", code: callbackUrl.searchParams.get("code")!, redirect_uri: provider.redirectUri, code_verifier: "wrong-verifier-wrong-verifier-wrong-verifier" }),
     });
     expect(response.status).toBe(400);
-    expectRefusal(await callback(new Request(callbackUrl)));
+    expectRefusal(await callback(new Request(callbackUrl, { headers: { cookie: login.cookie } })));
     expect(provider.tokenRequests).toBe(2);
   });
 });

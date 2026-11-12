@@ -4,6 +4,8 @@ import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 /** Client-safe constants and types. Neither bearer tokens nor OIDC provider tokens appear in these types. */
 export const REVIEW_COOKIE = "wasl_review_token";
 export const OIDC_REVIEW_COOKIE = "__Secure-wasl_review_session";
+export const OIDC_CORRELATION_COOKIE = "__Secure-wasl_oidc_correlation";
+export const OIDC_CORRELATION_COOKIE_PATH = "/app/auth/oidc/callback";
 export const REVIEW_COOKIE_PATH = "/app";
 export const REVIEW_COOKIE_MAX_AGE = 8 * 60 * 60;
 export const REVIEW_TOKEN_PATTERN = /^\S{16,4096}$/;
