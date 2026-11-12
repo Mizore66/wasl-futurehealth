@@ -161,8 +161,11 @@ export function HistoryCard({
 }: {
   audit: Audit;
   programme: Programme;
-  /** `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token. */
-  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean };
+  /**
+   * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
+   * `hostSignOut`: the host page already shows a sign-out for this session, so the history card does not repeat it.
+   */
+  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean };
 }) {
   const status = new Map(governance?.projection.events.map((event) => [event.hash, event.status]));
   const rejectedContests = new Set(
@@ -198,7 +201,7 @@ export function HistoryCard({
           Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
         </p>
       )}
-      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} /> : <GovernanceSignIn caseId={governance.caseId} />)}
+      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} /> : <GovernanceSignIn caseId={governance.caseId} />)}
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
           Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.

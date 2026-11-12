@@ -39,12 +39,13 @@ const ORDER = [
 const order = (events: { ledger: string; kind?: unknown; decision?: unknown }[]) =>
   events.map((e) => `${e.ledger}:${String(e.ledger === "review" ? e.decision : e.kind)}`);
 
-function renderGovernanceHistory(events: Record<string, unknown>[], statuses: [string, string][], signedIn = true) {
+function renderGovernanceHistory(events: Record<string, unknown>[], statuses: [string, string][], signedIn = true, hostSignOut = false) {
   const audit = Audit.parse({ ...rawAudit, history: events });
   const byHash = new Map(events.map((event) => [event.hash, event]));
   const governance = {
     caseId: rawAudit.case,
     signedIn,
+    hostSignOut,
     projection: {
       ...rawAudit.meta,
       case: rawAudit.case,
@@ -253,8 +254,16 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(html).toContain("act as the token you signed in with");
     expect(html).toContain("signs in separately");
     expect(html).toContain("distinct token the operator issued");
-    expect(html).toContain("Sign out");
+    expect(html).toMatch(/<button[^>]*>Sign out<\/button>/);
     expect(html).not.toContain('name="credential"');
+  });
+
+  it("does not repeat the host page's sign-out (the review desk shows its own)", () => {
+    const review = reviewFor("signoff_evidence");
+    const html = renderGovernanceHistory([review], [[review.hash, "active"]], true, true);
+    expect(html).toContain('data-testid="governance-identity"');
+    expect(html).toContain("Contest review");
+    expect(html).not.toMatch(/<button[^>]*>Sign out<\/button>/);
   });
 
   it.each([

@@ -26,7 +26,8 @@ export async function gatedHistory(id: string, opts: { before?: Viewer; needAudi
   if (apiMode() !== "live") return { status: "ok", audit: await getAudit(id), projection: null, signedIn: false };
   const before = opts.before ?? (await getReviewCase(id));
   // The review page has nothing to show for history while concealed: do not even request it.
-  if (hidden(before) && !opts.needAudit) return { status: "concealed", audit: null, projection: null, signedIn: before.authenticated };
+  // `hidden` holds only for an authenticated viewer, so this branch is always signed in.
+  if (hidden(before) && !opts.needAudit) return { status: "concealed", audit: null, projection: null, signedIn: true };
 
   const [audit, projection] = await Promise.all([getAudit(id), getUndoProjection(id)]);
   const after = await getReviewCase(id);

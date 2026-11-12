@@ -31,7 +31,10 @@ const GovernanceInput = z
 
 export type GovernanceActionResult =
   | { ok: true; hash: string; message: string }
-  /** `signIn` is set when the action needs a (fresh) sign-in rather than a different input. */
+  /**
+   * `signIn` is set when the action needs a (fresh) sign-in rather than a different input. The client then clears the
+   * stale session with `signOutForGovernance`, so the page shows its sign-in prompt.
+   */
   | { ok: false; error: string; signIn?: true };
 
 const SIGN_IN = "Sign in with the token assigned to you. Undo, contest and resolve act only as the signed-in credential.";
@@ -54,7 +57,7 @@ export async function appendGovernanceAction(input: unknown): Promise<Governance
         ? await postContestWithToken(caseId, { target, note: reason }, token)
         : await postContestResolutionWithToken(caseId, { target, resolution: resolution!, note: reason }, token);
   if (!result.ok) {
-    if (result.status === 401) return { ok: false, error: "The API did not accept your sign-in. Sign out and sign in again.", signIn: true };
+    if (result.status === 401) return { ok: false, error: "The API did not accept your sign-in. Sign in again.", signIn: true };
     return { ok: false, error: result.error };
   }
 
