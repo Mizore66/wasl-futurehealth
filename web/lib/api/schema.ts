@@ -764,17 +764,27 @@ const LUNG_OUTCOMES = [
   "nondiagnostic",
   "malignant",
 ] as const;
-const LUNG_TYPES = ["solid", "ground_glass", "part_solid"] as const;
-const LUNG_SIZES = ["<6", "6-8", ">8", ">=6"] as const;
+/**
+ * The size bands pipeline/fleischner.go sizeBand produces for each nodule type: solid nodules band as <6, 6-8 or >8 mm;
+ * ground-glass and part-solid nodules as <6 or >=6 mm. The review desk offers only these bands.
+ */
+const LUNG_SIZE_BANDS = {
+  solid: ["<6", "6-8", ">8"],
+  ground_glass: ["<6", ">=6"],
+  part_solid: ["<6", ">=6"],
+} as const;
 const LUNG_COUNTS = ["single", "multiple"] as const;
-/** Index-CT labels such as `solid/6-8/single` or `ground_glass/<6/multiple`. */
+/**
+ * Index-CT labels such as `solid/6-8/single` or `ground_glass/<6/multiple`. The API boundary keeps every band the
+ * endpoint parses (pipeline/lungread.go parseFindingLabel), including ones sizeBand never writes.
+ */
 const LUNG_INDEX_LABEL = /^(solid|ground_glass|part_solid)\/(<6|6-8|>8|>=6)\/(single|multiple)$/;
 
 /** DR screening grades as the review endpoint accepts them: `R{0|1|2|3A|3S}M{0|1}`, optional `/urgent`, or `U`. */
 const DR_GRADE = /^(R(0|1|2|3A|3S)M[01](\/urgent)?|U)$/;
 const BREAST_LABELS = ["B0", "B1", "B2", "B3", "B4", "B5", "TR", ...BREAST_OUTCOMES] as const;
 
-const lungIndexLabels = LUNG_TYPES.flatMap((type) => LUNG_SIZES.flatMap((size) => LUNG_COUNTS.map((count) => `${type}/${size}/${count}`)));
+const lungIndexLabels = Object.entries(LUNG_SIZE_BANDS).flatMap(([type, sizes]) => sizes.flatMap((size) => LUNG_COUNTS.map((count) => `${type}/${size}/${count}`)));
 const drGradeLabels = ["0", "1", "2", "3A", "3S"].flatMap((r) => ["0", "1"].flatMap((m) => [`R${r}M${m}`, `R${r}M${m}/urgent`]));
 const ifhasScreenLabels = ["N", "H", "S"].flatMap((bp) =>
   ["N", "P", "D", "S"].flatMap((glyc) => ["N", "H"].flatMap((lipid) => ["N", "O"].map((weight) => `bp=${bp};glyc=${glyc};lipid=${lipid};weight=${weight}`))),
