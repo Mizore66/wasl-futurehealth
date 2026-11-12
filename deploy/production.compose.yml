@@ -115,8 +115,10 @@ services:
       WASL_API_USERS_FILE: /run/secrets/api_users.json
       WASL_API_TLS_CERT_FILE: /run/secrets/server.crt
       WASL_API_TLS_KEY_FILE: /run/secrets/server.key
+      WASL_BACKUP_MANIFEST: /backup/bundle/manifest.json
     volumes:
       - wasl-run:/var/lib
+      - wasl-backup:/backup:ro
       - wasl-secrets:/run/secrets:ro
     ports:
       - "127.0.0.1:${WASL_API_PORT:-18443}:8443"

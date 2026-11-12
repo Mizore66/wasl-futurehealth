@@ -43,7 +43,7 @@ func securityRequest(t *testing.T, h http.Handler, method, path, token string, b
 func TestAPISecurityRequiresAuthenticationAndReadRBAC(t *testing.T) {
 	s, _ := exportRun(t)
 	h := secureTestHandler(t, s, "")
-	for _, path := range []string{"/api/dashboard", "/api/cases", "/api/fixtures", "/api/cases/" + exportLoop, "/api/cases/" + exportLoop + "/audit", "/api/cases/" + exportLoop + "/export"} {
+	for _, path := range []string{"/api/operations", "/api/dashboard", "/api/cases", "/api/fixtures", "/api/cases/" + exportLoop, "/api/cases/" + exportLoop + "/audit", "/api/cases/" + exportLoop + "/export"} {
 		w := securityRequest(t, h, http.MethodGet, path, "", nil)
 		if w.Code != http.StatusUnauthorized {
 			t.Errorf("unauthenticated GET %s: got %d, want 401", path, w.Code)
@@ -67,7 +67,9 @@ func TestAPISecurityRequiresAuthenticationAndReadRBAC(t *testing.T) {
 		want              int
 	}{
 		{"reviewer detail", "/api/cases/" + exportLoop, "reviewer-token-1234567890", 200},
+		{"reviewer operations", "/api/operations", "reviewer-token-1234567890", 200},
 		{"reviewer audit denied", "/api/cases/" + exportLoop + "/audit", "reviewer-token-1234567890", 403},
+		{"auditor operations denied", "/api/operations", "auditor-token-1234567890", 403},
 		{"auditor detail denied", "/api/cases/" + exportLoop, "auditor-token-1234567890", 403},
 		{"auditor list denied", "/api/cases", "auditor-token-1234567890", 403},
 		{"auditor audit", "/api/cases/" + exportLoop + "/audit", "auditor-token-1234567890", 200},
@@ -94,6 +96,22 @@ func TestAPISecurityRequiresAuthenticationAndReadRBAC(t *testing.T) {
 	missing := securityRequest(t, h, http.MethodGet, "/api/cases/missing/ServiceRequest/none/audit", "auditor-token-1234567890", nil)
 	if strings.Contains(missing.Body.String(), "CANARY") {
 		t.Fatalf("auditor 404 leaked log-derived metadata: %s", missing.Body.String())
+	}
+}
+
+// Operations uses the same verified queue-read boundary without making the existing health probe private.
+func TestOperationsSecurityKeepsHealthzAnonymous(t *testing.T) {
+	s, _ := exportRun(t)
+	h := secureTestHandler(t, s, "")
+	health := securityRequest(t, h, http.MethodGet, "/healthz", "", nil)
+	if health.Code != http.StatusOK {
+		t.Fatalf("anonymous healthz = %d, want 200", health.Code)
+	}
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+		w := securityRequest(t, h, method, "/api/operations", "reviewer-token-1234567890", nil)
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("reviewer %s operations = %d, want 405", method, w.Code)
+		}
 	}
 }
 

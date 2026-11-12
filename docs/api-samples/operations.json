@@ -1,0 +1,73 @@
+{
+ "schema": "wasl-operations/1",
+ "observed_at": "2026-11-12T16:49:04Z",
+ "api": {
+  "status": "ok",
+  "source": "/healthz",
+  "dependencies": {
+   "materialised_run": "loaded",
+   "nats": "not_required_for_read_api",
+   "reader": "cached",
+   "ingest_adapter": "fhir",
+   "review_ledger": "ok"
+  }
+ },
+ "nats": {
+  "status": "unreachable",
+  "source": "nats_jetstream_consumer_info",
+  "reason": "jetstream_probe_failed"
+ },
+ "queue": {
+  "status": "unavailable",
+  "source": "nats_jetstream_consumer_info",
+  "coverage": "known_durable_consumers",
+  "reason": "nats_unreachable",
+  "consumers": []
+ },
+ "run": {
+  "status": "available",
+  "scope": "completed_synthetic_run",
+  "source": "report7.json",
+  "latency_ms": {
+   "n": 12697,
+   "p50": 24707.623,
+   "p90": 29705.052,
+   "p99": 30004.763,
+   "max": 30066.352
+  },
+  "recovery": {
+   "generated_resources": 32245,
+   "fhir_msgs": 33653,
+   "expected_outputs": 25048,
+   "live_outputs": 25048,
+   "ingest_lost": 0,
+   "ingest_duplicates": 0,
+   "lost_outputs": 0,
+   "duplicate_outputs": 0
+  }
+ },
+ "api_measurements": {
+  "latency": {
+   "status": "unmeasured",
+   "reason": "api_request_latency_not_recorded"
+  },
+  "error_rate": {
+   "status": "unmeasured",
+   "reason": "api_request_outcomes_not_recorded"
+  }
+ },
+ "backup": {
+  "status": "unmeasured",
+  "source": "recovery_bundle_manifest",
+  "reason": "backup_manifest_not_configured"
+ },
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "run": "redacted-internal-audit",
+  "policy": "redacted-internal-audit",
+  "reader_model": "not-disclosed",
+  "loaded_at": "2026-11-12T16:46:06Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."
+ }
+}

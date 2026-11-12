@@ -6,8 +6,8 @@ import { PipelineHeading } from "@/components/pipeline/heading";
 import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-replay";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { HealthPanel } from "@/components/pipeline/health-panel";
-import { loadHealth } from "@/components/pipeline/health";
-import { apiMode, getAudit, getFixtures, getHealthz } from "@/lib/api/source";
+import { loadOperations } from "@/components/pipeline/health";
+import { apiMode, getAudit, getFixtures, getOperations } from "@/lib/api/source";
 import type { ChainEntry } from "@/lib/api/schema";
 import { plain } from "@/lib/domain/terms";
 import { formatDay } from "@/lib/domain/day";
@@ -83,7 +83,7 @@ export default async function Page() {
   const audit = await getAudit(loop);
   if (!audit) notFound();
 
-  const health = await loadHealth(getHealthz, apiMode());
+  const health = await loadOperations(getOperations, apiMode());
 
   return (
     <PipelineReplay

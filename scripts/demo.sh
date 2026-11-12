@@ -256,6 +256,8 @@ snapshot() {  # static API responses for frontend development (no backend needed
   trap 'snapshot_cleanup' EXIT; trap 'snapshot_cleanup; exit 130' INT; trap 'snapshot_cleanup; exit 143' TERM  # nothing outlives the run
   curl -sf --max-time "$MT" "http://$A/healthz" |
     python3 "$ROOT/scripts/redacted_snapshot.py" health > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" "http://$A/api/operations" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" operations > "$S/operations.json" || { echo "snapshot: operations failed" >&2; return 1; }
   curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/dashboard" |
     python3 "$ROOT/scripts/redacted_snapshot.py" dashboard > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
   curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" |
