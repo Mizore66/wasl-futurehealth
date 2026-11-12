@@ -339,6 +339,9 @@ func (s *apiServer) claimFailureLocked(c *apiCase, viewer apiPrincipal, key revi
 		code, msg = pe.code, pe.msg
 		if code == http.StatusConflict {
 			conflict = "review_state"
+			if msg == "stale expected_head" || msg == "stale expected_head: the first read starts at an empty head" {
+				conflict = "head"
+			}
 		}
 	}
 	claims := s.claimsLocked()

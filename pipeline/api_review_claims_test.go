@@ -178,6 +178,11 @@ func TestReviewClaimReplayAndAppendFailure(t *testing.T) {
 func TestReviewClaimValidationAndMethods(t *testing.T) {
 	e := newIR(t)
 	e.must(t, irRevA, fmt.Sprintf(`{"item":%q,"decision":"same","note":"","read":"r1","expected_head":""}`, irLinkItem), 400)
+	claimed := e.claim(t, irRevA, irLinkItem, "link", "claim", "", 201)
+	stale := e.must(t, irRevA, irBodyWithClaim(irLinkItem, "same", "r1", strings.Repeat("1", 64), claimHead(claimed)), 409)
+	if stale["conflict"] != "head" {
+		t.Fatalf("stale protocol head conflict: %v", stale)
+	}
 	for _, body := range []string{
 		`{"item":"rv-link","question":"link","operation":"claim"}`,
 		`{"item":"rv-link","question":"link","operation":"other","expected_claim_head":""}`,
