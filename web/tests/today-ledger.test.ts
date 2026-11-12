@@ -139,6 +139,10 @@ describe("board position from persisted outcomes", () => {
     const html = renderToStaticMarkup(LedgerInvalidBanner({ what: "this board" }));
     expect(html).toContain('role="alert"');
     expect(html).toContain("nothing on this board is authoritative");
+    // pipeline/api.go sets ledgerErr on a failed replay, an indeterminate append and a ledger changed by another writer:
+    // the banner must not claim it was a replay that stopped.
+    expect(html).not.toContain("stopped replaying");
+    expect(html).toContain("refuses new actions until an operator restores it");
   });
 });
 
@@ -171,6 +175,11 @@ describe("GET /app/today/ledger", () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ meta: {}, case: "not a case" }), { status: 200 }));
     const shape = await GET(req("?id=x"));
     expect([shape.status, (await shape.json()).error]).toEqual([502, "the API answered in a shape this page does not recognise"]);
+
+    // A 200 whose body is not JSON at all is an answer this page does not recognise, not "no answer".
+    fetchMock.mockResolvedValueOnce(new Response("<html>proxy error page</html>", { status: 200 }));
+    const notJson = await GET(req("?id=x"));
+    expect([notJson.status, (await notJson.json()).error]).toEqual([502, "the API answered in a shape this page does not recognise"]);
 
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "authentication required" }), { status: 401 }));
     const refused = await GET(req("?id=x"));

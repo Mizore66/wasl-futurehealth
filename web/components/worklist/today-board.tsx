@@ -29,7 +29,7 @@ import type { CaseAction } from "@/lib/api/schema";
  *
  * Live API, after a reload: the board position comes from the persisted overlay in the case list (model.ts workItem),
  * and the open patient's trail from that ONE case's detail overlay (GET /app/today/ledger), never from session state.
- * If ledger replay stopped part-way, the trail shows only the valid prefix under a warning and writes are disabled.
+ * If the API reports its ledger as not trustworthy (ledger_status: invalid), the board and trail say so and writes are disabled.
  */
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
@@ -56,6 +56,11 @@ type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
 type LedgerRead = PersistedLedger | { error: string };
 const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
+const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
+  const next = { ...reads };
+  delete next[id];
+  return next;
+};
 /** A ledger read the route answered and refused: its message is shown as given. */
 class ReadError extends Error {}
 
@@ -83,12 +88,21 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
   /**
-   * Live API: the open patient's persisted trail and ledger status, kept once read. A failed read is kept only to say
-   * why; it is read again when the case is selected again or on Retry, never cached for the session.
+   * Live API: each case's last ledger read. Every selection of a case reads it again (however it was selected: row
+   * click, keyboard, tab change or search) and so does Retry; a successful read is shown until the new one lands, a
+   * failed one is kept only to say why and is dropped as soon as the next read starts. A failure never retries by itself.
    */
   const [persisted, setPersisted] = useState<Record<string, LedgerRead>>({});
   /** Bumped by Retry so the same selected case is read again. */
   const [attempt, setAttempt] = useState(0);
+  /** The case the current read is for: when the selection moves, a read starts for the new one. */
+  const [readFor, setReadFor] = useState<string | undefined>(undefined);
+  /**
+   * `ledger_status` of the most recent successful detail read, or null before the first. The API's flag is server-wide
+   * and the latest read is the newest word on it, so it decides the board once there is one: a ledger an operator has
+   * restored clears the warning on the next read, and one that fails again sets it.
+   */
+  const [lastStatus, setLastStatus] = useState<PersistedLedger["status"] | null>(null);
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -129,10 +143,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
 
   /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
   const selId = live ? p?.id : undefined;
-  /* Only a successful read counts as known: a failed one is read again on reselection (selId changes) or Retry (attempt). */
-  const known = !!selId && isLedger(persisted[selId]);
+  /*
+   * A read starts whenever the selected case changes, whichever way it was selected: drop that case's failed read now
+   * (React's adjust-state-during-render pattern) so it shows "Reading…", not the old error and Retry, while it runs.
+   */
+  if (selId !== readFor) {
+    setReadFor(selId);
+    if (selId && persisted[selId] && !isLedger(persisted[selId])) setPersisted((prev) => withoutRead(prev, selId));
+  }
   useEffect(() => {
-    if (!selId || known) return;
+    if (!selId) return;
     const ac = new AbortController();
     fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
       .then(async (r) => {
@@ -140,32 +160,32 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
         throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
       })
-      .then((ledger) => setPersisted((prev) => ({ ...prev, [selId]: ledger })))
+      .then((ledger) => {
+        setPersisted((prev) => ({ ...prev, [selId]: ledger }));
+        setLastStatus(ledger.status);
+      })
       .catch((e: unknown) => {
         if (ac.signal.aborted) return;
         const error = e instanceof ReadError ? e.message : "the web server did not answer";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
-  }, [selId, known, attempt]);
-  /** Forget a failed read of `id` so it is read again; a successful read is kept. */
+  }, [selId, attempt]);
+  /** Forget a failed read of `id` and read it again; a successful read is kept (selecting the case reads it again). */
   const retryLedger = (id: string) => {
     if (!persisted[id] || isLedger(persisted[id])) return;
-    setPersisted((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    setPersisted((prev) => withoutRead(prev, id));
     setAttempt((n) => n + 1);
   };
   const ledger = selId ? persisted[selId] : undefined;
   const ledgerRead = isLedger(ledger) ? ledger : null;
   const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
   /*
-   * Replay failure is server-wide: if any listed case or any detail read says so, no row on the board is authoritative
-   * and the API refuses every write. The board says so once; the open patient's detail says why.
+   * An untrustworthy ledger is server-wide: if the latest detail read (or, before any, a listed case) says so, no row on
+   * the board is authoritative and the API refuses every write. The board says so once; the open patient's detail says why.
+   * The list overlay is from page load, so a newer detail read overrides it in either direction.
    */
-  const boardInvalid = live && (listLedgerInvalid(items) || Object.values(persisted).some((l) => isLedger(l) && l.status === "invalid"));
+  const boardInvalid = live && (lastStatus ? lastStatus === "invalid" : listLedgerInvalid(items));
   const ledgerInvalid = !!p && boardInvalid;
 
   const top = toCall[0];
@@ -567,12 +587,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             </div>
 
             {ledgerInvalid && (
-              <div role="alert" data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-                <p className="m-0 font-medium text-warning">Case ledger incomplete: this patient&rsquo;s state here is not authoritative</p>
+              /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
+              <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
+                <p className="m-0 font-medium text-warning">Case ledger not trustworthy: this patient&rsquo;s state here is not authoritative</p>
                 <p className="m-0 mt-1">
-                  The API stopped replaying the shared ledger at an invalid entry. Only the actions before it are shown
+                  The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
                   {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
-                  operator repairs the ledger.
+                  operator restores the ledger.
                 </p>
                 {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
               </div>

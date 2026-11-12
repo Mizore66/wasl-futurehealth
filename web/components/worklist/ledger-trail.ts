@@ -10,8 +10,9 @@ export type TrailEntry = { what: string; when: string; who: string; hash?: strin
 
 /**
  * What the selected case's detail overlay says (issue #47): every persisted contact outcome and note as trail entries,
- * oldest first, and whether the ledger replayed completely. `invalid` means replay stopped at an invalid ledger line:
- * the entries are only the valid prefix and the case's state on Today is not authoritative; the API refuses writes.
+ * oldest first, and whether the API trusts its ledger. `invalid` (Go `ledgerErr`: replay stopped at an invalid line, an
+ * append left the file in an unknown state, or another writer changed it) means the entries may not match the ledger
+ * and the case's state on Today is not authoritative; the API refuses writes.
  */
 export type PersistedLedger = {
   status: "ok" | "invalid";

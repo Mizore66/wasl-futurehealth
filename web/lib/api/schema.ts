@@ -553,6 +553,9 @@ const tag =
  * pipeline/api.go replayLedgerLine) and no `kind`, or an empty one (pipeline/api_undo.go evKind). Review writers (POST review,
  * consent, independent reads) set neither. Without this, an event of a type or kind the frontend does not know that
  * happens to carry the core fields (case, role, action, at, mode, prev, hash) would be shown as a review.
+ * Deliberately stricter than Go: evKind also treats a non-string `kind` and a literal `kind: "review"` as a review, while
+ * this schema shows both as `unknown`. No Go writer produces either, and showing an event as unknown is the safe side of
+ * that disagreement.
  */
 const reviewOnly = { type: z.never().optional(), kind: z.literal("").optional() };
 
