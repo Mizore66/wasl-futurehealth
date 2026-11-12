@@ -16,6 +16,8 @@ class OfflineBuildTests(unittest.TestCase):
         self.assertIn("COPY pipeline/vendor ./vendor", dockerfile)
         self.assertIn("GOFLAGS=-mod=vendor GOPROXY=off", dockerfile)
         self.assertIn("ARG OFFLINE_BUILD_ID=0", dockerfile)
+        self.assertIn('python -c "import numpy, scipy, cryptography"', dockerfile)
+        self.assertIn("find /app /var/lib/wasl", dockerfile)
         runner = (ROOT / "scripts/offline_build.sh").read_text()
         self.assertIn("--network=none", runner)
         self.assertIn("--pull-never", runner)
