@@ -47,7 +47,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
    * The append-only history and governance projection exist only against the live API. They are read with shared
    * credentials, so gatedHistory withholds them while any first read is concealed, re-checking after the fetch.
    */
-  const history = live ? await gatedHistory(id, { before: viewer }) : { status: "ok" as const, audit: null, projection: null };
+  const history = live ? await gatedHistory(id, { before: viewer }) : { status: "ok" as const, audit: null, projection: null, signedIn: false };
   const concealed = history.status === "concealed";
   const { audit, projection } = history;
 
@@ -143,7 +143,12 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       )}
       {audit && (
         <div className="mt-3">
-          <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection } : undefined} />
+          {/* A guided live desk always shows its own reviewer sign-out; the history card then does not add a second one. */}
+          <HistoryCard
+            audit={audit}
+            programme={detail.case.programme}
+            governance={projection ? { caseId: id, projection, signedIn: history.signedIn, hostSignOut: view.guided } : undefined}
+          />
         </div>
       )}
     </>
