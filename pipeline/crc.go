@@ -537,9 +537,9 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 		body["working_days"] = 31
 		body["business_day_rule"] = "Monday-Friday, UAE 2026 public holidays (addBD)"
 	}
-	chain := appendBlock(nil, "crc_child_opened", body)
+	chain := appendCRCBlock(nil, "crc_child_opened", body)
 	if state == "closed" {
-		chain = appendBlock(chain, "crc_followup_completed", map[string]interface{}{"loop": id, "category": kind, "day": closedDay})
+		chain = appendCRCBlock(chain, "crc_followup_completed", map[string]interface{}{"loop": id, "category": kind, "day": closedDay})
 	}
 	d := &Decision{LoopID: id, Provider: f.Provider, SRDay: start, State: state, Owner: cd.Owner, Prog: "crc",
 		Deadline: due - start, ProcDay: -1, ClosingReport: source.d.ReportID, Chain: chain, NotifDay: -1, AckDay: -1,
@@ -592,9 +592,9 @@ func crcEvidenceChain(f *LoopFacts, source, procedure row, pathologies []row, pr
 		}
 		contributors = append(contributors, fact)
 	}
-	chain := appendBlock(nil, "link_decision", linkBlock(f, source.d, source.pc))
-	chain = appendBlock(chain, "evidence", evBlock(source.d, ""))
-	return appendBlock(chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": source.d.ReportID,
+	chain := appendCRCBlock(nil, "link_decision", linkBlock(f, source.d, source.pc))
+	chain = appendCRCBlock(chain, "evidence", evBlock(source.d, ""))
+	return appendCRCBlock(chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": source.d.ReportID,
 		"report_version": source.d.Version, "proposal": proposal, "procedure_report": procedure.d.ReportID,
 		"procedure_version": procedure.d.Version, "procedure_day": procedure.d.Day, "contributing_reports": contributors})
 }

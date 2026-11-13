@@ -160,6 +160,11 @@ func evBlock(d DownFact, human string) map[string]interface{} {
 		}
 		b["fields"] = map[string]string{"regex": d.Ev.Regex.Caecum + "/" + d.Ev.Regex.Prep + "/" + d.Ev.Regex.Polyps + "/" + d.Ev.Regex.Histology,
 			"reader": d.Ev.Gemma.Caecum + "/" + d.Ev.Gemma.Prep + "/" + d.Ev.Gemma.Polyps + "/" + d.Ev.Gemma.Histology}
+		if d.Ev.CRC != nil {
+			// Ordinary/held CRC evidence and non-disposition reviews also embed
+			// proposals. Freeze at their producer, before any caller's first hash.
+			return crcProvenanceBody(b)
+		}
 	}
 	return b
 }
@@ -972,7 +977,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		withdrawn.State, withdrawn.Overdue, withdrawn.ClosedDay = "review", false, 0
 		withdrawn.Pending = []string{id}
 		withdrawn.Escalations = []string{"crc_child_withdrawn_review"}
-		withdrawn.Chain = appendBlock(append([]Block{}, previous.Chain...), "crc_child_withdrawn", map[string]interface{}{
+		withdrawn.Chain = appendCRCBlock(append([]Block{}, previous.Chain...), "crc_child_withdrawn", map[string]interface{}{
 			"loop": id, "parent": f.LoopID, "reason": "source report corrected/withdrawn or disposition no longer current", "requires_review": true})
 		withdrawn.Sig = sha(canon(withdrawn))
 		withdrawn.Now, withdrawn.InSeq = now, inSeq

@@ -298,7 +298,7 @@ func report7(data, wasl, run string, P int) {
 	preps := prepAll(fhir, enc)
 
 	// live final decision per loop (highest OSeq) straight from the OUT stream
-	projection, counts, err := projectMaterializedDecisions(outLog)
+	projection, counts, err := readMaterializedOUT(run)
 	if err != nil {
 		panic(err)
 	}

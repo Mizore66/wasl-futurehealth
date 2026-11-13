@@ -214,7 +214,7 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 	}
 
 	// review_queue.json (and the other analysis artifacts) come from the existing analyzer.
-	analyze(fhir, list, rp, o.gbm, o.iso, P, o.tr, main)
+	analyze(fhir, list, rp, o.gbm, o.iso, P, o.tr, main, analysisOfflineReplay)
 	writeStatus(main, "linker", linkerStatus(rp.L, uint64(len(list)), 0, int64(rp.facts), 0, -1, 0, 0, 0))
 	ob, _ := json.MarshalIndent(map[string]interface{}{"offline_replay": true, "fhir_msgs": len(fhir), "out_msgs": len(outLog), "P": P,
 		"wall_s": 0, "throughput_ev_s": 0, "chaos": 0, "linker": readStatus(main, "linker"), "reviewer": cfg}, "", " ")

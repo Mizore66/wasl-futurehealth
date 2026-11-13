@@ -91,7 +91,32 @@ func writeCRCMaterialization(t *testing.T, logs []LogMsg) string {
 			t.Fatal(err)
 		}
 	}
+	if err := validateAPIPreflight(run); err != nil {
+		t.Fatalf("valid materialized baseline before any mutation: %v", err)
+	}
 	return run
+}
+
+func requireMaterializationJSONCounts(t *testing.T, value interface{}, want materializationCounts) {
+	t.Helper()
+	counts, ok := value.(map[string]interface{})
+	if !ok || counts["schema"] != want.Schema {
+		t.Fatalf("missing materialization schema: %v", value)
+	}
+	for field, expected := range map[string]int{
+		"root_screening": want.RootScreening, "derived_care": want.DerivedCare,
+		"total_current_materialized": want.TotalCurrentMaterialized, "withdrawn_derived_care": want.WithdrawnDerivedCare,
+		"screening_complete": want.ScreeningComplete, "ongoing_care_cases": want.OngoingCareCases,
+	} {
+		number, ok := counts[field].(json.Number)
+		if !ok {
+			t.Fatalf("%s must preserve an exact JSON number, got %T", field, counts[field])
+		}
+		got, err := number.Int64()
+		if err != nil || got != int64(expected) {
+			t.Fatalf("%s=%s want %d: %v", field, number, expected, err)
+		}
+	}
 }
 
 func TestCRCGeneratedMaterializationServesWithSeparateDenominators(t *testing.T) {
@@ -113,8 +138,21 @@ func TestCRCGeneratedMaterializationServesWithSeparateDenominators(t *testing.T)
 			logs, _, _ := generatedCRCMaterialization(t, tc.path, tc.multiple, tc.procedure)
 			projection := materializationProjection(t, logs)
 			counts, err := projection.validate()
-			if err != nil || counts.RootScreening != 1 || counts.DerivedCare != tc.children || counts.TotalCurrentMaterialized != 1+tc.children {
-				t.Fatalf("counts=%+v err=%v", counts, err)
+			want := materializationCounts{Schema: materializationSchema, RootScreening: 1, DerivedCare: tc.children,
+				TotalCurrentMaterialized: 1 + tc.children, ScreeningComplete: 1}
+			if tc.children > 0 {
+				want.OngoingCareCases = 1 + tc.children
+			}
+			if tc.name == "suspicious" {
+				want.ScreeningComplete, want.OngoingCareCases = 0, 1
+			}
+			if err != nil || counts != want {
+				t.Fatalf("counts=%+v want=%+v err=%v", counts, want, err)
+			}
+			root := projection.final["L"]
+			if tc.name == "ordinary" && (root.State != "closed" || ongoingCare(root)) ||
+				tc.name == "suspicious" && (root.State != "suspected_malignancy" || screeningComplete(root) || !ongoingCare(root)) {
+				t.Fatalf("incorrect clinical state for %s: %s", tc.name, canon(root))
 			}
 			run := writeCRCMaterialization(t, logs)
 			for _, restart := range []bool{false, true} {
@@ -130,6 +168,13 @@ func TestCRCGeneratedMaterializationServesWithSeparateDenominators(t *testing.T)
 				if rr.Code != 200 || !strings.Contains(rr.Body.String(), `"total_current_materialized":`) {
 					t.Fatalf("generated dashboard not served: %d %s", rr.Code, rr.Body.String())
 				}
+				var dashboardBody map[string]interface{}
+				decoder := json.NewDecoder(rr.Body)
+				decoder.UseNumber()
+				if err := decoder.Decode(&dashboardBody); err != nil {
+					t.Fatal(err)
+				}
+				requireMaterializationJSONCounts(t, dashboardBody["materialization"], want)
 				writePersonTestSnapshot(t, s, map[string]string{"L": "site|synthetic"}, map[string][]string{"site|synthetic": {"site|synthetic"}})
 				people, err := s.loadPersonProjection()
 				if err != nil || len(people.clusters) != 1 {
@@ -139,9 +184,7 @@ func TestCRCGeneratedMaterializationServesWithSeparateDenominators(t *testing.T)
 				if err != nil || len(journey["cases"].([]interface{})) != 1+tc.children {
 					t.Fatalf("person journey hid current care: %v", err)
 				}
-				if journey["materialization"].(map[string]interface{})["derived_care"] != float64(tc.children) {
-					t.Fatalf("person counts disagree: %v", journey["materialization"])
-				}
+				requireMaterializationJSONCounts(t, journey["materialization"], want)
 				for _, c := range s.cases {
 					if c.last.CRC == nil || c.last.CRC.Parent == "" {
 						continue
@@ -208,6 +251,9 @@ func TestCRCMaterializationRejectsForgedAndMissingChildren(t *testing.T) {
 		{"negative-source-version", func(d *Decision) { d.CRC.SourceVersion = -1 }},
 		{"fake-parent-head", func(d *Decision) { d.CRC.ParentHead = "forged" }},
 		{"missing-confirmation", func(d *Decision) { d.CRC.Confirmation = "" }},
+		{"fake-confirmation", func(d *Decision) { d.CRC.Confirmation = "forged" }},
+		{"fake-review-head", func(d *Decision) { d.CRC.SignedHead = "forged" }},
+		{"fake-reviewer", func(d *Decision) { d.CRC.Reviewer = "forged" }},
 		{"fake-obligation", func(d *Decision) { d.CRC.ObligationID = "forged" }},
 		{"wrong-programme", func(d *Decision) { d.Prog = "cervical" }},
 	} {
@@ -265,6 +311,9 @@ func TestCRCMaterializationRejectsForgedAndMissingChildren(t *testing.T) {
 	})
 	t.Run("conflicting-duplicate-sequence", func(t *testing.T) {
 		projection := materializationProjection(t, logs)
+		if _, err := projection.validate(); err != nil {
+			t.Fatalf("valid baseline before sequence forgery: %v", err)
+		}
 		m := logs[0]
 		var env OutEnvelope
 		_ = json.Unmarshal(m.Data, &env)
@@ -299,6 +348,9 @@ func TestCRCMaterializationUsesTypedIdentityNotIDSubstrings(t *testing.T) {
 func TestCRCMaterializationRejectsConcealedHistoricalForgery(t *testing.T) {
 	logs, _, _ := generatedCRCMaterialization(t, "Diagnosis: invasive adenocarcinoma.", false)
 	projection := materializationProjection(t, logs)
+	if _, err := projection.validate(); err != nil {
+		t.Fatalf("valid baseline before historical forgery: %v", err)
+	}
 	for _, d := range projection.final {
 		if d.CRC == nil || d.CRC.Parent == "" {
 			continue
@@ -322,6 +374,30 @@ func TestCRCMaterializationRejectsConcealedHistoricalForgery(t *testing.T) {
 	}
 }
 
+func TestCRCMaterializationRejectsConcealedHistoricalParentForgery(t *testing.T) {
+	logs, _, _ := generatedCRCMaterialization(t, "Diagnosis: invasive adenocarcinoma.", false)
+	projection := materializationProjection(t, logs)
+	if _, err := projection.validate(); err != nil {
+		t.Fatalf("valid baseline before parent forgery: %v", err)
+	}
+	parent := projection.final["L"]
+	var forged Decision
+	if err := json.Unmarshal(canon(parent), &forged); err != nil {
+		t.Fatal(err)
+	}
+	forged.Chain[0].Body["referral_patient"] = "forged-registration"
+	seq := uint64(len(logs) + 1)
+	if err := projection.add(LogMsg{Seq: seq}, OutEnvelope{OSeq: seq, Dec: &forged}); err != nil {
+		t.Fatal(err)
+	}
+	if err := projection.add(LogMsg{Seq: seq + 1}, OutEnvelope{OSeq: seq + 1, Dec: parent}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := projection.validate(); err == nil || !strings.Contains(err.Error(), "original provenance digest") {
+		t.Fatalf("valid current parent concealed invalid historical parent: %v", err)
+	}
+}
+
 func TestLegacyMaterializationDeclarationsRemainStrict(t *testing.T) {
 	for _, tc := range []struct{ artifact, body string }{
 		{"dashboard.json", `{"cases":-1}`},
@@ -337,6 +413,9 @@ func TestLegacyMaterializationDeclarationsRemainStrict(t *testing.T) {
 		t.Run(tc.body, func(t *testing.T) {
 			run := t.TempDir()
 			writeRealValidAPIRun(t, run)
+			if err := validateAPIPreflight(run); err != nil {
+				t.Fatalf("valid legacy baseline before declaration mutation: %v", err)
+			}
 			if err := os.WriteFile(filepath.Join(run, tc.artifact), []byte(tc.body), 0o600); err != nil {
 				t.Fatal(err)
 			}

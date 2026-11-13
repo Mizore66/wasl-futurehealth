@@ -205,7 +205,13 @@ func baselines(preps []*Prep, tr *Truth) map[string]interface{} {
 	}
 }
 
-func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P int, tr *Truth, run string) map[string]interface{} {
+func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P int, tr *Truth, run string, source analysisSource) map[string]interface{} {
+	// Resolve ownership before writing any artifacts. A nonempty preview output
+	// directory does not imply that a completed live OUT exists.
+	dash, err := analysisDashboard(rp.final, tr, run, source)
+	if err != nil {
+		panic(err)
+	}
 	repPK := map[string]string{}
 	nEvents := 0
 	type repInfo struct {
@@ -428,15 +434,6 @@ func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P 
 		})
 		qb, _ := json.MarshalIndent(q, "", " ")
 		os.WriteFile(filepath.Join(run, "review_queue.json"), qb, 0600)
-		dash := dashboard(rp.final, tr)
-		// Existing provider/origin evaluation rows are replay metrics. The new
-		// materialized-case contract must describe the actual live OUT served by
-		// the API, not a possibly different offline policy/reviewer projection.
-		_, counts, err := projectMaterializedDecisions(readLog(filepath.Join(run, "out_log.ndjson")))
-		if err != nil {
-			panic(err)
-		}
-		dash["cases"], dash["materialization"] = counts.TotalCurrentMaterialized, counts
 		db, _ := json.MarshalIndent(dash, "", " ")
 		os.WriteFile(filepath.Join(run, "dashboard.json"), db, 0600)
 		writeHTML(filepath.Join(run, "dashboard.html"), dash)
@@ -648,7 +645,7 @@ func simOffline(data, wasl string, P int, withReview bool, run string) {
 	if run != "" {
 		os.MkdirAll(run, 0700)
 	}
-	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
+	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run, analysisOfflineReplay) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
 	rb := marshalReport(res)
 	fmt.Println(string(rb))
 }

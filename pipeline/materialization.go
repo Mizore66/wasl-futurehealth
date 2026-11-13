@@ -184,7 +184,7 @@ func (p *materializedDecisions) add(m LogMsg, env OutEnvelope) error {
 		return nil
 	}
 	p.seen[d.LoopID][seq] = body
-	if d.CRC != nil { // only CRC provenance needs historical parent/child binding
+	if d.CRC != nil || d.Prog == "crc" { // include legacy CRC roots without plan metadata
 		p.history[d.LoopID] = append(p.history[d.LoopID], d)
 	}
 	if p.final[d.LoopID] == nil || seq > p.seq[d.LoopID] {
@@ -248,6 +248,9 @@ func (p *materializedDecisions) validate() (materializationCounts, error) {
 	// correction cannot conceal forged historical child/source metadata.
 	for _, history := range p.history {
 		for _, d := range history {
+			if !verifyChain(d.Chain) {
+				return counts, fmt.Errorf("CRC case %s: original provenance digest is invalid or unsupported legacy representation", d.LoopID)
+			}
 			if d.CRC == nil || d.CRC.Parent == "" {
 				continue
 			}

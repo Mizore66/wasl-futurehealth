@@ -130,10 +130,16 @@ func crcPreviousNeed(previous *Decision, id, confirmation, head string, now floa
 }
 
 func snapshotCRCChain(chain []Block) []Block {
-	// Body maps contain nested reader/proposal pointers. Deep copy at the review
-	// boundary so later fact correction or reconciliation cannot mutate history.
+	// Verify the ORIGINAL digest before any copy. Never repair a legacy signed
+	// representation by normalizing/re-hashing it. New CRC bodies were already
+	// recursively frozen before their first hash, so a copy must verify unchanged.
+	if !verifyChain(chain) {
+		panic("CRC snapshot: original provenance digest is invalid or unsupported legacy representation")
+	}
 	var copy []Block
-	_ = json.Unmarshal(canon(chain), &copy)
+	if err := json.Unmarshal(canon(chain), &copy); err != nil || !verifyChain(copy) {
+		panic("CRC snapshot: original provenance digest cannot survive serialization; unsupported legacy representation")
+	}
 	return copy
 }
 
@@ -153,10 +159,10 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 				if !evidence.trusted {
 					continue
 				}
-				blocks := appendBlock(nil, "link_decision", linkBlock(f, evidence.d, evidence.pc))
-				blocks = appendBlock(blocks, "evidence", evBlock(evidence.d, ""))
+				blocks := appendCRCBlock(nil, "link_decision", linkBlock(f, evidence.d, evidence.pc))
+				blocks = appendCRCBlock(blocks, "evidence", evBlock(evidence.d, ""))
 				for _, b := range snapshotCRCChain(blocks) {
-					chain = appendBlock(chain, b.Type, b.Body)
+					chain = appendCRCBlock(chain, b.Type, b.Body)
 				}
 			}
 		}
@@ -251,7 +257,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 				id = "crc-need-" + sha([]byte(id + "|" + need.source.d.Provider + "|" + need.source.d.ReportID))[:16]
 			}
 			ch := crcEvidenceChain(f, need.source, o.procedure, o.pathologies, &proposal)
-			ch = appendBlock(ch, "crc_obligation", map[string]interface{}{"schema": CRCPlanSchema, "id": id, "outcome": outcome, "blockers": needBlockers})
+			ch = appendCRCBlock(ch, "crc_obligation", map[string]interface{}{"schema": CRCPlanSchema, "id": id, "outcome": outcome, "blockers": needBlockers})
 			head := ch[len(ch)-1].Hash
 			itemID := crcDispositionItemID(f.LoopID, need.source.d.ReportID, need.source.d.Version, head)
 			item := ls.raised[itemID]
@@ -281,8 +287,8 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 					p.DispositionDay = *s.ClinicalDay
 				}
 				p.State = "complete"
-				ch = appendBlock(ch, "human_signoff", map[string]interface{}{"item": s.ItemID, "reviewer": s.Reviewer, "evidence": s.Evidence, "signed_head": s.SignedHead})
-				ch = appendBlock(ch, "crc_disposition", map[string]interface{}{"obligation": id, "disposition": p.Disposition, "boundary": "simulated tracking only"})
+				ch = appendCRCBlock(ch, "human_signoff", map[string]interface{}{"item": s.ItemID, "reviewer": s.Reviewer, "evidence": s.Evidence, "signed_head": s.SignedHead})
+				ch = appendCRCBlock(ch, "crc_disposition", map[string]interface{}{"obligation": id, "disposition": p.Disposition, "boundary": "simulated tracking only"})
 				childHead := ch[len(ch)-1].Hash
 				childID := crcChildIDForNeed(f, p.Disposition, id)
 				category := ""
@@ -324,7 +330,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 				cd.SourceVersion = need.source.d.Version
 			}
 			cd.Obligations = append(cd.Obligations, p)
-			chain = appendBlock(chain, "crc_plan_obligation", map[string]interface{}{"plan": p, "evidence_chain": snapshotCRCChain(ch)})
+			chain = appendCRCBlock(chain, "crc_plan_obligation", map[string]interface{}{"plan": p, "evidence_chain": snapshotCRCChain(ch)})
 		}
 		if findingResolved {
 			cd.Evidence[len(cd.Evidence)-1].FindingState = "resolved_by_confirmation"
@@ -345,7 +351,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 	}
 	if !cd.ScreeningComplete {
 		cd.CareState = "blocked"
-		chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "evidence": cd.Evidence, "state": state, "rule": "current trusted procedure quality and all current specimens must resolve", "reason": "current evidence incomplete; coordination does not certify completeness"})
+		chain = appendCRCBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "evidence": cd.Evidence, "state": state, "rule": "current trusted procedure quality and all current specimens must resolve", "reason": "current evidence incomplete; coordination does not certify completeness"})
 	}
 	// Scalar fields are compatibility projections only for a singleton plan.
 	if len(cd.Obligations) == 1 {
@@ -372,7 +378,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 					state = "awaiting_specialist"
 				}
 			}
-			chain = appendBlock(chain, "crc_disposition", map[string]interface{}{"loop": f.LoopID, "disposition": p.Disposition, "obligation": p.ID})
+			chain = appendCRCBlock(chain, "crc_disposition", map[string]interface{}{"loop": f.LoopID, "disposition": p.Disposition, "obligation": p.ID})
 		}
 	}
 	// Recompute the aggregate independently of traversal/signing order.
@@ -416,7 +422,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 		pending = filtered
 	}
 	// A completed screening projection does not certify ongoing downstream care.
-	chain = appendBlock(chain, "crc_plan", map[string]interface{}{"schema": CRCPlanSchema, "screening_complete": cd.ScreeningComplete, "care_state": cd.CareState, "obligations": cd.Obligations, "evidence": cd.Evidence})
+	chain = appendCRCBlock(chain, "crc_plan", map[string]interface{}{"schema": CRCPlanSchema, "screening_complete": cd.ScreeningComplete, "care_state": cd.CareState, "obligations": cd.Obligations, "evidence": cd.Evidence})
 	return cd, kids, chain, newItems, uniqueSorted(pending), state
 }
 

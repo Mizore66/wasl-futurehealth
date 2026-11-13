@@ -121,31 +121,51 @@ func rewriteRecoveryTestInput(t *testing.T, run string, mutate func(*recoveryInp
 
 func appendRecoveryTestDecision(t *testing.T, run string, decision *Decision) {
 	t.Helper()
-	f, err := os.OpenFile(filepath.Join(run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o600)
-	if err != nil {
-		t.Fatal(err)
-	}
-	m := LogMsg{Seq: decision.InSeq, Subject: "out.p0", Hdr: map[string]string{}}
-	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: decision})
-	raw, _ := json.Marshal(m)
-	if _, err := f.Write(append(raw, '\n')); err != nil {
-		f.Close()
-		t.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
-	}
+	appendRecoveryTestOutput(t, run, OutEnvelope{Kind: "decision", Dec: decision})
 }
 
 func appendRecoveryTestReviewItem(t *testing.T, run string, item *ReviewItem) {
 	t.Helper()
-	f, err := os.OpenFile(filepath.Join(run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o600)
+	appendRecoveryTestOutput(t, run, OutEnvelope{Kind: "item", Item: item})
+}
+
+func appendRecoveryTestOutput(t *testing.T, run string, env OutEnvelope) {
+	t.Helper()
+	path := filepath.Join(run, "out_log.ndjson")
+	var streamSeq, outputSeq uint64
+	if _, err := scanAPILog(path, func(m LogMsg) error {
+		var previous OutEnvelope
+		if err := json.Unmarshal(m.Data, &previous); err != nil {
+			return err
+		}
+		if m.Seq > streamSeq {
+			streamSeq = m.Seq
+		}
+		seq := previous.OSeq
+		if seq == 0 {
+			seq = m.Seq
+		}
+		if seq > outputSeq {
+			outputSeq = seq
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// Input/FHIR sequence, OUT sequence and stream sequence are independent.
+	// Match the production producer instead of relying on physical last-line wins.
+	env.OSeq = outputSeq + 1
+	m := LogMsg{Seq: streamSeq + 1, Subject: "out.p0", Hdr: map[string]string{}}
+	encodeEnv(&m, env)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := LogMsg{Seq: item.InSeq, Subject: "out.p0", Hdr: map[string]string{}}
-	encodeEnv(&m, OutEnvelope{Kind: "item", OSeq: item.InSeq, Item: item})
-	raw, _ := json.Marshal(m)
+	raw, err := json.Marshal(m)
+	if err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
 	if _, err := f.Write(append(raw, '\n')); err != nil {
 		f.Close()
 		t.Fatal(err)
