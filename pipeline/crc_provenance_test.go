@@ -159,6 +159,7 @@ func TestCRCProvenancePreservesExactNumericLiterals(t *testing.T) {
 
 func TestCRCProvenanceLegacyCompatibilityUsesOnlyOriginalDigest(t *testing.T) {
 	legacy := appendBlock(nil, "closure_decision", map[string]interface{}{"loop": "legacy", "state": "closed"})
+	requireCRCChain(t, legacy)
 	original := canon(legacy)
 	var decoded []Block
 	if err := json.Unmarshal(original, &decoded); err != nil {
@@ -180,15 +181,26 @@ func TestCRCProvenanceLegacyCompatibilityUsesOnlyOriginalDigest(t *testing.T) {
 	// An old typed nested body can verify in its original in-memory form but
 	// cannot be proved from its generic decoded representation. Do not guess
 	// field order, rehash the signed body, or fabricate replacement signatures.
-	unsupported := appendBlock(nil, "evidence", map[string]interface{}{"proposal": &CRCProposal{Outcome: CRCOutcomeMalignant}})
+	// Reuse the synthetic adenoma's three-year interval: the typed proposal emits
+	// outcome before interval_days, while a decoded map sorts them the other way.
+	unsupported := appendBlock(nil, "evidence", map[string]interface{}{"proposal": &CRCProposal{
+		Outcome: CRCOutcomeSurveillance, IntervalDays: 1095,
+	}})
 	requireCRCChain(t, unsupported)
 	raw := canon(unsupported)
 	if err := json.Unmarshal(raw, &decoded); err != nil {
 		t.Fatal(err)
 	}
+	if bytes.Equal(canon(unsupported[0].Body), canon(decoded[0].Body)) {
+		t.Fatal("fixture did not change body field order across serialization")
+	}
+	if decoded[0].Hash != unsupported[0].Hash || decoded[0].Prev != unsupported[0].Prev {
+		t.Fatal("decoding rewrote the original legacy digest or predecessor")
+	}
 	if verifyChain(decoded) {
 		t.Fatal("fixture did not expose the legacy representation mismatch")
 	}
+	decodedRaw := canon(decoded)
 	for _, metadata := range []*CRCDecision{nil, {Kind: "screening"}} {
 		p = newMaterializedDecisions()
 		d = &Decision{LoopID: "legacy", Prog: "crc", CRC: metadata, Chain: legacy}
@@ -203,8 +215,8 @@ func TestCRCProvenanceLegacyCompatibilityUsesOnlyOriginalDigest(t *testing.T) {
 			t.Fatalf("unverifiable legacy provenance not explicitly rejected: %v", err)
 		}
 	}
-	if !bytes.Equal(raw, canon(unsupported)) {
-		t.Fatal("validation rewrote original legacy evidence")
+	if !bytes.Equal(raw, canon(unsupported)) || !bytes.Equal(decodedRaw, canon(decoded)) {
+		t.Fatal("validation rewrote original or decoded legacy evidence")
 	}
 	for _, chain := range [][]Block{unsupported, decoded} {
 		t.Run("snapshot-rejects-unverifiable-representation", func(t *testing.T) {
