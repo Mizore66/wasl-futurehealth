@@ -315,18 +315,7 @@ func (s *apiServer) effectiveConsentLocked(c *apiCase) string {
 	return consentFromDecision(c.last)
 }
 
-func (s *apiServer) recoverySecondIdentifierAtDecision(c *apiCase, decision *Decision) (bool, []string) {
-	for _, item := range s.queue[c.ID] {
-		if item.Reason == "second_identifier" {
-			resolved := false
-			for _, signoff := range s.signoffs[c.ID] {
-				resolved = resolved || fmt.Sprint(signoff["item"]) == item.ItemID
-			}
-			if !resolved {
-				return false, nil
-			}
-		}
-	}
+func recoverySecondIdentifierEvidenceAtDecision(c *apiCase, decision *Decision) []string {
 	refs := []string{}
 	for _, d := range c.decisions {
 		if d != decision {
@@ -340,6 +329,22 @@ func (s *apiServer) recoverySecondIdentifierAtDecision(c *apiCase, decision *Dec
 		}
 	}
 	sort.Strings(refs)
+	return refs
+}
+
+func (s *apiServer) recoverySecondIdentifierAtDecision(c *apiCase, decision *Decision) (bool, []string) {
+	for _, item := range s.queue[c.ID] {
+		if item.Reason == "second_identifier" {
+			resolved := false
+			for _, signoff := range s.signoffs[c.ID] {
+				resolved = resolved || fmt.Sprint(signoff["item"]) == item.ItemID
+			}
+			if !resolved {
+				return false, nil
+			}
+		}
+	}
+	refs := recoverySecondIdentifierEvidenceAtDecision(c, decision)
 	return len(refs) > 0, refs
 }
 
@@ -788,8 +793,8 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 		if ev["consent_at_confirmation"] != "granted" || s.recoveryConsentBeforeLocked(c, guardDecision) != "granted" {
 			return errors.New("recovery outreach consent evidence not satisfied at event time")
 		}
-		second, refs := s.recoverySecondIdentifierAtDecision(c, guardDecision)
-		if !second || !reflect.DeepEqual(ev["guard_evidence"], stringsToInterface(refs)) {
+		refs := recoverySecondIdentifierEvidenceAtDecision(c, guardDecision)
+		if len(refs) == 0 || !reflect.DeepEqual(ev["guard_evidence"], stringsToInterface(refs)) {
 			return errors.New("recovery second-identifier evidence mismatch")
 		}
 	}

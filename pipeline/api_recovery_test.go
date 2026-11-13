@@ -345,6 +345,37 @@ func TestRecoveryReplaySurvivesLaterCandidateReviewHold(t *testing.T) {
 	}
 }
 
+func TestRecoveryOutreachReplaySurvivesLaterSecondIdentifierHold(t *testing.T) {
+	run, ids := recoveryTestRun(t, 2)
+	recoveryCanonicalOutreach(t, run, ids[2])
+	s, srv := recoveryTestServer(t, run)
+	firstSlot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(firstSlot), s.caseHead(s.cases[ids[2]]), "outreach-replay-request-01", true)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+firstSlot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("outreach confirmation: %d %v", code, body)
+	}
+	appendRecoveryTestReviewItem(t, run, &ReviewItem{ItemID: "later-unresolved-second-identifier", LoopID: ids[2], InSeq: 100,
+		Reason: "second_identifier"})
+
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || reloaded.recovery.Fills[firstSlot.SlotID] == nil || reloaded.recovery.ByCase[ids[2]] == nil {
+		t.Fatalf("later second-identifier hold invalidated historical outreach: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+	reloadedSrv := httptest.NewServer(apiHandler(reloaded))
+	defer reloadedSrv.Close()
+	secondSlot := recoveryTestSlot(reloaded, 2)
+	next := recoveryRequest(ids[3], reloaded.recoverySlotHeadLocked(secondSlot), reloaded.caseHead(reloaded.cases[ids[3]]), "after-replay-request-0001", false)
+	code, body = recoveryCall(t, reloadedSrv, "POST", "/api/recovery/slots/"+secondSlot.SlotID+"/confirm", RoleCoordinator, next)
+	if code != 201 {
+		t.Fatalf("ledger writes refused after historical outreach replay: %d %v", code, body)
+	}
+	final := loadAPI(run, "")
+	if final.ledgerErr != "" || len(final.recovery.Fills) != 2 {
+		t.Fatalf("post-replay write did not survive another reload: %q %+v", final.ledgerErr, final.recovery)
+	}
+}
+
 func TestRecoverySharedSessionCapacityAcrossSlotsAndReplay(t *testing.T) {
 	run, ids := recoveryTestRun(t, 2)
 	rewriteRecoveryTestInput(t, run, func(in *recoveryInput) {
