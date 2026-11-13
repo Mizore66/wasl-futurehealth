@@ -36,7 +36,7 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
+type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -53,7 +53,7 @@ type State = {
   over: Record<string, Patch>;
 };
 
-type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
+type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; log: Contact[] };
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
 type LedgerRead = (PersistedLedger & { bookingPanel?: BookingProjection | null }) | { error: string };
@@ -192,7 +192,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           ...prev.over,
           [id]: {
             ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
-            snoozed: latest.snoozed, noAnswer: latest.noAnswer,
+            snoozed: latest.snoozed, noAnswer: latest.noAnswer, awaitingNext: latest.awaitingNext,
           },
         },
       };
@@ -290,7 +290,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       </span>
     </div>
   );
-  const stage = last ? s.stage : null;
+  /* A persisted Reached outcome keeps its follow-up choices until a later outcome, snooze or booking replaces it. */
+  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" ? "callback" : null) : p?.awaitingNext ? "reached" : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
 
@@ -298,7 +299,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   let chipsTitle = "";
   let chips: Chip[] = [];
   if (p) {
-    if (!last) {
+    if (!last && !stage) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
         [
@@ -307,7 +308,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Reached on the phone",
-              { status: `Reached · ${p.next}`, snoozed: false },
+              { status: `Reached · ${p.next}`, snoozed: false, awaitingNext: true },
               "Logged: Reached",
               "Next: appointment agreed or a call back",
               { action: "contact_outcome", outcome: "reached", channel: "phone" },
@@ -318,7 +319,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true }, "Logged: No answer", toEnd, {
+            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true, awaitingNext: false }, "Logged: No answer", toEnd, {
               action: "contact_outcome",
               outcome: "no_answer",
               channel: "phone",
@@ -336,7 +337,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Appointment agreed",
-              { view: "waiting", status: BOOKING_NEEDED, snoozed: false },
+              { view: "waiting", status: BOOKING_NEEDED, snoozed: false, awaitingNext: false },
               "Logged: Appointment agreed",
               `${first} moved to Waiting`,
               { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
@@ -346,7 +347,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "Call back on…",
           () => {
             setWant({ k: "chips" });
-            setS((prev) => ({ ...prev, stage: "callback", callbackFrom: Date.now() }));
+            setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "callback", callbackFrom: Date.now() }));
           },
         ],
         [
@@ -355,7 +356,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: DECLINED_STATUS, snoozed: false },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },
@@ -367,7 +368,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       // One wall-clock `until` per choice drives both the label and the saved snooze (issue #37); never the run day.
       chips = [1, 2, 3].map((k) => {
         const { label: d, action } = callbackChoice(k, s.callbackFrom);
-        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
+        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true, awaitingNext: false }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
       });
     }
   }
@@ -564,7 +565,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 className="max-sm:flex-1"
                 disabled={busy || ledgerInvalid}
                 onClick={() =>
-                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
+                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
                     action: "snooze",
                     until: fromNow(1),
                     reason: "Snoozed to tomorrow",
