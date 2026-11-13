@@ -75,7 +75,8 @@ type Event struct {
 	PatientKey    string      `json:"pk"` // provider|local MRN
 	RType         string      `json:"rtype"`
 	Status        string      `json:"status,omitempty"`
-	Version       int         `json:"ver,omitempty"` // FHIR meta.versionId; used for DiagnosticReport revision/withdrawal ordering
+	ConsentStatus string      `json:"consent_status,omitempty"` // Consent lifecycle; Status remains provision.type
+	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport and Consent revision/withdrawal ordering
 	Day           float64     `json:"day"`
 	Name          string      `json:"name"`
 	Dob           string      `json:"dob,omitempty"`

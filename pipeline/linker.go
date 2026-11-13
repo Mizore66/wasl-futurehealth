@@ -35,45 +35,47 @@ type Rec struct {
 }
 
 type LinkerCore struct {
-	P           int
-	K, Cap      int
-	Thr, Lo     float64
-	GuardThr    float64
-	gbm         *GBM
-	recs        []*Rec
-	byPk        map[string]int
-	keyIdx      map[string][]int
-	eidIdx      map[string][]int
-	parent      []int
-	members     map[int][]int
-	adj         map[int]map[int]float64
-	basis       map[[2]int]string
-	idConfirmed map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
-	cannot      map[int]map[int]bool
-	pscore      map[[2]int]float64
-	near        map[int]map[int]float64 // lo <= p < thr
-	demoMissing map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
-	loops       map[string]*LoopFacts   // static part (sr info)
-	loopRec     map[string]int
-	tasks       map[string][]TaskFact // loop -> tasks
-	comms       map[string][]CommFact // loop -> communications
-	signoffs    map[string][]Signoff
-	evOver      map[string]map[string]string
-	lastHash    map[string]string
-	Stats       map[string]int
-	provLast    map[string]float64
-	provDone    map[string]bool
-	lastTick    int
-	streamT     float64 // HistClock: latest input arrival day seen
-	streamSeen  bool
-	PSeq        []uint64
-	optOut      map[string]bool    // v6: pk -> outreach consent withheld
-	contact     map[string]string  // stage 3: pk -> granted|denied|opted_out (absent = unknown)
-	pcal7       map[[2]int]float64 // v7: calibrated probability of each model edge
-	xref        map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
-	ann         ANNIndex
-	trace       func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
-	traceSeq    uint64
+	P              int
+	K, Cap         int
+	Thr, Lo        float64
+	GuardThr       float64
+	gbm            *GBM
+	recs           []*Rec
+	byPk           map[string]int
+	keyIdx         map[string][]int
+	eidIdx         map[string][]int
+	parent         []int
+	members        map[int][]int
+	adj            map[int]map[int]float64
+	basis          map[[2]int]string
+	idConfirmed    map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
+	cannot         map[int]map[int]bool
+	pscore         map[[2]int]float64
+	near           map[int]map[int]float64 // lo <= p < thr
+	demoMissing    map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
+	loops          map[string]*LoopFacts   // static part (sr info)
+	loopRec        map[string]int
+	tasks          map[string][]TaskFact // loop -> tasks
+	comms          map[string][]CommFact // loop -> communications
+	signoffs       map[string][]Signoff
+	evOver         map[string]map[string]string
+	lastHash       map[string]string
+	Stats          map[string]int
+	provLast       map[string]float64
+	provDone       map[string]bool
+	lastTick       int
+	streamT        float64 // HistClock: latest input arrival day seen
+	streamSeen     bool
+	PSeq           []uint64
+	optOut         map[string]bool     // pk -> registration-local denied/opted-out projection
+	contact        map[string]string   // pk -> granted|denied|opted_out (absent = unknown)
+	consentJournal map[string][]*Event // pk -> authorised active Consent journal, in ingest order only for storage
+	consentSeen    map[string]struct{} // stable normalized payload -> already journalled
+	pcal7          map[[2]int]float64  // v7: calibrated probability of each model edge
+	xref           map[string][]int    // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
+	ann            ANNIndex
+	trace          func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq       uint64
 }
 
 var annMode = new(string)
@@ -110,7 +112,8 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{},
+		consentJournal: map[string][]*Event{}, consentSeen: map[string]struct{}{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -870,10 +873,11 @@ func (L *LinkerCore) markNearDependents(i int, aff map[int]bool) {
 
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	base := L.loops[loop]
+	s := L.loopRec[loop]
+	contact, optedOut := L.clusterConsent(s)
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
 		Prog: base.Prog, Priority: base.Priority, Cat: base.Cat, IndexDay: base.IndexDay,
-		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: L.optOut[base.SRRec], Contact: contactOf(L.contact, base.SRRec)}
-	s := L.loopRec[loop]
+		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: optedOut, Contact: contact}
 	ms := L.clusterOf(s)
 	best, weak, hops, pred := L.widestP(s, ms)
 	if V7Cal != nil || V7Guard {
@@ -1099,28 +1103,28 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				L.Stats["rbac_denied_consent"]++
 				break
 			}
-			L.Stats["consent_records"]++
-			L.optOut[e.PatientKey] = e.Status == "deny"
-			prev := L.contact[e.PatientKey]
-			switch e.Status { // idempotent: re-applying the same record (duplicate/replay) is a no-op
-			case "permit":
-				if prev != "opted_out" { // a stale permit never overrides a later withdrawal
-					L.contact[e.PatientKey] = "granted"
-				}
-			case "deny":
-				if prev == "granted" || prev == "opted_out" {
-					L.contact[e.PatientKey] = "opted_out" // withdrawal after granting
-				} else {
-					L.contact[e.PatientKey] = "denied"
-				}
+			if e.ConsentStatus == "" {
+				// Historical normalized events carry no lifecycle proof. They remain
+				// visible in the raw log but cannot authorize an outreach transition.
+				L.Stats["consent_legacy_inert"]++
+				break
 			}
-			if L.contact[e.PatientKey] != prev {
-				L.Stats["contact_"+L.contact[e.PatientKey]]++
+			if e.ConsentStatus != "active" || !supportedConsentProvision(e.Status) {
+				L.Stats["consent_inert"]++
+				break
+			}
+			added, previous, current := L.addConsent(e)
+			if !added {
+				break
+			}
+			L.Stats["consent_records"]++
+			if current != previous {
+				L.Stats["contact_"+current]++
 			}
 			if i, ok := L.byPk[e.PatientKey]; ok {
-				for _, lp := range L.recs[i].srs {
-					affLoops[lp] = true
-				}
+				// A changed record can affect every loop in the trusted cluster,
+				// including when its clinical time predates the current arrival.
+				affRoots[L.Find(i)] = true
 			}
 			break
 		}
