@@ -36,16 +36,22 @@ func readLog(path string) []LogMsg {
 	return out
 }
 
+type replayConsent struct {
+	InSeq     uint64
+	Contact   string
+	MsgOptOut bool
+}
 
 type replayOut struct {
-	svcL  []float64
-	svcC  []float64
-	ids   []string
-	outs  []OutMsg
-	final map[string]*Decision
-	L     *LinkerCore
-	facts int
-	items map[string]*ReviewItem
+	svcL    []float64
+	svcC    []float64
+	ids     []string
+	outs    []OutMsg
+	final   map[string]*Decision
+	L       *LinkerCore
+	facts   int
+	items   map[string]*ReviewItem
+	consent map[string][]replayConsent
 }
 
 // ReplayTrace, when non-nil, receives the linker's candidate-funnel records from every replay. It is nil by default
@@ -61,7 +67,7 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 	for k := range cores {
 		cores[k] = NewClosureCore(k, iso)
 	}
-	r := &replayOut{final: map[string]*Decision{}, items: map[string]*ReviewItem{}, L: L}
+	r := &replayOut{final: map[string]*Decision{}, items: map[string]*ReviewItem{}, L: L, consent: map[string][]replayConsent{}}
 	for _, p := range preps {
 		if skipReview && p.Kind == "signoff" {
 			continue
@@ -71,6 +77,9 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 		r.svcL = append(r.svcL, float64(time.Since(t0).Microseconds())/1000)
 		for _, fm := range fms {
 			r.facts++
+			if fm.Facts != nil {
+				r.consent[fm.Facts.LoopID] = append(r.consent[fm.Facts.LoopID], replayConsent{InSeq: fm.InSeq, Contact: fm.Facts.Contact, MsgOptOut: fm.Facts.MsgOptOut})
+			}
 			fm := fm
 			t1 := time.Now()
 			outs := cores[fm.Part].Apply(&fm)
@@ -90,6 +99,10 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 		for k, v := range c.Final() {
 			r.final[k] = v
 		}
+	}
+	for loop, timeline := range r.consent {
+		sort.SliceStable(timeline, func(i, j int) bool { return timeline[i].InSeq < timeline[j].InSeq })
+		r.consent[loop] = timeline
 	}
 	return r
 }
@@ -370,4 +383,3 @@ func supp(n int) interface{} {
 	}
 	return n
 }
-

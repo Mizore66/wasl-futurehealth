@@ -196,16 +196,28 @@ export function ConsentActions({
         <p className="m-0 mt-2 text-muted">No demo consent events recorded.</p>
       ) : (
         <ol className="m-0 mt-1 list-none p-0" aria-label="Demo consent history">
-          {current.history.map((event) => (
-            <li key={event.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{EVENT_WORDS[event.decision]}</p>
-              <p className="m-0 text-small text-muted">
-                {atWords(event.at)} · {event.actor} · {roleWords(event.role)}
-              </p>
-              {event.note && <p className="m-0 mt-1">&ldquo;{event.note}&rdquo;</p>}
-              <code className="mt-1 block break-all text-small text-muted">{event.hash}</code>
-            </li>
-          ))}
+          {current.history.map((event) => {
+            const patient = "type" in event && event.type === "patient_journey";
+            const decision = event.decision;
+            const actor = "actor" in event && typeof event.actor === "string" ? event.actor : "Actor not recorded";
+            const role = "role" in event && typeof event.role === "string" ? event.role : "";
+            return (
+              <li key={event.hash} className="border-t border-rule py-3">
+                <p className="m-0 font-medium">
+                  {patient
+                    ? `Patient ${decision === "consent_opted_out" ? "opted out of" : decision === "consent_granted" ? "granted" : decision === "consent_denied" ? "denied" : "changed"} contact permission`
+                    : decision
+                      ? (EVENT_WORDS[decision as keyof typeof EVENT_WORDS] ?? "Contact permission changed")
+                      : "Contact permission changed"}
+                </p>
+                <p className="m-0 text-small text-muted">
+                  {atWords(event.at)} · {patient ? "Patient self-service" : `${actor} · ${roleWords(role)}`}
+                </p>
+                {"note" in event && typeof event.note === "string" && event.note && <p className="m-0 mt-1">&ldquo;{event.note}&rdquo;</p>}
+                <code className="mt-1 block break-all text-small text-muted">{event.hash}</code>
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>

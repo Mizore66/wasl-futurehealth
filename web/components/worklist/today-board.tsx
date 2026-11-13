@@ -715,10 +715,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             <Track days={p.days} referralDay={p.referralDay} />
 
             <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
-              <Field label="Texts" value={p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
+              <Field label="Texts" value={p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
               <Field label="Owner" value={p.owner} />
               <Field label="Next" value={p.next} />
             </dl>
+
+            {ledgerRead?.patient && (
+              <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
+                <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
+                <p className="m-0 mt-1 text-muted">
+                  Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · {ledgerRead.patient.contact_permission.status === "opted_out" ? "text messages stopped" : `text permission ${ledgerRead.patient.contact_permission.status}`}
+                </p>
+                {ledgerRead.patient.slot_selection.status === "selected" && (
+                  <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
+                )}
+              </section>
+            )}
 
             {live && ledgerRead?.bookingPanel && (
               <div className="mt-6" aria-label="Simulated booking">

@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // Fixtures mode reads data/api with fs at request time, which the tracer cannot see.
   outputFileTracingIncludes: { "/app/**": ["./data/api/**"] },
+  async headers() {
+    return [
+      {
+        source: "/patient/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

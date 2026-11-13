@@ -170,6 +170,60 @@ describe("board position from persisted outcomes", () => {
   });
 });
 
+describe("patient self-service projections", () => {
+  const base = fullList.cases[0];
+  const NOW = Date.parse("2026-11-20T12:00:00Z");
+  const projection = {
+    schema: "wasl-patient-journey/1" as const,
+    head: "patient-head",
+    seq: 1,
+    ledger_status: "ok" as const,
+    teach_back: { question_id: "crc-next-step-v1", status: "completed" as const, completed_at: "2026-11-10T08:00:00Z", event: "patient-event-1" },
+    contact_permission: { status: "opted_out" as const, updated_at: "2026-11-10T08:00:00Z", event: "patient-event-1" },
+    slot_selection: { status: "selected" as const, slot_id: "skmc-endo:2026-10-09:09:30", offers_version: "offers-1", selected_at: "2026-11-10T08:00:00Z", event: "patient-event-1" },
+    preparation: { items: [{ item_id: "escort_home", completed: true, updated_at: "2026-11-10T08:00:00Z", event: "patient-event-1" }], completed: 1, total: 2 },
+    last_action_at: "2026-11-10T08:00:00Z",
+  };
+  const detail = () => {
+    const raw = load("ledger_case_detail.json");
+    raw.api_patient = projection;
+    raw.api_reviews.push({
+      type: "patient_journey", kind: "contact_permission_changed", case: raw.case.id, link_id: "a".repeat(32), role: "patient_link", actor: `patient-link/${"a".repeat(32)}`,
+      action: "record_consent", decision: "consent_opted_out", at: "2026-11-10T08:00:00Z", mode: "demo", request_id: crypto.randomUUID(),
+      head: "canonical-head", head_signed: "canonical-head", seq: 1, data: { permission: "opted_out" }, prev: "f".repeat(64), hash: "e".repeat(64),
+    });
+    return CaseDetail.parse(raw);
+  };
+
+  it("adds patient activity and a current projection to Today's persisted ledger", () => {
+    const saved = persistedLedger(detail());
+    expect(saved.patient?.preparation.completed).toBe(1);
+    expect(saved.entries).toContainEqual(expect.objectContaining({ what: "Patient contact permission: opted_out", who: "Patient self-service" }));
+  });
+
+  it("keeps patient and coordinator activity in shared ledger order, not timestamp order", () => {
+    const current = detail();
+    const patient = current.api_reviews.find((event) => event.ledger === "patient")!;
+    const coordinator = current.api_reviews.find((event) => event.ledger === "coordinator" && event.kind === "note")!;
+    const events = [
+      { ...coordinator, at: "2026-11-10T09:00:00Z" },
+      { ...patient, at: "2026-11-10T08:00:00Z" },
+    ] as CaseDetail["api_reviews"];
+    const saved = persistedLedger({ ...current, api_reviews: events });
+    expect(saved.entries.map((entry) => entry.hash)).toEqual(events.map((event) => event.hash));
+  });
+
+  it("shows a simulated preference, never booked, and suppresses SMS after opt-out", () => {
+    const item = workItem({ ...base, dropoff: "not_booked", api_overlay: undefined, api_patient: projection }, 40, true, NOW);
+    expect(item.status).toBe("Patient selected a simulated slot · coordinator review needed");
+    expect(item.textsAllowed).toBe(false);
+    expect(item.textsStopped).toBe(true);
+    expect(item.dropoff).not.toBe("booked");
+    const coordinatorWins = workItem({ ...base, api_patient: projection }, 40, true, NOW);
+    expect(coordinatorWins.status).toBe(DECLINED_STATUS);
+  });
+});
+
 describe("GET /app/today/ledger", () => {
   const req = (q: string) => new NextRequest(`http://localhost/app/today/ledger${q}`);
 
