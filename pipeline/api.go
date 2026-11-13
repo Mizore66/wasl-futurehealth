@@ -232,6 +232,9 @@ func loadAPI(run, data string) *apiServer {
 		d := c.last
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
 		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
+		if d.CRC != nil && d.CRC.CareState != "" && d.CRC.CareState != "complete" && d.CRC.CareState != "accepted_or_first_appointment" {
+			c.Closed = false
+		}
 		c.Consent = consentFromDecision(d)
 	}
 	// reviewer sign-offs (signed resolutions)
@@ -621,13 +624,20 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
 		m["ifhas"] = c.last.Ifhas
 	}
+	if c.last != nil && c.last.CRC != nil {
+		m["crc"] = c.last.CRC
+	}
 	return m
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
+	closed := c.Closed
+	if c.last != nil && c.last.CRC != nil && c.last.CRC.CareState != "" && c.last.CRC.CareState != "complete" && c.last.CRC.CareState != "accepted_or_first_appointment" {
+		closed = false
+	}
 	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
-		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
+		"consent": c.Consent, "review": c.Review, "closed": closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
 }
 
@@ -775,6 +785,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "actor or note exceeds its character limit"}))
 		return
 	}
+	if crcReviewDecisionLabel(req.Decision) && req.Item == "" {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "CRC confirmation requires one current obligation review item"}))
+		return
+	}
 	if req.Item != "" {
 		found := false
 		for _, it := range s.queue[c.ID] {
@@ -785,6 +799,22 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 		it := s.queueItem(c.ID, req.Item)
+		if it.Reason == CRCDispositionPurpose {
+			active := false
+			if c.last != nil && c.last.CRC != nil {
+				for _, p := range c.last.CRC.Obligations {
+					active = active || p.ReviewItem == it.ItemID && p.ExpectedHead == it.Head && p.Confirmation == "" && len(p.Blockers) == 0
+				}
+			}
+			if !active {
+				writeJSONResp(w, 409, s.envelope(map[string]interface{}{"error": "CRC obligation is blocked, signed or no longer current"}))
+				return
+			}
+			if req.Decision != it.Verdict {
+				writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "confirmation must match this obligation's documented proposal"}))
+				return
+			}
+		}
 		if it.Reason == CRCDispositionPurpose && !crcReviewDecisionLabel(req.Decision) || crcReviewDecisionLabel(req.Decision) && it.Reason != CRCDispositionPurpose {
 			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "CRC disposition labels are valid only on the crc_disposition item and must use its closed vocabulary"}))
 			return

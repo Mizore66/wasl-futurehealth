@@ -32,13 +32,16 @@ const (
 // CRCProposal is extracted deterministically after both completeness readers have
 // run. It is not a third reader vote, a cancer diagnosis, or a final disposition.
 type CRCProposal struct {
-	Outcome        string   `json:"outcome"`
-	Suspected      bool     `json:"suspected_malignancy,omitempty"`
-	PriorSuspicion bool     `json:"prior_suspicion,omitempty"`
-	IntervalDays   int      `json:"interval_days,omitempty"`
-	IntervalText   string   `json:"interval_text,omitempty"`
-	Conflicting    bool     `json:"conflicting,omitempty"`
-	Quotes         []string `json:"quotes,omitempty"`
+	Outcome            string   `json:"outcome"` // presentation primary only; never discharges Outcomes
+	Outcomes           []string `json:"outcomes,omitempty"`
+	Suspected          bool     `json:"suspected_malignancy,omitempty"`
+	PriorSuspicion     bool     `json:"prior_suspicion,omitempty"`
+	IntervalDays       int      `json:"interval_days,omitempty"`
+	IntervalText       string   `json:"interval_text,omitempty"`
+	Conflicting        bool     `json:"conflicting,omitempty"`
+	EvidenceUnresolved bool     `json:"evidence_unresolved,omitempty"`
+	IntervalConflict   bool     `json:"interval_conflict,omitempty"`
+	Quotes             []string `json:"quotes,omitempty"`
 }
 
 // CRCWorkItem is simulated coordinator work. It is not a referral dispatch or a
@@ -57,27 +60,34 @@ type CRCWorkItem struct {
 // CRCDecision records both the screening disposition and the state of an owned
 // child. Child ClockStart is the colonoscopy day, including suspicion-first cases.
 type CRCDecision struct {
-	Kind             string       `json:"kind,omitempty"` // screening|crc-treatment|crc-surveillance|crc-gastroenterology|crc-specialist
-	ProposedOutcome  string       `json:"proposed_outcome,omitempty"`
-	Disposition      string       `json:"disposition,omitempty"`
-	ClosedInto       string       `json:"closed_into,omitempty"`
-	SourceReport     string       `json:"source_report,omitempty"`
-	SourceVersion    int          `json:"source_version,omitempty"`
-	Owner            string       `json:"owner,omitempty"`
-	Confirmation     string       `json:"confirmation,omitempty"` // sign-off item ID
-	SignedHead       string       `json:"signed_head,omitempty"`
-	Reviewer         string       `json:"reviewer,omitempty"`
-	DispositionDay   float64      `json:"disposition_day,omitempty"`
-	MDT              *CRCWorkItem `json:"mdt,omitempty"`
-	ChildLoops       []string     `json:"child_loops,omitempty"`
-	Parent           string       `json:"parent,omitempty"`
-	ParentHead       string       `json:"parent_head,omitempty"`
-	ClockStart       float64      `json:"clock_start,omitempty"`
-	DueDay           float64      `json:"due_day,omitempty"`
-	IntervalDays     int          `json:"interval_days,omitempty"`
-	FollowUpCategory string       `json:"follow_up_category,omitempty"`
-	FollowUpState    string       `json:"follow_up_state,omitempty"`
-	Withdrawn        bool         `json:"withdrawn,omitempty"`
+	Schema            string             `json:"schema,omitempty"`
+	ObligationID      string             `json:"obligation_id,omitempty"` // owning need for a care child
+	ScreeningComplete bool               `json:"screening_complete"`
+	CareState         string             `json:"care_state,omitempty"`
+	Obligations       []CRCPlanItem      `json:"obligations,omitempty"`
+	Evidence          []CRCEvidenceState `json:"evidence,omitempty"`
+	Kind              string             `json:"kind,omitempty"` // screening|crc-treatment|crc-surveillance|crc-gastroenterology|crc-specialist
+	ProposedOutcome   string             `json:"proposed_outcome,omitempty"`
+	Disposition       string             `json:"disposition,omitempty"`
+	ClosedInto        string             `json:"closed_into,omitempty"`
+	SourceReport      string             `json:"source_report,omitempty"`
+	SourceVersion     int                `json:"source_version,omitempty"`
+	Owner             string             `json:"owner,omitempty"`
+	Confirmation      string             `json:"confirmation,omitempty"` // sign-off item ID
+	SignedHead        string             `json:"signed_head,omitempty"`
+	Reviewer          string             `json:"reviewer,omitempty"`
+	DispositionDay    float64            `json:"disposition_day,omitempty"`
+	Coordination      []CRCWorkItem      `json:"coordination,omitempty"`
+	MDT               *CRCWorkItem       `json:"mdt,omitempty"`
+	ChildLoops        []string           `json:"child_loops,omitempty"`
+	Parent            string             `json:"parent,omitempty"`
+	ParentHead        string             `json:"parent_head,omitempty"`
+	ClockStart        float64            `json:"clock_start,omitempty"`
+	DueDay            float64            `json:"due_day,omitempty"`
+	IntervalDays      int                `json:"interval_days,omitempty"`
+	FollowUpCategory  string             `json:"follow_up_category,omitempty"`
+	FollowUpState     string             `json:"follow_up_state,omitempty"`
+	Withdrawn         bool               `json:"withdrawn,omitempty"`
 }
 
 var (
@@ -180,22 +190,29 @@ func extractCRCProposal(text, kind string) *CRCProposal {
 	case p.Suspected:
 		p.Outcome = CRCOutcomeSuspected
 	}
-	// A suspicious finding plus another explicit downstream category is allowed;
-	// two different final outcome categories are not.
-	if len(adenoma) > 0 && len(malignant) > 0 || len(gastro) > 0 && (len(malignant) > 0 || len(adenoma) > 0) || len(specialist) > 0 && (len(malignant) > 0 || len(adenoma) > 0 || len(gastro) > 0) {
-		p.Outcome, p.Conflicting = CRCOutcomeReview, true
+	// Coexisting findings are independent needs, not competing scalar answers.
+	for _, finding := range []struct {
+		outcome string
+		quotes  []string
+	}{
+		{CRCOutcomeMalignant, malignant}, {CRCOutcomeSurveillance, adenoma},
+		{CRCOutcomeGastro, gastro}, {CRCOutcomeSpecialist, specialist},
+	} {
+		if len(finding.quotes) > 0 {
+			p.Outcomes = append(p.Outcomes, finding.outcome)
+		}
 	}
 	intervalDays, intervalText, intervalConflict, intervalQuotes := crcIntervals(text)
 	p.IntervalDays, p.IntervalText = intervalDays, intervalText
 	p.Quotes = append(p.Quotes, intervalQuotes...)
 	if intervalConflict {
-		p.Conflicting = true
+		p.Conflicting, p.IntervalConflict = true, true
 	}
 	// Keep the diagnosis separate from plan completeness: the contributing
 	// procedure may document the interval. Missing/conflicting plans are held
 	// by crcDispositionAnswer after all current evidence has been reconciled.
 	if kind == "pathology" && p.Outcome == "" {
-		p.Outcome = CRCOutcomeReview // unknown pathology never falls through to generic adequate
+		p.Outcome, p.EvidenceUnresolved = CRCOutcomeReview, true // unknown pathology never falls through to generic adequate
 	}
 	p.Quotes = uniqueSorted(p.Quotes)
 	return p
@@ -224,6 +241,7 @@ func mergeCRCProposal(procedure, pathology *CRCProposal) *CRCProposal {
 	cp := CRCProposal{}
 	if procedure != nil {
 		cp = *procedure
+		cp.Outcomes = crcProposalOutcomes(procedure) // upgrade legacy scalar facts before selecting a presentation primary
 		cp.PriorSuspicion = cp.PriorSuspicion || procedure.Suspected
 	}
 	if pathology != nil {
@@ -250,23 +268,29 @@ func reconcileCRCPathology(current, next *CRCProposal) *CRCProposal {
 		return &cp
 	}
 	cp := *current
+	cp.Outcomes = crcProposalOutcomes(current)
 	switch {
 	case cp.Outcome == "" || cp.Outcome == CRCOutcomeNormal:
 		cp.Outcome = next.Outcome
-	case next.Outcome != "" && next.Outcome != CRCOutcomeNormal && next.Outcome != cp.Outcome:
+	case next.Outcome == CRCOutcomeReview:
 		cp.Outcome, cp.Conflicting = CRCOutcomeReview, true
+	case next.Outcome == CRCOutcomeMalignant:
+		cp.Outcome = CRCOutcomeMalignant
 	}
 	mergeCRCDetails(&cp, next)
 	return &cp
 }
 
 func mergeCRCDetails(dst, src *CRCProposal) {
+	dst.Outcomes = uniqueSorted(append(crcProposalOutcomes(dst), crcProposalOutcomes(src)...))
 	dst.Suspected = dst.Suspected || src.Suspected
 	dst.PriorSuspicion = dst.PriorSuspicion || src.PriorSuspicion
 	dst.Conflicting = dst.Conflicting || src.Conflicting
+	dst.IntervalConflict = dst.IntervalConflict || src.IntervalConflict
+	dst.EvidenceUnresolved = dst.EvidenceUnresolved || src.EvidenceUnresolved || src.Outcome == CRCOutcomeReview
 	if src.IntervalDays > 0 {
 		if dst.IntervalDays > 0 && dst.IntervalDays != src.IntervalDays {
-			dst.Conflicting = true
+			dst.Conflicting, dst.IntervalConflict = true, true
 		} else if dst.IntervalDays == 0 {
 			dst.IntervalDays, dst.IntervalText = src.IntervalDays, src.IntervalText
 		}
@@ -278,7 +302,7 @@ func crcProposalNeedsDisposition(p *CRCProposal) bool {
 	if p == nil {
 		return false
 	}
-	return p.Conflicting || p.PriorSuspicion || p.Outcome == CRCOutcomeReview || p.Outcome == CRCOutcomeMalignant ||
+	return len(crcProposalOutcomes(p)) > 0 || p.Conflicting || p.PriorSuspicion || p.Outcome == CRCOutcomeReview || p.Outcome == CRCOutcomeMalignant ||
 		p.Outcome == CRCOutcomeSurveillance || p.Outcome == CRCOutcomeGastro || p.Outcome == CRCOutcomeSpecialist
 }
 
@@ -398,12 +422,11 @@ func crcChildLoopID(parent, disposition string) string {
 
 // buildCRCChild derives a fresh child projection from the current signed
 // disposition. Storage/emission in closure.go is signature-deduplicated.
-func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposal *CRCProposal, disposition string, dispositionDay float64, parentHead string, now float64) *Decision {
-	id := crcChildLoopID(f.LoopID, disposition)
+func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposal *CRCProposal, disposition string, dispositionDay float64, parentHead string, now float64, id, followCategory string) *Decision {
 	if id == "" || parentHead == "" {
 		return nil
 	}
-	kind := strings.TrimPrefix(id, f.LoopID+"#")
+	kind := strings.TrimPrefix(crcChildLoopID(f.LoopID, disposition), f.LoopID+"#")
 	start := procedure.d.Day
 	due := start
 	interval := 0
@@ -422,13 +445,13 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 	followState := ""
 	if disposition == "closed_to_gastro" || disposition == "closed_to_specialist" {
 		followState = "awaiting_acceptance_or_first_appointment"
-		if day, completed := c.crcFollowUpCompletionDay(f, dispositionDay, kind); completed {
+		if day, completed := c.crcFollowUpCompletionDay(f, dispositionDay, followCategory); completed {
 			state, closedDay, followState = "closed", day, "accepted_or_first_appointment"
 		}
 	}
 	cd := &CRCDecision{Kind: kind, Disposition: disposition, SourceReport: source.d.ReportID, SourceVersion: source.d.Version,
 		Owner: crcOwner(disposition), Parent: f.LoopID, ParentHead: parentHead, DispositionDay: dispositionDay, ClockStart: start, DueDay: due,
-		IntervalDays: interval, FollowUpCategory: kind, FollowUpState: followState}
+		IntervalDays: interval, FollowUpCategory: followCategory, FollowUpState: followState}
 	body := map[string]interface{}{"loop": id, "parent": f.LoopID, "parent_head": parentHead, "disposition": disposition,
 		"source_report": source.d.ReportID, "source_version": source.d.Version, "clock_start": start, "due_day": due,
 		"interval_days": interval, "state": state, "boundary": "tracking only; no scheduling, referral dispatch or treatment-delivery claim"}
@@ -467,90 +490,9 @@ type crcObligation struct {
 	source, procedure row
 	pathologies       []row
 	proposal          *CRCProposal
+	specimenPending   bool
 	preHistology      bool
 	qualityHold       bool
-}
-
-// Reconcile the whole loop before selecting a disposition source. Confirmed
-// cancer takes the MDT pathway, not an unrelated adenoma's surveillance pathway.
-// Other incompatible/unresolved obligations stay in review. Every contributing
-// procedure/specimen remains bound into the signature, including lower-priority
-// findings; none is declared completed by selecting the coordinating pathway.
-func reconcileCRCLoop(obligations []crcObligation) (*crcObligation, []row) {
-	rank := func(o crcObligation) int {
-		if o.proposal == nil {
-			return 7
-		}
-		if o.proposal.Outcome == CRCOutcomeMalignant {
-			return 0
-		}
-		if o.preHistology && o.proposal.Suspected {
-			return 1
-		}
-		if o.proposal.Conflicting || o.proposal.Outcome == CRCOutcomeReview {
-			return 2
-		}
-		switch o.proposal.Outcome {
-		case CRCOutcomeSurveillance:
-			return 3
-		case CRCOutcomeGastro:
-			return 4
-		case CRCOutcomeSpecialist:
-			return 5
-		}
-		return 6
-	}
-	sort.SliceStable(obligations, func(i, j int) bool {
-		a, b := obligations[i], obligations[j]
-		if ar, br := rank(a), rank(b); ar != br {
-			return ar < br
-		}
-		if a.procedure.d.Day != b.procedure.d.Day {
-			return a.procedure.d.Day < b.procedure.d.Day
-		}
-		return crcPathologyLess(a.procedure, b.procedure)
-	})
-	selected := -1
-	for i, o := range obligations {
-		if crcProposalNeedsDisposition(o.proposal) || o.preHistology && o.proposal != nil && o.proposal.Suspected {
-			selected = i
-			break
-		}
-	}
-	if selected < 0 {
-		return nil, nil
-	}
-	result := obligations[selected]
-	proposal := *result.proposal
-	result.proposal = &proposal
-	var contributors []row
-	for i, o := range obligations {
-		if i != selected {
-			contributors = append(contributors, o.procedure)
-		}
-		contributors = append(contributors, o.pathologies...)
-		if i == selected {
-			continue
-		}
-		if o.preHistology || o.qualityHold {
-			proposal.Conflicting = true // coordination never clears another procedure's hold
-		}
-		if o.proposal == nil {
-			continue
-		}
-		if proposal.Outcome == CRCOutcomeMalignant || result.preHistology {
-			// A separate surveillance interval is not a treatment-clock interval.
-			// Keep its original proposal in contributing_reports, not in the MDT plan.
-			proposal.Suspected = proposal.Suspected || o.proposal.Suspected
-			proposal.PriorSuspicion = proposal.PriorSuspicion || o.proposal.PriorSuspicion
-			proposal.Conflicting = proposal.Conflicting || o.proposal.Conflicting || o.proposal.Outcome == CRCOutcomeReview || o.proposal.Outcome == CRCOutcomeGastro || o.proposal.Outcome == CRCOutcomeSpecialist
-			proposal.Quotes = uniqueSorted(append(append([]string{}, proposal.Quotes...), o.proposal.Quotes...))
-		} else {
-			proposal = *reconcileCRCPathology(&proposal, o.proposal)
-		}
-	}
-	sort.SliceStable(contributors, func(i, j int) bool { return crcPathologyLess(contributors[i], contributors[j]) })
-	return &result, contributors
 }
 
 // Scope review identity to the evidence head as well as its source report. A

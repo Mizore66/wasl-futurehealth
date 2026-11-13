@@ -68,6 +68,7 @@ const CLOSE_TONE = { closed: "positive", held: "negative", open: "neutral" } as 
 
 /** Why the case is where it is: the closure reason when closed, the hold reasons when open. */
 export function ReasonCard({ detail }: { detail: CaseDetail }) {
+  if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each current CRC obligation below has its own evidence binding, clinician confirmation and tracking state. Completing one pathway does not discharge another.</p></Card>;
   const reason = closureReason(detail);
   const tone = detail.case.closed ? CLOSE_TONE.closed : detail.holds.length ? CLOSE_TONE.held : CLOSE_TONE.open;
   return (
@@ -459,6 +460,22 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
 /** The programme-specific finding and recommendation, kept separate from the CRC closure checklist. */
 export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.JSX.Element {
   const { case: c } = detail;
+  if (c.crc) {
+    return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only; no treatment delivery or referral dispatch.">
+      <p>Screening: {c.crc.screening_complete ? "complete" : "evidence incomplete"}. Care: {c.crc.care_state.replaceAll("_", " ")}.</p>
+      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
+      <ul aria-label="Independent CRC obligations">
+        {c.crc.obligations.map((need) => <li key={need.id}>
+          <strong>{need.outcome.replaceAll("_", " ")}</strong> · {need.state.replaceAll("_", " ")}
+          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {need.clock_start}. Owner {need.owner}.</p>
+          {need.blockers.length > 0 && <p>Holds: {need.blockers.map((b) => b.replaceAll("_", " ")).join(", ")}.</p>}
+          <p>{need.confirmation ? `Confirmed by ${need.reviewer}; signature ${need.confirmation}.` : `Separate clinician confirmation required: ${need.review_item}.`}</p>
+          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day}.</p>}
+          {need.child_loop && <p>Tracking loop: {need.child_loop}.</p>}
+        </li>)}
+      </ul>
+    </Card>;
+  }
   if (c.programme === "lung_nodule") {
     return (
       <Card id="programme-finding" title="Incidental lung nodule (Fleischner)">

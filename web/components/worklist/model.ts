@@ -48,6 +48,11 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
+  if (c.crc) {
+    if (c.crc.care_state === "ongoing") return { status: "Screening complete, care ongoing", next: "Track each confirmed care pathway" };
+    if (c.crc.care_state === "awaiting_confirmation") return { status: "Care pathways need confirmation", next: "Review each obligation separately" };
+    if (c.crc.care_state === "blocked") return { status: "Current evidence incomplete", next: "Resolve the evidence holds" };
+  }
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };

@@ -27,6 +27,7 @@ export type ReviewView = {
   programme: CaseDetail["case"]["programme"];
   evidenceQuestion: string;
   evidenceChoices: string[];
+  crcItems?: Record<string, { title: string; choices: string[] }>;
   shortId: string;
   name: string;
   nameAr: string;
@@ -197,6 +198,10 @@ export function reviewView(c: CaseDetail): ReviewView {
     programme,
     evidenceQuestion,
     evidenceChoices: [...evidenceChoices],
+    crcItems: Object.fromEntries(c.review_items.filter((it) => it.reason === "crc_disposition").map((it) => {
+      const need = c.case.crc?.obligations.find((p) => p.review_item === it.item);
+      return [it.item, { title: need ? `${need.outcome.replaceAll("_", " ")} · ${need.source_report} v${need.source_version}` : "Superseded CRC obligation", choices: need && !need.confirmation && need.blockers.length === 0 && it.verdict ? [it.verdict] : [] }];
+    })),
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",

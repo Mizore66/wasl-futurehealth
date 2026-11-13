@@ -146,6 +146,8 @@ type Signoff struct {
 	Evidence      string    `json:"evidence,omitempty"`       // adequate|inadequate
 	Reviewer      string    `json:"reviewer"`
 	SignedHead    string    `json:"signed_head"`
+	ClinicalDay   *float64  `json:"clinical_day,omitempty"`  // CRC confirmation's event clock, persisted for restart-safe follow-up gating
+	ObligationID  string    `json:"obligation_id,omitempty"` // persistent CRC need identity, including after source withdrawal
 	Run           string    `json:"run"`
 	// v6 governance fields (omitempty keeps v5 sign-offs byte-identical)
 	Role      string   `json:"role,omitempty"`    // RBAC role of the signing actor
@@ -318,8 +320,9 @@ type ReviewItem struct {
 	Head           string    `json:"head"`
 	InSeq          uint64    `json:"in_seq"`
 	OverdueAtRaise bool      `json:"overdue"`
-	Reason         string    `json:"reason,omitempty"` // v7: second_identifier (outreach guard confirmation)
-	Day            float64   `json:"day,omitempty"`    // pilot items (shadow_confirm, auto_audit): simulated day raised
+	ObligationID   string    `json:"obligation_id,omitempty"` // CRC: exactly one source-bound care need
+	Reason         string    `json:"reason,omitempty"`        // v7: second_identifier (outreach guard confirmation)
+	Day            float64   `json:"day,omitempty"`           // pilot items (shadow_confirm, auto_audit): simulated day raised
 }
 
 type Decision struct {

@@ -38,7 +38,7 @@ func crcFeed(L *LinkerCore, C *ClosureCore, p *Prep) []OutMsg {
 }
 
 func crcSignCurrent(L *LinkerCore, C *ClosureCore, item *ReviewItem, seq uint64) {
-	crcFeed(L, C, &Prep{Seq: seq, Kind: "signoff", So: &Signoff{ItemID: item.ItemID, LoopID: item.LoopID, Kinds: []string{"evidence"}, ReportID: item.ReportID, ReportVersion: item.ReportVersion, Evidence: item.Verdict, Role: RoleClinician, Reviewer: "synthetic-clinician", SignedHead: item.Head, Purpose: CRCDispositionPurpose}})
+	crcFeed(L, C, &Prep{Seq: seq, Kind: "signoff", So: &Signoff{ItemID: item.ItemID, LoopID: item.LoopID, Kinds: []string{"evidence"}, ReportID: item.ReportID, ReportVersion: item.ReportVersion, Evidence: item.Verdict, Role: RoleClinician, Reviewer: "synthetic-clinician", SignedHead: item.Head, ObligationID: item.ObligationID, Purpose: CRCDispositionPurpose}})
 }
 
 func TestCRCLoopObligationsIndependentOfProcedureArrivalAndDates(t *testing.T) {
@@ -59,12 +59,11 @@ func TestCRCLoopObligationsIndependentOfProcedureArrivalAndDates(t *testing.T) {
 			if d.CRC == nil || d.CRC.ProposedOutcome != CRCOutcomeMalignant || d.CRC.SourceReport != "P1" || d.CRC.MDT == nil {
 				t.Fatalf("order %v, earlier adenoma %v lost cancer: %+v", order, earlierAdenoma, d)
 			}
-			item := crcDispositionItem(outs)
-			if item == nil {
-				for _, id := range d.Pending {
-					if it := C.loops[loop].raised[id]; it != nil && it.Reason == CRCDispositionPurpose {
-						item = it
-					}
+			_ = outs
+			var item *ReviewItem
+			for _, it := range crcCurrentItems(C, loop) {
+				if it.Verdict == CRCSignMDT {
+					item = it
 				}
 			}
 			if item == nil || item.Verdict != CRCSignMDT {
@@ -74,14 +73,14 @@ func TestCRCLoopObligationsIndependentOfProcedureArrivalAndDates(t *testing.T) {
 				t.Fatal("arrival order changed whole-loop evidence head")
 			}
 			head = item.Head
-			for _, id := range []string{"C1", "P1", "C2", "P2"} {
+			for _, id := range []string{"C1", "P1"} {
 				if !strings.Contains(string(canon(item.Chain)), `"`+id+`"`) {
 					t.Fatalf("signature omits contributing report %s", id)
 				}
 			}
 			crcSignCurrent(L, C, item, 8)
 			child := C.Final()[loop+"#crc-treatment"]
-			if d = C.Final()[loop]; d.CRC.Disposition != "closed_to_mdt" || child == nil || child.CRC.ClockStart != 10 || C.Final()[loop+"#crc-surveillance"] != nil {
+			if d = C.Final()[loop]; child == nil || child.CRC.ClockStart != 10 || C.Final()[loop+"#crc-surveillance"] != nil {
 				t.Fatalf("wrong active downstream pathway: %+v", d)
 			}
 			saved := string(canon(item.Chain))
@@ -89,8 +88,8 @@ func TestCRCLoopObligationsIndependentOfProcedureArrivalAndDates(t *testing.T) {
 			revision.Version, revision.Status = 2, "corrected"
 			updates := crcFeed(L, C, &Prep{Seq: 9, Kind: "event", Ev: &revision})
 			fresh := crcDispositionItem(updates)
-			if C.Final()[loop].State != "awaiting_crc_disposition" || fresh == nil || fresh.Head == item.Head || !C.Final()[child.LoopID].CRC.Withdrawn || string(canon(item.Chain)) != saved {
-				t.Fatal("unrelated contributing correction reused signature or mutated original evidence")
+			if C.Final()[loop].State != "awaiting_crc_disposition" || fresh == nil || fresh.Head == item.Head || C.Final()[child.LoopID].CRC.Withdrawn || string(canon(item.Chain)) != saved {
+				t.Fatal("correction failed to preserve independent treatment or mutated original evidence")
 			}
 			crcSignCurrent(L, C, fresh, 10)
 			if C.Final()[child.LoopID].CRC.Withdrawn {
@@ -114,6 +113,13 @@ func TestCRCLoopCancerCorrectionAllowsRemainingSurveillance(t *testing.T) {
 	correction.Ev = j.Judge(correction.Text, "pathology")
 	out := crcFeed(L, C, &Prep{Seq: 8, Kind: "event", Ev: &correction})
 	item := crcDispositionItem(out)
+	if item == nil {
+		for _, it := range crcCurrentItems(C, loop) {
+			if it.Verdict == "surveillance:1095" {
+				item = it
+			}
+		}
+	}
 	d := C.Final()[loop]
 	if item == nil || item.Verdict != "surveillance:1095" || d.CRC.MDT != nil || d.CRC.ProposedOutcome != CRCOutcomeSurveillance {
 		t.Fatalf("explicit correction did not retire cancer: %+v item=%+v", d, item)

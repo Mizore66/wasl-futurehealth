@@ -38,7 +38,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   const detail = queue?.cases.find((c) => c.case.id === id) ?? viewer.detail;
   if (!detail) notFound();
   const view = reviewView(detail);
-  const sharedEvidence = view.programme !== "crc" && view.programme !== "cervical" ? (
+  const sharedEvidence = detail.case.crc || view.programme !== "crc" && view.programme !== "cervical" ? (
     <>
       <ProgrammeFindingCard detail={detail} />
       {detail.evidence.map((ev, i) => (

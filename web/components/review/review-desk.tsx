@@ -142,11 +142,12 @@ function QuestionCard({
   const next = state.next_read;
   const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
   const actions = state.claim_actions;
-  const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
+  const crcItem = view.crcItems?.[state.item];
+  const evidenceOptions: [ReportAnswer, string][] = (crcItem?.choices ?? view.evidenceChoices).map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
   });
-  const title = link ? "Is it the same patient?" : view.evidenceQuestion;
+  const title = link ? "Is it the same patient?" : crcItem?.title ?? view.evidenceQuestion;
   return (
     <section
       aria-labelledby={`${id}-h`}
@@ -243,7 +244,8 @@ function QuestionCard({
         <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
       )}
 
-      {canAnswer && (
+      {crcItem && crcItem.choices.length === 0 && <p>This obligation is blocked, already signed or superseded. No generic adequacy answer can resolve it.</p>}
+      {canAnswer && (!crcItem || crcItem.choices.length > 0) && (
         <div className="mt-3">
           <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${id}-help`}>
             <legend className="p-0 text-small font-medium">
@@ -577,6 +579,9 @@ export function ReviewDesk({
   }, [current]);
 
 
+  if (!live && Object.keys(view.crcItems ?? {}).length > 0) {
+    return <div className="mt-6" role="status"><p>CRC care needs separate evidence-bound confirmations. This fixture preview cannot sign care obligations or declare them completed. Use an authenticated live review for each current item.</p>{sharedEvidence}</div>;
+  }
   if (live && current.length === 0) {
     return (
       <div className="mt-6 max-w-[72ch]" role="status">

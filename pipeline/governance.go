@@ -432,6 +432,11 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 		return nil
 	}
 	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, ReportVersion: it.ReportVersion, SignedHead: it.Head, Purpose: it.Reason}
+	if it.Reason == CRCDispositionPurpose {
+		day := it.Day
+		so.ClinicalDay = &day
+		so.ObligationID = it.ObligationID
+	}
 	so.Role = RoleReviewer
 	if it.Kinds[0] == "evidence" {
 		so.Role = RoleClinician
