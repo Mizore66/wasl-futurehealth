@@ -118,6 +118,8 @@ export type WorkItem = {
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
+  /** A recorded consent denial or opt-out: no new contact outcome may be logged, whatever the canonical consent. */
+  contactBlocked: boolean;
   owner: string;
   review: CaseSummary["review"];
   dropoff: Dropoff;
@@ -177,6 +179,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.status = outcomeStatus(lc.outcome);
     }
   }
+  const contactBlocked = c.contact_state?.contact_blocked === true;
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
@@ -216,7 +219,8 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted",
+    textsAllowed: c.consent === "granted" && !contactBlocked,
+    contactBlocked,
     owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,

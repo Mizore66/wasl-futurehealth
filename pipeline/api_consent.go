@@ -80,6 +80,21 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	return o, hist
 }
 
+// contactBlockedLocked is the one effective-consent rule for coordinator contact: a recorded denial or opt-out blocks
+// contact whatever canonical consent says. s.mu must be held.
+func (s *apiServer) contactBlockedLocked(c *apiCase) bool {
+	o, _ := s.overlayLocked(c)
+	return o["contact_blocked"] == true
+}
+
+// contactSummary is the list-form effective contact state: the consent overlay status and whether contact is blocked.
+func (s *apiServer) contactSummary(c *apiCase) map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, _ := s.overlayLocked(c)
+	return map[string]interface{}{"status": o["status"], "contact_blocked": o["contact_blocked"]}
+}
+
 // withConsent wraps the case router with the consent routes and the detail overlay. Wire with
 // mux.HandleFunc("/api/cases/", s.withConsent(s.caseRoutes)).
 func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {

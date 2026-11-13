@@ -297,7 +297,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   type Chip = [string, () => void];
   let chipsTitle = "";
   let chips: Chip[] = [];
-  if (p) {
+  if (p && !p.contactBlocked) {
     if (!last) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
@@ -542,6 +542,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               <Button
                 variant="cta"
                 size="touch"
+                disabled={p.contactBlocked}
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
                 className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
@@ -698,7 +699,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             <Track days={p.days} referralDay={p.referralDay} />
 
             <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
-              <Field label="Texts" value={p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
+              <Field label="Texts" value={p.contactBlocked ? "Contact blocked · denial or opt-out recorded" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
               <Field label="Owner" value={p.owner} />
               <Field label="Next" value={p.next} />
             </dl>

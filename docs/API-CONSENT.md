@@ -30,7 +30,7 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 - The `api_contact` overlay is **derived from that ledger** on each read, so a server restart rebuilds it exactly. The ledger is written first.
 - Overlay fields: `status` (`none|granted|denied|opted_out`), `demo_pending_consent` (`""|released|cancelled`; a demo-only view of what the hold would do, distinct from the canonical `case.consent`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash`.
 - Grant derives demo hold to `released`. Deny and opt-out derive `cancelled` and set `contact_blocked`. A later grant after a denial is allowed; after an opt-out it is refused (409).
-- While `contact_blocked`, `POST /review` with `decision: confirm_contact` returns 409 and writes nothing.
+- While `contact_blocked`, `POST /review` with `decision: confirm_contact` and `POST /actions` with `action: contact_outcome` return 409 and write nothing. The case summary carries `contact_state: {status, contact_blocked}`.
 
 ## What does not change
 

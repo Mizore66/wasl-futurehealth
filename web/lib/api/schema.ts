@@ -273,6 +273,12 @@ export const EligibleBookingSlot = z.looseObject({
   availability: z.enum(["available", "reserved"]).optional(),
 });
 
+/** Effective contact state on the case list: a recorded denial or opt-out blocks contact whatever `consent` says. */
+export const ContactState = z.looseObject({
+  status: z.enum(["none", "granted", "denied", "opted_out"]),
+  contact_blocked: z.boolean(),
+});
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -337,6 +343,7 @@ export const CaseSummary = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
   api_overlay: ApiOverlay.optional(),
+  contact_state: ContactState.optional(),
   recovery: RecoveryCase.optional(),
 });
 

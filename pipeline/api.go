@@ -304,7 +304,7 @@ func (s *apiServer) readerModel() string {
 }
 
 func consentFromDecision(d *Decision) string {
-	if d.Contact != "" {
+	if d != nil && d.Contact != "" {
 		return d.Contact
 	}
 	return "unknown"
@@ -628,7 +628,7 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
-		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false), "contact_state": s.contactSummary(c)}
 }
 
 // GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
@@ -1556,6 +1556,10 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if kind == "contact_outcome" && c.Consent != "granted" {
 			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
+		}
+		if kind == "contact_outcome" && s.contactBlockedLocked(c) {
+			o, _ := s.overlayLocked(c)
+			return 409, map[string]interface{}{"error": "contact is blocked by a recorded denial or opt-out; contact outcomes refused", "conflict": "consent", "consent": c.Consent, "api_contact": o}
 		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
