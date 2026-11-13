@@ -473,9 +473,11 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 			return errors.New("patient consent decision does not match permission")
 		}
 		overlay, _ := s.overlayLocked(c)
-		if overlay["status"] == "opted_out" {
+		if overlay["status"] == "opted_out" && sstr(data, "permission") != "opted_out" {
 			return errors.New("patient event attempts to append after terminal opt-out")
 		}
+		// A staff opt-out does not record the patient's own first choice. The common
+		// semantic replay check below still rejects a true repeated patient opt-out.
 	} else if _, present := ev["decision"]; present {
 		return errors.New("non-consent patient event has a decision")
 	}

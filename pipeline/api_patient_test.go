@@ -633,6 +633,69 @@ func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 			t.Fatalf("true repeated-grant no-op: %d %v", code, body)
 		}
 	})
+
+	t.Run("first opt-out after coordinator opt-out survives restart", func(t *testing.T) {
+		p := newPatientTestAPI(t)
+		head := patientHead(p.s.cases[patientTestCaseA])
+		recordConsent(t, p, "consent_opted_out")
+		eventsBefore := len(p.s.reviews)
+
+		code, body := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "opted_out"})
+		if code != http.StatusCreated || body["replayed"] != false || body["event"] == nil {
+			t.Fatalf("first patient opt-out after coordinator opt-out: %d %v", code, body)
+		}
+		event := body["event"].(map[string]interface{})
+		journey := body["journey"].(map[string]interface{})
+		contact := journey["contact_permission"].(map[string]interface{})
+		if event["seq"] != float64(1) || journey["seq"] != float64(1) || contact["status"] != "opted_out" || len(p.s.reviews) != eventsBefore+1 {
+			t.Fatalf("first patient opt-out projection: event=%v journey=%v events=%d", event, journey, len(p.s.reviews))
+		}
+		head = journeyHead(body)
+		canonicalBefore, _ := json.Marshal(p.s.cases[patientTestCaseA].last)
+
+		p.srv.Close()
+		s2 := &apiServer{run: p.s.run, cases: freshPatientCases(p.s.cases), queue: p.s.queue, signoffs: p.s.signoffs, facts: p.s.facts, ids: p.s.ids, meta: p.s.meta, now: p.s.now}
+		s2.loadReviews()
+		reloaded := s2.cases[patientTestCaseA]
+		if s2.ledgerErr != "" || reloaded.patient.Seq != 1 || reloaded.patient.Contact.Status != "opted_out" || patientHead(reloaded) != head || len(s2.reviews) != eventsBefore+1 {
+			t.Fatalf("restart after first patient opt-out: err=%q state=%+v events=%d", s2.ledgerErr, reloaded.patient, len(s2.reviews))
+		}
+		overlay, _ := s2.overlayLocked(reloaded)
+		if overlay["status"] != "opted_out" || overlay["contact_blocked"] != true || overlay["demo_pending_consent"] != "cancelled" {
+			t.Fatalf("reloaded opt-out overlay: %v", overlay)
+		}
+		canonicalAfter, _ := json.Marshal(reloaded.last)
+		if !bytes.Equal(canonicalBefore, canonicalAfter) {
+			t.Fatal("restart changed the canonical clinical decision")
+		}
+		if _, err := readVerifiedLedger(filepath.Join(p.s.run, "api_reviews.ndjson")); err != nil {
+			t.Fatalf("chain verification after restart: %v", err)
+		}
+
+		h, err := s2.handler("staff-token-123456:coordinator:coordinator-one,audit-token-1234567:auditor:auditor-one", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		p2 := &patientTestAPI{s: s2, srv: httptest.NewServer(h), token: p.token, now: p.now}
+		defer p2.srv.Close()
+		code, body = p2.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "opted_out"})
+		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || len(s2.reviews) != eventsBefore+1 {
+			t.Fatalf("true opt-out repeat after restart: %d %v", code, body)
+		}
+		for i, permission := range []string{"granted", "denied"} {
+			code, body = p2.post(t, "contact_permission_changed", patientUUID(byte(i+3)), head, map[string]interface{}{"permission": permission})
+			if code != http.StatusConflict || body["conflict"] != "consent" || len(s2.reviews) != eventsBefore+1 {
+				t.Fatalf("%s after patient terminal opt-out: %d %v", permission, code, body)
+			}
+		}
+		if code, body := contactOutcome(t, p2); code != http.StatusConflict || body["error"] == nil || len(s2.reviews) != eventsBefore+1 {
+			t.Fatalf("contact after reloaded patient opt-out: %d %v", code, body)
+		}
+		code, review, _ := p2.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/review", "staff-token-123456", map[string]interface{}{"decision": "confirm_contact"})
+		if code != http.StatusConflict || review["error"] == nil || len(s2.reviews) != eventsBefore+1 {
+			t.Fatalf("confirm_contact after reloaded patient opt-out: %d %v", code, review)
+		}
+	})
 }
 
 func TestPatientRouteDoesNotEnableDirectBrowserCORS(t *testing.T) {
