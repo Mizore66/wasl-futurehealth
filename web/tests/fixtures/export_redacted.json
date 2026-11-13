@@ -69,8 +69,8 @@
    }
   ]
  },
- "comparison_sha256": "a747a733eb31d00c869ba053ca572395d019678a990f7d00ce6e3114ca2860ec",
- "content_sha256": "5b55c7025f1071f94613a494aade3f08067c8647829134fe1e290fdf6d523b51",
+ "comparison_sha256": "6c323282004e50ac7c89daa8f582f924fc1ebaa4beb9c31a80e6e503e130740d",
+ "content_sha256": "7f9ea6f1455aff367ab52a8d0502a13002b214079890f9f91f8a26967e9fc179",
  "detail": {
   "agent_investigations": [
    {
@@ -102,6 +102,15 @@
   },
   "api_overlay": {
    "actions": 0,
+   "booking": {
+    "mode": "simulated",
+    "reservation_id": null,
+    "reservation_version": null,
+    "revision": 0,
+    "status": "unreserved",
+    "updated_at": null,
+    "updated_event": null
+   },
    "contact_outcomes": [],
    "head": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
    "ledger_status": "ok"
@@ -119,6 +128,15 @@
   "case": {
    "api_overlay": {
     "actions": 0,
+    "booking": {
+     "mode": "simulated",
+     "reservation_id": null,
+     "reservation_version": null,
+     "revision": 0,
+     "status": "unreserved",
+     "updated_at": null,
+     "updated_event": null
+    },
     "head": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
     "ledger_status": "ok"
    },
@@ -352,7 +370,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-11T09:18:15Z",
+  "loaded_at": "2026-11-13T03:26:26Z",
   "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
   "policy": "redacted-internal-audit",
   "reader_model": "not-disclosed",

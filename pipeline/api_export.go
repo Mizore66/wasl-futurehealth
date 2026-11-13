@@ -487,15 +487,26 @@ var exportConsentTransitionAllow = exportObject(exportKeys("ev", "kind", "from",
 
 var exportSnoozeAllow = exportObject(exportKeys("at", "event", "until"))
 var exportContactOutcomeAllow = exportObject(exportKeys("at", "event", "outcome", "channel"))
+var exportAgreementAllow = exportObject(exportKeys("at", "event"))
+var exportBookingSlotAllow = exportObject(exportKeys("slot_id", "session_id", "unit", "day", "procedure", "deadline", "region", "within_deadline",
+	"endoscopist_female", "arabic", "after_hours", "prep_send_day", "predicted_no_show", "nurse_call", "cross_region", "version", "availability"))
+var exportBookingSummaryAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("status", "mode", "revision", "reservation_id", "reservation_version", "updated_at", "updated_event")
+	m["slot"] = exportBookingSlotAllow
+	return m
+}())
 var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("head", "actions", "last_action_at", "ledger_status", "no_answer_streak")
 	m["snooze"] = exportSnoozeAllow
 	m["last_contact"] = exportContactOutcomeAllow
+	m["last_appointment_agreement"] = exportAgreementAllow
+	m["booking"] = exportBookingSummaryAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel"))
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "expected_suggestion_version", "slot_id", "expected_slot_version",
+	"reservation_id", "expected_reservation_version"))
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head",
@@ -544,8 +555,11 @@ var exportAgentProvenanceAllow = exportObject(exportKeys("cached", "experimental
 
 var exportBookingAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("status", "data_mode", "decision_support_only", "procedure", "repeat_after_unsatisfactory", "requested_day", "window_days",
-		"rule", "region", "state_at_run_end", "within_window", "cross_region", "wait_days", "target_days", "capacity_condition", "pooling_relevant")
+		"rule", "region", "state_at_run_end", "within_window", "cross_region", "wait_days", "target_days", "capacity_condition", "pooling_relevant",
+		"suggestion_version", "suggested_slot_id", "calendar_version", "reservable")
 	m["reason"] = exportOperationalLeaf
+	m["reservation_explanation"] = exportOperationalLeaf
+	m["eligible_slots"] = exportList(exportBookingSlotAllow)
 	m["constraints"] = exportObject(exportKeys("female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show"))
 	m["booking"] = exportObject(exportKeys("loop_id", "session_id", "unit", "day", "endoscopist_female", "overbooked", "predicted_no_show",
 		"nurse_call", "prep_send_day", "deadline", "within_deadline", "booked_on"))

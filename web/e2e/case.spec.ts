@@ -75,6 +75,12 @@ for (const name of NAMES) {
       await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support");
       await expect(booking).toContainText(detail.booking.status === "suggested" ? "Slot suggested" : "No booking needed");
       if (detail.booking.prep_risk) await expect(booking).toContainText("Bowel-prep risk (App 9)");
+      if (detail.api_overlay) {
+        await expect(booking).toContainText("Fixture mode cannot save simulated reservations.");
+        await expect(booking.getByRole("button", { name: "Accept simulated slot", exact: true })).toBeDisabled();
+      } else {
+        await expect(booking).toContainText("This older snapshot has no coordinator ledger projection, so reservation controls are unavailable.");
+      }
 
       await expect(page.getByRole("region", { name: /Why it (closed|is still open)/ })).toBeVisible();
       await expect(page.getByRole("region", { name: "Consent and messages" })).toBeVisible();

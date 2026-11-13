@@ -3,12 +3,26 @@
     {
       "api_overlay": {
         "actions": 6,
-        "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
-        "last_action_at": "2026-11-10T22:50:47.59902562Z",
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+        "last_action_at": "2026-11-13T03:26:25.358745Z",
+        "last_appointment_agreement": {
+          "at": "2026-11-13T03:26:25.308685Z",
+          "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+        },
         "last_contact": {
-          "at": "2026-11-10T22:50:47.59902562Z",
+          "at": "2026-11-13T03:26:25.358745Z",
           "channel": "phone",
-          "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+          "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
           "outcome": "declined"
         },
         "ledger_status": "ok",
@@ -16,10 +30,10 @@
         "owner": "coordinator-bound",
         "snooze": {
           "actor": "coordinator-bound",
-          "at": "2026-11-10T22:50:47.592819664Z",
-          "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
-          "reason": "Call back Fri 13 Nov",
-          "until": "2026-11-13T22:50:47Z"
+          "at": "2026-11-13T03:26:25.315807Z",
+          "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+          "reason": "Call back Mon 16 Nov",
+          "until": "2026-11-16T03:26:25Z"
         }
       },
       "closed": false,
@@ -44,7 +58,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-10T22:50:47Z",
+    "loaded_at": "2026-11-13T03:26:25Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",

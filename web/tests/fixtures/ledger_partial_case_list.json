@@ -3,12 +3,22 @@
     {
       "api_overlay": {
         "actions": 4,
-        "head": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
-        "last_action_at": "2026-11-10T22:50:47.613354788Z",
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
+        "last_action_at": "2026-11-13T03:26:25.375084Z",
         "last_contact": {
-          "at": "2026-11-10T22:50:47.613354788Z",
+          "at": "2026-11-13T03:26:25.375084Z",
           "channel": "phone",
-          "event": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+          "event": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
           "outcome": "declined"
         },
         "ledger_status": "invalid",
@@ -37,7 +47,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-10T22:50:47Z",
+    "loaded_at": "2026-11-13T03:26:25Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",
