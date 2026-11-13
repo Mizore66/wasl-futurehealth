@@ -214,8 +214,9 @@ func uniqueSorted(xs []string) []string {
 	return out
 }
 
-// mergeCRCProposal keeps suspicion from the procedure report when the linked
-// pathology supplies the final outcome. Conflicts always fail closed.
+// mergeCRCProposal keeps suspicion and independent follow-up obligations from
+// the procedure when linked pathology supplies the tissue outcome. Conflicts
+// always fail closed.
 func mergeCRCProposal(procedure, pathology *CRCProposal) *CRCProposal {
 	if procedure == nil && pathology == nil {
 		return nil
@@ -226,7 +227,10 @@ func mergeCRCProposal(procedure, pathology *CRCProposal) *CRCProposal {
 		cp.PriorSuspicion = cp.PriorSuspicion || procedure.Suspected
 	}
 	if pathology != nil {
-		if pathology.Outcome != "" {
+		// A benign specimen cannot retire a current endoscopic gastroenterology
+		// or high-risk specialist plan; it still needs its owned, signed pathway.
+		benignWithFollowup := pathology.Outcome == CRCOutcomeNormal && (cp.Outcome == CRCOutcomeGastro || cp.Outcome == CRCOutcomeSpecialist)
+		if pathology.Outcome != "" && !benignWithFollowup {
 			cp.Outcome = pathology.Outcome
 		}
 		mergeCRCDetails(&cp, pathology)

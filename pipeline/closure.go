@@ -579,7 +579,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if prog == "crc" && label == "inadequate" {
 			holdCRCSuspicion(r)
 		}
-		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && len(paths[r.d.ReportID]) > 0 {
+		// Completeness agreement (including "no polyps") cannot dispose of a
+		// suspicious finding before subsequent histology resolves its outcome.
+		suspiciousCRC := procedureCRC != nil && procedureCRC.Suspected
+		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && (len(paths[r.d.ReportID]) > 0 || suspiciousCRC) {
 			has, pathologyPending := false, false
 			for _, p := range paths[r.d.ReportID] {
 				pl := ""
