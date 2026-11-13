@@ -69,7 +69,8 @@ type apiServer struct {
 	meta            map[string]interface{}
 	cases           map[string]*apiCase
 	order           []string
-	queue           map[string][]*ReviewItem // loop -> raised items
+	queue           map[string][]*ReviewItem // loop -> currently eligible raised items
+	retiredQueue    map[string][]*ReviewItem // loop -> historical raised items, replay-only; never actionable
 	signoffs        map[string][]map[string]interface{}
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
@@ -199,7 +200,7 @@ func cors(h http.Handler) http.Handler {
 }
 
 func loadAPI(run, data string) *apiServer {
-	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{},
+	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{}, retiredQueue: map[string][]*ReviewItem{},
 		signoffs: map[string][]map[string]interface{}{}, facts: map[string][]map[string]interface{}{}, ids: map[string][]map[string]string{},
 		claims: map[reviewQuestionKey]*reviewClaimState{}, now: time.Now}
 	s.appendLine = func(line []byte) error { return appendLedgerLine(filepath.Join(run, "api_reviews.ndjson"), line) }
@@ -239,7 +240,9 @@ func loadAPI(run, data string) *apiServer {
 		if d.Inactive {
 			// The case and every earlier decision remain available through the
 			// authorized detail/audit views, but no current review obligation
-			// survives retirement.
+			// survives retirement. Earlier claims/reads still require their
+			// original raised items to validate append-only ledger history.
+			s.retiredQueue[c.ID] = s.queue[c.ID]
 			delete(s.queue, c.ID)
 		}
 	}
