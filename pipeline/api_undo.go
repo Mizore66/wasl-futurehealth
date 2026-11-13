@@ -245,6 +245,9 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 			if err := validateBaseReviewEvent(ev); err != nil {
 				return bad(err.Error())
 			}
+			if err := validateConsentRevision(ev, caseOf(prior, sstr(ev, "case"))); err != nil {
+				return bad(err.Error())
+			}
 			if hasProtocolFields(ev) { // the same transition validator the POST handler and the replay use
 				if err := checkClaimedProtocolRead(claims, ev, false); err != nil {
 					return bad("independent review claim: " + err.Error())

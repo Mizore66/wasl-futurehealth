@@ -3,7 +3,7 @@ package main
 // Workflow C: consent event actions (demo overlay).
 //
 //   POST /api/cases/{id}/consent   headers X-Wasl-Role (coordinator|clinician), X-Wasl-Actor
-//   body {"event":"consent_granted|consent_denied|consent_opted_out","expected_head":"<case head sig>","note":"<=500 chars"}
+//   body {"event":"consent_granted|consent_denied|consent_opted_out","expected_head":"<consent revision>","note":"<=500 chars"}
 //   GET  /api/cases/{id}/consent   overlay + event history
 //
 // Events are appended to the existing review ledger (api_reviews.ndjson, hash-chained, head_signed preserved). The
@@ -44,6 +44,42 @@ func (s *apiServer) apiContactOverlay(c *apiCase, viewer ...apiPrincipal) (map[s
 	return o, h
 }
 
+// consentRevision is the optimistic-concurrency token for consent writes: the canonical signature until the case's
+// first consent-related ledger event, then the hash of the latest one (a consent event or an undo, contest or
+// resolution chained onto one). Unrelated ledger events never move it.
+func consentRevision(events []map[string]interface{}, canonical string) string {
+	related := map[string]bool{}
+	rev := canonical
+	for _, ev := range events {
+		if evKind(ev) == "review" {
+			if _, ok := consentEvents[sstr(ev, "decision")]; !ok || sstr(ev, "action") != ActRecordConsent {
+				continue
+			}
+		} else if !related[sstr(ev, "target")] {
+			continue
+		}
+		related[sstr(ev, "hash")] = true
+		rev = sstr(ev, "hash")
+	}
+	return rev
+}
+
+// validateConsentRevision replays the revision linkage of one consent event against the earlier events of its case.
+// Events written before consent_rev existed carry no field and stay valid.
+func validateConsentRevision(ev map[string]interface{}, caseEvents []map[string]interface{}) error {
+	got, present := ev["consent_rev"]
+	if !present {
+		return nil
+	}
+	if _, ok := consentEvents[sstr(ev, "decision")]; !ok || sstr(ev, "action") != ActRecordConsent {
+		return fmt.Errorf("consent_rev on a non-consent event")
+	}
+	if want := consentRevision(caseEvents, sstr(ev, "head_signed")); got != want {
+		return fmt.Errorf("consent_rev does not match the case's consent revision at that point")
+	}
+	return nil
+}
+
 func requestViewer(r *http.Request) apiPrincipal {
 	return apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
 }
@@ -71,7 +107,7 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 		"status": status, "demo_pending_consent": pending, "events": len(hist),
 		"contact_blocked": status == "denied" || status == "opted_out",
 		"mode":            "demo", "canonical_consent": canon, "canonical_unchanged": true,
-		"last_event_hash": last,
+		"last_event_hash": last, "revision": consentRevision(s.caseEvents(c.ID), c.last.Sig),
 		"note":            "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
 	}
 	if pending == "" {
@@ -239,14 +275,15 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}
-		if req.ExpectedHead != c.last.Sig {
-			return 409, map[string]interface{}{"error": "stale expected_head: the case has moved on; reload and retry", "current_head": c.last.Sig}
+		rev := consentRevision(s.caseEvents(c.ID), c.last.Sig)
+		if req.ExpectedHead != rev {
+			return 409, map[string]interface{}{"error": "stale expected_head: the case's consent has moved on; reload and retry", "current_head": c.last.Sig, "current_revision": rev}
 		}
 		if cur, _ := s.overlayLocked(c); cur["status"] == "opted_out" && req.Event != "consent_opted_out" {
 			return 409, map[string]interface{}{"error": "patient has opted out; a later grant needs a new, separately recorded consent flow", "api_contact": cur}
 		}
 		ev := map[string]interface{}{"case": c.ID, "item": "", "decision": req.Event, "note": req.Note, "role": role, "actor": actor,
-			"action": ActRecordConsent, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
+			"action": ActRecordConsent, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "consent_rev": rev, "mode": "demo", "prev": s.lastHashLocked()}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}

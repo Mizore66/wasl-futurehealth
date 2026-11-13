@@ -106,6 +106,20 @@ it("blocks a stale-head retry until refreshed case state is mounted", async () =
   expect(actions.recordConsent).toHaveBeenNthCalledWith(2, "case/1", "new-head", "consent_granted", "");
 });
 
+it("uses the revision returned by a successful action for the next action", async () => {
+  actions.recordConsent.mockResolvedValue({ ok: true, status: 201, expectedHead: "rev-2", contact: detail().api_contact });
+  await mount("rev-1");
+
+  await act(async () => {
+    confirmGrant().click();
+  });
+  await act(async () => {
+    confirmGrant().click();
+  });
+  expect(actions.recordConsent).toHaveBeenNthCalledWith(1, "case/1", "rev-1", "consent_granted", "");
+  expect(actions.recordConsent).toHaveBeenNthCalledWith(2, "case/1", "rev-2", "consent_granted", "");
+});
+
 it("offers only a repeat opt-out once the patient has opted out", async () => {
   await mount("current-head", optedOutContact());
   expect(offered()).toEqual(["Record opt-out"]);

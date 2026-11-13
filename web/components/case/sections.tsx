@@ -569,7 +569,7 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
       )}
       <ConsentActions
         caseId={detail.case.id}
-        expectedHead={detail.current.sig}
+        expectedHead={detail.api_contact?.overlay.revision ?? detail.current.sig}
         contact={detail.api_contact}
         live={apiMode() === "live"}
         canWrite={detail.review_ledger?.status !== "invalid"}

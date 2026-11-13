@@ -493,6 +493,7 @@ export const ConsentOverlay = z.looseObject({
   canonical_consent: Consent,
   canonical_unchanged: z.literal(true),
   last_event_hash: z.string(),
+  revision: z.string().min(1),
   note: z.string(),
 });
 export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentEvent) });
