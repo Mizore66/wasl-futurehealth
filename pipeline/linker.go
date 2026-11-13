@@ -994,8 +994,8 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 	}
 	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version, tracking: tracking}
 	if recIdx < 0 {
-		// Preserve an inactive-first revision by resource identity alone. Do
-		// not invent a patient registration or let delayed older orders bind it.
+		// Preserve an unbound revision by resource identity alone, including
+		// active orders. Never let delayed older revisions bind or activate it.
 		delete(L.loops, loop)
 		delete(L.loopRec, loop)
 		return loop, false, tracking
@@ -1336,11 +1336,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				if current := L.requests[loop]; current != nil {
 					recIdx = current.rec
 				}
-				// Non-active revisions must fold even before any patient is
-				// known. Activation still requires an established registration.
-				if recIdx < 0 && e.Status == "active" && e.Category != "referral-intake" {
-					break
-				}
+				// Fold every revision even before any patient is known, so a
+				// delayed older active request cannot supply stale scope or bind it.
+				// Activation still requires an established registration.
 				_, store, changed := L.foldRequestAndInvalidate(e, recIdx, affRoots, affLoops)
 				if recIdx >= 0 {
 					affRoots[L.Find(recIdx)] = true
