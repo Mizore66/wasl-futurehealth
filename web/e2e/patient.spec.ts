@@ -3,12 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-const LANGS = [
-  { lang: "ar", dir: "rtl" },
-  { lang: "en", dir: "ltr" },
-  { lang: "ur", dir: "rtl" },
-  { lang: "fil", dir: "ltr" },
-] as const;
+const LANGS = [{ lang: "en", dir: "ltr" }] as const;
+const UNREVIEWED = ["ar", "ur", "fil"] as const;
+const NON_ENGLISH = '[lang="ar"], [lang="ur"], [lang="fil"]';
 const STEPS = ["notice", "check", "book"] as const;
 
 async function expectNoSeriousAxe(page: Page) {
@@ -35,19 +32,34 @@ for (const step of STEPS) {
   }
 }
 
-test("Arabic is the default language", async ({ page }) => {
+test("English, the reviewed language, is the default", async ({ page }) => {
   await page.goto("/patient/notice");
-  await expect(page.locator('div[lang="ar"]')).toHaveAttribute("dir", "rtl");
-  await expect(page.locator("h1")).toHaveText("نتيجة فحصكِ تحتاج فحصًا آخر");
+  await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+  await expect(page.locator("h1")).toHaveText("Your test result needs one more check");
 });
+
+for (const step of STEPS) {
+  for (const lang of UNREVIEWED) {
+    test(`/patient/${step}?lang=${lang} serves reviewed English, never the unreviewed ${lang} draft`, async ({ page }) => {
+      const res = await page.goto(`/patient/${step}?lang=${lang}&consent=yes`);
+      expect(res?.status()).toBe(200);
+      await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+      await expect(page.locator(NON_ENGLISH)).toHaveCount(0);
+      await expect(page.locator("body")).not.toContainText(/[\u0600-\u06FF]/);
+      await expect(page.locator("body")).not.toContainText(/Ang |Ikaw|iyong/);
+      const nav = page.getByRole("navigation", { name: "Demo steps" });
+      for (const s of STEPS) await expect(nav.locator(`a[href^="/patient/${s}?lang=en"]`)).toHaveCount(1);
+    });
+  }
+}
 
 test("notice: switch language, read rights, say who calls whom", async ({ page }) => {
   await page.goto("/patient/notice");
-  await page.getByRole("button", { name: /اللغة/ }).click();
-  const sheet = page.getByRole("dialog", { name: "اللغة" });
-  await expect(sheet.getByRole("link")).toHaveCount(4);
-  await expect(sheet.getByRole("link", { name: "العربية" })).toHaveAttribute("aria-current", "true");
-  await page.screenshot({ path: "test-results/screens/patient_notice_ar_language.png" });
+  await page.getByRole("button", { name: /Language/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Language" });
+  await expect(sheet.getByRole("link")).toHaveCount(1);
+  await expect(sheet.getByRole("link", { name: "English" })).toHaveAttribute("aria-current", "true");
+  await page.screenshot({ path: "test-results/screens/patient_notice_en_language.png" });
   await sheet.getByRole("link", { name: "English" }).click();
   await expect(page).toHaveURL(/\/patient\/notice\?lang=en$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -110,12 +122,6 @@ test("check: declining SMS means Hessa calls, and no SMS is promised on the book
   await expect(page.getByText(/SMS/)).toHaveCount(0);
 });
 
-test("check: Arabic says this is not an exam", async ({ page }) => {
-  await page.goto("/patient/check");
-  await expect(page.getByText("هذا ليس امتحانًا.")).toBeVisible();
-  await expect(page.getByText("تُحاسَبين")).toHaveCount(0);
-});
-
 test("book: October slots, pick another, confirm, prep list", async ({ page }) => {
   await page.goto("/patient/book?lang=en");
   await expect(page.getByTestId("slot-date")).toHaveText("Friday 9 October");
@@ -145,15 +151,14 @@ test("book: October slots, pick another, confirm, prep list", async ({ page }) =
   await expect(boxes.first()).toHaveAttribute("aria-checked", "true");
 });
 
-test("language persists across the three phones", async ({ page }) => {
+test("an unreviewed language request falls back to English across the three phones", async ({ page }) => {
   await page.goto("/patient/notice?lang=ur");
   const nav = page.getByRole("navigation", { name: "Demo steps" });
   await nav.getByRole("link", { name: "2 Check" }).click();
-  await expect(page).toHaveURL(/\/patient\/check\?lang=ur$/);
-  await expect(page.locator('div[lang="ur"]')).toHaveAttribute("dir", "rtl");
+  await expect(page).toHaveURL(/\/patient\/check\?lang=en$/);
   await nav.getByRole("link", { name: "3 Book" }).click();
-  await expect(page).toHaveURL(/\/patient\/book\?lang=ur$/);
-  await expect(page.getByTestId("slot-date")).toContainText("جمعہ");
+  await expect(page).toHaveURL(/\/patient\/book\?lang=en$/);
+  await expect(page.getByTestId("slot-date")).toContainText("Friday");
 });
 
 test.describe("desktop", () => {
@@ -163,6 +168,6 @@ test.describe("desktop", () => {
     const box = await page.locator("main").boundingBox();
     expect(box && Math.round(box.x + box.width / 2)).toBe(720);
     expect(box?.width).toBeLessThanOrEqual(390);
-    await page.screenshot({ path: "test-results/screens/patient_notice_ar_desktop.png" });
+    await page.screenshot({ path: "test-results/screens/patient_notice_en_desktop.png" });
   });
 });

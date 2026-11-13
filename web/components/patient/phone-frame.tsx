@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Mark } from "@/components/brand/mark";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
-import { DICTS, LANGS } from "./i18n";
+import { DICTS, PATIENT_LANGS } from "./i18n";
 import { phoneHref, STEPS, type PhoneQuery, type Step } from "./journey";
 import { LanguageSheet } from "./language-sheet";
 import { PHONE_FONT } from "./parts";
@@ -12,7 +12,7 @@ const STEP_NAMES: Record<Step, string> = { notice: "Notice", check: "Check", boo
 /** The phone column: a demo strip (English, honesty label, step links), then the patient's screen in her language. */
 export function PhoneFrame({ step, query, children }: { step: Step; query: PhoneQuery; children: React.ReactNode }) {
   const t = DICTS[query.lang];
-  const options = LANGS.map((lang) => ({
+  const options = PATIENT_LANGS.map((lang) => ({
     lang,
     dir: DICTS[lang].dir,
     label: DICTS[lang].langName,

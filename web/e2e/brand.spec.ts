@@ -63,7 +63,7 @@ test("the site header shows the logo without the typed Arabic name", async ({ pa
   await expectBrandAndAxe(page, 'nav[aria-label="Primary"]', "header");
 });
 
-for (const lang of ["en", "ar"] as const) {
+for (const lang of ["en"] as const) {
   test(`the patient phone header shows the tile (${lang})`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(`/patient/notice?lang=${lang}`);
