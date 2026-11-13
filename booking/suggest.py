@@ -104,6 +104,106 @@ def wd(xs):
     return round(sum(1 for c in xs if c["status"] == "suggested" and c["booking"]["within_deadline"]) / len(xs), 3) if xs else None
 
 
+def _canonical(value):
+    """Compact key-sorted JSON with the same integral-number normalization as Go's booking hasher."""
+    def numbers(v):
+        if isinstance(v, float) and np.isfinite(v) and v.is_integer():
+            return int(v)
+        if isinstance(v, list):
+            return [numbers(x) for x in v]
+        if isinstance(v, dict):
+            return {k: numbers(x) for k, x in v.items()}
+        return v
+    return json.dumps(numbers(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026").encode()
+
+
+def _sha(value):
+    return hashlib.sha256(_canonical(value)).hexdigest()
+
+
+def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead):
+    """Deterministic synthetic seats from the existing engine's hard-feasibility and no-show rules.
+
+    This is a catalogue, not a second assignment pass: sessions stay in calendar order and every declared
+    non-overbooked seat is named. Per-case fields (deadline, lead time and no-show risk) intentionally differ.
+    """
+    day = requested_day
+    lo = max(day + prep_lead, earliest)
+    a, b = cal.window(lo, day + eng.H)
+    sessions = np.arange(a, b)
+    if len(sessions) == 0:
+        return []
+    m = cal.day[sessions] >= lo
+    m &= (cal.region[sessions] == prefs.region) | prefs.travel_ok
+    if prefs.female_endoscopist == "hard":
+        m &= cal.female[sessions]
+    if prefs.avoid_ramadan:
+        m &= ~cal.ramadan[sessions]
+    sessions = sessions[m]
+    # Match BookingEngine.build's bounded candidate window, counting sessions rather than occupied seats because
+    # coordinator reservations occupy their own append-only ledger, not the engine's retrospective assignment state.
+    sessions = sessions[: eng.K]
+    out = []
+    for s0 in sessions:
+        s = int(s0)
+        female, arabic, after, ramadan = (bool(x) for x in (cal.female[s], cal.arabic[s], cal.after[s], cal.ramadan[s]))
+        region = str(cal.region[s])
+        pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 0, region))
+        nurse = pred > eng.nurse_thr
+        if nurse:
+            pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 1, region))
+        for seat in range(1, int(cal.cap[s]) + 1):
+            out.append({
+                "slot_id": f"sim:{procedure}:{s}:{seat}", "session_id": s, "unit": str(cal.unit[s]),
+                "day": int(cal.day[s]), "region": region, "deadline": int(deadline),
+                "within_deadline": bool(cal.day[s] <= deadline), "endoscopist_female": female,
+                "arabic": arabic, "after_hours": after, "prep_send_day": int(cal.day[s]) - prep_lead,
+                "predicted_no_show": pred, "nurse_call": bool(nurse), "cross_region": region != prefs.region,
+            })
+    return out
+
+
+def _version_catalogue(res):
+    """Version the generated document without a self-referential calendar hash.
+
+    suggestion_version covers the complete case suggestion (including constraints and eligible slot IDs), excluding
+    only that field itself. calendar_version then covers the complete booking document, including suggestion versions,
+    excluding only calendar_version itself. The Go loader recomputes both before exposing a reservable slot.
+    """
+    for case in res["cases"].values():
+        unsigned = {k: v for k, v in case.items() if k != "suggestion_version"}
+        case["suggestion_version"] = _sha(unsigned)
+    unsigned = {k: v for k, v in res.items() if k != "calendar_version"}
+    res["calendar_version"] = _sha(unsigned)
+
+
+def _assign_suggested_seats(cases):
+    """Give ordinary suggestions unique deterministic seats in case-ID order; never reserve an overbooked one."""
+    used = collections.defaultdict(set)
+    for case_id in sorted(cases):
+        case = cases[case_id]
+        candidates = case.get("eligible_slots") or []
+        if case["status"] != "suggested":
+            case["reservable"] = False
+            continue
+        booking = case["booking"]
+        if booking["overbooked"]:
+            case["reservable"] = False
+            case["reservation_explanation"] = "overbooked_suggestion_not_reservable"
+            continue
+        same_session = [s for s in candidates if s["session_id"] == booking["session_id"]]
+        for slot in same_session:
+            seat = int(slot["slot_id"].rsplit(":", 1)[1])
+            if seat not in used[(case["procedure"], booking["session_id"])]:
+                used[(case["procedure"], booking["session_id"])].add(seat)
+                case["suggested_slot_id"] = slot["slot_id"]
+                case["reservable"] = True
+                break
+        else:
+            case["reservable"] = False
+            case["reservation_explanation"] = "suggested_session_has_no_regular_seat"
+
+
 REPEAT_WINDOW = (42, 84)   # DoH cervical standard 10.6.4: unsatisfactory colposcopy -> repeat in 6-12 weeks
 COLPO_FEMALE_SHARE = 0.5   # assumed share of colposcopy clinics run by a female clinician [A]
 
@@ -146,11 +246,13 @@ def cervical(last, sr, a, rng):
                 "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
                 "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
         b = out.get(k)
+        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1)
         if b is None:
-            cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", **base}
+            cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", "eligible_slots": candidates, **base}
         else:
             cases[k] = {"status": "suggested", "booking": b.to_json(), "within_window": lo <= b.day <= hi,
-                        "cross_region": b.unit.split("-")[0] != prefs.region, "wait_days": b.day - day, **base}
+                        "cross_region": b.unit.split("-")[0] != prefs.region, "wait_days": b.day - day,
+                        "eligible_slots": candidates, **base}
     sugg = [c for c in cases.values() if c["status"] == "suggested"]
     within = sum(1 for c in sugg if c["within_window"])
     return {"cases": cases, "summary": {
@@ -223,12 +325,15 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     reg_demand, reg_booked_out = collections.Counter(), collections.Counter()
     for k, (d, prefs, day) in meta.items():
         b = out.get(k)
+        deadline = day + (14 if k in urgent else 31)
+        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5)
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
         if b is None:
             unbooked += 1
             cases[k] = {"status": "no_slot_within_horizon", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region,
-                        "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"], **lv}
+                        "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"],
+                        "eligible_slots": candidates, **lv}
             if a.crc_urgent_share > 0:
                 cases[k]["target_days"] = 14 if k in urgent else 31
             continue
@@ -237,7 +342,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
             reg_booked_out[prefs.region] += 1
         cases[k] = {"status": "suggested", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
-                    "wait_days": b.day - day, **lv}
+                    "wait_days": b.day - day, "eligible_slots": candidates, **lv}
         if a.crc_urgent_share > 0:
             cases[k]["target_days"] = 14 if k in urgent else 31
     cerv = cervical(last, sr, a, rng)
@@ -288,6 +393,8 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
                    method="rolling-horizon min-cost flow over real + forecast demand (booking/booking/lookahead.py, wsi7 mcf)")
     if opt:   # only when a non-default optimiser or stress test is on, so the default booking.json is unchanged
         res["inputs"]["optimiser"] = opt
+    _assign_suggested_seats(res["cases"])
+    _version_catalogue(res)
     if write:
         json.dump(res, open(a.out or os.path.join(a.run, "booking.json"), "w"), indent=1)
     if quiet:

@@ -8,6 +8,7 @@ import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
+import { atWords, ledgerWordsWithHistory } from "@/components/case/words";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -188,6 +189,22 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
   const snoozed = snoozeRunning || sinks;
+  // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
+  // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
+  const booking = ov?.booking;
+  if (booking?.status === "reserved") {
+    view = "waiting";
+    words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
+    words.next = "Manage the simulated reservation";
+  } else if (booking?.status === "cancelled") {
+    const agreement = ov?.last_appointment_agreement;
+    const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
+    if (afterAgreement) {
+      view = "call";
+      words.status = "Simulated reservation cancelled · rebook";
+      words.next = "Choose another simulated slot";
+    }
+  }
   return {
     id: c.id,
     short: shortId(c.id),
@@ -288,6 +305,17 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
   c.signoffs.forEach((s, i) => {
     const what = s.link ? `signed: ${s.link === "same" ? "same patient" : "not the same patient"}` : `signed: evidence ${s.evidence}`;
     nodes.push({ id: `signoff-${i}`, kind: "human", who: SIGNOFF_ROLE[s.role] ?? s.role, what: `${what} (simulated reviewer)`, when: "in review", t: lastT, order: 4 + i, hash: s.kinds.includes("evidence") ? sealed("human_signoff") : undefined });
+  });
+  // Coordinator reservations join the human case chain in ledger order. They never enter the canonical source timeline.
+  const coordinatorEvents = c.api_reviews.filter((e) => e.ledger === "coordinator");
+  coordinatorEvents.forEach((e, i) => {
+    if (!e.kind.startsWith("booking_")) return;
+    const reason = e.data.reason ? `: “${e.data.reason}”` : "";
+    nodes.push({
+      id: `booking-${e.hash}`, kind: "human", who: e.actor || "Coordinator",
+      what: `${ledgerWordsWithHistory(e, coordinatorEvents.slice(0, i))}${reason}`,
+      when: atWords(e.at), t: lastT, order: 1000 + i, hash: e.hash,
+    });
   });
 
   const sorted = nodes.sort((a, b) => a.t - b.t || a.order - b.order);

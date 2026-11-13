@@ -280,7 +280,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; data: { owner?: string; until?: string; outcome?: string; channel?: string } }
+  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -295,6 +295,24 @@ export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "patient") return `patient_journey/${e.kind}`;
   if (e.ledger === "unknown") return e.label || "unrecognised";
   return e.action ?? "review";
+}
+
+/** Booking wording with old/new synthetic slots reconstructed in ledger order, never from canonical clinical events. */
+export function ledgerWordsWithHistory(e: LedgerLike, prior: LedgerLike[]): string {
+  if (e.ledger !== "coordinator" || !e.kind.startsWith("booking_")) return ledgerWords(e);
+  const slots = new Map<string, string>();
+  for (const past of prior) {
+    if (past.ledger !== "coordinator") continue;
+    if ((past.kind === "booking_accept" || past.kind === "booking_choose_slot") && past.hash && past.data.slot_id) slots.set(past.hash, past.data.slot_id);
+    if (past.kind === "booking_reschedule" && past.data.reservation_id && past.data.slot_id) {
+      slots.set(past.data.reservation_id, past.data.slot_id);
+    }
+  }
+  const reservation = e.data.reservation_id ? slots.get(e.data.reservation_id) : undefined;
+  if (e.kind === "booking_accept" || e.kind === "booking_choose_slot") return `Simulated slot reserved · ${e.data.slot_id ?? "slot not recorded"}`;
+  if (e.kind === "booking_reschedule") return `Simulated reservation moved · ${reservation ?? "previous slot"} → ${e.data.slot_id ?? "new slot not recorded"}`;
+  if (e.kind === "booking_cancel") return `Simulated reservation cancelled · ${reservation ?? "last slot retained"}`;
+  return `Simulated booking action: ${plain(e.kind)}`;
 }
 
 /** A coordinator, compensation or unrecognised ledger event as a sentence, built only from fields it carries. */

@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
   try {
     const detail = await getCase(id);
     if (!detail) return Response.json({ error: "unknown case" }, { status: 404, headers: noStore });
-    return Response.json(persistedLedger(detail), { headers: noStore });
+    return Response.json({
+      ...persistedLedger(detail),
+      bookingPanel: detail.api_overlay ? { booking: detail.booking, overlay: detail.api_overlay, case: detail.case } : null,
+    }, { headers: noStore });
   } catch (e) {
     const { status, error } = failure(e);
     return Response.json({ error }, { status, headers: noStore });

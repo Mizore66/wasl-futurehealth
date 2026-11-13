@@ -16,7 +16,9 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
+import { BookingControls } from "@/components/case/booking-controls";
+import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
@@ -34,7 +36,7 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
+type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -54,7 +56,7 @@ type State = {
 type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
-type LedgerRead = PersistedLedger | { error: string };
+type LedgerRead = (PersistedLedger & { bookingPanel?: BookingProjection | null }) | { error: string };
 const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
@@ -179,6 +181,28 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   };
   const ledger = selId ? persisted[selId] : undefined;
   const ledgerRead = isLedger(ledger) ? ledger : null;
+  const bookingProjection = (id: string, projection: BookingProjection) => {
+    const original = items.find((item) => item.id === id);
+    const latest = workItem(projection.case, now, original?.hasRecord ?? true, Date.now());
+    setS((prev) => {
+      const before = prev.over[id] ?? { log: [] };
+      return {
+        ...prev,
+        over: {
+          ...prev.over,
+          [id]: {
+            ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
+            snoozed: latest.snoozed, noAnswer: latest.noAnswer,
+          },
+        },
+      };
+    });
+    setPersisted((prev) => {
+      const existing = prev[id];
+      return isLedger(existing) ? { ...prev, [id]: { ...existing, bookingPanel: projection } } : prev;
+    });
+    setAttempt((n) => n + 1); // refresh the human trail and list evidence from the API as well
+  };
   const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
   /*
    * An untrustworthy ledger is server-wide: if the latest detail read (or, before any, a listed case) says so, no row on
@@ -689,6 +713,12 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
                 )}
               </section>
+            )}
+
+            {live && ledgerRead?.bookingPanel && (
+              <div className="mt-6" aria-label="Simulated booking">
+                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live onProjection={(projection) => bookingProjection(p.id, projection)} />
+              </div>
             )}
 
             <div className="mt-7">

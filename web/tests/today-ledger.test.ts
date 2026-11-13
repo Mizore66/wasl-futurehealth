@@ -54,26 +54,23 @@ describe("persisted trail from the case-detail overlay", () => {
     expect(l.entries.map((e) => e.what)).toEqual(["No answer (phone)", "Reached (phone): “synthetic call note”", "Note: “synthetic coordinator note”", "Declined the procedure (phone)"]);
   });
 
-  it("orders entries by instant, not text: a zero-nanosecond time (no fraction) sorts before a later fraction", () => {
-    const ov = full.api_overlay!;
-    const l = persistedLedger({
-      ...full,
-      api_overlay: {
-        ...ov,
-        // Go writes RFC3339Nano: at zero nanoseconds the fraction is dropped, so "…:00Z" > "…:00.25Z" as text.
-        contact_outcomes: [{ at: "2026-11-09T08:00:00Z", event: "e1", outcome: "reached", channel: "phone", actor: "a" }],
-        notes: [
-          { at: "2026-11-09T08:00:00.25Z", event: "e2", actor: "a", text: "second" },
-          { at: "2026-11-09T07:59:59.999999999Z", event: "e0", actor: "a", text: "first" },
-        ],
-      },
-    });
-    expect(l.entries.map((e) => e.hash)).toEqual(["e0", "e1", "e2"]);
+  it("uses ledger order rather than sorting wall-clock timestamps", () => {
+    const times = ["2026-11-09T08:00:00.25Z", "2026-11-09T07:59:59.999999999Z", "2026-11-09T08:00:00Z"];
+    const events = full.api_reviews.filter((event) => event.ledger === "coordinator" && (event.kind === "contact_outcome" || event.kind === "note")).slice(0, 3).map((event, i) => ({ ...event, at: times[i] })) as CaseDetail["api_reviews"];
+    const l = persistedLedger({ ...full, api_reviews: events });
+    expect(l.entries.map((e) => e.hash)).toEqual(events.map((e) => e.hash));
   });
 
   it("a detail with no overlay (an older snapshot) has no entries and is not flagged", () => {
     const older = { ...full, api_overlay: undefined, review_ledger: undefined, api_reviews: [] };
     expect(persistedLedger(older)).toEqual({ status: "ok", detail: "", applied: null, entries: [] });
+  });
+
+  it("an older overlay-only snapshot keeps its persisted contact history", () => {
+    const older = { ...full, api_reviews: [] };
+    const entries = persistedLedger(older).entries;
+    expect(entries).toHaveLength(4);
+    expect(entries.map((entry) => entry.what)).toContain("Note: “synthetic coordinator note”");
   });
 });
 
@@ -177,6 +174,18 @@ describe("patient self-service projections", () => {
     expect(saved.entries).toContainEqual(expect.objectContaining({ what: "Patient contact permission: opted_out", who: "Patient self-service" }));
   });
 
+  it("keeps patient and coordinator activity in shared ledger order, not timestamp order", () => {
+    const current = detail();
+    const patient = current.api_reviews.find((event) => event.ledger === "patient")!;
+    const coordinator = current.api_reviews.find((event) => event.ledger === "coordinator" && event.kind === "note")!;
+    const events = [
+      { ...coordinator, at: "2026-11-10T09:00:00Z" },
+      { ...patient, at: "2026-11-10T08:00:00Z" },
+    ] as CaseDetail["api_reviews"];
+    const saved = persistedLedger({ ...current, api_reviews: events });
+    expect(saved.entries.map((entry) => entry.hash)).toEqual(events.map((event) => event.hash));
+  });
+
   it("shows a simulated preference, never booked, and suppresses SMS after opt-out", () => {
     const item = workItem({ ...base, dropoff: "not_booked", api_overlay: undefined, api_patient: projection }, 40, true, NOW);
     expect(item.status).toBe("Patient selected a simulated slot · coordinator review needed");
@@ -199,7 +208,10 @@ describe("GET /app/today/ledger", () => {
     vi.stubGlobal("fetch", fetchMock);
     const res = await GET(req(`?id=${encodeURIComponent(partial.case.id)}`));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual(persistedLedger(partial));
+    expect(await res.json()).toEqual({
+      ...persistedLedger(partial),
+      bookingPanel: { booking: partial.booking, overlay: partial.api_overlay, case: partial.case },
+    });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(partial.case.id)}`);
   });

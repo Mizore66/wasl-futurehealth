@@ -1,4 +1,4 @@
-import { atWords, outcomeWords } from "@/components/case/words";
+import { atWords, ledgerWordsWithHistory, outcomeWords } from "@/components/case/words";
 import type { CaseDetail } from "@/lib/api/schema";
 import { compareInstants } from "@/lib/domain/instant";
 
@@ -44,30 +44,32 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
   const ov = detail.api_overlay;
   const rl = detail.review_ledger;
   const status = rl?.status === "invalid" || ov?.ledger_status === "invalid" ? "invalid" : "ok";
-  const timed: (TrailEntry & { at: string })[] = [
-    ...(ov?.contact_outcomes ?? []).map((o) => ({
-      at: o.at,
-      what: `${outcomeWords(o.outcome, o.channel)}${quoted(o.note)}`,
-      when: saved(o.at, o.event),
-      who: o.actor || "Actor not recorded",
-      hash: o.event || undefined,
-    })),
-    ...(ov?.notes ?? []).map((n) => ({
-      at: n.at,
-      what: `Note${quoted(n.text)}`,
-      when: saved(n.at, n.event),
-      who: n.actor || "Actor not recorded",
-      hash: n.event || undefined,
-    })),
-    ...detail.api_reviews.filter((event): event is Extract<CaseDetail["api_reviews"][number], { ledger: "patient" }> => event.ledger === "patient").map((event) => ({
-      at: event.at,
-      what: patientActivity(event),
-      when: saved(event.at, event.hash),
-      who: "Patient self-service",
-      hash: event.hash,
-    })),
-  ];
-  timed.sort((a, b) => compareInstants(a.at, b.at));
+  const timed: (TrailEntry & { at: string })[] = [];
+  const coordinator = detail.api_reviews.filter((event) => event.ledger === "coordinator");
+  let coordinatorIndex = 0;
+  detail.api_reviews.forEach((event) => {
+    if (event.ledger === "patient") {
+      timed.push({ at: event.at, what: patientActivity(event), when: saved(event.at, event.hash), who: "Patient self-service", hash: event.hash });
+      return;
+    }
+    if (event.ledger !== "coordinator") return;
+    let what = "";
+    if (event.kind === "contact_outcome") what = `${outcomeWords(event.data.outcome, event.data.channel)}${quoted(event.data.note)}`;
+    else if (event.kind === "note") what = `Note${quoted(event.data.text)}`;
+    else if (event.kind.startsWith("booking_")) what = `${ledgerWordsWithHistory(event, coordinator.slice(0, coordinatorIndex))}${quoted(event.data.reason)}`;
+    coordinatorIndex += 1;
+    if (!what) return;
+    timed.push({ at: event.at, what, when: saved(event.at, event.hash), who: event.actor || "Actor not recorded", hash: event.hash });
+  });
+  // Older snapshots may have the overlay but not the shared event array. Keep their contacts readable; new responses
+  // use the shared hash chain above, not wall-clock sorting, when two actions share a timestamp.
+  if (coordinator.length === 0) {
+    timed.push(
+      ...(ov?.contact_outcomes ?? []).map((o) => ({ at: o.at, what: `${outcomeWords(o.outcome, o.channel)}${quoted(o.note)}`, when: saved(o.at, o.event), who: o.actor || "Actor not recorded", hash: o.event || undefined })),
+      ...(ov?.notes ?? []).map((n) => ({ at: n.at, what: `Note${quoted(n.text)}`, when: saved(n.at, n.event), who: n.actor || "Actor not recorded", hash: n.event || undefined })),
+    );
+    timed.sort((a, b) => compareInstants(a.at, b.at));
+  }
   return {
     status,
     detail: status === "invalid" ? (rl?.detail ?? "") : "",
