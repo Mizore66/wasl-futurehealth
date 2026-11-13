@@ -53,6 +53,18 @@ func TestCRCProvenanceVerifiesInMemoryAndAcrossOUTSnapshots(t *testing.T) {
 			t.Fatal("child lost distinct review and post-disposition heads")
 		}
 	}
+	for _, state := range core.loops {
+		for _, item := range state.raised {
+			if item.Reason != CRCDispositionPurpose {
+				continue
+			}
+			requireCRCChain(t, item.Chain)
+			if item.Head != item.Chain[len(item.Chain)-1].Hash {
+				t.Fatal("retained in-memory review snapshot changed its signed digest")
+			}
+			chains = append(chains, item.Chain)
+		}
+	}
 	for _, m := range logs {
 		var env OutEnvelope
 		if err := json.Unmarshal(m.Data, &env); err != nil {
