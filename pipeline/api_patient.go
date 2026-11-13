@@ -273,7 +273,7 @@ func (s *apiServer) patientSemanticNoOpLocked(c *apiCase, kind string, data map[
 		return c.patient.Teach.Status == "completed"
 	case "contact_permission_changed":
 		overlay, _ := s.overlayLocked(c)
-		return overlay["status"] == data["permission"]
+		return c.patient.Contact.Status == data["permission"] && overlay["status"] == data["permission"]
 	case "slot_selected":
 		return c.patient.Slot.Status == "selected" && c.patient.Slot.SlotID == data["slot_id"]
 	case "preparation_changed":
@@ -390,9 +390,8 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 			if overlay["status"] == "opted_out" && data["permission"] != "opted_out" {
 				return s.patientConflictLocked(c, "consent", "contact permission is terminal after opt-out")
 			}
-			if data["permission"] == "opted_out" && overlay["status"] == "opted_out" {
-				return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
-			}
+			// A staff opt-out does not record the patient's own first choice. The common
+			// replay check below distinguishes that write from a true patient repeat.
 		}
 		if s.patientSemanticNoOpLocked(c, req.Kind, data) {
 			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}

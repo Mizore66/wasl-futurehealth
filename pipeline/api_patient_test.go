@@ -526,7 +526,7 @@ func TestPatientOptOutBlocksOutreachAndSurvivesExpiry(t *testing.T) {
 	}
 }
 
-func TestPatientPermissionNoOpUsesSharedContactOverlay(t *testing.T) {
+func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 	recordConsent := func(t *testing.T, p *patientTestAPI, event string) {
 		t.Helper()
 		code, body, _ := p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{
@@ -543,6 +543,39 @@ func TestPatientPermissionNoOpUsesSharedContactOverlay(t *testing.T) {
 		})
 		return code, body
 	}
+
+	t.Run("first grant after coordinator grant appends and projects", func(t *testing.T) {
+		p := newPatientTestAPI(t)
+		head := patientHead(p.s.cases[patientTestCaseA])
+		recordConsent(t, p, "consent_granted")
+		eventsBefore := len(p.s.reviews)
+
+		code, body := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "granted"})
+		if code != http.StatusCreated || body["replayed"] != false || body["event"] == nil || journeyHead(body) == head {
+			t.Fatalf("first patient grant after coordinator grant: %d %v", code, body)
+		}
+		journey := body["journey"].(map[string]interface{})
+		contact := journey["contact_permission"].(map[string]interface{})
+		if journey["seq"] != float64(1) || contact["status"] != "granted" || len(p.s.reviews) != eventsBefore+1 {
+			t.Fatalf("first patient grant projection: journey=%v events=%d", journey, len(p.s.reviews))
+		}
+
+		code, detail, _ := p.request(t, http.MethodGet, "/api/cases/"+patientTestCaseA, "staff-token-123456", nil)
+		projection, ok := detail["api_patient"].(map[string]interface{})
+		if code != http.StatusOK || !ok || projection["seq"] != float64(1) {
+			t.Fatalf("staff detail after first patient grant: %d %v", code, detail)
+		}
+		projectedContact, ok := projection["contact_permission"].(map[string]interface{})
+		if !ok || projectedContact["status"] != "granted" {
+			t.Fatalf("staff contact projection after first patient grant: %v", projection)
+		}
+
+		head = journeyHead(body)
+		code, body = p.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "granted"})
+		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || p.s.cases[patientTestCaseA].patient.Seq != 1 || len(p.s.reviews) != eventsBefore+1 {
+			t.Fatalf("true first-choice repeat no-op: %d %v", code, body)
+		}
+	})
 
 	t.Run("repeated denial overrides coordinator grant", func(t *testing.T) {
 		p := newPatientTestAPI(t)
