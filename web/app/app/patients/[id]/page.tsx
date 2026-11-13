@@ -5,8 +5,8 @@ import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingC
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
-import { caseDeadlineDays } from "@/components/worklist/days";
-import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
+import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -65,7 +65,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const closedIn = c.closed ? closedInDays(c) : null;
   /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
   const due = caseDeadlineDays(c);
-  const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
   /* Independent review: only a terminal state on every question clears waiting, even while canonical review is still open. */
   const waiting = allQuestionsResolved(detail)
     ? false
@@ -92,12 +91,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             </div>
             <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
               {closedIn !== null ? (
-                <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+                <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
               ) : (
                 <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
+                {statusWords(c).status === "Closed" ? (isNoAction(c) ? "closed, no action needed" : "closed with evidence") : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
               </span>
             </p>
           </div>
@@ -165,11 +164,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               {first ? "Her case, step by step" : "The case, step by step"}
             </h2>
             <span className="text-small text-muted" data-testid="closed-in">
-              {closedIn !== null
-                ? closedIn <= due
-                  ? `Closed in ${closedIn} days, ${due - closedIn} inside the ${dueWords}`
-                  : `Closed in ${closedIn} days, ${closedIn - due} past the ${dueWords}`
-                : statusWords(c).next}
+              {closedIn !== null ? closedHeadline(c) : statusWords(c).next}
             </span>
           </div>
           <SealedChain nodes={nodes} className="mt-4" />

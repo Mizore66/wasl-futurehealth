@@ -9,7 +9,7 @@ import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/le
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
 import { Refine } from "@/components/patients/refine";
 import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
-import { closedInDays, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
+import { closedInDays, dueColumnWords, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { apiMode, getCases } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
@@ -207,7 +207,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                 </td>
                 <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
                   <span className="md:hidden">Due </span>
-                  {formatDay(c.referral_day + dueIn(c))}
+                  {dueColumnWords(c)}
                   {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}
                 </td>
                 <td className="px-4 py-2.5 text-muted max-md:block max-md:p-0">

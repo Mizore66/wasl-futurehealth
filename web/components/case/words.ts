@@ -2,7 +2,8 @@ import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
-import { statusWords } from "@/components/worklist/model";
+import { isNoAction } from "@/components/worklist/days";
+import { noActionWords, statusWords } from "@/components/worklist/model";
 
 /*
  * Plain words for what the case and audit endpoints return (issues #1 and #5).
@@ -99,6 +100,9 @@ export function bodySummary(e: Chain): string {
 /** The closure reason (closed) or the hold reason (open), as the summary at the top of the case. */
 export function closureReason(d: CaseDetail): { title: string; body: string } {
   const c = d.case;
+  if (c.closed && isNoAction(c)) {
+    return { title: "Resolved, no action needed", body: `The screening finding needs no procedure: ${noActionWords(c)}.` };
+  }
   if (c.closed) {
     const closure = d.current.chain.find((e) => e.type === "closure_decision")?.body ?? {};
     const sla = num(closure.sla_days);
