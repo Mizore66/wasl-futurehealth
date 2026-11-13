@@ -30,17 +30,27 @@ var (
 	crcCurrentContextRE    = regexp.MustCompile(`(?i)\b(?:current(?:ly)?|today(?:'s)?)\b`)
 	crcSectionRE           = regexp.MustCompile(`(?i)\b(indication|reason\s+for\s+(?:procedure|examination)|clinical\s+history|past\s+medical\s+history|family\s+history|history|findings|impression|(?:final\s+)?diagnosis|microscopic\s+examination|colonoscopy)\s*:`)
 	crcFamilyHistoryRE     = regexp.MustCompile(`(?i)\bfamily\s+history\b`)
-	crcSubjectJoinRE       = regexp.MustCompile(`(?i)\b(and|or|with|alongside|in\s+the\s+(?:setting|context)\s+of|in\s+a\s+patient|against\s+a\s+background\s+of)\b`)
-	crcQualifiedHeadRE     = regexp.MustCompile(`(?i)^\s*(?:(?:a|an|the)\s+)?(?:current(?:ly)?|today(?:'s)?|prior|previous(?:ly)?|histor(?:y|ical)|hx\s+of|no|without|negative\s+for)\b`)
+	crcSubjectJoinRE       = regexp.MustCompile(`(?i)\b(and|or|with|alongside|despite|in\s+addition\s+to|in\s+the\s+(?:setting|context)\s+of|in\s+a\s+patient|against\s+a\s+background\s+of)\b`)
+	crcQualifiedHeadRE     = regexp.MustCompile(`(?i)^\s*(?:(?:a|an|the)\s+)?(?:current(?:ly)?|today(?:'s)?|prior|previous(?:ly)?|histor(?:y|ical)|family\s+history|hx\s+of|no|without|negative\s+for)\b`)
 	crcArticleHeadRE       = regexp.MustCompile(`(?i)^\s*(?:a|an|the)\s+`)
 	crcObservationRE       = regexp.MustCompile(`(?i)\b(?:seen|identified|present|detected|confirmed|excluded|ruled\s+out)\b`)
 	crcSharedObservationRE = regexp.MustCompile(`(?i)\b(?:were|are)\s+(?:not\s+)?(?:seen|identified|present|detected|confirmed|excluded|ruled\s+out)\b`)
 	crcTentativeBeforeRE   = regexp.MustCompile(`(?i)\b(?:suspected|suspicious(?:\s+for)?|possible)\s+(?:(?:a|an|the|rectal|colonic|colorectal|sigmoid|invasive)\s+)*$`)
 	crcSubjectNounRE       = regexp.MustCompile(`(?i)\b(?:mass|stricture|polyp|adenoma|carcinoma|adenocarcinoma|cancer|malignancy|colitis|proctitis|crohn(?:'s)?|IBD)\b`)
 	crcSuspicionWordRE     = regexp.MustCompile(`(?i)\b(?:suspected|suspicious|malignant[- ]looking)\b`)
-	crcPurposeBeforeRE     = regexp.MustCompile(`(?i)\bscreening\s+(?:for\s+)?(?:(?:a|an|the|colon|colorectal|rectal|invasive)\s+)*$`)
+	crcPurposeBeforeRE     = regexp.MustCompile(`(?i)\bscreening\s+(?:colonoscopy\s+)?(?:(?:for|to\s+exclude)\s+)?(?:(?:a|an|the|colon|colorectal|rectal|invasive)\s+)*$`)
 	crcPurposeAfterRE      = regexp.MustCompile(`(?i)^\s+screening\b`)
+	// A present predicate can reassert a previously suspected finding. Require
+	// the predicate on this very subject, not a "current" word elsewhere. A past
+	// persistence predicate ("was still present") does not establish current care.
+	crcPresentObservationRE = regexp.MustCompile(`(?i)^\s*(?:(?:a|an|the|rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:is|are)\s+(?:still\s+)?(?:not\s+)?(?:seen|identified|present|detected|confirmed|excluded|ruled\s+out)|(?:cannot|can't)\s+be\s+(?:confirmed|excluded|ruled\s+out))\b`)
 )
+
+func crcFindingReasserted(after string) bool {
+	// Even a present-tense transcription can describe an old observation. Its
+	// own historical qualifier wins; unrelated history has already been split.
+	return crcPresentObservationRE.MatchString(after) && !rePriorCtx.MatchString(after)
+}
 
 // A conjunction may share modifiers across a finding list, or introduce another
 // subject. Split only at a newly qualified subject or its own observation. In
@@ -147,7 +157,7 @@ func crcScopedFindings(text string, re *regexp.Regexp) []crcFinding {
 		switch {
 		case f.Context == crcFamilyContext || crcFamilyHistoryRE.MatchString(scope):
 			f.Assertion = crcContextOnly
-		case f.Context == crcHistoryContext && !crcCurrentContextRE.MatchString(scope):
+		case f.Context == crcHistoryContext && !crcCurrentContextRE.MatchString(scope) && !crcFindingReasserted(after):
 			f.Assertion = crcHistorical
 		case f.Assertion == crcAffirmative && (ambiguous || re != crcSuspiciousRE && crcTentativeBeforeRE.MatchString(before)):
 			// Suspected disease is not a confirmed diagnosis. The suspicion reader

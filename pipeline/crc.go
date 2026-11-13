@@ -136,7 +136,7 @@ const (
 // Absence of confirmation is not confirmation of absence. Explicit uncertainty
 // wins over a competing negative in the same finding scope, not over history.
 func crcFindingAssertion(before, after string) crcAssertion {
-	if rePriorCtx.MatchString(before + after) {
+	if rePriorCtx.MatchString(before+after) && !crcFindingReasserted(after) {
 		return crcHistorical
 	}
 	// A negator on confirmation ("no mass was confirmed") negates certainty,

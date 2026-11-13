@@ -24,6 +24,30 @@ func TestCRCAssertionContextCanonicalFlow(t *testing.T) {
 		{"A current suspicious rectal stricture was seen alongside a prior benign polyp.", true},
 		{"History of ulcerative colitis and a current rectal mass was seen.", true},
 		{"A current suspicious rectal stricture was seen with a prior benign polyp.", true},
+		{"A current suspicious rectal mass was seen with a family history of colorectal cancer.", true},
+		{"A current suspicious rectal mass was seen despite a prior normal colonoscopy.", true},
+		{"The previously suspected rectal mass is still present.", true},
+		{"History: the previously suspected rectal mass is still present.", true},
+		{"The previously suspected rectal stricture is still present.", true},
+		{"Family history: the previously suspected rectal mass is still present.", false},
+		{"The previously suspected rectal mass was still present on the prior colonoscopy.", false},
+		{"A current rectal mass was seen in addition to a prior benign polyp.", true},
+		{"A current suspicious rectal mass was seen with a prior benign polyp.", true},
+		{"A current suspicious rectal mass was seen alongside a prior benign polyp.", true},
+		{"A prior benign polyp was seen in addition to a current rectal mass.", true},
+		{"Family history of colorectal cancer with a current rectal mass seen today.", true},
+		{"No mass was seen with a family history of colorectal cancer.", false},
+		{"No mass was seen despite a prior polyp.", false},
+		{"A prior suspicious rectal mass was seen in addition to a current benign polyp.", false},
+		{"The previously suspected rectal mass was seen on the prior colonoscopy.", false},
+		{"The previously suspected rectal mass is not present.", false},
+		{"Screening colonoscopy for colorectal cancer.", false},
+		{"Screening colonoscopy to exclude colorectal cancer.", false},
+		{"Colonoscopy performed for colorectal cancer screening.", false},
+		{"Indication: screening colonoscopy for colorectal cancer.", false},
+		{"Screening colonoscopy for colorectal cancer. Findings: a current rectal mass was seen.", true},
+		{"Screening colonoscopy to exclude colorectal cancer. Findings: malignancy cannot be excluded.", true},
+		{"Screening colonoscopy for suspected colorectal cancer.", true},
 		{"Suspected malignancy.", true},
 		{"Malignancy cannot be excluded.", true},
 		{"Cancer cannot be excluded.", true},
@@ -118,8 +142,13 @@ func TestCRCAssertionContextCompositions(t *testing.T) {
 				{"A current %s was seen in the setting of prior %s.", true, false},
 				{"A %s is present in a patient previously treated for %s.", true, false},
 				{"A current %s was seen with a history of %s.", true, false},
+				{"A current %s was seen with a family history of %s.", true, false},
+				{"A current %s was seen despite a prior %s.", true, false},
+				{"A current %s was seen in addition to a prior %s.", true, false},
 				{"A %s cannot be excluded alongside a prior %s.", true, true},
 				{"A %s was not identified alongside a prior %s.", false, false},
+				{"A %s was not identified despite a prior %s.", false, false},
+				{"No %s was seen with a family history of %s.", false, false},
 			} {
 				text := fmt.Sprintf(tc.format, current, historical)
 				t.Run(text, func(t *testing.T) {
@@ -129,7 +158,7 @@ func TestCRCAssertionContextCompositions(t *testing.T) {
 					}
 				})
 			}
-			for _, connector := range []string{"and a current", "with a current", ", but a current", "; however a current"} {
+			for _, connector := range []string{"and a current", "with a current", "despite a current", "in addition to a current", ", but a current", "; however a current"} {
 				text := fmt.Sprintf("History of %s %s %s was seen.", historical, connector, current)
 				t.Run(text, func(t *testing.T) {
 					p := extractCRCProposal("No polyps. "+text, "colonoscopy")
@@ -141,7 +170,7 @@ func TestCRCAssertionContextCompositions(t *testing.T) {
 		}
 	}
 	for _, disease := range []string{"colorectal cancer", "colon cancer", "carcinoma"} {
-		for _, format := range []string{"Indication: %s screening.", "Indication: screening for %s.", "%s screening colonoscopy was normal.", "%s screening colonoscopy identified no polyps.", "Family history: %s.", "History: %s."} {
+		for _, format := range []string{"Indication: %s screening.", "Indication: screening for %s.", "%s screening colonoscopy was normal.", "%s screening colonoscopy identified no polyps.", "Screening colonoscopy for %s.", "Screening colonoscopy to exclude %s.", "Colonoscopy performed for %s screening.", "Family history: %s.", "History: %s."} {
 			text := fmt.Sprintf(format, disease)
 			t.Run(text, func(t *testing.T) {
 				p := extractCRCProposal("No polyps. "+text, "colonoscopy")
@@ -149,6 +178,67 @@ func TestCRCAssertionContextCompositions(t *testing.T) {
 					t.Fatalf("procedure purpose or nonpatient/history context became a finding: %s", canon(p))
 				}
 			})
+		}
+	}
+}
+
+// The red canonical probes at 3c350b64 cover both adjunct attachment and
+// persistence. Cross subjects, predicates and adjuncts so that repairing a single
+// wording cannot hide an uncertain finding or promote unrelated history.
+func TestCRCAssertionContextPredicateCompositions(t *testing.T) {
+	for _, subject := range []string{"rectal mass", "suspicious rectal stricture", "malignancy"} {
+		for _, historical := range []string{"colorectal cancer", "ulcerative colitis", "benign polyp", "normal colonoscopy"} {
+			for _, adjunct := range []string{"with a family history of", "with a history of", "despite a prior", "in addition to a prior"} {
+				for _, predicate := range []struct {
+					text                  string
+					suspected, unresolved bool
+				}{
+					{"was seen", true, false},
+					{"cannot be excluded", true, true},
+					{"was not confirmed", true, true},
+					{"was not identified", false, false},
+				} {
+					text := fmt.Sprintf("A current %s %s %s %s.", subject, predicate.text, adjunct, historical)
+					t.Run(text, func(t *testing.T) {
+						p := extractCRCProposal("No polyps. "+text, "colonoscopy")
+						if p.Suspected != predicate.suspected || p.EvidenceUnresolved != predicate.unresolved || len(crcProposalOutcomes(p)) != 0 {
+							t.Fatalf("adjacent history changed this subject's assertion: %s", canon(p))
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
+// A present predicate reasserts only its own subject. Past-tense persistence,
+// historical observation dates and a relative's finding remain context-only.
+func TestCRCAssertionContextTemporalReassertion(t *testing.T) {
+	for _, subject := range []string{"rectal mass", "rectal stricture"} {
+		for _, section := range []string{"", "History: ", "Family history: "} {
+			for _, predicate := range []struct {
+				text                  string
+				suspected, unresolved bool
+			}{
+				{"is still present", true, false},
+				{"is still seen", true, false},
+				{"is identified", true, false},
+				{"cannot be excluded", true, true},
+				{"is not confirmed", true, true},
+				{"is not present", false, false},
+				{"was still present", false, false},
+				{"was still seen on the prior colonoscopy", false, false},
+				{"is still present on the prior colonoscopy", false, false},
+			} {
+				text := fmt.Sprintf("%sThe previously suspected %s %s.", section, subject, predicate.text)
+				t.Run(text, func(t *testing.T) {
+					p := extractCRCProposal("No polyps. "+text, "colonoscopy")
+					patient := section != "Family history: "
+					if p.Suspected != (patient && predicate.suspected) || p.EvidenceUnresolved != (patient && predicate.unresolved) || len(crcProposalOutcomes(p)) != 0 {
+						t.Fatalf("temporal predicate escaped its subject/observation context: %s", canon(p))
+					}
+				})
+			}
 		}
 	}
 }
@@ -236,6 +326,10 @@ func TestCRCAssertionContextFinalTissueStillRequiresSourceSignoff(t *testing.T) 
 	for _, finding := range []string{
 		"A current suspicious rectal stricture was seen alongside a prior benign polyp.",
 		"A suspicious rectal mass was seen in the setting of prior ulcerative colitis.",
+		"A current suspicious rectal mass was seen with a family history of colorectal cancer.",
+		"A current suspicious rectal mass was seen despite a prior normal colonoscopy.",
+		"The previously suspected rectal mass is still present.",
+		"A current rectal mass was seen in addition to a prior benign polyp.",
 		"Indication: screening for colorectal cancer. Findings: malignancy cannot be excluded.",
 	} {
 		for _, malignant := range []bool{false, true} {
