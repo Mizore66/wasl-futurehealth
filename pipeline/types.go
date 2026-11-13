@@ -210,6 +210,58 @@ type DownFact struct {
 	IDConfirmed bool    `json:"id_confirmed,omitempty"` // a human confirmed this registration pair on another loop (ReuseIDConfirm)
 }
 
+// reportParentLineage records only explicit report-to-report parent links. Eligibility filtering is deliberately
+// separate: an ineligible intermediate report cannot decide a loop, but its declared parent can still establish the
+// lineage of an eligible correction.
+func reportParentLineage(down []DownFact, prog, rtype string) map[string]string {
+	parents := map[string]string{}
+	for _, d := range down {
+		if d.Prog == prog && d.RType == rtype && d.ReportID != "" && d.Parent != "" {
+			parents[d.ReportID] = d.Parent
+		}
+	}
+	return parents
+}
+
+// inExplicitReportLineage follows declared parent identity, never chronology or content similarity. The visited set
+// prevents malformed parent cycles from turning evaluation into an unbounded walk.
+func inExplicitReportLineage(root, reportID string, parents map[string]string) bool {
+	if root == "" || reportID == "" {
+		return false
+	}
+	seen := map[string]bool{}
+	for reportID != "" && !seen[reportID] {
+		if reportID == root {
+			return true
+		}
+		seen[reportID] = true
+		reportID = parents[reportID]
+	}
+	return false
+}
+
+// unsupersededReportRows removes ancestors of eligible explicit corrections before chronology is used to choose
+// between remaining branches. A child's exam day or lexical ID need not be later than its parent's. Callers supply
+// only eligible rows in the authorized index lineage; ineligible intermediates remain usable through parents.
+func unsupersededReportRows(reports []row, parents map[string]string) []row {
+	var current []row
+	for i := range reports {
+		id := reports[i].d.ReportID
+		superseded := false
+		for j := range reports {
+			other := reports[j].d.ReportID
+			if id != other && inExplicitReportLineage(id, other, parents) && !inExplicitReportLineage(other, id, parents) {
+				superseded = true
+				break
+			}
+		}
+		if !superseded {
+			current = append(current, reports[i])
+		}
+	}
+	return current
+}
+
 // reportVersionKey scopes active evidence decisions and review items to the
 // exact report version reviewed. Versions zero and one share the historical
 // replay key; corrections at v2 and above receive distinct identities.
