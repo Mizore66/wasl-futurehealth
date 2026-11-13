@@ -54,6 +54,17 @@ describe("docs/api-samples contract", () => {
     expect((parsed.fixtures.review_hold as Record<string, unknown>).display_name).toBe("Mariam Al Shamsi");
   });
 
+  it("keeps historical evidence labelled and separate from the current checklist", () => {
+    const sample = CaseDetail.parse(loadSample("case_dr_exam_closure.json"));
+    const report = sample.evidence[0];
+    const past = { ...report, history: "rejected_registration", block_hash: "block-1", decision_id: "decision-1", decision_sig: "original-signature" };
+    const parsed = CaseDetail.parse({ ...sample, evidence: [], evidence_history: [past] });
+    expect(parsed.evidence).toEqual([]);
+    expect(parsed.evidence_history?.[0]).toMatchObject(past);
+    expect(CaseDetail.safeParse({ ...sample, evidence_history: [{ ...past, history: "current" }] }).success).toBe(false);
+    expect(CaseDetail.safeParse({ ...sample, evidence_history: [{ ...past, history: "superseded" }] }).success).toBe(true);
+  });
+
   it("rejects an unknown case state", () => {
     const sample = loadSample("fixtures.json") as { fixtures: { review_hold: { state: string } } };
     sample.fixtures.review_hold.state = "teleported";

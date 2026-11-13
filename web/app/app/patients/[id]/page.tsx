@@ -238,8 +238,25 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       <div className="mt-gap grid items-start gap-gap lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-gap">
           {earlier.map((ev) => (
-            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
+            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Supporting reading: report ${shortId(ev.report)}`} />
           ))}
+          {!!detail.evidence_history?.length && (
+            <section aria-label="Historical evidence" className="rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="evidence-history">
+              <details>
+                <summary className="min-h-11 cursor-pointer py-2 font-medium">Historical evidence</summary>
+                <p>These reports are preserved for audit, not the current clinical checklist. Original decisions and signatures are unchanged.</p>
+                <ul className="m-0 space-y-3 pl-5">
+                  {detail.evidence_history.map((ev) => (
+                    <li key={ev.block_hash}>
+                      <span className="font-medium">{ev.history === "rejected_registration" ? "Rejected registration" : "Superseded evidence"}</span>
+                      <span className="block text-small">Report {shortId(ev.report)} · recorded result: {ev.label}</span>
+                      <span className="block text-small text-muted">Decision {shortId(ev.decision_id)} · signature {ev.decision_sig.slice(0, 12)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </section>
+          )}
           <ConsentCard detail={detail} />
           <PatientJourneySection detail={detail} />
           <SignoffsCard detail={detail} />

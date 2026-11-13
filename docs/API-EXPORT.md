@@ -33,6 +33,7 @@ GET /api/cases/{id}/export
 
 - Before redaction, `detail` and `audit` are produced by `caseDetailBody(c)` and `caseAuditBody(c)` in `pipeline/api_export.go`.
   `caseDetail` serves a deep copy of the shared detail helper with registration keys pseudonymized; tests compare both redacted projections against the real wrapped live routes, including consent and ledger overlays.
+- The shared detail projection separates current `evidence` from optional `evidence_history`. History retains the report's allowlisted evidence fields plus `history` (`rejected_registration` or `superseded`), `block_hash`, `decision_id` and the original `decision_sig`. It uses the same redaction rules as current evidence; neither a history label nor the original signature authenticates the redacted report body by itself. Current identities, timeline, links and these history labels agree with case detail. Original canonical records remain unchanged.
 - The export adds **no** `exported_at`, no file list and no other field. Nothing is written to the run directory.
 
 ## Hashes

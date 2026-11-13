@@ -71,6 +71,7 @@ type apiServer struct {
 	order           []string
 	queue           map[string][]*ReviewItem // loop -> raised items
 	signoffs        map[string][]map[string]interface{}
+	idSignoffs      []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
 	dashboard       map[string]interface{}
@@ -322,14 +323,19 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	s.idSignoffs = nil
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
-		if !strings.HasSuffix(m.Subject, ".res") {
+		if !apiFHIRSubject.MatchString(m.Subject) && m.Subject != "fhir.review" || strings.HasSuffix(m.Subject, ".ctl") {
 			continue
 		}
 		prov := strings.Split(m.Subject, ".")[1]
 		arr, _ := strconv.ParseFloat(m.Hdr["Wsi-Arr"], 64)
 		e, so := normalise(prov, arr, m.Data)
-		if e == nil || so != nil || e.PatientKey == "" {
+		if so != nil {
+			s.idSignoffs = append(s.idSignoffs, *so)
+			continue
+		}
+		if e == nil || e.PatientKey == "" {
 			continue
 		}
 		h := sha256.Sum256(m.Data)
@@ -341,9 +347,18 @@ func (s *apiServer) loadTimelines() {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
 		}
 	}
+	projection, _ := s.loadPersonProjection()
 	for id, c := range s.cases {
-		pks := map[string]bool{srPK[id]: true}
-		// linked downstream registrations come from the link_decision blocks of the case's decisions
+		referral := srPK[baseLoop(id)]
+		pks := map[string]bool{referral: true}
+		if projection != nil {
+			referral = projection.referralByCase[id]
+			pks[referral] = true
+			for _, registration := range projection.byCase[id].registrations {
+				pks[registration] = true
+			}
+		}
+		// Keep historical candidates internally; the served current projection uses trusted membership.
 		for _, d := range c.decisions {
 			for _, b := range d.Chain {
 				if b.Type == "link_decision" {
@@ -365,7 +380,7 @@ func (s *apiServer) loadTimelines() {
 				continue
 			}
 			role := "downstream"
-			if pk == srPK[id] {
+			if pk == referral {
 				role = "referral"
 			}
 			ids = append(ids, map[string]string{"registration": pk, "provider": strings.Split(pk, "|")[0], "role": role})
