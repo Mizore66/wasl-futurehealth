@@ -210,8 +210,8 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	// ---- the deciding scan: the first read scan; a categorised scan after an LR0 replaces it; for 3/4A the next read
 	// scan with a category other than 0 is the follow-up. An unread scan blocks what comes after it.
-	var dec, follow, unread *row
-	var decLab, decHuman, folLab, folHuman string
+	var dec, follow, unread, reclass *row
+	var decLab, decHuman, idxHuman, folLab, folHuman string
 	incompleteFollow := false
 	excludedFollow := ""
 	for i := range scans {
@@ -221,10 +221,24 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			}
 		}
 		if dec != nil && (decLab == "LR3" || decLab == "LR4A") {
-			// An addendum reclassifies the index report; it is not a new interval LDCT. Likewise, a same-day reread
-			// cannot satisfy the 3/6-month recommendation. Neither gets an evidence review merely for being ineligible.
+			// An addendum linked to the deciding report reclassifies it and keeps the index examination day; it is not
+			// a new interval LDCT. Any other addendum, and a same-day reread, cannot satisfy the 3/6-month
+			// recommendation and gets no evidence review merely for being ineligible.
 			if scans[i].d.Parent != "" {
-				excludedFollow = "followup_addendum_not_interval_ldct"
+				if scans[i].d.Parent != dec.d.ReportID {
+					excludedFollow = "followup_addendum_not_interval_ldct"
+					continue
+				}
+				lab, h := labelOf(scans[i])
+				if lab == "" {
+					unread = &scans[i]
+					raise(scans[i], "evidence")
+					break
+				}
+				if reclass == nil {
+					idxHuman = decHuman
+				}
+				reclass, decLab, decHuman = &scans[i], lab, h
 				continue
 			}
 			if scans[i].d.Day < dec.d.Day+LDCTMinFollowupDays {
@@ -267,23 +281,35 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": reason, "label": decLab})
 	default:
+		eff := dec
+		if reclass != nil {
+			eff = reclass
+		}
 		ld.Scan, ld.ScanLabel, ld.Rec, ld.ScanDay = dec.d.ReportID, decLab, &rec, dec.d.Day
-		ld.Coded = dec.d.Ev != nil && dec.d.Ev.Model == "coded_lungrads" && decHuman == ""
+		ld.Coded = eff.d.Ev != nil && eff.d.Ev.Model == "coded_lungrads" && decHuman == ""
 		ld.DueDay = ld.ScanDay + float64(rec.Due)
 		if rec.Deadline > 0 {
 			ld.DeadlineDay = ld.ScanDay + float64(rec.Deadline)
 		}
-		gchain := appendBlock(nil, "evidence", ldctEvBlock(dec.d, decHuman))
-		gchain = appendBlock(gchain, "recommendation", map[string]interface{}{"rule": "acr2022lungrads", "cell": rec.Cell, "action": rec.Action,
+		var gchain []Block
+		if reclass != nil {
+			gchain = appendBlock(gchain, "evidence", ldctEvBlock(dec.d, idxHuman))
+		}
+		gchain = appendBlock(gchain, "evidence", ldctEvBlock(eff.d, decHuman))
+		recBody := map[string]interface{}{"rule": "acr2022lungrads", "cell": rec.Cell, "action": rec.Action,
 			"due_days": rec.Due, "deadline_days": rec.Deadline, "urgency": rec.Urgency, "next_step": rec.Next, "scan_day": round4(ld.ScanDay),
-			"source": ldctSource})
+			"source": ldctSource}
+		if reclass != nil {
+			recBody["reclassified_by"] = reclass.d.ReportID
+		}
+		gchain = appendBlock(gchain, "recommendation", recBody)
 		if decHuman != "" {
-			gchain, _ = withSignoff(gchain, dec.d.ReportID)
+			gchain, _ = withSignoff(gchain, eff.d.ReportID)
 			human = true
 		}
 		switch rec.Action {
 		case LDCTAnnual:
-			state, closedDay, closing = "no_recall_needed", dec.d.Day, dec.d.ReportID
+			state, closedDay, closing = "no_recall_needed", eff.d.Day, eff.d.ReportID
 			chain = appendBlock(gchain, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "no_recall_needed",
 				"programme": "lung_ldct", "rule": "acr2022lungrads", "cell": rec.Cell, "closed_day": round4(closedDay),
 				"next_step": rec.Next, "next_screen_due_day": round4(ld.DueDay),
