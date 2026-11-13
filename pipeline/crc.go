@@ -105,9 +105,12 @@ var (
 	// mass finding. Contrast/punctuation also delimit history and post-negation.
 	crcClauseBoundaryRE  = regexp.MustCompile(`(?i)[.;,!?\n—–]|\b(?:but|however|yet|whereas|although|nevertheless)\b`)
 	crcUnclearNegationRE = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out|cannot\s+exclude|can't\s+exclude)\b`)
-	crcNegatedRE         = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out|cannot\s+exclude|can't\s+exclude)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
-	crcPostNegatedRE     = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?not\s+(?:seen|identified|present|detected|confirmed)\b`)
-	crcIntervalPriorRE   = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
+	// "Cannot exclude"/"can't exclude" express unresolved evidence, never absence.
+	// Keep them in crcUnclearNegationRE only so suspicion retains a review hold
+	// without asserting a diagnosis or falling through to normal closure.
+	crcNegatedRE       = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
+	crcPostNegatedRE   = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?not\s+(?:seen|identified|present|detected|confirmed)\b`)
+	crcIntervalPriorRE = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
 )
 
 func crcCurrentQuotes(text string, re *regexp.Regexp) []string {
