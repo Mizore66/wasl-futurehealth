@@ -21,10 +21,24 @@ export type PersistedLedger = {
   /** Ledger events the API applied before stopping (all of them when `ok`). */
   applied: number | null;
   entries: TrailEntry[];
+  patient?: CaseDetail["api_patient"];
 };
 
 const saved = (at: string, event: string) => `Saved · ${atWords(at)}${event ? ` · ${event.slice(0, 8)}` : ""}`;
 const quoted = (s: string | undefined) => (s ? `: “${s}”` : "");
+
+function patientActivity(event: Extract<CaseDetail["api_reviews"][number], { ledger: "patient" }>): string {
+  switch (event.kind) {
+    case "teach_back_completed":
+      return "Patient completed teach-back";
+    case "contact_permission_changed":
+      return `Patient contact permission: ${event.data.permission ?? "changed"}`;
+    case "slot_selected":
+      return "Patient selected a simulated slot · coordinator review needed";
+    case "preparation_changed":
+      return `Patient preparation ${event.data.item_id === "escort_home" ? "escort home" : "clear fluids and prep"}: ${event.data.completed ? "complete" : "not complete"}`;
+  }
+}
 
 export function persistedLedger(detail: CaseDetail): PersistedLedger {
   const ov = detail.api_overlay;
@@ -32,11 +46,18 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
   const status = rl?.status === "invalid" || ov?.ledger_status === "invalid" ? "invalid" : "ok";
   const timed: (TrailEntry & { at: string })[] = [];
   const coordinator = detail.api_reviews.filter((event) => event.ledger === "coordinator");
-  coordinator.forEach((event, index) => {
+  let coordinatorIndex = 0;
+  detail.api_reviews.forEach((event) => {
+    if (event.ledger === "patient") {
+      timed.push({ at: event.at, what: patientActivity(event), when: saved(event.at, event.hash), who: "Patient self-service", hash: event.hash });
+      return;
+    }
+    if (event.ledger !== "coordinator") return;
     let what = "";
     if (event.kind === "contact_outcome") what = `${outcomeWords(event.data.outcome, event.data.channel)}${quoted(event.data.note)}`;
     else if (event.kind === "note") what = `Note${quoted(event.data.text)}`;
-    else if (event.kind.startsWith("booking_")) what = `${ledgerWordsWithHistory(event, coordinator.slice(0, index))}${quoted(event.data.reason)}`;
+    else if (event.kind.startsWith("booking_")) what = `${ledgerWordsWithHistory(event, coordinator.slice(0, coordinatorIndex))}${quoted(event.data.reason)}`;
+    coordinatorIndex += 1;
     if (!what) return;
     timed.push({ at: event.at, what, when: saved(event.at, event.hash), who: event.actor || "Actor not recorded", hash: event.hash });
   });
@@ -54,5 +75,6 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
     detail: status === "invalid" ? (rl?.detail ?? "") : "",
     applied: rl?.events_applied ?? null,
     entries: timed.map((e) => ({ what: e.what, when: e.when, who: e.who, ...(e.hash ? { hash: e.hash } : {}) })),
+    ...(detail.api_patient ? { patient: detail.api_patient } : {}),
   };
 }

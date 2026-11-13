@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
-import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySection, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
@@ -42,6 +42,7 @@ const SECTIONS = [
   ["people", "Records"],
   ["readers", "Readers"],
   ["consent", "Consent"],
+  ["patient-journey", "Patient self-service"],
   ["signoffs", "Sign-offs"],
   ["ledger", "Coordinator actions"],
   ["timeline", "Timeline"],
@@ -240,6 +241,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
           ))}
           <ConsentCard detail={detail} />
+          <PatientJourneySection detail={detail} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>

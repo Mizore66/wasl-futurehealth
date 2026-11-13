@@ -120,6 +120,9 @@ export type WorkItem = {
   textsAllowed: boolean;
   /** A recorded consent denial or opt-out: no new contact outcome may be logged, whatever the canonical consent. */
   contactBlocked: boolean;
+  /** Patient denial/opt-out in the demo overlay makes simulated SMS unavailable immediately. */
+  textsStopped?: boolean;
+  patient?: CaseSummary["api_patient"];
   owner: string;
   review: CaseSummary["review"];
   dropoff: Dropoff;
@@ -159,6 +162,11 @@ export const HANDOFF_OWNER = "Dr Al Kaabi";
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
   const words = { ...statusWords(c) };
+  if (c.api_patient?.slot_selection.status === "selected") {
+    words.status = "Patient selected a simulated slot · coordinator review needed";
+    words.next = "Review the preferred time; no appointment is reserved";
+  }
+  const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
   const owner = ov?.owner || c.owner;
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
@@ -219,8 +227,10 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted" && !contactBlocked,
-    contactBlocked,
+    textsAllowed: c.consent === "granted" && !contactBlocked && !patientBlocked,
+    contactBlocked: contactBlocked || patientBlocked,
+    textsStopped: patientBlocked,
+    patient: c.api_patient,
     owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,

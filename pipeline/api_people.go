@@ -716,6 +716,7 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		}
 		if summary, ok := allowed["case"].(map[string]interface{}); ok {
 			delete(summary, "api_overlay")
+			delete(summary, "api_patient")
 		}
 		overlay, _ := s.apiContactOverlay(c, viewer)
 		referral := projection.referralByCase[caseID]

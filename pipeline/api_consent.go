@@ -80,19 +80,30 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	return o, hist
 }
 
-// contactBlockedLocked is the one effective-consent rule for coordinator contact: a recorded denial or opt-out blocks
-// contact whatever canonical consent says. s.mu must be held.
-func (s *apiServer) contactBlockedLocked(c *apiCase) bool {
-	o, _ := s.overlayLocked(c)
-	return o["contact_blocked"] == true
-}
-
 // contactSummary is the list-form effective contact state: the consent overlay status and whether contact is blocked.
 func (s *apiServer) contactSummary(c *apiCase) map[string]interface{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, _ := s.overlayLocked(c)
 	return map[string]interface{}{"status": o["status"], "contact_blocked": o["contact_blocked"]}
+}
+
+type demoContactGuard struct {
+	Canonical string
+	Overlay   string
+	Blocked   bool
+	Allowed   bool
+}
+
+// contactGuardLocked is the single guard for simulated outreach intents. The
+// caller holds s.mu, so its decision and the subsequent append are atomic with
+// respect to patient denial and opt-out events.
+func (s *apiServer) contactGuardLocked(c *apiCase) demoContactGuard {
+	overlay, _ := s.overlayLocked(c)
+	status, _ := overlay["status"].(string)
+	canonical := consentFromDecision(c.last)
+	blocked := status == "denied" || status == "opted_out"
+	return demoContactGuard{Canonical: canonical, Overlay: status, Blocked: blocked, Allowed: canonical == "granted" && !blocked}
 }
 
 // withConsent wraps the case router with the consent routes and the detail overlay. Wire with
