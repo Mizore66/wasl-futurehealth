@@ -1,4 +1,4 @@
-import { DEFAULT_PATIENT_LANG, PATIENT_LANGS, type Lang, type PatientDict } from "./i18n";
+import { LANGS, type Lang, type PatientDict } from "./i18n";
 
 /**
  * Fatima's three phones (canonical facts, xcritique-consistency.md). Designed, not served by the API:
@@ -37,7 +37,7 @@ export function parsePhoneQuery(search: Search): PhoneQuery {
   const lang = first(search.lang);
   const consent = first(search.consent);
   return {
-    lang: (PATIENT_LANGS as readonly string[]).includes(lang ?? "") ? (lang as Lang) : DEFAULT_PATIENT_LANG,
+    lang: (LANGS as readonly string[]).includes(lang ?? "") ? (lang as Lang) : "ar",
     consent: consent === "yes" ? "given" : consent === "no" ? "declined" : "unknown",
   };
 }
