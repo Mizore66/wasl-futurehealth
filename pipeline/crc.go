@@ -36,10 +36,15 @@ type CRCProposal struct {
 	Outcomes           []string `json:"outcomes,omitempty"`
 	Suspected          bool     `json:"suspected_malignancy,omitempty"`
 	PriorSuspicion     bool     `json:"prior_suspicion,omitempty"`
+	NormalEvidence     bool     `json:"normal_evidence,omitempty"` // definitive benign evidence may coexist with an independent care finding
 	IntervalDays       int      `json:"interval_days,omitempty"`
 	IntervalText       string   `json:"interval_text,omitempty"`
 	Conflicting        bool     `json:"conflicting,omitempty"`
 	EvidenceUnresolved bool     `json:"evidence_unresolved,omitempty"`
+	// Finding categories retain the scope of uncertainty on this source. A final
+	// linked tissue result may propose resolution of endoscopic suspicion only;
+	// it cannot silently clear an uncertain diagnosis or another specimen.
+	UnresolvedFindings []string `json:"unresolved_findings,omitempty"`
 	IntervalConflict   bool     `json:"interval_conflict,omitempty"`
 	Quotes             []string `json:"quotes,omitempty"`
 }
@@ -108,10 +113,53 @@ var (
 	// "Cannot exclude"/"can't exclude" express unresolved evidence, never absence.
 	// Keep them in crcUnclearNegationRE only so suspicion retains a review hold
 	// without asserting a diagnosis or falling through to normal closure.
-	crcNegatedRE       = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
-	crcPostNegatedRE   = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?not\s+(?:seen|identified|present|detected|confirmed)\b`)
-	crcIntervalPriorRE = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
+	crcNegatedRE          = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
+	crcPostNegatedRE      = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+(?:seen|identified|present|detected)|excluded|ruled\s+out)\b`)
+	crcPreUncertainRE     = regexp.MustCompile(`(?i)\b(?:(?:cannot|can't)\s+exclude|(?:not|no)\s+confirmed|unconfirmed)\s+(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*$`)
+	crcPostUncertainRE    = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+(?:confirmed|excluded|ruled\s+out)|(?:cannot|can't)\s+be\s+(?:confirmed|excluded|ruled\s+out))\b`)
+	crcPostObservationRE  = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+)?(?:seen|identified|present|detected|excluded|ruled\s+out)\b`)
+	crcPostConfirmationRE = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are|could\s+be)\s+)?confirmed\b`)
+	crcIntervalPriorRE    = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
 )
+
+type crcAssertion uint8
+
+const (
+	crcAffirmative crcAssertion = iota
+	crcExcluded
+	crcUnresolved
+	crcHistorical
+)
+
+// Classify the assertion before deciding whether it contributes an outcome.
+// Absence of confirmation is not confirmation of absence. Explicit uncertainty
+// wins over a competing negative in the same finding scope, not over history.
+func crcFindingAssertion(before, after, clause string) crcAssertion {
+	if rePriorCtx.MatchString(clause) {
+		return crcHistorical
+	}
+	// A negator on confirmation ("no mass was confirmed") negates certainty,
+	// not the finding itself. Classify it with the post-negated form.
+	unconfirmed := crcNegatedRE.MatchString(before) && crcPostConfirmationRE.MatchString(after)
+	if crcPreUncertainRE.MatchString(before) || crcPostUncertainRE.MatchString(after) || unconfirmed {
+		return crcUnresolved
+	}
+	if negative := crcPostObservationRE.FindStringIndex(after); negative != nil && (crcNegatedRE.MatchString(before) || crcPostNegatedRE.MatchString(after)) {
+		// A contrasting assertion about this same finding remains unresolved.
+		// Stop at another subject rather than borrowing its uncertainty.
+		tail := strings.TrimSpace(after[negative[1]:])
+		if strings.HasPrefix(strings.ToLower(tail), "and ") && crcPostUncertainRE.MatchString(tail[4:]) {
+			return crcUnresolved
+		}
+	}
+	if crcNegatedRE.MatchString(before) || crcPostNegatedRE.MatchString(after) {
+		return crcExcluded
+	}
+	if crcUnclearNegationRE.MatchString(before) {
+		return crcUnresolved
+	}
+	return crcAffirmative
+}
 
 func crcCurrentQuotes(text string, re *regexp.Regexp) []string {
 	quotes, _ := crcFindingQuotes(text, re)
@@ -134,13 +182,12 @@ func crcFindingQuotes(text string, re *regexp.Regexp) ([]string, bool) {
 			}
 		}
 		clause := text[start:end]
-		if crcNegatedRE.MatchString(text[start:m[0]]) || crcPostNegatedRE.MatchString(text[m[1]:end]) || rePriorCtx.MatchString(clause) {
+		switch crcFindingAssertion(text[start:m[0]], text[m[1]:end], clause) {
+		case crcExcluded, crcHistorical:
 			continue
-		}
-		if crcUnclearNegationRE.MatchString(text[start:m[0]]) {
+		case crcUnresolved:
 			unclear = true
-			// Ambiguous scope may retain suspicion, but cannot assert a diagnosis
-			// or a normal result. The proposal below carries an explicit review hold.
+			// Unresolved mass/stricture warrants coordination, not a diagnosis.
 			if re != crcSuspiciousRE {
 				continue
 			}
@@ -198,9 +245,18 @@ func extractCRCProposal(text, kind string) *CRCProposal {
 	suspect, suspectUnclear := crcFindingQuotes(text, crcSuspiciousRE)
 	adenoma, adenomaUnclear := crcFindingQuotes(text, crcAdenomaRE)
 	normal := crcCurrentQuotes(text, crcNormalRE)
+	p.NormalEvidence = kind == "pathology" && len(normal) > 0
 	gastro, gastroUnclear := crcFindingQuotes(text, crcGastroRE)
 	specialist, specialistUnclear := crcFindingQuotes(text, crcSpecialistRE)
-	p.EvidenceUnresolved = malignantUnclear || suspectUnclear || adenomaUnclear || gastroUnclear || specialistUnclear
+	for _, finding := range []struct {
+		category string
+		unclear  bool
+	}{{CRCOutcomeMalignant, malignantUnclear}, {CRCOutcomeSuspected, suspectUnclear}, {CRCOutcomeSurveillance, adenomaUnclear}, {CRCOutcomeGastro, gastroUnclear}, {CRCOutcomeSpecialist, specialistUnclear}} {
+		if finding.unclear {
+			p.UnresolvedFindings = append(p.UnresolvedFindings, finding.category)
+		}
+	}
+	p.EvidenceUnresolved = len(p.UnresolvedFindings) > 0
 	p.Suspected = len(suspect) > 0 || len(malignant) > 0
 	p.Quotes = append(p.Quotes, malignant...)
 	p.Quotes = append(p.Quotes, suspect...)

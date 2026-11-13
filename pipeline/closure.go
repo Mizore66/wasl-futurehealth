@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 var LinkReview = 0.20 // below: ignored; -linkfloor may lower review routing only
@@ -298,6 +299,18 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	refStatus, refDay, refLast := "none", -1.0, -1.0
 	var srs []srFact
 	rows, paths := []row{}, map[string][]row{}
+	pathKey := func(provider, report string) string {
+		if prog != "crc" {
+			return report
+		}
+		// A local parent ID lives in the pathology provider's namespace. Never
+		// resolve it by guessing a same-ID procedure at another provider. This
+		// is CRC-specific; other programmes retain their existing association.
+		if strings.Contains(report, "/") {
+			return report // only an exact provider-qualified reference can match
+		}
+		return provider + "/DiagnosticReport/" + report
+	}
 	procDay := -1.0
 	for _, d := range f.Down {
 		if d.Day < f.SRDay-1 {
@@ -340,7 +353,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				rows = append(rows, r)
 			}
 		case "Pathology":
-			paths[d.Parent] = append(paths[d.Parent], r)
+			key := pathKey(d.Provider, d.Parent)
+			paths[key] = append(paths[key], r)
 			if !trusted {
 				rows = append(rows, r)
 			}
@@ -381,7 +395,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if r.trusted && r.d.Ev != nil {
 			proposal = mergeCRCProposal(r.d.Ev.CRC, nil)
 		}
-		for _, p := range paths[r.d.ReportID] {
+		for _, p := range paths[pathKey(r.d.Provider, r.d.ReportID)] {
 			label := ""
 			if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 				label = h
@@ -401,7 +415,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if r.trusted {
 			proposal = mergeCRCProposal(proposal, pathology)
 		}
-		crcObligations = append(crcObligations, crcObligation{source: source, procedure: r, pathologies: paths[r.d.ReportID], proposal: proposal, preHistology: !has, specimenPending: unresolved, qualityHold: true})
+		crcObligations = append(crcObligations, crcObligation{source: source, procedure: r, pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], proposal: proposal, preHistology: !has, specimenPending: unresolved, qualityHold: true})
 	}
 	pending := []string{}
 	pendSet := map[string]bool{}
@@ -589,9 +603,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		// Completeness agreement (including "no polyps") cannot dispose of a
 		// suspicious finding before subsequent histology resolves its outcome.
 		suspiciousCRC := procedureCRC != nil && procedureCRC.Suspected
-		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && (len(paths[r.d.ReportID]) > 0 || suspiciousCRC) {
+		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && (len(paths[pathKey(r.d.Provider, r.d.ReportID)]) > 0 || suspiciousCRC) {
 			has, pathologyPending := prog == "crc" && crcEmbeddedHistology(r), false
-			for _, p := range paths[r.d.ReportID] {
+			for _, p := range paths[pathKey(r.d.Provider, r.d.ReportID)] {
 				pl := ""
 				if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 					pl = h
@@ -626,7 +640,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if !has {
 				if prog == "crc" {
 					crcObligations = append(crcObligations, crcObligation{source: r, procedure: r,
-						pathologies: paths[r.d.ReportID], proposal: mergeCRCProposal(procedureCRC, nil), preHistology: true})
+						pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], proposal: mergeCRCProposal(procedureCRC, nil), preHistology: true})
 				}
 				awaiting = true
 				if holdRow == nil {
@@ -649,7 +663,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				source = *pathologyRow
 			}
 			crcObligations = append(crcObligations, crcObligation{source: source, procedure: r,
-				proposal: proposal, pathologies: paths[r.d.ReportID], specimenPending: crcSpecimenPending})
+				proposal: proposal, pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], specimenPending: crcSpecimenPending})
 			if crcProposalNeedsDisposition(proposal) {
 				continue // outcome disposition is separate from procedure completeness
 			}

@@ -11,6 +11,17 @@ func TestCRCCannotExcludeFindingRetainsUnresolvedCareAndReplay(t *testing.T) {
 		"Cannot exclude a rectal mass.",
 		"Can't exclude a suspicious rectal stricture.",
 		"Cannot exclude a malignant-looking mass.",
+		"A rectal mass was not confirmed.",
+		"A malignant-looking mass was not confirmed.",
+		"A rectal mass was not confirmed and cannot be excluded.",
+		"Cannot exclude a rectal mass which was not identified.",
+		"A rectal mass was not confirmed and not excluded.",
+		"A rectal mass cannot be excluded.",
+		"A rectal mass can't be excluded.",
+		"An unconfirmed rectal mass.",
+		"No confirmed rectal mass.",
+		"No rectal mass was confirmed.",
+		"A rectal mass was not seen and cannot be excluded.",
 	} {
 		t.Run(finding, func(t *testing.T) {
 			text := "Colonoscopy: advanced to the cecum. Prep adequate. No polyps. " + finding

@@ -16,6 +16,7 @@ type CRCEvidenceState struct {
 	TissueComplete  bool     `json:"tissue_complete"`
 	QualityComplete bool     `json:"quality_complete"`
 	Suspected       bool     `json:"suspected"`
+	FindingState    string   `json:"finding_state,omitempty"` // unresolved|awaiting_confirmation|resolved_by_confirmation
 	Blockers        []string `json:"blockers"`
 }
 
@@ -173,6 +174,9 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 			blockers = append(blockers, "procedure_quality")
 		}
 		ev := CRCEvidenceState{Report: o.procedure.d.ReportID, Version: o.procedure.d.Version, Trusted: o.procedure.trusted, TissueComplete: !o.preHistology && !o.specimenPending, QualityComplete: !o.qualityHold, Suspected: o.proposal != nil && o.proposal.Suspected, Blockers: blockers}
+		if o.procedure.trusted && o.procedure.d.Ev != nil && o.procedure.d.Ev.CRC != nil && o.procedure.d.Ev.CRC.EvidenceUnresolved {
+			ev.FindingState = "unresolved"
+		}
 		cd.Evidence = append(cd.Evidence, ev)
 		if len(blockers) > 0 {
 			cd.ScreeningComplete = false
@@ -198,6 +202,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 		}
 
 		allConfirmed, malignant := len(needs) > 0, false
+		findingResolved := false
 		for _, n := range needs {
 			outcome := n.outcome
 			malignant = malignant || outcome == CRCOutcomeMalignant
@@ -206,6 +211,20 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 			proposal := *o.proposal
 			proposal.Outcome = outcome
 			proposal.Outcomes = []string{outcome}
+			// An uncertain mass is not uncertainty about a separately asserted
+			// colitis/adenoma plan. Keep those needs source-scoped and signable,
+			// without letting their confirmation resolve the mass itself.
+			if crcIndependentOfFindingUncertainty(o, n) {
+				proposal.EvidenceUnresolved = false
+			}
+			resolvesFinding := crcCanProposeUncertaintyResolution(o, n)
+			if resolvesFinding {
+				// Eligibility is not resolution. Original per-source evidence stays
+				// unresolved in the review chain; only this need's valid signature
+				// below can activate care and resolve the matching procedure hold.
+				proposal.EvidenceUnresolved = false
+				cd.Evidence[len(cd.Evidence)-1].FindingState = "awaiting_confirmation"
+			}
 			if proposal.IntervalConflict && outcome != CRCOutcomeSurveillance && !proposal.EvidenceUnresolved {
 				proposal.Conflicting = false
 			}
@@ -255,6 +274,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 					state = "awaiting_crc_disposition"
 				}
 			} else {
+				findingResolved = findingResolved || resolvesFinding
 				p.Confirmation, p.Reviewer, p.Disposition = s.ItemID, s.Reviewer, crcDispositionFromAnswer(answer)
 				p.DispositionDay = crcPreviousNeed(ls.last, id, s.ItemID, head, now)
 				if s.ClinicalDay != nil {
@@ -305,6 +325,9 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 			}
 			cd.Obligations = append(cd.Obligations, p)
 			chain = appendBlock(chain, "crc_plan_obligation", map[string]interface{}{"plan": p, "evidence_chain": snapshotCRCChain(ch)})
+		}
+		if findingResolved {
+			cd.Evidence[len(cd.Evidence)-1].FindingState = "resolved_by_confirmation"
 		}
 		if work != nil {
 			if allConfirmed && !malignant {
@@ -448,7 +471,77 @@ func crcCareNeeds(f *LoopFacts, o crcObligation) []crcCareNeed {
 	for _, source := range suspicious {
 		needs = append(needs, crcCareNeed{CRCOutcomeSuspected, source})
 	}
+	// An unrelated care finding does not replace unresolved endoscopic suspicion.
+	// Definitive normal/malignant tissue can instead propose its signed resolution.
+	if o.procedure.trusted && o.procedure.d.Ev != nil && o.procedure.d.Ev.CRC != nil && o.procedure.d.Ev.CRC.EvidenceUnresolved && o.procedure.d.Ev.CRC.Suspected {
+		represented := false
+		for _, n := range needs {
+			represented = represented || n.outcome == CRCOutcomeSuspected || n.outcome == CRCOutcomeReview || n.outcome == CRCOutcomeNormal || n.outcome == CRCOutcomeMalignant
+		}
+		if !represented && !o.preHistology && !o.qualityHold {
+			var normalSource *row
+			for _, r := range o.pathologies {
+				if r.trusted && r.d.Ev != nil && r.d.Ev.CRC != nil && r.d.Ev.CRC.NormalEvidence {
+					copy := r
+					normalSource = &copy
+					break
+				}
+			}
+			if normalSource != nil {
+				needs = append(needs, crcCareNeed{CRCOutcomeNormal, *normalSource})
+			} else {
+				needs = append(needs, crcCareNeed{CRCOutcomeSuspected, o.procedure})
+			}
+		}
+	}
 	return needs
+}
+
+func crcIndependentOfFindingUncertainty(o crcObligation, n crcCareNeed) bool {
+	if n.outcome != CRCOutcomeGastro && n.outcome != CRCOutcomeSpecialist && n.outcome != CRCOutcomeSurveillance || !n.source.trusted || n.source.d.Ev == nil || n.source.d.Ev.CRC == nil || o.procedure.d.Ev == nil || o.procedure.d.Ev.CRC == nil {
+		return false
+	}
+	p := o.procedure.d.Ev.CRC
+	if !p.EvidenceUnresolved || len(p.UnresolvedFindings) != 1 || p.UnresolvedFindings[0] != CRCOutcomeSuspected {
+		return false
+	}
+	for _, r := range o.pathologies {
+		if r.d.Ev != nil && r.d.Ev.CRC != nil && r.d.Ev.CRC.EvidenceUnresolved {
+			return false
+		}
+	}
+	return !containsCRCOutcome(n.source.d.Ev.CRC.UnresolvedFindings, n.outcome)
+}
+
+// Resolve no global flag here: this is an eligibility check for one current
+// need on one procedure, re-derived identically on live and replay paths. Unknown
+// legacy scope, uncertain diagnoses and independent specimens remain blockers.
+func crcCanProposeUncertaintyResolution(o crcObligation, n crcCareNeed) bool {
+	if !o.procedure.trusted || o.preHistology || o.specimenPending || o.qualityHold || o.procedure.d.Ev == nil || o.procedure.d.Ev.CRC == nil {
+		return false
+	}
+	p := o.procedure.d.Ev.CRC
+	if !p.EvidenceUnresolved || len(p.UnresolvedFindings) != 1 || p.UnresolvedFindings[0] != CRCOutcomeSuspected || (n.outcome != CRCOutcomeNormal && n.outcome != CRCOutcomeMalignant) {
+		return false
+	}
+	source := n.source
+	if !source.trusted || source.d.RType != "Pathology" || source.d.Ev == nil || source.d.Ev.CRC == nil {
+		return false
+	}
+	linked := source.d.Parent == o.procedure.d.ReportID && source.d.Provider == o.procedure.d.Provider || source.d.Parent == o.procedure.d.Provider+"/DiagnosticReport/"+o.procedure.d.ReportID
+	if !linked {
+		return false
+	}
+	supportsOutcome := source.d.Ev.CRC.Outcome == n.outcome || n.outcome == CRCOutcomeNormal && source.d.Ev.CRC.NormalEvidence && !containsCRCOutcome(crcProposalOutcomes(source.d.Ev.CRC), CRCOutcomeMalignant)
+	if !source.d.Ev.Agree || source.d.Ev.Label != "histology" || !supportsOutcome || source.d.Ev.CRC.Conflicting || source.d.Ev.CRC.EvidenceUnresolved {
+		return false
+	}
+	for _, r := range o.pathologies {
+		if !r.trusted || r.d.Ev == nil || !r.d.Ev.Agree || r.d.Ev.Label != "histology" || r.d.Ev.CRC == nil || r.d.Ev.CRC.EvidenceUnresolved || r.d.Ev.CRC.Outcome == CRCOutcomeReview {
+			return false // final tissue on one specimen cannot resolve another
+		}
+	}
+	return true
 }
 
 func containsCRCOutcome(outcomes []string, outcome string) bool {
