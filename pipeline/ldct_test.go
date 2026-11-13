@@ -161,11 +161,12 @@ func TestLDCTIncompleteScan(t *testing.T) {
 	}
 }
 
-func TestLDCTFollowupRejectsAddendumAndEarlyReread(t *testing.T) {
+func TestLDCTFollowupRejectsUnrelatedAddendumAndEarlyReread(t *testing.T) {
 	for _, indexLabel := range []string{"LR3", "LR4A"} {
 		index := lcScan("LCS-ct-1", 10, indexLabel)
 		addendum := lcScan("LCS-ct-add", 30, "LR2")
-		addendum.Parent = index.ReportID
+		// An addendum to another index is neither this index's revision nor an independent interval scan.
+		addendum.Parent = "LCS-other-index"
 		d, _ := runLung(t, lcFacts(index, addendum), 120)
 		if d.State != "open" || lcHoldReason(d) != "followup_addendum_not_interval_ldct" {
 			t.Errorf("%s addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
@@ -591,6 +592,110 @@ func TestLDCTLinkedRevisionRecomputesTerminalDecision(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestLDCTLinkedRevisionReclassifiesFollowupIndex(t *testing.T) {
+	for _, indexLabel := range []string{"LR3", "LR4A"} {
+		t.Run(indexLabel+"/annual_revision_not_interval_followup", func(t *testing.T) {
+			index := lcScan("LCS-ct-1", 10, indexLabel)
+			revision := lcScan("LCS-ct-revision", 10.5, "LR2")
+			revision.Parent = index.ReportID
+			d, _ := runLung(t, lcFacts(index, revision), 20)
+			if d.State != "no_recall_needed" || d.ClosingReport != revision.ReportID || d.LDCT.Scan != revision.ReportID ||
+				d.LDCT.ScanDay != 10.5 || d.LDCT.DueDay != 375.5 || d.LDCT.FollowReport != "" || d.LDCT.Outcome == "followup_done" {
+				t.Fatalf("linked annual revision must reclassify the index even before an interval scan is eligible: %+v", d)
+			}
+		})
+		t.Run(indexLabel+"/authorized_revision", func(t *testing.T) {
+			index := lcScan("LCS-ct-1", 10, indexLabel)
+			revision := lcScan("LCS-ct-revision", 12, "LR4B")
+			revision.Parent = index.ReportID
+			d, _ := runLung(t, lcFacts(index, revision), 20)
+			if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != revision.ReportID || d.LDCT.ScanLabel != "LR4B" ||
+				d.LDCT.Rec == nil || d.LDCT.Rec.Action != LDCTWorkup || d.LDCT.ScanDay != 12 || d.LDCT.DeadlineDay != 42 ||
+				d.LDCT.FollowReport != "" || d.LDCT.Outcome == "followup_done" || !hasEsc(d, "urgent_ldct_workup_open") {
+				t.Fatalf("linked revision must reclassify %s as urgent work-up, not an interval follow-up: %+v", indexLabel, d)
+			}
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("reclassified decision provenance does not verify: %+v", d)
+			}
+		})
+		t.Run(indexLabel+"/unread_revision", func(t *testing.T) {
+			index := lcScan("LCS-ct-1", 10, indexLabel)
+			revision := lcScan("LCS-ct-revision", 12, "")
+			revision.Parent = index.ReportID
+			d, out := runLung(t, lcFacts(index, revision), 20)
+			if d.State != "open" || d.ClosingReport != "" || lcHoldReason(d) != "scan_readers_disagree" || len(d.Pending) != 1 ||
+				d.LDCT.Scan != "" || d.LDCT.FollowReport != "" || !hasReview(out, "evidence") {
+				t.Fatalf("unread linked revision must hold on revised evidence, not retain %s: %+v", indexLabel, d)
+			}
+			for _, o := range out {
+				if o.Kind == "review" && o.Item.ReportID != revision.ReportID {
+					t.Fatalf("review identifies superseded or unrelated report %q", o.Item.ReportID)
+				}
+			}
+		})
+	}
+}
+
+func TestLDCTProductionFactsPreserveWithdrawnIntermediateLineage(t *testing.T) {
+	for _, status := range []string{"cancelled", "entered-in-error", "preliminary", "registered", "partial", "unknown"} {
+		t.Run(status, func(t *testing.T) {
+			rec := &Rec{Pk: lcSRRec, evOrder: []string{"index", "addendum", "correction"}, evs: map[string]*Event{
+				"index": {ID: "LCS-ct-1", Provider: "lcs-centre", RType: "DiagnosticReport", Status: "final", Category: "ldct-screen", ReportID: "LCS-ct-1", Day: 10,
+					Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR2"}},
+				"addendum": {ID: "LCS-ct-addendum", Provider: "lcs-centre", RType: "DiagnosticReport", Status: status, Category: "ldct-screen", ReportID: "LCS-ct-addendum", Day: 11, Focus: "LCS-ct-1",
+					Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR2"}},
+				"correction": {ID: "LCS-ct-correction", Provider: "lcs-centre", RType: "DiagnosticReport", Status: "final", Category: "ldct-screen", ReportID: "LCS-ct-correction", Day: 12, Focus: "LCS-ct-addendum",
+					Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR4B"}},
+			}}
+			facts := ldctScanFacts(rec)
+			if len(facts) != 3 || facts[1].ReportID != "LCS-ct-addendum" || facts[1].Status != status || facts[1].Parent != "LCS-ct-1" {
+				t.Errorf("production facts discarded the ineligible parent's lineage metadata: %+v", facts)
+			}
+			d, _ := runLung(t, lcFacts(facts...), 20)
+			if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != "LCS-ct-correction" || d.LDCT.ScanLabel != "LR4B" ||
+				d.LDCT.Rec == nil || d.LDCT.Rec.Action != LDCTWorkup || d.LDCT.FollowReport != "" || !hasEsc(d, "urgent_ldct_workup_open") {
+				t.Fatalf("authorized correction through an ineligible intermediate must supersede the LR2 index: %+v", d)
+			}
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("transitive correction decision provenance does not verify: %+v", d)
+			}
+			if facts[1].Ev != nil || rec.evs["addendum"].Ev == nil {
+				t.Fatal("ineligible intermediate must carry lineage only, without erasing original evidence")
+			}
+			var replay LoopFacts
+			if err := json.Unmarshal(canon(lcFacts(facts...)), &replay); err != nil {
+				t.Fatal(err)
+			}
+			rd, _ := runLung(t, &replay, 20)
+			if !bytes.Equal(canon(d), canon(rd)) {
+				t.Fatal("lineage metadata or decision changed after JSON replay")
+			}
+
+			// A final but unread correction holds on that correction, not on the withdrawn intermediate or stale index.
+			rec.evs["correction"].Ev = nil
+			d, out := runLung(t, lcFacts(ldctScanFacts(rec)...), 20)
+			if d.State != "open" || d.ClosingReport != "" || lcHoldReason(d) != "scan_readers_disagree" || d.LDCT.Scan != "" ||
+				len(d.Pending) != 1 || !hasReview(out, "evidence") || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/LCS-ct-correction" {
+				t.Fatalf("unread correction must hold on authorized evidence: %+v", d)
+			}
+			for _, o := range out {
+				if o.Kind == "review" && o.Item.ReportID != "LCS-ct-correction" {
+					t.Fatalf("review used ineligible or superseded evidence: %+v", o.Item)
+				}
+			}
+
+			// Without an eligible correction, the ineligible no-action addendum cannot close a follow-up index.
+			rec.evOrder = rec.evOrder[:2]
+			rec.evs["index"].Ev.Label = "LR4A"
+			d, out = runLung(t, lcFacts(ldctScanFacts(rec)...), 20)
+			if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != "LCS-ct-1" || d.LDCT.Rec == nil ||
+				d.LDCT.Rec.Action != LDCTFollowup || d.LDCT.FollowReport != "" || len(d.Pending) != 0 || hasReview(out, "evidence") {
+				t.Fatalf("ineligible intermediate became clinical evidence: %+v", d)
+			}
+		})
+	}
 }
 
 func TestLDCTAnchoredDecisionsReplayAfterJSONRoundTrip(t *testing.T) {

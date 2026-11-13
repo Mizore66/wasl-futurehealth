@@ -326,6 +326,66 @@ func TestLungTransitiveCorrectionSupersedesNoActionAddendum(t *testing.T) {
 	}
 }
 
+func TestLungProductionFactsPreserveWithdrawnIntermediateLineage(t *testing.T) {
+	for _, status := range []string{"cancelled", "entered-in-error", "preliminary", "registered", "partial", "unknown"} {
+		t.Run(status, func(t *testing.T) {
+			rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"target", "addendum", "correction"}, evs: map[string]*Event{
+				"target": {ID: "RAD-target", Provider: "rad-imaging", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-target", Day: -200,
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/<6/single"}},
+				"addendum": {ID: "RAD-addendum", Provider: "rad-imaging", RType: "DiagnosticReport", Status: status, Category: "lung-finding", ReportID: "RAD-addendum", Day: -190, Focus: "RAD-target",
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/<6/single"}},
+				"correction": {ID: "RAD-correction", Provider: "rad-imaging", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-correction", Day: -180, Focus: "RAD-addendum",
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/6-8/single"}},
+			}}
+			facts := lungFindingFacts(rec)
+			if len(facts) != 3 || facts[1].ReportID != "RAD-addendum" || facts[1].Status != status || facts[1].Parent != "RAD-target" {
+				t.Errorf("production facts discarded the ineligible parent's lineage metadata: %+v", facts)
+			}
+			d, _ := runLung(t, lungMissingIndexFacts(facts...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-correction" || d.Lung.FindingLabel != "solid/6-8/single" ||
+				d.Lung.Rec == nil || d.Lung.Rec.Action != FlCT || d.Lung.WindowStart != -200+float64(months(6)) || d.Lung.WindowEnd != -200+float64(months(12)) {
+				t.Fatalf("authorized correction through an ineligible intermediate must supersede the no-action target: %+v", d)
+			}
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("transitive correction decision provenance does not verify: %+v", d)
+			}
+			if facts[1].Ev != nil || rec.evs["addendum"].Ev == nil {
+				t.Fatal("ineligible intermediate must carry lineage only, without erasing original evidence")
+			}
+			var replay LoopFacts
+			if err := json.Unmarshal(canon(lungMissingIndexFacts(facts...)), &replay); err != nil {
+				t.Fatal(err)
+			}
+			rd, _ := runLung(t, &replay, 120)
+			if !bytes.Equal(canon(d), canon(rd)) {
+				t.Fatal("lineage metadata or decision changed after JSON replay")
+			}
+
+			// A final but unread correction holds on that correction, not on the withdrawn intermediate or stale index.
+			rec.evs["correction"].Ev = nil
+			d, out := runLung(t, lungMissingIndexFacts(lungFindingFacts(rec)...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-correction" || d.Lung.Rec != nil ||
+				len(d.Pending) != 1 || !hasReview(out, "evidence") || d.Chain[0].Body["report"] != "rad-imaging/DiagnosticReport/RAD-correction" {
+				t.Fatalf("unread correction must hold on authorized evidence: %+v", d)
+			}
+			for _, o := range out {
+				if o.Kind == "review" && o.Item.ReportID != "RAD-correction" {
+					t.Fatalf("review used ineligible or superseded evidence: %+v", o.Item)
+				}
+			}
+
+			// Without an eligible correction, the ineligible no-action addendum cannot close a follow-up index.
+			rec.evOrder = rec.evOrder[:2]
+			rec.evs["target"].Ev.Label = "solid/6-8/single"
+			d, out = runLung(t, lungMissingIndexFacts(lungFindingFacts(rec)...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-target" || d.Lung.Rec == nil ||
+				d.Lung.Rec.Action != FlCT || len(d.Pending) != 0 || hasReview(out, "evidence") {
+				t.Fatalf("ineligible intermediate became clinical evidence: %+v", d)
+			}
+		})
+	}
+}
+
 func TestLungFindingFactsCarryAddendumIdentity(t *testing.T) {
 	rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"a", "b"}, evs: map[string]*Event{
 		"a": {ID: "a", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-target"},

@@ -57,11 +57,20 @@ func ldctScanFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "ldct-screen" || !diagnosticReportEvidenceEligible(e.Status) {
+		if e.RType != "DiagnosticReport" || e.Category != "ldct-screen" {
+			continue
+		}
+		eligible := diagnosticReportEvidenceEligible(e.Status)
+		if !eligible && e.Focus == "" {
 			continue
 		}
 		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus,
-			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
+			Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
+		// Retain ineligible intermediates solely for explicit lineage traversal. The evaluator filters their status;
+		// do not carry their reader verdicts as clinical evidence or alter the original event.
+		if eligible {
+			d.Ev = e.Ev
+		}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
@@ -263,9 +272,9 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 				continue
 			}
 		}
-		if dec != nil && (decLab == "LR3" || decLab == "LR4A") {
-			// An addendum reclassifies the index report; it is not a new interval LDCT. Likewise, a same-day reread
-			// cannot satisfy the 3/6-month recommendation. Neither gets an evidence review merely for being ineligible.
+		if dec != nil && (decLab == "LR3" || decLab == "LR4A") && !linkedRevision {
+			// An authorized revision reclassifies the index below, rather than satisfying interval follow-up.
+			// Other addenda and same-day rereads cannot satisfy the 3/6-month recommendation or raise evidence review.
 			if scans[i].d.Parent != "" {
 				excludedFollow = "followup_addendum_not_interval_ldct"
 				continue

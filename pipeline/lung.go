@@ -68,11 +68,20 @@ func lungFindingFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" || !diagnosticReportEvidenceEligible(e.Status) {
+		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" {
+			continue
+		}
+		eligible := diagnosticReportEvidenceEligible(e.Status)
+		if !eligible && e.Focus == "" {
 			continue
 		}
 		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LungFinding", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus,
-			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_nodule", RecPk: rec.Pk}
+			Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_nodule", RecPk: rec.Pk}
+		// Retain ineligible intermediates solely for explicit lineage traversal. The evaluator filters their status;
+		// do not carry their reader verdicts as clinical evidence or alter the original event.
+		if eligible {
+			d.Ev = e.Ev
+		}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
