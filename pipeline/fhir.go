@@ -188,21 +188,20 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if e.Prog == "" {
 			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "code.text", "no explicit Wasl programme mapping")
 		}
-		if e.Category != "referral-intake" {
-			if !trackingRequestStatuses[e.Status] {
-				return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_status", "status", "missing or unsupported tracking ServiceRequest status")
-			}
-			// Version zero is the legacy materialized representation of version one.
-			e.Version = 1
-			if meta, ok := res["meta"].(map[string]interface{}); ok {
-				if supplied, present := meta["versionId"]; present {
-					rawVersion, ok := supplied.(string)
-					version, err := strconv.Atoi(rawVersion)
-					if !ok || rawVersion == "" || err != nil || version <= 0 {
-						return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_version", "meta.versionId", "versionId must be a positive integer")
-					}
-					e.Version = version
+		if e.Category != "referral-intake" && !trackingRequestStatuses[e.Status] {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_status", "status", "missing or unsupported tracking ServiceRequest status")
+		}
+		// Category can change across same-ID revisions, so intake responses must
+		// retain their version too. Version zero is legacy version one.
+		e.Version = 1
+		if meta, ok := res["meta"].(map[string]interface{}); ok {
+			if supplied, present := meta["versionId"]; present {
+				rawVersion, ok := supplied.(string)
+				version, err := strconv.Atoi(rawVersion)
+				if !ok || rawVersion == "" || err != nil || version <= 0 {
+					return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_version", "meta.versionId", "versionId must be a positive integer")
 				}
+				e.Version = version
 			}
 		}
 	case "Communication":

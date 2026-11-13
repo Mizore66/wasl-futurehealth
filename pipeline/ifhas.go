@@ -104,6 +104,55 @@ func ifhasDropoff(state string, unlinked bool) string {
 	return "no_followup_documented"
 }
 
+// ifhasFollowupRows preserves clinical-time ordering, but orders same-time
+// addenda after their explicit ancestors. Resource spelling and version numbers
+// on different resources cannot override that precedence. References are local
+// to a provider; an identically named report elsewhere is not an ancestor.
+func ifhasFollowupRows(notes []row) ([]row, string) {
+	byReport := map[string]DownFact{}
+	key := func(provider, id string) string { return provider + "/DiagnosticReport/" + id }
+	for _, r := range notes {
+		byReport[key(r.d.Provider, r.d.ReportID)] = r.d
+	}
+	ids := make([]string, 0, len(byReport))
+	for id := range byReport {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	depth := map[string]int{}
+	for _, id := range ids {
+		seen := map[string]bool{id: true}
+		for d := byReport[id]; d.Relation == addendumRelation && d.Parent != ""; {
+			parentID := key(d.Provider, d.Parent)
+			parent, ok := byReport[parentID]
+			if !ok {
+				break
+			}
+			if seen[parentID] {
+				return nil, "cyclic_followup_evidence_lineage"
+			}
+			if d.Day < parent.Day {
+				return nil, "contradictory_followup_evidence_chronology"
+			}
+			seen[parentID] = true
+			depth[id]++
+			d = parent
+		}
+	}
+	sort.SliceStable(notes, func(i, j int) bool {
+		a, b := notes[i].d, notes[j].d
+		if a.Day != b.Day {
+			return a.Day < b.Day
+		}
+		ad, bd := depth[key(a.Provider, a.ReportID)], depth[key(b.Provider, b.ReportID)]
+		if ad != bd {
+			return ad < bd
+		}
+		return key(a.Provider, a.EventID) < key(b.Provider, b.EventID)
+	})
+	return notes, ""
+}
+
 func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	f := ls.facts
 	now := c.now
@@ -140,16 +189,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		}
 		notes = append(notes, row{d: d, pc: pc, trusted: trusted})
 	}
-	byDay := func(rs []row) {
-		sort.SliceStable(rs, func(i, j int) bool {
-			if rs[i].d.Day != rs[j].d.Day {
-				return rs[i].d.Day < rs[j].d.Day
-			}
-			return rs[i].d.EventID < rs[j].d.EventID
-		})
-	}
 	// episodeRows orders screens by clinical time and explicit lineage.
-	byDay(notes)
 	index := ""
 	if f.IFHAS != nil {
 		index = f.IFHAS.Screen
@@ -293,7 +333,14 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 				"policy": "screening results read by two agreeing readers (printed panel = coded results, or a clinician) AND no abnormal domain"})
 			break
 		}
-		// ---- reduce the complete eligible follow-up sequence in time order.
+		// ---- reduce the complete eligible follow-up sequence in time/lineage order.
+		eligible := notes[:0]
+		for _, r := range notes {
+			if r.d.Day >= ib.GradeDay {
+				eligible = append(eligible, r)
+			}
+		}
+		notes, noteErr := ifhasFollowupRows(eligible)
 		ib.Status, ib.ResDay = map[string]string{}, map[string]float64{}
 		abnormal := map[string]bool{}
 		for _, d := range rec.Domains {
@@ -301,7 +348,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			abnormal[d] = true
 		}
 		var holdRow *row
-		holdWhy := ""
+		holdWhy := noteErr
 		ch := gchain
 		dna := false
 		var candidate *row // final all-resolved point; cleared by any later reopening
@@ -401,7 +448,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		switch {
 		case state == "no_show":
 			reason = "did_not_attend_rebook"
-		case holdRow != nil:
+		case holdWhy != "":
 			reason = holdWhy
 		case unlinked:
 			reason = "followup_identity_link_unconfirmed"

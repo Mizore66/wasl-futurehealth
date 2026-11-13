@@ -98,6 +98,15 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 			out = append(out, r)
 		}
 	}
+	// A linked correction may itself correct the clinical date. Until that
+	// contradictory chronology is reconciled, hold the episode rather than
+	// letting chronological sorting silently restore its superseded ancestor.
+	for id := range included {
+		d := current[id]
+		if id != index && d.Day < current[d.Parent].Day {
+			return nil, "contradictory_index_evidence_chronology"
+		}
+	}
 	// Clinical time orders separate observations, but a same-time child must
 	// follow its ancestors. Resource IDs and versions across distinct resources
 	// establish no clinical precedence. Every included path already reaches index.

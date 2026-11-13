@@ -40,6 +40,7 @@ type trackingRevision struct {
 	rec      int // -1 until a patient registration is available
 	version  int
 	conflict bool
+	tracking bool // any revision of this provider+ID was a root tracking order
 }
 
 type LinkerCore struct {
@@ -62,7 +63,7 @@ type LinkerCore struct {
 	near        map[int]map[int]float64      // lo <= p < thr
 	demoMissing map[[2]string]bool           // demoguard: pairs emitted as near/demographic_missing
 	loops       map[string]*LoopFacts        // active tracking requests only: static part (sr info)
-	requests    map[string]*trackingRevision // all current tracking revisions and conflict tombstones
+	requests    map[string]*trackingRevision // current ServiceRequest revisions, including category changes
 	loopRec     map[string]int
 	tasks       map[string][]TaskFact // loop -> tasks
 	comms       map[string][]CommFact // loop -> communications
@@ -933,13 +934,14 @@ func trackingBase(e *Event, rec *Rec) *LoopFacts {
 		Prog: e.Prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT, IFHAS: e.IFHAS}
 }
 
-// foldTrackingRequest is the same-ID FHIR revision boundary for root tracking
-// requests. It runs before activation and is deliberately independent of
-// L.loops, so inactive-first and stale-active deliveries cannot open a case.
+// foldTrackingRequest folds every ServiceRequest revision before category
+// routing. An intake-only ID never owns a loop, but an intake category correction
+// must retire the same ID's old tracking order, even if delivered first.
 func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, store, changed bool) {
 	loop = e.Provider + "/ServiceRequest/" + e.ID
 	version := requestVersion(e)
-	if version <= 0 || !trackingRequestStatuses[e.Status] {
+	tracking := e.Category != "referral-intake"
+	if version <= 0 || (tracking && !trackingRequestStatuses[e.Status]) {
 		// normaliseChecked rejects this before Prep; a direct/materialized caller
 		// gets the same no-op quarantine and cannot supersede a valid revision.
 		if version <= 0 {
@@ -956,17 +958,26 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 	if seen && current.rec >= 0 {
 		currentRec = L.recs[current.rec]
 	}
+	newTracking := seen && tracking && !current.tracking
 	if seen {
+		// A delayed old tracking revision establishes the resource's tracking
+		// history, not its current category. Emit the current intake retirement.
+		current.tracking = current.tracking || tracking
+		tracking = current.tracking
+		if newTracking && currentRec != nil {
+			addLoopRegistration(currentRec, loop)
+			L.loopRec[loop] = current.rec
+		}
 		if version < current.version {
 			L.Stats["stale_tracking_request_version"]++
-			return loop, false, false
+			return loop, false, newTracking
 		}
 		if version == current.version {
 			if current.conflict {
-				return loop, false, false
+				return loop, false, newTracking
 			}
 			if sameRequestContent(current.event, &incoming) {
-				return loop, false, false
+				return loop, false, newTracking
 			}
 			// Same-version disagreement is a durable tombstone. Neither arrival
 			// order nor another copy of either revision can select a winner.
@@ -974,20 +985,23 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 			delete(L.loops, loop)
 			removeCurrentRequestEvent(currentRec, current.event)
 			L.Stats["conflicting_tracking_request_version"]++
-			return loop, false, true
+			return loop, false, tracking
 		}
 	}
 	if currentRec != nil {
 		removeLoopRegistration(currentRec, loop)
 		removeCurrentRequestEvent(currentRec, current.event)
 	}
-	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version}
+	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version, tracking: tracking}
 	if recIdx < 0 {
 		// Preserve an inactive-first revision by resource identity alone. Do
 		// not invent a patient registration or let delayed older orders bind it.
 		delete(L.loops, loop)
 		delete(L.loopRec, loop)
-		return loop, false, true
+		return loop, false, tracking
+	}
+	if !tracking {
+		return loop, true, false // distinct intake responses retain downstream semantics
 	}
 	rec := L.recs[recIdx]
 	addLoopRegistration(rec, loop)
@@ -997,7 +1011,7 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 		delete(L.loops, loop)
 		return loop, true, true
 	}
-	if e.Status == "active" {
+	if e.Status == "active" && e.Category != "referral-intake" {
 		L.loops[loop] = trackingBase(&incoming, rec)
 	} else {
 		delete(L.loops, loop)
@@ -1007,7 +1021,7 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 
 func (L *LinkerCore) retirementFacts(loop string) *LoopFacts {
 	r := L.requests[loop]
-	if r == nil {
+	if r == nil || !r.tracking {
 		return nil
 	}
 	f := &LoopFacts{LoopID: loop, Provider: r.event.Provider, Inactive: true, ReqStatus: r.event.Status, ReqVersion: r.version, ReqConflict: r.conflict}
@@ -1291,7 +1305,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		if e.PatientKey == "" {
-			if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+			if e.RType == "ServiceRequest" {
 				loop := e.Provider + "/ServiceRequest/" + e.ID
 				recIdx := -1
 				if current := L.requests[loop]; current != nil {
@@ -1299,7 +1313,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				}
 				// Non-active revisions must fold even before any patient is
 				// known. Activation still requires an established registration.
-				if recIdx < 0 && e.Status == "active" {
+				if recIdx < 0 && e.Status == "active" && e.Category != "referral-intake" {
 					break
 				}
 				_, store, changed := L.foldTrackingRequest(e, recIdx)
@@ -1330,7 +1344,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
-		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+		if e.RType == "ServiceRequest" {
 			loop, store, changed := L.foldTrackingRequest(e, i)
 			affRoots[L.Find(i)] = true
 			if changed {
