@@ -248,14 +248,7 @@ func loadAPI(run, data string) *apiServer {
 		f.Close()
 	}
 	for id, c := range s.cases {
-		switch {
-		case len(s.signoffs[id]) > 0:
-			c.Review = "signed"
-		case len(s.queue[id]) > 0:
-			c.Review = "open"
-		default:
-			c.Review = "none"
-		}
+		c.Review = reviewStatus(s.queue[id], s.signoffs[id])
 	}
 	s.loadTimelines()
 	s.pickFixtures()
@@ -494,6 +487,54 @@ func consentHeldThenGranted(c *apiCase) bool {
 		}
 	}
 	return held && granted
+}
+
+// reviewStatus is "open" while any raised item or link/evidence question lacks a canonical sign-off for its report version.
+func reviewStatus(items []*ReviewItem, signoffs []map[string]interface{}) string {
+	if len(items) == 0 {
+		if len(signoffs) > 0 {
+			return "signed"
+		}
+		return "none"
+	}
+	for _, it := range items {
+		questions := []string{}
+		for _, k := range it.Kinds {
+			if k == "link" || k == "evidence" {
+				questions = append(questions, k)
+			}
+		}
+		if len(questions) == 0 {
+			questions = []string{""}
+		}
+		for _, q := range questions {
+			if !signoffCovers(it, q, signoffs) {
+				return "open"
+			}
+		}
+	}
+	return "signed"
+}
+
+func signoffCovers(it *ReviewItem, question string, signoffs []map[string]interface{}) bool {
+	for _, r := range signoffs {
+		if fmt.Sprint(r["item"]) != it.ItemID {
+			continue
+		}
+		if v, _ := r["report_version"].(float64); v != 0 && it.ReportVersion != 0 && int(v) != it.ReportVersion {
+			continue
+		}
+		if rep, _ := r["report"].(string); rep != "" && it.ReportID != "" && rep != it.ReportID {
+			continue
+		}
+		if question == "" {
+			return true
+		}
+		if ans, ok := r[question].(string); ok && ans != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func linkSigned(so []map[string]interface{}) bool {
