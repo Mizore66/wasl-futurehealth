@@ -87,6 +87,7 @@ func requestViewer(r *http.Request) apiPrincipal {
 func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
 	hist := []map[string]interface{}{}
 	status, pending, last := "none", "", ""
+	undo, _ := foldUndo(s.caseEvents(c.ID))
 	for _, r := range s.reviews {
 		d := fmt.Sprint(r["decision"])
 		st, ok := consentEvents[d]
@@ -94,6 +95,14 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 			continue
 		}
 		hist = append(hist, r)
+		switch undo[fmt.Sprint(r["hash"])] {
+		case undoCompensated:
+			continue
+		case undoContested:
+			if st == "granted" {
+				continue
+			}
+		}
 		status, last = st, fmt.Sprint(r["hash"])
 	}
 	switch status {
