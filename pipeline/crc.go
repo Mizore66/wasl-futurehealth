@@ -302,7 +302,10 @@ func crcProposalNeedsDisposition(p *CRCProposal) bool {
 	if p == nil {
 		return false
 	}
-	return len(crcProposalOutcomes(p)) > 0 || p.Conflicting || p.PriorSuspicion || p.Outcome == CRCOutcomeReview || p.Outcome == CRCOutcomeMalignant ||
+	// Current suspicious tissue is an unresolved care need, never benign clearance.
+	// Keep it out of Outcomes: a later definitive pathology outcome replaces this
+	// suspicion, but still requires the existing evidence-bound disposition.
+	return len(crcProposalOutcomes(p)) > 0 || p.Conflicting || p.PriorSuspicion || p.Outcome == CRCOutcomeSuspected || p.Outcome == CRCOutcomeReview || p.Outcome == CRCOutcomeMalignant ||
 		p.Outcome == CRCOutcomeSurveillance || p.Outcome == CRCOutcomeGastro || p.Outcome == CRCOutcomeSpecialist
 }
 

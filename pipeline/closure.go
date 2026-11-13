@@ -530,6 +530,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					label, human = s, "shadow:"+s // the signed answer decides, whether or not it confirms the readers
 				} else if label == "adequate" && state != "closed" {
 					raiseFor(r, "evidence", ShadowConfirm)
+					holdCRCQuality(r) // coordination cannot wait for shadow completeness approval
 					continue
 				}
 			} else if s, ok := evidenceOverride(f.EvOver, r.d, pilotKey(AutoAudit)); ok && AutoAuditP > 0 && s != label {
@@ -636,6 +637,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			if ShadowMode && human == "" && state != "closed" { // both reports read automatically: the closure is a suggestion (shadow item on the procedure report)
 				raiseFor(r, "evidence", ShadowConfirm)
+				holdCRCQuality(r) // collect trusted current outcomes without certifying completeness
 				continue
 			}
 			label = "adequate"
