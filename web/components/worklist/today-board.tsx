@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -22,7 +22,8 @@ import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions"
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
-import type { CaseAction } from "@/lib/api/schema";
+import { ApiOverlay, Booking, CasePatient, CaseSummary, type CaseAction } from "@/lib/api/schema";
+import { z } from "zod";
 
 /*
  * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
@@ -36,7 +37,8 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
+type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -56,8 +58,18 @@ type State = {
 type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
-type LedgerRead = (PersistedLedger & { bookingPanel?: BookingProjection | null }) | { error: string };
-const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
+const LedgerResponse = z.object({
+  status: z.enum(["ok", "invalid"]), detail: z.string(), applied: z.number().nullable(),
+  entries: z.array(z.object({ what: z.string(), when: z.string(), who: z.string(), hash: z.string().optional() })),
+  patient: CasePatient.optional(),
+  bookingPanel: z.object({ booking: Booking, overlay: ApiOverlay, case: CaseSummary }).nullable().optional(),
+});
+type LedgerSnapshot = z.infer<typeof LedgerResponse>;
+type LedgerRead = LedgerSnapshot | { error: string };
+const isLedger = (l: LedgerRead | undefined): l is LedgerSnapshot => !!l && !("error" in l);
+const contactProjection = (item: WorkItem): ContactProjection => ({
+  contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped,
+});
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
   delete next[id];
@@ -85,6 +97,14 @@ const REFUSED: Record<number, string> = {
   503: "no live API",
 };
 
+// Revision access is confined to effects and event handlers; render only constructs the chip callbacks.
+function useReadFence() {
+  const revisions = useRef<Record<string, number>>({});
+  const revisionFor = useCallback((id: string) => revisions.current[id] ?? 0, []);
+  const supersede = useCallback((id: string) => { revisions.current[id] = (revisions.current[id] ?? 0) + 1; }, []);
+  return { revisionFor, supersede };
+}
+
 export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
@@ -97,6 +117,12 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [persisted, setPersisted] = useState<Record<string, LedgerRead>>({});
   /** Bumped by Retry so the same selected case is read again. */
   const [attempt, setAttempt] = useState(0);
+  // A completed local write supersedes any read begun before it, even if fetch ignores abort.
+  const { revisionFor, supersede } = useReadFence();
+  const supersedeRead = (id: string) => {
+    supersede(id);
+    setAttempt((n) => n + 1);
+  };
   /** The case the current read is for: when the selection moves, a read starts for the new one. */
   const [readFor, setReadFor] = useState<string | undefined>(undefined);
   /**
@@ -156,23 +182,44 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   useEffect(() => {
     if (!selId) return;
     const ac = new AbortController();
+    const revision = revisionFor(selId);
+    const stale = () => ac.signal.aborted || revision !== revisionFor(selId);
     fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
       .then(async (r) => {
-        if (r.ok) return (await r.json()) as PersistedLedger;
+        if (r.ok) {
+          const parsed = LedgerResponse.safeParse(await r.json());
+          if (!parsed.success) throw new ReadError("the web server returned an unrecognised ledger");
+          const panel = parsed.data.bookingPanel;
+          if (panel && (panel.case.id !== selId || panel.case.api_overlay?.head !== panel.overlay.head)) {
+            throw new ReadError("the web server returned a ledger for a different case or head");
+          }
+          return parsed.data;
+        }
         const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
         throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
       })
       .then((ledger) => {
+        if (stale()) return;
         setPersisted((prev) => ({ ...prev, [selId]: ledger }));
         setLastStatus(ledger.status);
+        const panel = ledger.bookingPanel;
+        // An invalid replay is only a prefix, never permission to resume contact. Keep patient activity/history
+        // separate; only the validated current shared case projection may change these affordances and their head.
+        if (ledger.status === "ok" && panel?.overlay.ledger_status === "ok") {
+          const latest = workItem(panel.case, now, true);
+          setS((prev) => ({
+            ...prev,
+            over: { ...prev.over, [selId]: { ...(prev.over[selId] ?? { log: [] }), ...contactProjection(latest), head: panel.overlay.head } },
+          }));
+        }
       })
       .catch((e: unknown) => {
-        if (ac.signal.aborted) return;
+        if (stale()) return;
         const error = e instanceof ReadError ? e.message : "the web server did not answer";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
-  }, [selId, attempt]);
+  }, [selId, attempt, now, revisionFor]);
   /** Forget a failed read of `id` and read it again; a successful read is kept (selecting the case reads it again). */
   const retryLedger = (id: string) => {
     if (!persisted[id] || isLedger(persisted[id])) return;
@@ -182,6 +229,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const ledger = selId ? persisted[selId] : undefined;
   const ledgerRead = isLedger(ledger) ? ledger : null;
   const bookingProjection = (id: string, projection: BookingProjection) => {
+    if (projection.case.id !== id || projection.case.api_overlay?.head !== projection.overlay.head) return;
+    supersedeRead(id);
     const original = items.find((item) => item.id === id);
     const latest = workItem(projection.case, now, original?.hasRecord ?? true, Date.now());
     setS((prev) => {
@@ -192,6 +241,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           ...prev.over,
           [id]: {
             ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
+            ...(projection.overlay.ledger_status === "ok" ? contactProjection(latest) : {}),
             snoozed: latest.snoozed, noAnswer: latest.noAnswer,
           },
         },
@@ -201,7 +251,6 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       const existing = prev[id];
       return isLedger(existing) ? { ...prev, [id]: { ...existing, bookingPanel: projection } } : prev;
     });
-    setAttempt((n) => n + 1); // refresh the human trail and list evidence from the API as well
   };
   const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
   /*
@@ -257,8 +306,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
-        else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
+        if (res.ok) {
+          supersedeRead(row.id);
+          apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
+        } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -542,7 +593,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               <Button
                 variant="cta"
                 size="touch"
-                disabled={p.contactBlocked}
+                disabled={p.contactBlocked || ledgerInvalid}
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
                 className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
@@ -708,7 +759,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
                 <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
                 <p className="m-0 mt-1 text-muted">
-                  Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · {ledgerRead.patient.contact_permission.status === "opted_out" ? "text messages stopped" : `text permission ${ledgerRead.patient.contact_permission.status}`}
+                  Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
                 </p>
                 {ledgerRead.patient.slot_selection.status === "selected" && (
                   <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>

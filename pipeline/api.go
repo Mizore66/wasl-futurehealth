@@ -1679,6 +1679,19 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		return nil
 	}
 	if _, isCoord := ev["type"]; !isCoord {
+		// Legacy confirm_contact is still a contact action. Check the same guard as
+		// HTTP against this valid ledger prefix, before appending the event. A later
+		// denial must not retroactively invalidate an earlier authorized contact.
+		if ev["decision"] == "confirm_contact" {
+			id, _ := ev["case"].(string)
+			c := s.cases[id]
+			if c == nil {
+				return errors.New("confirm_contact for unknown case")
+			}
+			if s.contactGuardLocked(c).Blocked {
+				return errors.New("confirm_contact after demo consent denial/opt-out")
+			}
+		}
 		if hasProtocolFields(ev) {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)

@@ -187,7 +187,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.status = outcomeStatus(lc.outcome);
     }
   }
-  const contactBlocked = c.contact_state?.contact_blocked === true;
+  // The validated shared projection folds patient AND staff consent in ledger order. api_patient is activity,
+  // not current shared permission: a legitimate later staff grant can supersede a patient denial.
+  // Older snapshots have no shared projection; only there retain the conservative patient-only fallback.
+  const contactBlocked = c.contact_state ? c.contact_state.contact_blocked : patientBlocked;
+  const textsStopped = contactBlocked && patientBlocked;
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
@@ -227,9 +231,9 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted" && !contactBlocked && !patientBlocked,
-    contactBlocked: contactBlocked || patientBlocked,
-    textsStopped: patientBlocked,
+    textsAllowed: c.consent === "granted" && !contactBlocked,
+    contactBlocked,
+    textsStopped,
     patient: c.api_patient,
     owner: ownerLabel(owner),
     review: c.review,
