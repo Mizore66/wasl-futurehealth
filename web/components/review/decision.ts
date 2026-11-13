@@ -11,10 +11,10 @@ export type IdentityAnswer = "same" | "different";
 export type ReportAnswer = string;
 export type Draft = { identity?: IdentityAnswer; report?: ReportAnswer };
 
-export type OutcomeKey = "close" | "inadequate" | "evidence" | "linkSame" | "ask" | "notSame";
+export type OutcomeKey = "close" | "inadequate" | "evidence" | "linkSame" | "ask" | "notSame" | "scoped";
 
 /** The review items this case raised, by the question they answer. */
-export type ReviewItems = { link?: string; evidence?: string };
+export type ReviewItems = { link?: string; evidence?: string; /** The evidence item asks one narrow question, so "adequate" does not mean the case closes. */ scoped?: boolean };
 
 /** One appended review event: what the API receives. */
 export type Signature = { item: string; decision: string };
@@ -30,7 +30,7 @@ export function outcomeOf(draft: Draft, items: ReviewItems = { link: "link", evi
   if (items.link && draft.identity === "different") return "notSame";
   const linkAnswered = !items.link || draft.identity === "same";
   if (items.evidence && draft.report && draft.report !== "ask" && linkAnswered) {
-    if (draft.report === "adequate") return "close";
+    if (draft.report === "adequate") return items.scoped ? "scoped" : "close";
     if (draft.report === "inadequate") return "inadequate";
     return "evidence";
   }
@@ -91,6 +91,17 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
         : "Report adequate would be appended for this evidence-only CRC item. No identity answer would be invented.",
     next: (_unit, hasLink = true) => (hasLink ? { who: "Closed", what: "with both answers recorded" } : { who: "Case data", what: "no downstream effect inferred" }),
     recordedText: "Same patient and report adequate were appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+    recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
+    answerCell: { word: "adequate, signed", tone: "positive" },
+  },
+  scoped: {
+    commit: "Sign: adequate",
+    pill: "Demo answer appended",
+    preview: "Would record this answer only",
+    tone: "muted",
+    text: () => "Adequate would be appended for this question only. Histology and other requirements are still checked, so nothing is promised about the case.",
+    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
+    recordedText: "Adequate was appended to the demo review log for this question only. Histology and other requirements are still checked.",
     recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     answerCell: { word: "adequate, signed", tone: "positive" },
   },
