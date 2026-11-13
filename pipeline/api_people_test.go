@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func testPersonDecision(id, prog string) *Decision {
@@ -130,6 +131,79 @@ func TestCaseDetailDoesNotExposeTimelinePatientKeys(t *testing.T) {
 	}
 	if got := s.facts[caseID][0]["patient_key"]; got != regs[caseID] {
 		t.Errorf("serialization removed internal person-filtering key: got %v, want %q", got, regs[caseID])
+	}
+}
+
+func TestPersonJourneyExcludesPatientProjectionAfterLiveActivity(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	caseID := "provider/ServiceRequest/case-0"
+	token := strings.Repeat("p", 43)
+	patientFixture := &patientTestAPI{s: s}
+	patientFixture.writeLink(t, token, caseID, strings.Repeat("a", 32), time.Now().UTC().Add(time.Hour))
+	s.loadReviews()
+	h := secureTestHandler(t, s, "")
+
+	head := patientHead(s.cases[caseID])
+	actions := []struct {
+		kind string
+		data map[string]interface{}
+	}{
+		{"teach_back_completed", map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "colonoscopy"}},
+		{"contact_permission_changed", map[string]interface{}{"permission": "granted"}},
+		{"slot_selected", map[string]interface{}{"slot_id": patientSlotOffers[0].SlotID, "offers_version": patientOffersVersion()}},
+		{"preparation_changed", map[string]interface{}{"item_id": prepEscortHome, "completed": true}},
+	}
+	for i, action := range actions {
+		payload, err := json.Marshal(map[string]interface{}{"kind": action.kind, "expected_head": head, "request_id": patientUUID(byte(i + 1)), "data": action.data})
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := securityRequest(t, h, http.MethodPost, "/api/patient/journey", token, bytes.NewReader(payload))
+		if w.Code != http.StatusCreated {
+			t.Fatalf("patient activity %s: %d %s", action.kind, w.Code, w.Body.String())
+		}
+		var response map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		head = journeyHead(response)
+	}
+	patientRead := securityRequest(t, h, http.MethodGet, "/api/patient/journey", token, nil)
+	var patientBody map[string]interface{}
+	if err := json.Unmarshal(patientRead.Body.Bytes(), &patientBody); err != nil {
+		t.Fatal(err)
+	}
+	if patientRead.Code != http.StatusOK || journeyHead(patientBody) != head || patientBody["journey"].(map[string]interface{})["seq"] != float64(len(actions)) {
+		t.Fatalf("authenticated patient projection was weakened: %d %s", patientRead.Code, patientRead.Body.String())
+	}
+
+	target := "/api/people?case_id=" + url.QueryEscape(caseID)
+	w := personRequest(t, h, http.MethodGet, target, "reviewer-token-1234567890")
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET live person after patient activity: %d %s", w.Code, w.Body.String())
+	}
+	var journey map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &journey); err != nil {
+		t.Fatal(err)
+	}
+	cases := journey["cases"].([]interface{})
+	var summary map[string]interface{}
+	for _, raw := range cases {
+		entry := raw.(map[string]interface{})
+		if entry["case_id"] == caseID {
+			summary = entry["detail"].(map[string]interface{})["case"].(map[string]interface{})
+		}
+	}
+	if summary == nil {
+		t.Fatalf("person response omitted requested case: %s", w.Body.String())
+	}
+	if _, present := summary["api_patient"]; present {
+		t.Fatalf("live person case summary exposed patient projection: %v", summary["api_patient"])
+	}
+	for _, forbidden := range []string{`"api_patient"`, `"last_action_at"`, `"teach_back"`, head} {
+		if strings.Contains(w.Body.String(), forbidden) {
+			t.Fatalf("live person response exposed patient-only value %q: %s", forbidden, w.Body.String())
+		}
 	}
 }
 
