@@ -55,6 +55,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
 | GET, POST | `/api/patient/journey` | Case-bound synthetic patient-link projection and patient self-service events (below); never a staff credential or coordinator permission |
+| GET | `/api/people`, `/api/people/{person_id}` | Read-only trusted-cluster person journey, canonical obligations, outreach review flags and deterministic next coordinator action ([contract](API-PEOPLE.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
