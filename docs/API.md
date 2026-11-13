@@ -54,6 +54,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
+| GET | `/api/people`, `/api/people/{person_id}` | Read-only trusted-cluster person journey, canonical obligations, outreach review flags and deterministic next coordinator action ([contract](API-PEOPLE.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 

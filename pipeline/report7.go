@@ -256,9 +256,9 @@ func report7(data, wasl, run string, P int) {
 	closure := map[string]interface{}{}
 	for _, pg := range []string{"crc", "cervical"} {
 		closure[pg] = map[string]interface{}{"loops": nLoops[pg],
-			"wasl_live_with_review": closureStatsProg(predOf(liveFinal), &tr, pg),
-			"wasl_no_review":        closureStatsProg(predOf(noRev.final), &tr, pg),
-			"baseline_eid_only":     closureStatsProg(rules.eidClose, &tr, pg),
+			"wasl_live_with_review":  closureStatsProg(predOf(liveFinal), &tr, pg),
+			"wasl_no_review":         closureStatsProg(predOf(noRev.final), &tr, pg),
+			"baseline_eid_only":      closureStatsProg(rules.eidClose, &tr, pg),
 			"baseline_any_proc_120d": closureStatsProg(rules.naiveClose, &tr, pg)}
 	}
 
@@ -327,9 +327,9 @@ func report7(data, wasl, run string, P int) {
 	}
 	total := len(tr.Loops)
 	review := map[string]interface{}{
-		"by_kind":       rwOut(byKind, func(string) int { return total }),
-		"by_programme":  rwOut(byProg, func(k string) int { return nLoops[k] }),
-		"by_origin":     rwOut(byOrigin, func(k string) int { return loopsByOrigin[k] }),
+		"by_kind":        rwOut(byKind, func(string) int { return total }),
+		"by_programme":   rwOut(byProg, func(k string) int { return nLoops[k] }),
+		"by_origin":      rwOut(byOrigin, func(k string) int { return loopsByOrigin[k] }),
 		"wrong_signoffs": wrongDetail,
 	}
 
@@ -529,7 +529,7 @@ func report7(data, wasl, run string, P int) {
 	imgOut := imageReport(preps, fhir, &tr, liveFinal)
 	res := map[string]interface{}{
 		"image_reader": imgOut,
-		"run": run, "loops": total, "loops_by_programme": nLoops,
+		"run":          run, "loops": total, "loops_by_programme": nLoops,
 		"closure": closure, "programmes_live": analyze6(liveFinal, &tr), "programmes_no_review": analyze6(noRev.final, &tr),
 		"reviewer": review, "outreach_live": gov, "outreach_no_review": govNoRev, "forged": forgedOut, "consent_timing": consentTiming, "dropoff": drop,
 		"crc_kpi_31d": crcKPI(&tr, liveFinal, noRev.final, rules), "patient_side": patientSide(outLog, &tr, liveFinal),
@@ -579,6 +579,10 @@ func report7(data, wasl, run string, P int) {
 	}
 	if im, ok := res["programmes_live"].(map[string]interface{})["ifhas"].(map[string]interface{}); ok {
 		im["two_reader"] = ifhasTwoReader(preps, &tr) // IFHAS: results (panel vs coded) and follow-up note agreement end to end
+	}
+	// Person routes require the exact canonical replay and input hashes. Older runs remain usable through case routes.
+	if err := writeIdentityClusters(run, rp); err != nil {
+		panic(fmt.Errorf("materialise canonical identity projection: %w", err))
 	}
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0600)

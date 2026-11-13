@@ -31,6 +31,22 @@ func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	return s.caseDetailFor(c, nil)
 }
 
+// caseTimelineForSerialization copies timeline rows without the internal registration used by person filtering.
+// The original rows in s.facts retain patient_key so trusted-cluster filtering can still join events internally.
+func caseTimelineForSerialization(events []map[string]interface{}) []map[string]interface{} {
+	timeline := make([]map[string]interface{}, 0, len(events))
+	for _, event := range events {
+		row := make(map[string]interface{}, len(event))
+		for key, value := range event {
+			if key != "patient_key" {
+				row[key] = value
+			}
+		}
+		timeline = append(timeline, row)
+	}
+	return timeline
+}
+
 // caseDetailFor is caseDetailBody for one verified viewer: concealed first reads are removed from api_reviews and the
 // per-question protocol projection is added. A nil viewer (the redacted export) sees all events and a projection with
 // every concealed first read withheld; it adds no actor or note either way.
@@ -62,7 +78,7 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
 	return map[string]interface{}{
-		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
+		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": caseTimelineForSerialization(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
 		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),

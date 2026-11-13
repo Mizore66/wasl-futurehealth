@@ -415,6 +415,102 @@ def _public_meta(source_meta):
     }
 
 
+def _person_basis(value, path):
+    if not isinstance(value, str) or len(value) > 4096 or "\n" in value or "\r" in value or _canary_string(value):
+        raise ValueError(f"invalid canonical person basis at {path}")
+    return value
+
+
+def _person_registration(value, path):
+    if not isinstance(value, str) or not _REGISTRATION_ALIAS.fullmatch(value):
+        raise ValueError(f"raw or malformed registration at {path}")
+    return value
+
+
+_PERSON_OUTREACH = _strict_read({
+    "kind": None, "ev": None, "basis": _person_basis, "p_cal": None, "released": None,
+    "suppress": None, "guard": None, "pair": _read_list(_person_registration), "channel": None, "sender": None, "tpl": None,
+}, optional=("suppress", "guard", "pair", "channel", "sender", "tpl"))
+_PERSON_CONSENT_LOG = _strict_read({
+    "ev": None, "kind": None, "from": None, "to": None, "contact": None,
+}, optional=("ev", "kind", "from", "contact"))
+_PERSON_DECISION = _strict_read({
+    "decision_id": None, "in_seq": None, "state": None, "dropoff": None, "owner": None, "overdue": None,
+    "escalations": None, "consent_log": _read_list(_PERSON_CONSENT_LOG), "outreach": _read_list(_PERSON_OUTREACH), "policy": None, "sig": None,
+})
+_PERSON_IDENTITY = _strict_read({"provider": None, "registration": _person_registration, "role": None})
+_PERSON_TIMELINE = _strict_read({key: None for key in (
+    "seq", "type", "id", "provider", "status", "day", "arrival_day", "category", "raw_sha", "source",
+)}, optional=("arrival_day", "category", "raw_sha", "source", "status"))
+_PERSON_LINK = _strict_read({
+    "loop": None, "referral_patient": _person_registration, "downstream_event": None, "path_strength": None,
+    "path_p_cal": None, "tau": None, "hops": None, "near_miss": None, "linker": None,
+    "eid_contra": None, "review_pair_substituted": None,
+    "weakest_edge": _strict_read({"a": _person_registration, "b": _person_registration, "p": None, "basis": None}),
+}, optional=("eid_contra", "review_pair_substituted"))
+_PERSON_HOLD = _strict_read({
+    "loop": None, "state": None, "programme": None, "rule": None, "policy": None, "report": None,
+    "age": None, "scope": None, "label": None, "due_day": None, "deadline_day": None,
+    "reason": None, "why": None, "domain_status": None,
+}, optional=("loop", "programme", "policy", "report", "age", "scope", "label", "due_day", "deadline_day", "reason", "why", "domain_status"))
+
+
+def _person_summary(value, path):
+    fields = dict(_SUMMARY_FIELDS)
+    fields.pop("api_overlay", None)
+    return _read_fields(value, fields, path)
+
+
+_PERSON_DETAIL = _strict_read({
+    "case": _person_summary,
+    "identities": _read_list(_PERSON_IDENTITY),
+    "timeline": _read_list(_PERSON_TIMELINE),
+    "links": _read_list(_PERSON_LINK),
+    "holds": _read_list(_PERSON_HOLD),
+    "outreach": _read_list(_PERSON_OUTREACH),
+    "decisions": _read_list(_PERSON_DECISION),
+})
+_PERSON_CASE = _strict_read({
+    "case_id": None, "parent_case_id": None, "referral_registration": _person_registration, "detail": _PERSON_DETAIL,
+    "contact": _strict_read({"canonical": None, "overlay_status": None, "contact_blocked": None, "canonical_unchanged": None}),
+}, optional=("parent_case_id",))
+_PERSON_OBLIGATION = _strict_read({
+    "case_id": None, "programme": None, "kind": None, "due_day": None, "window_start_day": None,
+    "status": None, "source_field": None, "basis": _person_basis,
+}, optional=("window_start_day", "basis"))
+_PERSON_INTENT = _strict_read({
+    "case_id": None, "programme": None, "first_decision_id": None, "latest_decision_id": None,
+    "latest_decision_sig": None, "lifecycle": None, "outreach": _PERSON_OUTREACH,
+})
+_PERSON_FLAG = _strict_read({"id": None, "match": None, "actionable": None, "intents": _read_list(_PERSON_INTENT)})
+_PERSON_NEXT = _strict_read({
+    "kind": None, "case_id": None, "outreach_flag_id": None, "priority": None, "deadline_day": None,
+    "overdue": None, "reason_codes": None, "rule": None,
+}, optional=("case_id", "outreach_flag_id", "deadline_day"))
+_PERSON_SCHEMA = {
+    "schema": None,
+    "person": _strict_read({
+        "id": None, "anchor_case_id": None, "as_of_day": None, "case_ids": None, "programmes": None,
+        "registrations": _read_list(_strict_read({"registration": _person_registration, "providers": None})),
+        "identity_provenance": _strict_read({"source": None, "artifact_schema": None, "artifact_sha256": None, "policy": None}),
+    }),
+    "cases": _read_list(_PERSON_CASE),
+    "obligations": _read_list(_PERSON_OBLIGATION),
+    "outreach_flags": _read_list(_PERSON_FLAG),
+    "next_action": _PERSON_NEXT,
+}
+
+
+def person_snapshot(payload):
+    """Default-deny public person journey; raw identity artifacts are not accepted."""
+    if not isinstance(payload, dict) or payload.get("schema") != "wasl-person-journey/1":
+        raise ValueError("person snapshot requires wasl-person-journey/1")
+    output = _read_fields(payload, _PERSON_SCHEMA, "person", required=_PERSON_SCHEMA)
+    output["meta"] = _public_meta(payload.get("meta", {}))
+    _check_snapshot_canaries(output, "person")
+    return output
+
+
 def read_snapshot(payload, kind):
     """Project one documented public read through its default-deny response schema."""
     if not isinstance(payload, dict) or kind not in _READ_SCHEMAS:
@@ -449,7 +545,9 @@ def scan_snapshot_directory(directory):
             except (OSError, UnicodeError, ValueError) as exc:
                 raise ValueError(f"invalid staged JSON {path.name}: {exc}") from exc
             kind = None
-            if path.name == "healthz.json":
+            if path.name == "person_journey.json":
+                kind = "person"
+            elif path.name == "healthz.json":
                 kind = "health"
             elif path.name == "operations.json":
                 kind = "operations"
@@ -457,7 +555,9 @@ def scan_snapshot_directory(directory):
                 kind = path.stem
             elif re.fullmatch(r"cases_[a-z_]+_page1\.json", path.name):
                 kind = "cases"
-            if kind is not None:
+            if kind == "person":
+                projected = person_snapshot(value)
+            elif kind is not None:
                 projected = read_snapshot(value, kind)
             elif not (re.fullmatch(r"case_[A-Za-z0-9_-]+(?:_audit)?\.json", path.name) or
                       re.fullmatch(r"[A-Za-z0-9_-]+\.export", path.name)):
@@ -470,7 +570,7 @@ def scan_snapshot_directory(directory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=("detail", "audit", "health", "operations", "dashboard", "fixtures", "cases", "scan-dir"))
+    parser.add_argument("kind", choices=("detail", "audit", "health", "operations", "dashboard", "fixtures", "cases", "person", "scan-dir"))
     parser.add_argument("path", nargs="?")
     args = parser.parse_args(argv)
     try:
@@ -486,6 +586,8 @@ def main(argv=None):
             output = detail_snapshot(payload)
         elif args.kind == "audit":
             output = audit_snapshot(payload)
+        elif args.kind == "person":
+            output = person_snapshot(payload)
         else:
             output = read_snapshot(payload, args.kind)
     except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
