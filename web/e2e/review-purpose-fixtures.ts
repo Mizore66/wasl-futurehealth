@@ -52,6 +52,7 @@ export function fixtureApplication(details: CaseDetail[]): string {
   const [shadow, audit] = details;
   json("fixtures.json", { meta: shadow.meta, fixtures: { evidence_closure: shadow.case, false_closure_trap: shadow.case, review_hold: audit.case } });
   json("cases_crc_page1.json", { meta: shadow.meta, cases: details.map((detail) => detail.case), total: details.length, limit: 50, offset: 0 });
-  for (const detail of details) json(`case_${detail.review_items[0].reason}.json`, detail);
+  // source.ts reserves *_audit.json for Audit history, not CaseDetail: keep auto_audit discoverable as a case.
+  for (const detail of details) json(`case_${detail.review_items[0].reason}_detail.json`, detail);
   return root;
 }
