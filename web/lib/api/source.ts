@@ -464,6 +464,18 @@ export async function getCaseWithToken(id: string, token: string): Promise<Revie
   return { ok: true, detail: CaseDetail.parse(await res.json()) };
 }
 
+export type ReviewPhotoResult = { ok: true; bytes: ArrayBuffer; type: "image/png" | "image/jpeg" } | { ok: false; status: 401 | 403 | 404 };
+
+/** One review-item photo as the holder of `token` may fetch it. Anything but a PNG or JPEG body counts as unavailable. */
+export async function getReviewPhotoWithToken(id: string, item: string, sha: string, token: string): Promise<ReviewPhotoResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}/review-photos/${encodeURIComponent(item)}/${sha}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  if (res.status === 401 || res.status === 403) return { ok: false, status: res.status };
+  const type = res.headers.get("content-type");
+  if (!res.ok || (type !== "image/png" && type !== "image/jpeg")) return { ok: false, status: 404 };
+  return { ok: true, bytes: await res.arrayBuffer(), type };
+}
+
 export type ReviewReadResult =
   /** `response` is null when the event was appended (201) but its body could not be parsed. */
   | { ok: true; status: 201; response: ReviewResponse | null }

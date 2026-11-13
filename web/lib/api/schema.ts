@@ -362,7 +362,19 @@ export const Link = z.looseObject({
   weakest_edge: WeakestEdge,
 });
 
+/** The hold-only image reader's verdict. Provenance for the reviewer; it never answers the review item. */
+export const ImageReader = z.looseObject({
+  model: z.string(),
+  caecal_photo: z.string(),
+  prep: z.string(),
+  hint: z.string().default(""),
+});
+
+/** One photo filed on a review item's report at the station the item asks about. `available` is false when its pixels are not stored. */
+export const ReviewPhoto = z.strictObject({ sha: z.string(), station: z.string(), available: z.boolean() });
+
 export const Evidence = z.looseObject({
+  image_reader: ImageReader.optional(),
   report: z.string(),
   agree: z.boolean(),
   label: z.string(),
@@ -735,6 +747,8 @@ export const CaseDetail = withMeta({
   outreach: z.array(z.looseObject({})),
   decisions: z.array(Decision),
   review_items: z.array(ReviewItem),
+  /** Per review item id: the photos behind an image-backed CRC item; absent from snapshots and older APIs. */
+  review_photos: z.record(z.string(), z.array(ReviewPhoto)).optional(),
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
   api_reviews: z.array(LedgerEvent),
