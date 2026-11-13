@@ -96,7 +96,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   if (url.pathname === "/__health") return send(res, 200, { ok: true });
   if (url.pathname === "/__mock/links" && req.method === "POST") {
     const input = JSON.parse(await body(req)) as { token: string; expired?: boolean };
-    const expires = Date.now() + (input.expired ? -60_000 : 30 * 60_000);
+    const expires = Math.floor((Date.now() + (input.expired ? -60_000 : 30 * 60_000)) / 1000) * 1000;
     links.set(input.token, fresh(input.token, expires));
     return send(res, 201, { expires_at: new Date(expires).toISOString() });
   }

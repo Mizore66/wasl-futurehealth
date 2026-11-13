@@ -65,6 +65,9 @@ func provisionPatientLink(run, caseID string, ttl time.Duration, now time.Time) 
 	if s.cases[caseID] == nil {
 		return "", errors.New("unknown synthetic case")
 	}
+	if !patientCaseSupported(s.cases[caseID]) {
+		return "", errors.New("patient self-service supports only synthetic CRC cases")
+	}
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return "", err
@@ -155,7 +158,7 @@ func (s *apiServer) patientCredential(r *http.Request) (patientLink, int) {
 		return patientLink{}, http.StatusUnauthorized
 	}
 	rec, found := links[key]
-	if !found || s.cases[rec.Case] == nil {
+	if !found || !patientCaseSupported(s.cases[rec.Case]) {
 		return patientLink{}, http.StatusUnauthorized
 	}
 	expires, err := time.Parse(time.RFC3339, rec.ExpiresAt)

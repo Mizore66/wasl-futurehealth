@@ -254,6 +254,60 @@ func TestPatientAuthenticationStrictBodiesAndCrossCaseAuthority(t *testing.T) {
 	}
 }
 
+func TestPatientRejectsNonCRCProgrammesAndEveryAction(t *testing.T) {
+	programmes := []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"}
+	actions := []struct {
+		kind string
+		data map[string]interface{}
+	}{
+		{"teach_back_completed", map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "colonoscopy"}},
+		{"contact_permission_changed", map[string]interface{}{"permission": "granted"}},
+		{"slot_selected", map[string]interface{}{"slot_id": patientSlotOffers[0].SlotID, "offers_version": patientOffersVersion()}},
+		{"preparation_changed", map[string]interface{}{"item_id": prepEscortHome, "completed": true}},
+	}
+	for i, programme := range programmes {
+		t.Run(programme, func(t *testing.T) {
+			p := newPatientTestAPI(t)
+			id := "exp-prov/ServiceRequest/NON-CRC-" + programme
+			d := &Decision{ID: "decision-" + id, LoopID: id, Prog: programme, State: "open", Contact: "granted", Sig: patientTestSignature(id)}
+			c := &apiCase{ID: id, Programme: programme, State: "open", Consent: "granted", last: d, decisions: []*Decision{d}}
+			p.s.cases[id] = c
+			token := strings.Repeat(string(rune('a'+i)), 43)
+			p.writeLink(t, token, id, fmt.Sprintf("%032x", i+16), p.now.Add(time.Hour))
+
+			code, body, _ := p.request(t, http.MethodGet, "/api/patient/journey", token, nil)
+			if code != http.StatusUnauthorized || body["journey"] != nil || body["offers"] != nil {
+				t.Fatalf("non-CRC read: %d %v", code, body)
+			}
+			for j, action := range actions {
+				code, body, _ = p.request(t, http.MethodPost, "/api/patient/journey", token, map[string]interface{}{
+					"kind": action.kind, "expected_head": patientHead(c), "request_id": patientUUID(byte(j + 1)), "data": action.data,
+				})
+				if code != http.StatusUnauthorized {
+					t.Fatalf("%s on %s: want 401, got %d %v", action.kind, programme, code, body)
+				}
+			}
+			if len(p.s.reviews) != 0 || c.patient.Seq != 0 {
+				t.Fatalf("non-CRC requests mutated history or projection: events=%d patient=%+v", len(p.s.reviews), c.patient)
+			}
+
+			event := map[string]interface{}{
+				"type": patientEventType, "kind": "teach_back_completed", "case": id, "link_id": fmt.Sprintf("%032x", i+16),
+				"role": patientRole, "actor": "patient-link/" + fmt.Sprintf("%032x", i+16), "action": patientSelfService,
+				"at": p.now.Format(time.RFC3339Nano), "mode": "demo", "request_id": patientUUID(20),
+				"head": patientHead(c), "head_signed": patientCanonicalSignature(c), "seq": float64(1),
+				"data": actions[0].data, "prev": "",
+			}
+			if err := p.s.replayPatientEvent(event); err == nil {
+				t.Fatal("restart replay accepted a CRC-specific event on a non-CRC case")
+			}
+			if len(p.s.reviews) != 0 || c.patient.Seq != 0 {
+				t.Fatal("rejected non-CRC replay mutated history or projection")
+			}
+		})
+	}
+}
+
 func TestPatientRequestReplayConflictsOffersAndNoOps(t *testing.T) {
 	p := newPatientTestAPI(t)
 	head := patientHead(p.s.cases[patientTestCaseA])
@@ -705,6 +759,23 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 	}
 	if _, err := provisionPatientLink(run, exportLoop, 24*time.Hour+time.Nanosecond, now); err == nil {
 		t.Fatal("TTL above 24 hours was accepted")
+	}
+	for i, programme := range []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"} {
+		id := "exp-prov/ServiceRequest/NON-CRC-" + programme
+		d := &Decision{ID: "decision-" + id, LoopID: id, Prog: programme, State: "open", Contact: "granted"}
+		d.Sig = decSig(d)
+		m := LogMsg{Seq: uint64(i + 2), Subject: "out.p0", Hdr: map[string]string{}}
+		encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: d})
+		line, _ := json.Marshal(m)
+		if err := appendLedgerLine(filepath.Join(run, "out_log.ndjson"), append(line, '\n')); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := provisionPatientLink(run, id, 30*time.Minute, now); err == nil {
+			t.Fatalf("provisioned CRC-specific patient link for %s", programme)
+		}
+	}
+	if _, err := provisionPatientLink(run, "exp-prov/ServiceRequest/MISSING", 30*time.Minute, now); err == nil {
+		t.Fatal("provisioned patient link for an unknown case")
 	}
 	registry, err := os.ReadFile(patientRegistryPath(run))
 	if err != nil {

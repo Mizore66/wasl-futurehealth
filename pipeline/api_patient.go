@@ -34,6 +34,12 @@ var (
 	patientPermissions = map[string]bool{"granted": true, "denied": true, "opted_out": true}
 )
 
+// This contract contains only CRC teach-back, colonoscopy offers and preparation.
+// Other programmes must not acquire links or replay CRC-specific patient events.
+func patientCaseSupported(c *apiCase) bool {
+	return c != nil && c.Programme == "crc"
+}
+
 type patientFieldState struct {
 	Status        string
 	CompletedAt   string
@@ -431,6 +437,9 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	c := s.cases[id]
 	if c == nil {
 		return errors.New("patient event for unknown case")
+	}
+	if !patientCaseSupported(c) {
+		return errors.New("patient event for unsupported non-CRC case")
 	}
 	linkID := sstr(ev, "link_id")
 	if !patientIDRE.MatchString(linkID) || sstr(ev, "role") != patientRole || sstr(ev, "actor") != "patient-link/"+linkID || sstr(ev, "mode") != "demo" {

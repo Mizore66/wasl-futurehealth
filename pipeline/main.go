@@ -43,7 +43,7 @@ func main() {
 	out := fs.String("out", "../cohort", "")
 	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats input JSON")
 	run := fs.String("run", "../run/default", "run dir")
-	patientCase := fs.String("case", "", "patient-link: existing synthetic case id")
+	patientCase := fs.String("case", "", "patient-link: existing synthetic CRC case id")
 	patientTTL := fs.Duration("ttl", defaultPatientTTL, "patient-link: lifetime (maximum 24h)")
 	prov := fs.String("prov", "", "")
 	name := fs.String("name", "0", "")
