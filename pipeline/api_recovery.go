@@ -210,6 +210,7 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 			now = s.now
 		}
 		gates := s.recoveryOutreachLocked(c)
+		reviewEvidence := s.recoveryReviewEvidenceLocked(c)
 		ev := map[string]interface{}{"type": recoveryEventType, "kind": recoveryConfirmKind, "case": req.CaseID, "slot": slotID,
 			"expected_slot_head": req.ExpectedSlotHead, "expected_case_head": req.ExpectedCaseHead, "seq": c.ov.n + 1,
 			"request_id": req.RequestID, "payload_fingerprint": payloadSHA, "input_fingerprint": s.recovery.Input.InputFingerprint,
@@ -217,6 +218,7 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 			"role": viewer.role, "actor": viewer.actor, "action": ActCoordinateCase, "at": now().UTC().Format(time.RFC3339Nano),
 			"slot_snapshot": recoverySlotSnapshot(slot), "outreach_intent": req.OutreachIntent, "guard_evidence": gates["guard_evidence"],
 			"consent_at_confirmation": gates["consent"], "guard_decision_sig": c.last.Sig,
+			"review_at_confirmation": reviewEvidence.status, "canonical_hold_at_confirmation": reviewEvidence.canonicalHold,
 			"note": req.Note, "mode": "demo", "prev": s.lastHashLocked()}
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}

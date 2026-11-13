@@ -137,6 +137,24 @@ func appendRecoveryTestDecision(t *testing.T, run string, decision *Decision) {
 	}
 }
 
+func appendRecoveryTestReviewItem(t *testing.T, run string, item *ReviewItem) {
+	t.Helper()
+	f, err := os.OpenFile(filepath.Join(run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := LogMsg{Seq: item.InSeq, Subject: "out.p0", Hdr: map[string]string{}}
+	encodeEnv(&m, OutEnvelope{Kind: "item", OSeq: item.InSeq, Item: item})
+	raw, _ := json.Marshal(m)
+	if _, err := f.Write(append(raw, '\n')); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func recoveryTestSlot(s *apiServer, index int) *recoverySlot {
 	ids := make([]string, 0, len(s.recovery.Slots))
 	for id := range s.recovery.Slots {
@@ -290,6 +308,40 @@ func TestRecoveryReplaySurvivesLaterSourceNoShowChange(t *testing.T) {
 	current := reloaded.recoverySlotSummaryLocked(reloaded.recovery.Slots[slot.SlotID])
 	if current["status"] != "filled" || !strings.Contains(fmt.Sprint(current["stale_reason_codes"]), "source_no_show_changed") {
 		t.Fatalf("current source race was not projected separately from history: %v", current)
+	}
+}
+
+func TestRecoveryReplaySurvivesLaterCandidateReviewHold(t *testing.T) {
+	run, ids := recoveryTestRun(t, 1)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), "candidate-hold-request-001", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("confirmation: %d %v", code, body)
+	}
+	appendRecoveryTestReviewItem(t, run, &ReviewItem{ItemID: "later-unresolved-safety", LoopID: ids[2], InSeq: 100,
+		Reason: "second_identifier"})
+
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || reloaded.recovery.Fills[slot.SlotID] == nil || reloaded.recovery.ByCase[ids[2]] == nil {
+		t.Fatalf("later candidate hold invalidated append-only fill: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+	if err := validateReviewLedger(filepath.Join(run, "api_reviews.ndjson")); err != nil {
+		t.Fatalf("later candidate hold invalidated ledger semantics: %v", err)
+	}
+	current := reloaded.recoveryCandidateLocked(reloaded.recovery.Slots[slot.SlotID], reloaded.recovery.Waitlist[ids[2]])
+	if current["eligible"] != false {
+		t.Fatalf("later candidate hold missing from current-state warnings: %v", current)
+	}
+	caseActiveFailed := false
+	for _, raw := range current["checks"].([]map[string]interface{}) {
+		if raw["code"] == "case_active" {
+			caseActiveFailed = raw["result"] == "fail"
+		}
+	}
+	if !caseActiveFailed {
+		t.Fatalf("later candidate hold did not fail current case_active check: %v", current["checks"])
 	}
 }
 

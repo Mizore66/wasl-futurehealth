@@ -378,20 +378,53 @@ func (s *apiServer) recoveryCanonicalHoldLocked(c *apiCase) bool {
 	return false
 }
 
+type recoveryReviewEvidence struct {
+	status        string
+	canonicalHold bool
+}
+
+func (s *apiServer) recoveryReviewEvidenceLocked(c *apiCase) recoveryReviewEvidence {
+	return recoveryReviewEvidence{status: c.Review, canonicalHold: s.recoveryCanonicalHoldLocked(c)}
+}
+
+// recoveryReviewEvidenceFromEvent returns the hold state captured by the
+// confirmation. Events written before this evidence was added can only have
+// passed the write-side check with a non-open review and no unresolved hold.
+func recoveryReviewEvidenceFromEvent(ev map[string]interface{}) (recoveryReviewEvidence, error) {
+	statusValue, hasStatus := ev["review_at_confirmation"]
+	holdValue, hasHold := ev["canonical_hold_at_confirmation"]
+	if !hasStatus && !hasHold {
+		return recoveryReviewEvidence{status: "none"}, nil
+	}
+	status, statusOK := statusValue.(string)
+	hold, holdOK := holdValue.(bool)
+	if !hasStatus || !hasHold || !statusOK || !holdOK || (status != "none" && status != "open" && status != "signed") {
+		return recoveryReviewEvidence{}, errors.New("invalid recovery event-time review evidence")
+	}
+	return recoveryReviewEvidence{status: status, canonicalHold: hold}, nil
+}
+
 func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitlistCase) map[string]interface{} {
-	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "")
+	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "", nil)
 }
 
 // A non-nil guardDecision reconstructs the candidate at a historical ledger
-// event. Source staleness is checked against the stored release evidence by the
-// replay path, not against a later canonical Appointment or no-show decision.
-func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string) map[string]interface{} {
+// event. Source staleness and review holds are checked against stored event-time
+// evidence, not against later canonical decisions, review items or sign-offs.
+func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string, eventReview *recoveryReviewEvidence) map[string]interface{} {
 	c := s.cases[w.CaseID]
+	review := recoveryReviewEvidence{}
+	if eventReview != nil {
+		review = *eventReview
+	} else {
+		review = s.recoveryReviewEvidenceLocked(c)
+	}
 	if guardDecision != nil {
 		historical := *c
 		historical.last = guardDecision
 		historical.Programme, historical.State, historical.Provider = guardDecision.Prog, guardDecision.State, guardDecision.Provider
 		historical.Priority = guardDecision.Priority
+		historical.Review = review.status
 		historical.Closed = guardDecision.State == "closed" || guardDecision.State == "no_followup_needed" || guardDecision.State == "no_referral_needed" || guardDecision.State == "no_recall_needed"
 		c = &historical
 	}
@@ -411,7 +444,7 @@ func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *rec
 		procedure = "colposcopy"
 	}
 	add("procedure_match", "procedure_mismatch", procedure != slot.Procedure)
-	active := c != nil && !c.Closed && c.Review != "open" && !s.recoveryCanonicalHoldLocked(c) && (c.State == "open" || c.State == "no_show" || c.State == "inadequate" || c.State == "referral_rejected")
+	active := c != nil && !c.Closed && c.Review != "open" && !review.canonicalHold && (c.State == "open" || c.State == "no_show" || c.State == "inadequate" || c.State == "referral_rejected")
 	add("case_active", "case_closed_inactive_or_held", !active)
 	add("not_source_case", "source_case_for_own_release", w.CaseID == slot.SourceCase)
 	add("not_already_backfilled", "case_already_backfilled", s.recovery.ByCase[w.CaseID] != nil)
@@ -730,7 +763,11 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if !s.recoverySessionCapacityAvailableLocked(slot) {
 		return errors.New("recovery session capacity exceeded")
 	}
-	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead)
+	reviewEvidence, err := recoveryReviewEvidenceFromEvent(ev)
+	if err != nil {
+		return err
+	}
+	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead, &reviewEvidence)
 	if candidate["eligible"] != true || ev["eligibility_hash"] != candidate["eligibility_hash"] {
 		return errors.New("recovery candidate does not match event-time eligibility evidence")
 	}
