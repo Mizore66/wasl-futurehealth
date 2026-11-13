@@ -328,6 +328,30 @@ func TestPatientRequestReplayConflictsOffersAndNoOps(t *testing.T) {
 	if code != 200 || noop["replayed"] != true || len(p.s.reviews) != 1 {
 		t.Fatalf("semantic no-op: %d %v", code, noop)
 	}
+	code, noopReplay := p.post(t, "teach_back_completed", patientUUID(2), journeyHead(first), data)
+	if code != 200 || noopReplay["event"] != nil || noopReplay["replayed"] != true || len(p.s.reviews) != 1 {
+		t.Fatalf("semantic no-op exact retry: %d %v", code, noopReplay)
+	}
+	code, reused := p.post(t, "preparation_changed", patientUUID(2), journeyHead(first), map[string]interface{}{"item_id": prepEscortHome, "completed": true})
+	if code != 409 || reused["conflict"] != "request" || len(p.s.reviews) != 1 || p.s.cases[patientTestCaseA].patient.Prep[prepEscortHome].Completed {
+		t.Fatalf("semantic no-op request id reused for preparation_changed: %d %v", code, reused)
+	}
+	for _, tc := range []struct {
+		name string
+		kind string
+		head string
+		data map[string]interface{}
+	}{
+		{"different head", "teach_back_completed", "different-head", data},
+		{"different data", "preparation_changed", journeyHead(first), map[string]interface{}{"item_id": prepClearFluidsAndPrep, "completed": true}},
+	} {
+		t.Run("semantic no-op request id reused with "+tc.name, func(t *testing.T) {
+			code, conflict := p.post(t, tc.kind, patientUUID(2), tc.head, tc.data)
+			if code != 409 || conflict["conflict"] != "request" || len(p.s.reviews) != 1 {
+				t.Fatalf("request conflict: %d %v", code, conflict)
+			}
+		})
+	}
 	code, wrong := p.post(t, "teach_back_completed", patientUUID(3), journeyHead(first), map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "blood_test"})
 	if code != 400 || len(p.s.reviews) != 1 {
 		t.Fatalf("wrong teach-back answer: %d %v", code, wrong)

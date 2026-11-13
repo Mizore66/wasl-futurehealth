@@ -394,6 +394,7 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 			// replay check below distinguishes that write from a true patient repeat.
 		}
 		if s.patientSemanticNoOpLocked(c, req.Kind, data) {
+			s.patientRequestsLocked()[req.RequestID] = patientRequestRecord{Fingerprint: fingerprint}
 			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
 		}
 		action := patientSelfService
