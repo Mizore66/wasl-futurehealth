@@ -267,12 +267,13 @@ func validatePatientData(kind string, in map[string]interface{}) (map[string]int
 	return out, nil
 }
 
-func patientSemanticNoOp(c *apiCase, kind string, data map[string]interface{}) bool {
+func (s *apiServer) patientSemanticNoOpLocked(c *apiCase, kind string, data map[string]interface{}) bool {
 	switch kind {
 	case "teach_back_completed":
 		return c.patient.Teach.Status == "completed"
 	case "contact_permission_changed":
-		return c.patient.Contact.Status == data["permission"]
+		overlay, _ := s.overlayLocked(c)
+		return overlay["status"] == data["permission"]
 	case "slot_selected":
 		return c.patient.Slot.Status == "selected" && c.patient.Slot.SlotID == data["slot_id"]
 	case "preparation_changed":
@@ -393,7 +394,7 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 				return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
 			}
 		}
-		if patientSemanticNoOp(c, req.Kind, data) {
+		if s.patientSemanticNoOpLocked(c, req.Kind, data) {
 			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
 		}
 		action := patientSelfService
@@ -485,7 +486,7 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if kind == "slot_selected" && (sstr(data, "offers_version") != patientOffersVersion() || !patientOfferedSlot(sstr(data, "slot_id"))) {
 		return errors.New("patient event names an unoffered slot or offer version")
 	}
-	if patientSemanticNoOp(c, kind, data) {
+	if s.patientSemanticNoOpLocked(c, kind, data) {
 		return errors.New("patient event repeats current state instead of being a no-op response")
 	}
 	link := patientLink{Case: id, LinkID: linkID}

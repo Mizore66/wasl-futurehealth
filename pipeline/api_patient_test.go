@@ -526,6 +526,82 @@ func TestPatientOptOutBlocksOutreachAndSurvivesExpiry(t *testing.T) {
 	}
 }
 
+func TestPatientPermissionNoOpUsesSharedContactOverlay(t *testing.T) {
+	recordConsent := func(t *testing.T, p *patientTestAPI, event string) {
+		t.Helper()
+		code, body, _ := p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{
+			"event": event, "expected_head": patientTestSignature(patientTestCaseA), "note": "synthetic coordinator consent update",
+		})
+		if code != http.StatusCreated {
+			t.Fatalf("coordinator %s: %d %v", event, code, body)
+		}
+	}
+	contactOutcome := func(t *testing.T, p *patientTestAPI) (int, map[string]interface{}) {
+		t.Helper()
+		code, body, _ := p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/actions", "staff-token-123456", map[string]interface{}{
+			"action": "contact_outcome", "expected_head": patientTestSignature(patientTestCaseA), "outcome": "reached", "channel": "phone",
+		})
+		return code, body
+	}
+
+	t.Run("repeated denial overrides coordinator grant", func(t *testing.T) {
+		p := newPatientTestAPI(t)
+		head := patientHead(p.s.cases[patientTestCaseA])
+		code, body := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "denied"})
+		if code != http.StatusCreated {
+			t.Fatalf("initial patient denial: %d %v", code, body)
+		}
+		head = journeyHead(body)
+		recordConsent(t, p, "consent_granted")
+		code, body = p.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "denied"})
+		if code != http.StatusCreated || body["replayed"] != false || journeyHead(body) == head {
+			t.Fatalf("repeated patient denial after coordinator grant: %d %v", code, body)
+		}
+		overlay, _ := p.s.overlayLocked(p.s.cases[patientTestCaseA])
+		if overlay["status"] != "denied" || overlay["contact_blocked"] != true {
+			t.Fatalf("effective overlay after repeated denial: %v", overlay)
+		}
+		if code, body := contactOutcome(t, p); code != http.StatusConflict {
+			t.Fatalf("contact after repeated patient denial: %d %v", code, body)
+		}
+		head = journeyHead(body)
+		code, body = p.post(t, "contact_permission_changed", patientUUID(3), head, map[string]interface{}{"permission": "denied"})
+		if code != http.StatusOK || body["replayed"] != true || p.s.cases[patientTestCaseA].patient.Seq != 2 {
+			t.Fatalf("true repeated-denial no-op: %d %v", code, body)
+		}
+	})
+
+	t.Run("repeated grant overrides coordinator denial", func(t *testing.T) {
+		p := newPatientTestAPI(t)
+		head := patientHead(p.s.cases[patientTestCaseA])
+		code, body := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "granted"})
+		if code != http.StatusCreated {
+			t.Fatalf("initial patient grant: %d %v", code, body)
+		}
+		head = journeyHead(body)
+		recordConsent(t, p, "consent_denied")
+		if code, body := contactOutcome(t, p); code != http.StatusConflict {
+			t.Fatalf("contact after coordinator denial: %d %v", code, body)
+		}
+		code, body = p.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "granted"})
+		if code != http.StatusCreated || body["replayed"] != false || journeyHead(body) == head {
+			t.Fatalf("repeated patient grant after coordinator denial: %d %v", code, body)
+		}
+		overlay, _ := p.s.overlayLocked(p.s.cases[patientTestCaseA])
+		if overlay["status"] != "granted" || overlay["contact_blocked"] != false {
+			t.Fatalf("effective overlay after repeated grant: %v", overlay)
+		}
+		if code, body := contactOutcome(t, p); code != http.StatusCreated {
+			t.Fatalf("contact after restored patient grant: %d %v", code, body)
+		}
+		head = journeyHead(body)
+		code, body = p.post(t, "contact_permission_changed", patientUUID(3), head, map[string]interface{}{"permission": "granted"})
+		if code != http.StatusOK || body["replayed"] != true || p.s.cases[patientTestCaseA].patient.Seq != 2 {
+			t.Fatalf("true repeated-grant no-op: %d %v", code, body)
+		}
+	})
+}
+
 func TestPatientRouteDoesNotEnableDirectBrowserCORS(t *testing.T) {
 	p := newPatientTestAPI(t)
 	h, err := p.s.handler("staff-token-123456:coordinator:coordinator-one", "https://staff.example")
