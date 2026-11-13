@@ -124,7 +124,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			return rs[i].d.EventID < rs[j].d.EventID
 		})
 	}
-	byDay(screens)
+	// episodeRows orders screens by clinical time and explicit lineage.
 	byDay(notes)
 	index := ""
 	if f.DR != nil {

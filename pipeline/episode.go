@@ -98,6 +98,37 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 			out = append(out, r)
 		}
 	}
+	// Clinical time orders separate observations, but a same-time child must
+	// follow its ancestors. Resource IDs and versions across distinct resources
+	// establish no clinical precedence. Every included path already reaches index.
+	depth := map[string]int{index: 0}
+	for id := range included {
+		for cur := id; cur != index; cur = current[cur].Parent {
+			depth[id]++
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].d.Day != out[j].d.Day {
+			return out[i].d.Day < out[j].d.Day
+		}
+		return depth[out[i].d.ReportID] < depth[out[j].d.ReportID]
+	})
+	// Same-time siblings (including branches at different depths) have no
+	// explicit precedence. Do not let their order choose a closing grade. In a
+	// totally ordered lineage each adjacent same-time row descends from the last.
+	for i := 1; i < len(out); i++ {
+		prev, next := out[i-1].d, out[i].d
+		if prev.Day != next.Day {
+			continue
+		}
+		cur := next.ReportID
+		for cur != index && cur != prev.ReportID {
+			cur = current[cur].Parent
+		}
+		if cur != prev.ReportID {
+			return nil, "ambiguous_same_time_index_evidence_lineage"
+		}
+	}
 	return out, ""
 }
 

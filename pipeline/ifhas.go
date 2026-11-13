@@ -148,7 +148,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			return rs[i].d.EventID < rs[j].d.EventID
 		})
 	}
-	byDay(screens)
+	// episodeRows orders screens by clinical time and explicit lineage.
 	byDay(notes)
 	index := ""
 	if f.IFHAS != nil {
