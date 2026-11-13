@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 )
@@ -185,7 +186,257 @@ func TestLungStableFollowUpOpensSurveillanceLoop(t *testing.T) {
 		t.Fatalf("growth on the surveillance CT should escalate, got %s", d.State)
 	}
 	g := lungFacts(60, "none", "low", "solid/<6/single", lungFU("MAF-ct-1", 50, "stable", "eid", 1, false))
-	if _, ok := func() (*Decision, bool) { c := NewClosureCore(0, nil); c.Apply(&FactsMsg{ID: "f", InSeq: 1, Facts: g}); d, ok := c.Final()[g.LoopID+"#surv"]; return d, ok }(); ok {
+	if _, ok := func() (*Decision, bool) {
+		c := NewClosureCore(0, nil)
+		c.Apply(&FactsMsg{ID: "f", InSeq: 1, Facts: g})
+		d, ok := c.Final()[g.LoopID+"#surv"]
+		return d, ok
+	}(); ok {
 		t.Fatal("no follow-up recommended -> no surveillance loop")
+	}
+}
+
+func lungIndexFinding(id string, day float64, label string) DownFact {
+	return DownFact{EventID: id, Provider: "rad-imaging", RType: "LungFinding", Day: day, ReportID: id,
+		Prog: "lung_nodule", Strength: 1, Weak: Edge{A: "rad-imaging|RAD-MRN000001", B: "rad-imaging|RAD-MRN000001", P: 1, Basis: "self"},
+		Ev: &TwoVerdict{Kind: "lung-finding", Agree: label != "", Label: map[bool]string{true: label, false: "disagree"}[label != ""]}}
+}
+
+func lungMissingIndexFacts(down ...DownFact) *LoopFacts {
+	f := lungFacts(60, "none", "low", "solid/<6/single")
+	f.Lung.Finding = "RAD-target"
+	f.Down = down
+	return f
+}
+
+func requireLungMissingIndex(t *testing.T, f *LoopFacts) {
+	t.Helper()
+	d, out := runLung(t, f, 120)
+	if d.State != "open" || d.Lung.Rec != nil || d.Lung.Finding != "" || d.ClosingReport != "" || d.ClosedDay != 0 || lastBlock(d) != "hold_decision" {
+		t.Fatalf("missing index lineage must hold without a substitute: %+v", d)
+	}
+	hold := d.Chain[len(d.Chain)-1].Body
+	if hold["reason"] != "index_ct_report_not_received" || len(d.Pending) != 0 || len(d.Outreach) != 0 {
+		t.Fatalf("wrong missing-index hold or side effects: %+v", d)
+	}
+	for _, o := range out {
+		if o.Kind == "review" {
+			t.Fatalf("unrelated report raised review %+v", o.Item)
+		}
+	}
+}
+
+func TestLungMissingIndexNeverUsesUnrelatedReport(t *testing.T) {
+	other := lungIndexFinding("RAD-other", -200, "solid/<6/single")
+	requireLungMissingIndex(t, lungMissingIndexFacts(other))
+	forward, _ := runLung(t, lungMissingIndexFacts(other), 120)
+	withUnread := lungIndexFinding("RAD-unread", -199, "")
+	reverse, _ := runLung(t, lungMissingIndexFacts(withUnread, other), 120)
+	if !bytes.Equal(canon(forward), canon(reverse)) {
+		t.Fatal("unrelated report order changed the missing-index decision")
+	}
+	for _, status := range []string{"cancelled", "entered-in-error", "preliminary", "registered"} {
+		t.Run(status, func(t *testing.T) {
+			rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"target", "other"}, evs: map[string]*Event{
+				"target": {ID: "target", Provider: "rad-imaging", RType: "DiagnosticReport", Status: status, Category: "lung-finding", ReportID: "RAD-target", Day: -200,
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/6-8/single"}},
+				"other": {ID: "other", Provider: "rad-imaging", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-other", Day: -200,
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/<6/single"}},
+			}}
+			requireLungMissingIndex(t, lungMissingIndexFacts(lungFindingFacts(rec)...))
+		})
+	}
+	outside := lungIndexFinding("RAD-target", -500, "solid/6-8/single")
+	requireLungMissingIndex(t, lungMissingIndexFacts(outside, other))
+}
+
+func TestLungNamedDisagreementCannotBeReplaced(t *testing.T) {
+	target := lungIndexFinding("RAD-target", -200, "")
+	other := lungIndexFinding("RAD-other", -199, "solid/<6/single")
+	d, out := runLung(t, lungMissingIndexFacts(other, target), 120)
+	if d.State != "open" || d.Lung.Finding != "RAD-target" || d.Lung.Rec != nil || len(d.Pending) != 1 || d.ClosingReport != "" {
+		t.Fatalf("named disagreement must remain target-specific: %+v", d)
+	}
+	for _, o := range out {
+		if o.Kind == "review" && (o.Item.ReportID != "RAD-target" || o.Item.Kinds[0] != "evidence") {
+			t.Fatalf("review used unrelated evidence: %+v", o.Item)
+		}
+	}
+	if !hasReview(out, "evidence") {
+		t.Fatal("named disagreement did not raise evidence review")
+	}
+}
+
+func TestLungOnlyExplicitIndexLineageCanDecide(t *testing.T) {
+	target := lungIndexFinding("RAD-target", -200, "solid/6-8/single")
+	addendum := lungIndexFinding("RAD-addendum", -190, "solid/<6/single")
+	addendum.Parent = target.ReportID
+	lookalike := lungIndexFinding("RAD-lookalike", -190, "solid/<6/single")
+
+	d, _ := runLung(t, lungMissingIndexFacts(lookalike, target), 120)
+	if d.State != "open" || d.Lung.Finding != target.ReportID || d.Lung.Rec == nil || d.Lung.Rec.Action != FlCT {
+		t.Fatalf("unlinked lookalike replaced the requested report: %+v", d)
+	}
+	d, _ = runLung(t, lungMissingIndexFacts(addendum, target), 120)
+	if d.State != "no_followup_needed" || d.Lung.Finding != addendum.ReportID || d.ClosingReport != addendum.ReportID || !verifyChain(d.Chain) {
+		t.Fatalf("linked addendum must supply the authorized decision and provenance: %+v", d)
+	}
+	// With no active named row, an explicitly linked eligible addendum is still in the requested lineage.
+	d, _ = runLung(t, lungMissingIndexFacts(addendum), 120)
+	if d.State != "no_followup_needed" || d.Lung.Finding != addendum.ReportID {
+		t.Fatalf("eligible linked lineage was treated as unrelated: %+v", d)
+	}
+	revision := lungIndexFinding("RAD-target", -200, "solid/<6/single")
+	revision.Version, revision.Status = 2, "corrected"
+	d, _ = runLung(t, lungMissingIndexFacts(revision, lookalike), 120)
+	if d.State != "no_followup_needed" || d.Lung.Finding != revision.ReportID {
+		t.Fatalf("active same-ID revision was not evaluated: %+v", d)
+	}
+	unreadAddendum := lungIndexFinding("RAD-addendum", -190, "")
+	unreadAddendum.Parent = target.ReportID
+	d, out := runLung(t, lungMissingIndexFacts(target, unreadAddendum), 120)
+	if d.State != "open" || d.Lung.Finding != unreadAddendum.ReportID || d.Lung.Rec != nil || len(d.Pending) != 1 {
+		t.Fatalf("selected lineage disagreement must hold on the addendum: %+v", d)
+	}
+	for _, o := range out {
+		if o.Kind == "review" && o.Item.ReportID != unreadAddendum.ReportID {
+			t.Fatalf("review identifies non-selected lineage report %q", o.Item.ReportID)
+		}
+	}
+}
+
+func TestLungTransitiveCorrectionSupersedesNoActionAddendum(t *testing.T) {
+	target := lungIndexFinding("RAD-target", -200, "solid/<6/single")
+	addendum := lungIndexFinding("RAD-addendum", -190, "solid/<6/single")
+	addendum.Parent = target.ReportID
+	correction := lungIndexFinding("RAD-correction", -180, "solid/6-8/single")
+	correction.Parent = addendum.ReportID
+	unrelated := lungIndexFinding("RAD-unrelated", -170, "solid/<6/single")
+
+	for _, down := range [][]DownFact{{target, addendum, correction, unrelated}, {unrelated, correction, target, addendum}} {
+		d, _ := runLung(t, lungMissingIndexFacts(down...), 120)
+		if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != correction.ReportID || d.Lung.FindingLabel != "solid/6-8/single" ||
+			d.Lung.Rec == nil || d.Lung.Rec.Action != FlCT || d.Lung.WindowStart != -200+float64(months(6)) || d.Lung.WindowEnd != -200+float64(months(12)) {
+			t.Fatalf("correction of the authorized addendum did not supply the current decision: %+v", d)
+		}
+		if len(d.Chain) == 0 || d.Chain[0].Type != "evidence" || d.Chain[0].Body["report"] != "rad-imaging/DiagnosticReport/RAD-correction" ||
+			!verifyChain(d.Chain) || decSig(d) != d.Sig {
+			t.Fatalf("decision evidence does not identify the transitive correction: %+v", d)
+		}
+	}
+}
+
+func TestLungProductionFactsPreserveWithdrawnIntermediateLineage(t *testing.T) {
+	for _, status := range []string{"cancelled", "entered-in-error", "preliminary", "registered", "partial", "unknown"} {
+		t.Run(status, func(t *testing.T) {
+			rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"target", "addendum", "correction"}, evs: map[string]*Event{
+				"target": {ID: "RAD-target", Provider: "rad-imaging", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-target", Day: -200,
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/<6/single"}},
+				"addendum": {ID: "RAD-addendum", Provider: "rad-imaging", RType: "DiagnosticReport", Status: status, Category: "lung-finding", ReportID: "RAD-addendum", Day: -190, Focus: "RAD-target",
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/<6/single"}},
+				"correction": {ID: "RAD-correction", Provider: "rad-imaging", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-correction", Day: -180, Focus: "RAD-addendum",
+					Ev: &TwoVerdict{Kind: "lung-finding", Agree: true, Label: "solid/6-8/single"}},
+			}}
+			facts := lungFindingFacts(rec)
+			if len(facts) != 3 || facts[1].ReportID != "RAD-addendum" || facts[1].Status != status || facts[1].Parent != "RAD-target" {
+				t.Errorf("production facts discarded the ineligible parent's lineage metadata: %+v", facts)
+			}
+			d, _ := runLung(t, lungMissingIndexFacts(facts...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-correction" || d.Lung.FindingLabel != "solid/6-8/single" ||
+				d.Lung.Rec == nil || d.Lung.Rec.Action != FlCT || d.Lung.WindowStart != -200+float64(months(6)) || d.Lung.WindowEnd != -200+float64(months(12)) {
+				t.Fatalf("authorized correction through an ineligible intermediate must supersede the no-action target: %+v", d)
+			}
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("transitive correction decision provenance does not verify: %+v", d)
+			}
+			if facts[1].Ev != nil || rec.evs["addendum"].Ev == nil {
+				t.Fatal("ineligible intermediate must carry lineage only, without erasing original evidence")
+			}
+			var replay LoopFacts
+			if err := json.Unmarshal(canon(lungMissingIndexFacts(facts...)), &replay); err != nil {
+				t.Fatal(err)
+			}
+			rd, _ := runLung(t, &replay, 120)
+			if !bytes.Equal(canon(d), canon(rd)) {
+				t.Fatal("lineage metadata or decision changed after JSON replay")
+			}
+
+			// A final but unread correction holds on that correction, not on the withdrawn intermediate or stale index.
+			rec.evs["correction"].Ev = nil
+			d, out := runLung(t, lungMissingIndexFacts(lungFindingFacts(rec)...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-correction" || d.Lung.Rec != nil ||
+				len(d.Pending) != 1 || !hasReview(out, "evidence") || d.Chain[0].Body["report"] != "rad-imaging/DiagnosticReport/RAD-correction" {
+				t.Fatalf("unread correction must hold on authorized evidence: %+v", d)
+			}
+			for _, o := range out {
+				if o.Kind == "review" && o.Item.ReportID != "RAD-correction" {
+					t.Fatalf("review used ineligible or superseded evidence: %+v", o.Item)
+				}
+			}
+
+			// Without an eligible correction, the ineligible no-action addendum cannot close a follow-up index.
+			rec.evOrder = rec.evOrder[:2]
+			rec.evs["target"].Ev.Label = "solid/6-8/single"
+			d, out = runLung(t, lungMissingIndexFacts(lungFindingFacts(rec)...), 120)
+			if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != "RAD-target" || d.Lung.Rec == nil ||
+				d.Lung.Rec.Action != FlCT || len(d.Pending) != 0 || hasReview(out, "evidence") {
+				t.Fatalf("ineligible intermediate became clinical evidence: %+v", d)
+			}
+		})
+	}
+}
+
+func TestLungFindingFactsCarryAddendumIdentity(t *testing.T) {
+	rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"a", "b"}, evs: map[string]*Event{
+		"a": {ID: "a", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-target"},
+		"b": {ID: "b", RType: "DiagnosticReport", Status: "appended", Category: "lung-finding", ReportID: "RAD-addendum", Focus: "RAD-target"},
+	}}
+	facts := lungFindingFacts(rec)
+	if len(facts) != 2 || facts[0].Parent != "" || facts[1].Parent != "RAD-target" {
+		t.Fatalf("lung addendum parent identity lost: %+v", facts)
+	}
+}
+
+func TestLungAnchoredDecisionsReplayAfterJSONRoundTrip(t *testing.T) {
+	savedCal := V7Cal
+	V7Cal = nil
+	defer func() { V7Cal = savedCal }()
+
+	missing := lungMissingIndexFacts(lungIndexFinding("RAD-other", -200, "solid/<6/single"))
+	closed := lungMissingIndexFacts(lungIndexFinding("RAD-target", -200, "solid/<6/single"), lungIndexFinding("RAD-other", -199, "disagree"))
+	evidenceHold := lungMissingIndexFacts(lungIndexFinding("RAD-target", -200, ""), lungIndexFinding("RAD-other", -199, "solid/<6/single"))
+	for name, original := range map[string]*LoopFacts{"anchored closure": closed, "missing index": missing, "named evidence hold": evidenceHold} {
+		t.Run(name, func(t *testing.T) {
+			var decoded LoopFacts
+			if err := json.Unmarshal(canon(original), &decoded); err != nil {
+				t.Fatal(err)
+			}
+			run := func(f *LoopFacts) *ClosureCore {
+				c := NewClosureCore(0, nil)
+				c.Apply(&FactsMsg{ID: "facts", InSeq: 1, Facts: f})
+				c.Apply(&FactsMsg{ID: "tick", InSeq: 2, IsTick: true, TickDay: 120})
+				return c
+			}
+			first, replayed := run(original), run(&decoded)
+			reversedFacts := *original
+			reversedFacts.Down = append([]DownFact(nil), original.Down...)
+			for i, j := 0, len(reversedFacts.Down)-1; i < j; i, j = i+1, j-1 {
+				reversedFacts.Down[i], reversedFacts.Down[j] = reversedFacts.Down[j], reversedFacts.Down[i]
+			}
+			reversed := run(&reversedFacts)
+			if !bytes.Equal(canon(first.Final()), canon(reversed.Final())) {
+				t.Fatalf("reversed Down order changed decisions:\n%s\n%s", canon(first.Final()), canon(reversed.Final()))
+			}
+			if !bytes.Equal(canon(first.Final()), canon(replayed.Final())) {
+				t.Fatalf("JSON replay changed decisions:\n%s\n%s", canon(first.Final()), canon(replayed.Final()))
+			}
+			d := replayed.Final()[original.LoopID]
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("replayed decision provenance does not verify: %+v", d)
+			}
+			if duplicate := replayed.Apply(&FactsMsg{ID: "duplicate", InSeq: 3, Facts: &decoded}); len(duplicate) != 0 {
+				t.Fatalf("identical facts emitted duplicate outputs: %+v", duplicate)
+			}
+		})
 	}
 }

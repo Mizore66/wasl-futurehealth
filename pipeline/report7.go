@@ -202,6 +202,88 @@ func crcKPI(tr *Truth, final map[string]*Decision, noRev map[string]*Decision, r
 	return out
 }
 
+func replayConsentAt(rp *replayOut, loop string, at uint64) (string, bool) {
+	if rp == nil {
+		return "unknown", false
+	}
+	timeline := rp.consent[baseLoop(loop)]
+	i := sort.Search(len(timeline), func(i int) bool { return timeline[i].InSeq > at }) - 1
+	if i < 0 {
+		return "unknown", false
+	}
+	contact := timeline[i].Contact
+	if contact == "" {
+		contact = "unknown"
+	}
+	return contact, timeline[i].MsgOptOut
+}
+
+// calculateConsentTiming is deliberately independent of live Decision.Contact:
+// the replay timeline is the canonical consent state at the input sequence that
+// produced each live decision. Child loops use their parent's consent timeline.
+func replayFirstOptOut(rp *replayOut, loop string) (uint64, bool) {
+	if rp == nil {
+		return 0, false
+	}
+	for _, projection := range rp.consent[baseLoop(loop)] {
+		if projection.MsgOptOut {
+			return projection.InSeq, true
+		}
+	}
+	return 0, false
+}
+
+func calculateConsentTiming(outLog []LogMsg, rp *replayOut, optOutTruth map[string]bool) map[string]int {
+	type relKey struct{ loop, ev, kind string }
+	before, after := map[relKey]bool{}, map[relKey]bool{}
+	relNoGrant, relTotal := map[relKey]bool{}, map[relKey]bool{}
+	held, cancelled := map[relKey]bool{}, map[relKey]bool{}
+	firstOptOut := map[string]uint64{}
+	hasOptOut := map[string]bool{}
+	optOutComputed := map[string]bool{}
+	for _, m := range outLog {
+		var oe OutEnvelope
+		json.Unmarshal(m.Data, &oe)
+		d := oe.Dec
+		if d == nil {
+			continue
+		}
+		contact, optedOut := replayConsentAt(rp, d.LoopID, d.InSeq)
+		for _, x := range d.Outreach {
+			k := relKey{d.LoopID, x.Event, x.Kind}
+			switch {
+			case x.Released:
+				relTotal[k] = true
+				if contact != "granted" || optedOut {
+					relNoGrant[k] = true
+				}
+				if optedOut {
+					after[k] = true
+				} else if optOutTruth[baseLoop(d.LoopID)] {
+					base := baseLoop(d.LoopID)
+					if !optOutComputed[base] {
+						firstOptOut[base], hasOptOut[base] = replayFirstOptOut(rp, base)
+						optOutComputed[base] = true
+					}
+					if !hasOptOut[base] || d.InSeq < firstOptOut[base] {
+						before[k] = true
+					}
+				}
+			case x.Suppress == SupConsentHold:
+				held[k] = true
+			case x.Suppress == SupConsent:
+				cancelled[k] = true
+			}
+		}
+	}
+	return map[string]int{
+		"opted_out_loops": len(optOutTruth), "released_after_opt_out_on_file": len(after),
+		"released_before_opt_out_recorded": len(before), "released_total": len(relTotal),
+		"released_without_granted_consent": len(relNoGrant), "intents_ever_held_for_consent": len(held),
+		"intents_cancelled_by_consent": len(cancelled),
+	}
+}
+
 func report7(data, wasl, run string, P int) {
 	fhir := readLog(filepath.Join(run, "fhir_log.ndjson"))
 	outLog := readLog(filepath.Join(run, "out_log.ndjson"))
@@ -414,104 +496,9 @@ func report7(data, wasl, run string, P int) {
 		drop[pg] = map[string]interface{}{"pipeline": pred, "truth": truth, "loop_accuracy": frac(ok, n)}
 	}
 
-	// ---- consent timing: a release counts as a violation only if the opt-out was already on file (authorised Consent
-	// earlier in the FHIR log than the input that produced the decision)
-	consentSeq := map[string]uint64{}
-	srPK := map[string]string{}
-	for _, p := range preps {
-		if p == nil || p.Ev == nil || p.Kind != "event" {
-			continue
-		}
-		e := p.Ev
-		if e.RType == "Consent" && e.Status == "deny" && Authorize(e.Owner, ActRecordConsent) == nil {
-			if _, ok := consentSeq[e.PatientKey]; !ok {
-				consentSeq[e.PatientKey] = p.Seq
-			}
-		}
-		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
-			srPK[e.Provider+"/ServiceRequest/"+e.ID] = e.PatientKey
-		}
-	}
-	type relKey struct{ loop, ev, kind string }
-	before, after := map[relKey]bool{}, map[relKey]bool{}
-	for _, m := range outLog {
-		var oe OutEnvelope
-		json.Unmarshal(m.Data, &oe)
-		d := oe.Dec
-		if d == nil || !o.optT[baseLoop(d.LoopID)] { // child loops (<loop>#surv) carry the parent's consent
-			continue
-		}
-		cs, ok := consentSeq[srPK[baseLoop(d.LoopID)]]
-		for _, x := range d.Outreach {
-			if !x.Released {
-				continue
-			}
-			k := relKey{d.LoopID, x.Event, x.Kind}
-			if ok && d.InSeq >= cs {
-				after[k] = true
-			} else {
-				before[k] = true
-			}
-		}
-	}
-	consentTiming := map[string]int{"opted_out_loops": len(o.optT), "released_after_opt_out_on_file": len(after),
-		"released_before_opt_out_recorded": len(before)}
-	// stage 3 invariant: every released intent must have had a *granted* contact permission (authorised permit, not
-	// later withdrawn) earlier in the FHIR log than the input that produced the decision.
-	type cev struct {
-		seq  uint64
-		kind string
-	}
-	cons := map[string][]cev{}
-	for _, p := range preps {
-		if p != nil && p.Ev != nil && p.Kind == "event" && p.Ev.RType == "Consent" && Authorize(p.Ev.Owner, ActRecordConsent) == nil {
-			cons[p.Ev.PatientKey] = append(cons[p.Ev.PatientKey], cev{p.Seq, p.Ev.Status})
-		}
-	}
-	grantedAt := func(pk string, at uint64) bool {
-		st := ""
-		for _, c := range cons[pk] { // replay the same state machine as the linker
-			if c.seq > at {
-				break
-			}
-			switch {
-			case c.kind == "permit" && st != "opted_out":
-				st = "granted"
-			case c.kind == "deny" && (st == "granted" || st == "opted_out"):
-				st = "opted_out"
-			case c.kind == "deny":
-				st = "denied"
-			}
-		}
-		return st == "granted"
-	}
-	relNoGrant, relTotal, held, cancelled := map[relKey]bool{}, map[relKey]bool{}, map[relKey]bool{}, map[relKey]bool{}
-	for _, m := range outLog {
-		var oe OutEnvelope
-		json.Unmarshal(m.Data, &oe)
-		d := oe.Dec
-		if d == nil {
-			continue
-		}
-		for _, x := range d.Outreach {
-			k := relKey{d.LoopID, x.Event, x.Kind}
-			switch {
-			case x.Released:
-				relTotal[k] = true
-				if !grantedAt(srPK[baseLoop(d.LoopID)], d.InSeq) {
-					relNoGrant[k] = true
-				}
-			case x.Suppress == SupConsentHold:
-				held[k] = true
-			case x.Suppress == SupConsent:
-				cancelled[k] = true
-			}
-		}
-	}
-	consentTiming["released_total"] = len(relTotal)
-	consentTiming["released_without_granted_consent"] = len(relNoGrant)
-	consentTiming["intents_ever_held_for_consent"] = len(held)
-	consentTiming["intents_cancelled_by_consent"] = len(cancelled)
+	// Consent metrics use only the independent replay's canonical loop projections,
+	// never a live decision's self-reported contact fields or a second reducer.
+	consentTiming := calculateConsentTiming(outLog, rp, o.optT)
 	var orch, aud map[string]interface{}
 	ob, _ := os.ReadFile(filepath.Join(run, "orchestrate.json"))
 	json.Unmarshal(ob, &orch)
