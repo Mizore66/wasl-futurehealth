@@ -84,6 +84,18 @@ func requestViewer(r *http.Request) apiPrincipal {
 	return apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
 }
 
+// consentEventCounts: a compensated consent event is ignored, and while one is contested a grant is ignored (it must
+// not release outreach) but a denial or opt-out still counts (it keeps blocking contact).
+func consentEventCounts(undoState, status string) bool {
+	switch undoState {
+	case undoCompensated:
+		return false
+	case undoContested:
+		return status != "granted"
+	}
+	return true
+}
+
 func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
 	hist := []map[string]interface{}{}
 	status, pending, last := "none", "", ""
@@ -95,13 +107,8 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 			continue
 		}
 		hist = append(hist, r)
-		switch undo[fmt.Sprint(r["hash"])] {
-		case undoCompensated:
+		if !consentEventCounts(undo[fmt.Sprint(r["hash"])], st) {
 			continue
-		case undoContested:
-			if st == "granted" {
-				continue
-			}
 		}
 		status, last = st, fmt.Sprint(r["hash"])
 	}
