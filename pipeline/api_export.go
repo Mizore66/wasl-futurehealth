@@ -77,10 +77,36 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
 			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
+	items := nz(s.queue[c.ID])
+	current := c.last
+	if s.imageVerdictWithheld(c, viewer) {
+		for i, b := range ev {
+			if _, has := b["image_reader"]; has {
+				cp := make(map[string]interface{}, len(b))
+				for k, v := range b {
+					if k != "image_reader" {
+						cp[k] = v
+					}
+				}
+				ev[i] = cp
+			}
+		}
+		items = make([]*ReviewItem, len(s.queue[c.ID]))
+		for i, it := range s.queue[c.ID] {
+			cp := *it
+			cp.Chain = withoutImageVerdict(it.Chain)
+			items[i] = &cp
+		}
+		if current != nil {
+			cp := *current
+			cp.Chain = withoutImageVerdict(current.Chain)
+			current = &cp
+		}
+	}
 	detail := map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": caseTimelineForSerialization(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
-		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
+		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": items, "signoffs": nz(s.signoffs[c.ID]),
+		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": current, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
 	if photos := s.reviewPhotos(c); len(photos) > 0 {

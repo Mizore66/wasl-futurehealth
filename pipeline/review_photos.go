@@ -182,3 +182,36 @@ func (s *apiServer) casePhoto(w http.ResponseWriter, r *http.Request, c *apiCase
 	w.WriteHeader(200)
 	w.Write(b)
 }
+
+// imageVerdictWithheld: a clinician who may answer the evidence question must not see the image model's read until a
+// first read of that question is visible to them (their own, or one already revealed). Other roles are not readers.
+func (s *apiServer) imageVerdictWithheld(c *apiCase, viewer *apiPrincipal) bool {
+	if viewer == nil || Authorize(viewer.role, ActSignEvidence) != nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, it := range s.queue[c.ID] {
+		if st := s.rstates[reviewQuestionKey{it.ItemID, "evidence"}]; st != nil && len(st.Reads) > 0 && !concealedFrom(st, *viewer) {
+			return false
+		}
+	}
+	return true
+}
+
+func withoutImageVerdict(chain []Block) []Block {
+	out := make([]Block, len(chain))
+	for i, b := range chain {
+		if _, has := b.Body["image_reader"]; has {
+			body := make(map[string]interface{}, len(b.Body))
+			for k, v := range b.Body {
+				if k != "image_reader" {
+					body[k] = v
+				}
+			}
+			b.Body = body
+		}
+		out[i] = b
+	}
+	return out
+}

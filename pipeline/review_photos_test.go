@@ -94,7 +94,7 @@ func newPhotoEnv(t *testing.T) *photoEnv {
 	} {
 		it := &ReviewItem{ItemID: spec.item, Reason: spec.reason}
 		it.LoopID, it.Kinds = ledgerLoop, []string{"evidence"}
-		it.Chain = appendBlock(nil, "evidence", map[string]interface{}{"report": spec.report})
+		it.Chain = appendBlock(nil, "evidence", map[string]interface{}{"report": spec.report, "image_reader": map[string]interface{}{"model": "synthetic", "prep": "adequate"}})
 		m := LogMsg{Seq: uint64(30 + i), Subject: "out.p0", Hdr: map[string]string{}}
 		encodeEnv(&m, OutEnvelope{Kind: "review", Item: it})
 		b, _ := json.Marshal(m)
@@ -174,6 +174,54 @@ func shaStations(refs []map[string]interface{}) []string {
 		out = append(out, r["station"].(string)+":"+r["sha"].(string)+":"+map[bool]string{true: "ok", false: "missing"}[r["available"].(bool)])
 	}
 	return out
+}
+
+func (e *photoEnv) itemHasVerdict(t *testing.T, token, item string) bool {
+	t.Helper()
+	w := e.get(token, e.path)
+	if w.Code != 200 {
+		t.Fatalf("case detail: %d", w.Code)
+	}
+	var body struct {
+		Items []struct {
+			Item  string `json:"item"`
+			Chain []struct {
+				Body map[string]interface{} `json:"body"`
+			} `json:"chain"`
+		} `json:"review_items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range body.Items {
+		if it.Item == item {
+			for _, b := range it.Chain {
+				if _, ok := b.Body["image_reader"]; ok {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	t.Fatalf("item %s not in case detail", item)
+	return false
+}
+
+func TestImageVerdictIsWithheldFromAClinicianUntilAFirstReadIsVisible(t *testing.T) {
+	e := newPhotoEnv(t)
+	if e.itemHasVerdict(t, photoTokClin, "rv-one") || e.itemHasVerdict(t, photoTokSC, "rv-one") {
+		t.Fatal("a clinician with no first read must not receive the image model's verdict")
+	}
+	if !e.itemHasVerdict(t, photoTokRev, "rv-one") {
+		t.Fatal("roles that cannot answer the evidence question keep the existing evidence block")
+	}
+	e.must(t, photoTokClin, irBody("rv-one", "adequate", "r1", ""), 201)
+	if !e.itemHasVerdict(t, photoTokClin, "rv-one") {
+		t.Fatal("the first reader sees the verdict after their own first read")
+	}
+	if e.itemHasVerdict(t, "ir-clin-b-token-1234567890", "rv-one") {
+		t.Fatal("the second reader must not see the verdict while the first read is concealed from them")
+	}
 }
 
 func TestReviewPhotosProjectionBindsEachItemToItsStation(t *testing.T) {
