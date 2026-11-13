@@ -47,7 +47,7 @@ def readiness_hold(d):
 
 def held_case(d, procedure):
     return {"status": "not_applicable", "procedure": procedure, "state_at_run_end": d["state"],
-            "reason": f"clinical_readiness: {readiness_hold(d)}"}
+            "eligible_slots": [], "reason": f"clinical_readiness: {readiness_hold(d)}"}
 
 
 def load(run):
