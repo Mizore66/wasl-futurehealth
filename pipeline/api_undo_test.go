@@ -27,9 +27,7 @@ type undoRig struct {
 func newUndoRig(t *testing.T) *undoRig {
 	t.Helper()
 	run := t.TempDir()
-	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "reviewer_decisions.ndjson"} { // loadAPI needs (here empty) logs
-		os.WriteFile(filepath.Join(run, f), nil, 0644)
-	}
+	writeValidAPILogs(t, run)
 	writeRequiredAPIJSON(t, run)
 	s := loadAPI(run, "")
 	for _, id := range []string{undoCaseA, undoCaseB} {
@@ -136,7 +134,7 @@ func TestUndoHappyPathCompensates(t *testing.T) {
 	if c.State != stateBefore || c.last.Sig != sigBefore || decSig(c.last) != decSigBefore || c.Closed {
 		t.Error("canonical decision changed")
 	}
-	if b := readFile(t, filepath.Join(r.s.run, "out_log.ndjson")); b != "" {
+	if b := readFile(t, filepath.Join(r.s.run, "out_log.ndjson")); b != preflightDecisionLine+"\n" {
 		t.Error("undo must not write out_log")
 	}
 	_, p := r.do("GET", "/api/cases/"+undoCaseA+"/undo", RoleAuditor, "aud", "")
@@ -362,9 +360,7 @@ func TestLoadAPIVerifiedRejectsTamper(t *testing.T) {
 		t.Fatal("tampered ledger loaded")
 	}
 	empty := t.TempDir()
-	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "reviewer_decisions.ndjson"} {
-		os.WriteFile(filepath.Join(empty, f), nil, 0644)
-	}
+	writeValidAPILogs(t, empty)
 	writeRequiredAPIJSON(t, empty)
 	if _, err := loadAPIVerified(empty, ""); err != nil {
 		t.Fatalf("run with no ledger rejected: %v", err)

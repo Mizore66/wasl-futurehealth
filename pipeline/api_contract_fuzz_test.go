@@ -94,9 +94,9 @@ func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 		}
 	}
 	writeAgentNDJSON(t, filepath.Join(run, "out_log.ndjson"), out)
-	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), nil)
+	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
 	writeAgentNDJSON(t, filepath.Join(run, "reviewer_decisions.ndjson"), nil)
-	writeRequiredAPIJSON(t, run)
+	writeRequiredAPIJSONForCases(t, run, len(specs))
 	return loadAPI(run, ""), run
 }
 

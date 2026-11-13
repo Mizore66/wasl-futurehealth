@@ -54,7 +54,13 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	ev := []map[string]interface{}{}
 	links := []map[string]interface{}{}
 	holds := []map[string]interface{}{}
+	linkHistory := []map[string]interface{}{}
 	seen := map[string]bool{}
+	ci := s.currentIdentityFor(c)
+	inLast := map[string]bool{}
+	for _, b := range c.last.Chain {
+		inLast[b.Hash] = true
+	}
 	for _, d := range c.decisions {
 		for _, b := range d.Chain {
 			key := b.Hash
@@ -66,7 +72,16 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 			case "evidence":
 				ev = append(ev, b.Body)
 			case "link_decision":
-				links = append(links, b.Body)
+				if ci == nil || ci.linkIsCurrent(b, inLast[key]) {
+					links = append(links, b.Body)
+					continue
+				}
+				past := make(map[string]interface{}, len(b.Body)+1)
+				for k, v := range b.Body {
+					past[k] = v
+				}
+				past["history"] = ci.linkHistoryLabel(b)
+				linkHistory = append(linkHistory, past)
 			case "hold_decision":
 				holds = append(holds, b.Body)
 			}
@@ -77,12 +92,45 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
 			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
-	return map[string]interface{}{
-		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": caseTimelineForSerialization(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
+	identities, identityHistory, facts := s.ids[c.ID], []map[string]string{}, s.facts[c.ID]
+	if ci != nil {
+		identities, facts = nil, nil
+		for _, id := range s.ids[c.ID] {
+			if ci.keep[id["registration"]] {
+				identities = append(identities, id)
+				continue
+			}
+			past := map[string]string{}
+			for k, v := range id {
+				past[k] = v
+			}
+			past["role"] = "historical"
+			identityHistory = append(identityHistory, past)
+		}
+		for _, event := range s.facts[c.ID] {
+			if registration, _ := event["patient_key"].(string); ci.keep[registration] {
+				facts = append(facts, event)
+			}
+		}
+	}
+	body := map[string]interface{}{
+		"case": s.summary(c), "identities": nz(identities), "timeline": caseTimelineForSerialization(facts), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
 		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
+	if len(identityHistory) > 0 {
+		body["identity_history"] = identityHistory
+	}
+	if len(linkHistory) > 0 {
+		body["link_history"] = linkHistory
+	}
+	s.mu.Lock()
+	if c.patient.Seq > 0 {
+		body["api_patient"] = s.patientViewLocked(c, true)
+	}
+	s.mu.Unlock()
+	return body
 }
 
 // caseAuditBody is the raw internal source for the redacted auditor response and export. It is not served directly:
@@ -528,13 +576,26 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "expected_suggestion_version", "slot_id", "expected_slot_version",
-	"reservation_id", "expected_reservation_version"))
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
+var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
+var exportPatientAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("schema", "head", "seq", "ledger_status", "last_action_at")
+	m["teach_back"] = exportObject(exportKeys("question_id", "status", "completed_at", "event"))
+	m["contact_permission"] = exportObject(exportKeys("status", "updated_at", "event"))
+	m["slot_selection"] = exportObject(exportKeys("status", "offers_version", "slot_id", "selected_at", "event"))
+	m["preparation"] = exportObject(func() map[string]*exportAllow {
+		p := exportKeys("completed", "total")
+		p["items"] = exportList(exportPatientPrepItemAllow)
+		return p
+	}())
+	return m
+}())
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
-		"head", "seq", "target", "target_action", "resolution", "action_head",
+		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
-		"slot", "expected_slot_head", "expected_case_head", "request_id", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
+		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
 	m["data"] = exportCoordinatorDataAllow
 	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m
@@ -550,6 +611,12 @@ var exportSignoffAllow = exportObject(func() map[string]*exportAllow {
 
 var exportLinkAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("loop", "referral_patient", "downstream_event", "path_strength", "path_p_cal", "tau", "hops", "near_miss", "linker", "eid_contra", "review_pair_substituted")
+	m["weakest_edge"] = exportObject(exportKeys("a", "b", "p", "basis"))
+	return m
+}())
+
+var exportLinkHistoryAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("loop", "referral_patient", "downstream_event", "path_strength", "path_p_cal", "tau", "hops", "near_miss", "linker", "eid_contra", "review_pair_substituted", "history")
 	m["weakest_edge"] = exportObject(exportKeys("a", "b", "p", "basis"))
 	return m
 }())
@@ -610,6 +677,7 @@ var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
 		"review", "closed", "closed_day", "fixture", "decisions")
 	m["api_overlay"] = exportOverlayAllow
+	m["api_patient"] = exportPatientAllow
 	m["recovery"] = exportRecoveryCaseAllow
 	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
 	return m
@@ -649,6 +717,8 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["identities"] = exportList(exportObject(exportKeys("provider", "role")))
 	m["timeline"] = exportList(exportTimelineAllow)
 	m["links"] = exportList(exportLinkAllow)
+	m["link_history"] = exportList(exportLinkHistoryAllow)
+	m["identity_history"] = exportList(exportObject(exportKeys("provider", "role")))
 	m["evidence"] = exportList(exportEvidenceAllow)
 	m["holds"] = exportList(exportHoldAllow)
 	m["outreach"] = exportList(exportOutreachAllow)
@@ -657,6 +727,7 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["signoffs"] = exportList(exportSignoffAllow)
 	m["api_reviews"] = exportList(exportReviewEventAllow)
 	m["api_overlay"] = exportOverlayAllow
+	m["api_patient"] = exportPatientAllow
 	m["current"] = exportDecisionAllow
 	m["booking"] = exportBookingAllow
 	m["agent_investigations"] = exportList(exportAgentInvestigationAllow)
