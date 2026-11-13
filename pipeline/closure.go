@@ -151,15 +151,18 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 			}
 		}
 		ls.lastFU, ls.lastFU2 = nil, nil
-		ls.raised = map[string]*ReviewItem{}
+		// Raised reviews are append-only output history, not current work.
+		// Keep their IDs and signed heads while inactive so reactivation cannot
+		// re-emit an existing ID and break the deduplicated live output ledger.
 		ls.contact = nil
 		return out
 	}
 	if ls.inactive {
 		// A strictly newer active revision rebuilds live state from complete
 		// current facts. In particular, equal pre-retirement clinical content
-		// must still produce a fresh current decision.
-		ls = &loopState{raised: map[string]*ReviewItem{}}
+		// must still produce a fresh current decision. Preserve review history;
+		// current pending work is recomputed from facts and sign-offs by eval.
+		ls = &loopState{raised: ls.raised}
 		c.loops[f.LoopID] = ls
 	}
 	ls.facts = f
