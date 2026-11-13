@@ -34,6 +34,8 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 - The overlay uses the `/undo` fold. A compensated (undone or upheld-contest) consent event no longer counts, so the state falls back to the latest effective earlier event or `none`. While a consent event is contested, a grant is ignored (it does not release outreach) and a denial or opt-out still counts (it keeps blocking contact). A rejected contest restores the event. `history` still lists every raw event.
 - While `contact_blocked`, `POST /review` with `decision: confirm_contact` returns 409 and writes nothing.
 
+- While a first independent read awaits its second, `prev` is omitted from consent events chained on it (and `prev` and `action_head` from undo, contest and resolution responses) for non-authors, because the value would disclose the concealed hash. Clients treat those fields as optional and treat every 201 as committed.
+
 ## What does not change
 
 `case.consent`, the decision's `outreach` and `consent_log`, `out_log.ndjson` and every canonical run file stay as the pipeline wrote them. `DispatchC` is never called. In a live deployment these events would be published as signed consent records and replayed through the linker; that path is **designed**, not built.

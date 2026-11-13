@@ -479,7 +479,9 @@ export const ApiReview = z.looseObject({
 
 /** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
 export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
+/** `prev` is absent when it would repeat the hash of a first independent read still concealed from the viewer. */
 export const ConsentEvent = ApiReview.extend({
+  prev: z.string().optional(),
   decision: ConsentEventName,
   action: z.literal("record_consent"),
   head_signed: z.string(),
@@ -1086,8 +1088,17 @@ export const ContestResolutionRequest = z.object({
   resolution: z.enum(["upheld", "rejected"]),
   note: governanceReason,
 });
+/** The compensation event as a viewer receives it: `prev` and `action_head` are omitted when they would repeat a concealed first-read hash. */
+export const ViewerCompensationEvent = z.looseObject({
+  ...compensationShape,
+  prev: z.string().optional(),
+  action_head: z.string().optional(),
+  actor: z.string(),
+  target_actor: z.string(),
+  note: z.string(),
+});
 export const CompensationResponse = withMeta({
-  event: CompensationEvent,
+  event: ViewerCompensationEvent,
   canonical_reopened: z.literal(false),
   auto_closure: z.literal(false),
   canonical_state: CaseState,
