@@ -17,7 +17,7 @@ export function protocolFinished(detail: Pick<CaseDetail, "api_review_states">):
   return states.length > 0 && states.every((s) => s.state === "resolved_agreed" || s.state === "resolved_senior");
 }
 
-/** Cases waiting for a person's answer in every programme the desk can sign, oldest referral first. Cervical has no answer panel. */
+/** Cases waiting for a person's answer in every programme the desk can sign, oldest referral first. */
 export async function reviewQueue(token?: string): Promise<ReviewQueue> {
   /* The list itself is a shared read; only its per-case projections carry claim actions, and those use the viewer token. */
   const detail = async (id: string): Promise<CaseDetail | null> => {

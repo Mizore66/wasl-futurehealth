@@ -996,8 +996,9 @@ function ifhasFollowupLabels(): string[] {
 }
 
 /** Every evidence label the corresponding backend programme accepts, including procedure and structured-result labels. */
-export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas", string[]> = {
+export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "cervical" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas", string[]> = {
   crc: ["adequate", "inadequate"],
+  cervical: ["adequate", "inadequate"],
   lung_nodule: [...LUNG_OUTCOMES, ...lungIndexLabels],
   diabetic_retinopathy: [...drGradeLabels, "U", ...DR_OUTCOMES],
   breast: [...BREAST_LABELS],
@@ -1005,7 +1006,7 @@ export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_re
   ifhas: [...ifhasScreenLabels, ...ifhasFollowupLabels()],
 };
 
-/** Programmes the review desk can sign: each has evidence labels. Cervical has none, so its cases cannot be answered there. */
+/** Programmes the review desk can sign: each has evidence labels. */
 export const isGuided = (programme: string): programme is keyof typeof GUIDED_EVIDENCE_LABELS => Object.hasOwn(GUIDED_EVIDENCE_LABELS, programme);
 
 export const ReviewDecision = z.union([

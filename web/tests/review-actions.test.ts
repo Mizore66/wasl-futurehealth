@@ -87,6 +87,32 @@ describe("submitReviewRead", async () => {
     expect(fetchMock.mock.calls.every((c) => c[1].method !== "POST")).toBe(true);
   });
 
+  it.each([
+    ["link", "same"],
+    ["link", "different"],
+    ["evidence", "adequate"],
+    ["evidence", "inadequate"],
+  ] as const)("accepts %s answer %s on a raised cervical item", async (question, decision) => {
+    const submit = await load();
+    const base = detail([state({ question })]);
+    const cervical = { ...base, case: { ...base.case, programme: "cervical" }, review_items: [{ ...base.review_items[0], kinds: [question] }] };
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, cervical)).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question, decision })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ item: "rv-1", decision, read: "r1" });
+  });
+
+  it("refuses a cervical decision that does not match the raised question without posting", async () => {
+    const submit = await load();
+    const base = detail([state({ question: "evidence" })]);
+    const cervical = { ...base, case: { ...base.case, programme: "cervical" }, review_items: [{ ...base.review_items[0], kinds: ["evidence"] }] };
+    const fetchMock = vi.fn().mockImplementation(async () => json(200, cervical));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question: "evidence", decision: "same" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(await submit("c1", { ...input, question: "evidence", decision: "histology" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock.mock.calls.every((c) => c[1].method !== "POST")).toBe(true);
+  });
+
   it("refuses a stale expected head without posting", async () => {
     const submit = await load();
     const fetchMock = vi.fn().mockResolvedValue(json(200, detail([state({ head: "newer" })])));

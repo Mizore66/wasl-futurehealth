@@ -4,7 +4,7 @@ import { composableIfhasLabels, composeIfhasLabel, IFHAS_DOMAINS, parseIfhasLabe
 import { GUIDED_EVIDENCE_LABELS, ReviewDecision, type CaseDetail, type Programme } from "@/lib/api/schema";
 import { programmeDetail } from "./programme-cases";
 
-type GuidedProgramme = Extract<Programme, "crc" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas">;
+type GuidedProgramme = Extract<Programme, "crc" | "cervical" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas">;
 
 function detailFor(programme: GuidedProgramme): CaseDetail {
   const detail = programmeDetail("lung_ldct");
@@ -82,6 +82,16 @@ describe("programme evidence vocabulary", () => {
       expect(offered).not.toContain(impossible);
       expect(ReviewDecision.safeParse(impossible).success).toBe(true); // the API still parses it; the desk just never offers it
     }
+  });
+
+  it("offers a raised cervical item the desk with only its own decisions", () => {
+    const link = detailFor("cervical");
+    link.review_items[0].kinds = ["link"];
+    const evidence = reviewView(detailFor("cervical"));
+    expect(evidence.guided).toBe(true);
+    expect(evidence.evidenceChoices).toEqual(["adequate", "inadequate"]);
+    expect(reviewView(link).items).toEqual({ link: "rv-cervical", evidence: undefined });
+    expect(ReviewDecision.safeParse("histology").success).toBe(false);
   });
 
   it("keeps the two CRC evidence answers and the no-API ask action separate", () => {

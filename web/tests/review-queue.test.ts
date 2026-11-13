@@ -26,7 +26,7 @@ describe("reviewQueue", () => {
     expect(queue.cases.map((c) => c.case.programme)).toEqual(["lung_ldct"]);
   });
 
-  it("keeps every guided programme and leaves out cervical, which has no answer panel", async () => {
+  it("keeps every programme, cervical included", async () => {
     const programmes = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"] as const;
     const details = programmes.map((programme, i) => {
       const detail = programmeDetail("lung_ldct");
@@ -41,8 +41,7 @@ describe("reviewQueue", () => {
 
     const queue = await reviewQueue();
     expect(queue.source).toBe("open");
-    expect(queue.cases.map((c) => c.case.programme)).toEqual(["crc", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
-    expect(source.getCase).not.toHaveBeenCalledWith("case-cervical");
+    expect(queue.cases.map((c) => c.case.programme)).toEqual(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
   });
 
   it("uses the viewer token for signed-in claim projections and never uses it as web_reviewer", async () => {
@@ -81,15 +80,37 @@ describe("reviewQueue", () => {
     expect(questionAnchor(link.item, "link")).not.toBe(questionAnchor(evidence.item, "evidence"));
   });
 
-  it("falls back to the rebuilt hold case when only cervical cases are open", async () => {
+  const cervical = (id: string, kinds: ("link" | "evidence")[], states?: { state: string }[]) => {
     const detail = programmeDetail("lung_ldct");
-    detail.case = { ...detail.case, programme: "cervical", review: "open" };
+    detail.case = { ...detail.case, id, programme: "cervical", review: "open" };
+    detail.review_items = [{ item: `rv-${id}`, loop: id, kinds, pair: [], p: 0, report: detail.evidence[0].report, verdict: "disagree", quote: "", chain: [] }];
+    if (states) detail.api_review_states = states.map((s) => ({ item: `rv-${id}`, question: kinds[0], head: "", next_read: null, may_submit: false, reads: [], disagreement: false, canonical_unchanged: true, claim: null, claim_head: "", claim_actions: { claim: false, renew: false, release: false, takeover: false }, ...s })) as never;
+    return detail;
+  };
+
+  it("returns an open cervical evidence case without loading the practice case", async () => {
+    const detail = cervical("cx-ev", ["evidence"]);
     source.getCases.mockResolvedValue({ cases: [detail.case], total: 1, limit: 50, offset: 0, meta: {} });
-    source.getFixtures.mockResolvedValue({ fixtures: { review_hold: { id: "hold" } } });
-    source.getCase.mockResolvedValue(null);
+    source.getCase.mockResolvedValue(detail);
 
     const queue = await reviewQueue();
-    expect(source.getCase).toHaveBeenCalledExactlyOnceWith("hold");
-    expect(queue).toEqual({ cases: [], source: "rebuilt" });
+    expect(source.getCase).toHaveBeenCalledExactlyOnceWith("cx-ev");
+    expect(source.getFixtures).not.toHaveBeenCalled();
+    expect(queue).toEqual({ cases: [detail], source: "open" });
+  });
+
+  it("keeps only cervical cases with outstanding protocol work and falls back when none remain", async () => {
+    const done = cervical("cx-done", ["link"], [{ state: "resolved_agreed" }]);
+    const waiting = cervical("cx-wait", ["link"], [{ state: "awaiting_r2" }]);
+    const details = [done, waiting];
+    source.getCases.mockResolvedValue({ cases: details.map((d) => d.case), total: 2, limit: 50, offset: 0, meta: {} });
+    source.getCase.mockImplementation(async (id: string) => details.find((d) => d.case.id === id) ?? null);
+    expect((await reviewQueue()).cases.map((c) => c.case.id)).toEqual(["cx-wait"]);
+    expect(source.getFixtures).not.toHaveBeenCalled();
+
+    source.getCases.mockResolvedValue({ cases: [done.case], total: 1, limit: 50, offset: 0, meta: {} });
+    source.getFixtures.mockResolvedValue({ fixtures: { review_hold: { id: "hold" } } });
+    source.getCase.mockImplementation(async (id: string) => (id === "cx-done" ? done : null));
+    expect(await reviewQueue()).toEqual({ cases: [], source: "rebuilt" });
   });
 });
