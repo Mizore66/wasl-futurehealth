@@ -603,7 +603,7 @@ var exportLinkHistoryAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
-var exportHoldAllow =exportObject(func() map[string]*exportAllow {
+var exportHoldAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("loop", "state", "programme", "rule", "policy", "report", "age", "scope", "label", "due_day", "deadline_day")
 	m["reason"] = exportOperationalLeaf
 	m["why"] = exportOperationalLeaf
