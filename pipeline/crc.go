@@ -97,7 +97,7 @@ type CRCDecision struct {
 
 var (
 	crcMalignantRE       = regexp.MustCompile(`(?i)\b(?:invasive\s+)?(?:adenocarcinoma|carcinoma)\b`)
-	crcSuspiciousRE      = regexp.MustCompile(`(?i)\b(?:suspicious|highly\s+suspicious|malignant[- ]looking|urgent\s+(?:malignancy|cancer)|mass|stricture)\b`)
+	crcSuspiciousRE      = regexp.MustCompile(`(?i)\b(?:suspicious|highly\s+suspicious|malignant[- ]looking|malignancy|cancer|mass|stricture)\b`)
 	crcAdenomaRE         = regexp.MustCompile(`(?i)\b(?:tubular\s+|villous\s+|tubulovillous\s+)?adenoma(?:s|tous)?\b|\bsessile[- ]serrated\b|\btraditional\s+serrated\s+adenoma\b`)
 	crcNormalRE          = regexp.MustCompile(`(?i)\bhyperplastic\s+polyps?\b|\bnon[- ]neoplastic\b|\bno\s+(?:polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\b|\bnegative\s+for\s+(?:malignancy|adenocarcinoma|carcinoma)\b|\bbenign\b|\bnormal\s+colonoscopy\b`)
 	crcGastroRE          = regexp.MustCompile(`(?i)\b(?:ulcerative\s+colitis|crohn(?:'s)?|inflammatory\s+bowel\s+disease|\bIBD\b|colitis|proctitis)\b`)
@@ -113,13 +113,18 @@ var (
 	// "Cannot exclude"/"can't exclude" express unresolved evidence, never absence.
 	// Keep them in crcUnclearNegationRE only so suspicion retains a review hold
 	// without asserting a diagnosis or falling through to normal closure.
-	crcNegatedRE          = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
+	crcNegatedRE          = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspected|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|cancer|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
 	crcPostNegatedRE      = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+(?:seen|identified|present|detected)|excluded|ruled\s+out)\b`)
-	crcPreUncertainRE     = regexp.MustCompile(`(?i)\b(?:(?:cannot|can't)\s+exclude|(?:not|no)\s+confirmed|unconfirmed)\s+(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*$`)
+	crcPreUncertainRE     = regexp.MustCompile(`(?i)\b(?:(?:cannot|can't)\s+exclude|(?:not|no)\s+confirmed|unconfirmed)\s+(?:(?:a|an|any|the|suspected|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*$`)
 	crcPostUncertainRE    = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+(?:confirmed|excluded|ruled\s+out)|(?:cannot|can't)\s+be\s+(?:confirmed|excluded|ruled\s+out))\b`)
 	crcPostObservationRE  = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?(?:not\s+)?(?:seen|identified|present|detected|excluded|ruled\s+out)\b`)
 	crcPostConfirmationRE = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are|could\s+be)\s+)?confirmed\b`)
 	crcIntervalPriorRE    = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
+	// A new temporal qualifier or independently observed subject scopes history;
+	// an unqualified finding list ("history of mass and stricture") does not.
+	crcCurrentContextRE         = regexp.MustCompile(`(?i)\b(?:current(?:ly)?|today(?:'s)?)\b`)
+	crcHistorySubjectRE         = regexp.MustCompile(`(?i)\b(?:and|with)\s+(?:(?:a|an|the)\s+)?(?:current(?:ly)?|today(?:'s)?|prior|previous|histor(?:y|ical))\b|\band\s+(?:a|an|the)\b`)
+	crcIndependentObservationRE = regexp.MustCompile(`(?i)\b(?:was|were|is|are)\s+(?:not\s+)?(?:seen|identified|present|detected|confirmed|excluded|ruled\s+out)\b`)
 )
 
 type crcAssertion uint8
@@ -131,11 +136,47 @@ const (
 	crcHistorical
 )
 
+// History belongs to the finding's subject, not every finding in the clause.
+// Preserve shared historical lists, but stop at a newly qualified or independently
+// observed subject. A later "current" qualifier starts a new present context;
+// a later historical qualifier (including a date after the finding) still wins.
+func crcFindingHistorical(before, after string) bool {
+	subjectBoundary := func(subject string, match []int) bool {
+		qualifier := subject[match[0]:match[1]]
+		return rePriorCtx.MatchString(qualifier) || crcCurrentContextRE.MatchString(qualifier) || crcIndependentObservationRE.MatchString(subject[match[1]:])
+	}
+	for _, m := range crcHistorySubjectRE.FindAllStringIndex(after, -1) {
+		if subjectBoundary(after, m) {
+			after = after[:m[0]]
+			break
+		}
+	}
+	start := 0
+	for _, m := range crcHistorySubjectRE.FindAllStringIndex(before, -1) {
+		if subjectBoundary(before+after, m) {
+			start = m[0]
+		}
+	}
+	before = before[start:]
+	if current := crcCurrentContextRE.FindAllStringIndex(before, -1); len(current) > 0 {
+		start := current[len(current)-1][0]
+		// Do not turn "not today's current" into a positive current qualifier.
+		for _, prior := range rePriorCtx.FindAllStringIndex(before, -1) {
+			if prior[0] < start && prior[1] > start {
+				start = prior[0]
+				break
+			}
+		}
+		before = before[start:]
+	}
+	return rePriorCtx.MatchString(before + after)
+}
+
 // Classify the assertion before deciding whether it contributes an outcome.
 // Absence of confirmation is not confirmation of absence. Explicit uncertainty
 // wins over a competing negative in the same finding scope, not over history.
-func crcFindingAssertion(before, after, clause string) crcAssertion {
-	if rePriorCtx.MatchString(clause) {
+func crcFindingAssertion(before, after string) crcAssertion {
+	if crcFindingHistorical(before, after) {
 		return crcHistorical
 	}
 	// A negator on confirmation ("no mass was confirmed") negates certainty,
@@ -182,7 +223,7 @@ func crcFindingQuotes(text string, re *regexp.Regexp) ([]string, bool) {
 			}
 		}
 		clause := text[start:end]
-		switch crcFindingAssertion(text[start:m[0]], text[m[1]:end], clause) {
+		switch crcFindingAssertion(text[start:m[0]], text[m[1]:end]) {
 		case crcExcluded, crcHistorical:
 			continue
 		case crcUnresolved:

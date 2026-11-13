@@ -108,7 +108,7 @@ func crcAssertResolutionReplay(t *testing.T, L *LinkerCore, C *ClosureCore, loop
 
 func TestCRCUncertainProcedureFinalSourceConfirmationMatrix(t *testing.T) {
 	pilotSet(t, false, 0)
-	for _, finding := range []string{"Cannot exclude a rectal mass.", "Can't exclude a suspicious rectal stricture."} {
+	for _, finding := range []string{"Cannot exclude a rectal mass.", "Can't exclude a suspicious rectal stricture.", "Malignancy cannot be excluded.", "Cancer cannot be excluded."} {
 		for _, malignant := range []bool{false, true} {
 			for _, reverse := range []bool{false, true} {
 				for _, signature := range []string{"missing", "valid", "wrong_role", "wrong_item", "wrong_source", "wrong_version", "wrong_outcome", "stale_head", "missing_actor"} {
