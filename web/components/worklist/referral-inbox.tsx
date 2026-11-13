@@ -135,7 +135,7 @@ export function ReferralInbox({
                 id: "now",
                 kind: "current" as const,
                 who: r.state === "returned" ? `${r.clinic} GP` : r.state === "grade" ? "You" : "SKMC endoscopy",
-                what: { new: "Your answer", grade: "Review the incomplete report", returned: "Act on the return", accepted: "Book and do the colonoscopy", done: "" }[r.state],
+                what: { new: "Your answer", grade: over[r.id] ? "Complete the report" : "Review the incomplete report", returned: "Act on the return", accepted: "Book and do the colonoscopy", done: "" }[r.state],
                 when: r.state === "returned" ? `by ${actBy}` : `${r.waiting} days since referral`,
               },
             ]),
@@ -356,7 +356,7 @@ export function ReferralInbox({
                     {GRADES.map(([n, w]) => (
                       <button
                         key={n}
-                        onClick={() => act(r.id, "accepted", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
+                        onClick={() => act(r.id, "grade", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
                         className="flex h-14 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
                       >
                         <span className="font-medium">{n}</span>

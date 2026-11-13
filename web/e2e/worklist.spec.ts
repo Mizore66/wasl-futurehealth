@@ -277,13 +277,29 @@ test.describe("Referrals", () => {
     await shot(page, "referrals-returned");
   });
 
-  test("the incomplete report shows grade chips", async ({ page }) => {
-    await page.goto("/app/referrals");
-    const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
-    await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: /^2\s*Mostly seen$/ }).click();
-    await expect(pane.getByRole("status")).toContainText("Graded 2, mostly seen. The case stays held until the report is complete.");
-  });
+  for (const [grade, words] of [["0", "Not seen"], ["1", "Partly seen"], ["2", "Mostly seen"], ["3", "All seen"]]) {
+    test(`grading the prep ${grade} keeps the incomplete report held in Needs you`, async ({ page }) => {
+      await page.goto("/app/referrals");
+      const pane = page.getByRole("region", { name: "Open referral" });
+      const grades = pane.getByRole("group", { name: "Boston grade" });
+      await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+      await grades.getByRole("button", { name: new RegExp(`^${grade}\\s*${words}$`) }).click();
+      await expect(pane.getByRole("status")).toContainText(`Graded ${grade}, ${words.toLowerCase()}. The case stays held until the report is complete.`);
+      await expect(pane.getByRole("list", { name: "Sealed chain" })).toContainText(`Graded the prep ${grade}`);
+      await expect(pane.getByRole("list", { name: "Sealed chain" })).not.toContainText("Book and do the colonoscopy");
+      await expect(page.getByRole("tab", { name: "Needs you 1" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+      await expect(page.getByRole("region", { name: "Referral list" }).getByRole("button", { name: "Review the referral for Aisha Al Mansoori" })).toBeVisible();
+      await expect(grades).toBeVisible();
+
+      await pane.getByRole("button", { name: "Undo" }).click();
+      await expect(pane.getByRole("status")).toHaveCount(0);
+      await expect(page.getByRole("tab", { name: "Needs you 1" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+      await grades.getByRole("button", { name: /^3\s*All seen$/ }).click();
+      await expect(pane.getByRole("status")).toContainText("Graded 3, all seen.");
+    });
+  }
 
   test("a referral's avatar opens the patient record", async ({ page }) => {
     await page.goto("/app/referrals");
