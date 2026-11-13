@@ -75,6 +75,41 @@ func TestAPIFactoriesProduceCanonicalVerifiedRuns(t *testing.T) {
 	}
 }
 
+func TestAPIPatientProvisioningFixtureCanonicalVerifiedRun(t *testing.T) {
+	programmes := []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"}
+	run := patientProvisioningRun(t, programmes)
+	before := actRead(t, filepath.Join(run, "out_log.ndjson"))
+	if !bytes.Equal(before, actRead(t, filepath.Join(patientProvisioningRun(t, programmes), "out_log.ndjson"))) {
+		t.Fatal("patient provisioning fixture/signatures are not deterministic")
+	}
+	loops := map[string]string{}
+	records, err := scanAPILog(filepath.Join(run, "out_log.ndjson"), func(m LogMsg) error {
+		if err := validateOutRecord(m, loops); err != nil {
+			return err
+		}
+		env := decodeEnv(m)
+		d := env.Dec
+		if m.Subject != "out.p0" || m.Seq != env.OSeq || env.PSeq == 0 || env.FSeq == 0 || env.Proc == "" || d == nil || d.Provider != "exp-prov" || d.Prog == "" || d.State == "" || d.Sig != decSig(d) {
+			return fmt.Errorf("noncanonical patient provisioning decision at OUT seq %d", m.Seq)
+		}
+		return nil
+	})
+	if err != nil || records != 7 || len(loops) != 7 {
+		t.Fatalf("patient fixture OUT: records=%d loops=%d err=%v", records, len(loops), err)
+	}
+	s, err := loadAPIVerified(run, "")
+	if err != nil || len(s.cases) != 7 || s.ledgerErr != "" {
+		t.Fatalf("canonical patient fixture rejected: server=%p err=%v", s, err)
+	}
+	counts, ok := s.dashboard["state_counts"].(map[string]interface{})
+	if !ok || counts["closed"] != float64(1) || counts["open"] != float64(6) {
+		t.Fatalf("incorrect patient fixture states: %v", counts)
+	}
+	if !bytes.Equal(before, actRead(t, filepath.Join(run, "out_log.ndjson"))) {
+		t.Fatal("patient fixture verified load changed original OUT evidence")
+	}
+}
+
 func TestAPIAgentFixtureCountsUniqueLoopsNotDecisionHistory(t *testing.T) {
 	run := t.TempDir()
 	loop := agentLoop("1")
@@ -103,6 +138,7 @@ func TestAPIFixtureRejectsObsoleteOUTShapesWithLine(t *testing.T) {
 		{"bare test-helper subject", "unknown subject", func(m *LogMsg, _ *OutEnvelope) { m.Subject = "out" }},
 		{"unknown partition subject", "unknown subject", func(m *LogMsg, _ *OutEnvelope) { m.Subject = "out.not-a-partition" }},
 		{"unsigned decision", "requires id, loop, prov, state and sig", func(_ *LogMsg, env *OutEnvelope) { env.Dec.Sig = "" }},
+		{"missing source provider", "requires id, loop, prov, state and sig", func(_ *LogMsg, env *OutEnvelope) { env.Dec.Provider = "" }},
 		{"identifier-only decision", "requires id, loop, prov, state and sig", func(_ *LogMsg, env *OutEnvelope) {
 			env.Dec = &Decision{ID: env.Dec.ID, LoopID: env.Dec.LoopID}
 		}},
