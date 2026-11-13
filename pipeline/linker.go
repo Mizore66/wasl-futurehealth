@@ -1019,6 +1019,31 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 	return loop, true, true
 }
 
+// Revisions can remove facts from a different registration than the incoming
+// one. Invalidate both sides, including near-link and explicit-reference
+// dependents, even for intake-only IDs and same-version conflicts. Rejected
+// stale/duplicate revisions remain no-ops through the facts hash guard.
+func (L *LinkerCore) foldRequestAndInvalidate(e *Event, recIdx int, roots map[int]bool, loops map[string]bool) (string, bool, bool) {
+	invalidate := func(rec int, event *Event) {
+		if rec >= 0 {
+			roots[L.Find(rec)] = true
+			L.markNearDependents(rec, roots)
+			for near := range L.near[rec] {
+				roots[L.Find(near)] = true
+			}
+		}
+		if XRefLinkQ && event != nil && event.XRef != "" {
+			loops[event.XRef] = true
+		}
+	}
+	if previous := L.requests[e.Provider+"/ServiceRequest/"+e.ID]; previous != nil {
+		invalidate(previous.rec, previous.event)
+	}
+	loop, store, changed := L.foldTrackingRequest(e, recIdx)
+	invalidate(recIdx, e)
+	return loop, store, changed
+}
+
 func (L *LinkerCore) retirementFacts(loop string) *LoopFacts {
 	r := L.requests[loop]
 	if r == nil || !r.tracking {
@@ -1316,7 +1341,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				if recIdx < 0 && e.Status == "active" && e.Category != "referral-intake" {
 					break
 				}
-				_, store, changed := L.foldTrackingRequest(e, recIdx)
+				_, store, changed := L.foldRequestAndInvalidate(e, recIdx, affRoots, affLoops)
 				if recIdx >= 0 {
 					affRoots[L.Find(recIdx)] = true
 				}
@@ -1345,7 +1370,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
 		if e.RType == "ServiceRequest" {
-			loop, store, changed := L.foldTrackingRequest(e, i)
+			loop, store, changed := L.foldRequestAndInvalidate(e, i, affRoots, affLoops)
 			affRoots[L.Find(i)] = true
 			if changed {
 				affLoops[loop] = true

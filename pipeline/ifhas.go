@@ -17,6 +17,7 @@ package main
 // a review item and holds.
 import (
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -153,6 +154,98 @@ func ifhasFollowupRows(notes []row) ([]row, string) {
 	return notes, ""
 }
 
+// Include the complete explicitly connected lineage of eligible notes before
+// checking dates. Unrelated historical notes must not affect this episode.
+func ifhasEpisodeFollowups(notes []row, minDay float64) []row {
+	key := func(provider, id string) string { return provider + "/DiagnosticReport/" + id }
+	included := map[string]bool{}
+	for _, r := range notes {
+		if r.d.Day >= minDay {
+			included[key(r.d.Provider, r.d.ReportID)] = true
+		}
+	}
+	for changed := true; changed; {
+		changed = false
+		for _, r := range notes {
+			if r.d.Relation != addendumRelation || r.d.Parent == "" {
+				continue
+			}
+			id, parent := key(r.d.Provider, r.d.ReportID), key(r.d.Provider, r.d.Parent)
+			if included[id] || included[parent] {
+				if !included[id] || !included[parent] {
+					included[id], included[parent], changed = true, true, true
+				}
+			}
+		}
+	}
+	var scoped []row
+	for _, r := range notes {
+		if included[key(r.d.Provider, r.d.ReportID)] {
+			scoped = append(scoped, r)
+		}
+	}
+	return scoped
+}
+
+// A domain's active same-time frontier is a partial order, not a total order
+// by resource ID, ancestry depth, or versions from different resources.
+func ifhasFollowupConflicts(notes []row, minDay float64, abnormal map[string]bool, labelOf func(row) (string, string)) map[string]bool {
+	key := func(d DownFact) string { return d.Provider + "/DiagnosticReport/" + d.ReportID }
+	byReport := map[string]DownFact{}
+	for _, r := range notes {
+		byReport[key(r.d)] = r.d
+	}
+	ancestor := func(a, b DownFact) bool {
+		for b.Relation == addendumRelation && b.Parent != "" {
+			p, ok := byReport[b.Provider+"/DiagnosticReport/"+b.Parent]
+			if !ok {
+				break
+			}
+			if key(a) == key(p) {
+				return true
+			}
+			b = p
+		}
+		return false
+	}
+	type value struct {
+		d DownFact
+		s string
+	}
+	frontier := map[string][]value{}
+	for _, r := range notes {
+		if !r.trusted || r.d.Day < minDay {
+			continue
+		}
+		lab, _ := labelOf(r)
+		dna, statuses, ok := ifhasNoteParse(lab)
+		if !ok || dna {
+			continue
+		}
+		for domain, status := range statuses {
+			if !abnormal[domain] {
+				continue
+			}
+			var active []value
+			for _, v := range frontier[domain] {
+				if v.d.Day == r.d.Day && !ancestor(v.d, r.d) {
+					active = append(active, v)
+				}
+			}
+			frontier[domain] = append(active, value{r.d, status})
+		}
+	}
+	conflicts := map[string]bool{}
+	for domain, active := range frontier {
+		for _, v := range active[1:] {
+			if v.s != active[0].s {
+				conflicts[domain] = true
+			}
+		}
+	}
+	return conflicts
+}
+
 func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	f := ls.facts
 	now := c.now
@@ -171,10 +264,13 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row
 	for _, d := range f.Down {
-		if d.Prog != "ifhas" || d.Day < f.SRDay-1 {
+		if d.Prog != "ifhas" {
 			continue
 		}
 		if d.RType == "IfhasScreen" {
+			if d.Day < f.SRDay-1 {
+				continue
+			}
 			screens = append(screens, row{d: d, pc: 1, trusted: true})
 			continue
 		}
@@ -334,13 +430,8 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			break
 		}
 		// ---- reduce the complete eligible follow-up sequence in time/lineage order.
-		eligible := notes[:0]
-		for _, r := range notes {
-			if r.d.Day >= ib.GradeDay {
-				eligible = append(eligible, r)
-			}
-		}
-		notes, noteErr := ifhasFollowupRows(eligible)
+		minDay := math.Max(ib.GradeDay, f.SRDay-1)
+		notes, noteErr := ifhasFollowupRows(ifhasEpisodeFollowups(notes, minDay))
 		ib.Status, ib.ResDay = map[string]string{}, map[string]float64{}
 		abnormal := map[string]bool{}
 		for _, d := range rec.Domains {
@@ -354,7 +445,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		var candidate *row // final all-resolved point; cleared by any later reopening
 		for i := range notes {
 			r := notes[i]
-			if r.d.Day < ib.GradeDay {
+			if r.d.Day < minDay {
 				continue
 			}
 			if !r.trusted {
@@ -413,7 +504,19 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 				candidate = &notes[i]
 			}
 		}
-		if candidate != nil && holdRow == nil {
+		// Resolve only when the final active frontier agrees. Serialization
+		// order is useful for provenance, never for choosing between siblings.
+		if noteErr == "" {
+			for domain := range ifhasFollowupConflicts(notes, minDay, abnormal, labelOf) {
+				ib.Outcome, dna = "", false
+				ib.Status[domain] = ""
+				delete(ib.ResDay, domain)
+				if holdWhy == "" {
+					holdWhy = "ambiguous_followup_evidence_lineage"
+				}
+			}
+		}
+		if candidate != nil && holdRow == nil && holdWhy == "" {
 			state, closedDay, closing, procDay = "closed", candidate.d.Day, candidate.d.ReportID, candidate.d.Day
 			ib.WithinDeadline = true
 			for _, d := range rec.Domains {
