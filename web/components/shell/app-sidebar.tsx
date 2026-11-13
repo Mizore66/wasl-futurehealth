@@ -52,6 +52,16 @@ const NAV: NavItem[] = [
     icon: icon(<path d="M2.5 4h11M2.5 8h11M2.5 12h7" />),
   },
   {
+    href: "/app/recovery",
+    label: "Recovery",
+    icon: icon(
+      <>
+        <path d="M3 8a5 5 0 1 1 1.5 5.5" />
+        <path d="M3 3.5V8h4.5" />
+      </>,
+    ),
+  },
+  {
     href: "/app/review",
     label: "Review",
     countKey: "review",
@@ -128,6 +138,12 @@ const USERS: {
 }[] = [
   {
     prefix: "/app/today",
+    initials: "HA",
+    name: "Hessa Al Ali",
+    role: "Nurse coordinator",
+  },
+  {
+    prefix: "/app/recovery",
     initials: "HA",
     name: "Hessa Al Ali",
     role: "Nurse coordinator",

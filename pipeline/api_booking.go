@@ -422,6 +422,10 @@ func (s *apiServer) reservationKnownLocked(c *apiCase, id string) bool {
 	return false
 }
 
+func bookingReservationActive(c *apiCase) bool {
+	return c != nil && c.ov.booking.status == "reserved" && c.ov.booking.reservationID != ""
+}
+
 func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[string]interface{}) (*bookingTransition, *bookingFailure) {
 	state := &c.ov.booking
 	status := state.status
@@ -441,6 +445,9 @@ func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[strin
 		}
 		if c.Closed || !bookingOpen[c.State] {
 			return nil, s.bookingStateConflict(c, "case is not open and booking-eligible")
+		}
+		if s.recovery.ByCase[c.ID] != nil {
+			return nil, bookingFail(409, "case already has a confirmed recovery backfill", "recovery_backfill", nil)
 		}
 	}
 	switch kind {

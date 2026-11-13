@@ -320,6 +320,18 @@ export const CasePatient = z.looseObject({
   last_action_at: z.string(),
 });
 
+export const RecoveryCase = z.looseObject({
+  backfill: z.looseObject({
+    slot_id: z.string(),
+    status: z.literal("simulated_backfill_confirmed"),
+    day: z.number(),
+    event: z.string(),
+    outreach_status: z.enum(["none", "recorded_not_dispatched", "cancelled_consent"]),
+    dispatched: z.literal(false).optional(),
+  }).optional(),
+  source_releases: z.array(z.looseObject({ slot_id: z.string(), status: z.string(), day: z.number() })).default([]),
+});
+
 export const CaseSummary = z.looseObject({
   id: z.string(),
   programme: Programme,
@@ -344,6 +356,7 @@ export const CaseSummary = z.looseObject({
   ifhas: IfhasFinding.optional(),
   api_overlay: ApiOverlay.optional(),
   api_patient: CasePatient.optional(),
+  recovery: RecoveryCase.optional(),
 });
 
 export const ChainEntry = z.looseObject({

@@ -205,6 +205,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Choose another simulated slot";
     }
   }
+  if (c.recovery?.backfill) {
+    view = "waiting";
+    words.status = "Simulated slot confirmed";
+    words.next = "Wait for the simulated appointment day";
+  }
   return {
     id: c.id,
     short: shortId(c.id),
