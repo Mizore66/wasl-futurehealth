@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
 import { composableIfhasLabels, composeIfhasLabel, IFHAS_DOMAINS, parseIfhasLabel } from "@/components/review/ifhas-label";
-import { GUIDED_EVIDENCE_LABELS, ReviewDecision, type CaseDetail, type Programme } from "@/lib/api/schema";
+import { evidenceLabelsFor, GUIDED_EVIDENCE_LABELS, ReviewDecision, type CaseDetail, type Programme } from "@/lib/api/schema";
 import { programmeDetail } from "./programme-cases";
 
 type GuidedProgramme = Extract<Programme, "crc" | "cervical" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas">;
@@ -41,7 +41,7 @@ const drGrades = ["0", "1", "2", "3A", "3S"].flatMap((r) =>
 );
 const drOutcomes = ["examined_treated", "examined_followup", "examined_discharged", "not_examined", "dna", "not_assessable"];
 
-const EXPECTED: Record<Exclude<GuidedProgramme, "crc" | "ifhas">, string[]> = {
+const EXPECTED: Record<Exclude<GuidedProgramme, "crc" | "cervical" | "ifhas">, string[]> = {
   lung_nodule: [...lungOutcomes, ...lungIndex],
   diabetic_retinopathy: [...drGrades, "U", ...drOutcomes],
   breast: ["B0", "B1", "B2", "B3", "B4", "B5", "TR", "return_routine", "early_recall", "to_treatment", "incomplete", "dna"],
@@ -91,7 +91,19 @@ describe("programme evidence vocabulary", () => {
     expect(evidence.guided).toBe(true);
     expect(evidence.evidenceChoices).toEqual(["adequate", "inadequate"]);
     expect(reviewView(link).items).toEqual({ link: "rv-cervical", evidence: undefined });
-    expect(ReviewDecision.safeParse("histology").success).toBe(false);
+    expect(evidenceLabelsFor(detailFor("cervical"), "any/DiagnosticReport/R")).toEqual(["adequate", "inadequate"]);
+  });
+
+  it("asks a CRC pathology item for histology and leaves a colonoscopy item on adequacy", () => {
+    const pathology = detailFor("crc");
+    pathology.review_items[0].report = "lab/DiagnosticReport/PATH-1";
+    pathology.timeline = [{ ...pathology.timeline[0], id: "lab/DiagnosticReport/PATH-1", category: "pathology" }];
+    const view = reviewView(pathology);
+    expect(view.evidenceChoices).toEqual(["histology", "no_histology"]);
+    expect(view.evidenceQuestion).toBe("Does the pathology report show histology?");
+    expect(reviewView(detailFor("crc")).evidenceChoices).toEqual(["adequate", "inadequate"]);
+    expect(ReviewDecision.safeParse("histology").success).toBe(true);
+    expect(ReviewDecision.safeParse("no_histology").success).toBe(true);
   });
 
   it("keeps the two CRC evidence answers and the no-API ask action separate", () => {

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -506,6 +507,9 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 func reviewActFor(c *apiCase, decision string) string {
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
 		"confirm_contact": ActRecordConsent}[decision]
+	if act == "" && c.Programme == "crc" && isCRCPathologyLabel(decision) {
+		act = ActSignEvidence
+	}
 	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(decision) != nil {
 		act = ActSignEvidence
 	}
@@ -522,6 +526,34 @@ func reviewActFor(c *apiCase, decision string) string {
 		act = ActSignEvidence
 	}
 	return act
+}
+
+func isCRCPathologyLabel(decision string) bool {
+	return decision == "histology" || decision == "no_histology"
+}
+
+// itemReportCategory is the category (colonoscopy, pathology, ...) of the DiagnosticReport an evidence item asks about.
+func (s *apiServer) itemReportCategory(caseID string, it *ReviewItem) string {
+	if it == nil || it.ReportID == "" {
+		return ""
+	}
+	suffix := "/DiagnosticReport/" + it.ReportID
+	for _, f := range s.facts[caseID] {
+		if id, _ := f["id"].(string); strings.HasSuffix(id, suffix) {
+			cat, _ := f["category"].(string)
+			return cat
+		}
+	}
+	return ""
+}
+
+// crcDecisionFitsItem keeps a CRC pathology item to histology/no_histology and every other CRC evidence item to
+// adequate/inadequate. Decisions outside those four labels are not scoped by report kind.
+func (s *apiServer) crcDecisionFitsItem(c *apiCase, it *ReviewItem, decision string) bool {
+	if c.Programme != "crc" || !(isCRCPathologyLabel(decision) || decision == "adequate" || decision == "inadequate") {
+		return true
+	}
+	return (s.itemReportCategory(c.ID, it) == "pathology") == isCRCPathologyLabel(decision)
 }
 
 // replayProtocol validates a protocol event found in the ledger at startup with the same rules as a live write.
@@ -550,6 +582,9 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	act := reviewActFor(c, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
+	}
+	if !s.crcDecisionFitsItem(c, it, sstr(ev, "decision")) {
+		return fmt.Errorf("protocol read decision does not fit the item's report")
 	}
 	if err := checkClaimedProtocolRead(s.claimsLocked(), ev, false); err != nil {
 		return err

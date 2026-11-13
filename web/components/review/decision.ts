@@ -300,12 +300,22 @@ export function stateHeadline(s: ReviewState): { text: string; tone: "positive" 
   }
 }
 
+/** How the desk words each CRC evidence answer: colonoscopy adequacy, or pathology histology. */
+export const CRC_CHOICE_LABELS: Record<string, string> = {
+  adequate: "Adequate",
+  inadequate: "Not adequate",
+  histology: "Histology present",
+  no_histology: "No histology",
+};
+
 /** A decision as a sentence, keeping the programme's own evidence labels. CRC keeps its adequacy wording. */
 export function answerWords(decision: string, question: Question): string {
   if (decision === "same") return "Same patient";
   if (decision === "different") return "Not the same patient";
   if (decision === "adequate") return "Report adequate";
   if (decision === "inadequate") return "Report not adequate";
+  if (decision === "histology") return "Histology present";
+  if (decision === "no_histology") return "No histology";
   return question === "evidence" ? `Evidence label ${decision}` : decision;
 }
 

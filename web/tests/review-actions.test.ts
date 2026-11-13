@@ -113,6 +113,32 @@ describe("submitReviewRead", async () => {
     expect(fetchMock.mock.calls.every((c) => c[1].method !== "POST")).toBe(true);
   });
 
+  describe("CRC evidence items are scoped to their report", () => {
+    const crc = (category: string) => {
+      const base = detail([state({ question: "evidence" })]);
+      const item = { ...base.review_items[0], kinds: ["evidence"], report: "lab/DiagnosticReport/R-1" };
+      const timeline = [{ ...(loadSample("case_evidence_closure.json") as { timeline: object[] }).timeline[0], id: "lab/DiagnosticReport/R-1", category }];
+      return { ...base, review_items: [item], timeline };
+    };
+    it.each([
+      ["pathology", "histology", true],
+      ["pathology", "no_histology", true],
+      ["pathology", "adequate", false],
+      ["pathology", "inadequate", false],
+      ["colonoscopy", "adequate", true],
+      ["colonoscopy", "inadequate", true],
+      ["colonoscopy", "histology", false],
+      ["colonoscopy", "no_histology", false],
+    ])("%s item, answer %s accepted: %s", async (category, decision, accepted) => {
+      const submit = await load();
+      const fetchMock = vi.fn().mockResolvedValueOnce(json(200, crc(category))).mockResolvedValueOnce(json(201, reviewBody));
+      vi.stubGlobal("fetch", fetchMock);
+      const result = await submit("c1", { ...input, question: "evidence", decision });
+      expect(result.ok).toBe(accepted);
+      expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(accepted ? 1 : 0);
+    });
+  });
+
   it("refuses a stale expected head without posting", async () => {
     const submit = await load();
     const fetchMock = vi.fn().mockResolvedValue(json(200, detail([state({ head: "newer" })])));

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { shortId } from "@/lib/domain/ids";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -942,7 +943,8 @@ export const Operations = z.strictObject({
   backup: OperationsBackup,
 });
 
-const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "confirm_contact"] as const;
+const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "histology", "no_histology", "confirm_contact"] as const;
+const CRC_PATHOLOGY_LABELS = ["histology", "no_histology"];
 const LUNG_OUTCOMES = [
   "stable",
   "resolved",
@@ -1008,6 +1010,15 @@ export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "cervical" | "lung_nodule" |
 
 /** Programmes the review desk can sign: each has evidence labels. */
 export const isGuided = (programme: string): programme is keyof typeof GUIDED_EVIDENCE_LABELS => Object.hasOwn(GUIDED_EVIDENCE_LABELS, programme);
+
+/** The labels a raised evidence item accepts: a CRC pathology report takes histology answers, every other report its programme's labels. */
+export function evidenceLabelsFor(detail: Pick<CaseDetail, "case" | "timeline">, report: string): string[] {
+  const programme = detail.case.programme;
+  if (!isGuided(programme)) return [];
+  const short = shortId(report);
+  if (programme === "crc" && detail.timeline.some((e) => shortId(e.id) === short && e.category === "pathology")) return CRC_PATHOLOGY_LABELS;
+  return GUIDED_EVIDENCE_LABELS[programme];
+}
 
 export const ReviewDecision = z.union([
   z.enum(CRC_DECISIONS),

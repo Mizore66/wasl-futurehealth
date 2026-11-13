@@ -760,7 +760,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	act := reviewActFor(c, req.Decision)
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact (histology|no_histology on a CRC pathology item), or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {
@@ -784,6 +784,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
 			return
 		}
+	}
+	if !s.crcDecisionFitsItem(c, s.queueItem(c.ID, req.Item), req.Decision) {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision does not answer the report this item raised (CRC pathology: histology|no_histology; colonoscopy: adequate|inadequate)", "item": req.Item}))
+		return
 	}
 	if req.Read != "" || req.ExpectedHead != nil || req.ClaimHead != nil { // independent double review; without these fields the legacy path below is unchanged
 		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, req.ClaimHead, act); msg != "" {
@@ -1662,6 +1666,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)
 			}
+		}
+		if c := s.cases[sstr(ev, "case")]; c != nil && !s.crcDecisionFitsItem(c, s.queueItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
+			return errors.New("review decision does not fit the item's report")
 		}
 		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
 		return nil

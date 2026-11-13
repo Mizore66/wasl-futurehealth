@@ -15,6 +15,7 @@ import {
   answerWords,
   canAnswerClaim,
   claimSummary,
+  CRC_CHOICE_LABELS,
   draftKey,
   orderedStates,
   outcomeOf,
@@ -143,7 +144,7 @@ function QuestionCard({
   const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
   const actions = state.claim_actions;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
-    const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
+    const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
     return [label, display];
   });
   const title = link ? "Is it the same patient?" : view.evidenceQuestion;
@@ -162,7 +163,7 @@ function QuestionCard({
       <p className="m-0 mt-1 flex flex-wrap items-center gap-2" data-testid={`status-${state.question}`}>
         <Pill tone={headline.tone}>{headline.text}</Pill>
         <span className="text-small text-muted">
-          {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? "Colonoscopy report (clinician discipline)" : "Programme evidence (clinician discipline)"}
+          {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
           {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
         </span>
       </p>
@@ -415,7 +416,7 @@ export function ReviewDesk({
   const hasEvidence = Boolean(view.items.evidence);
   const evidenceOptions: [ReportAnswer, string][] = [
     ...view.evidenceChoices.map((label) => {
-      const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
+      const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
       return [label, display] as [ReportAnswer, string];
     }),
     ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
@@ -750,7 +751,7 @@ export function ReviewDesk({
               ) : (
                 <p className="m-0 text-small text-muted">
                   {draft.identity === "same" && hasEvidence
-                    ? view.programme === "crc" ? `Answer the colonoscopy report question to sign.` : `Answer the evidence question to sign.`
+                    ? view.programme === "crc" ? `Answer the ${view.pathology ? "pathology" : "colonoscopy"} report question to sign.` : `Answer the evidence question to sign.`
                     : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
                 </p>
               )}
@@ -822,7 +823,7 @@ export function ReviewDesk({
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
           {hasLink && <IdentityBridge view={view} answer={live ? (finalDecisions({ api_review_states: current }, "link")[0] as IdentityAnswer | undefined) : draft.identity} />}
-          {view.programme === "crc" ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+          {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
         </div>
       </div>
     </MotionConfig>
