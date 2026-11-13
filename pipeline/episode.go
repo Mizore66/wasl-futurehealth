@@ -49,62 +49,76 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 		}
 	}
 	sort.Strings(ids)
+	linked := func(d DownFact) bool {
+		// The evaluator additionally gates a DR/breast repeat on U/TR.
+		return d.Relation == addendumRelation ||
+			(d.Relation == repeatRelation && (prog == "diabetic_retinopathy" || prog == "breast"))
+	}
+	// Discover descendants without admitting disconnected cyclic islands. Reaching
+	// index establishes membership only, not validity of the index's own lineage.
 	for _, id := range ids {
 		seen := map[string]bool{}
 		cur := id
-		valid := false
-		for cur != index {
-			if seen[cur] {
-				// A cycle is ambiguous only when it captures the index lineage;
-				// an unrelated cyclic island is not this loop's evidence.
-				if seen[index] {
-					return nil, "cyclic_index_evidence_lineage"
-				}
-				valid = false
-				break
-			}
+		for cur != index && !seen[cur] {
 			seen[cur] = true
 			d, ok := current[cur]
-			if !ok {
-				break
-			}
-			if d.Relation == addendumRelation {
-				// Corrections and addenda are allowed for all three programmes.
-			} else if d.Relation == repeatRelation && (prog == "diabetic_retinopathy" || prog == "breast") {
-				// The evaluator additionally gates a repeat on U/TR at its turn.
-			} else {
-				break
-			}
-			if d.Parent == "" {
+			if !ok || !linked(d) || d.Parent == "" {
 				break
 			}
 			cur = d.Parent
-			if cur == index {
-				valid = true
-			}
 		}
-		if valid {
+		if cur == index {
 			included[id] = true
 		}
 	}
-	for id := range included {
-		if conflict[id] {
-			return nil, "conflicting_index_evidence_version"
+	// Validate complete applicable paths before any grade/supersession selection.
+	// Unlike membership discovery, this must traverse THROUGH index to a genuine
+	// root: index -> child -> index, an ancestor cycle, and self-edges all hold.
+	// Ancestors are validated, not added as independently selectable episode rows.
+	validated := map[string]bool{}
+	for _, id := range append([]string{index}, ids...) {
+		if !included[id] {
+			continue
+		}
+		path, seen := []string{}, map[string]bool{}
+		for cur := id; !validated[cur]; {
+			if seen[cur] {
+				return nil, "cyclic_index_evidence_lineage"
+			}
+			seen[cur] = true
+			path = append(path, cur)
+			d, ok := current[cur]
+			if !ok {
+				return nil, "invalid_index_evidence_lineage"
+			}
+			if conflict[cur] {
+				return nil, "conflicting_index_evidence_version"
+			}
+			if d.Relation == "" && d.Parent == "" {
+				break
+			}
+			if !linked(d) || d.Parent == "" {
+				return nil, "invalid_index_evidence_lineage"
+			}
+			cur = d.Parent
+		}
+		for _, cur := range path {
+			validated[cur] = true
+		}
+	}
+	// A linked correction may itself correct the clinical date. Check every
+	// validated edge, including the index's, before chronological sorting can
+	// silently restore a superseded ancestor or select a normal descendant.
+	for id := range validated {
+		d := current[id]
+		if d.Parent != "" && d.Day < current[d.Parent].Day {
+			return nil, "contradictory_index_evidence_chronology"
 		}
 	}
 	out := make([]row, 0, len(included))
 	for _, r := range in {
 		if included[r.d.ReportID] && string(canon(r.d)) == string(canon(current[r.d.ReportID])) {
 			out = append(out, r)
-		}
-	}
-	// A linked correction may itself correct the clinical date. Until that
-	// contradictory chronology is reconciled, hold the episode rather than
-	// letting chronological sorting silently restore its superseded ancestor.
-	for id := range included {
-		d := current[id]
-		if id != index && d.Day < current[d.Parent].Day {
-			return nil, "contradictory_index_evidence_chronology"
 		}
 	}
 	// Clinical time orders separate observations, but a same-time child must
