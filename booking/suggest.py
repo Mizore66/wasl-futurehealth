@@ -58,6 +58,18 @@ def load(run):
     return last, sr
 
 
+def clock_anchor(d):
+    """Absolute day a programme clock starts from: the inadequate/unsatisfactory exam for a repeat, else the referral.
+    Independent of the synthetic request day, which only orders scheduling."""
+    if d["state"] == "inadequate":
+        day = d.get("inadequate_day")
+        if day is None and d.get("proc_day", -1) >= 0:
+            day = d["proc_day"]
+        if day is not None:
+            return {"kind": "inadequate_procedure", "day": day}
+    return {"kind": "referral", "day": d["sr_day"]}
+
+
 def stable_u(key, salt):
     return int(hashlib.sha256(f"{salt}|{key}".encode()).hexdigest()[:12], 16) / 16 ** 12
 
@@ -224,8 +236,10 @@ def cervical(last, sr, a, rng):
                       travel_ok=stable_u(k, "travel") < 0.3, prior_no_show=d["state"] == "no_show")
         day = arrival_day(k, a)
         repeat = d["state"] == "inadequate"
-        lo, hi = (day + REPEAT_WINDOW[0], day + REPEAT_WINDOW[1]) if repeat else (day, day + int(d.get("deadline") or 56))
-        meta[k] = (d, prefs, day, repeat, lo, hi)
+        anchor = clock_anchor(d)
+        t0 = anchor["day"]
+        lo, hi = (t0 + REPEAT_WINDOW[0], t0 + REPEAT_WINDOW[1]) if repeat else (t0, t0 + int(d.get("deadline") or 56))
+        meta[k] = (d, prefs, day, repeat, lo, hi, anchor)
         by_day[day].append(Event("result_accepted", k, day, prefs, hi, lo))   # booked when the result arrives
     if getattr(a, "forecast", "") == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
@@ -241,8 +255,9 @@ def cervical(last, sr, a, rng):
     finally:
         getattr(eng, "close", lambda: None)()
     cases = {}
-    for k, (d, prefs, day, repeat, lo, hi) in meta.items():
+    for k, (d, prefs, day, repeat, lo, hi, anchor) in meta.items():
         base = {"procedure": "colposcopy", "repeat_after_unsatisfactory": repeat, "requested_day": day, "window_days": [lo, hi],
+                "clock_anchor": anchor,
                 "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
                 "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
         b = out.get(k)
@@ -300,11 +315,11 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
                       region=region, travel_ok=stable_u(k, "travel") < (0.6 if a.misallocated else 0.3),
                       prior_no_show=d["state"] == "no_show")
         day = as_of + arrival_day(k, a)  # spread requests over 60 days
-        meta[k] = (d, prefs, day)
+        meta[k] = (d, prefs, day, clock_anchor(d))
     urgent = {k for k in meta if a.crc_urgent_share > 0 and stable_u(k, "urgent") < a.crc_urgent_share}
     by_day = collections.defaultdict(list)
-    for k, (_, prefs, day) in meta.items():
-        by_day[day].append(Event("result_accepted", k, day, prefs, day + (14 if k in urgent else 31)))
+    for k, (_, prefs, day, anchor) in meta.items():
+        by_day[day].append(Event("result_accepted", k, day, prefs, anchor["day"] + (14 if k in urgent else 31)))
     if a.forecast == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
@@ -323,9 +338,9 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
         getattr(eng, "close", lambda: None)()
     cases, unbooked = {}, 0
     reg_demand, reg_booked_out = collections.Counter(), collections.Counter()
-    for k, (d, prefs, day) in meta.items():
+    for k, (d, prefs, day, anchor) in meta.items():
         b = out.get(k)
-        deadline = day + (14 if k in urgent else 31)
+        deadline = anchor["day"] + (14 if k in urgent else 31)
         candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5)
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
@@ -333,7 +348,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
             unbooked += 1
             cases[k] = {"status": "no_slot_within_horizon", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region,
                         "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"],
-                        "eligible_slots": candidates, **lv}
+                        "clock_anchor": anchor, "deadline_day": deadline, "eligible_slots": candidates, **lv}
             if a.crc_urgent_share > 0:
                 cases[k]["target_days"] = 14 if k in urgent else 31
             continue
@@ -342,7 +357,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
             reg_booked_out[prefs.region] += 1
         cases[k] = {"status": "suggested", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
-                    "wait_days": b.day - day, "eligible_slots": candidates, **lv}
+                    "wait_days": b.day - day, "clock_anchor": anchor, "deadline_day": deadline, "eligible_slots": candidates, **lv}
         if a.crc_urgent_share > 0:
             cases[k]["target_days"] = 14 if k in urgent else 31
     cerv = cervical(last, sr, a, rng)

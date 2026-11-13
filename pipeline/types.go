@@ -342,6 +342,7 @@ type Decision struct {
 	Prog           string              `json:"prog,omitempty"`
 	Priority       string              `json:"prio,omitempty"`
 	Deadline       float64             `json:"deadline,omitempty"`
+	InadequateDay  *float64            `json:"inadequate_day,omitempty"` // report day of the latest inadequate exam; anchors the repeat clock
 	ProcDay        float64             `json:"proc_day"`           // first trusted fulfilled procedure for this programme; -1 none
 	EcState        string              `json:"ec_state,omitempty"` // none|awaiting_reply|accept|conditional|needs_info|redirect|reject|unparsed
 	EcTurns        int                 `json:"ec_turns,omitempty"`
