@@ -20,6 +20,7 @@ import {
   outcomeOf,
   questionAnchor,
   OUTCOMES,
+  outcomeFor,
   readFailureSentence,
   readLine,
   resolvedCell,
@@ -421,7 +422,7 @@ export function ReviewDesk({
     ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
   ];
   const pending = outcomeOf(draft, view.items);
-  const outcome = done && OUTCOMES[done.outcome];
+  const outcome = done && outcomeFor(done.outcome, view.purpose);
 
   /*
    * Closing a fixture preview removes the questions and the button, so focus would fall to <body>.
@@ -745,7 +746,7 @@ export function ReviewDesk({
                   onClick={preview}
                   className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink"
                 >
-                  {`Preview: ${OUTCOMES[pending].commit}`}
+                  {`Preview: ${outcomeFor(pending, view.purpose).commit}`}
                 </button>
               ) : (
                 <p className="m-0 text-small text-muted">

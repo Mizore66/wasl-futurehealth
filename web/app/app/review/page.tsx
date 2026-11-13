@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
-import { reviewView } from "@/components/review/case-view";
+import { PURPOSE_LABEL, reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { apiMode } from "@/lib/api/source";
@@ -29,7 +29,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
         <div>
           <h1 className="m-0 text-title font-semibold">Review</h1>
           <p className="m-0 mt-1 text-muted">
-            {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer. Nothing closes without it.
+            {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer.
           </p>
         </div>
         <QueueLabel source={queue.source} />
@@ -86,7 +86,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
               </span>
               <span className="col-start-2 min-w-0 text-muted md:col-start-auto">{view.held}</span>
               <span className="col-start-2 text-small text-muted md:col-start-auto">
-                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
+                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : view.purpose ? PURPOSE_LABEL[view.purpose] : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
               </span>
             </Link>
             {(detail.api_review_states ?? []).filter((s) => s.next_read !== null && !s.frozen && s.claim_actions).map((state) => {
