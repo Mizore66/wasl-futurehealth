@@ -317,6 +317,75 @@ test.describe("Referrals", () => {
     await expect(page).toHaveURL(aisha);
   });
 
+  async function search(page: Page, text: string) {
+    const box = page.getByRole("searchbox", { name: "Search case id" });
+    await box.fill(text);
+    await box.press("Enter");
+    await expect(page).toHaveURL(text ? `/app/referrals?q=${text}` : /\/app\/referrals$/);
+    await expect(box).toBeFocused();
+  }
+
+  test("searching and clearing keep an Accept, its history and Undo", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await expect(page.getByRole("tab", { name: "Accepted 17" })).toBeVisible();
+    await search(page, "9001");
+    await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
+    await expect(pane.getByRole("list", { name: "Sealed chain" })).toContainText("Accepted the referral");
+    await search(page, "");
+    await expect(page.getByRole("tab", { name: "Accepted 17" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 3" })).toBeVisible();
+    await page.getByRole("tab", { name: "All 21" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9001/ }).click();
+    await pane.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+  });
+
+  test("a search that hides several decisions gives every one back when cleared", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
+    await pane.getByRole("button", { name: "Accept with conditions" }).click();
+    await pane.getByRole("button", { name: "Female endoscopist" }).click();
+    await pane.getByRole("button", { name: "Accept with 1 condition" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9003/ }).click();
+    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await pane.getByRole("button", { name: "Wrong unit" }).click();
+    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await search(page, "9004");
+    await expect(page.getByRole("tab", { name: "All 1" })).toBeVisible();
+    await search(page, "");
+    await expect(page.getByRole("tab", { name: "Accepted 18" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Waiting on GP 2" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 1" })).toBeVisible();
+    await page.getByRole("tab", { name: "All 21" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
+    await expect(pane.getByRole("status")).toContainText("Accepted with conditions. Female endoscopist.");
+    await page.getByRole("button", { name: /^AHS-sr-9003/ }).click();
+    await expect(pane.getByRole("status")).toContainText("Reason: wrong unit. Act by 1 Sep.");
+    await pane.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByRole("tab", { name: "Waiting on GP 1" })).toBeVisible();
+  });
+
+  test("a recorded prep grade survives searching for the case and clearing", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+    await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: /^2\s*Mostly seen$/ }).click();
+    await search(page, "1011");
+    await expect(pane.getByRole("status")).toContainText("Graded 2, mostly seen.");
+    await expect(pane.getByRole("list", { name: "Sealed chain" })).toContainText("Graded the prep 2");
+    await search(page, "");
+    await page.getByRole("tab", { name: "All 21" }).click();
+    await page.getByRole("button", { name: /^Aisha Al Mansoori/ }).click();
+    await expect(pane.getByRole("status")).toContainText("Graded 2, mostly seen.");
+    await pane.getByRole("button", { name: "Undo" }).click();
+    await expect(pane.getByRole("group", { name: "Boston grade" })).toBeVisible();
+  });
+
   test("search is wired to q", async ({ page }) => {
     await page.goto("/app/referrals");
     await page.getByRole("searchbox", { name: "Search case id" }).fill("1011");

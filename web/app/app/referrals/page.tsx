@@ -22,7 +22,6 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
   const referrals = cases.map((c, i) => referralFrom(c, now, hasRecord(c), currents[i] && handoffOf(currents[i]))).filter((r) => r !== null);
   return (
     <ReferralInbox
-      key={q}
       referrals={referrals}
       window={dashboard.sla.referral_response_days}
       now={now}

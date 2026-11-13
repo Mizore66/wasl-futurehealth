@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import { handoffActBy } from "@/lib/domain/handoff";
 import { handoffWords, type Handoff, type Referral, type ReferralState } from "./referrals";
-import { rememberSearchFocus, SearchField } from "./search-field";
+import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 
 /* Every action here is session state: the API has no referral-inbox endpoint. */
@@ -54,6 +55,14 @@ export function ReferralInbox({
   q: string;
   aside: React.ReactNode;
 }) {
+  const router = useRouter();
+  /* The query is a navigation, not a reload, so the session decisions below outlive it. */
+  const [text, setText] = useState(q);
+  const [seenQ, setSeenQ] = useState(q);
+  if (seenQ !== q) {
+    setSeenQ(q);
+    setText(q);
+  }
   const [tab, setTab] = useState<Tab>("needs");
   const [sel, setSel] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>(null);
@@ -190,8 +199,16 @@ export function ReferralInbox({
               </button>
             ))}
           </div>
-          <form action="/app/referrals" onSubmit={() => rememberSearchFocus("referrals")} className="px-4 pb-2 pt-3">
-            <SearchField label="Search case id" name="q" defaultValue={q} placeholder="Case id, then Enter" restoreKey="referrals" />
+          <form
+            action="/app/referrals"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const next = text.trim();
+              router.push(next ? `/app/referrals?q=${encodeURIComponent(next)}` : "/app/referrals");
+            }}
+            className="px-4 pb-2 pt-3"
+          >
+            <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
           </form>
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {list.map((x) => {
