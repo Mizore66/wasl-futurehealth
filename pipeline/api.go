@@ -227,6 +227,12 @@ func loadAPI(run, data string) *apiServer {
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
 		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
 		c.Consent = consentFromDecision(d)
+		if d.Inactive {
+			// The case and every earlier decision remain available through the
+			// authorized detail/audit views, but no current review obligation
+			// survives retirement.
+			delete(s.queue, c.ID)
+		}
 	}
 	// reviewer sign-offs (signed resolutions)
 	if f, err := os.Open(filepath.Join(run, "reviewer_decisions.ndjson")); err == nil {
@@ -549,8 +555,12 @@ func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 	states, drop, review := map[string]int{}, map[string]int{}, map[string]int{}
 	byProg := map[string]map[string]int{}
-	overdue, closed := 0, 0
+	overdue, closed, activeCases := 0, 0, 0
 	for _, c := range s.cases {
+		if c.last != nil && c.last.Inactive {
+			continue
+		}
+		activeCases++
 		states[c.State]++
 		drop[c.Dropoff]++
 		review[c.Review]++
@@ -575,7 +585,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 		rep["exactly_once"] = map[string]interface{}{"duplicate_outputs": cr["duplicate_outputs"], "lost_outputs": cr["lost_outputs"], "ingest_lost": cr["ingest_lost"], "ingest_duplicates": cr["ingest_duplicates"]}
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"cases": len(s.cases), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
+		"cases": activeCases, "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
 		"by_programme": byProg, "sla": s.dashboard["sla"], "providers": s.dashboard["providers"], "origins": s.dashboard["origins"],
 		"small_cell_rule": s.dashboard["small_cell_rule"], "metrics": rep, "fixtures": s.fixtures,
 		"capacity": s.capacity(),
@@ -611,10 +621,17 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
-	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
+	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+	if c.last != nil && c.last.Inactive {
+		m["inactive"] = true
+		m["request_status"] = c.last.RequestStatus
+		m["request_version"] = c.last.RequestVersion
+		m["request_conflict"] = c.last.RequestConflict
+	}
+	return m
 }
 
 // GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
@@ -622,6 +639,9 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	match := func(c *apiCase) bool {
 		eq := func(k, v string) bool { x := q.Get(k); return x == "" || x == v }
+		if c.last != nil && c.last.Inactive && q.Get("state") != "inactive" && q.Get("include_inactive") != "true" {
+			return false
+		}
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", c.Owner) && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&

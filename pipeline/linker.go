@@ -34,6 +34,14 @@ type Rec struct {
 	reportGroupLatest map[string]int    // logical-report group -> newest accepted version
 }
 
+type trackingRevision struct {
+	loop     string
+	event    *Event
+	rec      int
+	version  int
+	conflict bool
+}
+
 type LinkerCore struct {
 	P           int
 	K, Cap      int
@@ -51,9 +59,10 @@ type LinkerCore struct {
 	idConfirmed map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
 	cannot      map[int]map[int]bool
 	pscore      map[[2]int]float64
-	near        map[int]map[int]float64 // lo <= p < thr
-	demoMissing map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
-	loops       map[string]*LoopFacts   // static part (sr info)
+	near        map[int]map[int]float64      // lo <= p < thr
+	demoMissing map[[2]string]bool           // demoguard: pairs emitted as near/demographic_missing
+	loops       map[string]*LoopFacts        // active tracking requests only: static part (sr info)
+	requests    map[string]*trackingRevision // all current tracking revisions and conflict tombstones
 	loopRec     map[string]int
 	tasks       map[string][]TaskFact // loop -> tasks
 	comms       map[string][]CommFact // loop -> communications
@@ -107,7 +116,7 @@ func (L *LinkerCore) attachANN() {
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
-		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
+		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{}, requests: map[string]*trackingRevision{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
@@ -467,7 +476,7 @@ func reportBodyKey(e *Event) string {
 		}
 		body = sha([]byte(e.Text))
 	}
-	return e.Category + "|" + e.Focus + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
+	return e.Category + "|" + e.Focus + "|" + e.Relation + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
 }
 
 // reportContentKey adds revision semantics to exact cross-transport dedupe.
@@ -787,8 +796,8 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
 			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog})
-		if rt == "Pathology" {
-			out[len(out)-1].Parent = e.Focus
+		if e.RType == "DiagnosticReport" {
+			out[len(out)-1].Parent, out[len(out)-1].Relation = e.Focus, e.Relation
 		}
 	}
 	return out
@@ -868,6 +877,133 @@ func (L *LinkerCore) markNearDependents(i int, aff map[int]bool) {
 	}
 }
 
+func requestVersion(e *Event) int {
+	if e.Version == 0 {
+		return 1 // legacy materialized tracking requests
+	}
+	return e.Version
+}
+
+func sameRequestContent(a, b *Event) bool {
+	ac, bc := *a, *b
+	ac.Version, bc.Version = requestVersion(a), requestVersion(b)
+	return string(canon(&ac)) == string(canon(&bc))
+}
+
+func removeLoopRegistration(rec *Rec, loop string) {
+	for i, lp := range rec.srs {
+		if lp == loop {
+			rec.srs = append(rec.srs[:i], rec.srs[i+1:]...)
+			return
+		}
+	}
+}
+
+func addLoopRegistration(rec *Rec, loop string) {
+	for _, lp := range rec.srs {
+		if lp == loop {
+			return
+		}
+	}
+	rec.srs = append(rec.srs, loop)
+	sort.Strings(rec.srs)
+}
+
+func removeCurrentRequestEvent(rec *Rec, e *Event) {
+	if rec == nil || e == nil {
+		return
+	}
+	key := e.RType + "/" + e.ID
+	delete(rec.evs, key)
+	for i, k := range rec.evOrder {
+		if k == key {
+			rec.evOrder = append(rec.evOrder[:i], rec.evOrder[i+1:]...)
+			break
+		}
+	}
+}
+
+func trackingBase(e *Event, rec *Rec) *LoopFacts {
+	return &LoopFacts{LoopID: e.Provider + "/ServiceRequest/" + e.ID, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
+		Prog: e.Prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT, IFHAS: e.IFHAS}
+}
+
+// foldTrackingRequest is the same-ID FHIR revision boundary for root tracking
+// requests. It runs before activation and is deliberately independent of
+// L.loops, so inactive-first and stale-active deliveries cannot open a case.
+func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, store, changed bool) {
+	loop = e.Provider + "/ServiceRequest/" + e.ID
+	version := requestVersion(e)
+	if version <= 0 || !trackingRequestStatuses[e.Status] {
+		// normaliseChecked rejects this before Prep; a direct/materialized caller
+		// gets the same no-op quarantine and cannot supersede a valid revision.
+		if version <= 0 {
+			L.Stats["invalid_tracking_request_version"]++
+		} else {
+			L.Stats["invalid_tracking_request_status"]++
+		}
+		return loop, false, false
+	}
+	incoming := *e
+	incoming.Version = version
+	current, seen := L.requests[loop]
+	if seen {
+		if version < current.version {
+			L.Stats["stale_tracking_request_version"]++
+			return loop, false, false
+		}
+		if version == current.version {
+			if current.conflict {
+				return loop, false, false
+			}
+			if sameRequestContent(current.event, &incoming) {
+				return loop, false, false
+			}
+			// Same-version disagreement is a durable tombstone. Neither arrival
+			// order nor another copy of either revision can select a winner.
+			current.conflict = true
+			delete(L.loops, loop)
+			removeCurrentRequestEvent(L.recs[current.rec], current.event)
+			L.Stats["conflicting_tracking_request_version"]++
+			return loop, false, true
+		}
+	}
+	if seen {
+		removeLoopRegistration(L.recs[current.rec], loop)
+		removeCurrentRequestEvent(L.recs[current.rec], current.event)
+	}
+	rec := L.recs[recIdx]
+	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version}
+	addLoopRegistration(rec, loop)
+	L.loopRec[loop] = recIdx
+	if e.Prog == "" {
+		L.Stats["unknown_programme"]++
+		delete(L.loops, loop)
+		return loop, true, true
+	}
+	if e.Status == "active" {
+		L.loops[loop] = trackingBase(&incoming, rec)
+	} else {
+		delete(L.loops, loop)
+	}
+	return loop, true, true
+}
+
+func (L *LinkerCore) retirementFacts(loop string) *LoopFacts {
+	r := L.requests[loop]
+	if r == nil {
+		return nil
+	}
+	f := &LoopFacts{LoopID: loop, Provider: r.event.Provider, Inactive: true, ReqStatus: r.event.Status, ReqVersion: r.version, ReqConflict: r.conflict}
+	if !r.conflict {
+		f.SRDay, f.SRRec, f.Prog = r.event.Day, L.recs[r.rec].Pk, r.event.Prog
+	} else {
+		// Conflicts have no clinically selected request body or status.
+		f.ReqStatus = "conflict"
+	}
+	return f
+}
+
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	base := L.loops[loop]
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
@@ -885,18 +1021,29 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	}
 	if base.DR != nil {
 		f.DR = base.DR
-		f.Down = append(f.Down, drScreenFacts(L.recs[s])...) // screening reports on the screen's own registration
+		var screens []DownFact
+		screens, f.EpisodeError = drScreenFacts(L.recs[s], base.DR.Screen)
+		f.Down = append(f.Down, screens...)
 	}
 	if base.Breast != nil {
 		f.Breast = base.Breast
-		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
+		var screens []DownFact
+		screens, f.EpisodeError = breastScreenFacts(L.recs[s], base.Breast.Screen)
+		f.Down = append(f.Down, screens...)
 	}
 	if base.LDCT != nil {
 		f.LDCT = base.LDCT
 		f.Down = append(f.Down, ldctScanFacts(L.recs[s])...) // LDCT reports (index, completion, follow-up) on the scan's own registration
 	}
 	if base.Prog == "ifhas" {
-		f.Down = append(f.Down, ifhasScreenFacts(L.recs[s])...) // IFHAS results on the visit's own registration (ifhas.go)
+		f.IFHAS = base.IFHAS
+		index := ""
+		if base.IFHAS != nil {
+			index = base.IFHAS.Screen
+		}
+		var screens []DownFact
+		screens, f.EpisodeError = ifhasScreenFacts(L.recs[s], index)
+		f.Down = append(f.Down, screens...)
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
@@ -1125,6 +1272,27 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		if e.PatientKey == "" {
+			if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+				loop := e.Provider + "/ServiceRequest/" + e.ID
+				if current := L.requests[loop]; current != nil {
+					// A revision may omit the contained Patient. Its provider+ID
+					// still identifies the existing request registration, so a
+					// valid non-active revision must be able to retire it.
+					_, store, changed := L.foldTrackingRequest(e, current.rec)
+					affRoots[L.Find(current.rec)] = true
+					if changed {
+						affLoops[loop] = true
+					}
+					if store {
+						rec := L.recs[current.rec]
+						key := e.RType + "/" + e.ID
+						if _, exists := rec.evs[key]; !exists {
+							rec.evOrder = append(rec.evOrder, key)
+						}
+						rec.evs[key] = e
+					}
+				}
+			}
 			break
 		}
 		i, ok := L.byPk[e.PatientKey]
@@ -1137,6 +1305,16 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
+		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+			loop, store, changed := L.foldTrackingRequest(e, i)
+			affRoots[L.Find(i)] = true
+			if changed {
+				affLoops[loop] = true
+			}
+			if !store {
+				break
+			}
+		}
 		var previousReport *Event
 		if e.RType == "DiagnosticReport" {
 			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
@@ -1323,20 +1501,6 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if XRefLinkQ && L.noteXRef(e, i) { // a rejected intake citing a referral: that loop may need a link question
 			affLoops[e.XRef] = true
 		}
-		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
-			loop := e.Provider + "/ServiceRequest/" + e.ID
-			if _, ok := L.loops[loop]; !ok {
-				prog := e.Prog
-				if prog == "" {
-					L.Stats["unknown_programme"]++
-					break
-				}
-				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}
-				L.loopRec[loop] = i
-				rec.srs = append(rec.srs, loop)
-			}
-		}
 		affRoots[L.Find(i)] = true
 		L.markNearDependents(i, affRoots)
 		for z := range L.near[i] {
@@ -1357,10 +1521,15 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	}
 	sort.Strings(lps)
 	for _, lp := range lps {
-		if _, ok := L.loops[lp]; !ok {
+		var f *LoopFacts
+		if _, ok := L.loops[lp]; ok {
+			f = L.factsFor(lp)
+		} else {
+			f = L.retirementFacts(lp)
+		}
+		if f == nil {
 			continue
 		}
-		f := L.factsFor(lp)
 		h := sha(canon(f))
 		if L.lastHash[lp] == h {
 			continue

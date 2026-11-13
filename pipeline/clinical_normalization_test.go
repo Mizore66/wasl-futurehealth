@@ -274,7 +274,7 @@ func TestDiagnosticReportProgrammeMappingIsExplicit(t *testing.T) {
 func TestLinkerDoesNotOpenCRCForEmptyProgramme(t *testing.T) {
 	L := NewLinkerCore(nil, 1)
 	L.Apply(&Prep{Seq: 1, Kind: "event", Tick: 1, Ev: &Event{
-		ID: "sr-unknown", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|unknown",
+		ID: "sr-unknown", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", PatientKey: "ahs-mushrif|unknown",
 		Name: "Synthetic Patient", Day: 1,
 	}})
 	if len(L.loops) != 0 {
@@ -337,20 +337,20 @@ func TestSpecialisedDiagnosticFactBuildersRejectNonFinalEvidence(t *testing.T) {
 	builders := []struct {
 		name     string
 		category string
-		build    func(*Rec) []DownFact
+		build    func(*Rec) ([]DownFact, string)
 	}{
-		{"lung", "lung-finding", lungFindingFacts},
-		{"dr", "dr-screen", drScreenFacts},
-		{"breast", "breast-screen", breastScreenFacts},
-		{"ldct", "ldct-screen", ldctScanFacts},
-		{"ifhas", "ifhas-screen", ifhasScreenFacts},
+		{"lung", "lung-finding", func(r *Rec) ([]DownFact, string) { return lungFindingFacts(r), "" }},
+		{"dr", "dr-screen", func(r *Rec) ([]DownFact, string) { return drScreenFacts(r, "r1") }},
+		{"breast", "breast-screen", func(r *Rec) ([]DownFact, string) { return breastScreenFacts(r, "r1") }},
+		{"ldct", "ldct-screen", func(r *Rec) ([]DownFact, string) { return ldctScanFacts(r), "" }},
+		{"ifhas", "ifhas-screen", func(r *Rec) ([]DownFact, string) { return ifhasScreenFacts(r, "r1") }},
 	}
 	for _, status := range []string{"registered", "partial", "preliminary", "cancelled", "entered-in-error", "unknown"} {
 		for _, builder := range builders {
 			t.Run(status+"/"+builder.name, func(t *testing.T) {
 				ev := &Event{ID: "r1", RType: "DiagnosticReport", Category: builder.category, Status: status, ReportID: "r1"}
 				rec := &Rec{Pk: "p|1", evOrder: []string{"DiagnosticReport/r1"}, evs: map[string]*Event{"DiagnosticReport/r1": ev}}
-				if facts := builder.build(rec); len(facts) != 0 {
+				if facts, _ := builder.build(rec); len(facts) != 0 {
 					t.Fatalf("non-final status %q supplied %s facts: %+v", status, builder.name, facts)
 				}
 			})

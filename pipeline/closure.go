@@ -23,12 +23,13 @@ const (
 )
 
 type loopState struct {
-	facts   *LoopFacts
-	last    *Decision
-	lastFU  *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
-	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
-	raised  map[string]*ReviewItem
-	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
+	facts    *LoopFacts
+	last     *Decision
+	lastFU   *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
+	lastFU2  map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
+	raised   map[string]*ReviewItem
+	contact  map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
+	inactive bool              // current tracking request is retired/conflicted; history remains in the output ledger
 }
 
 type ClosureCore struct {
@@ -87,6 +88,9 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 			c.now = m.TickDay
 		}
 		for _, lp := range c.order {
+			if c.loops[lp].inactive {
+				continue
+			}
 			out = append(out, c.eval(c.loops[lp], m.InSeq, m.ID)...)
 		}
 		return out
@@ -102,6 +106,34 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 	if ls.facts != nil && f.InSeq < ls.facts.InSeq {
 		c.Stats["stale_facts_ignored"]++
 		return out
+	}
+	if f.Inactive {
+		ls.facts = f
+		ls.inactive = true
+		ls.lastFU, ls.lastFU2 = nil, nil
+		ls.raised = map[string]*ReviewItem{}
+		ls.contact = nil
+		d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: "inactive", Prog: f.Prog,
+			Inactive: true, RequestStatus: f.ReqStatus, RequestVersion: f.ReqVersion, RequestConflict: f.ReqConflict,
+			ProcDay: -1, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1,
+			Chain: appendBlock(nil, "tracking_request_retirement", map[string]interface{}{"loop": f.LoopID, "status": f.ReqStatus, "version": f.ReqVersion, "conflict": f.ReqConflict,
+				"policy": "only the current active same-ID tracking ServiceRequest version sustains actionable care"})}
+		d.Policy = PolicyName
+		d.Sig = sha(canon(d))
+		if ls.last == nil || ls.last.Sig != d.Sig {
+			d.Now, d.InSeq = c.now, m.InSeq
+			d.ID = fmt.Sprintf("dec-%s@%s", f.LoopID, m.ID)
+			ls.last = d
+			out = append(out, OutMsg{ID: d.ID, Kind: "decision", Dec: d})
+		}
+		return out
+	}
+	if ls.inactive {
+		// A strictly newer active revision rebuilds live state from complete
+		// current facts. In particular, equal pre-retirement clinical content
+		// must still produce a fresh current decision.
+		ls = &loopState{raised: map[string]*ReviewItem{}}
+		c.loops[f.LoopID] = ls
 	}
 	ls.facts = f
 	if HistClock && m.Arr != nil && *m.Arr < 0 && *m.Arr < c.now { // pre-day-0 look-back history only: never rewind a live-day decision
@@ -796,6 +828,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 func (c *ClosureCore) Final() map[string]*Decision {
 	m := map[string]*Decision{}
 	for k, v := range c.loops {
+		if v.inactive {
+			continue
+		}
 		m[k] = v.last
 		if v.lastFU != nil {
 			m[v.lastFU.LoopID] = v.lastFU

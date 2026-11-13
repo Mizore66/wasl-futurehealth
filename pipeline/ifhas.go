@@ -20,6 +20,11 @@ import (
 	"sort"
 )
 
+// IFHASSR scopes a tracking request to its index IFHAS results panel.
+type IFHASSR struct {
+	Screen string `json:"screen,omitempty"`
+}
+
 // IfhasDecision: the IFHAS-specific part of a decision (also served by the API).
 type IfhasDecision struct {
 	Screen         string             `json:"screen_report,omitempty"`
@@ -36,22 +41,27 @@ type IfhasDecision struct {
 	NextStep       string             `json:"next_step,omitempty"`
 }
 
-// ifhasScreenFacts: results reports on the tracking ServiceRequest's own registration (no identity link needed).
-func ifhasScreenFacts(rec *Rec) []DownFact {
-	var out []DownFact
+// ifhasScreenFacts: only the index results episode on the request's own registration.
+func ifhasScreenFacts(rec *Rec, index string) ([]DownFact, string) {
+	var rows []row
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
 		if e.RType != "DiagnosticReport" || e.Category != "ifhas-screen" || !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "IfhasScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "IfhasScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus, Relation: e.Relation,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "ifhas", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
-		out = append(out, d)
+		rows = append(rows, row{d: d, pc: 1, trusted: true})
 	}
-	return out
+	rows, scopeErr := episodeRows(rows, index, "ifhas")
+	out := make([]DownFact, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.d)
+	}
+	return out, scopeErr
 }
 
 func ifhasEvBlock(d DownFact, human string) map[string]interface{} {
@@ -140,6 +150,15 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 	}
 	byDay(screens)
 	byDay(notes)
+	index := ""
+	if f.IFHAS != nil {
+		index = f.IFHAS.Screen
+	}
+	var scopeErr string
+	screens, scopeErr = episodeRows(screens, index, "ifhas")
+	if f.EpisodeError != "" {
+		scopeErr = f.EpisodeError
+	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
@@ -212,17 +231,27 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the results: the last read screen; an unread screen blocks
+	// ---- the results: current index and explicitly linked corrections/addenda only.
 	var grade *row
 	var gradeLab, gradeHuman string
 	var unread *row
+	authorized := map[string]bool{index: true}
 	for i := range screens {
+		d := screens[i].d
+		if d.Relation == addendumRelation {
+			if !authorized[d.Parent] {
+				continue
+			}
+		} else if !authorized[d.ReportID] {
+			continue
+		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {
 			unread = &screens[i]
 			raise(screens[i], "evidence")
 			break
 		}
+		authorized[d.ReportID] = true
 		grade, gradeLab, gradeHuman = &screens[i], lab, h
 	}
 	var rec IfhasRec
@@ -231,6 +260,8 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		rec, recOK = ifhasRule(gradeLab)
 	}
 	switch {
+	case scopeErr != "":
+		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "index_evidence_" + scopeErr})
 	case len(screens) == 0:
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "screening_results_not_received"})
 	case unread != nil:
@@ -262,19 +293,18 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 				"policy": "screening results read by two agreeing readers (printed panel = coded results, or a clinician) AND no abnormal domain"})
 			break
 		}
-		// ---- follow-up documents, in time order
+		// ---- reduce the complete eligible follow-up sequence in time order.
 		ib.Status, ib.ResDay = map[string]string{}, map[string]float64{}
-		for _, d := range rec.Domains {
-			ib.Status[d] = ""
-		}
 		abnormal := map[string]bool{}
 		for _, d := range rec.Domains {
+			ib.Status[d] = ""
 			abnormal[d] = true
 		}
 		var holdRow *row
 		holdWhy := ""
 		ch := gchain
 		dna := false
+		var candidate *row // final all-resolved point; cleared by any later reopening
 		for i := range notes {
 			r := notes[i]
 			if r.d.Day < ib.GradeDay {
@@ -289,10 +319,10 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			if lab == "" {
 				raise(r, "evidence")
 				holdRow, holdWhy = &notes[i], "followup_readers_disagree"
-				break // an unread earlier document blocks a decision on a later one
+				break // an earlier unread document prevents complete interpretation
 			}
 			isDNA, m, ok := ifhasNoteParse(lab)
-			if !ok { // a human label the rule does not know
+			if !ok {
 				holdRow, holdWhy = &notes[i], "followup_label_unknown"
 				break
 			}
@@ -304,14 +334,14 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			used := false
 			for d, s := range m {
 				if !abnormal[d] {
-					continue // a domain that was not abnormal on the screen decides nothing
+					continue // domains normal on the index screen never decide this loop
 				}
 				used = true
 				ib.Status[d] = s
 				if ifhasResolved(s) {
 					ib.ResDay[d] = r.d.Day
 				} else {
-					delete(ib.ResDay, d)
+					delete(ib.ResDay, d) // a later pending reopens the domain
 				}
 			}
 			if !used {
@@ -328,12 +358,16 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			for _, d := range rec.Domains {
 				all = all && ifhasResolved(ib.Status[d])
 			}
-			if all {
-				state, closedDay, closing, procDay = "closed", r.d.Day, r.d.ReportID, r.d.Day
-				break
+			if !all {
+				candidate = nil
+			} else {
+				// Resolved statuses also refresh their clinical resolution day;
+				// keep closure provenance on the latest all-resolved document.
+				candidate = &notes[i]
 			}
 		}
-		if state == "closed" {
+		if candidate != nil && holdRow == nil {
+			state, closedDay, closing, procDay = "closed", candidate.d.Day, candidate.d.ReportID, candidate.d.Day
 			ib.WithinDeadline = true
 			for _, d := range rec.Domains {
 				ib.WithinDeadline = ib.WithinDeadline && ib.ResDay[d] <= ib.GradeDay+float64(rec.DomDays[d])
@@ -342,11 +376,11 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			ib.NextStep = "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
 			chain = appendBlock(ch, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "closed",
 				"programme": "ifhas", "rule": "doh2025ifhas", "domain_status": ib.Status, "closed_day": round4(closedDay),
-				"within_deadline": ib.WithinDeadline, "next_step": ib.NextStep,
-				"policy": "every abnormal domain resolved (managed or not confirmed) by documents on a trusted link (p_cal>=tau|eid|human) with two-reader agreement (or clinician sign-off)"})
+				"closing_report": closing, "within_deadline": ib.WithinDeadline, "next_step": ib.NextStep,
+				"policy": "the final state of every abnormal domain is resolved across the complete trusted, agreed chronological sequence (or authorised clinician sign-off)"})
 			break
 		}
-		// deadline shown: the earliest clock among the domains still unresolved
+		// deadline shown: the earliest clock among domains unresolved at sequence end
 		ib.DeadlineDay = -1
 		for _, d := range rec.Domains {
 			if !ifhasResolved(ib.Status[d]) {
