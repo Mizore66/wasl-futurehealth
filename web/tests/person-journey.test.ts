@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import CasePage from "@/app/app/patients/[id]/page";
 import { Journey } from "@/components/person/journey";
 import { lifecycleLabel, reasonLabel } from "@/components/person/journey-model";
 import { getPerson, getPersonByCase } from "@/lib/api/person-source";
@@ -40,6 +41,33 @@ describe("person journey contract", () => {
     expect(init.headers.has("x-wasl-role")).toBe(false);
     expect(init.headers.has("x-wasl-actor")).toBe(false);
     expect(init.cache).toBe("no-store");
+  });
+
+  it("keeps the case page available when the live identity projection is unavailable", async () => {
+    const journey = await sample();
+    const id = journey.person.anchor_case_id;
+    const [detail, audit] = await Promise.all([
+      readFile("data/api/case_evidence_closure.json", "utf8"),
+      readFile("data/api/case_evidence_closure_audit.json", "utf8"),
+    ]);
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "person-web-reviewer-secret-123456");
+    vi.stubEnv("WASL_API_AUDITOR_TOKEN", "person-auditor-secret-123456");
+    const fetchMock = vi.fn(async (input: string) => {
+      const url = new URL(input);
+      if (url.pathname === "/api/people") return new Response(JSON.stringify({ error: "identity projection is stale" }), { status: 503 });
+      if (url.pathname === `/api/cases/${encodeURIComponent(id)}`) return new Response(detail, { status: 200 });
+      if (url.pathname === `/api/cases/${encodeURIComponent(id)}/audit`) return new Response(audit, { status: 200 });
+      throw new Error(`unexpected live request: ${input}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const page = await CasePage({ params: Promise.resolve({ id: encodeURIComponent(id) }), searchParams: Promise.resolve({}) });
+    const html = renderToStaticMarkup(page);
+    expect(html).toContain('data-testid="case-actions"');
+    expect(html).toContain("Audit trail");
+    expect(html).toContain("Chain verified by the server");
+    expect(html).not.toContain("View all programmes");
   });
 
   it("does not substitute the fixture for an unknown person or case", async () => {
