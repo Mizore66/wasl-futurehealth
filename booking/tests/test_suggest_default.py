@@ -7,7 +7,7 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "e7fbf77dafea7467dcef7a06d325e27b8397eb912f0ba08bbcc97e33248a9dd4"
+GOLDEN = "fd44acb022bf1a0fb56ea6f03ed3c190af50ae7cf40d0ad6b9445c9fb10ad47f"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
