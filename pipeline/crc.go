@@ -82,9 +82,9 @@ type CRCDecision struct {
 
 var (
 	crcMalignantRE       = regexp.MustCompile(`(?i)\b(?:invasive\s+)?(?:adenocarcinoma|carcinoma)\b`)
-	crcSuspiciousRE      = regexp.MustCompile(`(?i)\b(?:suspicious|highly\s+suspicious|malignant[- ]looking|urgent\s+(?:malignancy|cancer)|mass\s+(?:suspicious|concerning)|stricture)\b|\b(?:mass|stricture)\b[^.\n]{0,50}\b(?:suspicious|malignan|concerning)`)
+	crcSuspiciousRE      = regexp.MustCompile(`(?i)\b(?:suspicious|highly\s+suspicious|malignant[- ]looking|urgent\s+(?:malignancy|cancer)|mass|stricture)\b`)
 	crcAdenomaRE         = regexp.MustCompile(`(?i)\b(?:tubular\s+|villous\s+|tubulovillous\s+)?adenoma(?:s|tous)?\b|\bsessile[- ]serrated\b|\btraditional\s+serrated\s+adenoma\b`)
-	crcNormalRE          = regexp.MustCompile(`(?i)\bhyperplastic\s+polyps?\b|\bnon[- ]neoplastic\b|\bno\s+(?:polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\b|\bnegative\s+for\s+(?:malignancy|adenocarcinoma|carcinoma)\b|\bbening?\b|\bnormal\s+colonoscopy\b`)
+	crcNormalRE          = regexp.MustCompile(`(?i)\bhyperplastic\s+polyps?\b|\bnon[- ]neoplastic\b|\bno\s+(?:polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\b|\bnegative\s+for\s+(?:malignancy|adenocarcinoma|carcinoma)\b|\bbenign\b|\bnormal\s+colonoscopy\b`)
 	crcGastroRE          = regexp.MustCompile(`(?i)\b(?:ulcerative\s+colitis|crohn(?:'s)?|inflammatory\s+bowel\s+disease|\bIBD\b|colitis|proctitis)\b`)
 	crcSpecialistRE      = regexp.MustCompile(`(?i)\b(?:increased|high)[- ]risk\b[^.\n]{0,80}\b(?:specialist|speciali[sz]ed\s+centre|referral)\b|\b(?:specialist|speciali[sz]ed\s+centre)\b[^.\n]{0,80}\b(?:increased|high)[- ]risk\b`)
 	crcIntervalRE        = regexp.MustCompile(`(?i)\b(\d{1,3})\s*(years?|yrs?|y|months?|mos?|days?)\b`)
@@ -191,9 +191,9 @@ func extractCRCProposal(text, kind string) *CRCProposal {
 	if intervalConflict {
 		p.Conflicting = true
 	}
-	if p.Outcome == CRCOutcomeSurveillance && (p.IntervalDays == 0 || intervalConflict) {
-		p.Outcome = CRCOutcomeReview
-	}
+	// Keep the diagnosis separate from plan completeness: the contributing
+	// procedure may document the interval. Missing/conflicting plans are held
+	// by crcDispositionAnswer after all current evidence has been reconciled.
 	if kind == "pathology" && p.Outcome == "" {
 		p.Outcome = CRCOutcomeReview // unknown pathology never falls through to generic adequate
 	}
@@ -217,33 +217,57 @@ func uniqueSorted(xs []string) []string {
 // mergeCRCProposal keeps suspicion from the procedure report when the linked
 // pathology supplies the final outcome. Conflicts always fail closed.
 func mergeCRCProposal(procedure, pathology *CRCProposal) *CRCProposal {
-	if procedure == nil {
-		if pathology == nil {
-			return nil
-		}
-		cp := *pathology
-		return &cp
+	if procedure == nil && pathology == nil {
+		return nil
 	}
-	cp := *procedure
+	cp := CRCProposal{}
+	if procedure != nil {
+		cp = *procedure
+		cp.PriorSuspicion = cp.PriorSuspicion || procedure.Suspected
+	}
 	if pathology != nil {
 		if pathology.Outcome != "" {
 			cp.Outcome = pathology.Outcome
 		}
-		cp.IntervalDays, cp.IntervalText = pathology.IntervalDays, pathology.IntervalText
-		cp.Conflicting = cp.Conflicting || pathology.Conflicting
-		cp.Quotes = uniqueSorted(append(append([]string{}, procedure.Quotes...), pathology.Quotes...))
-		if pathology.Outcome == CRCOutcomeReview {
-			cp.Outcome = CRCOutcomeReview
-		}
-	}
-	if cp.Suspected {
-		cp.PriorSuspicion = true
-	}
-	if cp.Outcome == CRCOutcomeNormal && cp.PriorSuspicion {
-		// Normal-after-suspicion is explicitly signed, never automatic.
-		return &cp
+		mergeCRCDetails(&cp, pathology)
 	}
 	return &cp
+}
+
+// Reconcile separate tissue reports, not revisions of one report. Benign tissue
+// is neutral alongside a positive finding from another specimen; incompatible
+// non-normal obligations and unknown pathology require review, never first-wins.
+func reconcileCRCPathology(current, next *CRCProposal) *CRCProposal {
+	if next == nil {
+		return current // legacy completeness-only pathology has no outcome proposal
+	}
+	if current == nil {
+		cp := *next
+		return &cp
+	}
+	cp := *current
+	switch {
+	case cp.Outcome == "" || cp.Outcome == CRCOutcomeNormal:
+		cp.Outcome = next.Outcome
+	case next.Outcome != "" && next.Outcome != CRCOutcomeNormal && next.Outcome != cp.Outcome:
+		cp.Outcome, cp.Conflicting = CRCOutcomeReview, true
+	}
+	mergeCRCDetails(&cp, next)
+	return &cp
+}
+
+func mergeCRCDetails(dst, src *CRCProposal) {
+	dst.Suspected = dst.Suspected || src.Suspected
+	dst.PriorSuspicion = dst.PriorSuspicion || src.PriorSuspicion
+	dst.Conflicting = dst.Conflicting || src.Conflicting
+	if src.IntervalDays > 0 {
+		if dst.IntervalDays > 0 && dst.IntervalDays != src.IntervalDays {
+			dst.Conflicting = true
+		} else if dst.IntervalDays == 0 {
+			dst.IntervalDays, dst.IntervalText = src.IntervalDays, src.IntervalText
+		}
+	}
+	dst.Quotes = uniqueSorted(append(append([]string{}, dst.Quotes...), src.Quotes...))
 }
 
 func crcProposalNeedsDisposition(p *CRCProposal) bool {
@@ -323,7 +347,16 @@ func crcOwner(disposition string) string {
 // after the signed disposition. The original colonoscopy referral and unrelated
 // or earlier referrals/appointments never complete a CRC follow-up pathway.
 func (c *ClosureCore) crcFollowUpCompleted(f *LoopFacts, dispositionDay float64, category string) bool {
+	_, completed := c.crcFollowUpCompletionDay(f, dispositionDay, category)
+	return completed
+}
+
+func (c *ClosureCore) crcFollowUpCompletionDay(f *LoopFacts, dispositionDay float64, category string) (float64, bool) {
+	day, completed := 0.0, false
 	for _, d := range f.Down {
+		if d.Prog != "" && d.Prog != "crc" {
+			continue // match the ordinary downstream gate, including legacy empty programme
+		}
 		if d.FollowUp != category || d.Day <= dispositionDay || d.Day > c.now+1e-9 || d.Strength < LinkReview || d.NearMiss || d.EIDContra != "" {
 			continue
 		}
@@ -337,10 +370,12 @@ func (c *ClosureCore) crcFollowUpCompleted(f *LoopFacts, dispositionDay float64,
 			continue
 		}
 		if d.RType == "ServiceRequest" && d.Status == "active" || d.RType == "Appointment" && (d.Status == "booked" || d.Status == "fulfilled") {
-			return true
+			if !completed || d.Day < day {
+				day, completed = d.Day, true
+			}
 		}
 	}
-	return false
+	return day, completed
 }
 
 func crcChildLoopID(parent, disposition string) string {
@@ -383,8 +418,8 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 	followState := ""
 	if disposition == "closed_to_gastro" || disposition == "closed_to_specialist" {
 		followState = "awaiting_acceptance_or_first_appointment"
-		if c.crcFollowUpCompleted(f, dispositionDay, kind) {
-			state, closedDay, followState = "closed", now, "accepted_or_first_appointment"
+		if day, completed := c.crcFollowUpCompletionDay(f, dispositionDay, kind); completed {
+			state, closedDay, followState = "closed", day, "accepted_or_first_appointment"
 		}
 	}
 	cd := &CRCDecision{Kind: kind, Disposition: disposition, SourceReport: source.d.ReportID, SourceVersion: source.d.Version,
@@ -419,6 +454,53 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 	}
 	d.Sig = sha(canon(d))
 	return d
+}
+
+// Scope review identity to the evidence head as well as its source report. A
+// correction must enqueue a new item, not be deduplicated as an answered item.
+func crcDispositionItemID(loop, report string, version int, head string) string {
+	base := evidenceReviewItemID(loop, report, version, CRCDispositionPurpose)
+	return "rv-" + sha([]byte(base + "|" + head))[:16]
+}
+
+// A signed disposition covers the whole reconciled evidence set, including the
+// procedure version/date that defines the child's clock. Rebuilding this chain
+// from current facts invalidates a signature after any contributing correction.
+func crcEvidenceChain(f *LoopFacts, source, procedure row, pathologies []row, proposal *CRCProposal) []Block {
+	contributors := []DownFact{procedure.d}
+	for _, p := range pathologies {
+		fact := p.d
+		if !p.trusted {
+			fact.Ev = nil // bind the unresolved report identity, never expose its clinical evidence
+		}
+		contributors = append(contributors, fact)
+	}
+	chain := appendBlock(nil, "link_decision", linkBlock(f, source.d, source.pc))
+	chain = appendBlock(chain, "evidence", evBlock(source.d, ""))
+	return appendBlock(chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": source.d.ReportID,
+		"report_version": source.d.Version, "proposal": proposal, "procedure_report": procedure.d.ReportID,
+		"procedure_version": procedure.d.Version, "procedure_day": procedure.d.Day, "contributing_reports": contributors})
+}
+
+// Stable source/evidence ordering is independent of pathology arrival order.
+func crcPathologyLess(a, b row) bool {
+	rank := func(r row) int {
+		if r.trusted && r.d.Ev != nil && r.d.Ev.CRC != nil {
+			switch r.d.Ev.CRC.Outcome {
+			case CRCOutcomeMalignant:
+				return 0
+			case CRCOutcomeNormal, "":
+			default:
+				return 1
+			}
+		}
+		return 2
+	}
+	if ar, br := rank(a), rank(b); ar != br {
+		return ar < br
+	}
+	return a.d.Provider+"|"+reportVersionKey(a.d.ReportID, a.d.Version)+"|"+a.d.EventID <
+		b.d.Provider+"|"+reportVersionKey(b.d.ReportID, b.d.Version)+"|"+b.d.EventID
 }
 
 func crcWorkItem(loop string, source, procedure row) *CRCWorkItem {

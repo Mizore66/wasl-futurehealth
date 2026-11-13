@@ -787,7 +787,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			continue
 		}
 		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
-			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog, FollowUp: e.Category})
+			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog, FollowUp: e.FollowUp})
 		if rt == "Pathology" {
 			out[len(out)-1].Parent = e.Focus
 		}
@@ -1081,7 +1081,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if so.Evidence != "" && so.ReportID != "" {
 			if so.Purpose == CRCDispositionPurpose {
 				// CRC dispositions never become generic EvOver adequacy labels.
-				if so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) || !crcReviewDecisionLabel(so.Evidence) {
+				if so.ItemID != crcDispositionItemID(so.LoopID, so.ReportID, so.ReportVersion, so.SignedHead) || !crcReviewDecisionLabel(so.Evidence) {
 					L.Stats["mismatched_crc_disposition_signoff"]++
 					break
 				}

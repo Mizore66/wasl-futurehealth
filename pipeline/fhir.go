@@ -128,7 +128,7 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 				case "urn:wsi:index-category":
 					e.Cat = gs(xm, "valueString")
 				case "urn:wsi:crc-follow-up":
-					e.Category = gs(xm, "valueString")
+					e.FollowUp = gs(xm, "valueString")
 				case "urn:wsi:specimen-date":
 					day, err := tsToDay(gs(xm, "valueString"))
 					if err != nil {
@@ -238,7 +238,7 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			for _, x := range xs {
 				xm := x.(map[string]interface{})
 				if gs(xm, "url") == "urn:wsi:crc-follow-up" {
-					e.Category = gs(xm, "valueString")
+					e.FollowUp = gs(xm, "valueString")
 				}
 			}
 		}

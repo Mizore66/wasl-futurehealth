@@ -86,10 +86,11 @@ type Event struct {
 	ReportID      string      `json:"report,omitempty"`
 	ReportVersion int         `json:"report_version,omitempty"` // Communication prep thread -> DiagnosticReport version; zero/one share the legacy key
 	Text          string      `json:"text,omitempty"`
-	PrefLang      string      `json:"lang,omitempty"`  // Patient.communication preferred language at this provider
-	Category      string      `json:"cat,omitempty"`   // Communication.category | DiagnosticReport kind (colonoscopy|pathology)
-	Template      string      `json:"tpl,omitempty"`   // Communication template id (extension)
-	CommLang      string      `json:"clang,omitempty"` // Communication.language
+	PrefLang      string      `json:"lang,omitempty"`      // Patient.communication preferred language at this provider
+	Category      string      `json:"cat,omitempty"`       // Communication.category | DiagnosticReport kind (colonoscopy|pathology)
+	FollowUp      string      `json:"follow_up,omitempty"` // typed CRC downstream care, independent of referral-intake classification
+	Template      string      `json:"tpl,omitempty"`       // Communication template id (extension)
+	CommLang      string      `json:"clang,omitempty"`     // Communication.language
 	Channel       string      `json:"chan,omitempty"`
 	Reason        string      `json:"reason,omitempty"` // Task.statusReason (referral response)
 	Recipient     string      `json:"rcpt,omitempty"`   // Communication recipient unit (e-consult question: the unit asked)

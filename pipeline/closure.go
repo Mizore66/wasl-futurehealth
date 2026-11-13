@@ -356,6 +356,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			rows = append(rows, r)
 		}
 	}
+	if prog == "crc" {
+		for parent := range paths {
+			ps := paths[parent]
+			sort.SliceStable(ps, func(i, j int) bool { return crcPathologyLess(ps[i], ps[j]) })
+		}
+	}
 	sort.SliceStable(rows, func(i, j int) bool {
 		if rows[i].d.Day != rows[j].d.Day {
 			return rows[i].d.Day < rows[j].d.Day
@@ -375,7 +381,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var crcProposal *CRCProposal
 	var crcSignoff *Signoff
 	var crcDecision *CRCDecision
-	var crcPreHistology bool
+	var crcPreHistology, crcQualityHold bool
+	var crcPathologies []row
 	crcDisposition := ""
 	pending := []string{}
 	pendSet := map[string]bool{}
@@ -400,6 +407,11 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if kind == "evidence" {
 			id = evidenceReviewItemID(f.LoopID, r.d.ReportID, r.d.Version, purpose)
 		}
+		var crcChain []Block
+		if purpose == CRCDispositionPurpose {
+			crcChain = crcEvidenceChain(f, *crcSource, *crcProcedure, crcPathologies, crcProposal)
+			id = crcDispositionItemID(f.LoopID, r.d.ReportID, r.d.Version, crcChain[len(crcChain)-1].Hash)
+		}
 		if s, ok := signed[id]; ok && kind == "link" && purpose == "" && heldLink(s) { // held "same": ask the confirming review
 			purpose, key = LinkConfirm, key+"#linkconfirm"
 			id = "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
@@ -410,9 +422,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		pendSet[id] = true
 		pending = append(pending, id)
 		if _, ok := ls.raised[id]; !ok {
-			ch := appendBlock(nil, "link_decision", linkBlock(f, r.d, r.pc))
-			if report != "" {
-				ch = appendBlock(ch, "evidence", evBlock(r.d, ""))
+			ch := crcChain
+			if purpose != CRCDispositionPurpose {
+				ch = appendBlock(nil, "link_decision", linkBlock(f, r.d, r.pc))
+				if report != "" {
+					ch = appendBlock(ch, "evidence", evBlock(r.d, ""))
+				}
 			}
 			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report, ReportVersion: r.d.Version,
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, OverdueAtRaise: now-f.SRDay > SLADays}
@@ -427,6 +442,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			if purpose == LinkConfirm {
 				it.Verdict = signed["rv-"+sha([]byte(f.LoopID + "|link|" + pair[0] + "|" + pair[1]))[:16]].Hold
+			}
+			if purpose == CRCDispositionPurpose {
+				it.Verdict = crcDispositionAnswer(crcProposal)
 			}
 			if pilotKey(purpose) != "" {
 				it.Day = round4(now)
@@ -549,8 +567,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if prog == "crc" && r.d.Ev != nil {
 			procedureCRC = r.d.Ev.CRC
 		}
-		if label == "awaiting_histology" {
-			has := false
+		if prog == "crc" && label == "inadequate" && procedureCRC != nil && procedureCRC.Suspected {
+			rr := r
+			crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true, true
+			crcPathologies = nil
+		}
+		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && len(paths[r.d.ReportID]) > 0 {
+			has, pathologyPending := false, false
 			for _, p := range paths[r.d.ReportID] {
 				pl := ""
 				if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
@@ -566,19 +589,27 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					if pathologyRow == nil {
 						pp := p
 						pathologyRow = &pp
-						if p.d.Ev != nil {
-							pathologyCRC = p.d.Ev.CRC
-						}
+					}
+					if p.d.Ev != nil {
+						pathologyCRC = reconcileCRCPathology(pathologyCRC, p.d.Ev.CRC)
 					}
 					if _, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 						human = "histology"
 					}
+				} else {
+					pathologyPending = true
 				}
+			}
+			if prog == "crc" && has && pathologyPending {
+				// One satisfactory specimen cannot clear another current unresolved
+				// report (including a report still behind identity/evidence review).
+				pathologyCRC = reconcileCRCPathology(pathologyCRC, &CRCProposal{Outcome: CRCOutcomeReview})
 			}
 			if !has {
 				if procedureCRC != nil && procedureCRC.Suspected {
 					rr := r
-					crcSource, crcProcedure, crcProposal, crcPreHistology = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true
+					crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true, false
+					crcPathologies = nil
 				}
 				awaiting = true
 				if holdRow == nil {
@@ -600,7 +631,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				if pathologyRow != nil {
 					rr = *pathologyRow
 				}
-				crcSource, crcProcedure, crcProposal, crcPreHistology = &rr, &pr, proposal, false
+				crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &pr, proposal, false, false
+				crcPathologies = paths[r.d.ReportID]
 				continue // outcome disposition is separate from procedure completeness
 			}
 		}
@@ -646,27 +678,20 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			crcDecision.MDT = crcWorkItem(f.LoopID, *crcSource, *crcProcedure)
 			// ID and same-day clock stay anchored to the colonoscopy across pathology arrival.
 		}
-		chain = appendBlock(nil, "link_decision", linkBlock(f, crcSource.d, crcSource.pc))
-		chain = appendBlock(chain, "evidence", evBlock(crcSource.d, ""))
-		chain = appendBlock(chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": crcSource.d.ReportID,
-			"report_version": crcSource.d.Version, "proposal": crcProposal, "procedure_report": crcProcedure.d.ReportID})
+		chain = crcEvidenceChain(f, *crcSource, *crcProcedure, crcPathologies, crcProposal)
 		if crcPreHistology {
 			state, closing, closedDay = "suspected_malignancy", crcSource.d.ReportID, 0
-			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": "suspected_malignancy",
-				"report": crcSource.d.ReportID, "awaiting_histology": true, "next": "same-day MDT coordinator review; no treatment loop before a signed disposition"})
+			if crcQualityHold {
+				state = "inadequate" // urgent coordination does not certify procedure completeness
+			}
+			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": state,
+				"report": crcSource.d.ReportID, "awaiting_histology": true, "quality_hold": crcQualityHold,
+				"next": "same-day MDT coordinator review; no treatment loop before a signed disposition"})
 		} else {
-			itemID := evidenceReviewItemID(f.LoopID, crcSource.d.ReportID, crcSource.d.Version, CRCDispositionPurpose)
+			itemID := crcDispositionItemID(f.LoopID, crcSource.d.ReportID, crcSource.d.Version, chain[len(chain)-1].Hash)
 			raiseFor(*crcSource, "evidence", CRCDispositionPurpose)
 			item := ls.raised[itemID]
-			if item != nil && (len(item.Chain) == 0 || item.Chain[len(item.Chain)-1].Type != "crc_proposal") {
-				item.Chain = appendBlock(item.Chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": crcSource.d.ReportID,
-					"report_version": crcSource.d.Version, "proposal": crcProposal, "procedure_report": crcProcedure.d.ReportID})
-				item.Head = item.Chain[len(item.Chain)-1].Hash
-			}
 			answer := crcDispositionAnswer(crcProposal)
-			if item != nil {
-				item.Verdict = answer // simulated reviewers confirm the proposal, never an inferred generic adequacy label
-			}
 			if s, ok := signed[itemID]; ok && item != nil {
 				valid := s.ItemID == itemID && s.LoopID == f.LoopID && s.ReportID == crcSource.d.ReportID &&
 					sameReportReviewVersion(s.ReportVersion, crcSource.d.Version) && sameReportReviewVersion(item.ReportVersion, currentReportVersion(f, crcSource.d.ReportID)) && s.SignedHead == item.Head &&

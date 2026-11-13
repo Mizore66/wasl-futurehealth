@@ -101,8 +101,8 @@ func TestCRCSignedReplayAndTicksAreIdempotent(t *testing.T) {
 
 func TestCRCLinkerSignoffNeverBecomesGenericAdequacy(t *testing.T) {
 	L, loop := newLoopLinker(t)
-	so := &Signoff{ItemID: evidenceReviewItemID(loop, "P1", 1, CRCDispositionPurpose), LoopID: loop,
-		Kinds: []string{"evidence"}, ReportID: "P1", ReportVersion: 1, Evidence: "mdt", Role: RoleClinician, Purpose: CRCDispositionPurpose}
+	so := &Signoff{ItemID: crcDispositionItemID(loop, "P1", 1, "synthetic-head"), LoopID: loop,
+		Kinds: []string{"evidence"}, ReportID: "P1", ReportVersion: 1, Evidence: "mdt", Role: RoleClinician, Purpose: CRCDispositionPurpose, SignedHead: "synthetic-head"}
 	L.Apply(&Prep{Seq: 40, Kind: "signoff", So: so})
 	facts := lastFactsOf(L, loop)
 	if len(facts.Signoffs) != 1 || len(facts.EvOver) != 0 {
