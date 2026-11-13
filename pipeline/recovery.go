@@ -499,7 +499,8 @@ func apiAuthFromEnvironment() (func(http.Handler) http.Handler, error) {
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodOptions {
+			if r.URL.Path == "/api/patient/journey" || r.Method == http.MethodOptions {
+				// Patient links have their own bearer boundary and never inherit Basic staff identity.
 				next.ServeHTTP(w, r)
 				return
 			}

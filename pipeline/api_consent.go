@@ -80,6 +80,24 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	return o, hist
 }
 
+type demoContactGuard struct {
+	Canonical string
+	Overlay   string
+	Blocked   bool
+	Allowed   bool
+}
+
+// contactGuardLocked is the single guard for simulated outreach intents. The
+// caller holds s.mu, so its decision and the subsequent append are atomic with
+// respect to patient denial and opt-out events.
+func (s *apiServer) contactGuardLocked(c *apiCase) demoContactGuard {
+	overlay, _ := s.overlayLocked(c)
+	status, _ := overlay["status"].(string)
+	canonical := consentFromDecision(c.last)
+	blocked := status == "denied" || status == "opted_out"
+	return demoContactGuard{Canonical: canonical, Overlay: status, Blocked: blocked, Allowed: canonical == "granted" && !blocked}
+}
+
 // withConsent wraps the case router with the consent routes and the detail overlay. Wire with
 // mux.HandleFunc("/api/cases/", s.withConsent(s.caseRoutes)).
 func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {
