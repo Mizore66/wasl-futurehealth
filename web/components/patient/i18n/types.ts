@@ -13,6 +13,19 @@ export interface PatientDict {
   clinic: string;
   call: string;
   close: string;
+  common: {
+    saving: string;
+    saved: string;
+    saveFailed: string;
+    retry: string;
+    conflict: string;
+    unavailableTitle: string;
+    invalidLink: string;
+    expiredLink: string;
+    unavailable: string;
+    stopMessages: string;
+    stopped: string;
+  };
   notice: {
     greet: string;
     title: string;

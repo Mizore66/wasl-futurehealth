@@ -43,23 +43,24 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string      `json:"state"`
-	Dropoff   string      `json:"dropoff"`
-	Owner     string      `json:"owner,omitempty"`
-	Provider  string      `json:"provider"`
-	SRDay     float64     `json:"referral_day"`
-	Deadline  float64     `json:"deadline_day,omitempty"`
-	Overdue   bool        `json:"overdue"`
-	Priority  string      `json:"priority,omitempty"`
-	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string      `json:"review"`  // none | open | signed
-	Closed    bool        `json:"closed"`
-	ClosedDay float64     `json:"closed_day,omitempty"`
-	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
-	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision   // full last decision (detail view)
+	ID        string           `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string           `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string           `json:"state"`
+	Dropoff   string           `json:"dropoff"`
+	Owner     string           `json:"owner,omitempty"`
+	Provider  string           `json:"provider"`
+	SRDay     float64          `json:"referral_day"`
+	Deadline  float64          `json:"deadline_day,omitempty"`
+	Overdue   bool             `json:"overdue"`
+	Priority  string           `json:"priority,omitempty"`
+	Consent   string           `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string           `json:"review"`  // none | open | signed
+	Closed    bool             `json:"closed"`
+	ClosedDay float64          `json:"closed_day,omitempty"`
+	Fixture   string           `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ov        caseOverlay      // coordinator actions replayed from the ledger; never merged into the canonical fields above
+	patient   patientCaseState // patient-link actions; separate from coordinator, consent and booking heads
+	last      *Decision        // full last decision (detail view)
 	decisions []*Decision
 }
 
@@ -90,11 +91,13 @@ type apiServer struct {
 	now             func() time.Time                           // UTC clock; replaceable in lease tests
 	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
+	patientRequests map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
 }
 
 func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/api/patient/journey", s.patientJourney)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -630,10 +633,16 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
-	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
+	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+	s.mu.Lock()
+	if c.patient.Seq > 0 {
+		m["api_patient"] = s.patientViewLocked(c, false)
+	}
+	s.mu.Unlock()
+	return m
 }
 
 // GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
@@ -803,6 +812,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		defer s.mu.Unlock()
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if req.Decision == "confirm_contact" && s.contactGuardLocked(c).Blocked {
+			return 409, map[string]interface{}{"error": "contact is blocked by a recorded denial or opt-out; confirm_contact refused", "conflict": "consent"}
 		}
 		ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
 			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
@@ -1559,8 +1571,11 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if head := s.caseHead(c); expected != head {
 			return 409, map[string]interface{}{"error": "stale expected_head: the case changed since it was read", "conflict": "head", "current_head": head}
 		}
-		if kind == "contact_outcome" && c.Consent != "granted" {
-			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
+		if kind == "contact_outcome" {
+			guard := s.contactGuardLocked(c)
+			if !guard.Allowed {
+				return 409, map[string]interface{}{"error": "contact outcomes need canonical contact permission granted and no demo denial or opt-out", "conflict": "consent", "consent": guard.Canonical, "contact_blocked": guard.Blocked}
+			}
 		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
@@ -1649,6 +1664,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
 		return errors.New("hash mismatch")
 	}
+	if ev["type"] == patientEventType {
+		if err := s.replayPatientEvent(ev); err != nil {
+			return fmt.Errorf("patient journey: %v", err)
+		}
+		return nil
+	}
 	if ev["type"] == reviewClaimEventType {
 		if err := s.replayClaim(ev); err != nil {
 			return fmt.Errorf("review claim: %v", err)
@@ -1709,8 +1730,8 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if err != nil || !reflect.DeepEqual(norm, raw) {
 		return fmt.Errorf("invalid or non-canonical action data (%v)", err)
 	}
-	if kind == "contact_outcome" && c.Consent != "granted" {
-		return errors.New("contact outcome on a case without granted consent")
+	if kind == "contact_outcome" && !s.contactGuardLocked(c).Allowed {
+		return errors.New("contact outcome without granted canonical consent or after demo denial/opt-out")
 	}
 	var booking *bookingTransition
 	if bookingActionName(kind) {
