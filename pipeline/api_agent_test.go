@@ -50,6 +50,7 @@ func agentRun(t *testing.T, dir string, cases []agentCaseSpec) {
 		t.Fatal(err)
 	}
 	var out, so []interface{}
+	states := map[string]string{}
 	for i, c := range cases {
 		st, ct := c.state, c.contact
 		if st == "" {
@@ -59,10 +60,15 @@ func agentRun(t *testing.T, dir string, cases []agentCaseSpec) {
 			ct = "granted"
 		}
 		dec := &Decision{ID: "dec-" + c.item, LoopID: c.loop, State: st, Prog: "crc", Contact: ct, Provider: "ahs-mushrif"}
+		dec.Sig = decSig(dec)
+		states[c.loop] = st
 		it := &ReviewItem{ItemID: c.item, LoopID: c.loop, Kinds: []string{"link"}, Pair: c.pair, P: 0.5}
-		for _, env := range []OutEnvelope{{Kind: "item", OSeq: uint64(2*i + 1), Item: it}, {Kind: "dec", OSeq: uint64(2*i + 2), Dec: dec}} {
-			b, _ := json.Marshal(env)
-			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out", Data: b})
+		for _, env := range []OutEnvelope{{Kind: "review", OSeq: uint64(2*i + 1), Item: it}, {Kind: "decision", OSeq: uint64(2*i + 2), Dec: dec}} {
+			b, err := json.Marshal(env)
+			if err != nil {
+				t.Fatalf("encode OUT fixture for %s: %v", c.loop, err)
+			}
+			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out.p0", Data: b})
 		}
 		if c.signoff != nil {
 			so = append(so, c.signoff)
@@ -71,7 +77,7 @@ func agentRun(t *testing.T, dir string, cases []agentCaseSpec) {
 	writeAgentNDJSON(t, filepath.Join(dir, "out_log.ndjson"), out)
 	writeAgentNDJSON(t, filepath.Join(dir, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
 	writeAgentNDJSON(t, filepath.Join(dir, "reviewer_decisions.ndjson"), so)
-	writeRequiredAPIJSONForCases(t, dir, len(cases))
+	writeRequiredAPIJSONForCaseStates(t, dir, states)
 }
 
 func agentRecRow(item string, pair [2]string, label string) map[string]interface{} {
