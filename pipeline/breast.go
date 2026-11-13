@@ -220,15 +220,15 @@ func (c *ClosureCore) evalBreast(ls *loopState, inSeq uint64, mid string) []OutM
 		if d.Day < f.SRDay-1 {
 			continue
 		}
-		// The explicitly named index is authorised even when it is an addendum.
+		// The explicitly named index is authorised even when it is an addendum or repeat.
 		// Its ancestors are retained only to validate the complete graph.
 		if d.ReportID != index {
 			if (d.Relation != addendumRelation && d.Relation != repeatRelation) || !authorized[d.Parent] {
 				continue
 			}
-		}
-		if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("breast", gradeLab)) {
-			continue
+			if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("breast", gradeLab)) {
+				continue
+			}
 		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {

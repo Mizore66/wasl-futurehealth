@@ -217,15 +217,15 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if d.Day < f.SRDay-1 {
 			continue
 		}
-		// The explicitly named index is authorised even when it is an addendum.
+		// The explicitly named index is authorised even when it is an addendum or repeat.
 		// Its ancestors are retained only to validate the complete graph.
 		if d.ReportID != index {
 			if (d.Relation != addendumRelation && d.Relation != repeatRelation) || !authorized[d.Parent] {
 				continue
 			}
-		}
-		if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("diabetic_retinopathy", gradeLab)) {
-			continue
+			if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("diabetic_retinopathy", gradeLab)) {
+				continue
+			}
 		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {
