@@ -456,6 +456,99 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 	return d
 }
 
+// Each current procedure contributes an independent obligation. A later procedure
+// is not a correction of an earlier one; only the linker's version/supersession
+// fold can retire its evidence before it reaches this reconciliation.
+type crcObligation struct {
+	source, procedure row
+	pathologies       []row
+	proposal          *CRCProposal
+	preHistology      bool
+	qualityHold       bool
+}
+
+// Reconcile the whole loop before selecting a disposition source. Confirmed
+// cancer takes the MDT pathway, not an unrelated adenoma's surveillance pathway.
+// Other incompatible/unresolved obligations stay in review. Every contributing
+// procedure/specimen remains bound into the signature, including lower-priority
+// findings; none is declared completed by selecting the coordinating pathway.
+func reconcileCRCLoop(obligations []crcObligation) (*crcObligation, []row) {
+	rank := func(o crcObligation) int {
+		if o.proposal == nil {
+			return 7
+		}
+		if o.proposal.Outcome == CRCOutcomeMalignant {
+			return 0
+		}
+		if o.preHistology && o.proposal.Suspected {
+			return 1
+		}
+		if o.proposal.Conflicting || o.proposal.Outcome == CRCOutcomeReview {
+			return 2
+		}
+		switch o.proposal.Outcome {
+		case CRCOutcomeSurveillance:
+			return 3
+		case CRCOutcomeGastro:
+			return 4
+		case CRCOutcomeSpecialist:
+			return 5
+		}
+		return 6
+	}
+	sort.SliceStable(obligations, func(i, j int) bool {
+		a, b := obligations[i], obligations[j]
+		if ar, br := rank(a), rank(b); ar != br {
+			return ar < br
+		}
+		if a.procedure.d.Day != b.procedure.d.Day {
+			return a.procedure.d.Day < b.procedure.d.Day
+		}
+		return crcPathologyLess(a.procedure, b.procedure)
+	})
+	selected := -1
+	for i, o := range obligations {
+		if crcProposalNeedsDisposition(o.proposal) || o.preHistology && o.proposal != nil && o.proposal.Suspected {
+			selected = i
+			break
+		}
+	}
+	if selected < 0 {
+		return nil, nil
+	}
+	result := obligations[selected]
+	proposal := *result.proposal
+	result.proposal = &proposal
+	var contributors []row
+	for i, o := range obligations {
+		if i != selected {
+			contributors = append(contributors, o.procedure)
+		}
+		contributors = append(contributors, o.pathologies...)
+		if i == selected {
+			continue
+		}
+		if o.preHistology || o.qualityHold {
+			proposal.Conflicting = true // coordination never clears another procedure's hold
+		}
+		if o.proposal == nil {
+			continue
+		}
+		if proposal.Outcome == CRCOutcomeMalignant || result.preHistology {
+			// A separate surveillance interval is not a treatment-clock interval.
+			// Keep its original proposal in contributing_reports, not in the MDT plan.
+			proposal.Suspected = proposal.Suspected || o.proposal.Suspected
+			proposal.PriorSuspicion = proposal.PriorSuspicion || o.proposal.PriorSuspicion
+			proposal.Conflicting = proposal.Conflicting || o.proposal.Conflicting || o.proposal.Outcome == CRCOutcomeReview || o.proposal.Outcome == CRCOutcomeGastro || o.proposal.Outcome == CRCOutcomeSpecialist
+			proposal.Quotes = uniqueSorted(append(append([]string{}, proposal.Quotes...), o.proposal.Quotes...))
+		} else {
+			proposal = *reconcileCRCPathology(&proposal, o.proposal)
+		}
+	}
+	sort.SliceStable(contributors, func(i, j int) bool { return crcPathologyLess(contributors[i], contributors[j]) })
+	return &result, contributors
+}
+
 // Scope review identity to the evidence head as well as its source report. A
 // correction must enqueue a new item, not be deduplicated as an answered item.
 func crcDispositionItemID(loop, report string, version int, head string) string {

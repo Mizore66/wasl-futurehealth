@@ -55,9 +55,10 @@ type LinkerCore struct {
 	demoMissing map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
 	loops       map[string]*LoopFacts   // static part (sr info)
 	loopRec     map[string]int
-	tasks       map[string][]TaskFact // loop -> tasks
-	comms       map[string][]CommFact // loop -> current Communication revisions only
-	commHistory map[string][]CommFact // loop|Communication ID -> append-only normalized revision history
+	tasks       map[string][]TaskFact              // loop -> tasks
+	comms       map[string][]CommFact              // loop -> current Communication revisions only
+	commCurrent map[string]communicationRevision   // provider|resource ID -> logical current revision, including reassociations
+	commHistory map[string][]communicationRevision // provider|resource ID -> append-only normalized inputs and their basedOn loop
 	signoffs    map[string][]Signoff
 	evOver      map[string]map[string]string
 	lastHash    map[string]string
@@ -109,7 +110,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
-		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, commHistory: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
+		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, commCurrent: map[string]communicationRevision{}, commHistory: map[string][]communicationRevision{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
@@ -961,45 +962,82 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	return f
 }
 
-// foldCommunication retains only the greatest FHIR revision of each logical Communication.
-// Legacy missing versions and version 1 share an identity. A same-version payload
-// conflict becomes an inert tombstone until a greater revision resolves it; raw history
-// remains append-only in commHistory and in the FHIR/NATS logs.
-func (L *LinkerCore) foldCommunication(loop string, cf CommFact) bool {
-	key := loop + "|" + cf.ID
-	L.commHistory[key] = append(L.commHistory[key], cf)
+type communicationRevision struct {
+	Loop string
+	Fact CommFact
+}
+
+// Fold at provider/resource identity, never at basedOn membership. A newer
+// reassociation or withdrawal retracts the old loop's effective revision too.
+// Missing versions and v1 are equivalent. Conflicting same-version payloads
+// remain inert until a greater version; every original input stays append-only.
+func (L *LinkerCore) foldCommunication(loop string, cf CommFact) []string {
+	provider, _, _ := strings.Cut(loop, "/")
+	key := provider + "|" + cf.ID
+	next := communicationRevision{Loop: loop, Fact: cf}
+	L.commHistory[key] = append(L.commHistory[key], next)
 	version := func(v int) int {
 		if v <= 1 {
 			return 1
 		}
 		return v
 	}
-	for i := range L.comms[loop] {
-		current := &L.comms[loop][i]
-		if current.ID != cf.ID {
-			continue
-		}
-		cv, nv := version(current.Version), version(cf.Version)
+	next.Fact.Version = version(cf.Version)
+	current, exists := L.commCurrent[key]
+	if exists {
+		cv, nv := version(current.Fact.Version), version(cf.Version)
 		if nv < cv {
 			L.Stats["stale_communication_version"]++
-			return false
+			return nil
 		}
 		if nv == cv {
-			a, b := *current, cf
-			a.Version, b.Version = 0, 0
+			a, b := current, next
+			a.Fact.Version, b.Fact.Version = 0, 0
 			if string(canon(a)) == string(canon(b)) {
 				L.Stats["duplicate_communication_version"]++
-				return false
+				return nil
 			}
-			L.comms[loop][i] = CommFact{ID: cf.ID, Version: cf.Version, Status: "conflicting_revision"}
+			// The tombstone's loop is the lexically first conflicting membership,
+			// so reverse arrival and repeated conflicts yield the same projection.
+			if current.Loop < next.Loop {
+				next.Loop = current.Loop
+			}
+			next.Fact = CommFact{ID: cf.ID, Version: nv, Status: "conflicting_revision"}
 			L.Stats["conflicting_communication_version"]++
-			return true
 		}
-		L.comms[loop][i] = cf
-		return true
 	}
-	L.comms[loop] = append(L.comms[loop], cf)
-	return true
+	// Copy slices rather than editing previously emitted LoopFacts in place.
+	if exists {
+		remaining := []CommFact{}
+		for _, old := range L.comms[current.Loop] {
+			if old.ID != cf.ID {
+				remaining = append(remaining, old)
+			}
+		}
+		if len(remaining) == 0 {
+			delete(L.comms, current.Loop)
+		} else {
+			L.comms[current.Loop] = remaining
+		}
+	}
+	updated := append([]CommFact{}, L.comms[next.Loop]...)
+	updated = append(updated, next.Fact)
+	sort.Slice(updated, func(i, j int) bool {
+		a, b := updated[i], updated[j]
+		if a.Day != b.Day {
+			return a.Day < b.Day
+		}
+		if a.Category != b.Category {
+			return a.Category < b.Category // opening questions/prompts precede same-day replies
+		}
+		return a.ID < b.ID
+	})
+	L.comms[next.Loop], L.commCurrent[key] = updated, next
+	affected := []string{loop, next.Loop}
+	if exists {
+		affected = append(affected, current.Loop)
+	}
+	return uniqueSorted(affected)
 }
 
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
@@ -1141,9 +1179,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
 				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
 			}
-			if L.foldCommunication(loop, cf) {
-				if _, ok := L.loops[loop]; ok {
-					affLoops[loop] = true
+			for _, affected := range L.foldCommunication(loop, cf) {
+				if _, ok := L.loops[affected]; ok {
+					affLoops[affected] = true
 				}
 			}
 			break

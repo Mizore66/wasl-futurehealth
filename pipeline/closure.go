@@ -383,6 +383,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var crcDecision *CRCDecision
 	var crcPreHistology, crcQualityHold bool
 	var crcPathologies []row
+	var crcObligations []crcObligation
+	holdCRCSuspicion := func(r row) {
+		if prog == "crc" && r.d.Ev != nil && r.d.Ev.CRC != nil && r.d.Ev.CRC.Suspected {
+			crcObligations = append(crcObligations, crcObligation{source: r, procedure: r,
+				pathologies: paths[r.d.ReportID], proposal: mergeCRCProposal(r.d.Ev.CRC, nil), preHistology: true, qualityHold: true})
+		}
+	}
 	crcDisposition := ""
 	pending := []string{}
 	pendSet := map[string]bool{}
@@ -540,12 +547,14 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				ps == nil && now >= r.d.Day+PrepDecideDays+2: // no query thread ever seen: same day-15 decision
 				prepQ = "clinician_day15"
 				raiseFor(r, "evidence", PrepDay15Purpose)
+				holdCRCSuspicion(r) // urgent coordination is independent of the prep/quality decision
 				continue
 			default:
 				prepQ = "awaiting_unit"
 				if ps != nil && ps.escalated {
 					prepQ = "escalated"
 				}
+				holdCRCSuspicion(r)
 				continue
 			}
 		}
@@ -567,10 +576,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if prog == "crc" && r.d.Ev != nil {
 			procedureCRC = r.d.Ev.CRC
 		}
-		if prog == "crc" && label == "inadequate" && procedureCRC != nil && procedureCRC.Suspected {
-			rr := r
-			crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true, true
-			crcPathologies = nil
+		if prog == "crc" && label == "inadequate" {
+			holdCRCSuspicion(r)
 		}
 		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && len(paths[r.d.ReportID]) > 0 {
 			has, pathologyPending := false, false
@@ -606,10 +613,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				pathologyCRC = reconcileCRCPathology(pathologyCRC, &CRCProposal{Outcome: CRCOutcomeReview})
 			}
 			if !has {
-				if procedureCRC != nil && procedureCRC.Suspected {
-					rr := r
-					crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true, false
-					crcPathologies = nil
+				if prog == "crc" {
+					crcObligations = append(crcObligations, crcObligation{source: r, procedure: r,
+						pathologies: paths[r.d.ReportID], proposal: mergeCRCProposal(procedureCRC, nil), preHistology: true})
 				}
 				awaiting = true
 				if holdRow == nil {
@@ -626,13 +632,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		if prog == "crc" && label == "adequate" {
 			proposal := mergeCRCProposal(procedureCRC, pathologyCRC)
+			source := r
+			if pathologyRow != nil {
+				source = *pathologyRow
+			}
+			crcObligations = append(crcObligations, crcObligation{source: source, procedure: r,
+				proposal: proposal, pathologies: paths[r.d.ReportID]})
 			if crcProposalNeedsDisposition(proposal) {
-				rr, pr := r, r
-				if pathologyRow != nil {
-					rr = *pathologyRow
-				}
-				crcSource, crcProcedure, crcProposal, crcPreHistology, crcQualityHold = &rr, &pr, proposal, false, false
-				crcPathologies = paths[r.d.ReportID]
 				continue // outcome disposition is separate from procedure completeness
 			}
 		}
@@ -666,6 +672,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				holdRow = &rr
 			}
 		}
+	}
+	if obligation, contributors := reconcileCRCLoop(crcObligations); obligation != nil {
+		crcSource, crcProcedure, crcProposal = &obligation.source, &obligation.procedure, obligation.proposal
+		crcPreHistology, crcQualityHold, crcPathologies = obligation.preHistology, obligation.qualityHold, contributors
 	}
 	if prog == "crc" && crcSource != nil && crcProcedure != nil && crcProposal != nil {
 		// This branch runs only after the ordinary trusted-link, current-version,
