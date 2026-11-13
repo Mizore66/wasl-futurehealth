@@ -5,21 +5,20 @@ import { z } from "zod";
 import { apiMode, getCaseWithToken, postReviewClaimWithToken, postReviewWithToken } from "@/lib/api/source";
 import * as session from "@/lib/api/reviewer-session";
 import { type SignInResult } from "@/components/review/auth";
-import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
+import { evidenceLabelsFor, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
 import type { SaveFailure, Signature } from "@/components/review/decision";
 
 /**
  * The API accepts any programme label on any raised item, so each answer is checked against the item it signs:
- * a link item takes same/different, an evidence item only its programme's evidence labels.
+ * a link item takes same/different, an evidence item only the labels of its programme and report kind.
  */
 function refusal(detail: CaseDetail | null, signature: Signature): SaveFailure | undefined {
   if (!detail) return { status: 404, error: "case not found" };
   const item = detail.review_items.find((r) => r.item === signature.item);
   if (!item) return { status: 404, error: "review item not raised for this case" };
-  const programme = detail.case.programme;
   const allowed = [
     ...(item.kinds.includes("link") ? ["same", "different"] : []),
-    ...(item.kinds.includes("evidence") && isGuided(programme) ?GUIDED_EVIDENCE_LABELS[programme] : []),
+    ...(item.kinds.includes("evidence") ? evidenceLabelsFor(detail, item.report) : []),
   ];
   if (!allowed.includes(signature.decision)) return { status: 400, error: `${signature.decision} does not answer this ${item.kinds.join("/")} item` };
 }

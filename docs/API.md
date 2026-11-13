@@ -274,7 +274,7 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
 
 **Identity:** the role (`coordinator` | `clinician` | `reviewer` | `senior_reviewer` | `senior_clinician` | `auditor`) and the actor (who is signing) come from the bearer token's `WASL_API_TOKENS` entry. `X-Wasl-Role`/`X-Wasl-Actor` sent by a client are overwritten.
 
-**Body:** `{"item": "<review item id from review_items>", "decision": "same|different|adequate|inadequate|confirm_contact", "note": "…"}`
+**Body:** `{"item": "<review item id from review_items>", "decision": "same|different|adequate|inadequate|confirm_contact", "note": "…"}`. On a CRC pathology evidence item the evidence labels are `histology|no_histology` and `adequate|inadequate` is refused; on a CRC colonoscopy item the reverse.
 
 **RBAC:**
 - `same`/`different` need a role allowed to sign links (reviewer).

@@ -1,4 +1,4 @@
-import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { evidenceLabelsFor, GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -24,6 +24,8 @@ export type ReviewView = {
   closed: boolean;
   /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
+  /** The raised evidence item asks about a CRC pathology report: histology or no histology, not colonoscopy adequacy. */
+  pathology: boolean;
   programme: CaseDetail["case"]["programme"];
   evidenceQuestion: string;
   evidenceChoices: string[];
@@ -122,9 +124,15 @@ export function reviewView(c: CaseDetail): ReviewView {
   const programme = c.case.programme;
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);
-  const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
-  const evidenceQuestion = programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
-  const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
+  const evidenceChoices = !guided ? [] : evidenceItem ? evidenceLabelsFor(c, evidenceItem.report) : GUIDED_EVIDENCE_LABELS[programme];
+  const pathology = evidenceChoices.includes("histology");
+  const reportWord = pathology ? "pathology report" : copy.report;
+  const evidenceQuestion = pathology
+    ? "Does the pathology report show histology?"
+    : programme === "crc"
+      ? "Is the colonoscopy report adequate?"
+      : `Select the ${copy.report} evidence label`;
+  const checks = programme === "crc" && !pathology ? checksFrom(ev?.fields) : [];
   /*
    * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
    * with agreeing name, sex and date of birth, was on file for the pair. It does not say which side lacks it, so the screen
@@ -140,9 +148,9 @@ export function reviewView(c: CaseDetail): ReviewView {
           ? `neither reader found ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}`
           : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: rules reader ${READER_WORD[k.rules] ?? k.rules}, second reader ${READER_WORD[k.second] ?? k.second}`,
     }));
-  const evidenceHold = programme === "crc"
+  const evidenceHold = programme === "crc" && !pathology
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
-    : ev && !ev.agree && `${copy.report} readers disagree`;
+    : ev && !ev.agree && `${reportWord} readers disagree`;
   const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
 
   const identity: IdentityRow[] = [
@@ -185,15 +193,16 @@ export function reviewView(c: CaseDetail): ReviewView {
       `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}; ${noSecondId ? "no second identifier confirmed" : "held"}, needs a person`,
       guardEvent?.arrival_day ?? reportEvent?.day,
     );
-  add("report", unit, `${copy.report} ${shortId(ev?.report ?? "")}`, reportEvent?.day);
+  add("report", unit, `${reportWord} ${shortId(ev?.report ?? "")}`, reportEvent?.day);
   if (ev && !ev.agree && c.case.programme === "crc" && disputed.length)
     add("readers", "Two readers", `could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}; needs a person`, reportEvent?.day);
-  else if (ev && !ev.agree) add("readers", "Two readers", `${copy.report} readers disagree; needs a person`, reportEvent?.day);
+  else if (ev && !ev.agree) add("readers", "Two readers", `${reportWord} readers disagree; needs a person`, reportEvent?.day);
 
   return {
     caseId: c.case.id,
     closed: c.case.closed,
     guided,
+    pathology,
     programme,
     evidenceQuestion,
     evidenceChoices: [...evidenceChoices],
@@ -209,7 +218,7 @@ export function reviewView(c: CaseDetail): ReviewView {
     reportRegistration: downstream?.registration ?? "",
     reportName: b?.recorded_name ?? "",
     referralSource: `${providerName(c.case.provider)} · ${copy.referral}`,
-    reportSource: `${unit} · ${copy.report}`,
+    reportSource: `${unit} · ${reportWord}`,
     unit,
     held: held.length ? `Held: ${held.join(", and ")}.` : "",
     disputed,
