@@ -101,14 +101,14 @@ func (c *ClosureCore) evalBreast(ls *loopState, inSeq uint64, mid string) []OutM
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row
 	for _, d := range f.Down {
-		if d.Prog != "breast" || d.Day < f.SRDay-1 {
+		if d.Prog != "breast" {
 			continue
 		}
 		if d.RType == "BreastScreen" {
 			screens = append(screens, row{d: d, pc: 1, trusted: true})
 			continue
 		}
-		if d.RType != "DiagnosticReport" || d.Strength < LinkReview || (d.Ev != nil && d.Ev.Kind == "breast-screen") {
+		if d.Day < f.SRDay-1 || d.RType != "DiagnosticReport" || d.Strength < LinkReview || (d.Ev != nil && d.Ev.Kind == "breast-screen") {
 			continue
 		}
 		pc := c.pcal(d.Strength)
@@ -217,12 +217,15 @@ func (c *ClosureCore) evalBreast(ls *loopState, inSeq uint64, mid string) []OutM
 	authorized := map[string]bool{index: true}
 	for i := range screens {
 		d := screens[i].d
-		if d.Relation == addendumRelation || d.Relation == repeatRelation {
-			if !authorized[d.Parent] {
+		if d.Day < f.SRDay-1 {
+			continue
+		}
+		// The explicitly named index is authorised even when it is an addendum.
+		// Its ancestors are retained only to validate the complete graph.
+		if d.ReportID != index {
+			if (d.Relation != addendumRelation && d.Relation != repeatRelation) || !authorized[d.Parent] {
 				continue
 			}
-		} else if !authorized[d.ReportID] {
-			continue
 		}
 		if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("breast", gradeLab)) {
 			continue

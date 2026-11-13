@@ -268,9 +268,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			continue
 		}
 		if d.RType == "IfhasScreen" {
-			if d.Day < f.SRDay-1 {
-				continue
-			}
+			// Keep older ancestors for full lineage validation, not grade selection.
 			screens = append(screens, row{d: d, pc: 1, trusted: true})
 			continue
 		}
@@ -374,12 +372,15 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 	authorized := map[string]bool{index: true}
 	for i := range screens {
 		d := screens[i].d
-		if d.Relation == addendumRelation {
-			if !authorized[d.Parent] {
+		if d.Day < f.SRDay-1 {
+			continue
+		}
+		// The explicitly named index is authorised even when it is an addendum.
+		// Its ancestors are retained only to validate the complete graph.
+		if d.ReportID != index {
+			if d.Relation != addendumRelation || !authorized[d.Parent] {
 				continue
 			}
-		} else if !authorized[d.ReportID] {
-			continue
 		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {

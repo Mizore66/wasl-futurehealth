@@ -7,9 +7,11 @@ const (
 	repeatRelation   = "urn:wsi:repeat-of"
 )
 
-// episodeRows selects only the index report's current same-ID revision and
-// documents with an explicit lineage back to that index. It never infers
-// episode membership from registration, date, arrival order, or content.
+// episodeRows selects the current index, explicit descendants, and their
+// validated ancestor context. Retaining ancestors makes selection safe to repeat
+// across linker/closure boundaries; only the named index and authorised descendants
+// may select a grade. Membership is never inferred from registration, date,
+// arrival order, or content.
 func episodeRows(in []row, index, prog string) ([]row, string) {
 	if index == "" {
 		return nil, "missing_or_ambiguous_index_reference"
@@ -74,7 +76,7 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 	// Validate complete applicable paths before any grade/supersession selection.
 	// Unlike membership discovery, this must traverse THROUGH index to a genuine
 	// root: index -> child -> index, an ancestor cycle, and self-edges all hold.
-	// Ancestors are validated, not added as independently selectable episode rows.
+	// Ancestors remain validation context, not independently selectable grades.
 	validated := map[string]bool{}
 	for _, id := range append([]string{index}, ids...) {
 		if !included[id] {
@@ -115,18 +117,18 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 			return nil, "contradictory_index_evidence_chronology"
 		}
 	}
-	out := make([]row, 0, len(included))
+	out := make([]row, 0, len(validated))
 	for _, r := range in {
-		if included[r.d.ReportID] && string(canon(r.d)) == string(canon(current[r.d.ReportID])) {
+		if validated[r.d.ReportID] && string(canon(r.d)) == string(canon(current[r.d.ReportID])) {
 			out = append(out, r)
 		}
 	}
 	// Clinical time orders separate observations, but a same-time child must
 	// follow its ancestors. Resource IDs and versions across distinct resources
-	// establish no clinical precedence. Every included path already reaches index.
-	depth := map[string]int{index: 0}
-	for id := range included {
-		for cur := id; cur != index; cur = current[cur].Parent {
+	// establish no clinical precedence. All validated paths reach a genuine root.
+	depth := map[string]int{}
+	for id := range validated {
+		for cur := id; current[cur].Parent != ""; cur = current[cur].Parent {
 			depth[id]++
 		}
 	}
@@ -145,7 +147,7 @@ func episodeRows(in []row, index, prog string) ([]row, string) {
 			continue
 		}
 		cur := next.ReportID
-		for cur != index && cur != prev.ReportID {
+		for cur != "" && cur != prev.ReportID {
 			cur = current[cur].Parent
 		}
 		if cur != prev.ReportID {
