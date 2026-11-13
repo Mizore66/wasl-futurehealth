@@ -1542,6 +1542,9 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		s.actionErr(w, 400, "expected_head is required (the case's api_overlay.head)", nil)
 		return
 	}
+	if _, given := fields["owner"]; kind == "assign_owner" && !given {
+		fields["owner"] = actor
+	}
 	data, err := validateActionData(kind, fields)
 	if err != nil {
 		s.actionErr(w, 400, err.Error(), nil)
