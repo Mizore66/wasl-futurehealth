@@ -233,48 +233,66 @@ test.describe("Patient record", () => {
 });
 
 test.describe("Referrals", () => {
-  test("opens on Needs you with the one incomplete report, which shows Review, not Accept", async ({ page }) => {
+  test("opens on Needs you; the incomplete report shows Review and an unanswered referral shows Accept", async ({ page }) => {
     await page.goto("/app/referrals");
-    await expect(page.getByRole("tab", { name: "Needs you 1" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tab", { name: "All 17" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 4" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: "All 21" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
     await expect(page.getByTestId("finding")).toHaveText("Aisha Al Mansoori's report needs your review.");
     await expect(page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" })).toBeVisible();
-    // No referral in the sample is waiting on the unit's answer, so no row offers Accept.
-    await expect(page.getByRole("button", { name: /^Accept referral/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Accept referral for/ })).toHaveCount(3);
     await expect(page.locator("[data-honesty=designed]")).toHaveText("Referral inbox: designed, not built");
     await shot(page, "referrals");
     await noSeriousAxe(page);
   });
 
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("inline Accept, Undo, conditions and Return", async ({ page }) => {
+  test("inline Accept, Undo, conditions and Return", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-1002" }).click();
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
     await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
-    await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 3" })).toBeVisible();
     await pane.getByRole("button", { name: "Undo" }).click();
-    await expect(page.getByRole("tab", { name: "Needs you 5" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
 
-    await page.getByRole("button", { name: /^AHS-sr-1011/ }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
     await expect(pane.getByTestId("flags")).toHaveCount(0);
     await pane.getByRole("button", { name: "Accept with conditions" }).click();
     await pane.getByRole("button", { name: "Arabic interpreter on the day" }).click();
     await pane.getByRole("button", { name: "Female endoscopist" }).click();
     await pane.getByRole("button", { name: "Accept with 2 conditions" }).click();
     await expect(pane.getByRole("status")).toContainText("Accepted with conditions. Arabic interpreter on the day; Female endoscopist.");
+  });
 
-    await page.getByRole("button", { name: /^AHS-sr-1014/ }).click();
+  test("Return to GP clocks the GP from the return day and Undo clears it", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: /^AHS-sr-9003/ }).click();
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByText("Choose a reason to return it.")).toBeVisible();
+    await expect(pane.getByText("who must act by 1 Sep.")).toBeVisible();
     await pane.getByRole("button", { name: "Wrong unit" }).click();
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByRole("status")).toContainText("Returned to the Al Mushrif GP. Reason: wrong unit. Act by 1 Sep.");
-    await expect(page.getByRole("tab", { name: "Waiting on GP 1" })).toBeVisible();
+    const chain = pane.getByRole("list", { name: "Sealed chain" });
+    await expect(chain.getByRole("listitem").last()).toContainText("Act on the return");
+    await expect(chain.getByRole("listitem").last()).toContainText("by 1 Sep");
+    await expect(page.getByRole("tab", { name: "Waiting on GP 2" })).toBeVisible();
     await shot(page, "referrals-returned");
+    await pane.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByRole("tab", { name: "Waiting on GP 1" })).toBeVisible();
+    await expect(chain).not.toContainText("by 1 Sep");
+  });
+
+  test("an existing return without a hand-off says its deadline is unavailable", async ({ page }) => {
+    await page.goto("/app/referrals");
+    await page.getByRole("tab", { name: "Waiting on GP 1" }).click();
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await expect(pane.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-9004");
+    const last = pane.getByRole("list", { name: "Sealed chain" }).getByRole("listitem").last();
+    await expect(last).toContainText("Act on the return");
+    await expect(last).toContainText("deadline unavailable");
+    await expect(last).not.toContainText(/by d/);
   });
 
   test("the incomplete report shows grade chips", async ({ page }) => {
@@ -288,7 +306,7 @@ test.describe("Referrals", () => {
   test("a referral's avatar opens the patient record", async ({ page }) => {
     await page.goto("/app/referrals");
     // A referral with no record shows a plain avatar: AHS-sr-1010 is booked, and only the three demo patients have a record.
-    await page.getByRole("tab", { name: "All 17" }).click();
+    await page.getByRole("tab", { name: "All 21" }).click();
     await expect(page.getByRole("button", { name: /^AHS-sr-1010/ })).toBeVisible();
     await expect(page.getByRole("link", { name: "Open AHS-sr-1010's record" })).toHaveCount(0);
     await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
@@ -396,6 +414,8 @@ test.describe("Phone width, 390px", () => {
     await page.goto("/app/referrals");
     await noSideScroll(page);
     await targetsAre44(page);
+    await page.getByRole("button", { name: /All referrals/ }).click();
+    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
     const grade = page.getByRole("region", { name: "Open referral" }).getByRole("group", { name: "Boston grade" });
     const box = (await grade.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
