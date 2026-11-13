@@ -1,5 +1,6 @@
-import type { CaseSummary } from "@/lib/api/schema";
+import type { CaseSummary, CurrentDecision, HandoffStatus } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
+import { handoffUrgent } from "@/lib/domain/handoff";
 import { shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
@@ -21,6 +22,26 @@ const STATE_BY_DROPOFF: Partial<Record<CaseSummary["dropoff"], ReferralState>> =
   "": "done",
 };
 
+/** Where a returned referral stands with the referring GP, from the canonical hand-off packet or a session return. */
+export type Handoff = { status: HandoffStatus; actBy: number };
+
+export function handoffOf(current: CurrentDecision): Handoff | null {
+  return current.handoff ? { status: current.handoff.status, actBy: current.handoff.act_by } : null;
+}
+
+const HANDOFF_WORDS: Record<HandoffStatus, string> = {
+  awaiting_referrer: "Act on the return",
+  referrer_acted: "The GP has acted",
+  coordinator: "Escalated to the care coordinator",
+  medical_director: "Escalated to the medical director",
+};
+
+/** A past-due packet keeps its original deadline; only one still awaiting the referrer is phrased as upcoming. */
+export function handoffWords(h: Handoff | null): { what: string; when: string } {
+  if (!h) return { what: HANDOFF_WORDS.awaiting_referrer, when: "deadline unavailable" };
+  return { what: HANDOFF_WORDS[h.status], when: `${h.status === "awaiting_referrer" ? "by" : "was due"} ${formatDay(h.actBy)}` };
+}
+
 export type Referral = {
   id: string;
   short: string;
@@ -37,6 +58,10 @@ export type Referral = {
   flags: string[];
   details: [string, string][];
   hasRecord: boolean;
+  /** Whether a return clocks the referrer two business days (suspected cancer) or five. */
+  urgent: boolean;
+  /** Canonical hand-off of an existing returned referral; null when the case carries none. */
+  handoff: Handoff | null;
 };
 
 const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
@@ -46,7 +71,7 @@ const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
   unknown: "Not recorded",
 };
 
-export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean): Referral | null {
+export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, handoff: Handoff | null = null): Referral | null {
   const state = c.closed ? "done" : STATE_BY_DROPOFF[c.dropoff];
   if (!state) return null;
   const person = personForLoop(c.id);
@@ -69,6 +94,8 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean): R
     sent: formatDay(c.referral_day),
     flags,
     hasRecord,
+    urgent: handoffUrgent(c.programme, c.priority),
+    handoff,
     details: [
       ["Indication", "Positive FIT, colorectal screening"],
       ["Referred", formatDay(c.referral_day)],
