@@ -79,7 +79,7 @@ func TestLungAndLDCTSameDayCorrectionPrecedence(t *testing.T) {
 			root := normalizedLungRevision(t, tc.prov, "root", "", tc.kind, "final", tc.initial, 1, 10)
 			parent := normalizedLungRevision(t, tc.prov, "z-parent", "root", tc.kind, "appended", tc.initial, 2, 10)
 			child := normalizedLungRevision(t, tc.prov, "a-correction", "z-parent", tc.kind, "corrected", tc.corrected, 3, 10)
-			sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Provider: tc.prov, PatientKey: root.PatientKey, Name: root.Name, Prog: tc.prog, Day: 10}
+			sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Status: "active", Provider: tc.prov, PatientKey: root.PatientKey, Name: root.Name, Prog: tc.prog, Day: 10}
 			if tc.prog == "lung_ldct" {
 				sr.LDCT = &LDCTSR{Scan: "root"}
 			} else {
@@ -117,7 +117,7 @@ func TestLDCTIndexCorrectionAfterIntervalFollowup(t *testing.T) {
 				root := normalizedLungRevision(t, "lcs-centre", "root", "", "ldct-screen", "final", initial, 1, 10)
 				follow := normalizedLungRevision(t, "lcs-centre", "follow", "", "ldct-screen", "final", "LR2", 1, 100)
 				correction := normalizedLungRevision(t, "lcs-centre", "correction", "root", "ldct-screen", "corrected", corrected, 2, 110)
-				sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
+				sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Status: "active", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
 				for _, events := range [][]*Event{{root, follow, correction}, {correction, follow, root}} {
 					d, out := replayLungRevisions(t, sr, events...)
 					if d.State != "open" || d.ClosingReport != "" || d.LDCT.FollowReport != "" || d.LDCT.Outcome != "" {
