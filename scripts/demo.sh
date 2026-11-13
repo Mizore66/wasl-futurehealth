@@ -262,6 +262,9 @@ snapshot() {  # static API responses for frontend development (no backend needed
     python3 "$ROOT/scripts/redacted_snapshot.py" dashboard > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
   curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" |
     python3 "$ROOT/scripts/redacted_snapshot.py" fixtures > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
+  id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures']['evidence_closure']['id'])" "$S/fixtures.json")
+  curl -sfG --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" --data-urlencode "case_id=$id" "http://$A/api/people" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" person > "$S/person_journey.json" || { echo "snapshot: person journey failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
     if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" |
       python3 "$ROOT/scripts/redacted_snapshot.py" cases > "$S/cases_${prog}_page1.json" &&

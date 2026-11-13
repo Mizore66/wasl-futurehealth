@@ -164,6 +164,8 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
+	mux.HandleFunc("/api/people", s.peopleRoutes)
+	mux.HandleFunc("/api/people/", s.peopleRoutes)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
 	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

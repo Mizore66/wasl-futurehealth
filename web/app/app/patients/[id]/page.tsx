@@ -98,6 +98,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       </header>
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
+        <Link
+          href={`/app/people?case_id=${encodeURIComponent(c.id)}`}
+          className={cn(BUTTON, "border border-control bg-surface text-ink no-underline hover:bg-active hover:text-ink")}
+        >
+          View all programmes
+        </Link>
         {detail.review_items.length > 0 && (
           <Link
             href={caseHref("/app/review", c.id)}
