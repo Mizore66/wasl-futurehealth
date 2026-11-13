@@ -264,6 +264,46 @@ test.describe("Today, live mode against a mock API", () => {
     expect(ledger.get(second)?.map((e) => e.data.outcome)).toEqual(["reached", "declined"]);
   });
 
+  for (const [label, outcome, status, trail] of [
+    ["Voicemail", "voicemail", "Left a voicemail · retry", "Left a voicemail (phone)"],
+    ["Wrong number", "wrong_number", "Wrong number · check the record", "Wrong number (phone)"],
+  ]) {
+    test(`${label} is logged as ${outcome} on the phone and survives a reload (issue #134)`, async ({ page }) => {
+      append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T08:00:00.000Z");
+      append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T09:00:00.000Z");
+      await page.goto("/app/today");
+      const open = page.getByRole("region", { name: "Open patient" });
+      const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ });
+      await row.click();
+      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await expect(open.getByRole("group", { name: "How did it go?" }).getByRole("button")).toHaveText(["Reached", "No answer", "Voicemail", "Wrong number"]);
+
+      await open.getByRole("button", { name: label, exact: true }).click();
+      await expect(open.getByRole("status")).toContainText(`Logged: ${label}`);
+      await expect(row).toContainText(status);
+      await expect(open).toContainText(trail);
+      expect(ledger.get(first)?.at(-1)).toMatchObject({ kind: "contact_outcome", data: { outcome, channel: "phone" }, actor: "mock-coordinator" });
+
+      await page.reload();
+      await expect(row).toContainText(status);
+      await row.click();
+      await expect(open).toContainText(trail);
+      await expect(open.getByText(trail)).toHaveCount(1);
+      await expect(open.getByText("No answer (phone)")).toHaveCount(2);
+
+      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await open.getByRole("button", { name: "No answer", exact: true }).click();
+      await expect(row).toContainText("No answer ×1 · retry tomorrow");
+      expect(ledger.get(first)?.map((e) => e.data.outcome)).toEqual(["no_answer", "no_answer", outcome, "no_answer"]);
+
+      await page.reload();
+      await expect(row).toContainText("No answer ×1 · retry tomorrow");
+      await row.click();
+      await expect(open.getByText(trail)).toHaveCount(1);
+      await expect(open.getByText("No answer (phone)")).toHaveCount(3);
+    });
+  }
+
   test("a partial ledger replay shows only the valid prefix under a warning and disables writes", async ({ page }) => {
     append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
     append(first, "note", { text: "Left a message with her son" }, "seed-coordinator", "2026-11-09T08:01:00.000Z");

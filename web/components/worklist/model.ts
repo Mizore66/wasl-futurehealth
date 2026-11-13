@@ -142,7 +142,7 @@ export const DECLINED_STATUS = "Declined · GP to sign";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
-const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
+export const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
 
 /** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
 export const HANDOFF_OWNER = "Dr Al Kaabi";

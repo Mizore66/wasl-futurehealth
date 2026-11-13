@@ -16,7 +16,8 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, workItem } from "./model";
+import { outcomeWords } from "@/components/case/words";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
@@ -71,6 +72,8 @@ const TABS: [View, string][] = [
   ["waiting", "Waiting"],
   ["none", "No owner"],
 ];
+
+const OUTCOME_CHIP = { voicemail: "Voicemail", wrong_number: "Wrong number" } as const;
 
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -326,6 +329,18 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             });
           },
         ],
+        ...(["voicemail", "wrong_number"] as const).map((outcome): Chip => [
+          OUTCOME_CHIP[outcome],
+          () =>
+            log(
+              p,
+              outcomeWords(outcome, "phone"),
+              { noAnswer: 0, status: outcomeStatus(outcome), snoozed: false, awaitingNext: false },
+              `Logged: ${OUTCOME_CHIP[outcome]}`,
+              outcomeStatus(outcome),
+              { action: "contact_outcome", outcome, channel: "phone" },
+            ),
+        ]),
       ];
     } else if (stage === "reached") {
       chipsTitle = "What next?";
