@@ -350,11 +350,30 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if normErr := setClinicalDay(e, res, "period", "start"); normErr != nil {
 			return nil, nil, normErr
 		}
-	case "Consent": // v6: patient outreach consent (provision deny = opt out of automated messages)
+	case "Consent": // patient outreach consent (provision deny = opt out of automated messages)
+		e.ConsentStatus = e.Status
+		switch e.ConsentStatus {
+		case "active", "draft", "inactive", "entered-in-error", "unknown":
+		default:
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_status", "status", "missing or unsupported Consent status")
+		}
+		if meta, ok := res["meta"].(map[string]interface{}); ok {
+			if rawVersion, present := meta["versionId"]; present {
+				versionText, ok := rawVersion.(string)
+				version, err := strconv.Atoi(versionText)
+				if !ok || err != nil || version <= 0 {
+					return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_version", "meta.versionId", "versionId must be a positive integer")
+				}
+				e.Version = version
+			}
+		}
 		if normErr := setClinicalDay(e, res, "dateTime"); normErr != nil {
 			return nil, nil, normErr
 		}
 		e.Status = gs(res, "provision", "type")
+		if e.Status != "permit" && e.Status != "deny" {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_provision", "provision.type", "missing or unsupported Consent provision type")
+		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
 				if xm := x.(map[string]interface{}); gs(xm, "url") == "urn:wsi:actor-role" {

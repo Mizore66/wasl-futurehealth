@@ -77,12 +77,18 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
 			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
-	return map[string]interface{}{
+	body := map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": caseTimelineForSerialization(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
 		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
+	s.mu.Lock()
+	if c.patient.Seq > 0 {
+		body["api_patient"] = s.patientViewLocked(c, true)
+	}
+	s.mu.Unlock()
+	return body
 }
 
 // caseAuditBody is the raw internal source for the redacted auditor response and export. It is not served directly:
@@ -291,6 +297,13 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		out := map[string]interface{}{}
 		for k, val := range x {
 			lk := strings.ToLower(k)
+			// Recovery is append-only like every other ledger event, but its prev
+			// may point directly at a concealed independent first read. Audit and
+			// export omit that reference for recovery events rather than risking a
+			// blinding side channel. The canonical ledger is unchanged.
+			if x["type"] == recoveryEventType && lk == "prev" {
+				continue
+			}
 			sub := a.kids[lk]
 			if sub == nil {
 				sub = a.kids["*"]
@@ -521,12 +534,26 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "expected_suggestion_version", "slot_id", "expected_slot_version",
-	"reservation_id", "expected_reservation_version"))
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
+var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
+var exportPatientAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("schema", "head", "seq", "ledger_status", "last_action_at")
+	m["teach_back"] = exportObject(exportKeys("question_id", "status", "completed_at", "event"))
+	m["contact_permission"] = exportObject(exportKeys("status", "updated_at", "event"))
+	m["slot_selection"] = exportObject(exportKeys("status", "offers_version", "slot_id", "selected_at", "event"))
+	m["preparation"] = exportObject(func() map[string]*exportAllow {
+		p := exportKeys("completed", "total")
+		p["items"] = exportList(exportPatientPrepItemAllow)
+		return p
+	}())
+	return m
+}())
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
-		"head", "seq", "target", "target_action", "resolution", "action_head",
-		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head")
+		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
+		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
+		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
 	m["data"] = exportCoordinatorDataAllow
 	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m
@@ -590,10 +617,20 @@ var exportBookingAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
+var exportRecoverySlotAllow = exportObject(exportKeys("slot_id", "head", "status", "programme", "procedure", "provider", "unit", "region", "day", "source_case", "filled_case", "stale_reason_codes"))
+var exportRecoveryCaseAllow = exportObject(func() map[string]*exportAllow {
+	m := map[string]*exportAllow{}
+	m["source_releases"] = exportList(exportRecoverySlotAllow)
+	m["backfill"] = exportObject(exportKeys("slot_id", "status", "day", "event", "outreach_status", "dispatched"))
+	return m
+}())
+
 var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
 		"review", "closed", "closed_day", "fixture", "decisions")
 	m["api_overlay"] = exportOverlayAllow
+	m["api_patient"] = exportPatientAllow
+	m["recovery"] = exportRecoveryCaseAllow
 	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
 	return m
 }())
@@ -640,6 +677,7 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["signoffs"] = exportList(exportSignoffAllow)
 	m["api_reviews"] = exportList(exportReviewEventAllow)
 	m["api_overlay"] = exportOverlayAllow
+	m["api_patient"] = exportPatientAllow
 	m["current"] = exportDecisionAllow
 	m["booking"] = exportBookingAllow
 	m["agent_investigations"] = exportList(exportAgentInvestigationAllow)

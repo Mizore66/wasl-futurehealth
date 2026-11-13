@@ -123,7 +123,7 @@ func TestIfhasSameTimeFollowupLineageCanonical(t *testing.T) {
 						preps[i].Ev.Eid = trackingEvent("active", 1).Eid
 					}
 					req := base[1].Ev
-					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "temporal-consent", Provider: req.Provider, RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: req.PatientKey, Day: 2}})
+					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "temporal-consent", Provider: req.Provider, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: req.PatientKey, Day: 2}})
 					L, final, _, outs := runTracking(episodeSequence(preps))
 					d := final["ahs-mushrif/ServiceRequest/temporal-followup"]
 					if d == nil {
@@ -247,7 +247,7 @@ func TestTrackingCategoryRevisionsRetireRoot(t *testing.T) {
 				if intake.Version != 2 {
 					t.Errorf("intake category dropped FHIR version: %d", intake.Version)
 				}
-				consent := &Event{ID: "consent", Provider: active.Provider, RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: active.PatientKey, Day: 2}
+				consent := &Event{ID: "consent", Provider: active.Provider, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: active.PatientKey, Day: 2}
 				ar := clinicalFixture("Appointment")
 				ar["start"] = dayToTS(10)
 				clinicalAddPatient(ar, "skmc-endo", "tracking-hospital")

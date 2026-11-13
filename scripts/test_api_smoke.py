@@ -374,6 +374,10 @@ class Fake:
             if method != "GET":
                 return 405, {"error": "method not allowed"}
             return 200, self.operations
+        if path == "/api/recovery/slots":
+            return 200, {"schema": "wasl-recovery/1", "status": "not_generated", "data_mode": "simulated",
+                         "decision_support_only": True, "canonical_unchanged": True, "as_of_day": 0,
+                         "ranking_policy": [], "slots": [], "label": "simulated released-capacity projection"}
         if path == "/api/dashboard":
             return 200, self.dash
         if path == "/api/fixtures":

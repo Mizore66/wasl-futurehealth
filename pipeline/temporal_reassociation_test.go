@@ -23,7 +23,7 @@ func temporalIFHASPreps(t *testing.T, notes ...*Prep) []*Prep {
 		p.Ev.Eid = trackingEvent("active", 1).Eid
 	}
 	req := preps[1].Ev
-	return append(preps, &Prep{Kind: "event", Ev: &Event{ID: "frontier-consent", Provider: req.Provider, RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: req.PatientKey, Day: 2}})
+	return append(preps, &Prep{Kind: "event", Ev: &Event{ID: "frontier-consent", Provider: req.Provider, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: req.PatientKey, Day: 2}})
 }
 
 func TestIfhasIncomparableFollowupFrontier(t *testing.T) {
@@ -170,7 +170,7 @@ func TestIntakeReassociationInvalidatesBothPatients(t *testing.T) {
 				otherRoot := *root
 				otherRoot.ID, otherRoot.PatientKey = "other-tracking", "ahs-mushrif|other-patient"
 				otherRoot.Name, otherRoot.Dob, otherRoot.Eid = "Synthetic Other Patient", "1990-02-03", guardEID
-				consent := &Event{ID: "original-consent", Provider: root.Provider, RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: root.PatientKey, Day: 2}
+				consent := &Event{ID: "original-consent", Provider: root.Provider, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: root.PatientKey, Day: 2}
 				otherConsent := *consent
 				otherConsent.ID, otherConsent.PatientKey = "other-consent", otherRoot.PatientKey
 				intake := *root

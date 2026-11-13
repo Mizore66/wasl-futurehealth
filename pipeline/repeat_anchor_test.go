@@ -36,7 +36,7 @@ func TestIndependentRepeatIndexAnchor(t *testing.T) {
 						p = append(p, base[i])
 					}
 					req := base[2].Ev
-					p = append(p, &Prep{Kind: "event", Ev: &Event{ID: "repeat-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", Owner: RoleCoordinator, Day: 2}})
+					p = append(p, &Prep{Kind: "event", Ev: &Event{ID: "repeat-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, Day: 2}})
 					for _, pc := range Providers {
 						p = append(p, &Prep{Kind: "eof", Tick: 120, Ev: &Event{Provider: pc.ID}})
 					}

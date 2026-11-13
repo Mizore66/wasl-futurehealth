@@ -142,7 +142,7 @@ func TestScreeningEpisodeGraphUnrelatedCyclesAreIsolated(t *testing.T) {
 						preps = append(preps, island...)
 					}
 					req := base[1].Ev
-					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "graph-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", Owner: RoleCoordinator, Day: 2}})
+					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "graph-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, Day: 2}})
 					L, final, _, outs := runTracking(episodeSequence(preps))
 					abnormal, normal := final["ahs-mushrif/ServiceRequest/abnormal"], final["ahs-mushrif/ServiceRequest/normal"]
 					if abnormal == nil || normal == nil || abnormal.State != "open" || abnormal.ClosingReport != "" || normal.State != prog.routine || normal.ClosingReport != "normal" {

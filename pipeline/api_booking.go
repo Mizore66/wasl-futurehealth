@@ -422,6 +422,10 @@ func (s *apiServer) reservationKnownLocked(c *apiCase, id string) bool {
 	return false
 }
 
+func bookingReservationActive(c *apiCase) bool {
+	return c != nil && c.ov.booking.status == "reserved" && c.ov.booking.reservationID != ""
+}
+
 func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[string]interface{}) (*bookingTransition, *bookingFailure) {
 	state := &c.ov.booking
 	status := state.status
@@ -435,11 +439,15 @@ func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[strin
 		if suggestion == "" || data["expected_suggestion_version"] != suggestion {
 			return nil, bookingFail(409, "the simulated booking suggestion changed", "suggestion", map[string]interface{}{"current_suggestion_version": suggestion})
 		}
-		if c.Consent != "granted" {
-			return nil, bookingFail(409, "simulated reservations require canonical contact permission granted", "consent", map[string]interface{}{"consent": c.Consent})
+		guard := s.contactGuardLocked(c)
+		if !guard.Allowed {
+			return nil, bookingFail(409, "simulated reservations require canonical contact permission granted and no demo denial or opt-out", "consent", map[string]interface{}{"consent": guard.Canonical, "contact_blocked": guard.Blocked})
 		}
 		if c.Closed || !bookingOpen[c.State] {
 			return nil, s.bookingStateConflict(c, "case is not open and booking-eligible")
+		}
+		if s.recovery.ByCase[c.ID] != nil {
+			return nil, bookingFail(409, "case already has a confirmed recovery backfill", "recovery_backfill", nil)
 		}
 	}
 	switch kind {

@@ -102,7 +102,7 @@ func TestOnlyActiveTrackingRequestProjectsRichEvidence(t *testing.T) {
 				Ev: &TwoVerdict{Agree: true, Label: "adequate"}}
 			appt := &Event{ID: "appointment-1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", Prog: "crc",
 				PatientKey: hospital.PatientKey, Name: sr.Name, Dob: sr.Dob, Sex: sr.Sex, Eid: sr.Eid, Day: 8}
-			consent := &Event{ID: "consent-1", Provider: "ahs-mushrif", RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: sr.PatientKey, Day: 2}
+			consent := &Event{ID: "consent-1", Provider: "ahs-mushrif", RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: sr.PatientKey, Day: 2}
 			task := &Event{ID: "task-1", Provider: "ahs-mushrif", RType: "Task", Status: "accepted", Owner: "coordinator-1", Focus: "ServiceRequest/tracking-1", Day: 2}
 			comm := &Event{ID: "comm-1", Provider: "ahs-mushrif", RType: "Communication", Status: "completed", Focus: "ServiceRequest/tracking-1", Category: "result-notification", Day: 3}
 			reviewEvidence := &Event{ID: "report-review", ReportID: "report-review", Provider: "skmc-endo", RType: "DiagnosticReport", Status: "final", Version: 1,
@@ -142,7 +142,7 @@ func TestTrackingRequestRetirementReactivationConflictAndReplay(t *testing.T) {
 			closing := &Event{ID: "retirement-report", ReportID: "retirement-report", Provider: "skmc-endo", RType: "DiagnosticReport", Status: "final", Version: 1,
 				PatientKey: "skmc-endo|retirement-hospital", Name: sr.Name, Dob: sr.Dob, Sex: sr.Sex, Eid: sr.Eid, Day: 10, Category: "colonoscopy",
 				Ev: &TwoVerdict{Agree: true, Label: "adequate"}}
-			consent := &Event{ID: "retirement-consent", Provider: "ahs-mushrif", RType: "Consent", Status: "permit", Owner: RoleCoordinator, PatientKey: sr.PatientKey, Day: 2}
+			consent := &Event{ID: "retirement-consent", Provider: "ahs-mushrif", RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, PatientKey: sr.PatientKey, Day: 2}
 			preps := trackingPreps(sr, consent, closing, trackingEvent(status, 2), trackingEvent("active", 1))
 			L, final, current, outs := runTracking(preps)
 			closedBeforeRetirement := false

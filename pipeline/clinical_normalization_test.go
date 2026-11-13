@@ -690,3 +690,102 @@ func TestPartialTimestampExpectedEpochArithmetic(t *testing.T) {
 		t.Fatalf("test arithmetic=%v, want 120", got)
 	}
 }
+
+func consentClinicalFixture(status, provision string) map[string]interface{} {
+	res := clinicalFixture("Consent")
+	res["status"] = status
+	res["provision"] = map[string]interface{}{"type": provision}
+	res["contained"] = []interface{}{map[string]interface{}{
+		"resourceType": "Patient",
+		"identifier":   []interface{}{map[string]interface{}{"system": "urn:synthetic:mrn", "value": "M1"}},
+		"name":         []interface{}{map[string]interface{}{"text": "Synthetic Consent Person"}},
+	}}
+	res["extension"] = []interface{}{map[string]interface{}{"url": "urn:wsi:actor-role", "valueString": RoleCoordinator}}
+	return res
+}
+
+func TestConsentNormalizationPreservesLifecycleRevisionAndPrepRoundTrip(t *testing.T) {
+	res := consentClinicalFixture("active", "deny")
+	res["meta"].(map[string]interface{})["versionId"] = "7"
+	raw := clinicalRaw(t, res)
+	ev, so, normErr := normaliseChecked("ahs-mushrif", 9, raw)
+	if normErr != nil || so != nil || ev == nil {
+		t.Fatalf("active Consent rejected: event=%+v signoff=%+v error=%+v", ev, so, normErr)
+	}
+	wantDay, err := tsToDay(gs(res, "dateTime"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ev.ConsentStatus != "active" || ev.Status != "deny" || ev.Version != 7 || ev.Day != wantDay || ev.PatientKey != "ahs-mushrif|M1" {
+		t.Fatalf("lifecycle/revision not preserved: %+v, want day %v", ev, wantDay)
+	}
+	live := prepMsg(42, "fhir.ahs-mushrif.res", nats.Header{"Wsi-Arr": []string{"9"}}, raw, nil, &sync.Map{})
+	materialized := prepAll([]LogMsg{{Seq: 42, Subject: "fhir.ahs-mushrif.res", Hdr: map[string]string{"Wsi-Arr": "9"}, Data: raw}}, nil)
+	if len(materialized) != 1 || string(canon(live)) != string(canon(materialized[0])) {
+		t.Fatalf("live/materialized prep differ: live=%s materialized=%s", canon(live), canon(materialized))
+	}
+	var decoded Prep
+	if err := json.Unmarshal(canon(live), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Ev == nil || decoded.Ev.ConsentStatus != "active" || decoded.Ev.Status != "deny" || decoded.Ev.Version != 7 || decoded.Ev.Day != wantDay {
+		t.Fatalf("Prep JSON round trip lost Consent fields: %+v", decoded.Ev)
+	}
+}
+
+func TestConsentNormalizationLifecycleAndProvisionValidation(t *testing.T) {
+	for _, status := range []string{"active", "draft", "inactive", "entered-in-error", "unknown"} {
+		t.Run("accepted_"+status, func(t *testing.T) {
+			ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, consentClinicalFixture(status, "permit")))
+			if normErr != nil || ev == nil || ev.ConsentStatus != status || ev.Status != "permit" {
+				t.Fatalf("status %q: event=%+v error=%+v", status, ev, normErr)
+			}
+		})
+	}
+	for _, status := range []string{"", "pending", "ACTIVE"} {
+		t.Run("rejected_status_"+status, func(t *testing.T) {
+			res := consentClinicalFixture(status, "permit")
+			if status == "" {
+				delete(res, "status")
+			}
+			ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, res))
+			if ev != nil || normErr == nil || normErr.Code != "invalid_consent_status" || normErr.Field != "status" {
+				t.Fatalf("unsafe status accepted or wrong rejection: event=%+v error=%+v", ev, normErr)
+			}
+			if code := clinicalPrepRejectCode(t, clinicalRaw(t, res)); code != "invalid_consent_status" {
+				t.Fatalf("prep rejection=%q, want invalid_consent_status", code)
+			}
+		})
+	}
+	for _, provision := range []string{"", "ask", "PERMIT"} {
+		t.Run("rejected_provision_"+provision, func(t *testing.T) {
+			res := consentClinicalFixture("active", provision)
+			ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, res))
+			if ev != nil || normErr == nil || normErr.Code != "invalid_consent_provision" || normErr.Field != "provision.type" {
+				t.Fatalf("unsafe provision accepted or wrong rejection: event=%+v error=%+v", ev, normErr)
+			}
+		})
+	}
+}
+
+func TestConsentNormalizationVersionValidation(t *testing.T) {
+	for i, bad := range []interface{}{"", "0", "-2", "1.5", "not-a-version", 1, nil} {
+		t.Run("reject_"+itoa(i), func(t *testing.T) {
+			res := consentClinicalFixture("active", "permit")
+			res["meta"].(map[string]interface{})["versionId"] = bad
+			ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, res))
+			if ev != nil || normErr == nil || normErr.Code != "invalid_consent_version" || normErr.Field != "meta.versionId" {
+				t.Fatalf("version %#v: event=%+v error=%+v", bad, ev, normErr)
+			}
+			if code := clinicalPrepRejectCode(t, clinicalRaw(t, res)); code != "invalid_consent_version" {
+				t.Fatalf("prep rejection=%q, want invalid_consent_version", code)
+			}
+		})
+	}
+	res := consentClinicalFixture("active", "permit")
+	delete(res["meta"].(map[string]interface{}), "versionId")
+	ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, res))
+	if normErr != nil || ev == nil || ev.Version != 0 {
+		t.Fatalf("legacy unversioned Consent must normalize with Version=0: event=%+v error=%+v", ev, normErr)
+	}
+}

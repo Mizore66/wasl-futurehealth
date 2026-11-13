@@ -1,0 +1,130 @@
+{
+  "schema": "wasl-recovery/1",
+  "status": "ready",
+  "data_mode": "simulated",
+  "decision_support_only": true,
+  "canonical_unchanged": true,
+  "as_of_day": 20,
+  "label": "simulated released-capacity projection",
+  "slot": {
+    "slot_id": "rel_aaaaaaaaaaaaaaaaaaaaaaaa",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "base_head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "status": "open",
+    "programme": "crc",
+    "procedure": "colonoscopy",
+    "provider": "ahs-mushrif",
+    "unit": "AD-1",
+    "region": "AD",
+    "day": 40,
+    "session_id": "synthetic-crc-40-1",
+    "source_case": "ahs-mushrif/ServiceRequest/AHS-sr-900",
+    "filled_case": "",
+    "stale_reason_codes": [],
+    "capabilities": {
+      "female": false,
+      "arabic": true,
+      "after_hours": false,
+      "ramadan": false
+    },
+    "release": {
+      "source_appointment": "ahs-mushrif/Appointment/ap-900",
+      "source_decision_sig": "sig-source",
+      "projection_basis": "no_show_plus_future_synthetic_capacity_window",
+      "label": "simulated released-capacity projection"
+    },
+    "candidates": [
+      {
+        "case_id": "ahs-mushrif/ServiceRequest/AHS-sr-910",
+        "case_head": "sig-candidate",
+        "eligible": true,
+        "rank": 1,
+        "priority": "",
+        "requested_day": 12,
+        "deadline_day": 47,
+        "constraints": {
+          "female_endoscopist": "none",
+          "travel_ok": false
+        },
+        "checks": [
+          {
+            "code": "programme_match",
+            "kind": "hard",
+            "result": "pass",
+            "reason_code": "same_programme"
+          },
+          {
+            "code": "arabic_preference",
+            "kind": "soft",
+            "result": "pass",
+            "reason_code": "arabic_available"
+          }
+        ],
+        "ordering": {
+          "priority_rank": 1,
+          "deadline_day": 47,
+          "requested_day": 12,
+          "tie_break": "case_id_ascending"
+        },
+        "outreach": {
+          "allowed": false,
+          "consent": "unknown",
+          "second_identifier": "unconfirmed",
+          "reason_codes": [
+            "consent_not_granted",
+            "second_identifier_unconfirmed"
+          ]
+        },
+        "eligibility_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      {
+        "case_id": "ahs-mushrif/ServiceRequest/AHS-sr-900",
+        "case_head": "sig-source",
+        "eligible": false,
+        "rank": null,
+        "priority": "",
+        "requested_day": 10,
+        "deadline_day": 45,
+        "constraints": {},
+        "checks": [
+          {
+            "code": "not_source_case",
+            "kind": "hard",
+            "result": "fail",
+            "reason_code": "source_case_for_own_release"
+          }
+        ],
+        "ordering": {
+          "priority_rank": 1,
+          "deadline_day": 45,
+          "requested_day": 10,
+          "tie_break": "case_id_ascending"
+        },
+        "outreach": {
+          "allowed": false,
+          "consent": "unknown",
+          "second_identifier": "unconfirmed",
+          "reason_codes": [
+            "consent_not_granted"
+          ]
+        },
+        "eligibility_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    ],
+    "history": [],
+    "backfill": null,
+    "outreach": {
+      "status": "none",
+      "dispatched": false
+    }
+  },
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "run": "redacted-internal-audit",
+    "policy": "redacted-internal-audit",
+    "reader_model": "not-disclosed",
+    "loaded_at": "",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."
+  }
+}

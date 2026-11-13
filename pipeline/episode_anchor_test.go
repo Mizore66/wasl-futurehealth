@@ -58,7 +58,7 @@ func TestScreeningAddendumAnchorPreservesDecision(t *testing.T) {
 						preps = append(preps, base[i])
 					}
 					req := base[2].Ev
-					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "anchor-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", Owner: RoleCoordinator, Day: 2}})
+					preps = append(preps, &Prep{Kind: "event", Ev: &Event{ID: "anchor-consent", Provider: req.Provider, PatientKey: req.PatientKey, RType: "Consent", Status: "permit", ConsentStatus: "active", Owner: RoleCoordinator, Day: 2}})
 					// All provider watermarks advance the canonical clock to day 120.
 					for _, pc := range Providers {
 						preps = append(preps, &Prep{Kind: "eof", Tick: 120, Ev: &Event{Provider: pc.ID}})
