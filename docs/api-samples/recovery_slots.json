@@ -1,0 +1,40 @@
+{
+  "schema": "wasl-recovery/1",
+  "status": "ready",
+  "data_mode": "simulated",
+  "decision_support_only": true,
+  "canonical_unchanged": true,
+  "as_of_day": 20,
+  "ranking_policy": [
+    "urgent_priority_first",
+    "absolute_deadline_ascending",
+    "requested_day_ascending",
+    "case_id_ascending"
+  ],
+  "label": "simulated released-capacity projection",
+  "slots": [
+    {
+      "slot_id": "rel_aaaaaaaaaaaaaaaaaaaaaaaa",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "open",
+      "programme": "crc",
+      "procedure": "colonoscopy",
+      "provider": "ahs-mushrif",
+      "unit": "AD-1",
+      "region": "AD",
+      "day": 40,
+      "source_case": "ahs-mushrif/ServiceRequest/AHS-sr-900",
+      "filled_case": "",
+      "stale_reason_codes": []
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "run": "redacted-internal-audit",
+    "policy": "redacted-internal-audit",
+    "reader_model": "not-disclosed",
+    "loaded_at": "",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."
+  }
+}

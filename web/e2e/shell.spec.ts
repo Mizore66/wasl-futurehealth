@@ -309,7 +309,7 @@ const navNames = async (page: Page) => {
   return [...snap.matchAll(/^\s*- navigation(?: "([^"]*)")?/gm)].map((m) => m[1] ?? "");
 };
 const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
-const FOCUS_TEXT = ["Skip to main content", "WaslADPHC · screening follow-up", "Programme", "Today", "Review", "Patients", "Referrals", "Pipeline", "Results", "Agent reviewExperimental"];
+const FOCUS_TEXT = ["Skip to main content", "WaslADPHC · screening follow-up", "Programme", "Today", "Recovery", "Review", "Patients", "Referrals", "Pipeline", "Results", "Agent reviewExperimental"];
 
 const tabStop = (page: Page) =>
   page.evaluate(() => {

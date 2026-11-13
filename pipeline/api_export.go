@@ -291,6 +291,13 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		out := map[string]interface{}{}
 		for k, val := range x {
 			lk := strings.ToLower(k)
+			// Recovery is append-only like every other ledger event, but its prev
+			// may point directly at a concealed independent first read. Audit and
+			// export omit that reference for recovery events rather than risking a
+			// blinding side channel. The canonical ledger is unchanged.
+			if x["type"] == recoveryEventType && lk == "prev" {
+				continue
+			}
 			sub := a.kids[lk]
 			if sub == nil {
 				sub = a.kids["*"]
@@ -526,7 +533,8 @@ var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "ch
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head",
-		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head")
+		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
+		"slot", "expected_slot_head", "expected_case_head", "request_id", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
 	m["data"] = exportCoordinatorDataAllow
 	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m
@@ -590,10 +598,19 @@ var exportBookingAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
+var exportRecoverySlotAllow = exportObject(exportKeys("slot_id", "head", "status", "programme", "procedure", "provider", "unit", "region", "day", "source_case", "filled_case", "stale_reason_codes"))
+var exportRecoveryCaseAllow = exportObject(func() map[string]*exportAllow {
+	m := map[string]*exportAllow{}
+	m["source_releases"] = exportList(exportRecoverySlotAllow)
+	m["backfill"] = exportObject(exportKeys("slot_id", "status", "day", "event", "outreach_status", "dispatched"))
+	return m
+}())
+
 var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
 		"review", "closed", "closed_day", "fixture", "decisions")
 	m["api_overlay"] = exportOverlayAllow
+	m["recovery"] = exportRecoveryCaseAllow
 	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
 	return m
 }())

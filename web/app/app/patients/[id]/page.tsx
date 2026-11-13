@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
@@ -45,6 +46,7 @@ const SECTIONS = [
   ["ledger", "Coordinator actions"],
   ["timeline", "Timeline"],
   ["booking", "Booking"],
+  ["recovery", "Recovery"],
 ] as const;
 
 export default async function Page({ params }: PageProps<"/app/patients/[id]">) {
@@ -243,6 +245,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </div>
         <div className="flex min-w-0 flex-col gap-gap">
           <BookingCard detail={detail} />
+          <RecoveryCard detail={detail} />
           <TimelineCard detail={detail} />
         </div>
       </div>

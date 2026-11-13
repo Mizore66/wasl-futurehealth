@@ -149,6 +149,7 @@ jobs:
           python3 booking/tests/test_lookahead.py
           python3 booking/tests/test_lookahead_eval.py
           python3 booking/tests/test_pool_golden.py
+          python3 booking/tests/test_recovery.py
           python3 booking/tests/test_suggest_default.py
       - name: Check deployment configuration statically
         run: python3 scripts/check_deploy.py

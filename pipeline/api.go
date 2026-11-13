@@ -78,6 +78,7 @@ type apiServer struct {
 	booking         map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
 	bookingCalendar string
 	bookingSlots    map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
+	recovery        recoveryProjection
 	fixtures        map[string]string
 	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
 	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
@@ -96,6 +97,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
+	mux.HandleFunc("/api/recovery/", s.recoveryRoutes)
 	mux.HandleFunc("/api/people", s.peopleRoutes)
 	mux.HandleFunc("/api/people/", s.peopleRoutes)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
@@ -131,6 +133,10 @@ func runServe(run, data, addr string) {
 		handler = basicAPIHandler(s)
 	} else {
 		handler, err = s.handler(os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
+		if err != nil {
+			panic(err)
+		}
+		handler, err = s.withRecoveryRoutes(handler, os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
 		if err != nil {
 			panic(err)
 		}
@@ -256,6 +262,7 @@ func loadAPI(run, data string) *apiServer {
 	s.loadAgent()
 	s.pickAgentFixture()
 	s.initBookingCatalogue()
+	s.loadRecovery()
 	if s.ledgerErr == "" {
 		s.loadReviews()
 	}
@@ -592,6 +599,13 @@ func (s *apiServer) getFixtures(w http.ResponseWriter, r *http.Request) {
 
 func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	m := s.summary0(c)
+	s.mu.Lock()
+	recovery := s.recoveryForCaseLocked(c, nil)
+	releases, _ := recovery["source_releases"].([]map[string]interface{})
+	if recovery["backfill"] != nil || len(releases) > 0 {
+		m["recovery"] = recovery
+	}
+	s.mu.Unlock()
 	if c.last != nil && c.last.Lung != nil { // lung_nodule: Fleischner recommendation, window, outcome
 		m["lung"] = c.last.Lung
 	}
@@ -1635,6 +1649,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 			return fmt.Errorf("review claim: %v", err)
 		}
 		s.reviews = append(s.reviews, ev)
+		return nil
+	}
+	if ev["type"] == recoveryEventType {
+		if err := s.replayRecovery(ev); err != nil {
+			return fmt.Errorf("waitlist recovery: %v", err)
+		}
 		return nil
 	}
 	if _, isCoord := ev["type"]; !isCoord {

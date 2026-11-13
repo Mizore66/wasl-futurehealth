@@ -316,7 +316,15 @@ exit 2
             },
             "backup": {"status": "unmeasured", "source": "recovery_bundle_manifest", "reason": "backup_manifest_not_configured"},
         }
+        recovery = {
+            "schema": "wasl-recovery/1", "status": "ready", "data_mode": "simulated",
+            "decision_support_only": True, "canonical_unchanged": True, "as_of_day": 20,
+            "ranking_policy": ["urgent_priority_first", "absolute_deadline_ascending",
+                               "requested_day_ascending", "case_id_ascending"],
+            "label": "simulated released-capacity projection", "slots": [],
+        }
         curl.write_text("#!/usr/bin/env bash\ncase \"$*\" in *operations*) echo " + shlex.quote(json.dumps(operations)) +
+                        " && exit 0;; *recovery/slots*) echo " + shlex.quote(json.dumps(recovery)) +
                         " && exit 0;; esac\n" + curl_body)
         curl.chmod(0o755)
         samples = Path(tmp) / "api-samples"
