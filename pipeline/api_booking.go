@@ -401,6 +401,25 @@ func (s *apiServer) slotConflict(slot *simulatedSlot) *bookingFailure {
 	})
 }
 
+// A slot has elapsed when its day is before the case's latest decision run day; the run day itself is still bookable.
+func slotElapsed(c *apiCase, slot *simulatedSlot) bool {
+	return c != nil && c.last != nil && float64(slot.day) < c.last.Now
+}
+
+// Live writes only. Replay must not apply this: historical reservations were valid on the run clock of their time.
+func (s *apiServer) elapsedSlotFailure(c *apiCase, transition *bookingTransition) *bookingFailure {
+	if transition == nil || transition.targetID == "" {
+		return nil
+	}
+	slot := s.bookingSlots[transition.targetID]
+	if !slotElapsed(c, slot) {
+		return nil
+	}
+	return bookingFail(409, "simulated slot day has elapsed on the run clock", "slot_elapsed", map[string]interface{}{
+		"slot_id": slot.id, "slot_day": slot.day, "run_day": c.last.Now,
+	})
+}
+
 func (s *apiServer) bookingStateConflict(c *apiCase, message string) *bookingFailure {
 	return bookingFail(409, message, "state", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
 }
@@ -598,6 +617,8 @@ func (s *apiServer) bookingForLocked(id string) map[string]interface{} {
 				candidate["availability"] = "available"
 				if slot.reservationID != "" {
 					candidate["availability"] = "reserved"
+				} else if slotElapsed(s.cases[id], slot) {
+					candidate["availability"] = "elapsed"
 				}
 			}
 			list[i] = candidate
