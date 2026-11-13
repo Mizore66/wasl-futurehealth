@@ -99,27 +99,57 @@ var (
 	crcSpecialistRE      = regexp.MustCompile(`(?i)\b(?:increased|high)[- ]risk\b[^.\n]{0,80}\b(?:specialist|speciali[sz]ed\s+centre|referral)\b|\b(?:specialist|speciali[sz]ed\s+centre)\b[^.\n]{0,80}\b(?:increased|high)[- ]risk\b`)
 	crcIntervalRE        = regexp.MustCompile(`(?i)\b(\d{1,3})\s*(years?|yrs?|y|months?|mos?|days?)\b`)
 	crcIntervalContextRE = regexp.MustCompile(`(?i)surveillance|repeat\s+colonoscopy|recall|next\s+colonoscopy`)
-	crcNegatedRE         = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out|cannot\s+exclude|can't\s+exclude)\b[^.;]*$`)
-	crcPostNegatedRE     = regexp.MustCompile(`(?i)\b(?:was|were|is|are)?\s*not\s+(?:seen|identified|present|detected|confirmed)\b`)
+	// Only transparent modifiers (and explicit "or" finding lists) may carry a
+	// negator to this finding. Unknown intervening wording is a hold, not evidence
+	// of absence. In particular, "no polyps and a mass was seen" is not a negative
+	// mass finding. Contrast/punctuation also delimit history and post-negation.
+	crcClauseBoundaryRE  = regexp.MustCompile(`(?i)[.;,!?\n—–]|\b(?:but|however|yet|whereas|although|nevertheless)\b`)
+	crcUnclearNegationRE = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out|cannot\s+exclude|can't\s+exclude)\b`)
+	crcNegatedRE         = regexp.MustCompile(`(?i)\b(?:no|not|without|negative\s+for|free\s+of|rules?\s+out|ruled\s+out|cannot\s+exclude|can't\s+exclude)\s+(?:(?:evidence|signs?)\s+of\s+)?(?:(?:a|an|any|the|suspicious|malignant[- ]looking|rectal|colonic|colorectal|sigmoid|invasive)\s+)*(?:(?:mass|stricture|polyps?|adenomas?|malignancy|adenocarcinoma|carcinoma|dysplasia)\s+or\s+(?:(?:a|an|any|the|suspicious|rectal|colonic|invasive)\s+)*)*$`)
+	crcPostNegatedRE     = regexp.MustCompile(`(?i)^\s*(?:(?:rectal|colonic|colorectal|sigmoid|mass|stricture|and|or)\s+)*(?:(?:was|were|is|are)\s+)?not\s+(?:seen|identified|present|detected|confirmed)\b`)
 	crcIntervalPriorRE   = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|in\s+(?:19|20)\d\d|\d+\s+(?:years?|months?)\s+ago|last\s+(?:colonoscopy|scope)`)
 )
 
 func crcCurrentQuotes(text string, re *regexp.Regexp) []string {
+	quotes, _ := crcFindingQuotes(text, re)
+	return quotes
+}
+
+func crcFindingQuotes(text string, re *regexp.Regexp) ([]string, bool) {
 	seen := map[string]bool{}
 	var quotes []string
+	unclear := false
+	boundaries := crcClauseBoundaryRE.FindAllStringIndex(text, -1)
 	for _, m := range re.FindAllStringIndex(text, -1) {
-		start := strings.LastIndexAny(text[:m[0]], ".\n") + 1
-		if crcNegatedRE.MatchString(text[start:m[0]]) || crcPostNegatedRE.MatchString(sentenceAt(text, m[0])) || rePriorCtx.MatchString(sentenceAt(text, m[0])) {
+		start, end := 0, len(text)
+		for _, b := range boundaries {
+			if b[1] <= m[0] {
+				start = b[1]
+			} else if b[0] >= m[1] {
+				end = b[0]
+				break
+			}
+		}
+		clause := text[start:end]
+		if crcNegatedRE.MatchString(text[start:m[0]]) || crcPostNegatedRE.MatchString(text[m[1]:end]) || rePriorCtx.MatchString(clause) {
 			continue
 		}
-		q := strings.TrimSpace(sentenceAt(text, m[0]))
+		if crcUnclearNegationRE.MatchString(text[start:m[0]]) {
+			unclear = true
+			// Ambiguous scope may retain suspicion, but cannot assert a diagnosis
+			// or a normal result. The proposal below carries an explicit review hold.
+			if re != crcSuspiciousRE {
+				continue
+			}
+		}
+		q := strings.TrimSpace(clause)
 		if q != "" && !seen[q] {
 			seen[q] = true
 			quotes = append(quotes, q)
 		}
 	}
 	sort.Strings(quotes)
-	return quotes
+	return quotes, unclear
 }
 
 func crcIntervals(text string) (days int, label string, conflict bool, quotes []string) {
@@ -161,12 +191,13 @@ func crcIntervals(text string) (days int, label string, conflict bool, quotes []
 
 func extractCRCProposal(text, kind string) *CRCProposal {
 	p := &CRCProposal{}
-	malignant := crcCurrentQuotes(text, crcMalignantRE)
-	suspect := crcCurrentQuotes(text, crcSuspiciousRE)
-	adenoma := crcCurrentQuotes(text, crcAdenomaRE)
+	malignant, malignantUnclear := crcFindingQuotes(text, crcMalignantRE)
+	suspect, suspectUnclear := crcFindingQuotes(text, crcSuspiciousRE)
+	adenoma, adenomaUnclear := crcFindingQuotes(text, crcAdenomaRE)
 	normal := crcCurrentQuotes(text, crcNormalRE)
-	gastro := crcCurrentQuotes(text, crcGastroRE)
-	specialist := crcCurrentQuotes(text, crcSpecialistRE)
+	gastro, gastroUnclear := crcFindingQuotes(text, crcGastroRE)
+	specialist, specialistUnclear := crcFindingQuotes(text, crcSpecialistRE)
+	p.EvidenceUnresolved = malignantUnclear || suspectUnclear || adenomaUnclear || gastroUnclear || specialistUnclear
 	p.Suspected = len(suspect) > 0 || len(malignant) > 0
 	p.Quotes = append(p.Quotes, malignant...)
 	p.Quotes = append(p.Quotes, suspect...)
@@ -185,10 +216,12 @@ func extractCRCProposal(text, kind string) *CRCProposal {
 		p.Outcome = CRCOutcomeGastro
 	case len(specialist) > 0:
 		p.Outcome = CRCOutcomeSpecialist
-	case len(normal) > 0:
-		p.Outcome = CRCOutcomeNormal
 	case p.Suspected:
 		p.Outcome = CRCOutcomeSuspected
+	case p.EvidenceUnresolved:
+		p.Outcome = CRCOutcomeReview
+	case len(normal) > 0:
+		p.Outcome = CRCOutcomeNormal
 	}
 	// Coexisting findings are independent needs, not competing scalar answers.
 	for _, finding := range []struct {

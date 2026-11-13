@@ -181,22 +181,28 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 				state = "inadequate"
 			}
 		}
+		needs := crcCareNeeds(f, o)
 		var work *CRCWorkItem
 		if ev.Suspected {
-			work = crcWorkItem(f.LoopID, o.source, o.procedure)
+			source := o.source
+			for _, n := range needs {
+				if n.outcome == CRCOutcomeSuspected {
+					source = n.source
+					break
+				}
+			}
+			work = crcWorkItem(f.LoopID, source, o.procedure)
 			if cd.ProposedOutcome == "" {
 				cd.ProposedOutcome = o.proposal.Outcome
 			}
 		}
-		outcomes := crcProposalOutcomes(o.proposal)
-		if len(outcomes) == 0 && crcProposalNeedsDisposition(o.proposal) && !o.preHistology && !o.qualityHold {
-			outcomes = []string{o.proposal.Outcome}
-		}
 
-		allConfirmed := len(outcomes) > 0
-		for _, outcome := range outcomes {
+		allConfirmed, malignant := len(needs) > 0, false
+		for _, n := range needs {
+			outcome := n.outcome
+			malignant = malignant || outcome == CRCOutcomeMalignant
 			need := o
-			need.source = crcSourceForOutcome(o, outcome)
+			need.source = n.source
 			proposal := *o.proposal
 			proposal.Outcome = outcome
 			proposal.Outcomes = []string{outcome}
@@ -208,6 +214,9 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 			if proposal.Conflicting || proposal.EvidenceUnresolved || outcome == CRCOutcomeReview {
 				needBlockers = append(needBlockers, "unresolved_evidence_or_plan")
 			}
+			if outcome == CRCOutcomeSuspected {
+				needBlockers = append(needBlockers, "unresolved_suspicion")
+			}
 			if outcome == CRCOutcomeSurveillance && proposal.IntervalDays <= 0 {
 				needBlockers = append(needBlockers, "surveillance_interval_missing")
 			}
@@ -216,6 +225,12 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 				answer = ""
 			}
 			id := crcNeedID(f.LoopID, o, outcome)
+			if outcome == CRCOutcomeSuspected {
+				// Two current suspicious specimens are distinct unresolved sources.
+				// Preserve the ordinary pathway IDs/children and bind only these holds
+				// to their actual source (not the aggregate presentation outcome).
+				id = "crc-need-" + sha([]byte(id + "|" + need.source.d.Provider + "|" + need.source.d.ReportID))[:16]
+			}
 			ch := crcEvidenceChain(f, need.source, o.procedure, o.pathologies, &proposal)
 			ch = appendBlock(ch, "crc_obligation", map[string]interface{}{"schema": CRCPlanSchema, "id": id, "outcome": outcome, "blockers": needBlockers})
 			head := ch[len(ch)-1].Hash
@@ -292,7 +307,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 			chain = appendBlock(chain, "crc_plan_obligation", map[string]interface{}{"plan": p, "evidence_chain": snapshotCRCChain(ch)})
 		}
 		if work != nil {
-			if allConfirmed && !containsCRCOutcome(outcomes, CRCOutcomeMalignant) {
+			if allConfirmed && !malignant {
 				work.Status = "closed"
 			}
 			cd.Coordination = append(cd.Coordination, *work)
@@ -380,6 +395,60 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 	// A completed screening projection does not certify ongoing downstream care.
 	chain = appendBlock(chain, "crc_plan", map[string]interface{}{"schema": CRCPlanSchema, "screening_complete": cd.ScreeningComplete, "care_state": cd.CareState, "obligations": cd.Obligations, "evidence": cd.Evidence})
 	return cd, kids, chain, newItems, uniqueSorted(pending), state
+}
+
+type crcCareNeed struct {
+	outcome string
+	source  row
+}
+
+// The merged proposal is a presentation/plan summary, not proof that one specimen
+// resolves another. Keep each current suspicious tissue source as its own hold,
+// including when that same report also proposes a nonmalignant care pathway.
+// Only the current report fold can supersede this source. A later, unrelated
+// specimen or a signature on another need cannot make its answer actionable.
+func crcCareNeeds(f *LoopFacts, o crcObligation) []crcCareNeed {
+	if o.proposal == nil {
+		return nil
+	}
+	var suspicious []row
+	if o.procedure.trusted && o.proposal.Suspected {
+		candidates := append([]row{}, o.pathologies...)
+		if crcEmbeddedHistology(o.procedure) {
+			candidates = append(candidates, o.procedure)
+		}
+		for _, r := range candidates {
+			if !r.trusted || r.d.Ev == nil || r.d.Ev.CRC == nil {
+				continue
+			}
+			label, resolved := evidenceOverride(f.EvOver, r.d, "")
+			if !resolved && r.d.Ev.Agree {
+				label = r.d.Ev.Label
+			}
+			if label != "histology" && !crcEmbeddedHistology(r) {
+				continue // retain the existing two-reader/authorised completeness gate
+			}
+			p := r.d.Ev.CRC
+			if p.Suspected && !containsCRCOutcome(crcProposalOutcomes(p), CRCOutcomeMalignant) {
+				suspicious = append(suspicious, r)
+			}
+		}
+	}
+	outcomes := crcProposalOutcomes(o.proposal)
+	if len(outcomes) == 0 && crcProposalNeedsDisposition(o.proposal) && !o.preHistology && !o.qualityHold {
+		outcomes = []string{o.proposal.Outcome}
+	}
+	var needs []crcCareNeed
+	for _, outcome := range outcomes {
+		if outcome == CRCOutcomeSuspected && len(suspicious) > 0 {
+			continue // represented below by the actual source(s), never duplicated
+		}
+		needs = append(needs, crcCareNeed{outcome, crcSourceForOutcome(o, outcome)})
+	}
+	for _, source := range suspicious {
+		needs = append(needs, crcCareNeed{CRCOutcomeSuspected, source})
+	}
+	return needs
 }
 
 func containsCRCOutcome(outcomes []string, outcome string) bool {
