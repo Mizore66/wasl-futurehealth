@@ -347,6 +347,82 @@ func TestPatientConcurrentActionsAndRequestRetries(t *testing.T) {
 	}
 }
 
+func TestPatientStaffReadsDuringWrites(t *testing.T) {
+	for _, endpoint := range []struct {
+		name string
+		read func(*apiServer, *apiCase) int
+	}{
+		{name: "list", read: func(s *apiServer, _ *apiCase) int {
+			recorder := httptest.NewRecorder()
+			s.getCases(recorder, httptest.NewRequest(http.MethodGet, "/api/cases?limit=500", nil))
+			return recorder.Code
+		}},
+		{name: "detail", read: func(s *apiServer, c *apiCase) int {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/cases/"+c.ID, nil)
+			request.Header.Set("X-Wasl-Role", "coordinator")
+			request.Header.Set("X-Wasl-Actor", "coordinator-one")
+			s.caseDetail(recorder, request, c)
+			return recorder.Code
+		}},
+	} {
+		t.Run(endpoint.name, func(t *testing.T) {
+			p := newPatientTestAPI(t)
+			c := p.s.cases[patientTestCaseA]
+			const writes = 512
+			start := make(chan struct{})
+			done := make(chan struct{})
+			errs := make(chan error, 1)
+			var reads atomic.Int32
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				defer close(done)
+				<-start
+				for i := 0; i < writes; i++ {
+					// This is the state mutation performed by patient POST, with the same mutex.
+					p.s.mu.Lock()
+					c.applyPatientEvent(map[string]interface{}{
+						"kind": "preparation_changed", "at": p.now.Format(time.RFC3339Nano), "hash": fmt.Sprintf("patient-event-%d", i+1), "seq": float64(i + 1),
+						"data": map[string]interface{}{"item_id": prepEscortHome, "completed": i%2 == 0},
+					})
+					p.s.mu.Unlock()
+					time.Sleep(10 * time.Microsecond)
+				}
+			}()
+			go func() {
+				defer wg.Done()
+				<-start
+				for {
+					select {
+					case <-done:
+						return
+					default:
+					}
+					if code := endpoint.read(p.s, c); code != http.StatusOK {
+						errs <- fmt.Errorf("staff %s read: status=%d", endpoint.name, code)
+						return
+					}
+					reads.Add(1)
+				}
+			}()
+			close(start)
+			wg.Wait()
+			close(errs)
+			for err := range errs {
+				t.Error(err)
+			}
+			if reads.Load() == 0 {
+				t.Fatal("staff reads did not overlap patient writes")
+			}
+			if got := c.patient.Seq; got != writes {
+				t.Fatalf("patient sequence after concurrent staff reads: got %d, want %d", got, writes)
+			}
+		})
+	}
+}
+
 func TestPatientOptOutBlocksOutreachAndSurvivesExpiry(t *testing.T) {
 	p := newPatientTestAPI(t)
 	head := patientHead(p.s.cases[patientTestCaseA])

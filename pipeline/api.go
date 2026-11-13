@@ -606,11 +606,11 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+	s.mu.Lock()
 	if c.patient.Seq > 0 {
-		s.mu.Lock()
 		m["api_patient"] = s.patientViewLocked(c, false)
-		s.mu.Unlock()
 	}
+	s.mu.Unlock()
 	return m
 }
 
