@@ -192,6 +192,27 @@ test("slot preference and preparation changes persist both true and false", asyn
   await expect(page.getByRole("checkbox").first()).toHaveAttribute("aria-checked", "false");
 });
 
+test("a conflict refresh replaces the confirmed slot changed in another tab", async ({ page }) => {
+  await open(page, "book");
+  await page.getByRole("button", { name: "Save this preferred time" }).click();
+  await expect(page.getByTestId("slot-date")).toHaveText("Friday 9 October");
+  await expect(page.getByText("Your preferred time is saved for coordinator review — simulated only; no appointment is reserved.")).toBeVisible();
+
+  const otherTab = await page.context().newPage();
+  await open(otherTab, "book");
+  await otherTab.getByRole("button", { name: "Change appointment" }).click();
+  await otherTab.getByRole("group", { name: "Other times" }).getByRole("button").nth(1).click();
+  await expect(otherTab.getByTestId("slot-date")).toHaveText("Monday 12 October");
+  await otherTab.getByRole("button", { name: "Save this preferred time" }).click();
+  await expect(otherTab.getByText("Your preferred time is saved for coordinator review — simulated only; no appointment is reserved.")).toBeVisible();
+
+  await page.getByRole("checkbox").first().click();
+  await expect(page.getByTestId("patient-conflict")).toContainText("Review the latest details");
+  await expect(page.getByText("Your preferred time is saved for coordinator review — simulated only; no appointment is reserved.")).toBeVisible();
+  await expect(page.getByTestId("slot-date")).toHaveText("Monday 12 October");
+  await expect(page.getByTestId("slot-time")).toHaveText("at 1:00 pm");
+});
+
 test("network retry preserves request_id and never shows an unsaved advance", async ({ page }) => {
   await open(page, "check");
   await control("/__mock/fail-next", "network");

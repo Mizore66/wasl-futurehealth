@@ -18,9 +18,9 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
   const b = t.book;
   const ur = query.lang === "ur";
   const { journey, busy, status, save, retry, canRetry } = usePatientJourney(initial);
-  const savedIndex = offers.slots.findIndex((slot) => slot.slot_id === initial.slot_selection.slot_id);
+  const initialSavedIndex = offers.slots.findIndex((slot) => slot.slot_id === initial.slot_selection.slot_id);
   const [mode, setMode] = useState<Mode>(initial.slot_selection.status === "selected" ? "confirmed" : "proposed");
-  const [current, setCurrent] = useState(savedIndex >= 0 ? savedIndex : 0);
+  const [current, setCurrent] = useState(initialSavedIndex >= 0 ? initialSavedIndex : 0);
 
   async function retrySave() {
     const currentJourney = await retry();
@@ -31,8 +31,9 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
   }
 
   const slots = offers.slots.map((slot) => slotLabel(slot, b));
-  const slot = slots[current];
   const confirmed = mode === "confirmed" && journey.slot_selection.status === "selected";
+  const savedIndex = offers.slots.findIndex((offer) => offer.slot_id === journey.slot_selection.slot_id);
+  const slot = slots[confirmed ? savedIndex : current];
   const contact = journey.contact_permission.status;
 
   async function confirmSlot() {
