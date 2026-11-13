@@ -219,6 +219,13 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if normErr := setClinicalDay(e, res, "start"); normErr != nil {
 			return nil, nil, normErr
 		}
+		if rawVersion := gs(res, "meta", "versionId"); rawVersion != "" {
+			version, err := strconv.Atoi(rawVersion)
+			if err != nil || version <= 0 {
+				return nil, nil, normalizationError(e.RType, e.ID, "invalid_appointment_version", "meta.versionId", "versionId must be a positive integer")
+			}
+			e.Version = version
+		}
 		if st, ok := res["serviceType"].([]interface{}); ok && len(st) > 0 {
 			e.Prog = progOfText(gs(st[0].(map[string]interface{}), "text"))
 		}
