@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,14 +35,28 @@ func validateAPIPreflight(run string) error {
 	}
 	loops := map[string]bool{}
 	outPath, fhirPath := filepath.Join(run, "out_log.ndjson"), filepath.Join(run, "fhir_log.ndjson")
-	if _, err := scanAPILog(outPath, func(m LogMsg) error { return validateOutRecord(m, loops) }); err != nil {
+	projection := newMaterializedDecisions()
+	if _, err := scanAPILog(outPath, func(m LogMsg) error {
+		if err := validateOutRecord(m, loops); err != nil {
+			return err
+		}
+		var env OutEnvelope
+		if err := json.Unmarshal(m.Data, &env); err != nil {
+			return err
+		}
+		return projection.add(m, env)
+	}); err != nil {
 		return err
+	}
+	counts, err := projection.validate()
+	if err != nil {
+		return fmt.Errorf("serve preflight: out_log.ndjson: %w", err)
 	}
 	fhirRecords, err := scanAPILog(fhirPath, validateFHIRRecord)
 	if err != nil {
 		return err
 	}
-	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], len(loops), fhirRecords)
+	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], counts, projection.final, fhirRecords)
 }
 
 func validateRequiredAPIJSON(path string) (map[string]interface{}, error) {
@@ -128,24 +143,46 @@ func validateFHIRRecord(m LogMsg) error {
 	return nil
 }
 
-func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhirRecords int) error {
+func validateDeclaredCounts(dashboard, report map[string]interface{}, counts materializationCounts, final map[string]*Decision, fhirRecords int) error {
 	check := func(artifact, field string, value interface{}, want int, source string) error {
 		n, ok := value.(float64)
-		if !ok || n != float64(int(n)) || n < 0 {
+		if !ok || math.IsInf(n, 0) || math.IsNaN(n) || n != math.Trunc(n) || n < 0 {
 			return fmt.Errorf("serve preflight: %s: invalid JSON: %s must be a non-negative integer", artifact, field)
 		}
-		if int(n) != want {
-			return fmt.Errorf("serve preflight: %s declares %s=%d but %s holds %d", artifact, field, int(n), source, want)
+		if n != float64(want) {
+			return fmt.Errorf("serve preflight: %s declares %s=%g but %s holds %d", artifact, field, n, source, want)
 		}
 		return nil
 	}
+	// Metadata is additive for legacy root-only artifacts, mandatory for runs
+	// with independent CRC care. Every field is checked against actual OUT.
+	var expected map[string]interface{}
+	_ = json.Unmarshal(canon(counts), &expected)
+	for name, artifact := range map[string]map[string]interface{}{"dashboard.json": dashboard, "report7.json": report} {
+		value, present := artifact["materialization"]
+		if !present && counts.DerivedCare == 0 {
+			continue
+		}
+		declared, ok := value.(map[string]interface{})
+		if !ok || declared["schema"] != materializationSchema {
+			return fmt.Errorf("serve preflight: %s: missing or invalid materialization metadata", name)
+		}
+		for field, want := range expected {
+			if field == "schema" {
+				continue
+			}
+			if err := check(name, "materialization."+field, declared[field], int(want.(float64)), "out_log.ndjson decisions"); err != nil {
+				return err
+			}
+		}
+	}
 	if v, ok := dashboard["cases"]; ok {
-		if err := check("dashboard.json", "cases", v, loops, "out_log.ndjson decisions"); err != nil {
+		if err := check("dashboard.json", "cases", v, counts.TotalCurrentMaterialized, "out_log.ndjson decisions"); err != nil {
 			return err
 		}
 	}
 	if v, ok := report["loops"]; ok {
-		if err := check("report7.json", "loops", v, loops, "out_log.ndjson decisions"); err != nil {
+		if err := check("report7.json", "loops", v, counts.RootScreening, "out_log.ndjson root screening decisions"); err != nil {
 			return err
 		}
 	}
@@ -154,20 +191,59 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhi
 			return err
 		}
 	}
-	if programmes, ok := report["programmes_live"].(map[string]interface{}); ok {
-		total, declared := 0.0, false
-		for _, p := range programmes {
-			programme, _ := p.(map[string]interface{})
-			if v, ok := programme["cases"]; ok {
-				n, isNum := v.(float64)
-				if !isNum {
-					return fmt.Errorf("serve preflight: report7.json: invalid JSON: programmes_live cases must be a non-negative integer")
-				}
-				total, declared = total+n, true
+	byProgramme := map[string]int{}
+	for _, d := range final {
+		kind, _ := materializedCaseKind(d)
+		if kind == "derived_care" {
+			continue
+		}
+		pg := d.Prog
+		if pg == "" {
+			pg = "crc"
+		}
+		byProgramme[pg]++
+	}
+	if raw, present := report["loops_by_programme"]; present {
+		declared, ok := raw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("serve preflight: report7.json: invalid loops_by_programme object")
+		}
+		for pg, value := range declared {
+			if err := check("report7.json", "loops_by_programme."+pg, value, byProgramme[pg], "out_log.ndjson root screening decisions"); err != nil {
+				return err
 			}
 		}
-		if declared {
-			return check("report7.json", "programmes_live cases", total, loops, "out_log.ndjson decisions")
+		for pg := range byProgramme {
+			if _, present := declared[pg]; !present {
+				return fmt.Errorf("serve preflight: report7.json: loops_by_programme.%s missing root count for out_log.ndjson", pg)
+			}
+		}
+	}
+	if raw, present := report["programmes_live"]; present {
+		programmes, ok := raw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("serve preflight: report7.json: invalid programmes_live object")
+		}
+		for pg, raw := range programmes {
+			programme, ok := raw.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("serve preflight: report7.json: invalid programmes_live.%s", pg)
+			}
+			for _, field := range []string{"loops", "cases"} {
+				if value, present := programme[field]; present {
+					if err := check("report7.json", "programmes_live."+pg+"."+field, value, byProgramme[pg], "out_log.ndjson root screening decisions"); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		for pg := range byProgramme {
+			programme, _ := programmes[pg].(map[string]interface{})
+			_, loops := programme["loops"]
+			_, cases := programme["cases"]
+			if !loops && !cases {
+				return fmt.Errorf("serve preflight: report7.json: programmes_live.%s missing root count for out_log.ndjson", pg)
+			}
 		}
 	}
 	return nil

@@ -492,15 +492,8 @@ func (c *ClosureCore) crcFollowUpCompletionDay(f *LoopFacts, dispositionDay floa
 }
 
 func crcChildLoopID(parent, disposition string) string {
-	switch disposition {
-	case "closed_to_mdt":
-		return parent + "#crc-treatment"
-	case "closed_surveillance":
-		return parent + "#crc-surveillance"
-	case "closed_to_gastro":
-		return parent + "#crc-gastroenterology"
-	case "closed_to_specialist":
-		return parent + "#crc-specialist"
+	if kind := crcCareKind(disposition); kind != "" {
+		return parent + "#" + kind
 	}
 	return ""
 }
@@ -511,7 +504,7 @@ func (c *ClosureCore) buildCRCChild(f *LoopFacts, source, procedure row, proposa
 	if id == "" || parentHead == "" {
 		return nil
 	}
-	kind := strings.TrimPrefix(crcChildLoopID(f.LoopID, disposition), f.LoopID+"#")
+	kind := crcCareKind(disposition)
 	start := procedure.d.Day
 	due := start
 	interval := 0

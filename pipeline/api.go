@@ -213,9 +213,16 @@ func loadAPI(run, data string) *apiServer {
 		dec.UseNumber()
 		_ = dec.Decode(&s.booking)
 	}
-	// decisions (OUT stream log): every decision kept; the last per loop is the current state
-	for _, m := range readLog(filepath.Join(run, "out_log.ndjson")) {
+	// Preserve timeline order even if dump lines were reordered. Current state
+	// uses the same highest-output-sequence reducer as report7 and preflight.
+	outLog := readLog(filepath.Join(run, "out_log.ndjson"))
+	sort.SliceStable(outLog, func(i, j int) bool { return outLog[i].Seq < outLog[j].Seq })
+	projection := newMaterializedDecisions()
+	for _, m := range outLog {
 		oe := decodeEnv(m)
+		if err := projection.add(m, oe); err != nil {
+			panic(err)
+		}
 		if oe.Dec != nil {
 			d := oe.Dec
 			c := s.cases[d.LoopID]
@@ -232,10 +239,11 @@ func loadAPI(run, data string) *apiServer {
 		}
 	}
 	for _, c := range s.cases {
-		d := c.last
+		d := projection.final[c.ID]
+		c.last = d
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
 		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
-		if d.CRC != nil && d.CRC.CareState != "" && d.CRC.CareState != "complete" && d.CRC.CareState != "accepted_or_first_appointment" {
+		if ongoingCare(d) {
 			c.Closed = false
 		}
 		c.Consent = consentFromDecision(d)
@@ -588,7 +596,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 		rep["exactly_once"] = map[string]interface{}{"duplicate_outputs": cr["duplicate_outputs"], "lost_outputs": cr["lost_outputs"], "ingest_lost": cr["ingest_lost"], "ingest_duplicates": cr["ingest_duplicates"]}
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"cases": len(s.cases), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
+		"cases": len(s.cases), "materialization": s.materializationCounts(), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
 		"by_programme": byProg, "sla": s.dashboard["sla"], "providers": s.dashboard["providers"], "origins": s.dashboard["origins"],
 		"small_cell_rule": s.dashboard["small_cell_rule"], "metrics": rep, "fixtures": s.fixtures,
 		"capacity": s.capacity(),
@@ -635,13 +643,23 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	closed := c.Closed
-	if c.last != nil && c.last.CRC != nil && c.last.CRC.CareState != "" && c.last.CRC.CareState != "complete" && c.last.CRC.CareState != "accepted_or_first_appointment" {
+	if c.last != nil && ongoingCare(c.last) {
 		closed = false
 	}
 	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+	if c.last != nil {
+		kind, _ := materializedCaseKind(c.last)
+		m["case_kind"] = kind
+		m["screening_complete"] = screeningComplete(c.last)
+		m["ongoing_care"] = ongoingCare(c.last)
+		if c.last.CRC != nil && c.last.CRC.Parent != "" {
+			m["parent_case_id"] = c.last.CRC.Parent
+			m["withdrawn"] = c.last.CRC.Withdrawn
+		}
+	}
 	s.mu.Lock()
 	if c.patient.Seq > 0 {
 		m["api_patient"] = s.patientViewLocked(c, false)

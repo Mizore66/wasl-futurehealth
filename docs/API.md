@@ -62,6 +62,23 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
+### Screening/index denominators and materialized care cases
+
+New `report7.json` and `dashboard.json` outputs declare `materialization` with schema `wasl-materialization/1`. The API dashboard and person journey expose the same counts over their respective current case sets:
+
+- `root_screening`: screening/index cohort cases, excluding independently derived CRC care children. Existing programme follow-up rows already included in the cohort remain index rows for this contract.
+- `derived_care`: independently materialized CRC treatment, surveillance, gastroenterology and specialist cases, including withdrawn projections retained for review.
+- `total_current_materialized`: all current case projections, equal to `root_screening + derived_care`; not the number of OUT records or completed screenings.
+- `withdrawn_derived_care`: the retained withdrawn subset, never active care or completed treatment.
+- `screening_complete`: root cases whose screening/procedure-completeness requirement is met; this does not certify that downstream care is complete or even confirmed.
+- `ongoing_care_cases`: current root or child projections with unresolved/ongoing CRC care. This counts cases, not unique clinical obligations; a parent and its child can both carry pending work.
+
+Native `report7.loops`, `loops_by_programme`, programme `loops`/legacy `cases`, closure metrics and clinical KPI denominators retain their screening/index meanings. Native dashboard/API `cases` counts all materialized cases. Existing provider/origin evaluation rows retain their replay-based meanings; additive materialization metadata is computed from the actual live OUT decisions served by the API, not the offline replay. Frozen runs are not rewritten: root-only legacy artifacts may omit the new metadata. Runs with CRC children must declare complete, consistent metadata in both artifacts.
+
+Case summaries add `case_kind: root_screening | derived_care`, `screening_complete`, `ongoing_care`, and, for CRC children, `parent_case_id` and `withdrawn`. A screening parent can have a closed screening state while `closed: false` and `ongoing_care: true`; independently tracked children remain in case lists and person journeys. Person obligations use the children's existing care clocks and explicit parent relationship, not guessed ID substrings. Awaiting gastroenterology/specialist acceptance has no invented deadline, and withdrawn children remain visible for review without an active treatment clock.
+
+Serve preflight folds unique cases by highest OUT output sequence, tolerates identical duplicate/reordered records, and rejects conflicting duplicates, unknown CRC child types, orphaned or source-inconsistent children, missing child decisions and invalid/mismatched counts. Active children must match their current parent's signed source-bound plan; withdrawn children retain their historical signed-plan provenance. This validates the materialization contract, not treatment delivery or a new clinical policy.
+
 ### No-show recovery and waitlist backfill
 
 `scripts/demo.sh booking` runs `booking/recovery.py` immediately after the existing booking generator and writes `<run>/recovery.json` (`wasl-recovery-input/1`). The generator considers only canonical CRC/cervical no-show cases with a latest trusted Appointment status of `noshow`. A released slot is a **simulated released-capacity projection** over a future synthetic calendar, never the missed provider Appointment or a real cancellation. Existing suggestions remain unheld; no overbooking headroom is consumed.
