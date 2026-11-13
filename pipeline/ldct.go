@@ -235,6 +235,10 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 					raise(scans[i], "evidence")
 					break
 				}
+				if lab == "LR0" { // an incomplete addendum cannot stand in for the categorised index: keep it and hold
+					excludedFollow = "addendum_reclassifies_to_incomplete"
+					continue
+				}
 				if reclass == nil {
 					idxHuman = decHuman
 				}

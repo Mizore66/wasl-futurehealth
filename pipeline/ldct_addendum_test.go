@@ -72,6 +72,14 @@ func TestLDCTAddendumUnsafeReclassificationHolds(t *testing.T) {
 	if d.State == "closed" || d.State == "no_recall_needed" || lcHoldReason(d) != "scan_label_unknown" {
 		t.Errorf("unknown-label addendum: want hold scan_label_unknown, got %s %q", d.State, lcHoldReason(d))
 	}
+	d, _ = runLung(t, lcFacts(index, lcAddendum(index, "LCS-ct-add", 30, "LR0"), lcScan("LCS-ct-follow", 100, "LR2")), 120)
+	if d.State != "closed" || d.ClosingReport != "LCS-ct-follow" || d.LDCT.ScanLabel != "LR3" {
+		t.Errorf("incomplete addendum then interval LDCT: want index LR3 kept and closed by the interval scan, got %s %q %+v", d.State, d.ClosingReport, d.LDCT)
+	}
+	d, _ = runLung(t, lcFacts(index, lcAddendum(index, "LCS-ct-add", 30, "LR0")), 120)
+	if d.State != "open" || d.LDCT.ScanLabel != "LR3" || lcHoldReason(d) != "addendum_reclassifies_to_incomplete" {
+		t.Errorf("incomplete addendum: want LR3 retained with a hold, got %s %q", d.State, lcHoldReason(d))
+	}
 	other := lcScan("LCS-ct-add", 30, "LR4B")
 	other.Parent = "LCS-ct-other"
 	d, _ = runLung(t, lcFacts(index, other), 120)
