@@ -7,7 +7,7 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "e7fbf77dafea7467dcef7a06d325e27b8397eb912f0ba08bbcc97e33248a9dd4"
+GOLDEN = "6ffbad1b4f31850e30a012370df2ab770da100d62cffb56de32665d7d13574ad"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -19,7 +19,9 @@ def synthetic_run(d):
             loop = f"{prov}/ServiceRequest/sr-{i}"
             crc = i < 180
             state = ["open", "no_show", "inadequate", "open", "referral_rejected", "closed"][i % 6]
-            dec = {"loop": loop, "prog": "crc" if crc else "cervical", "state": state, "prov": prov}
+            dec = {"loop": loop, "prog": "crc" if crc else "cervical", "state": state, "prov": prov, "sr_day": i % 40}
+            if state == "inadequate":
+                dec["inadequate_day"] = i % 40 + 20
             if not crc:
                 dec["deadline"] = [14, 28, 56][i % 3]
             o.write(json.dumps({"data": {"dec": dec}}) + "\n")

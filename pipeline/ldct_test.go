@@ -157,19 +157,21 @@ func TestLDCTFollowupRejectsAddendumAndEarlyReread(t *testing.T) {
 	for _, indexLabel := range []string{"LR3", "LR4A"} {
 		index := lcScan("LCS-ct-1", 10, indexLabel)
 		addendum := lcScan("LCS-ct-add", 30, "LR2")
-		addendum.Parent = index.ReportID
+		addendum.Parent = "LCS-ct-other"
 		d, _ := runLung(t, lcFacts(index, addendum), 120)
 		if d.State != "open" || lcHoldReason(d) != "followup_addendum_not_interval_ldct" {
-			t.Errorf("%s addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
+			t.Errorf("%s unlinked addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
 		}
+		addendum.Parent = index.ReportID
 		early := lcScan("LCS-ct-early", 10.5, "LR2")
 		d, _ = runLung(t, lcFacts(index, early), 120)
 		if d.State != "open" || lcHoldReason(d) != "followup_too_early" {
 			t.Errorf("%s same-day reread: want open, got %s %q", indexLabel, d.State, lcHoldReason(d))
 		}
-		// An ineligible addendum does not consume or block the later real interval LDCT.
+		// A confirming addendum is not an interval LDCT and does not block the later real one.
+		confirm := lcAddendum(index, "LCS-ct-add", 30, indexLabel)
 		actual := lcScan("LCS-ct-follow", 100, "LR2")
-		d, _ = runLung(t, lcFacts(index, addendum, actual), 120)
+		d, _ = runLung(t, lcFacts(index, confirm, actual), 120)
 		if d.State != "closed" || d.ClosingReport != actual.ReportID {
 			t.Errorf("%s addendum then interval LDCT: got %s closing %q", indexLabel, d.State, d.ClosingReport)
 		}
