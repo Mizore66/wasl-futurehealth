@@ -8,11 +8,15 @@ import type { ReviewView, Verdict } from "./case-view";
 import type { IdentityAnswer } from "./decision";
 import { Mark, type Shape, type Tone } from "./marks";
 
-const VERDICT: Record<Verdict, { shape: Shape; tone: Tone }> = {
-  agrees: { shape: "tick", tone: "positive" },
-  matches: { shape: "tick", tone: "positive" },
-  missing: { shape: "dash", tone: "warning" },
-  differs: { shape: "cross", tone: "muted" },
+const VERDICT: Record<Verdict, { shape: Shape; tone: Tone; word: string }> = {
+  match: { shape: "tick", tone: "positive", word: "match" },
+  differ: { shape: "cross", tone: "negative", word: "differ" },
+  missing: { shape: "dash", tone: "warning", word: "missing" },
+  placeholder: { shape: "dash", tone: "warning", word: "placeholder" },
+  unknown: { shape: "dash", tone: "warning", word: "unknown" },
+  invalid: { shape: "dash", tone: "warning", word: "invalid" },
+  unavailable: { shape: "dash", tone: "muted", word: "not compared" },
+  separate: { shape: "cross", tone: "muted", word: "separate" },
 };
 
 const ARABIC = /[؀-ۿ]/;
@@ -59,7 +63,7 @@ function RecordCard({
         </div>
       </div>
       {values.map((v, i) => (
-        <div key={i} className={cn(CELL, v === "not on report" ? "text-muted" : "text-ink")}>
+        <div key={i} className={cn(CELL, v.startsWith("not recorded") || v === "unknown" ? "text-muted" : "text-ink")}>
           <span className="mr-2 flex-none text-small text-muted @2xl:hidden">{fields[i]}</span>
           <span lang={ARABIC.test(v) ? "ar" : undefined} dir={ARABIC.test(v) ? "rtl" : undefined} className={cn(ARABIC.test(v) && "font-arabic")}>
             {v}
@@ -157,8 +161,8 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
           {view.identity.map((r) => (
             <div key={r.field} className="flex h-9 items-center gap-1.5 border-t border-rule px-1">
               <span className="flex-1 whitespace-nowrap">{r.field}</span>
-              <Mark {...VERDICT[r.verdict]} className={cn("text-small", r.verdict === "missing" && "text-warning")}>
-                {r.verdict}
+              <Mark shape={VERDICT[r.verdict].shape} tone={VERDICT[r.verdict].tone} className={cn("text-small", r.verdict === "missing" && "text-warning")}>
+                {VERDICT[r.verdict].word}
               </Mark>
             </div>
           ))}
@@ -173,6 +177,13 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
       </div>
 
       <p className="m-0 mt-4 font-medium">{view.identitySummary}</p>
+      {view.identityGuard.length > 0 && (
+        <ul aria-label="Why the second identifier is not met" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
+          {view.identityGuard.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
 
       {why && (
         <div id={`why-held-${suffix}`} className="mt-3 rounded-control bg-ground p-4">

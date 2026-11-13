@@ -706,6 +706,22 @@ export const ReviewClaimRequest = z.object({
   expected_claim_head: z.string().regex(/^(?:[0-9a-f]{64})?$/),
 });
 
+export const IdentityField = z.looseObject({ state: z.enum(["present", "placeholder", "missing", "unknown", "invalid"]), value: z.string().default("") });
+export const IdentityVerdict = z.enum(["match", "differ", "missing", "placeholder", "unknown", "invalid"]);
+
+/** Recorded identifiers for one link item's two registrations. Sent only to credentials that may sign a link; never in the auditor export. */
+export const IdentityReview = z.discriminatedUnion("available", [
+  z.looseObject({ item: z.string(), pair: z.array(z.string()), available: z.literal(false), reason: z.string() }),
+  z.looseObject({
+    item: z.string(),
+    pair: z.array(z.string()),
+    available: z.literal(true),
+    records: z.array(z.looseObject({ registration: z.string(), name: IdentityField, dob: IdentityField, sex: IdentityField, eid: IdentityField })),
+    comparison: z.array(z.looseObject({ field: z.string(), verdict: IdentityVerdict })),
+    guard: z.looseObject({ met: z.boolean(), failures: z.array(z.string()) }),
+  }),
+]);
+
 /** One (item, question) independent-review state machine as the API projects it for the calling credential. */
 export const ReviewState = z.looseObject({
   item: z.string(),
@@ -746,6 +762,7 @@ export const CaseDetail = withMeta({
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
+  identity_review: z.array(IdentityReview).optional(),
   current: CurrentDecision,
   booking: Booking,
 });

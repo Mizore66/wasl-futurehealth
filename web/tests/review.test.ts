@@ -213,9 +213,9 @@ describe("review view of the review_hold fixture", () => {
     expect(view.link).toMatchObject({ score: 1, line: 0.99, basis: "Emirates ID" });
   });
 
-  it("shows the unconfirmed second identifier, not a date of birth the API never says is missing", () => {
-    expect(view.identity.find((r) => r.field === "Second identifier")).toMatchObject({ report: "not confirmed", verdict: "missing" });
-    expect(view.identity.some((r) => r.field === "Date of birth")).toBe(false);
+  it("shows the recorded identifiers the API sent, not status placeholders", () => {
+    expect(view.identity.find((r) => r.field === "Date of birth")).toMatchObject({ referral: "1965-03-14", report: "not recorded", verdict: "missing" });
+    expect(view.identity.some((r) => r.field === "Second identifier")).toBe(false);
     expect(view.held).toBe(
       "Held: no second identifier is confirmed for the two records, and the two readers could not settle the bowel prep grade and whether tissue was taken.",
     );

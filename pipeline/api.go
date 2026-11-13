@@ -72,6 +72,7 @@ type apiServer struct {
 	signoffs        map[string][]map[string]interface{}
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
+	demo            map[string]regDemo                  // registration -> recorded demographics, disclosed only to identity reviewers
 	dashboard       map[string]interface{}
 	report          map[string]interface{}
 	anchors         map[string]string
@@ -319,6 +320,7 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	s.demo = map[string]regDemo{}
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
 		if !strings.HasSuffix(m.Subject, ".res") {
 			continue
@@ -334,6 +336,9 @@ func (s *apiServer) loadTimelines() {
 			"day": round4(e.Day), "arrival_day": round4(arr), "category": e.Category, "raw_sha": hex.EncodeToString(h[:])[:16],
 			"source": firstNonEmpty(m.Hdr["Wsi-Src"], "fhir"), "patient_key": e.PatientKey}
 		byPK[e.PatientKey] = append(byPK[e.PatientKey], row)
+		d := s.demo[e.PatientKey]
+		d.absorb(e)
+		s.demo[e.PatientKey] = d
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
 		}
