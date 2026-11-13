@@ -70,7 +70,7 @@ func TestCheckSignoffPerEventType(t *testing.T) {
 // ---------- linker enforcement (RBAC + consent) ----------
 
 func consentPrep(seq uint64, pk, role, kind string) *Prep {
-	return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: "c" + utoa(seq), Provider: "ahs-mushrif", RType: "Consent", PatientKey: pk, Owner: role, Status: kind}}
+	return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: "c" + utoa(seq), Provider: "ahs-mushrif", RType: "Consent", PatientKey: pk, Owner: role, Status: kind, ConsentStatus: "active"}}
 }
 
 func newLoopLinker(t *testing.T) (*LinkerCore, string) {
@@ -133,11 +133,11 @@ func df(rtype, status string, strength float64, basis string, near bool) DownFac
 func TestOutreachGateAndConsent(t *testing.T) {
 	id := func(p float64) float64 { return p }
 	f := &LoopFacts{LoopID: "L", SRDay: 1, Contact: "granted", Down: []DownFact{
-		df("Appointment", "booked", 0.995, "wasl", false),   // p_cal >= tau -> released
-		df("Appointment", "booked", 0.95, "wasl", false),    // below tau -> held
-		df("Appointment", "noshow", 0.60, "eid", false),     // EID -> released
+		df("Appointment", "booked", 0.995, "wasl", false),     // p_cal >= tau -> released
+		df("Appointment", "booked", 0.95, "wasl", false),      // below tau -> held
+		df("Appointment", "noshow", 0.60, "eid", false),       // EID -> released
 		df("ServiceRequest", "revoked", 0.70, "human", false), // human-confirmed -> released
-		df("Appointment", "booked", 0.999, "wasl", true),    // near-miss (not linked) -> no intent at all
+		df("Appointment", "booked", 0.999, "wasl", true),      // near-miss (not linked) -> no intent at all
 		df("DiagnosticReport", "final", 0.999, "wasl", false), // results are never messaged
 	}}
 	out := BuildOutreach(f, id)
