@@ -209,6 +209,27 @@ class RedactedSnapshotTest(unittest.TestCase):
                 self.assertNotIn("MRN-1234", proc.stdout)
                 self.assertNotIn("operator", proc.stdout)
 
+    def test_recovery_snapshots_drop_event_secrets_and_validate_filenames(self):
+        root = Path(__file__).resolve().parents[1]
+        detail = json.loads((root / "docs/api-samples/recovery_slot.json").read_text())
+        detail["slot"]["history"] = [{
+            "hash": "recovery-event", "at": "2026-11-13T00:00:00Z", "type": "waitlist_recovery",
+            "kind": "confirm_backfill", "actor": "private actor", "note": "private note", "prev": "concealed-read",
+        }]
+        proc = self.run_snapshot(["recovery-detail"], detail)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertNotIn("private actor", proc.stdout)
+        self.assertNotIn("private note", proc.stdout)
+        self.assertNotIn("concealed-read", proc.stdout)
+        self.assertIn("recovery-event", proc.stdout)
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "recovery_slot.json").write_text(json.dumps(detail))
+            Path(directory, "recovery_slots.json").write_text((root / "docs/api-samples/recovery_slots.json").read_text())
+            # The direct input contains secrets and must fail; the projected form above passes.
+            self.assertNotEqual(self.run_snapshot(["scan-dir", directory]).returncode, 0)
+            Path(directory, "recovery_slot.json").write_text(proc.stdout)
+            self.assertEqual(self.run_snapshot(["scan-dir", directory]).returncode, 0)
+
     def test_public_dashboard_rejects_nonconstant_clinical_note(self):
         payload = valid_public_payload("dashboard")
         payload["capacity"]["note"] = "sessile adenoma"

@@ -199,6 +199,7 @@ tamper() { (cd "$BIN" && ./wsi7 tamper -role auditor -data "$COHORT" -wasl "$ROO
 booking() {  # stage 6: simulated booking decision support over the run (WASL_SLOTS = slots per open case, default 1.2)
   # WASL_OPTIMISER=lookahead: multi-period rolling-horizon optimiser (booking/booking/lookahead.py; needs bin/wsi7); default myopic
   python3 "$ROOT/booking/suggest.py" "$RUN" --slots-per-fit "${WASL_SLOTS:-1.2}" ${WASL_MISALLOCATED:+--misallocated} ${WASL_OPTIMISER:+--optimiser "$WASL_OPTIMISER"}
+  python3 "$ROOT/booking/recovery.py" "$RUN" --slots-per-fit "${WASL_SLOTS:-1.2}"
 }
 report() {
   (cd "$BIN" && ./wsi7 report7 -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > /dev/null)
@@ -262,6 +263,13 @@ snapshot() {  # static API responses for frontend development (no backend needed
     python3 "$ROOT/scripts/redacted_snapshot.py" dashboard > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
   curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" |
     python3 "$ROOT/scripts/redacted_snapshot.py" fixtures > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" "http://$A/api/recovery/slots" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" recovery-list > "$S/recovery_slots.json" || { echo "snapshot: recovery slots failed" >&2; return 1; }
+  id=$(python3 -c "import json,sys; slots=json.load(open(sys.argv[1])).get('slots', []); print(slots[0]['slot_id'] if slots else '')" "$S/recovery_slots.json")
+  if [ -n "$id" ]; then
+    curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" "http://$A/api/recovery/slots/$id" |
+      python3 "$ROOT/scripts/redacted_snapshot.py" recovery-detail > "$S/recovery_slot.json" || { echo "snapshot: recovery detail failed" >&2; return 1; }
+  fi
   for prog in ${progs//,/ }; do
     if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" |
       python3 "$ROOT/scripts/redacted_snapshot.py" cases > "$S/cases_${prog}_page1.json" &&

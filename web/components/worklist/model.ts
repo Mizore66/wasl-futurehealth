@@ -180,6 +180,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
   const snoozed = snoozeRunning || sinks;
+  if (c.recovery?.backfill) {
+    view = "waiting";
+    words.status = "Simulated slot confirmed";
+    words.next = "Wait for the simulated appointment day";
+  }
   return {
     id: c.id,
     short: shortId(c.id),

@@ -54,8 +54,19 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
+| GET | `/api/recovery/slots` | `wasl-recovery/1` synthetic released-capacity summaries; optional `programme=crc\|cervical` and `status=open\|filled\|stale` filters |
+| GET | `/api/recovery/slots/{slot_id}` | No-show release provenance, future synthetic-session capabilities, ranked eligible and excluded candidates with checks, outreach gates and viewer-filtered history |
+| POST | `/api/recovery/slots/{slot_id}/confirm` | Coordinator-only atomic simulated backfill with slot/case heads and a 16–80 character idempotency key; never books a provider slot or dispatches a message |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
+
+### No-show recovery and waitlist backfill
+
+`scripts/demo.sh booking` runs `booking/recovery.py` immediately after the existing booking generator and writes `<run>/recovery.json` (`wasl-recovery-input/1`). The generator considers only canonical CRC/cervical no-show cases with a latest trusted Appointment status of `noshow`. A released slot is a **simulated released-capacity projection** over a future synthetic calendar, never the missed provider Appointment or a real cancellation. Existing suggestions remain unheld; no overbooking headroom is consumed.
+
+The list returns `status: not_generated` when the input is absent and `invalid` when it is malformed. Confirmation returns 503 in either state. Recovery events replay from the ordinary `api_reviews.ndjson` hash chain; missing/changed input, altered source fingerprints, broken heads, invalid events or truncated history fail closed. Confirmations use strict JSON (maximum 8 KiB) with `case_id`, `expected_slot_head`, `expected_case_head`, `request_id`, `outreach_intent` and an optional note of at most 500 characters. Identical retries return 200 with `duplicate: true`; reusing a key for another payload returns 409 `request_id_reused`.
+
+Candidates are ordered by urgent canonical priority, absolute deadline, requested day and case ID. Every excluded candidate remains visible with all failed hard checks. Deadline lateness and language/after-hours/soft-female mismatches are warnings, not new clinical exclusions. Consent does not change tracking eligibility, but an outreach intent requires effective consent `granted` and current canonical same-provider second-identifier evidence. An accepted intent is only `recorded_not_dispatched`; later denial or opt-out changes it to `cancelled_consent` without erasing the simulated backfill or history. No recovery path calls `DispatchC`, changes canonical clinical decisions or creates a provider reservation.
 
 ### Synthetic operational readiness
 

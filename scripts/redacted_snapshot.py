@@ -181,6 +181,7 @@ _FIXED_READ_TEXT = {
     _PUBLIC_META_NOTE,
     "slots exist in another region: network pooling (cross-site booking) recovers them",
     "synthetic App 9 fields; Dik 2015 published score weights",
+    "simulated released-capacity projection",
     "booking/RESULTS.md, Queue levers (simulated)",
     "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
     "DoH CRC spec App. 2: referral after FIT+ -> colonoscopy conducted within 31 days; acceptable >90%, desirable >95%. Denominator: all FIT+ referrals with >=31 days of follow-up by day 120.",
@@ -320,6 +321,20 @@ _GROUP_FIELDS = {
 }
 
 
+def _read_nullable(rule):
+    def convert(value, path):
+        if value is None:
+            return None
+        return rule(value, path)
+    return convert
+
+
+def _read_nullable_scalar(value, path):
+    if value is None:
+        return None
+    return _operational_read(value, path)
+
+
 def _read_summary(value, path):
     return _read_fields(value, _SUMMARY_FIELDS, path)
 
@@ -382,6 +397,42 @@ _OPERATIONS_SCHEMA = {
 }
 
 
+_RECOVERY_SUMMARY = _strict_read({key: None for key in (
+    "slot_id", "head", "status", "programme", "procedure", "provider", "unit", "region", "day",
+    "source_case", "filled_case", "stale_reason_codes",
+)})
+_RECOVERY_CHECK = _strict_read({"code": None, "kind": None, "result": None, "reason_code": None})
+_RECOVERY_OUTREACH = _strict_read({
+    "allowed": None, "consent": None, "second_identifier": None, "reason_codes": None,
+})
+_RECOVERY_CANDIDATE = _strict_read({
+    "case_id": None, "case_head": None, "eligible": None, "rank": _read_nullable_scalar, "priority": None,
+    "requested_day": None, "deadline_day": None,
+    "constraints": _strict_read({key: None for key in (
+        "female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show",
+    )}, optional=("female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show")),
+    "checks": _read_list(_RECOVERY_CHECK),
+    "ordering": _strict_read({"priority_rank": None, "deadline_day": None, "requested_day": None, "tie_break": None}),
+    "outreach": _RECOVERY_OUTREACH, "eligibility_hash": None,
+})
+_RECOVERY_BACKFILL = _strict_read({"case_id": None, "event": None, "at": None, "status": None}, optional=("at",))
+_RECOVERY_HISTORY = _strict_read({
+    "hash": None, "at": None, "type": None, "kind": None, "case": None, "slot": None, "outreach_intent": None,
+}, optional=("type", "kind", "case", "slot", "outreach_intent"))
+_RECOVERY_SLOT = _strict_read({
+    key: None for key in ("slot_id", "head", "base_head", "status", "programme", "procedure", "provider", "unit", "region", "day", "session_id", "source_case", "filled_case", "stale_reason_codes")
+} | {
+    "capabilities": _strict_read({key: None for key in ("female", "arabic", "after_hours", "ramadan", "capacity", "regular", "overbooked")},
+                                  optional=("capacity", "regular", "overbooked")),
+    "release": _strict_read({key: None for key in (
+        "source_case", "source_appointment", "source_decision_sig", "source_appointment_version", "source_booking_fingerprint", "source_fingerprint", "projection_basis", "label",
+    )}, optional=("source_case", "source_appointment_version", "source_booking_fingerprint", "source_fingerprint")),
+    "candidates": _read_list(_RECOVERY_CANDIDATE), "history": _read_list(_RECOVERY_HISTORY),
+    "backfill": _read_nullable(_RECOVERY_BACKFILL),
+    "outreach": _strict_read({"status": None, "dispatched": None}),
+})
+
+
 _READ_SCHEMAS = {
     "health": {
         "status": None, "cases": None,
@@ -398,6 +449,12 @@ _READ_SCHEMAS = {
     },
     "fixtures": {"fixtures": _read_summary_map},
     "cases": {"total": None, "offset": None, "limit": None, "cases": _read_list(_read_summary)},
+    "recovery-list": {key: None for key in (
+        "schema", "status", "data_mode", "decision_support_only", "canonical_unchanged", "as_of_day", "ranking_policy", "label", "reason", "detail",
+    )} | {"slots": _read_list(_RECOVERY_SUMMARY)},
+    "recovery-detail": {key: None for key in (
+        "schema", "status", "data_mode", "decision_support_only", "canonical_unchanged", "as_of_day", "label",
+    )} | {"slot": _RECOVERY_SLOT},
     "operations": _OPERATIONS_SCHEMA,
 }
 
@@ -419,7 +476,10 @@ def read_snapshot(payload, kind):
     """Project one documented public read through its default-deny response schema."""
     if not isinstance(payload, dict) or kind not in _READ_SCHEMAS:
         raise ValueError("snapshot read projection requires an object and a documented response kind")
-    output = _read_fields(payload, _READ_SCHEMAS[kind], kind, required=_READ_SCHEMAS[kind])
+    required = set(_READ_SCHEMAS[kind])
+    if kind == "recovery-list":
+        required -= {"reason", "detail"}
+    output = _read_fields(payload, _READ_SCHEMAS[kind], kind, required=required)
     output["meta"] = _public_meta(payload.get("meta", {}))
     return output
 
@@ -455,6 +515,10 @@ def scan_snapshot_directory(directory):
                 kind = "operations"
             elif path.name in {"dashboard.json", "fixtures.json"}:
                 kind = path.stem
+            elif path.name == "recovery_slots.json":
+                kind = "recovery-list"
+            elif path.name == "recovery_slot.json":
+                kind = "recovery-detail"
             elif re.fullmatch(r"cases_[a-z_]+_page1\.json", path.name):
                 kind = "cases"
             if kind is not None:
@@ -470,7 +534,7 @@ def scan_snapshot_directory(directory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=("detail", "audit", "health", "operations", "dashboard", "fixtures", "cases", "scan-dir"))
+    parser.add_argument("kind", choices=("detail", "audit", "health", "operations", "dashboard", "fixtures", "cases", "recovery-list", "recovery-detail", "scan-dir"))
     parser.add_argument("path", nargs="?")
     args = parser.parse_args(argv)
     try:
