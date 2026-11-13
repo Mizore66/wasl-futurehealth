@@ -156,6 +156,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		requestedScan = f.LDCT.Scan
 	}
 	anchor := -1
+	var indexScan *row
 	if requestedScan != "" {
 		for i := range scans {
 			if scans[i].d.ReportID == requestedScan {
@@ -167,6 +168,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	if anchor < 0 {
 		scans = nil
 	} else {
+		indexScan = &scans[anchor]
 		var revisions, independent []row
 		for i := range scans {
 			if i == anchor {
@@ -178,12 +180,13 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 				independent = append(independent, scans[i])
 			}
 		}
-		// Resolve eligible index corrections before any interval scan can close the episode. Explicit descendants
-		// supersede ancestors regardless of exam day or lexical report ID; chronology only orders surviving branches.
+		// Resolve eligible index corrections, including supersession of the root, before evidence/label gates or
+		// interval scans. The root establishes authorization; its unread/unknown label cannot veto a valid correction.
+		// Explicit descendants supersede ancestors regardless of exam day or lexical report ID.
 		anchored := make([]row, 0, len(scans))
-		anchored = append(anchored, scans[anchor])
-		anchored = append(anchored, unsupersededReportRows(revisions, scanParents)...)
-		scans = append(anchored, independent...)
+		anchored = append(anchored, *indexScan)
+		anchored = append(anchored, revisions...)
+		scans = append(unsupersededReportRows(anchored, scanParents), independent...)
 	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
@@ -294,6 +297,13 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		lab, h := labelOf(scans[i])
 		if lab == "" {
+			// An unread LR0 completion still holds under the known incomplete index and its original clock.
+			// This is context only: the superseded root never gates a readable correction or supplies closure.
+			if dec == nil && linkedRevision && indexScan != nil {
+				if indexLab, indexHuman := labelOf(*indexScan); indexLab == "LR0" {
+					dec, decLab, decHuman = indexScan, indexLab, indexHuman
+				}
+			}
 			if linkedRevision && dec != nil && decLab != "LR0" {
 				dec, decLab, decHuman = &scans[i], "", ""
 			}
