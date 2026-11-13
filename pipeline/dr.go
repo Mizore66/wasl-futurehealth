@@ -364,7 +364,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	switch rec.Action {
 	case DRRefer:
-		d.Overdue = (state == "open" || state == "no_show") && now > dd.DeadlineDay
+		d.Overdue = (state == "open" || state == "no_show" || state == "not_assessable") && now > dd.DeadlineDay
 	case DRRepeatPhoto:
 		d.Overdue = state == "open" && now > dd.DeadlineDay
 	}

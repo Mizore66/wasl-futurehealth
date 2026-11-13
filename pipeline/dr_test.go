@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 const drSRRec = "phc-retina|PHC-MRN000001"
 
@@ -136,5 +139,47 @@ func TestDREvAltAndClosingAnswers(t *testing.T) {
 	}
 	if drEvAlt("adequate") != nil || drEvAlt("stable") != nil {
 		t.Fatal("non-DR labels must return nil")
+	}
+}
+
+func TestDRNoViewOverdueAfterDeadline(t *testing.T) {
+	for _, c := range []struct {
+		grade    string
+		deadline float64
+	}{{"R2M0", 101}, {"R3AM0", 52}} {
+		note := drNote("EYE-dr-1", 40, "not_assessable", "eid", 1, false)
+		d, _ := runLung(t, drFacts(drScreen("PHC-dr-1", 10, c.grade), note), c.deadline)
+		if d.State != "not_assessable" || d.Overdue || hasEsc(d, "overdue_dr_referral") || !hasEsc(d, "clinician_decision_no_fundal_view") {
+			t.Fatalf("%s at deadline: want not overdue, got %s %v %v", c.grade, d.State, d.Overdue, d.Escalations)
+		}
+		d, _ = runLung(t, drFacts(drScreen("PHC-dr-1", 10, c.grade), note), c.deadline+1)
+		if d.State != "not_assessable" || d.Dropoff != "not_assessable" || !d.Overdue || !hasEsc(d, "overdue_dr_referral") ||
+			!hasEsc(d, "clinician_decision_no_fundal_view") || !strings.Contains(string(canon(d.Chain)), "no_fundal_view_clinician_decides") {
+			t.Fatalf("%s after deadline: want overdue not_assessable with both escalations, got %s %v %q %v", c.grade, d.State, d.Overdue, d.Dropoff, d.Escalations)
+		}
+		if len(d.Outreach) != 0 {
+			t.Fatalf("%s: overdue projection must not release outreach: %+v", c.grade, d.Outreach)
+		}
+	}
+}
+
+func TestDRNoViewOverdueClearsOnTrustedExam(t *testing.T) {
+	view := drNote("EYE-dr-1", 40, "not_assessable", "eid", 1, false)
+	for name, c := range map[string]struct {
+		later  DownFact
+		closed bool
+	}{
+		"trusted exam":   {drNote("EYE-dr-2", 110, "examined_followup", "eid", 1, false), true},
+		"unread note":    {drNote("EYE-dr-2", 110, "", "eid", 1, false), false},
+		"untrusted exam": {drNote("EYE-dr-2", 110, "examined_followup", "wasl", 0.80, false), false},
+	} {
+		d, _ := runLung(t, drFacts(drScreen("PHC-dr-1", 10, "R2M0"), view, c.later), 120)
+		if c.closed {
+			if d.State != "closed" || d.Overdue || hasEsc(d, "overdue_dr_referral") || hasEsc(d, "clinician_decision_no_fundal_view") {
+				t.Fatalf("%s: want closed and cleared, got %s %v %v", name, d.State, d.Overdue, d.Escalations)
+			}
+		} else if d.State == "closed" {
+			t.Fatalf("%s: must not close", name)
+		}
 	}
 }
