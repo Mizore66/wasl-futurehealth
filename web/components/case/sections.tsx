@@ -13,6 +13,7 @@ import { recordFace } from "@/lib/people/identity";
 import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
+import { BookingControls } from "./booking-controls";
 import {
   atWords,
   basisWords,
@@ -23,6 +24,7 @@ import {
   holdWords,
   ledgerId,
   ledgerWords,
+  ledgerWordsWithHistory,
   outreachRows,
   reviewWords,
   roleWords,
@@ -680,7 +682,7 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
           {events.map((e, i) => (
             <li key={e.hash || `unknown-${i}`} className="border-t border-rule py-3">
               <div className={cn("font-medium", e.ledger === "unknown" && "text-warning")}>
-                <TechTerm id={ledgerId(e)} label={ledgerWords(e)} />
+                <TechTerm id={ledgerId(e)} label={ledgerWordsWithHistory(e, events.slice(0, i))} />
               </div>
               <p className="m-0 text-muted">
                 {e.actor || "Actor not recorded"} · {e.role ? roleWords(e.role) : "role not recorded"} · {e.at ? atWords(e.at) : "time not recorded"}
@@ -759,7 +761,7 @@ type BookingData = {
 const yesNo = (v: unknown) => (v === true ? "yes" : v === false ? "no" : String(v));
 
 /** The simulated booking suggestion and the App 9 prep-risk fields (issue #2). Decision support only. */
-export function BookingCard({ detail }: { detail: CaseDetail }) {
+export function BookingCard({ detail, live = apiMode() === "live" }: { detail: CaseDetail; live?: boolean }) {
   const b = detail.booking;
   const d = b as unknown as BookingData;
   const slot = d.booking;
@@ -858,7 +860,7 @@ export function BookingCard({ detail }: { detail: CaseDetail }) {
         </details>
       )}
       <div className="mt-3 text-small text-muted">
-        Simulated: no slot is held and no one is told. It is decision support for the coordinator, not a booking.
+        Simulated only: reservations and suggestions stay in Wasl. No provider system or patient is contacted.
         {d.capacity_condition && (
           <>
             {" "}
@@ -878,6 +880,11 @@ export function BookingCard({ detail }: { detail: CaseDetail }) {
             ))}
           </dl>
         </details>
+      )}
+      {detail.api_overlay ? (
+        <BookingControls key={detail.case.id} caseId={detail.case.id} initial={{ booking: detail.booking, overlay: detail.api_overlay, case: detail.case }} live={live} />
+      ) : (
+        <p className="m-0 mt-4 text-small text-muted">This older snapshot has no coordinator ledger projection, so reservation controls are unavailable.</p>
       )}
     </Card>
   );

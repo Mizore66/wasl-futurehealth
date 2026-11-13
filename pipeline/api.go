@@ -64,29 +64,31 @@ type apiCase struct {
 }
 
 type apiServer struct {
-	run, data  string
-	meta       map[string]interface{}
-	cases      map[string]*apiCase
-	order      []string
-	queue      map[string][]*ReviewItem // loop -> raised items
-	signoffs   map[string][]map[string]interface{}
-	facts      map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids        map[string][]map[string]string      // loop -> linked registrations
-	dashboard  map[string]interface{}
-	report     map[string]interface{}
-	anchors    map[string]string
-	booking    map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	recovery   recoveryProjection
-	fixtures   map[string]string
-	agentInv   map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu         sync.Mutex
-	reviews    []map[string]interface{}
-	rstates    map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
-	claims     map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
-	now        func() time.Time                           // UTC clock; replaceable in lease tests
-	ledgerErr  string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
-	appendLine func([]byte) error                         // appends one ledger line durably (replaceable in tests)
+	run, data       string
+	meta            map[string]interface{}
+	cases           map[string]*apiCase
+	order           []string
+	queue           map[string][]*ReviewItem // loop -> raised items
+	signoffs        map[string][]map[string]interface{}
+	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids             map[string][]map[string]string      // loop -> linked registrations
+	dashboard       map[string]interface{}
+	report          map[string]interface{}
+	anchors         map[string]string
+	booking         map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	bookingCalendar string
+	bookingSlots    map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
+	recovery        recoveryProjection
+	fixtures        map[string]string
+	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu              sync.Mutex
+	reviews         []map[string]interface{}
+	rstates         map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	claims          map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
+	now             func() time.Time                           // UTC clock; replaceable in lease tests
+	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -200,7 +202,12 @@ func loadAPI(run, data string) *apiServer {
 	readJSON("dashboard.json", &s.dashboard)
 	readJSON("report7.json", &s.report)
 	readJSON("anchors.json", &s.anchors)
-	readJSON("booking.json", &s.booking)
+	// Preserve generated booking-number spellings (notably Python's 2.0) for exact cross-language version hashes.
+	if b, err := os.ReadFile(filepath.Join(run, "booking.json")); err == nil {
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.UseNumber()
+		_ = dec.Decode(&s.booking)
+	}
 	// decisions (OUT stream log): every decision kept; the last per loop is the current state
 	for _, m := range readLog(filepath.Join(run, "out_log.ndjson")) {
 		oe := decodeEnv(m)
@@ -252,8 +259,11 @@ func loadAPI(run, data string) *apiServer {
 	s.pickFixtures()
 	s.loadAgent()
 	s.pickAgentFixture()
+	s.initBookingCatalogue()
 	s.loadRecovery()
-	s.loadReviews()
+	if s.ledgerErr == "" {
+		s.loadReviews()
+	}
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
 		"policy": PolicyName, "reader_model": safeReaderModel(s.readerModel()), "loaded_at": time.Now().UTC().Format(time.RFC3339),
 		"note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."}
@@ -816,25 +826,7 @@ func (s *apiServer) capacity() map[string]interface{} {
 		"summary": s.booking["summary"], "inputs": s.booking["inputs"], "note": s.booking["note"], "levers": s.booking["levers"]}
 }
 
-// bookingFor: this case's simulated booking suggestion and the capacity condition that governs it.
-func (s *apiServer) bookingFor(id string) map[string]interface{} {
-	if s.booking == nil {
-		return map[string]interface{}{"status": "not_generated"}
-	}
-	cs, _ := s.booking["cases"].(map[string]interface{})
-	c, ok := cs[id].(map[string]interface{})
-	if !ok {
-		return map[string]interface{}{"status": "not_applicable", "reason": "case does not need a colonoscopy slot at the end of the run", "data_mode": "simulated"}
-	}
-	out := map[string]interface{}{"data_mode": "simulated", "decision_support_only": true}
-	for k, v := range c {
-		out[k] = v
-	}
-	if cap, ok := s.booking["capacity"].(map[string]interface{}); ok {
-		out["capacity_condition"], out["pooling_relevant"], out["pooling_note"] = cap["condition"], cap["pooling_relevant"], cap["pooling_note"]
-	}
-	return out
-}
+// bookingFor and its catalogue live in api_booking.go; canonical case data is never changed there.
 
 // agentInvestigation is one cached evidence-investigator recommendation that a human sign-off actually consumed
 // (agent-assisted double review). The agent never signs; the human context is the existing sign-off, unchanged.
@@ -1064,22 +1056,28 @@ var (
 	contactChannels = map[string]bool{"phone": true, "sms": true, "email": true, "in_person": true}
 	// fields each action accepts besides action and expected_head
 	actionFields = map[string][]string{
-		"assign_owner":    {"owner"},
-		"snooze":          {"until", "reason"},
-		"contact_outcome": {"outcome", "channel", "note"},
-		"note":            {"text"},
+		"assign_owner":        {"owner"},
+		"snooze":              {"until", "reason"},
+		"contact_outcome":     {"outcome", "channel", "note"},
+		"note":                {"text"},
+		"booking_accept":      {"expected_suggestion_version", "slot_id", "expected_slot_version"},
+		"booking_choose_slot": {"expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
+		"booking_reschedule":  {"reservation_id", "expected_reservation_version", "expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
+		"booking_cancel":      {"reservation_id", "expected_reservation_version", "reason"},
 	}
 )
 
 // caseOverlay is the replayed coordinator state of one case (api metadata only).
 type caseOverlay struct {
-	head     string // "" until the first coordinator event
-	n        int
-	owner    string
-	snooze   map[string]interface{}
-	contacts []map[string]interface{}
-	notes    []map[string]interface{}
-	lastAt   string
+	head      string // "" until the first coordinator event
+	n         int
+	owner     string
+	snooze    map[string]interface{}
+	contacts  []map[string]interface{}
+	notes     []map[string]interface{}
+	agreement map[string]interface{}
+	booking   caseBookingState
+	lastAt    string
 }
 
 func (s *apiServer) caseHead(c *apiCase) string {
@@ -1175,6 +1173,8 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 			out["until"] = t.UTC().Format(time.RFC3339)
 			err = text("reason", maxReasonRunes, false, false)
 		}
+	case "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel":
+		return validateBookingActionData(kind, in)
 	case "contact_outcome":
 		if err = text("outcome", 32, true, false); err == nil {
 			err = text("channel", 32, true, false)
@@ -1211,6 +1211,9 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		c.ov.snooze = entry
 	case "contact_outcome":
 		c.ov.contacts = append(c.ov.contacts, entry)
+		if data["outcome"] == "appointment_agreed" {
+			c.ov.agreement = entry
+		}
 	case "note":
 		c.ov.notes = append(c.ov.notes, entry)
 	}
@@ -1231,7 +1234,8 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 	if s.ledgerErr != "" {
 		status = "invalid" // the overlay may be partial: say so in the list as well as the detail
 	}
-	m := map[string]interface{}{"head": s.caseHead(c), "actions": o.n, "owner": o.owner, "last_action_at": o.lastAt, "ledger_status": status}
+	m := map[string]interface{}{"head": s.caseHead(c), "actions": o.n, "owner": o.owner, "last_action_at": o.lastAt, "ledger_status": status,
+		"booking": s.bookingSummaryLocked(c)}
 	if o.snooze != nil {
 		m["snooze"] = o.snooze
 	}
@@ -1245,6 +1249,9 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			streak++
 		}
 		m["no_answer_streak"] = streak
+	}
+	if o.agreement != nil {
+		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
 	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
@@ -1513,7 +1520,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note", nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel", nil)
 		return
 	}
 	expected, ok := expV.(string)
@@ -1548,15 +1555,31 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if kind == "contact_outcome" && c.Consent != "granted" {
 			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
 		}
+		var booking *bookingTransition
+		if bookingActionName(kind) {
+			var failure *bookingFailure
+			booking, failure = s.prepareBookingLocked(c, kind, data)
+			if failure != nil {
+				return failure.code, failure.body
+			}
+		}
 		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
 			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
+		if booking != nil {
+			s.applyBookingLocked(c, stored, booking)
+		}
 		c.applyOverlay(stored)
-		return 201, map[string]interface{}{"event": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "api_overlay": s.overlayViewLocked(c, true),
+		body := map[string]interface{}{"event": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "api_overlay": s.overlayViewLocked(c, true),
 			"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}
+		if booking != nil {
+			body["booking"] = s.bookingForLocked(c.ID)
+			body["note"] = "simulated reservation event appended; no provider system or patient was contacted and canonical decisions are unchanged"
+		}
+		return 201, body
 	}()
 	writeJSONResp(w, code, s.envelope(body))
 }
@@ -1682,7 +1705,18 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if kind == "contact_outcome" && c.Consent != "granted" {
 		return errors.New("contact outcome on a case without granted consent")
 	}
+	var booking *bookingTransition
+	if bookingActionName(kind) {
+		var failure *bookingFailure
+		booking, failure = s.prepareBookingLocked(c, kind, norm)
+		if failure != nil {
+			return fmt.Errorf("invalid simulated booking transition: %v", failure.body["error"])
+		}
+	}
 	s.reviews = append(s.reviews, ev)
+	if booking != nil {
+		s.applyBookingLocked(c, ev, booking)
+	}
 	c.applyOverlay(ev)
 	return nil
 }

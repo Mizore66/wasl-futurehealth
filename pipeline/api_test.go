@@ -37,6 +37,27 @@ func apiFixture(t *testing.T) (*apiServer, *httptest.Server) {
 	return s, httptest.NewServer(cors(mux))
 }
 
+func apiUnexpectedNull(v interface{}, booking bool) bool {
+	if v == nil {
+		return !booking // simulated reservation summaries intentionally use null for no ID/slot/timestamp yet
+	}
+	switch x := v.(type) {
+	case map[string]interface{}:
+		for k, child := range x {
+			if apiUnexpectedNull(child, booking || k == "booking") {
+				return true
+			}
+		}
+	case []interface{}:
+		for _, child := range x {
+			if apiUnexpectedNull(child, booking) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func getJ(t *testing.T, url string) (int, map[string]interface{}) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -46,8 +67,8 @@ func getJ(t *testing.T, url string) (int, map[string]interface{}) {
 	b, _ := io.ReadAll(resp.Body)
 	var m map[string]interface{}
 	json.Unmarshal(b, &m)
-	if strings.Contains(string(b), ": null") {
-		t.Errorf("%s: response contains null (lists must be [])", url)
+	if apiUnexpectedNull(m, false) {
+		t.Errorf("%s: response contains an unexpected null (lists must be [])", url)
 	}
 	return resp.StatusCode, m
 }

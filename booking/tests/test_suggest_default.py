@@ -7,7 +7,7 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "54a1a14376f3014a282bb3d44f3a9d98e280d5245001263aba0f46752403ef7f"
+GOLDEN = "e7fbf77dafea7467dcef7a06d325e27b8397eb912f0ba08bbcc97e33248a9dd4"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -40,10 +40,19 @@ def test_default_unchanged():
         d = os.path.join(t, "golden-run")   # the run dir name is written into booking.json
         os.makedirs(d)
         synthetic_run(d)
-        h = hashlib.sha256(run(d)).hexdigest()
+        raw = run(d)
+        h = hashlib.sha256(raw).hexdigest()
         assert h == GOLDEN, (h, GOLDEN)
+        res = json.loads(raw)
+        assert len(res["calendar_version"]) == 64
+        suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
+        assert suggested and all(c["reservable"] and c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in suggested)
+        assert len({c["suggested_slot_id"] for c in suggested}) == len(suggested)
+        assert all(c["suggestion_version"] == suggest._sha({k: v for k, v in c.items() if k != "suggestion_version"}) for c in res["cases"].values())
+        assert res["calendar_version"] == suggest._sha({k: v for k, v in res.items() if k != "calendar_version"})
+        assert all(slot["slot_id"].startswith(f"sim:{case['procedure']}:{slot['session_id']}:") for case in res["cases"].values() for slot in case["eligible_slots"])
         h2 = hashlib.sha256(run(d, "--slots-per-fit", "0.8", "--misallocated")).hexdigest()
-    return f"default booking.json matches the reviewed deterministic golden ({h[:12]}); short/misallocated run ok ({h2[:12]})"
+    return f"default booking.json matches the reviewed versioned-slot golden ({h[:12]}); short/misallocated run ok ({h2[:12]})"
 
 
 def test_lookahead_labelled():

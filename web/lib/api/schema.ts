@@ -233,6 +233,46 @@ export const OverlayContact = z.looseObject({
 });
 export const OverlayNote = z.looseObject({ at: z.string(), event: z.string().default(""), actor: z.string().default(""), text: z.string() });
 
+export const BookingSummarySlot = z.looseObject({
+  slot_id: z.string(),
+  session_id: z.number(),
+  unit: z.string(),
+  day: z.number(),
+  procedure: z.string(),
+  deadline: z.number(),
+});
+
+/** Server-replayed simulated reservation state. No provider or patient system is involved. */
+export const BookingSummary = z.looseObject({
+  status: z.enum(["unreserved", "reserved", "cancelled"]),
+  mode: z.literal("simulated"),
+  revision: z.number().int().nonnegative(),
+  reservation_id: z.string().nullable(),
+  reservation_version: z.string().nullable(),
+  slot: BookingSummarySlot.nullable(),
+  updated_at: z.string().nullable(),
+  updated_event: z.string().nullable(),
+});
+
+export const EligibleBookingSlot = z.looseObject({
+  slot_id: z.string(),
+  session_id: z.number().int().nonnegative(),
+  unit: z.string(),
+  day: z.number(),
+  region: z.string(),
+  deadline: z.number(),
+  within_deadline: z.boolean(),
+  endoscopist_female: z.boolean(),
+  arabic: z.boolean(),
+  after_hours: z.boolean(),
+  prep_send_day: z.number(),
+  predicted_no_show: z.number().min(0).max(1),
+  nurse_call: z.boolean(),
+  cross_region: z.boolean(),
+  version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  availability: z.enum(["available", "reserved"]).optional(),
+});
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -246,6 +286,8 @@ export const ApiOverlay = z.looseObject({
   ledger_status: z.enum(["ok", "invalid"]).default("ok"),
   snooze: z.looseObject({ until: z.string(), reason: z.string().optional(), at: z.string().optional(), actor: z.string().optional() }).optional(),
   last_contact: OverlayContact.optional(),
+  last_appointment_agreement: z.looseObject({ at: z.string(), event: z.string().default("") }).optional(),
+  booking: BookingSummary.optional(),
   no_answer_streak: z.number().default(0),
   contact_outcomes: z.array(OverlayContact).optional(),
   notes: z.array(OverlayNote).optional(),
@@ -490,7 +532,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -512,6 +554,11 @@ export const CoordinatorData = z.looseObject({
   channel: z.string().optional(),
   note: z.string().optional(),
   text: z.string().optional(),
+  expected_suggestion_version: z.string().optional(),
+  slot_id: z.string().optional(),
+  expected_slot_version: z.string().optional(),
+  reservation_id: z.string().optional(),
+  expected_reservation_version: z.string().optional(),
 });
 
 const coordinatorShape = {
@@ -608,6 +655,12 @@ export const Booking = z.looseObject({
   status: z.enum(["suggested", "no_slot_within_horizon", "not_applicable", "not_generated"]),
   data_mode: z.string().optional(),
   reason: z.string().optional(),
+  suggestion_version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  suggested_slot_id: z.string().optional(),
+  calendar_version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  eligible_slots: z.array(EligibleBookingSlot).optional(),
+  reservable: z.boolean().optional(),
+  reservation_explanation: z.string().optional(),
 });
 
 export const CurrentDecision = z.looseObject({
@@ -1043,6 +1096,20 @@ export const CompensationResponse = withMeta({
 });
 
 /** POST /api/cases/{id}/actions body (docs/API.md, "POST actions"). `expected_head` is added by the caller. */
+const hash = z.string().regex(/^[0-9a-f]{64}$/);
+const bookingReason = z.string().trim().min(1).max(200);
+export const BookingAction = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("booking_accept"), expected_suggestion_version: hash, slot_id: z.string().min(1).max(160), expected_slot_version: hash }),
+  z.object({
+    action: z.literal("booking_choose_slot"), expected_suggestion_version: hash, slot_id: z.string().min(1).max(160), expected_slot_version: hash,
+    reason: bookingReason,
+  }),
+  z.object({
+    action: z.literal("booking_reschedule"), reservation_id: hash, expected_reservation_version: hash,
+    expected_suggestion_version: hash, slot_id: z.string().min(1).max(160), expected_slot_version: hash, reason: bookingReason,
+  }),
+  z.object({ action: z.literal("booking_cancel"), reservation_id: hash, expected_reservation_version: hash, reason: bookingReason }),
+]);
 export const CaseAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
   z.object({ action: z.literal("snooze"), until: z.string(), reason: z.string().max(200).optional() }),
@@ -1053,13 +1120,20 @@ export const CaseAction = z.discriminatedUnion("action", [
     note: z.string().max(1000).optional(),
   }),
   z.object({ action: z.literal("note"), text: z.string().min(1).max(1000) }),
+  ...BookingAction.options,
 ]);
 export const ActionResponse = withMeta({
   /** The appended event. `actor` is the one the API bound to the coordinator token, not one the frontend asserted. */
   event: z.looseObject({ hash: z.string(), at: z.string(), actor: z.string() }),
   api_overlay: ApiOverlay,
+  booking: Booking.optional(),
 });
-export const ActionError = withMeta({ error: z.string(), conflict: z.string().optional(), current_head: z.string().optional() });
+export const ActionError = withMeta({
+  error: z.string(), conflict: z.string().optional(), current_head: z.string().optional(),
+  current_suggestion_version: z.string().optional(), current_reservation_version: z.string().nullable().optional(),
+  slot_id: z.string().optional(), current_slot_version: z.string().optional(), availability: z.enum(["available", "reserved"]).optional(),
+  booking: BookingSummary.optional(), consent: z.string().optional(),
+});
 export const ApiError = withMeta({ error: z.string() });
 
 export type Programme = z.infer<typeof Programme>;
@@ -1107,4 +1181,8 @@ export type LedgerEvent = z.infer<typeof LedgerEvent>;
 export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
+export type BookingAction = z.input<typeof BookingAction>;
+export type Booking = z.infer<typeof Booking>;
+export type BookingSummary = z.infer<typeof BookingSummary>;
+export type EligibleBookingSlot = z.infer<typeof EligibleBookingSlot>;
 export type ActionResponse = z.infer<typeof ActionResponse>;
