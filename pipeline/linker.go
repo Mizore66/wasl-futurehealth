@@ -37,7 +37,7 @@ type Rec struct {
 type trackingRevision struct {
 	loop     string
 	event    *Event
-	rec      int
+	rec      int // -1 until a patient registration is available
 	version  int
 	conflict bool
 }
@@ -771,6 +771,11 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		if e.RType == "DiagnosticReport" && !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
+		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+			// Tracking orders govern their own loop, never another loop's
+			// receiving-unit response (including retired orders kept for audit).
+			continue
+		}
 		if near && e.RType != "DiagnosticReport" {
 			continue
 		}
@@ -947,6 +952,10 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 	incoming := *e
 	incoming.Version = version
 	current, seen := L.requests[loop]
+	var currentRec *Rec
+	if seen && current.rec >= 0 {
+		currentRec = L.recs[current.rec]
+	}
 	if seen {
 		if version < current.version {
 			L.Stats["stale_tracking_request_version"]++
@@ -963,17 +972,24 @@ func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, sto
 			// order nor another copy of either revision can select a winner.
 			current.conflict = true
 			delete(L.loops, loop)
-			removeCurrentRequestEvent(L.recs[current.rec], current.event)
+			removeCurrentRequestEvent(currentRec, current.event)
 			L.Stats["conflicting_tracking_request_version"]++
 			return loop, false, true
 		}
 	}
-	if seen {
-		removeLoopRegistration(L.recs[current.rec], loop)
-		removeCurrentRequestEvent(L.recs[current.rec], current.event)
+	if currentRec != nil {
+		removeLoopRegistration(currentRec, loop)
+		removeCurrentRequestEvent(currentRec, current.event)
+	}
+	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version}
+	if recIdx < 0 {
+		// Preserve an inactive-first revision by resource identity alone. Do
+		// not invent a patient registration or let delayed older orders bind it.
+		delete(L.loops, loop)
+		delete(L.loopRec, loop)
+		return loop, false, true
 	}
 	rec := L.recs[recIdx]
-	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version}
 	addLoopRegistration(rec, loop)
 	L.loopRec[loop] = recIdx
 	if e.Prog == "" {
@@ -996,7 +1012,10 @@ func (L *LinkerCore) retirementFacts(loop string) *LoopFacts {
 	}
 	f := &LoopFacts{LoopID: loop, Provider: r.event.Provider, Inactive: true, ReqStatus: r.event.Status, ReqVersion: r.version, ReqConflict: r.conflict}
 	if !r.conflict {
-		f.SRDay, f.SRRec, f.Prog = r.event.Day, L.recs[r.rec].Pk, r.event.Prog
+		f.SRDay, f.Prog = r.event.Day, r.event.Prog
+		if r.rec >= 0 {
+			f.SRRec = L.recs[r.rec].Pk
+		}
 	} else {
 		// Conflicts have no clinically selected request body or status.
 		f.ReqStatus = "conflict"
@@ -1274,23 +1293,29 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if e.PatientKey == "" {
 			if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 				loop := e.Provider + "/ServiceRequest/" + e.ID
+				recIdx := -1
 				if current := L.requests[loop]; current != nil {
-					// A revision may omit the contained Patient. Its provider+ID
-					// still identifies the existing request registration, so a
-					// valid non-active revision must be able to retire it.
-					_, store, changed := L.foldTrackingRequest(e, current.rec)
-					affRoots[L.Find(current.rec)] = true
-					if changed {
-						affLoops[loop] = true
+					recIdx = current.rec
+				}
+				// Non-active revisions must fold even before any patient is
+				// known. Activation still requires an established registration.
+				if recIdx < 0 && e.Status == "active" {
+					break
+				}
+				_, store, changed := L.foldTrackingRequest(e, recIdx)
+				if recIdx >= 0 {
+					affRoots[L.Find(recIdx)] = true
+				}
+				if changed {
+					affLoops[loop] = true
+				}
+				if store {
+					rec := L.recs[recIdx]
+					key := e.RType + "/" + e.ID
+					if _, exists := rec.evs[key]; !exists {
+						rec.evOrder = append(rec.evOrder, key)
 					}
-					if store {
-						rec := L.recs[current.rec]
-						key := e.RType + "/" + e.ID
-						if _, exists := rec.evs[key]; !exists {
-							rec.evOrder = append(rec.evOrder, key)
-						}
-						rec.evs[key] = e
-					}
+					rec.evs[key] = e
 				}
 			}
 			break

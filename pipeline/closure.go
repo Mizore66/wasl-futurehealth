@@ -110,22 +110,49 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 	if f.Inactive {
 		ls.facts = f
 		ls.inactive = true
+		// Every emitted child has its own latest stored decision. Append a
+		// tombstone for each before dropping in-memory surveillance state;
+		// otherwise API/log replay retains the child's overdue outreach.
+		previous := []*Decision{ls.last}
+		if ls.lastFU != nil {
+			previous = append(previous, ls.lastFU)
+		}
+		childIDs := make([]string, 0, len(ls.lastFU2))
+		for id := range ls.lastFU2 {
+			childIDs = append(childIDs, id)
+		}
+		sort.Strings(childIDs)
+		for _, id := range childIDs {
+			previous = append(previous, ls.lastFU2[id])
+		}
+		for i, prev := range previous {
+			loop, srDay := f.LoopID, f.SRDay
+			if i > 0 {
+				loop, srDay = prev.LoopID, prev.SRDay
+			}
+			body := map[string]interface{}{"loop": loop, "status": f.ReqStatus, "version": f.ReqVersion, "conflict": f.ReqConflict,
+				"policy": "only the current active same-ID tracking ServiceRequest version sustains actionable care"}
+			if loop != f.LoopID {
+				body["request"] = f.LoopID
+			}
+			d := &Decision{LoopID: loop, Provider: f.Provider, SRDay: srDay, State: "inactive", Prog: f.Prog,
+				Inactive: true, RequestStatus: f.ReqStatus, RequestVersion: f.ReqVersion, RequestConflict: f.ReqConflict,
+				ProcDay: -1, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1,
+				Chain: appendBlock(nil, "tracking_request_retirement", body)}
+			d.Policy = PolicyName
+			d.Sig = sha(canon(d))
+			if prev == nil || prev.Sig != d.Sig {
+				d.Now, d.InSeq = c.now, m.InSeq
+				d.ID = fmt.Sprintf("dec-%s@%s", loop, m.ID)
+				if i == 0 {
+					ls.last = d
+				}
+				out = append(out, OutMsg{ID: d.ID, Kind: "decision", Dec: d})
+			}
+		}
 		ls.lastFU, ls.lastFU2 = nil, nil
 		ls.raised = map[string]*ReviewItem{}
 		ls.contact = nil
-		d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: "inactive", Prog: f.Prog,
-			Inactive: true, RequestStatus: f.ReqStatus, RequestVersion: f.ReqVersion, RequestConflict: f.ReqConflict,
-			ProcDay: -1, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1,
-			Chain: appendBlock(nil, "tracking_request_retirement", map[string]interface{}{"loop": f.LoopID, "status": f.ReqStatus, "version": f.ReqVersion, "conflict": f.ReqConflict,
-				"policy": "only the current active same-ID tracking ServiceRequest version sustains actionable care"})}
-		d.Policy = PolicyName
-		d.Sig = sha(canon(d))
-		if ls.last == nil || ls.last.Sig != d.Sig {
-			d.Now, d.InSeq = c.now, m.InSeq
-			d.ID = fmt.Sprintf("dec-%s@%s", f.LoopID, m.ID)
-			ls.last = d
-			out = append(out, OutMsg{ID: d.ID, Kind: "decision", Dec: d})
-		}
 		return out
 	}
 	if ls.inactive {
