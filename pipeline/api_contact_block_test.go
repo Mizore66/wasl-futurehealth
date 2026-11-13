@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -129,5 +132,32 @@ func TestCaseListExposesEffectiveContactState(t *testing.T) {
 	_, srv2 := serveAgentConsent(t, run)
 	if blocked(list(srv2)) != true {
 		t.Fatal("blocked state lost after restart")
+	}
+}
+
+func TestReplayRejectsContactOutcomeAfterBlockingConsent(t *testing.T) {
+	l := agentLoop("1")
+	line := func(ev map[string]interface{}) string {
+		ev["hash"] = apiEventHash(ev)
+		b, _ := json.Marshal(ev)
+		return string(b) + "\n"
+	}
+	consent := map[string]interface{}{"case": l, "item": "", "decision": "consent_denied", "note": "", "role": RoleCoordinator, "actor": "c1",
+		"action": ActRecordConsent, "at": "2026-11-20T09:00:00Z", "head_signed": "", "mode": "demo", "prev": "genesis"}
+	consentLine := line(consent)
+	outcome := map[string]interface{}{"type": coordEventType, "kind": "contact_outcome", "case": l,
+		"data": map[string]interface{}{"outcome": "reached", "channel": "phone"}, "role": RoleCoordinator, "actor": "nurse-1",
+		"action": ActCoordinateCase, "at": "2026-11-20T10:00:00Z", "head": "sig-" + l, "seq": 1, "mode": "demo", "prev": consent["hash"]}
+	run := twoCaseRun(t)
+	if s := loadAPI(run, ""); s.ledgerErr != "" {
+		t.Fatal(s.ledgerErr)
+	}
+	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), []byte(consentLine+line(outcome)), 0o644)
+	if s := loadAPI(run, ""); s.ledgerErr == "" || !strings.Contains(s.ledgerErr, "consent") {
+		t.Fatalf("replay accepted an outcome after a denial: %q", s.ledgerErr)
+	}
+	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), []byte(consentLine), 0o644)
+	if s := loadAPI(run, ""); s.ledgerErr != "" {
+		t.Fatalf("the consent event alone is a valid ledger: %q", s.ledgerErr)
 	}
 }

@@ -1711,6 +1711,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if kind == "contact_outcome" && c.Consent != "granted" {
 		return errors.New("contact outcome on a case without granted consent")
 	}
+	if kind == "contact_outcome" && s.contactBlockedLocked(c) {
+		return errors.New("contact outcome after a recorded consent denial or opt-out")
+	}
 	var booking *bookingTransition
 	if bookingActionName(kind) {
 		var failure *bookingFailure

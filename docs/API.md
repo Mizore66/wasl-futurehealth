@@ -368,7 +368,7 @@ Workflow A coordinator actions. Overlay metadata only: they never change a decis
 |---|---|---|
 | `assign_owner` | `owner` | 1 to 64 characters |
 | `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
-| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted` and no recorded consent denial or opt-out (`contact_state.contact_blocked`); either failure returns 409 `consent` and appends nothing,. Records what happened; it does not send anything |
+| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted` and no recorded consent denial or opt-out (`contact_state.contact_blocked`); either failure returns 409 `consent` and appends nothing, and replay applies the same rule in ledger order,. Records what happened; it does not send anything |
 | `note` | `text` | 1 to 1000 characters, newlines allowed |
 | `booking_accept` | `expected_suggestion_version`, `slot_id`, `expected_slot_version` | Accept the current non-overbooked `suggested_slot_id` |
 | `booking_choose_slot` | accept fields plus `reason` | Choose a currently eligible slot; reason required, up to 200 characters |
