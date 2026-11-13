@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"bytes"
+	"encoding/json"
+	"testing"
+)
 
 const lcSRRec = "lcs-centre|LCS-MRN000001"
 
@@ -341,5 +345,211 @@ func TestLDCTProgOfText(t *testing.T) {
 	}
 	if p := progOfText("Incidental pulmonary nodule: Fleischner follow-up"); p != "lung_nodule" {
 		t.Fatalf("an incidental nodule must stay lung_nodule, got %s", p)
+	}
+}
+
+func requireUrgentLDCTAnchor(t *testing.T, d *Decision) {
+	t.Helper()
+	if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != "LCS-ct-1" || d.LDCT.ScanLabel != "LR4B" || d.LDCT.Rec == nil || d.LDCT.Rec.Action != LDCTWorkup {
+		t.Fatalf("request-named LR4B must remain open for work-up: %+v", d)
+	}
+	if lastBlock(d) == "closure_decision" || !verifyChain(d.Chain) || decSig(d) != d.Sig {
+		t.Fatalf("urgent index must not close and must retain valid provenance: %+v", d)
+	}
+}
+
+func TestLDCTAnchorsToRequestedScanDespiteNormalCompetitors(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		other DownFact
+	}{
+		{"earlier eligible LR2 in lookback", lcScan("LCS-ct-0", 9.5, "LR2")},
+		{"same day LR1", lcScan("LCS-ct-0", 10, "LR1")},
+		{"same day LR2", lcScan("LCS-ct-0", 10, "LR2")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			index := lcScan("LCS-ct-1", 10, "LR4B")
+			forward, _ := runLung(t, lcFacts(tc.other, index), 20)
+			reverse, _ := runLung(t, lcFacts(index, tc.other), 20)
+			requireUrgentLDCTAnchor(t, forward)
+			requireUrgentLDCTAnchor(t, reverse)
+			if !bytes.Equal(canon(forward), canon(reverse)) {
+				t.Fatalf("Down order changed the canonical decision:\n%s\n%s", canon(forward), canon(reverse))
+			}
+		})
+	}
+}
+
+func assertLDCTMissingHold(t *testing.T, f *LoopFacts) {
+	t.Helper()
+	d, out := runLung(t, f, 120)
+	if d.State != "open" || lcHoldReason(d) != "scan_report_not_received" || d.LDCT.Scan != "" || d.LDCT.Rec != nil || d.ClosingReport != "" || d.ClosedDay != 0 {
+		t.Fatalf("missing requested scan must hold without a substitute: %+v", d)
+	}
+	if len(d.Pending) != 0 || len(d.Outreach) != 0 {
+		t.Fatalf("an unrelated scan must not add reviews or outreach: pending=%v outreach=%v", d.Pending, d.Outreach)
+	}
+	for _, o := range out {
+		if o.Kind == "review" {
+			t.Fatalf("an unrelated scan raised review %+v", o.Item)
+		}
+	}
+}
+
+func TestLDCTMissingOrIneligibleRequestedScanNeverFallsBack(t *testing.T) {
+	savedOutreach := OutreachOn
+	OutreachOn = true
+	defer func() { OutreachOn = savedOutreach }()
+
+	other := lcScan("LCS-ct-0", 9.5, "LR2")
+	assertLDCTMissingHold(t, lcFacts(other))
+	empty := lcFacts(other)
+	empty.LDCT.Scan = ""
+	assertLDCTMissingHold(t, empty)
+	nilRequest := lcFacts(other)
+	nilRequest.LDCT = nil
+	assertLDCTMissingHold(t, nilRequest)
+	outside := lcFacts(lcScan("LCS-ct-1", -200, "LR4B"), other)
+	assertLDCTMissingHold(t, outside)
+
+	for _, status := range []string{"cancelled", "entered-in-error", "preliminary", "registered"} {
+		t.Run(status, func(t *testing.T) {
+			rec := &Rec{Pk: lcSRRec, evOrder: []string{"target", "other"}, evs: map[string]*Event{
+				"target": {ID: "target", Provider: "lcs-centre", RType: "DiagnosticReport", Status: status, Category: "ldct-screen", ReportID: "LCS-ct-1", Day: 10,
+					Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR4B"}},
+				"other": {ID: "other", Provider: "lcs-centre", RType: "DiagnosticReport", Status: "final", Category: "ldct-screen", ReportID: "LCS-ct-0", Day: 9.5,
+					Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR2"}},
+			}}
+			f := lcFacts(ldctScanFacts(rec)...)
+			f.Contact = "granted"
+			assertLDCTMissingHold(t, f)
+		})
+	}
+}
+
+func TestLDCTNamedDisagreementCannotBeReplaced(t *testing.T) {
+	d, out := runLung(t, lcFacts(lcScan("LCS-ct-0", 9.5, "LR2"), lcScan("LCS-ct-1", 10, "")), 120)
+	if d.State != "open" || lcHoldReason(d) != "scan_readers_disagree" || len(d.Pending) != 1 || d.ClosingReport != "" {
+		t.Fatalf("named disagreement must hold without fallback: %+v", d)
+	}
+	for _, o := range out {
+		if o.Kind == "review" && o.Item.ReportID != "LCS-ct-1" {
+			t.Fatalf("review identifies unrelated report %q", o.Item.ReportID)
+		}
+	}
+	if !hasReview(out, "evidence") {
+		t.Fatal("named disagreeing scan did not raise its evidence review")
+	}
+}
+
+func TestLDCTUnrelatedScansDoNotAlterAnchoredLoops(t *testing.T) {
+	for _, otherLabel := range []string{"LR2", ""} {
+		t.Run(map[string]string{"LR2": "readable", "": "unread"}[otherLabel], func(t *testing.T) {
+			index := lcScan("LCS-ct-1", 10, "LR4B")
+			other := lcScan("LCS-ct-0", 10, otherLabel)
+			first := lcFacts(other, index)
+			second := lcFacts(other, index)
+			second.LoopID = "lcs-centre/ServiceRequest/LCS-sr-2"
+			second.LDCT.Scan = "LCS-ct-0"
+			c := NewClosureCore(0, nil)
+			savedCal := V7Cal
+			V7Cal = nil
+			defer func() { V7Cal = savedCal }()
+			firstOut := c.Apply(&FactsMsg{ID: "first", InSeq: 1, Facts: first})
+			c.Apply(&FactsMsg{ID: "second", InSeq: 2, Facts: second})
+			c.Apply(&FactsMsg{ID: "tick", InSeq: 3, IsTick: true, TickDay: 20})
+			final := c.Final()
+			requireUrgentLDCTAnchor(t, final[first.LoopID])
+			if len(final[first.LoopID].Pending) != 0 {
+				t.Fatalf("unrelated scan placed a hold on the urgent loop: %v", final[first.LoopID].Pending)
+			}
+			for _, o := range firstOut {
+				if o.Kind == "review" {
+					t.Fatalf("first request evaluated unrelated evidence: %+v", o.Item)
+				}
+			}
+			otherDecision := final[second.LoopID]
+			if otherLabel == "LR2" {
+				if otherDecision.State != "no_recall_needed" || otherDecision.LDCT.Scan != "LCS-ct-0" {
+					t.Fatalf("other scan's own request was suppressed: %+v", otherDecision)
+				}
+			} else if otherDecision.State != "open" || otherDecision.LDCT.Scan != "" || len(otherDecision.Pending) != 1 {
+				t.Fatalf("other unread scan's own request must hold independently: %+v", otherDecision)
+			}
+		})
+	}
+}
+
+func TestLDCTIntervalAndCompletionRulesRemainIndexBound(t *testing.T) {
+	for _, label := range []string{"LR3", "LR4A"} {
+		index := lcScan("LCS-ct-1", 10, label)
+		earlier := lcScan("LCS-ct-0", 9.5, "LR2")
+		d, _ := runLung(t, lcFacts(earlier, index), 120)
+		if d.State != "open" || d.LDCT.Scan != index.ReportID || d.LDCT.ScanLabel != label {
+			t.Fatalf("%s: earlier normal scan changed the index episode: %+v", label, d)
+		}
+		follow := lcScan("LCS-ct-follow", 100, "LR2")
+		d, _ = runLung(t, lcFacts(follow, earlier, index), 120)
+		if d.State != "closed" || d.ClosingReport != follow.ReportID || d.LDCT.Scan != index.ReportID || d.LDCT.FollowReport != follow.ReportID {
+			t.Fatalf("%s: eligible independent interval LDCT must close with provenance: %+v", label, d)
+		}
+	}
+	index := lcScan("LCS-ct-1", 10, "LR0")
+	earlier := lcScan("LCS-ct-0", 9.5, "LR2")
+	d, _ := runLung(t, lcFacts(earlier, index), 20)
+	if d.State != "open" || d.LDCT.Scan != index.ReportID || d.LDCT.ScanLabel != "LR0" {
+		t.Fatalf("earlier annual scan completed the named LR0: %+v", d)
+	}
+	completion := lcScan("LCS-ct-complete", 60, "LR4A")
+	d, _ = runLung(t, lcFacts(completion, earlier, index), 120)
+	if d.State != "open" || d.LDCT.Scan != completion.ReportID || d.LDCT.ScanDay != 60 || d.LDCT.DeadlineDay != 181 {
+		t.Fatalf("independent LR0 completion or its clock changed: %+v", d)
+	}
+}
+
+func TestLDCTAnchoredDecisionsReplayAfterJSONRoundTrip(t *testing.T) {
+	savedCal, savedOutreach := V7Cal, OutreachOn
+	V7Cal, OutreachOn = nil, true
+	defer func() { V7Cal, OutreachOn = savedCal, savedOutreach }()
+
+	missing := lcFacts(lcScan("LCS-ct-0", 9.5, "LR2"))
+	urgent := lcFacts(lcScan("LCS-ct-0", 9.5, "LR2"), lcScan("LCS-ct-1", 10, "LR4B"))
+	urgent.Contact = "granted"
+	annual := lcFacts(lcScan("LCS-ct-0", 9.5, "LR2"), lcScan("LCS-ct-1", 10, "LR1"))
+	evidenceHold := lcFacts(lcScan("LCS-ct-0", 9.5, "LR2"), lcScan("LCS-ct-1", 10, ""))
+	for name, original := range map[string]*LoopFacts{"anchored closure": annual, "anchored urgent": urgent, "missing index": missing, "named evidence hold": evidenceHold} {
+		t.Run(name, func(t *testing.T) {
+			var decoded LoopFacts
+			if err := json.Unmarshal(canon(original), &decoded); err != nil {
+				t.Fatal(err)
+			}
+			run := func(f *LoopFacts) (*ClosureCore, []OutMsg) {
+				c := NewClosureCore(0, nil)
+				out := c.Apply(&FactsMsg{ID: "facts", InSeq: 1, Facts: f})
+				out = append(out, c.Apply(&FactsMsg{ID: "tick", InSeq: 2, IsTick: true, TickDay: 60})...)
+				return c, out
+			}
+			first, _ := run(original)
+			replayed, _ := run(&decoded)
+			reversedFacts := *original
+			reversedFacts.Down = append([]DownFact(nil), original.Down...)
+			for i, j := 0, len(reversedFacts.Down)-1; i < j; i, j = i+1, j-1 {
+				reversedFacts.Down[i], reversedFacts.Down[j] = reversedFacts.Down[j], reversedFacts.Down[i]
+			}
+			reversed, _ := run(&reversedFacts)
+			if !bytes.Equal(canon(first.Final()), canon(reversed.Final())) {
+				t.Fatalf("reversed Down order changed decisions:\n%s\n%s", canon(first.Final()), canon(reversed.Final()))
+			}
+			if !bytes.Equal(canon(first.Final()), canon(replayed.Final())) {
+				t.Fatalf("JSON replay changed decisions:\n%s\n%s", canon(first.Final()), canon(replayed.Final()))
+			}
+			d := replayed.Final()[original.LoopID]
+			if !verifyChain(d.Chain) || decSig(d) != d.Sig {
+				t.Fatalf("replayed decision provenance does not verify: %+v", d)
+			}
+			if duplicate := replayed.Apply(&FactsMsg{ID: "duplicate", InSeq: 3, Facts: &decoded}); len(duplicate) != 0 {
+				t.Fatalf("identical facts emitted duplicate outputs: %+v", duplicate)
+			}
+		})
 	}
 }

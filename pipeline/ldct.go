@@ -112,6 +112,9 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			continue
 		}
 		if d.RType == "LDCTScan" {
+			if d.Status != "" && !diagnosticReportEvidenceEligible(d.Status) {
+				continue
+			}
 			scans = append(scans, row{d: d, pc: 1, trusted: true})
 			continue
 		}
@@ -136,6 +139,30 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	byDay(scans)
 	byDay(notes)
+	// The tracking request identifies the only report that may open this episode. Other scans remain available
+	// solely for the category-specific completion/follow-up exceptions below; none can replace a missing anchor.
+	requestedScan := ""
+	if f.LDCT != nil {
+		requestedScan = f.LDCT.Scan
+	}
+	anchor := -1
+	if requestedScan != "" {
+		for i := range scans {
+			if scans[i].d.ReportID == requestedScan {
+				anchor = i
+				break
+			}
+		}
+	}
+	if anchor < 0 {
+		scans = nil
+	} else {
+		anchored := make([]row, 0, len(scans))
+		anchored = append(anchored, scans[anchor])
+		anchored = append(anchored, scans[:anchor]...)
+		anchored = append(anchored, scans[anchor+1:]...)
+		scans = anchored
+	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
@@ -208,8 +235,9 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the deciding scan: the first read scan; a categorised scan after an LR0 replaces it; for 3/4A the next read
-	// scan with a category other than 0 is the follow-up. An unread scan blocks what comes after it.
+	// ---- the deciding scan starts at the request's anchor; a categorised later completion after an LR0 replaces it;
+	// for 3/4A the next eligible independent interval scan with a category other than 0 is the follow-up. An unread
+	// eligible completion/follow-up blocks what comes after it. Ineligible reports raise no evidence review.
 	var dec, follow, unread *row
 	var decLab, decHuman, folLab, folHuman string
 	incompleteFollow := false
@@ -218,6 +246,16 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		if dec != nil {
 			if dr, ok := ldctRule(decLab); !ok || dr.Action == LDCTAnnual || dr.Action == LDCTWorkup {
 				break // later scans do not concern this loop (the next screen opens its own tracking request)
+			}
+		}
+		if dec != nil && decLab == "LR0" {
+			linked := scans[i].d.Parent != "" && (scans[i].d.Parent == requestedScan || scans[i].d.Parent == dec.d.ReportID)
+			if scans[i].d.Parent != "" && !linked {
+				continue
+			}
+			later := scans[i].d.Day > dec.d.Day || scans[i].d.Day == dec.d.Day && scans[i].d.EventID > dec.d.EventID
+			if !later {
+				continue
 			}
 		}
 		if dec != nil && (decLab == "LR3" || decLab == "LR4A") {
