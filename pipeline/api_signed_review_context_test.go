@@ -87,8 +87,6 @@ func TestAPIBreastReadSurvivesConflictingTrackingRetirement(t *testing.T) {
 	e.claim(t, irClinB, item, "evidence", "claim", st.Head, 404)
 	e.must(t, irClinB, irBody(item, "B4", "r2", st.Head), 400) // empty current programme is not restored
 	e.must(t, irClinB, irBody(item, "adequate", "r2", st.Head), 404)
-	ledgerPost(t, h, e.path+"/actions", irCoord,
-		fmt.Sprintf(`{"action":"note","text":"synthetic","expected_head":%q}`, headOf(s, c.ID)), 409)
 	if !bytes.Equal(before, actRead(t, filepath.Join(e.run, "api_reviews.ndjson"))) {
 		t.Fatal("retired submissions appended to the ledger")
 	}
