@@ -131,6 +131,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		ld.Risk = "low"
 	}
 	// ---- rows (same identity trust rule as the screening programmes)
+	findingParents := reportParentLineage(f.Down, "lung_nodule", "LungFinding")
 	var finding *row
 	var addenda, fus []row
 	for _, d := range f.Down {
@@ -146,7 +147,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			case sr.Finding != "" && d.ReportID == sr.Finding:
 				rr := r
 				finding = &rr
-			case sr.Finding != "" && d.Parent == sr.Finding:
+			case sr.Finding != "" && d.ReportID != sr.Finding && inExplicitReportLineage(sr.Finding, d.ReportID, findingParents):
 				addenda = append(addenda, r)
 			}
 			continue
@@ -162,8 +163,8 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		fus = append(fus, row{d: d, pc: pc, trusted: trusted})
 	}
-	// Chronology orders only reports already authorized by the request's explicit lineage. It never admits
-	// an unlinked report as an index substitute. Same-ID revision selection remains the linker's responsibility.
+	// Chronology orders only reports already authorized by the request's explicit, potentially multi-hop lineage. It
+	// never admits an unlinked report as an index substitute. Same-ID revision selection remains the linker's responsibility.
 	sort.SliceStable(addenda, func(i, j int) bool {
 		if addenda[i].d.Day != addenda[j].d.Day {
 			return addenda[i].d.Day < addenda[j].d.Day

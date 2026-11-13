@@ -147,13 +147,17 @@ func TestLDCTIncompleteScan(t *testing.T) {
 	if d.State != "no_recall_needed" || d.ClosingReport != "LCS-ct-2" || d.LDCT.ScanDay != 14 {
 		t.Fatalf("LR0 then an addendum LR2: want no_recall_needed on the addendum, got %s %s", d.State, d.ClosingReport)
 	}
-	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), lcScan("LCS-ct-2", 60, "LR4A")), 120)
+	completion := lcScan("LCS-ct-2", 60, "LR4A")
+	completion.Parent = "LCS-ct-1"
+	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), completion), 120)
 	if d.State != "open" || d.LDCT.ScanLabel != "LR4A" || d.LDCT.DeadlineDay != 60+121 || d.Overdue {
-		t.Fatalf("LR0 then a 4A completion: want the 4A clock from day 60, got %s %+v", d.State, d.LDCT)
+		t.Fatalf("LR0 then a linked 4A completion: want the 4A clock from day 60, got %s %+v", d.State, d.LDCT)
 	}
-	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), lcScan("LCS-ct-2", 60, "")), 120)
-	if d.State != "open" || d.LDCT.ScanLabel != "LR0" {
-		t.Fatalf("LR0 with an unread completion: want open under LR0, got %s %+v", d.State, d.LDCT)
+	unreadCompletion := lcScan("LCS-ct-2", 60, "")
+	unreadCompletion.Parent = "LCS-ct-1"
+	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), unreadCompletion), 120)
+	if d.State != "open" || d.LDCT.ScanLabel != "LR0" || lcHoldReason(d) != "completion_readers_disagree" || len(d.Pending) != 1 {
+		t.Fatalf("LR0 with an unread linked completion: want open under LR0 with evidence review, got %s %+v", d.State, d.LDCT)
 	}
 }
 
@@ -501,10 +505,92 @@ func TestLDCTIntervalAndCompletionRulesRemainIndexBound(t *testing.T) {
 		t.Fatalf("earlier annual scan completed the named LR0: %+v", d)
 	}
 	completion := lcScan("LCS-ct-complete", 60, "LR4A")
+	completion.Parent = index.ReportID
 	d, _ = runLung(t, lcFacts(completion, earlier, index), 120)
 	if d.State != "open" || d.LDCT.Scan != completion.ReportID || d.LDCT.ScanDay != 60 || d.LDCT.DeadlineDay != 181 {
-		t.Fatalf("independent LR0 completion or its clock changed: %+v", d)
+		t.Fatalf("linked LR0 completion or its clock changed: %+v", d)
 	}
+}
+
+func TestLDCTUnlinkedLaterScanCannotCompleteLR0(t *testing.T) {
+	index := lcScan("LCS-ct-1", 10, "LR0")
+	unrelated := lcScan("LCS-ct-unrelated", 60, "LR2")
+	for _, down := range [][]DownFact{{index, unrelated}, {unrelated, index}} {
+		d, out := runLung(t, lcFacts(down...), 120)
+		if d.State != "open" || d.LDCT.Scan != index.ReportID || d.LDCT.ScanLabel != "LR0" || d.LDCT.ScanDay != 10 ||
+			d.ClosingReport != "" || lcHoldReason(d) != "awaiting_completion" || len(d.Pending) != 0 {
+			t.Fatalf("unrelated later scan completed or altered the named LR0: %+v", d)
+		}
+		for _, o := range out {
+			if o.Kind == "review" {
+				t.Fatalf("unrelated completion raised review %+v", o.Item)
+			}
+		}
+	}
+}
+
+func TestLDCTLinkedRevisionRecomputesTerminalDecision(t *testing.T) {
+	savedOutreach := OutreachOn
+	OutreachOn = true
+	defer func() { OutreachOn = savedOutreach }()
+
+	t.Run("annual index revised to urgent workup", func(t *testing.T) {
+		index := lcScan("LCS-ct-1", 10, "LR2")
+		revision := lcScan("LCS-ct-revision", 12, "LR4B")
+		revision.Parent = index.ReportID
+		f := lcFacts(index, revision)
+		f.Contact = "granted"
+		d, _ := runLung(t, f, 50)
+		if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != revision.ReportID || d.LDCT.ScanLabel != "LR4B" ||
+			d.LDCT.ScanDay != 12 || d.LDCT.DeadlineDay != 42 || d.Deadline != 30 || !d.Overdue {
+			t.Fatalf("linked LR4B revision did not replace the annual decision and clock: %+v", d)
+		}
+		if len(d.Outreach) != 1 || d.Outreach[0].Kind != "ldct_workup_overdue" || !d.Outreach[0].Released {
+			t.Fatalf("revision did not recompute outreach from the urgent clock: %+v", d.Outreach)
+		}
+		if len(d.Chain) == 0 || d.Chain[0].Type != "evidence" || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/LCS-ct-revision" ||
+			!verifyChain(d.Chain) || decSig(d) != d.Sig {
+			t.Fatalf("decision evidence does not identify the authorized revision: %+v", d)
+		}
+	})
+
+	t.Run("workup index revised to annual", func(t *testing.T) {
+		index := lcScan("LCS-ct-1", 10, "LR4B")
+		revision := lcScan("LCS-ct-revision", 12, "LR2")
+		revision.Parent = index.ReportID
+		f := lcFacts(index, revision)
+		f.Contact = "granted"
+		d, _ := runLung(t, f, 50)
+		if d.State != "no_recall_needed" || d.ClosingReport != revision.ReportID || d.ClosedDay != 12 ||
+			d.LDCT.Scan != revision.ReportID || d.LDCT.ScanLabel != "LR2" || d.LDCT.ScanDay != 12 || d.LDCT.DueDay != 377 ||
+			d.Overdue || len(d.Outreach) != 0 || hasEsc(d, "urgent_ldct_workup_open") {
+			t.Fatalf("linked annual revision did not replace the work-up decision, clock and outreach: %+v", d)
+		}
+		if len(d.Chain) == 0 || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/LCS-ct-revision" ||
+			lastBlock(d) != "closure_decision" || !verifyChain(d.Chain) || decSig(d) != d.Sig {
+			t.Fatalf("annual closure does not identify the authorized revision: %+v", d)
+		}
+	})
+
+	t.Run("unread terminal revision holds on revision", func(t *testing.T) {
+		index := lcScan("LCS-ct-1", 10, "LR2")
+		revision := lcScan("LCS-ct-revision", 12, "")
+		revision.Parent = index.ReportID
+		f := lcFacts(index, revision)
+		f.Contact = "granted"
+		d, out := runLung(t, f, 50)
+		if d.State != "open" || d.ClosingReport != "" || lcHoldReason(d) != "scan_readers_disagree" || len(d.Pending) != 1 || len(d.Outreach) != 0 {
+			t.Fatalf("unread linked revision closed or retained the terminal index decision: %+v", d)
+		}
+		if len(d.Chain) == 0 || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/LCS-ct-revision" || !hasReview(out, "evidence") {
+			t.Fatalf("unread revision did not supply the hold evidence and review: %+v", d)
+		}
+		for _, o := range out {
+			if o.Kind == "review" && o.Item.ReportID != revision.ReportID {
+				t.Fatalf("review identifies superseded or unrelated report %q", o.Item.ReportID)
+			}
+		}
+	})
 }
 
 func TestLDCTAnchoredDecisionsReplayAfterJSONRoundTrip(t *testing.T) {

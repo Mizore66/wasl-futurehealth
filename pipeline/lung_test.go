@@ -305,6 +305,27 @@ func TestLungOnlyExplicitIndexLineageCanDecide(t *testing.T) {
 	}
 }
 
+func TestLungTransitiveCorrectionSupersedesNoActionAddendum(t *testing.T) {
+	target := lungIndexFinding("RAD-target", -200, "solid/<6/single")
+	addendum := lungIndexFinding("RAD-addendum", -190, "solid/<6/single")
+	addendum.Parent = target.ReportID
+	correction := lungIndexFinding("RAD-correction", -180, "solid/6-8/single")
+	correction.Parent = addendum.ReportID
+	unrelated := lungIndexFinding("RAD-unrelated", -170, "solid/<6/single")
+
+	for _, down := range [][]DownFact{{target, addendum, correction, unrelated}, {unrelated, correction, target, addendum}} {
+		d, _ := runLung(t, lungMissingIndexFacts(down...), 120)
+		if d.State != "open" || d.ClosingReport != "" || d.Lung.Finding != correction.ReportID || d.Lung.FindingLabel != "solid/6-8/single" ||
+			d.Lung.Rec == nil || d.Lung.Rec.Action != FlCT || d.Lung.WindowStart != -200+float64(months(6)) || d.Lung.WindowEnd != -200+float64(months(12)) {
+			t.Fatalf("correction of the authorized addendum did not supply the current decision: %+v", d)
+		}
+		if len(d.Chain) == 0 || d.Chain[0].Type != "evidence" || d.Chain[0].Body["report"] != "rad-imaging/DiagnosticReport/RAD-correction" ||
+			!verifyChain(d.Chain) || decSig(d) != d.Sig {
+			t.Fatalf("decision evidence does not identify the transitive correction: %+v", d)
+		}
+	}
+}
+
 func TestLungFindingFactsCarryAddendumIdentity(t *testing.T) {
 	rec := &Rec{Pk: "rad-imaging|RAD-MRN000001", evOrder: []string{"a", "b"}, evs: map[string]*Event{
 		"a": {ID: "a", RType: "DiagnosticReport", Status: "final", Category: "lung-finding", ReportID: "RAD-target"},

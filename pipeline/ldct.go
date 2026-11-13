@@ -9,8 +9,8 @@ package main
 //   category  : both readers agree on the LDCT report (or the coded Lung-RADS equals reader A's reading of the summary,
 //               or a clinician signs the evidence item) -> ldctRule(label).
 //                 1/2 -> closes as no_recall_needed (annual screening recorded, next LDCT due in 12 months).
-//                 0   -> open with a 91-day completion clock; a later categorised report on the same registration
-//                        (addendum after comparison, or a 1-3 month LDCT) decides the loop from its own day.
+//                 0   -> open with a 91-day completion clock; a later categorised report explicitly parented to the
+//                        index lineage (addendum after comparison, or a 1-3 month LDCT) decides from its own day.
 //   follow-up : 3/4A -> the next independent LDCT report on the scan's own registration (not an addendum or same-day
 //               reread) that both readers read with a category other than 0 closes the loop (outcome followup_done; the
 //               follow-up category and its next step are recorded; action categories raise followup_needs_tracking).
@@ -106,6 +106,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	ld := &LDCTDecision{ScanDay: f.SRDay}
 	// ---- rows (same identity trust rule as the other programmes)
+	scanParents := reportParentLineage(f.Down, "lung_ldct", "LDCTScan")
 	var scans, notes []row
 	for _, d := range f.Down {
 		if d.Prog != "lung_ldct" || d.Day < f.SRDay-1 {
@@ -235,23 +236,27 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the deciding scan starts at the request's anchor; a categorised later completion after an LR0 replaces it;
-	// for 3/4A the next eligible independent interval scan with a category other than 0 is the follow-up. An unread
+	// ---- the deciding scan starts at the request's anchor; an explicitly linked revision or LR0 completion replaces
+	// it; for 3/4A the next eligible independent interval scan with a category other than 0 is the follow-up. An unread
 	// eligible completion/follow-up blocks what comes after it. Ineligible reports raise no evidence review.
 	var dec, follow, unread *row
 	var decLab, decHuman, folLab, folHuman string
 	incompleteFollow := false
 	excludedFollow := ""
 	for i := range scans {
+		linkedRevision := scans[i].d.ReportID != requestedScan && inExplicitReportLineage(requestedScan, scans[i].d.ReportID, scanParents)
 		if dec != nil {
-			if dr, ok := ldctRule(decLab); !ok || dr.Action == LDCTAnnual || dr.Action == LDCTWorkup {
-				break // later scans do not concern this loop (the next screen opens its own tracking request)
+			dr, ok := ldctRule(decLab)
+			if !ok {
+				break
+			}
+			if (dr.Action == LDCTAnnual || dr.Action == LDCTWorkup) && !linkedRevision {
+				continue // only an authorized revision can replace a terminal index; unrelated scans open their own loops
 			}
 		}
 		if dec != nil && decLab == "LR0" {
-			linked := scans[i].d.Parent != "" && (scans[i].d.Parent == requestedScan || scans[i].d.Parent == dec.d.ReportID)
-			if scans[i].d.Parent != "" && !linked {
-				continue
+			if !linkedRevision {
+				continue // chronology alone never proves that a later scan completes this incomplete index
 			}
 			later := scans[i].d.Day > dec.d.Day || scans[i].d.Day == dec.d.Day && scans[i].d.EventID > dec.d.EventID
 			if !later {
@@ -272,11 +277,14 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		lab, h := labelOf(scans[i])
 		if lab == "" {
+			if linkedRevision && dec != nil && decLab != "LR0" {
+				dec, decLab, decHuman = &scans[i], "", ""
+			}
 			unread = &scans[i]
 			raise(scans[i], "evidence")
 			break
 		}
-		if dec == nil || decLab == "LR0" {
+		if dec == nil || decLab == "LR0" || linkedRevision {
 			dec, decLab, decHuman = &scans[i], lab, h
 			continue
 		}
@@ -295,7 +303,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	switch {
 	case len(scans) == 0:
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "scan_report_not_received"})
-	case dec == nil: // the first scan is unread
+	case dec == nil || decLab == "": // the index or its authorized terminal revision is unread
 		chain = appendBlock(nil, "evidence", ldctEvBlock(unread.d, ""))
 		chain = hold(chain, "review_hold", map[string]interface{}{"reason": "scan_readers_disagree", "report": unread.d.ReportID})
 	case !recOK: // a label the rule does not know (a mistyped human label): hold, never close
