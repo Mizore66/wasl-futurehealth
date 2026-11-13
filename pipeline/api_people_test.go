@@ -106,6 +106,33 @@ func personRequest(t *testing.T, h http.Handler, method, target, token string) *
 	return w
 }
 
+func TestCaseDetailDoesNotExposeTimelinePatientKeys(t *testing.T) {
+	s, regs := newPersonTestAPI(t)
+	caseID := "provider/ServiceRequest/case-0"
+	w := personRequest(t, secureTestHandler(t, s, ""), http.MethodGet, "/api/cases/"+caseID, "reviewer-token-1234567890")
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET case detail: %d %s", w.Code, w.Body.String())
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if timeline, ok := body["timeline"].([]interface{}); !ok || len(timeline) != 1 {
+		t.Fatalf("case timeline was not preserved: %s", w.Body.String())
+	}
+	for _, raw := range regs {
+		if strings.Contains(w.Body.String(), raw) {
+			t.Errorf("raw registration %q leaked in authenticated case response: %s", raw, w.Body.String())
+		}
+	}
+	if strings.Contains(w.Body.String(), `"patient_key"`) {
+		t.Errorf("internal patient key metadata reached case response: %s", w.Body.String())
+	}
+	if got := s.facts[caseID][0]["patient_key"]; got != regs[caseID] {
+		t.Errorf("serialization removed internal person-filtering key: got %v, want %q", got, regs[caseID])
+	}
+}
+
 func TestPersonJourneyTrustedAggregationAndReadOnlySecurity(t *testing.T) {
 	s, regs := newPersonTestAPI(t)
 	h := secureTestHandler(t, s, "")
