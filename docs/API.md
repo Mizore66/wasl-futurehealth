@@ -49,7 +49,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/cases/{id}/audit` | Redacted `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; redacted review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
 | POST | `/api/cases/{id}/review/claim` | Append an independent-review claim, renew, release or takeover event (below) |
-| POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note (below) |
+| POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note, or simulated reservation accept/choose/reschedule/cancel (below) |
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
@@ -359,21 +359,29 @@ Workflow A coordinator actions. Overlay metadata only: they never change a decis
 | `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
 | `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted`. Records what happened; it does not send anything |
 | `note` | `text` | 1 to 1000 characters, newlines allowed |
+| `booking_accept` | `expected_suggestion_version`, `slot_id`, `expected_slot_version` | Accept the current non-overbooked `suggested_slot_id` |
+| `booking_choose_slot` | accept fields plus `reason` | Choose a currently eligible slot; reason required, up to 200 characters |
+| `booking_reschedule` | `reservation_id`, `expected_reservation_version`, accept fields plus `reason` | Move the active reservation to a different eligible slot; reason required |
+| `booking_cancel` | `reservation_id`, `expected_reservation_version`, `reason` | Release the active synthetic reservation; reason required. Does not require consent, so capacity can always be released |
+
+All booking version fields are lowercase SHA-256 hashes. Accept/choose/reschedule require canonical consent `granted`, an open booking-eligible case and a current candidate. Reservations are simulated Wasl overlay state only: they do not schedule a provider, write a FHIR Appointment, contact a patient, change canonical no-show state, or create a waitlist.
 
 Text must be valid UTF-8, without surrounding whitespace or control characters.
 
 **Response codes:**
-- 201 with `event` (the ledger event) and the updated `api_overlay`;
+- 201 with `event` (the ledger event) and the updated `api_overlay`; booking actions also return the refreshed top-level `booking`;
 - 400 for a bad body, field, bound or missing actor or `expected_head`;
 - 403 for any role without `coordinate_case`;
 - 404 for an unknown case;
 - 405 for a method other than POST on `/actions` (with `Allow: POST`);
-- 409 for a stale `expected_head` (`conflict: "head"`, with `current_head`) or a `contact_outcome` on a case whose consent is not granted (`conflict: "consent"`);
+- 409 for a stale `expected_head` (`conflict: "head"`, with `current_head`) or a `contact_outcome` on a case whose consent is not granted (`conflict: "consent"`). Booking conflicts use `suggestion`, `slot`, `reservation`, `state` or `consent`, with the corresponding current version/projection; no conflict appends an event;
 - 500 when the ledger cannot be appended (nothing is recorded) or the ledger failed validation at start-up (all ledger writes are refused until it is repaired).
 
-**Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases never conflict. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
+**Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases proceed independently unless they compete for the same simulated slot, which one coordinator reserves and the other receives `conflict: "slot"`. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
 
-**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `last_contact` (the latest contact outcome: `at`, `event`, `outcome`, `channel`; no actor or note; absent before the first one), `no_answer_streak` (consecutive `no_answer` outcomes ending the contact log), `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
+**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `last_contact` (the latest contact outcome: `at`, `event`, `outcome`, `channel`; no actor or note; absent before the first one), `last_appointment_agreement`, `no_answer_streak` (consecutive `no_answer` outcomes ending the contact log), `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
+
+`api_overlay.booking` is the replayed reservation summary: `status` (`unreserved`, `reserved` or `cancelled`), `mode: simulated`, `revision`, reservation ID/version, current or last `slot`, and update time/event. Cancellation retains the last slot and reservation ID for traceability. The top-level case `booking` keeps the original suggestion status and adds `suggestion_version`, `calendar_version`, optional `suggested_slot_id`, and `eligible_slots`; each API candidate carries its current `version` and `availability`. An older `wasl-booking/2` document without candidates remains readable but cannot be reserved. Slot versions start at the calendar version. Accept/choose/reschedule version the acquired slot with the new event hash; reschedule versions both slots, and cancellation versions the released slot, preventing ABA reuse. Replay applies the same transition validation and fails closed on a changed source, broken slot chain or invalid transition.
 
 **Ledger and restart:** coordinator events share `<run>/api_reviews.ndjson` and its hash chain with review events (`type: "coordinator_action"`, with `kind`, `data`, `head`, per-case `seq`). On start-up the whole ledger is replayed and validated: JSON, chain, hash, case, role permission, head and sequence continuity, action fields (the same validation as the write path), consent for contact outcomes, and a complete final line. The first failure stops the replay, sets `healthz` `dependencies.review_ledger` to `invalid`, and makes `/review` and `/actions` return 500. The read endpoints keep working. Nothing is repaired or skipped silently.
 

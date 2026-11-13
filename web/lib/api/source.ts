@@ -7,6 +7,7 @@ import {
   ApiError,
   CaseAction,
   Audit,
+  BookingAction,
   CaseDetail,
   CaseList,
   CompensationResponse,
@@ -28,6 +29,7 @@ import {
   UndoProjection,
   UndoRequest,
   type CaseSummary,
+  type BookingAction as BookingActionInput,
   type CompensationResponse as CompensationResponseBody,
   type ConsentRequest as ConsentRequestInput,
   type ContestRequest as ContestRequestBody,
@@ -374,6 +376,45 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
   const refused = res.status === 500 ? ActionError.safeParse(json) : null;
   if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
   throw new Error(`POST actions: HTTP ${res.status}`);
+}
+
+export type BookingActionResult =
+  /** A 201 means the append happened. An unreadable body is null, never a licence to retry blindly. */
+  | { ok: true; status: 201; response: ActionResponse | null }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+
+/** A simulated booking action with truthful handling of an append whose response cannot be read. */
+export async function postBookingAction(id: string, action: BookingActionInput, expectedHead: string): Promise<BookingActionResult> {
+  const body = BookingAction.safeParse(action);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  if (apiMode() !== "live") throw new Error("postBookingAction needs WASL_API_URL: fixtures mode cannot append simulated reservations");
+  let init: RequestInit;
+  try {
+    init = authenticated(
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, expected_head: expectedHead }) },
+      "coordinator",
+    );
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`, init);
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  if (res.status === 201) {
+    const saved = ActionResponse.safeParse(await res.json().catch(() => undefined));
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const parsed = ActionError.safeParse(json);
+    return {
+      ok: false, status: res.status, error: parsed.success ? parsed.data.error : `HTTP ${res.status}`,
+      conflict: parsed.success ? parsed.data.conflict : undefined, currentHead: parsed.success ? parsed.data.current_head : undefined,
+    };
+  }
+  const refused = res.status === 500 ? ActionError.safeParse(json) : null;
+  if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
+  throw new Error(`POST booking actions: HTTP ${res.status}`);
 }
 
 /**
