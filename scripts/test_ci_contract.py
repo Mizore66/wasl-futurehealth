@@ -203,7 +203,7 @@ class WorkflowTests(unittest.TestCase):
         commands = self.runs("python-test")
         for directory in ("scripts", "scripts/fresh2_eval", "encoder"):
             self.assertIn(f"python3 -m unittest discover -v -s {directory} -p 'test_*.py'", commands)
-        for name in ("engine", "levers", "lookahead", "lookahead_eval", "pool_golden", "suggest_default"):
+        for name in ("engine", "levers", "lookahead", "lookahead_eval", "pool_golden", "recovery", "suggest_default"):
             self.assertIn(f"python3 booking/tests/test_{name}.py", commands)
         self.assertIn("go build -o ../bin/wsi7 .", commands)
         self.assertIn("python3 scripts/check_deploy.py", commands)

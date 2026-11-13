@@ -336,6 +336,29 @@ exit 2
                    WASL_SNAPSHOT_PROGRAMMES="crc")
         return env, samples
 
+    def snapshot_success_body(self, log=None):
+        person = json.loads((ROOT / "docs/api-samples/person_journey.json").read_text())
+        case_id = person["person"]["anchor_case_id"]
+        fixtures = {"fixtures": {"evidence_closure": {"id": case_id}}}
+        export = {"schema": "wasl-case-export/1", "redacted": True, "meta": {}, "detail": {}, "audit": {}}
+        responses = {
+            "people": person,
+            "fixtures": fixtures,
+            "export": export,
+            "programme": {"total": 1, "offset": 0, "limit": 100, "cases": [{"id": "case-1"}]},
+            "healthz": {"status": "ok", "cases": 1, "dependencies": {
+                "materialised_run": "loaded", "nats": "not_required_for_read_api", "reader": "cached",
+                "ingest_adapter": "fhir", "review_ledger": "ok",
+            }},
+        }
+        body = "" if log is None else 'echo "$*" >> %s\n' % shlex.quote(str(log))
+        for route, response in responses.items():
+            body += 'case "$*" in *%s*) echo %s && exit 0;; esac\n' % (route, shlex.quote(json.dumps(response)))
+        dashboard = {"cases": 1, "closed": 0, "overdue": 0, "states": {}, "dropoff": {}, "review": {},
+                     "by_programme": {}, "sla": {}, "providers": [], "origins": [],
+                     "small_cell_rule": "counts 1-4 shown as <5", "metrics": {}, "fixtures": {}, "capacity": {}}
+        return body + "echo %s\n" % shlex.quote(json.dumps(dashboard))
+
     def staging_dirs(self, tmp):
         return [p for p in Path(tmp).iterdir() if ".staging." in p.name]
 
@@ -386,7 +409,7 @@ exit 2
     def test_snapshot_curls_are_time_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / "curl.log"
-            body = 'echo "$*" >> %s\ncase "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n' % log
+            body = self.snapshot_success_body(log)
             env, samples = self.snapshot_env(tmp, body)
             r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -397,7 +420,7 @@ exit 2
                 self.assertIn("--max-time", l)
 
     def test_snapshot_success_removes_stale_files_keeps_readme(self):
-        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n'
+        ok = self.snapshot_success_body()
         with tempfile.TemporaryDirectory() as tmp:
             env, samples = self.snapshot_env(tmp, ok)
             (samples / "stale_case.json").write_text("old\n")
@@ -411,7 +434,7 @@ exit 2
             self.assertEqual([x.name for x in Path(tmp).iterdir() if ".staging." in x.name or ".old." in x.name], [])
 
     def test_snapshot_failure_and_success_leave_no_staging(self):
-        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n'
+        ok = self.snapshot_success_body()
         with tempfile.TemporaryDirectory() as tmp:
             env, samples = self.snapshot_env(tmp, "exit 22\n")
             r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,

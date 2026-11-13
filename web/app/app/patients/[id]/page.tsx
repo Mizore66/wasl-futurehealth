@@ -7,7 +7,8 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
-import { getAudit, getCase } from "@/lib/api/source";
+import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
+import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
 import { personForLoop } from "@/lib/people";
@@ -50,7 +51,12 @@ const SECTIONS = [
 
 export default async function Page({ params }: PageProps<"/app/patients/[id]">) {
   const id = caseIdFromParam((await params).id);
-  const [detail, audit] = await Promise.all([getCase(id), getAudit(id)]);
+  const optionalPersonJourney = getPersonByCase(id).catch((error: unknown) => {
+    /* Older live runs have no identity projection; only the optional cross-programme link is unavailable then. */
+    if (error instanceof ApiStatusError && error.status === 503) return null;
+    throw error;
+  });
+  const [detail, audit, personJourney] = await Promise.all([getCase(id), getAudit(id), optionalPersonJourney]);
   if (!detail) notFound();
   const c = detail.case;
   const person = personForLoop(c.id);
@@ -100,6 +106,14 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       </header>
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
+        {personJourney && (
+          <Link
+            href={`/app/people?case_id=${encodeURIComponent(c.id)}`}
+            className={cn(BUTTON, "border border-control bg-surface text-ink no-underline hover:bg-active hover:text-ink")}
+          >
+            View all programmes
+          </Link>
+        )}
         {detail.review_items.length > 0 && (
           <Link
             href={caseHref("/app/review", c.id)}

@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-from redacted_snapshot import audit_snapshot, detail_snapshot
+from redacted_snapshot import audit_snapshot, detail_snapshot, person_snapshot
 
 
 def valid_public_payload(kind):
@@ -51,6 +51,28 @@ def valid_public_payload(kind):
 
 
 class RedactedSnapshotTest(unittest.TestCase):
+    def test_person_snapshot_uses_strict_allowlist_and_aliases(self):
+        source = json.loads((Path(__file__).parent.parent / "docs/api-samples/person_journey.json").read_text())
+        original = copy.deepcopy(source)
+        source["cases"][0]["detail"]["evidence"] = [{"quote": "concealed-r1"}]
+        source["cases"][0]["detail"]["api_reviews"] = [{"note": "concealed-r1"}]
+        projected = person_snapshot(source)
+        self.assertNotIn("evidence", projected["cases"][0]["detail"])
+        self.assertNotIn("api_reviews", projected["cases"][0]["detail"])
+        self.assertNotIn("concealed-r1", json.dumps(projected))
+        self.assertRegex(projected["cases"][0]["referral_registration"], r"^reg_[0-9a-f]{64}$")
+        self.assertEqual(projected["person"]["id"], original["person"]["id"])
+
+    def test_person_snapshot_rejects_raw_registrations_and_canaries(self):
+        source = json.loads((Path(__file__).parent.parent / "docs/api-samples/person_journey.json").read_text())
+        source["cases"][0]["referral_registration"] = "provider|MRN0001"
+        with self.assertRaisesRegex(ValueError, "raw or malformed registration"):
+            person_snapshot(source)
+        source = json.loads((Path(__file__).parent.parent / "docs/api-samples/person_journey.json").read_text())
+        source["obligations"].append({"case_id": "case", "programme": "crc", "kind": "programme_deadline", "due_day": 31, "status": "open", "source_field": "deadline", "basis": "CANARY-CONCEALED-R1"})
+        with self.assertRaisesRegex(ValueError, "invalid canonical person basis"):
+            person_snapshot(source)
+
     def setUp(self):
         self.export = {
             "schema": "wasl-case-export/1",

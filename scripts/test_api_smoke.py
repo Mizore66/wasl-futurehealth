@@ -71,6 +71,7 @@ class Fake:
         self.operations = load("operations.json")
         self.dash = load("dashboard.json")
         self.fix = load("fixtures.json")
+        self.person = load("person_journey.json")
         self.detail, self.audit = {}, {}
         for tag, f in self.fix["fixtures"].items():
             self.detail[f["id"]] = load(f"case_{tag}.json")
@@ -381,6 +382,10 @@ class Fake:
             return 200, self.dash
         if path == "/api/fixtures":
             return 200, self.fix
+        if path == "/api/people":
+            if query.get("case_id", [""])[0] != self.person["person"]["anchor_case_id"]:
+                return 404, {"error": "unknown case"}
+            return 200, self.person
         if path == "/api/cases" and query.get("review", [""])[0] == "open":
             prog = query.get("programme", [""])[0]
             rows = [dict(next(iter(self.pages.values()))["cases"][0], id=cid, programme=prog, review="open")

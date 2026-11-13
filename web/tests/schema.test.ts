@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 import { Audit, CaseDetail, CaseList, Dashboard, Fixtures, Healthz, Operations, ReviewRequest } from "@/lib/api/schema";
 import { RecoveryDetail, RecoveryList } from "@/lib/api/recovery-schema";
+import { PersonJourney } from "@/lib/api/person-schema";
 import { loadSample, sampleFiles } from "./samples";
 
 function schemaFor(file: string): z.ZodType {
@@ -11,6 +12,7 @@ function schemaFor(file: string): z.ZodType {
   if (file === "operations.json") return Operations;
   if (file === "recovery_slots.json") return RecoveryList;
   if (file === "recovery_slot.json") return RecoveryDetail;
+  if (file === "person_journey.json") return PersonJourney;
   if (file.startsWith("cases_")) return CaseList;
   if (file.endsWith("_audit.json")) return Audit;
   if (file.startsWith("case_")) return CaseDetail;
