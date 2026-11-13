@@ -9,10 +9,10 @@
       {
         "action": "record_consent",
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.586841904Z",
+        "at": "2026-11-13T03:26:25.289605Z",
         "case": "exp-prov/ServiceRequest/EXP-sr-1",
         "decision": "consent_granted",
-        "hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+        "hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
         "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
         "item": "",
         "mode": "demo",
@@ -27,7 +27,7 @@
       "contact_blocked": false,
       "demo_pending_consent": "released",
       "events": 1,
-      "last_event_hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "last_event_hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
       "mode": "demo",
       "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
       "status": "granted"
@@ -35,37 +35,51 @@
   },
   "api_overlay": {
     "actions": 6,
+    "booking": {
+      "mode": "simulated",
+      "reservation_id": null,
+      "reservation_version": null,
+      "revision": 0,
+      "slot": null,
+      "status": "unreserved",
+      "updated_at": null,
+      "updated_event": null
+    },
     "canonical_owner": "",
     "contact_outcomes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.58919077Z",
+        "at": "2026-11-13T03:26:25.303659Z",
         "channel": "phone",
-        "event": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+        "event": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
         "note": "synthetic call note",
         "outcome": "reached"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.590121924Z",
+        "at": "2026-11-13T03:26:25.308685Z",
         "channel": "phone",
-        "event": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+        "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
         "outcome": "appointment_agreed"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.59902562Z",
+        "at": "2026-11-13T03:26:25.358745Z",
         "channel": "phone",
-        "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+        "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
         "outcome": "declined"
       }
     ],
-    "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
-    "last_action_at": "2026-11-10T22:50:47.59902562Z",
+    "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+    "last_action_at": "2026-11-13T03:26:25.358745Z",
+    "last_appointment_agreement": {
+      "at": "2026-11-13T03:26:25.308685Z",
+      "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+    },
     "last_contact": {
-      "at": "2026-11-10T22:50:47.59902562Z",
+      "at": "2026-11-13T03:26:25.358745Z",
       "channel": "phone",
-      "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+      "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
       "outcome": "declined"
     },
     "ledger_status": "ok",
@@ -73,18 +87,18 @@
     "notes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.594584827Z",
-        "event": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+        "at": "2026-11-13T03:26:25.317693Z",
+        "event": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
         "text": "synthetic coordinator note"
       }
     ],
     "owner": "coordinator-bound",
     "snooze": {
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.592819664Z",
-      "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
-      "reason": "Call back Fri 13 Nov",
-      "until": "2026-11-13T22:50:47Z"
+      "at": "2026-11-13T03:26:25.315807Z",
+      "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+      "reason": "Call back Mon 16 Nov",
+      "until": "2026-11-16T03:26:25Z"
     }
   },
   "api_review_states": [],
@@ -92,10 +106,10 @@
     {
       "action": "record_consent",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.586841904Z",
+      "at": "2026-11-13T03:26:25.289605Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "decision": "consent_granted",
-      "hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
@@ -106,16 +120,16 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.587896468Z",
+      "at": "2026-11-13T03:26:25.296372Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "owner": "coordinator-bound"
       },
-      "hash": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "hash": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
       "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "assign_owner",
       "mode": "demo",
-      "prev": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "prev": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
       "role": "coordinator",
       "seq": 1,
       "type": "coordinator_action"
@@ -123,32 +137,32 @@
     {
       "action": "signoff_link",
       "actor": "reviewer-one",
-      "at": "2026-11-10T22:50:47.588275934Z",
+      "at": "2026-11-13T03:26:25.299823Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "decision": "same",
-      "hash": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "hash": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
       "note": "synthetic review one",
-      "prev": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "prev": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
       "role": "reviewer"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.58919077Z",
+      "at": "2026-11-13T03:26:25.303659Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "note": "synthetic call note",
         "outcome": "reached"
       },
-      "hash": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
-      "head": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "hash": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
+      "head": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "prev": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
       "role": "coordinator",
       "seq": 2,
       "type": "coordinator_action"
@@ -156,17 +170,17 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.590121924Z",
+      "at": "2026-11-13T03:26:25.308685Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "appointment_agreed"
       },
-      "hash": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
-      "head": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+      "hash": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
+      "head": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+      "prev": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
       "role": "coordinator",
       "seq": 3,
       "type": "coordinator_action"
@@ -174,31 +188,31 @@
     {
       "action": "signoff_link",
       "actor": "reviewer-one",
-      "at": "2026-11-10T22:50:47.592160596Z",
+      "at": "2026-11-13T03:26:25.31165Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "decision": "different",
-      "hash": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "hash": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
       "note": "synthetic review two",
-      "prev": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+      "prev": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
       "role": "reviewer"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.592819664Z",
+      "at": "2026-11-13T03:26:25.315807Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
-        "reason": "Call back Fri 13 Nov",
-        "until": "2026-11-13T22:50:47Z"
+        "reason": "Call back Mon 16 Nov",
+        "until": "2026-11-16T03:26:25Z"
       },
-      "hash": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
-      "head": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+      "hash": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+      "head": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
       "kind": "snooze",
       "mode": "demo",
-      "prev": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "prev": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
       "role": "coordinator",
       "seq": 4,
       "type": "coordinator_action"
@@ -206,86 +220,86 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.594584827Z",
+      "at": "2026-11-13T03:26:25.317693Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "text": "synthetic coordinator note"
       },
-      "hash": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
-      "head": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "hash": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
+      "head": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
       "kind": "note",
       "mode": "demo",
-      "prev": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "prev": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
       "role": "coordinator",
       "seq": 5,
       "type": "coordinator_action"
     },
     {
       "action": "signoff_link",
-      "action_head": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "action_head": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
       "actor": "reviewer-two",
-      "at": "2026-11-10T22:50:47.59624318Z",
+      "at": "2026-11-13T03:26:25.345148Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "hash": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "undo",
       "mode": "demo",
       "note": "synthetic undo note",
-      "prev": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "prev": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
       "role": "reviewer",
-      "target": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "target": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "signoff_link",
-      "action_head": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "action_head": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
       "actor": "reviewer-two",
-      "at": "2026-11-10T22:50:47.5973082Z",
+      "at": "2026-11-13T03:26:25.351943Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "hash": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "contest",
       "mode": "demo",
       "note": "synthetic contest note",
-      "prev": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "prev": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
       "role": "reviewer",
-      "target": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "target": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "signoff_link",
-      "action_head": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "action_head": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
       "actor": "reviewer-three",
-      "at": "2026-11-10T22:50:47.598663998Z",
+      "at": "2026-11-13T03:26:25.356116Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "87e1a4c663c4cafdea9b157707ad0d90b82e82a83a2a95047cb0fea62ff56283",
+      "hash": "405c9788fe7df7a193ab0ce7611131bb0f45db7c6a57c76513ad7dd5d09eb6e7",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "contest_resolution",
       "mode": "demo",
       "note": "",
-      "prev": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "prev": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
       "resolution": "rejected",
       "role": "reviewer",
-      "target": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "target": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-10T22:50:47.59902562Z",
+      "at": "2026-11-13T03:26:25.358745Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "declined"
       },
-      "hash": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
-      "head": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "hash": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+      "head": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "87e1a4c663c4cafdea9b157707ad0d90b82e82a83a2a95047cb0fea62ff56283",
+      "prev": "405c9788fe7df7a193ab0ce7611131bb0f45db7c6a57c76513ad7dd5d09eb6e7",
       "role": "coordinator",
       "seq": 6,
       "type": "coordinator_action"
@@ -297,12 +311,26 @@
   "case": {
     "api_overlay": {
       "actions": 6,
-      "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
-      "last_action_at": "2026-11-10T22:50:47.59902562Z",
+      "booking": {
+        "mode": "simulated",
+        "reservation_id": null,
+        "reservation_version": null,
+        "revision": 0,
+        "slot": null,
+        "status": "unreserved",
+        "updated_at": null,
+        "updated_event": null
+      },
+      "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+      "last_action_at": "2026-11-13T03:26:25.358745Z",
+      "last_appointment_agreement": {
+        "at": "2026-11-13T03:26:25.308685Z",
+        "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+      },
       "last_contact": {
-        "at": "2026-11-10T22:50:47.59902562Z",
+        "at": "2026-11-13T03:26:25.358745Z",
         "channel": "phone",
-        "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+        "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
         "outcome": "declined"
       },
       "ledger_status": "ok",
@@ -310,10 +338,10 @@
       "owner": "coordinator-bound",
       "snooze": {
         "actor": "coordinator-bound",
-        "at": "2026-11-10T22:50:47.592819664Z",
-        "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
-        "reason": "Call back Fri 13 Nov",
-        "until": "2026-11-13T22:50:47Z"
+        "at": "2026-11-13T03:26:25.315807Z",
+        "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+        "reason": "Call back Mon 16 Nov",
+        "until": "2026-11-16T03:26:25Z"
       }
     },
     "closed": false,
@@ -450,7 +478,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-10T22:50:47Z",
+    "loaded_at": "2026-11-13T03:26:25Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",
