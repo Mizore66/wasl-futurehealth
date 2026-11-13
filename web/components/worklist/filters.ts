@@ -9,6 +9,8 @@ export type CaseFilters = {
   state?: CaseState;
   dropoff?: Exclude<Dropoff, "">;
   overdue?: boolean;
+  /** The `closed` projection: the closed state plus every no-action resolution. `state: "closed"` stays the single state. */
+  closed?: boolean;
   /** A provider id from the run data. Unknown ids are kept, so a stale link shows an honest empty list. */
   provider?: string;
   consent?: CaseSummary["consent"];
@@ -33,6 +35,7 @@ export function parseCaseFilters(sp: SearchParams): CaseFilters {
   const state = CaseState.safeParse(one(sp.state));
   const dropoff = Dropoff.safeParse(one(sp.dropoff));
   const overdue = one(sp.overdue);
+  const closed = one(sp.closed);
   const q = one(sp.q)?.trim();
   const provider = one(sp.provider)?.trim();
   const consent = Consent.safeParse(one(sp.consent));
@@ -43,6 +46,7 @@ export function parseCaseFilters(sp: SearchParams): CaseFilters {
     ...(state.success && { state: state.data }),
     ...(dropoff.success && dropoff.data !== "" && { dropoff: dropoff.data }),
     ...((overdue === "true" || overdue === "false") && { overdue: overdue === "true" }),
+    ...((closed === "true" || closed === "false") && { closed: closed === "true" }),
     ...(provider && { provider }),
     ...(consent.success && { consent: consent.data }),
     ...(review.success && { review: review.data }),
@@ -64,6 +68,7 @@ export function filtersHref(base: string, f: CaseFilters, page = 1): string {
   if (f.state) params.set("state", f.state);
   if (f.dropoff) params.set("dropoff", f.dropoff);
   if (f.overdue !== undefined) params.set("overdue", String(f.overdue));
+  if (f.closed !== undefined) params.set("closed", String(f.closed));
   if (f.provider) params.set("provider", f.provider);
   if (f.consent) params.set("consent", f.consent);
   if (f.review) params.set("review", f.review);

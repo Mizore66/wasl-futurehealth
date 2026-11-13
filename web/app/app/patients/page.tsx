@@ -26,7 +26,7 @@ const QUICK: { label: string; f: CaseFilters }[] = [
   { label: "Never notified", f: { dropoff: "never_notified" } },
   { label: "Not booked", f: { dropoff: "not_booked" } },
   { label: "No-show", f: { dropoff: "no_show" } },
-  { label: "Closed", f: { state: "closed" } },
+  { label: "Closed", f: { closed: true } },
 ];
 
 function describe(f: CaseFilters): string {
@@ -37,6 +37,8 @@ function describe(f: CaseFilters): string {
     f.review && facetValueLabel("review", f.review).toLowerCase(),
     f.owner && (f.owner === UNOWNED ? "no owner" : `owner ${facetValueLabel("owner", f.owner)}`),
     f.state && plain(f.state).toLowerCase(),
+    f.closed === true && "closed",
+    f.closed === false && "not closed",
     f.dropoff && DROPOFF_WORDS[f.dropoff].status.toLowerCase(),
     f.overdue === true && "overdue",
     f.overdue === false && "not overdue",
@@ -47,8 +49,8 @@ function describe(f: CaseFilters): string {
 
 const same = (a: CaseFilters, b: CaseFilters) => filtersHref("", a) === filtersHref("", b);
 
-/** The quick chips own state, dropoff and overdue. */
-const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, dropoff: f.dropoff, overdue: f.overdue });
+/** The quick chips own state, closed, dropoff and overdue. */
+const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, closed: f.closed, dropoff: f.dropoff, overdue: f.overdue });
 
 /** Chips change the view but keep every other filter: the refine selects and the search. */
 const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
