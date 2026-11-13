@@ -1,10 +1,30 @@
 import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
-import { shortId } from "@/lib/domain/ids";
+import { caseHref, shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
 import { recordFace, type Face } from "@/lib/people/identity";
 import type { ReviewItems } from "./decision";
+
+/** CRC evidence items raised for one narrow decision; any other reason is the ordinary report-adequacy review. */
+export const CRC_PURPOSES = {
+  prep_ungraded_day15: {
+    question: "Was the bowel preparation adequate?",
+    scope: "This answer settles only this question: the bowel preparation. Histology and other closure requirements can still keep the case open.",
+  },
+  completion_undocumented: {
+    question: "Was the caecum reached?",
+    scope: "This answer settles only this question: whether the caecum was reached. Histology and other closure requirements can still keep the case open.",
+  },
+} as const;
+export type CrcPurpose = keyof typeof CRC_PURPOSES;
+
+/** Item reasons the image reader raises or routes; the clinician judges the photographs, so they must be shown. */
+const IMAGE_REASONS = ["completion_undocumented", "prep_grade_one_click", "image_prep_conflict"];
+
+export type PhotoView = { sha: string; station: string; available: boolean; src: string };
+export type ImageContext = { model: string; caecal: string; prep: string; hint: string; textPrep: string };
+const purposeOf = (reason: string | undefined): CrcPurpose | undefined => (reason && reason in CRC_PURPOSES ? (reason as CrcPurpose) : undefined);
 
 /*
  * Everything the review desk shows, derived from one case detail.
@@ -26,7 +46,15 @@ export type ReviewView = {
   guided: boolean;
   programme: CaseDetail["case"]["programme"];
   evidenceQuestion: string;
+  /** Set when the evidence item asks one narrow CRC question; the answer does not decide whole-case closure. */
+  evidenceScope?: string;
   evidenceChoices: string[];
+  /** The evidence item was raised on photographic evidence: photos are shown, or their absence is said. */
+  imageBacked: boolean;
+  /** The photos the API filed on this item's report at the station the item asks about; never inferred from scores. */
+  photos: PhotoView[];
+  /** The image model's read of those photos, shown only after the clinician's own first read. */
+  imageContext?: ImageContext;
   shortId: string;
   name: string;
   nameAr: string;
@@ -123,7 +151,9 @@ export function reviewView(c: CaseDetail): ReviewView {
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);
   const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
-  const evidenceQuestion = programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
+  const purpose = programme === "crc" ? purposeOf(evidenceItem?.reason) : undefined;
+  const imageBacked = programme === "crc" && !!evidenceItem?.reason && IMAGE_REASONS.includes(evidenceItem.reason);
+  const evidenceQuestion = purpose ? CRC_PURPOSES[purpose].question : programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
   /*
    * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
@@ -196,7 +226,15 @@ export function reviewView(c: CaseDetail): ReviewView {
     guided,
     programme,
     evidenceQuestion,
+    evidenceScope: purpose && CRC_PURPOSES[purpose].scope,
     evidenceChoices: [...evidenceChoices],
+    imageBacked,
+    photos: imageBacked && evidenceItem
+      ? (c.review_photos?.[evidenceItem.item] ?? []).map((p) => ({ ...p, src: `${caseHref("/app/review", c.case.id)}/photo/${encodeURIComponent(evidenceItem.item)}/${p.sha}` }))
+      : [],
+    imageContext: imageBacked && ev?.image_reader
+      ? { model: ev.image_reader.model, caecal: ev.image_reader.caecal_photo, prep: ev.image_reader.prep, hint: ev.image_reader.hint, textPrep: readerValues(ev.fields?.regex)[1] ?? "not_stated" }
+      : undefined,
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
@@ -228,7 +266,7 @@ export function reviewView(c: CaseDetail): ReviewView {
     checks,
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
-    items: { link: linkItem?.item, evidence: evidenceItem?.item },
+    items: { link: linkItem?.item, evidence: evidenceItem?.item, ...(purpose && { scoped: true }) },
     trail,
   };
 }

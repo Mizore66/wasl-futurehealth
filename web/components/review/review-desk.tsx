@@ -41,6 +41,7 @@ import { ReviewerSignOut } from "./reviewer-login";
 import { IdentityBridge } from "./identity-bridge";
 import { Pill } from "./marks";
 import { ReadersTable } from "./readers-table";
+import { imageModelRevealed, ReviewPhotos } from "./review-photos";
 
 export type NextCase = { href: string; label: string; last: boolean };
 
@@ -822,6 +823,7 @@ export function ReviewDesk({
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
           {hasLink && <IdentityBridge view={view} answer={live ? (finalDecisions({ api_review_states: current }, "link")[0] as IdentityAnswer | undefined) : draft.identity} />}
+          {view.imageBacked && <ReviewPhotos view={view} revealModel={live ? imageModelRevealed(current, view.items.evidence) : Boolean(done)} />}
           {view.programme === "crc" ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
         </div>
       </div>
