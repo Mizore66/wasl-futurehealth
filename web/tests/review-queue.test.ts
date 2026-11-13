@@ -20,7 +20,7 @@ describe("reviewQueue", () => {
     source.getCase.mockResolvedValue(detail);
 
     const queue = await reviewQueue();
-    expect(source.getCases).toHaveBeenCalledWith({ review: "open", limit: 50 });
+    expect(source.getCases).toHaveBeenCalledWith(expect.objectContaining({ review: "open", offset: 0 }));
     expect(source.getFixtures).not.toHaveBeenCalled();
     expect(queue.source).toBe("open");
     expect(queue.cases.map((c) => c.case.programme)).toEqual(["lung_ldct"]);
@@ -91,5 +91,55 @@ describe("reviewQueue", () => {
     const queue = await reviewQueue();
     expect(source.getCase).toHaveBeenCalledExactlyOnceWith("hold");
     expect(queue).toEqual({ cases: [], source: "rebuilt" });
+  });
+});
+
+function pagedCases(count: number, pageSize: number, make: (i: number) => ReturnType<typeof programmeDetail>) {
+  const details = Array.from({ length: count }, (_, i) => make(i));
+  source.getCases.mockImplementation(async ({ offset = 0 }: { offset?: number }) => ({
+    cases: details.slice(offset, offset + pageSize).map((d) => d.case),
+    total: count,
+    limit: pageSize,
+    offset,
+    meta: {},
+  }));
+  source.getCase.mockImplementation(async (id: string) => details.find((d) => d.case.id === id) ?? null);
+}
+
+function guidedCase(i: number, resolved: boolean, day = i) {
+  const detail = programmeDetail("lung_ldct");
+  detail.case = { ...detail.case, id: `case-${String(i).padStart(3, "0")}`, review: "open", referral_day: day };
+  detail.review_items = [{ item: `rv-${i}`, loop: detail.case.id, kinds: ["evidence"], pair: [], p: 0, report: detail.evidence[0].report, verdict: "disagree", quote: "", chain: [] }];
+  detail.api_review_states = [{ item: `rv-${i}`, question: "evidence", state: resolved ? "resolved_agreed" : "awaiting_r1" }] as typeof detail.api_review_states;
+  return detail;
+}
+
+describe("reviewQueue pagination", () => {
+  it("finds an unresolved case on the second page without loading the practice fallback", async () => {
+    pagedCases(51, 50, (i) => guidedCase(i, i < 50));
+    const queue = await reviewQueue();
+    expect(queue.source).toBe("open");
+    expect(queue.cases.map((c) => c.case.id)).toEqual(["case-050"]);
+    expect(source.getFixtures).not.toHaveBeenCalled();
+  });
+
+  it("lists every unresolved case exactly once, oldest referral first, across pages", async () => {
+    pagedCases(120, 50, (i) => guidedCase(i, false, i === 119 ? -5 : 100 - (i % 7)));
+    const ids = (await reviewQueue()).cases.map((c) => c.case.id);
+    expect(ids).toHaveLength(120);
+    expect(new Set(ids).size).toBe(120);
+    expect(ids[0]).toBe("case-119");
+  });
+
+  it("uses the fallback only after every page held no actionable guided case", async () => {
+    pagedCases(100, 50, (i) => {
+      const d = guidedCase(i, true);
+      if (i % 2) d.case = { ...d.case, programme: "cervical" };
+      return d;
+    });
+    source.getFixtures.mockResolvedValue({ fixtures: { review_hold: { id: "hold" } } });
+    const queue = await reviewQueue();
+    expect(queue.source).toBe("rebuilt");
+    expect(source.getCases).toHaveBeenCalledTimes(2);
   });
 });
