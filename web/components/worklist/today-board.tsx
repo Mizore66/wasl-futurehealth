@@ -16,7 +16,7 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
@@ -355,7 +355,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: DECLINED_STATUS, snoozed: false },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false, ...(p.reserved ? { next: DECLINED_RESERVED_NEXT } : {}) },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },

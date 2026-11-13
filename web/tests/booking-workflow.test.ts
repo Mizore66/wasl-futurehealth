@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recordBooking } from "@/app/app/patients/[id]/booking-actions";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
-import { BOOKING_NEEDED, recordNodes, workItem } from "@/components/worklist/model";
+import { BOOKING_NEEDED, DECLINED_RESERVED_NEXT, DECLINED_STATUS, recordNodes, workItem } from "@/components/worklist/model";
 import { Booking, BookingSummary, CaseDetail, type ApiOverlay } from "@/lib/api/schema";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -55,6 +55,37 @@ describe("Today simulated booking precedence", () => {
     expect([agreed.view, agreed.status]).toEqual(["waiting", BOOKING_NEEDED]);
   });
 
+  const withDecline = (booking: BookingSummary, declinedAt: string, agreementAt?: string) => {
+    const ov = overlay(booking, agreementAt);
+    ov.last_contact = { at: declinedAt, event: h("e"), outcome: "declined", channel: "phone" };
+    return { ...workCase, api_overlay: ov };
+  };
+
+  it("a decline after the reservation stays visible with the active reservation warning", () => {
+    const item = workItem(withDecline(reservation("reserved"), "2026-11-13T10:00:00.000000001Z"), 40, true);
+    expect([item.view, item.status, item.next]).toEqual(["waiting", DECLINED_STATUS, DECLINED_RESERVED_NEXT]);
+    expect(item.reserved).toBe(true);
+  });
+
+  it("a reservation newer than, or at the same instant as, the decline keeps the reservation workflow", () => {
+    for (const declinedAt of ["2026-11-13T09:00:00Z", "2026-11-13T10:00:00.000Z"]) {
+      const item = workItem(withDecline(reservation("reserved"), declinedAt), 40, true);
+      expect(item.status).toBe("Simulated slot reserved · Day 20");
+      expect(item.next).toBe("Manage the simulated reservation");
+    }
+  });
+
+  it("a decline after agreement, reservation and cancellation shows the decline, not rebook", () => {
+    const item = workItem(withDecline(reservation("cancelled"), "2026-11-13T10:30:00Z", "2026-11-13T09:00:00Z"), 40, true);
+    expect([item.view, item.status]).toEqual(["waiting", DECLINED_STATUS]);
+    expect(item.reserved).toBe(false);
+  });
+
+  it("a cancellation after the decline goes to rebook", () => {
+    const item = workItem(withDecline(reservation("cancelled"), "2026-11-13T09:30:00Z", "2026-11-13T09:00:00Z"), 40, true);
+    expect([item.view, item.status]).toEqual(["call", "Simulated reservation cancelled · rebook"]);
+  });
+
   it("agreement without a reservation keeps the existing booking-needed state", () => {
     const item = workItem({ ...workCase, api_overlay: overlay(reservation("unreserved"), "2026-11-13T09:00:00Z") }, 40, true);
     expect([item.view, item.status]).toEqual(["waiting", BOOKING_NEEDED]);
@@ -101,6 +132,12 @@ describe("booking server action read-back", () => {
       prep_send_day: 15, predicted_no_show: 0.14, nurse_call: false, cross_region: false, version: h("4"), availability: "available",
     }],
   });
+  it("keeps the server readiness projection that gates the booking controls", () => {
+    const blocked = Booking.parse({ ...booking, reservable: false, readiness: { ready: false, reason: "the returned referral is unresolved" } });
+    expect(blocked.readiness).toEqual({ ready: false, reason: "the returned referral is unresolved" });
+    expect(booking.readiness).toBeUndefined();
+  });
+
   const detail = CaseDetail.parse({
     ...baseDetail,
     case: { ...baseDetail.case, api_overlay: overlay(reservation("unreserved")) },
