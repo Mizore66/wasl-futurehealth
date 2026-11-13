@@ -39,6 +39,7 @@ type recoverySlot struct {
 	Region                   string `json:"region"`
 	Day                      int    `json:"day"`
 	Capacity                 int    `json:"capacity"`
+	Booked                   int    `json:"booked,omitempty"`
 	Regular                  bool   `json:"regular"`
 	Overbooked               bool   `json:"overbooked"`
 	Female                   bool   `json:"female"`
@@ -197,7 +198,7 @@ func (s *apiServer) loadRecovery() {
 	for i := range in.Slots {
 		slot := &in.Slots[i]
 		if p.Slots[slot.SlotID] != nil || len(slot.SlotID) != 28 || !strings.HasPrefix(slot.SlotID, "rel_") || slot.SourceDecisionSig == "" || slot.SlotID != recoverySlotID(*slot) ||
-			slot.BaseHead != recoveryBaseHead(*slot) || slot.SourceFingerprint == "" || slot.Capacity < 1 || !slot.Regular || slot.Overbooked ||
+			slot.BaseHead != recoveryBaseHead(*slot) || slot.SourceFingerprint == "" || slot.Capacity < 1 || slot.Booked < 0 || slot.Booked > slot.Capacity || !slot.Regular || slot.Overbooked ||
 			(slot.Programme != "crc" && slot.Programme != "cervical") || slot.ProjectionBasis != "no_show_plus_future_synthetic_capacity_window" ||
 			slot.Day <= in.AsOfDay || !knownSourceDecision(s.cases[slot.SourceCase], slot.SourceDecisionSig) {
 			fail(fmt.Errorf("invalid or stale recovery slot %q", slot.SlotID))
@@ -267,6 +268,28 @@ func (s *apiServer) recoverySlotStaleLocked(slot *recoverySlot) []string {
 		reasons = append(reasons, "past_slot")
 	}
 	return reasons
+}
+
+func (s *apiServer) recoverySessionCapacityAvailableLocked(slot *recoverySlot) bool {
+	if slot == nil || slot.Booked < 0 || slot.Booked > slot.Capacity {
+		return false
+	}
+	remaining := slot.Capacity - slot.Booked
+	fills := 0
+	for _, fill := range s.recovery.Fills {
+		other := s.recovery.Slots[fill.SlotID]
+		if other != nil && other.SessionID == slot.SessionID {
+			fills++
+			if fills >= remaining {
+				return false
+			}
+		}
+	}
+	return remaining > 0
+}
+
+func recoveryOpenSlotHead(slot *recoverySlot) string {
+	return recoveryDigest(map[string]interface{}{"base_head": slot.BaseHead, "status": "open", "filled_case": "", "event": ""})
 }
 
 func (s *apiServer) recoverySlotHeadLocked(slot *recoverySlot) string {
@@ -356,7 +379,22 @@ func (s *apiServer) recoveryCanonicalHoldLocked(c *apiCase) bool {
 }
 
 func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitlistCase) map[string]interface{} {
+	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "")
+}
+
+// A non-nil guardDecision reconstructs the candidate at a historical ledger
+// event. Source staleness is checked against the stored release evidence by the
+// replay path, not against a later canonical Appointment or no-show decision.
+func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string) map[string]interface{} {
 	c := s.cases[w.CaseID]
+	if guardDecision != nil {
+		historical := *c
+		historical.last = guardDecision
+		historical.Programme, historical.State, historical.Provider = guardDecision.Prog, guardDecision.State, guardDecision.Provider
+		historical.Priority = guardDecision.Priority
+		historical.Closed = guardDecision.State == "closed" || guardDecision.State == "no_followup_needed" || guardDecision.State == "no_referral_needed" || guardDecision.State == "no_recall_needed"
+		c = &historical
+	}
 	checks := []map[string]interface{}{}
 	add := func(code, reason string, failed bool) {
 		result, kind := "pass", "hard"
@@ -377,7 +415,10 @@ func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitl
 	add("case_active", "case_closed_inactive_or_held", !active)
 	add("not_source_case", "source_case_for_own_release", w.CaseID == slot.SourceCase)
 	add("not_already_backfilled", "case_already_backfilled", s.recovery.ByCase[w.CaseID] != nil)
-	stale := s.recoverySlotStaleLocked(slot)
+	stale := []string{}
+	if guardDecision == nil {
+		stale = s.recoverySlotStaleLocked(slot)
+	}
 	add("slot_current", "slot_stale_or_past", len(stale) > 0)
 	add("prep_lead", "insufficient_prep_lead", slot.Day-s.recovery.Input.AsOfDay < w.PrepLead)
 	add("repeat_window", "before_repeat_window", slot.Day < w.RepeatWindowLowerBound)
@@ -386,7 +427,7 @@ func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitl
 	add("ramadan", "ramadan_conflict", recoveryConstraintBool(w, "avoid_ramadan") && slot.Ramadan)
 	protected := slot.Female && recoveryConstraintString(w, "female_endoscopist") != "hard" && slot.Day-s.recovery.Input.AsOfDay > 7
 	add("protected_female_capacity", "protected_female_list_outside_release_window", protected)
-	add("regular_capacity", "non_regular_or_exhausted_capacity", !slot.Regular || slot.Overbooked || slot.Capacity < 1)
+	add("regular_capacity", "non_regular_or_exhausted_capacity", !slot.Regular || slot.Overbooked || slot.Capacity < 1 || !s.recoverySessionCapacityAvailableLocked(slot))
 	eligible := true
 	for _, check := range checks {
 		eligible = eligible && check["result"] == "pass"
@@ -408,9 +449,13 @@ func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitl
 		priorityRank = 0
 	}
 	ordering := map[string]interface{}{"priority_rank": priorityRank, "deadline_day": w.DeadlineDay, "requested_day": w.RequestedDay, "tie_break": "case_id_ascending"}
+	caseHead := s.caseHead(c)
+	if guardDecision != nil {
+		caseHead = replayCaseHead
+	}
 	candidate := map[string]interface{}{"case_id": w.CaseID, "eligible": eligible, "rank": nil, "priority": w.Priority,
 		"requested_day": w.RequestedDay, "deadline_day": w.DeadlineDay, "constraints": w.Constraints, "checks": checks, "ordering": ordering,
-		"case_head": s.caseHead(c)}
+		"case_head": caseHead}
 	candidate["eligibility_hash"] = recoveryDigest(map[string]interface{}{"slot_base_head": slot.BaseHead, "candidate": candidate})
 	candidate["outreach"] = s.recoveryOutreachLocked(c)
 	return candidate
@@ -446,10 +491,11 @@ func (s *apiServer) recoveryCandidatesLocked(slot *recoverySlot) []map[string]in
 }
 
 func (s *apiServer) recoverySlotSummaryLocked(slot *recoverySlot) map[string]interface{} {
-	status, filled, reasons := "open", "", []string{}
+	status, filled := "open", ""
+	reasons := s.recoverySlotStaleLocked(slot)
 	if fill := s.recovery.Fills[slot.SlotID]; fill != nil {
 		status, filled = "filled", fill.CaseID
-	} else if reasons = s.recoverySlotStaleLocked(slot); len(reasons) > 0 {
+	} else if len(reasons) > 0 {
 		status = "stale"
 	}
 	return map[string]interface{}{"slot_id": slot.SlotID, "head": s.recoverySlotHeadLocked(slot), "status": status,
@@ -461,7 +507,7 @@ func (s *apiServer) recoverySlotDetailLocked(slot *recoverySlot, viewer apiPrinc
 	out := s.recoverySlotSummaryLocked(slot)
 	out["session_id"] = slot.SessionID
 	out["capabilities"] = map[string]interface{}{"female": slot.Female, "arabic": slot.Arabic, "after_hours": slot.AfterHours, "ramadan": slot.Ramadan,
-		"capacity": slot.Capacity, "regular": slot.Regular, "overbooked": slot.Overbooked}
+		"capacity": slot.Capacity, "booked": slot.Booked, "regular": slot.Regular, "overbooked": slot.Overbooked}
 	out["release"] = map[string]interface{}{"source_case": slot.SourceCase, "source_appointment": slot.SourceAppointment,
 		"source_decision_sig": slot.SourceDecisionSig, "source_appointment_version": slot.SourceAppointmentVersion,
 		"source_booking_fingerprint": slot.SourceBookingFingerprint, "source_fingerprint": slot.SourceFingerprint,
@@ -637,19 +683,59 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if ev["input_fingerprint"] != s.recovery.Input.InputFingerprint || ev["source_release_hash"] != slot.SourceFingerprint {
 		return errors.New("recovery input or source release fingerprint changed")
 	}
-	if ev["expected_slot_head"] != s.recoverySlotHeadLocked(slot) || ev["expected_case_head"] != s.caseHead(c) {
-		return errors.New("recovery heads do not follow current projections")
+	sourceReleaseValid := false
+	if source := s.cases[slot.SourceCase]; source != nil {
+		for _, decision := range source.decisions {
+			if decision.Sig == slot.SourceDecisionSig && decision.State == "no_show" {
+				sourceReleaseValid = true
+			}
+		}
+	}
+	if !sourceReleaseValid {
+		return errors.New("recovery source release evidence is not a canonical no-show")
+	}
+	guardDecisionSig, ok := ev["guard_decision_sig"].(string)
+	if !ok || guardDecisionSig == "" {
+		return errors.New("invalid recovery guard decision evidence")
+	}
+	var guardDecision *Decision
+	for _, decision := range c.decisions {
+		if decision.Sig == guardDecisionSig {
+			guardDecision = decision
+		}
+	}
+	if guardDecision == nil {
+		return errors.New("recovery guard decision is not canonical evidence")
+	}
+	if snapshot, ok := ev["slot_snapshot"].(map[string]interface{}); !ok || !reflect.DeepEqual(snapshot, recoverySlotSnapshot(slot)) {
+		return errors.New("recovery selected slot snapshot mismatch")
+	}
+	// Canonical cases are loaded at their final decision before ledger replay. Use
+	// the hash-chained event evidence at this ledger position instead of applying
+	// later source no-show or candidate decisions retroactively to this fill.
+	expectedCaseHead := s.caseHead(c)
+	if c.ov.head == "" {
+		expectedCaseHead = guardDecision.Sig
+	}
+	if ev["expected_slot_head"] != recoveryOpenSlotHead(slot) || ev["expected_case_head"] != expectedCaseHead {
+		return errors.New("recovery heads do not follow event-time evidence")
 	}
 	seq, ok := ev["seq"].(float64)
 	if !ok || seq != float64(c.ov.n+1) {
 		return errors.New("bad recovery per-case sequence")
 	}
-	candidate := s.recoveryCandidateLocked(slot, w)
+	if s.recovery.Fills[slot.SlotID] != nil || s.recovery.ByCase[c.ID] != nil {
+		return errors.New("duplicate recovery slot or case fill")
+	}
+	if !s.recoverySessionCapacityAvailableLocked(slot) {
+		return errors.New("recovery session capacity exceeded")
+	}
+	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead)
 	if candidate["eligible"] != true || ev["eligibility_hash"] != candidate["eligibility_hash"] {
-		return errors.New("recovery candidate no longer eligible")
+		return errors.New("recovery candidate does not match event-time eligibility evidence")
 	}
 	requestID, payloadSHA := fmt.Sprint(ev["request_id"]), fmt.Sprint(ev["payload_fingerprint"])
-	if len(requestID) < 16 || len(requestID) > 80 || payloadSHA == "" {
+	if !validRecoveryRequestID(requestID) || payloadSHA == "" {
 		return errors.New("invalid recovery idempotency data")
 	}
 	outreach, _ := ev["outreach_intent"].(bool)
@@ -661,17 +747,8 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if old, exists := s.recovery.Requests[requestID]; exists {
 		return fmt.Errorf("duplicate recovery request %s (original case %s)", requestID, old.CaseID)
 	}
-	if snapshot, ok := ev["slot_snapshot"].(map[string]interface{}); !ok || !reflect.DeepEqual(snapshot, recoverySlotSnapshot(slot)) {
-		return errors.New("recovery selected slot snapshot mismatch")
-	}
 	if outreach {
-		var guardDecision *Decision
-		for _, decision := range c.decisions {
-			if decision.Sig == ev["guard_decision_sig"] {
-				guardDecision = decision
-			}
-		}
-		if guardDecision == nil || ev["consent_at_confirmation"] != "granted" || s.recoveryConsentBeforeLocked(c, guardDecision) != "granted" {
+		if ev["consent_at_confirmation"] != "granted" || s.recoveryConsentBeforeLocked(c, guardDecision) != "granted" {
 			return errors.New("recovery outreach consent evidence not satisfied at event time")
 		}
 		second, refs := s.recoverySecondIdentifierAtDecision(c, guardDecision)

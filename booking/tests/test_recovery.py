@@ -1,5 +1,7 @@
 """Focused deterministic tests for the no-show recovery input projection."""
 import contextlib, hashlib, io, json, os, sys, tempfile, unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import recovery, suggest
@@ -71,6 +73,23 @@ class RecoveryTests(unittest.TestCase):
                 f.write(json.dumps({"subj": "fhir.ahs-mushrif.res", "data": appt}) + "\n")
             result = recovery.generate(run)
             self.assertFalse(any(s["source_case"].endswith("sr-source") for s in result["slots"]))
+
+    def test_booked_capacity_limits_shared_session_allocations(self):
+        with tempfile.TemporaryDirectory() as root:
+            run = self.run_dir(root)
+            with open(os.path.join(run, "booking.json")) as f:
+                booking = json.load(f)
+            for case in booking["cases"].values():
+                case["constraints"]["female_endoscopist"] = "none"
+            calendar = SimpleNamespace(n=1, day=[30], unit=["AD-1"], region=["AD"], cap=[2], nb=[1],
+                                       female=[False], arabic=[True], after=[False], ramadan=[False])
+            with patch.object(recovery.suggest, "calendar", return_value=(calendar, None)):
+                result = recovery.generate(run, booking=booking)
+            crc_slots = [slot for slot in result["slots"] if slot["programme"] == "crc"]
+            self.assertEqual(len(crc_slots), 1)
+            self.assertEqual(crc_slots[0]["session_id"], "synthetic-crc-30-0")
+            self.assertEqual(crc_slots[0]["booked"], 1)
+            self.assertEqual(crc_slots[0]["capacity"], 2)
 
     def test_unsupported_programme_never_projects(self):
         with tempfile.TemporaryDirectory() as root:

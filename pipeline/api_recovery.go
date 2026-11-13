@@ -39,6 +39,11 @@ type recoveryConfirmRequest struct {
 	Note             string `json:"note"`
 }
 
+func validRecoveryRequestID(requestID string) bool {
+	n := utf8.RuneCountInString(requestID)
+	return n >= 16 && n <= 80 && strings.TrimSpace(requestID) == requestID && !strings.ContainsAny(requestID, "\r\n\t")
+}
+
 func (s *apiServer) recoveryRoutes(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/recovery/slots")
 	if path == "" {
@@ -128,7 +133,7 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "case_id and both expected heads are required"}))
 		return
 	}
-	if n := utf8.RuneCountInString(req.RequestID); n < 16 || n > 80 || strings.TrimSpace(req.RequestID) != req.RequestID || strings.ContainsAny(req.RequestID, "\r\n\t") {
+	if !validRecoveryRequestID(req.RequestID) {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "request_id must be a 16-80 character idempotency key"}))
 		return
 	}
@@ -184,6 +189,9 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 		}
 		if stale := s.recoverySlotStaleLocked(slot); len(stale) > 0 {
 			return s.recoveryConflict(viewer, "slot_stale", "source no-show or slot is stale", slot, candidate, currentSlotHead, currentCaseHead)
+		}
+		if !s.recoverySessionCapacityAvailableLocked(slot) {
+			return s.recoveryConflict(viewer, "session_capacity", "session has no remaining regular capacity", slot, candidate, currentSlotHead, currentCaseHead)
 		}
 		if candidate["eligible"] != true {
 			return s.recoveryConflict(viewer, "case_ineligible", "candidate fails one or more hard eligibility checks", slot, candidate, currentSlotHead, currentCaseHead)

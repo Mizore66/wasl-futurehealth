@@ -96,6 +96,47 @@ func recoveryTestRun(t *testing.T, candidates int) (string, []string) {
 	return run, ids
 }
 
+func rewriteRecoveryTestInput(t *testing.T, run string, mutate func(*recoveryInput)) {
+	t.Helper()
+	path := filepath.Join(run, "recovery.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var in recoveryInput
+	if err := json.Unmarshal(raw, &in); err != nil {
+		t.Fatal(err)
+	}
+	mutate(&in)
+	var generic map[string]interface{}
+	raw, _ = json.Marshal(in)
+	_ = json.Unmarshal(raw, &generic)
+	delete(generic, "input_fingerprint")
+	in.InputFingerprint = recoveryDigest(generic)
+	raw, _ = json.Marshal(in)
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func appendRecoveryTestDecision(t *testing.T, run string, decision *Decision) {
+	t.Helper()
+	f, err := os.OpenFile(filepath.Join(run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := LogMsg{Seq: decision.InSeq, Subject: "out.p0", Hdr: map[string]string{}}
+	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: decision})
+	raw, _ := json.Marshal(m)
+	if _, err := f.Write(append(raw, '\n')); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func recoveryTestSlot(s *apiServer, index int) *recoverySlot {
 	ids := make([]string, 0, len(s.recovery.Slots))
 	for id := range s.recovery.Slots {
@@ -208,6 +249,100 @@ func TestRecoveryConfirmIdempotentAndReplay(t *testing.T) {
 		t.Fatalf("redacted recovery case projection: %v", caseView)
 	}
 	_ = s
+}
+
+func TestRecoveryUnicodeRequestIDSurvivesReplay(t *testing.T) {
+	run, ids := recoveryTestRun(t, 1)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	requestID := strings.Repeat("🙂", 21)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), requestID, false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("Unicode request confirmation: %d %v", code, body)
+	}
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || reloaded.recovery.Requests[requestID].CaseID != ids[2] {
+		t.Fatalf("accepted Unicode request did not survive replay: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+}
+
+func TestRecoveryReplaySurvivesLaterSourceNoShowChange(t *testing.T) {
+	run, ids := recoveryTestRun(t, 1)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), "source-race-request-001", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("confirmation: %d %v", code, body)
+	}
+	later := *s.cases[slot.SourceCase].last
+	later.ID += "-later"
+	later.InSeq++
+	later.State = "open"
+	later.Sig += "-later-open"
+	appendRecoveryTestDecision(t, run, &later)
+
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || reloaded.recovery.Fills[slot.SlotID] == nil {
+		t.Fatalf("later source decision invalidated append-only fill: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+	current := reloaded.recoverySlotSummaryLocked(reloaded.recovery.Slots[slot.SlotID])
+	if current["status"] != "filled" || !strings.Contains(fmt.Sprint(current["stale_reason_codes"]), "source_no_show_changed") {
+		t.Fatalf("current source race was not projected separately from history: %v", current)
+	}
+}
+
+func TestRecoverySharedSessionCapacityAcrossSlotsAndReplay(t *testing.T) {
+	run, ids := recoveryTestRun(t, 2)
+	rewriteRecoveryTestInput(t, run, func(in *recoveryInput) {
+		for _, i := range []int{0, 2} {
+			in.Slots[i].SessionID = "shared-recovery-session"
+			in.Slots[i].Capacity = 2
+			in.Slots[i].Booked = 1
+			in.Slots[i].SlotID = recoverySlotID(in.Slots[i])
+			in.Slots[i].BaseHead = recoveryBaseHead(in.Slots[i])
+		}
+	})
+	s, srv := recoveryTestServer(t, run)
+	shared := []*recoverySlot{}
+	for _, slot := range s.recovery.Slots {
+		if slot.SessionID == "shared-recovery-session" {
+			shared = append(shared, slot)
+		}
+	}
+	sort.Slice(shared, func(i, j int) bool { return shared[i].SlotID < shared[j].SlotID })
+	if len(shared) != 2 {
+		t.Fatalf("shared-session fixture has %d slots", len(shared))
+	}
+	first := recoveryRequest(ids[2], s.recoverySlotHeadLocked(shared[0]), s.caseHead(s.cases[ids[2]]), "shared-capacity-request-01", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+shared[0].SlotID+"/confirm", RoleCoordinator, first)
+	if code != 201 {
+		t.Fatalf("first shared-session fill: %d %v", code, body)
+	}
+	second := recoveryRequest(ids[3], s.recoverySlotHeadLocked(shared[1]), s.caseHead(s.cases[ids[3]]), "shared-capacity-request-02", false)
+	code, body = recoveryCall(t, srv, "POST", "/api/recovery/slots/"+shared[1].SlotID+"/confirm", RoleCoordinator, second)
+	if code != 409 || body["conflict"] != "session_capacity" || len(s.recovery.Fills) != 1 {
+		t.Fatalf("shared session overbooked: %d %v", code, body)
+	}
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || len(reloaded.recovery.Fills) != 1 || reloaded.recovery.Fills[shared[0].SlotID] == nil {
+		t.Fatalf("capacity-bound fill did not survive replay: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+
+	// Fault-inject the old write-side blind spot without changing the authenticated
+	// input or event snapshot. Replay must reject the resulting second fill.
+	firstFill := s.recovery.Fills[shared[0].SlotID]
+	delete(s.recovery.Fills, shared[0].SlotID)
+	code, body = recoveryCall(t, srv, "POST", "/api/recovery/slots/"+shared[1].SlotID+"/confirm", RoleCoordinator, second)
+	s.recovery.Fills[shared[0].SlotID] = firstFill
+	if code != 201 {
+		t.Fatalf("capacity fault-injection setup: %d %v", code, body)
+	}
+	overbooked := loadAPI(run, "")
+	if !strings.Contains(overbooked.ledgerErr, "recovery session capacity exceeded") {
+		t.Fatalf("replay accepted an over-capacity shared session: %q", overbooked.ledgerErr)
+	}
 }
 
 func TestRecoveryNoEligibleCandidates(t *testing.T) {

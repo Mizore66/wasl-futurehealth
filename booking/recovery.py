@@ -155,7 +155,7 @@ def generate(run, seed=2026, slots_per_fit=1.2, booking=None):
                                  "booked": int(cal.nb[sid]), "regular": True, "overbooked": False,
                                  "female": bool(cal.female[sid]), "arabic": bool(cal.arabic[sid]),
                                  "after_hours": bool(cal.after[sid]), "ramadan": bool(cal.ramadan[sid])})
-            matches = [s for s in sessions if used_sessions.get(s["session_id"], 0) < s["capacity"]
+            matches = [s for s in sessions if used_sessions.get(s["session_id"], 0) < s["capacity"] - s["booked"]
                        and compatible(s, wait["constraints"], wait["region"], earliest, as_of)]
             if matches:
                 break
@@ -174,6 +174,8 @@ def generate(run, seed=2026, slots_per_fit=1.2, booking=None):
                 "source_appointment_version": appointment.get("_v", 0),
                 "source_booking_fingerprint": digest(cases[case_id].get("booking")),
                 "projection_basis": "no_show_plus_future_synthetic_capacity_window"}
+        if session["booked"] > 0:
+            slot["booked"] = session["booked"]
         slot["base_head"] = digest(slot)
         slot["source_fingerprint"] = digest({"appointment": appointment, "decision_sig": source_sig, "base_head": slot["base_head"]})
         slots.append(slot)
