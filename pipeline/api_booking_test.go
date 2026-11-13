@@ -371,6 +371,45 @@ func TestBookingEligibilityValidationAndRBAC(t *testing.T) {
 	}
 }
 
+func TestBookingDemoOptOutConsentGuardAndReload(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	id := agentLoop("1")
+	requireBooking(t, srv, s, id, "booking_accept", "", "")
+	canonicalConsent := s.cases[id].Consent
+	s.mu.Lock()
+	_, consentErr := s.appendEventLocked(map[string]interface{}{
+		"case": id, "item": "", "decision": "consent_opted_out", "note": "synthetic opt-out",
+		"role": RoleCoordinator, "actor": "coordinator-bound", "action": ActRecordConsent,
+		"at": "2026-11-13T10:00:00Z", "head_signed": s.cases[id].last.Sig, "mode": "demo", "prev": s.lastHashLocked(),
+	})
+	s.mu.Unlock()
+	if consentErr != nil {
+		t.Fatalf("record opt-out: %v", consentErr)
+	}
+	before := len(s.reviews)
+	if code, body := coord(t, srv, id, bookingRequest(t, s, id, "booking_reschedule", "sim:colonoscopy:201:2", "Try after opt-out")); code != 409 || body["conflict"] != "consent" || body["contact_blocked"] != true {
+		t.Fatalf("reschedule after opt-out: %d %v", code, body)
+	}
+	if len(s.reviews) != before {
+		t.Fatal("refused reschedule appended an event")
+	}
+	requireBooking(t, srv, s, id, "booking_cancel", "", "Release after opt-out")
+	if code, body := coord(t, srv, id, bookingRequest(t, s, id, "booking_choose_slot", "sim:colonoscopy:201:2", "Try rebooking")); code != 409 || body["conflict"] != "consent" {
+		t.Fatalf("rebook after opt-out: %d %v", code, body)
+	}
+	if s.cases[id].Consent != canonicalConsent {
+		t.Fatal("demo opt-out changed canonical consent")
+	}
+	reloaded, err := loadAPIVerified(run, "")
+	if err != nil || reloaded.ledgerErr != "" {
+		t.Fatalf("reload after opt-out and cancellation: err=%v ledger=%q", err, reloaded.ledgerErr)
+	}
+	if got := bookingSummary(reloaded, id); got["status"] != "cancelled" {
+		t.Fatalf("cancelled booking did not survive replay: %v", got)
+	}
+}
+
 func TestBookingOverbookedAndLegacyDocuments(t *testing.T) {
 	run := bookingRun(t)
 	path := filepath.Join(run, "booking.json")
