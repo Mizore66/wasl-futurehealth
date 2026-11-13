@@ -7,6 +7,7 @@ import type { ReviewQueue } from "./queue";
  * appended to a case the server already shows as signed, so the label says that rather than "simulated".
  */
 export function QueueLabel({ source }: { source: ReviewQueue["source"] }) {
+  if (source === "incomplete") return <HonestyLabel kind="built">Incomplete: some open review items could not be loaded</HonestyLabel>;
   if (source === "open") return <HonestyLabel kind="built">Open review items from the API</HonestyLabel>;
   return apiMode() === "live" ? (
     <HonestyLabel kind="simulated">Practice queue: an already-signed demo case, answers are saved</HonestyLabel>
