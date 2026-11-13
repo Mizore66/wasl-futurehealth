@@ -58,8 +58,9 @@ test.describe("review, fixtures mode", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
     await expect(page.getByText("Case 1 of 1 waiting")).toBeVisible();
     await expect(page.getByText("Held: no second identifier is confirmed for the two records, and the two readers could not settle the bowel prep grade and whether tissue was taken.")).toBeVisible();
-    await expect(page.getByText("not confirmed", { exact: true })).toHaveCount(1);
-    await expect(page.getByText("Date of birth")).toHaveCount(0);
+    await expect(page.getByText("not recorded", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("1965-03-14", { exact: true })).toBeVisible();
+    await expect(page.getByText("Date of birth is not recorded on one or both records.")).toBeVisible();
     await expect(page.locator("mark")).toHaveText("the level of the cecum");
     await expect(prepRow(page)).toContainText("not stated");
     await expect(prepRow(page)).toContainText("reviewers decide");

@@ -51,13 +51,13 @@ const Label = ({ children }: { children: string }) => <span className="mr-2 inli
 /** Two readers side by side, one row per closure check, with the report quote below. */
 export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outcome["answerCell"] }) {
   return (
-    <section aria-labelledby="readers-h" className="@container rounded-card border border-line bg-surface p-4 md:p-6">
+    <section aria-labelledby={`readers-h-${view.items.evidence ?? "case"}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 id="readers-h" className="m-0 text-section font-medium">
+        <h2 id={`readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">
           Is the report enough to close her case?
         </h2>
         <span className="text-small text-muted">
-          {view.unit} report {view.report.id} · {view.report.on}
+          {view.unit} report {view.report.id}{view.report.version ? ` version ${view.report.version}` : ""} · {view.report.on}
         </span>
       </div>
       <div className="mt-2" data-testid="readers">

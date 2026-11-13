@@ -368,6 +368,81 @@
    "role": "downstream"
   }
  ],
+ "identity_review": [
+  {
+   "available": true,
+   "comparison": [
+    {
+     "field": "name",
+     "verdict": "differ"
+    },
+    {
+     "field": "dob",
+     "verdict": "missing"
+    },
+    {
+     "field": "sex",
+     "verdict": "unknown"
+    },
+    {
+     "field": "eid",
+     "verdict": "match"
+    }
+   ],
+   "guard": {
+    "failures": [
+     "dob_missing",
+     "sex_unknown"
+    ],
+    "met": false
+   },
+   "item": "rv-636161dc42837e08",
+   "pair": [
+    "ahs-mushrif|AHS-MRN001006",
+    "skmc-endo|SKM-MRN000409"
+   ],
+   "records": [
+    {
+     "dob": {
+      "state": "present",
+      "value": "1965-03-14"
+     },
+     "eid": {
+      "state": "present",
+      "value": "784*********123"
+     },
+     "name": {
+      "state": "present",
+      "value": "مريم الشامسي"
+     },
+     "registration": "ahs-mushrif|AHS-MRN001006",
+     "sex": {
+      "state": "present",
+      "value": "F"
+     }
+    },
+    {
+     "dob": {
+      "state": "missing",
+      "value": ""
+     },
+     "eid": {
+      "state": "present",
+      "value": "784*********123"
+     },
+     "name": {
+      "state": "present",
+      "value": "Mariam Al Shamsi"
+     },
+     "registration": "skmc-endo|SKM-MRN000409",
+     "sex": {
+      "state": "unknown",
+      "value": ""
+     }
+    }
+   ]
+  }
+ ],
  "links": [
   {
    "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-217",

@@ -83,6 +83,9 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
+	if review := s.identityReview(c, viewerOrNobody(viewer)); review != nil {
+		body["identity_review"] = review
+	}
 	s.mu.Lock()
 	if c.patient.Seq > 0 {
 		body["api_patient"] = s.patientViewLocked(c, true)
