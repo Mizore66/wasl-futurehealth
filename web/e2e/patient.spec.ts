@@ -81,8 +81,11 @@ test("access verifies the link, sets a bounded host cookie and strips the token"
   expect(page.url()).not.toContain(token);
   const cookie = await patientCookie(page);
   expect(cookie).toMatchObject({ httpOnly: true, secure: true, sameSite: "Lax", path: "/", value: token });
-  // Chromium derives a subsecond expiry from its receipt clock even for whole-second Expires values.
-  expect(Math.abs((cookie?.expires ?? 0) - Date.parse(expiresAt) / 1000)).toBeLessThan(1);
+  // Chromium derives expiry from its receipt clock: CI measured 1.004s after the whole-second Expires value.
+  // Compare cookie Unix seconds on both sides, allowing only that one-second serialization boundary.
+  const expectedExpiry = Math.floor(Date.parse(expiresAt) / 1000);
+  const actualExpiry = Math.floor(cookie?.expires ?? 0);
+  expect(Math.abs(actualExpiry - expectedExpiry)).toBeLessThanOrEqual(1);
   const response = await page.goto("/patient/book?lang=en");
   expect(response?.headers()["cache-control"]).toBe("no-store");
   expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
