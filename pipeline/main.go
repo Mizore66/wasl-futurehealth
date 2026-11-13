@@ -29,7 +29,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|backup-nats|restore-nats|verify-nats")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|backup-nats|restore-nats|verify-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -43,6 +43,8 @@ func main() {
 	out := fs.String("out", "../cohort", "")
 	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats input JSON")
 	run := fs.String("run", "../run/default", "run dir")
+	patientCase := fs.String("case", "", "patient-link: existing synthetic CRC case id")
+	patientTTL := fs.Duration("ttl", defaultPatientTTL, "patient-link: lifetime (maximum 24h)")
 	prov := fs.String("prov", "", "")
 	name := fs.String("name", "0", "")
 	part := fs.Int("part", 0, "")
@@ -547,6 +549,12 @@ func main() {
 		runHL7Sender(*data, *hl7Addr, *seed, *fDup, *fReo, *hl7Drops, absRun)
 	case "fhirsub":
 		runFhirSub("http://"+*hieAddr+"/fhir", *hookAddr, *content, absRun)
+	case "patient-link":
+		token, err := provisionPatientLink(absRun, *patientCase, *patientTTL, time.Now().UTC())
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("/patient/access?link=" + token)
 	case "serve":
 		runServe(absRun, *data, *apiAddr)
 	case "lungcache": // ask local Gemma 3 4B once per unique lung corpus text; write the replayable cache + reader scores
