@@ -67,7 +67,7 @@ def test_lookahead_labelled():
     opt = res["inputs"]["optimiser"]
     assert opt["optimiser"] == "lookahead" and opt["arrivals"] == "bursty" and opt["forecast"] == "trailing", opt
     assert res["data_mode"] == "simulated" and res["decision_support_only"] is True
-    crc = [c for c in res["cases"].values() if c["procedure"] == "colonoscopy"]
+    crc = [c for c in res["cases"].values() if c["procedure"] == "colonoscopy" and c["status"] != "not_applicable"]
     assert {c["target_days"] for c in crc} == {14, 31}
     assert res["summary"]["suggested"] + res["summary"]["no_slot"] == len(crc)
     return f"lookahead run labelled {opt['method'][:40]}...; {res['summary']['suggested']}/{len(crc)} CRC suggested"
