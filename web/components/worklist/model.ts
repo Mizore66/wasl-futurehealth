@@ -183,7 +183,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
-  const snoozed = snoozeRunning || sinks;
+  const snoozed = snoozeLater || sinks;
   // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
   // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
   const booking = ov?.booking;
