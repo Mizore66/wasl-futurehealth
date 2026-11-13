@@ -226,7 +226,12 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 	claims := map[reviewQuestionKey]*reviewClaimState{}
 	for i, ev := range evs {
 		bad := func(msg string) error { return fmt.Errorf("review ledger event %d: %s", i+1, msg) }
-		// Coordinator events share the hash chain but are schema-validated by loadReviews, not by undo semantics.
+		// Patient and coordinator overlays share the hash chain but are schema-validated by loadReviews, not undo semantics.
+		if sstr(ev, "type") == patientEventType {
+			byHash[sstr(ev, "hash")] = ev
+			prior = append(prior, ev)
+			continue
+		}
 		if sstr(ev, "type") == coordEventType {
 			byHash[sstr(ev, "hash")] = ev
 			prior = append(prior, ev)

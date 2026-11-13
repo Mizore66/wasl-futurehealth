@@ -284,6 +284,7 @@ type LedgerLike =
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
+  | { ledger: "patient"; kind: string }
   | { ledger: "unknown"; label: string };
 
 /** The system identifier of a ledger event as the API wrote it: `type/kind`, the compensation kind, or the review's action. */
@@ -291,6 +292,7 @@ export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
   if (e.ledger === "compensation") return e.kind;
   if (e.ledger === "claim") return `review_claim/${e.kind}`;
+  if (e.ledger === "patient") return `patient_journey/${e.kind}`;
   if (e.ledger === "unknown") return e.label || "unrecognised";
   return e.action ?? "review";
 }
@@ -315,6 +317,7 @@ export function ledgerWords(e: LedgerLike): string {
     const operation = { claim: "Claimed", renew: "Renewed", release: "Released", takeover: "Taken over" }[e.kind] ?? plain(e.kind);
     return `Review question ${operation.toLowerCase()}`;
   }
+  if (e.ledger === "patient") return `Patient self-service: ${plain(e.kind)}`;
   if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
   return e.decision ? plain(e.decision) : "Review";
 }

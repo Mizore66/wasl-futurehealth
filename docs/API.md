@@ -54,6 +54,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
 | GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
+| GET, POST | `/api/patient/journey` | Case-bound synthetic patient-link projection and patient self-service events (below); never a staff credential or coordinator permission |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
@@ -89,6 +90,16 @@ The default-deny snapshot projector accepts this same contract for `docs/api-sam
 - **Drop-off:** `never_notified`, `no_acknowledgement`, `not_booked`, `referral_rejected`, `referral_unanswered`, `no_show`, `inadequate`, `awaiting_histology`, `in_progress`, or `""` when closed.
 - **Consent:** `unknown`, `granted`, `denied`, `opted_out`.
 - **Days:** fractional days since 1 May 2026, the cohort epoch.
+
+### Synthetic patient self-service
+
+`wsi7 patient-link -run <run> -case <existing synthetic case id> [-ttl 30m]` provisions a 256-bit, base64url patient link and prints `/patient/access?link=…` once. It sends nothing. The default lifetime is 30 minutes and the maximum is 24 hours. `WASL_SYNTHETIC_DATA_ONLY=1` is required. The mode-`0600` run-local `patient_links.ndjson` registry stores only the SHA-256 token hash, opaque link ID, case ID and expiry. Raw tokens and token hashes never enter case responses, journey events, audit exports or request logs.
+
+Open the printed relative URL on the Next.js server. `GET /patient/access` verifies the link through the Go API, sets an `HttpOnly`, `Secure`, `SameSite=Lax`, host-only `__Host-wasl_patient_link` cookie with the same expiry, and redirects with `303` to `/patient/notice`, removing the token from the visible URL. Invalid or expired links return no patient data and clear the cookie. Patient pages and mutation routes use `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. The Next.js server, not direct browser CORS, proxies `/api/patient/journey` with the cookie's bearer token.
+
+`GET /api/patient/journey` returns `wasl-patient-journey/1`, a patient-only optimistic `head`/`seq`, teach-back, contact permission, offered-slot preference, preparation state, the current simulated offers and link expiry. It contains no case ID, staff timeline, evidence, identity, review or audit data. `POST` accepts exactly `teach_back_completed`, `contact_permission_changed`, `slot_selected` and `preparation_changed`, each with `expected_head`, a UUID `request_id` and its action-specific `data`. Bodies are limited to 8 KiB; unknown and duplicate fields and browser-asserted case/actor/role are rejected. Exact request replays and semantic no-ops return `200`; new durable events return `201`; stale heads/request IDs/offers/consent transitions return `409` with the current journey; invalid links return `401`, expired known links `410`, and append failures `500` without a success projection.
+
+Patient actions append `patient_journey` events to the existing hash-chained `api_reviews.ndjson`. Patient heads and sequences advance only on patient events; coordinator and future booking heads stay independent. Expiry governs new requests, not restart replay. Case summary/detail expose a separate optional `api_patient` projection after activity, while canonical consent, clinical decisions, signatures, outreach and booking stay unchanged. Contact denial/opt-out updates the demo `api_contact` guard and cancels simulated pending contact; it does not send SMS or reserve an appointment. Slot wording is a preference for coordinator review only.
 
 ### Programme `lung_nodule` (second loop type: incidental pulmonary nodules, Fleischner 2017)
 

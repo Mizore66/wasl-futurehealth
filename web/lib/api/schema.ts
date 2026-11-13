@@ -260,6 +260,24 @@ export const ReviewLedger = z.looseObject({
   note: z.string().optional(),
 });
 
+/** Patient-link self-service projection. Summary rows omit timestamps/event ids; detail includes the full projection. */
+export const CasePatient = z.looseObject({
+  schema: z.literal("wasl-patient-journey/1"),
+  head: z.string(),
+  seq: z.number().int().nonnegative(),
+  ledger_status: z.enum(["ok", "invalid"]),
+  teach_back: z.looseObject({ status: z.enum(["pending", "completed"]), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
+  contact_permission: z.looseObject({ status: Consent, updated_at: z.string().optional(), event: z.string().optional() }),
+  slot_selection: z.looseObject({
+    status: z.enum(["unselected", "selected"]), slot_id: z.string(), offers_version: z.string().optional(), selected_at: z.string().optional(), event: z.string().optional(),
+  }),
+  preparation: z.looseObject({
+    items: z.array(z.looseObject({ item_id: z.string(), completed: z.boolean(), updated_at: z.string().optional(), event: z.string().optional() })),
+    completed: z.number().int(), total: z.number().int(),
+  }),
+  last_action_at: z.string(),
+});
+
 export const CaseSummary = z.looseObject({
   id: z.string(),
   programme: Programme,
@@ -283,6 +301,7 @@ export const CaseSummary = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
   api_overlay: ApiOverlay.optional(),
+  api_patient: CasePatient.optional(),
 });
 
 export const ChainEntry = z.looseObject({
@@ -425,6 +444,13 @@ export const ApiReview = z.looseObject({
 /** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
 export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
 export const ConsentEvent = ApiReview.extend({
+  /** Patient consent overlays share this history but use patient_journey events without review item/note fields. */
+  item: z.string().optional(),
+  note: z.string().optional(),
+  type: z.literal("patient_journey").optional(),
+  kind: z.literal("contact_permission_changed").optional(),
+  /** viewerEvent removes prev when it would disclose a concealed independent first read. */
+  prev: z.string().optional(),
   decision: ConsentEventName,
   action: z.literal("record_consent"),
   head_signed: z.string(),
@@ -440,13 +466,14 @@ export const ConsentOverlay = z.looseObject({
   last_event_hash: z.string(),
   note: z.string(),
 });
-export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentHistoryEvent = z.union([ConsentEvent, z.lazy(() => PatientJourneyEvent)]);
+export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
 export const ConsentRequest = z.object({
   event: ConsentEventName,
   expected_head: z.string().min(1),
   note: z.string().max(500).default(""),
 });
-export const ConsentResponse = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentResponse = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
 export const ConsentAppendResponse = withMeta({ review: ConsentEvent, overlay: ConsentOverlay, note: z.string() });
 export const ConsentError = withMeta({ error: z.string(), current_head: z.string().optional(), api_contact: ConsentOverlay.optional() });
 
@@ -531,6 +558,28 @@ const claimShape = {
   expected_claim_head: z.string(),
 };
 
+const patientShape = {
+  ...ledgerCore,
+  /** viewerEvent omits prev when it chains onto a concealed independent read. */
+  prev: z.string().optional(),
+  type: z.literal("patient_journey"),
+  kind: z.enum(["teach_back_completed", "contact_permission_changed", "slot_selected", "preparation_changed"]),
+  link_id: z.string(),
+  request_id: z.string(),
+  head: z.string(),
+  head_signed: z.string(),
+  seq: z.number().int().positive(),
+  decision: z.string().optional(),
+  data: z.looseObject({
+    question_id: z.string().optional(), answer_id: z.string().optional(), permission: Consent.optional(),
+    slot_id: z.string().optional(), offers_version: z.string().optional(), item_id: z.string().optional(), completed: z.boolean().optional(),
+  }),
+};
+
+/** Patient self-service events stay distinct from coordinator actions and canonical FHIR source events. */
+export const PatientJourneyEvent = z.looseObject({ ...patientShape, actor: z.string() });
+export const AuditPatientJourneyEvent = z.looseObject({ ...patientShape, actor: z.string().optional() });
+
 /** A coordinator action as case detail serves it (actor and free text included). */
 export const CoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string() });
 /** An undo, contest or contest resolution as case detail serves it. */
@@ -577,6 +626,7 @@ const reviewOnly = { type: z.never().optional(), kind: z.literal("").optional() 
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
   CoordinatorEvent.transform(tag("coordinator")),
+  PatientJourneyEvent.transform(tag("patient")),
   CompensationEvent.transform(tag("compensation")),
   ReviewClaimEvent.transform(tag("claim")),
   ApiReview.extend(reviewOnly).transform(tag("review")),
@@ -585,6 +635,7 @@ export const LedgerEvent = z.union([
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
   AuditCoordinatorEvent.transform(tag("coordinator")),
+  AuditPatientJourneyEvent.transform(tag("patient")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReviewClaimEvent.transform(tag("claim")),
   AuditReview.extend(reviewOnly).transform(tag("review")),
@@ -676,6 +727,8 @@ export const CaseDetail = withMeta({
   api_contact: ApiContact.optional(),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
+  /** Separate patient-link projection; never merged into canonical timeline or booking. */
+  api_patient: CasePatient.optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
@@ -1091,6 +1144,7 @@ export type ConsentResponse = z.infer<typeof ConsentResponse>;
 export type ConsentAppendResponse = z.infer<typeof ConsentAppendResponse>;
 export type AuditReview = z.infer<typeof AuditReview>;
 export type LedgerEvent = z.infer<typeof LedgerEvent>;
+export type PatientJourneyEvent = z.infer<typeof PatientJourneyEvent>;
 export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;

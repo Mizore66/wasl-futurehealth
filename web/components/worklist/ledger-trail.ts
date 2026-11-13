@@ -21,10 +21,24 @@ export type PersistedLedger = {
   /** Ledger events the API applied before stopping (all of them when `ok`). */
   applied: number | null;
   entries: TrailEntry[];
+  patient?: CaseDetail["api_patient"];
 };
 
 const saved = (at: string, event: string) => `Saved · ${atWords(at)}${event ? ` · ${event.slice(0, 8)}` : ""}`;
 const quoted = (s: string | undefined) => (s ? `: “${s}”` : "");
+
+function patientActivity(event: Extract<CaseDetail["api_reviews"][number], { ledger: "patient" }>): string {
+  switch (event.kind) {
+    case "teach_back_completed":
+      return "Patient completed teach-back";
+    case "contact_permission_changed":
+      return `Patient contact permission: ${event.data.permission ?? "changed"}`;
+    case "slot_selected":
+      return "Patient selected a simulated slot · coordinator review needed";
+    case "preparation_changed":
+      return `Patient preparation ${event.data.item_id === "escort_home" ? "escort home" : "clear fluids and prep"}: ${event.data.completed ? "complete" : "not complete"}`;
+  }
+}
 
 export function persistedLedger(detail: CaseDetail): PersistedLedger {
   const ov = detail.api_overlay;
@@ -45,6 +59,13 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
       who: n.actor || "Actor not recorded",
       hash: n.event || undefined,
     })),
+    ...detail.api_reviews.filter((event): event is Extract<CaseDetail["api_reviews"][number], { ledger: "patient" }> => event.ledger === "patient").map((event) => ({
+      at: event.at,
+      what: patientActivity(event),
+      when: saved(event.at, event.hash),
+      who: "Patient self-service",
+      hash: event.hash,
+    })),
   ];
   timed.sort((a, b) => compareInstants(a.at, b.at));
   return {
@@ -52,5 +73,6 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
     detail: status === "invalid" ? (rl?.detail ?? "") : "",
     applied: rl?.events_applied ?? null,
     entries: timed.map((e) => ({ what: e.what, when: e.when, who: e.who, ...(e.hash ? { hash: e.hash } : {}) })),
+    ...(detail.api_patient ? { patient: detail.api_patient } : {}),
   };
 }
