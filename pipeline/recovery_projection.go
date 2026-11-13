@@ -453,6 +453,12 @@ func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *rec
 	add("case_active", "case_closed_inactive_or_held", !active)
 	add("not_source_case", "source_case_for_own_release", w.CaseID == slot.SourceCase)
 	add("not_already_backfilled", "case_already_backfilled", s.recovery.ByCase[w.CaseID] != nil)
+	// Keep unaffected eligibility hashes compatible with ledgers written before
+	// booking and recovery became mutually exclusive. A conflict is a hard failure;
+	// its absence does not change the authenticated candidate representation.
+	if bookingReservationActive(c) {
+		add("no_coordinator_reservation", "case_has_active_coordinator_reservation", true)
+	}
 	stale := []string{}
 	if guardDecision == nil {
 		stale = s.recoverySlotStaleLocked(slot)
@@ -764,6 +770,9 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	}
 	if s.recovery.Fills[slot.SlotID] != nil || s.recovery.ByCase[c.ID] != nil {
 		return errors.New("duplicate recovery slot or case fill")
+	}
+	if bookingReservationActive(c) {
+		return errors.New("recovery case has an active coordinator reservation")
 	}
 	if !s.recoverySessionCapacityAvailableLocked(slot) {
 		return errors.New("recovery session capacity exceeded")

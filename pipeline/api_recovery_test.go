@@ -520,6 +520,110 @@ func TestRecoveryConcurrentSameCandidateDifferentSlots(t *testing.T) {
 	}
 }
 
+func recoveryBookingConflictRun(t *testing.T) (string, []string) {
+	t.Helper()
+	run, ids := recoveryTestRun(t, 1)
+	recoveryCanonicalOutreach(t, run, ids[2])
+	first, second := testSlot(301, 1, 40, 47), testSlot(301, 2, 41, 47)
+	writeTestBooking(t, run, map[string]interface{}{
+		"schema": "wasl-booking/2", "data_mode": "simulated", "decision_support_only": true,
+		"capacity": map[string]interface{}{"condition": "adequate", "pooling_relevant": false, "pooling_note": "no capacity constraint"},
+		"cases":    map[string]interface{}{ids[2]: testBookingCase(ids[2], first, first, second)},
+	})
+	return run, ids
+}
+
+func TestBookingThenRecoveryConflictWriteAndReload(t *testing.T) {
+	run, ids := recoveryBookingConflictRun(t)
+	s, srv := recoveryTestServer(t, run)
+	requireBooking(t, srv, s, ids[2], "booking_accept", "", "")
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), "booking-recovery-write-01", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 409 || body["conflict"] != "case_ineligible" || len(s.recovery.ByCase) != 0 || len(s.reviews) != 1 {
+		t.Fatalf("reserved case accepted recovery: %d %v", code, body)
+	}
+	candidate := body["candidate"].(map[string]interface{})
+	reservationCheck := false
+	for _, raw := range candidate["checks"].([]interface{}) {
+		check := raw.(map[string]interface{})
+		if check["code"] == "no_coordinator_reservation" && check["result"] == "fail" {
+			reservationCheck = true
+		}
+	}
+	if !reservationCheck {
+		t.Fatalf("active reservation missing from eligibility checks: %v", candidate["checks"])
+	}
+
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || len(reloaded.reviews) != 1 || len(reloaded.recovery.ByCase) != 0 || bookingSummary(reloaded, ids[2])["status"] != "reserved" {
+		t.Fatalf("valid earlier reservation did not survive rejected recovery: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+}
+
+func TestRecoveryThenBookingConflictWriteAndReload(t *testing.T) {
+	run, ids := recoveryBookingConflictRun(t)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), "recovery-booking-write-01", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("recovery setup: %d %v", code, body)
+	}
+	code, body = coord(t, srv, ids[2], bookingRequest(t, s, ids[2], "booking_accept", "", ""))
+	if code != 409 || body["conflict"] != "recovery_backfill" || bookingSummary(s, ids[2])["status"] != "unreserved" || len(s.reviews) != 1 {
+		t.Fatalf("backfilled case accepted reservation: %d %v", code, body)
+	}
+
+	reloaded := loadAPI(run, "")
+	if reloaded.ledgerErr != "" || len(reloaded.reviews) != 1 || reloaded.recovery.ByCase[ids[2]] == nil || bookingSummary(reloaded, ids[2])["status"] != "unreserved" {
+		t.Fatalf("valid earlier backfill did not survive rejected booking: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+}
+
+func TestBookingThenRecoveryConflictReplay(t *testing.T) {
+	run, ids := recoveryBookingConflictRun(t)
+	s, srv := recoveryTestServer(t, run)
+	requireBooking(t, srv, s, ids[2], "booking_accept", "", "")
+	c := s.cases[ids[2]]
+	reserved := c.ov.booking
+	// Fault-inject the former write-side blind spot to create the conflicting
+	// ledger that old binaries could persist. Replay must reject its second event.
+	c.ov.booking = caseBookingState{}
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(c), "booking-recovery-replay-1", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	c.ov.booking = reserved
+	if code != 201 {
+		t.Fatalf("conflict fault-injection setup: %d %v", code, body)
+	}
+	reloaded := loadAPI(run, "")
+	if !strings.Contains(reloaded.ledgerErr, "active coordinator reservation") || reloaded.recovery.ByCase[ids[2]] != nil || bookingSummary(reloaded, ids[2])["status"] != "reserved" {
+		t.Fatalf("replay accepted booking then recovery conflict: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+}
+
+func TestRecoveryThenBookingConflictReplay(t *testing.T) {
+	run, ids := recoveryBookingConflictRun(t)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[2]]), "recovery-booking-replay-1", false)
+	code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req)
+	if code != 201 {
+		t.Fatalf("recovery setup: %d %v", code, body)
+	}
+	// As above, bypass only the new write-side check; the authenticated events and
+	// hash chain remain intact so replay exercises workflow validation itself.
+	fill := s.recovery.ByCase[ids[2]]
+	delete(s.recovery.ByCase, ids[2])
+	requireBooking(t, srv, s, ids[2], "booking_accept", "", "")
+	s.recovery.ByCase[ids[2]] = fill
+	reloaded := loadAPI(run, "")
+	if !strings.Contains(reloaded.ledgerErr, "confirmed recovery backfill") || reloaded.recovery.ByCase[ids[2]] == nil || bookingSummary(reloaded, ids[2])["status"] != "unreserved" {
+		t.Fatalf("replay accepted recovery then booking conflict: %q %+v", reloaded.ledgerErr, reloaded.recovery)
+	}
+}
+
 func TestRecoveryRefusalsAndAtomicAppend(t *testing.T) {
 	run, ids := recoveryTestRun(t, 1)
 	s, srv := recoveryTestServer(t, run)
@@ -645,6 +749,9 @@ func TestRecoveryConsentWithdrawalSurvivesReplay(t *testing.T) {
 func TestRecoveryPythonGeneratorContract(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {
 		t.Skip("python3 unavailable")
+	}
+	if err := exec.Command("python3", "-c", "import numpy").Run(); err != nil {
+		t.Skip("NumPy unavailable for python3; run the recovery generator contract in the Python-equipped lane")
 	}
 	run, ids := recoveryTestRun(t, 1)
 	if err := os.Remove(filepath.Join(run, "recovery.json")); err != nil {
