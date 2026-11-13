@@ -27,6 +27,7 @@ type loopState struct {
 	last    *Decision
 	lastFU  *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
 	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
+	lastCRC map[string]*Decision // CRC treatment/surveillance/follow-up children keyed by stable child loop ID
 	raised  map[string]*ReviewItem
 	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 }
@@ -153,6 +154,9 @@ func evBlock(d DownFact, human string) map[string]interface{} {
 				"landmark_p": d.Ev.Image.LandmarkP, "prep": d.Ev.Image.Prep, "prep_p": d.Ev.Image.PrepP, "unavailable": d.Ev.Image.Unavailable,
 				"photo_shas": d.Ev.Image.Shas, "label_before_image": d.Ev.PreImage, "hint": d.Ev.ReviewHint}
 		}
+		if d.Ev.CRC != nil {
+			b["crc_proposal"] = d.Ev.CRC // deterministic source quotes, never independent reader agreement
+		}
 		b["fields"] = map[string]string{"regex": d.Ev.Regex.Caecum + "/" + d.Ev.Regex.Prep + "/" + d.Ev.Regex.Polyps + "/" + d.Ev.Regex.Histology,
 			"reader": d.Ev.Gemma.Caecum + "/" + d.Ev.Gemma.Prep + "/" + d.Ev.Gemma.Polyps + "/" + d.Ev.Gemma.Histology}
 	}
@@ -164,6 +168,14 @@ type row struct {
 	pc      float64
 	trusted bool
 	human   bool
+}
+
+func crcDispositionDay(previous *Decision, confirmation, head, disposition string, now float64) float64 {
+	if previous != nil && previous.CRC != nil && previous.CRC.Confirmation == confirmation &&
+		previous.CRC.SignedHead == head && previous.CRC.Disposition == disposition && !previous.CRC.Withdrawn {
+		return previous.CRC.DispositionDay
+	}
+	return now
 }
 
 func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
@@ -225,8 +237,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	for _, cm := range f.Comms {
-		if cm.Day > now+1e-9 {
-			continue
+		if cm.Day > now+1e-9 || cm.Status != "completed" {
+			continue // only the current completed Communication revision is clinical evidence
 		}
 		switch cm.Category {
 		case "acknowledgement":
@@ -265,9 +277,6 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				flag(cm.ID, v)
 			}
 			continue
-		}
-		if cm.Status != "completed" {
-			continue // undeliverable
 		}
 		v := VerifyComm(cm.Template, f.Provider, cm.Text)
 		if v == "ok" && cm.Lang != expLang {
@@ -362,6 +371,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var holdRow *row                                       // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{}                   // pilot: a post-closure audit that disagreed with the automatic verdict
+	var crcSource, crcProcedure *row
+	var crcProposal *CRCProposal
+	var crcSignoff *Signoff
+	var crcDecision *CRCDecision
+	var crcPreHistology bool
+	crcDisposition := ""
 	pending := []string{}
 	pendSet := map[string]bool{}
 	unlinked := false
@@ -376,6 +391,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		if purpose == OverrideConfirm {
 			key += "#confirm"
+		} else if purpose == CRCDispositionPurpose {
+			key += "#crc-disposition"
 		} else if k := pilotKey(purpose); k != "" { // shadow / audit items are distinct from the report's own review
 			key += k
 		}
@@ -387,7 +404,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			purpose, key = LinkConfirm, key+"#linkconfirm"
 			id = "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		}
-		if _, ok := signed[id]; ok || pendSet[id] {
+		if _, ok := signed[id]; (ok && purpose != CRCDispositionPurpose) || pendSet[id] {
 			return
 		}
 		pendSet[id] = true
@@ -527,6 +544,11 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			raise(r, "evidence")
 			continue
 		}
+		var procedureCRC, pathologyCRC *CRCProposal
+		var pathologyRow *row
+		if prog == "crc" && r.d.Ev != nil {
+			procedureCRC = r.d.Ev.CRC
+		}
 		if label == "awaiting_histology" {
 			has := false
 			for _, p := range paths[r.d.ReportID] {
@@ -541,12 +563,23 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				}
 				if pl == "histology" && p.trusted {
 					has = true
+					if pathologyRow == nil {
+						pp := p
+						pathologyRow = &pp
+						if p.d.Ev != nil {
+							pathologyCRC = p.d.Ev.CRC
+						}
+					}
 					if _, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 						human = "histology"
 					}
 				}
 			}
 			if !has {
+				if procedureCRC != nil && procedureCRC.Suspected {
+					rr := r
+					crcSource, crcProcedure, crcProposal, crcPreHistology = &rr, &rr, mergeCRCProposal(procedureCRC, nil), true
+				}
 				awaiting = true
 				if holdRow == nil {
 					rr := r
@@ -559,6 +592,17 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				continue
 			}
 			label = "adequate"
+		}
+		if prog == "crc" && label == "adequate" {
+			proposal := mergeCRCProposal(procedureCRC, pathologyCRC)
+			if crcProposalNeedsDisposition(proposal) {
+				rr, pr := r, r
+				if pathologyRow != nil {
+					rr = *pathologyRow
+				}
+				crcSource, crcProcedure, crcProposal, crcPreHistology = &rr, &pr, proposal, false
+				continue // outcome disposition is separate from procedure completeness
+			}
 		}
 		switch label {
 		case "adequate":
@@ -591,7 +635,100 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
-	if state == "closed" {
+	if prog == "crc" && crcSource != nil && crcProcedure != nil && crcProposal != nil {
+		// This branch runs only after the ordinary trusted-link, current-version,
+		// two-reader and procedure-quality gates above have supplied an adequate label.
+		// Suspicion alone is the exception: it adds coordinator work while histology
+		// (and any quality hold) remains visible and unresolved.
+		crcDecision = &CRCDecision{Kind: "screening", ProposedOutcome: crcProposal.Outcome,
+			SourceReport: crcSource.d.ReportID, SourceVersion: crcSource.d.Version, Owner: "crc-mdt-coordinator"}
+		if crcProposal.Suspected || crcPreHistology {
+			crcDecision.MDT = crcWorkItem(f.LoopID, *crcSource, *crcProcedure)
+			// ID and same-day clock stay anchored to the colonoscopy across pathology arrival.
+		}
+		chain = appendBlock(nil, "link_decision", linkBlock(f, crcSource.d, crcSource.pc))
+		chain = appendBlock(chain, "evidence", evBlock(crcSource.d, ""))
+		chain = appendBlock(chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": crcSource.d.ReportID,
+			"report_version": crcSource.d.Version, "proposal": crcProposal, "procedure_report": crcProcedure.d.ReportID})
+		if crcPreHistology {
+			state, closing, closedDay = "suspected_malignancy", crcSource.d.ReportID, 0
+			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": "suspected_malignancy",
+				"report": crcSource.d.ReportID, "awaiting_histology": true, "next": "same-day MDT coordinator review; no treatment loop before a signed disposition"})
+		} else {
+			itemID := evidenceReviewItemID(f.LoopID, crcSource.d.ReportID, crcSource.d.Version, CRCDispositionPurpose)
+			raiseFor(*crcSource, "evidence", CRCDispositionPurpose)
+			item := ls.raised[itemID]
+			if item != nil && (len(item.Chain) == 0 || item.Chain[len(item.Chain)-1].Type != "crc_proposal") {
+				item.Chain = appendBlock(item.Chain, "crc_proposal", map[string]interface{}{"loop": f.LoopID, "report": crcSource.d.ReportID,
+					"report_version": crcSource.d.Version, "proposal": crcProposal, "procedure_report": crcProcedure.d.ReportID})
+				item.Head = item.Chain[len(item.Chain)-1].Hash
+			}
+			answer := crcDispositionAnswer(crcProposal)
+			if item != nil {
+				item.Verdict = answer // simulated reviewers confirm the proposal, never an inferred generic adequacy label
+			}
+			if s, ok := signed[itemID]; ok && item != nil {
+				valid := s.ItemID == itemID && s.LoopID == f.LoopID && s.ReportID == crcSource.d.ReportID &&
+					sameReportReviewVersion(s.ReportVersion, crcSource.d.Version) && sameReportReviewVersion(item.ReportVersion, currentReportVersion(f, crcSource.d.ReportID)) && s.SignedHead == item.Head &&
+					s.Purpose == CRCDispositionPurpose && s.Evidence == answer && answer != "" && len(s.Kinds) == 1 && s.Kinds[0] == "evidence" && CheckSignoff(&s, DualMerge) == nil
+				if valid {
+					for i, id := range pending {
+						if id == itemID {
+							pending = append(pending[:i], pending[i+1:]...)
+							break
+						}
+					}
+					delete(pendSet, itemID)
+					ss := s
+					crcSignoff, crcDisposition = &ss, crcDispositionFromAnswer(answer)
+				} else if !pendSet[itemID] {
+					pendSet[itemID] = true
+					pending = append(pending, itemID)
+				}
+			}
+			if crcSignoff == nil {
+				state, closing, closedDay = "awaiting_crc_disposition", "", 0
+				chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": state,
+					"report": crcSource.d.ReportID, "report_version": crcSource.d.Version, "proposed_outcome": crcProposal.Outcome,
+					"review_item": itemID, "reason": "clinician-signed CRC disposition required"})
+			} else {
+				crcDecision.Disposition, crcDecision.Confirmation = crcDisposition, crcSignoff.ItemID
+				crcDecision.SignedHead, crcDecision.Reviewer = crcSignoff.SignedHead, crcSignoff.Reviewer
+				crcDecision.IntervalDays = crcProposal.IntervalDays
+				crcDecision.Owner = crcOwner(crcDisposition)
+				crcDecision.DispositionDay = crcDispositionDay(ls.last, crcSignoff.ItemID, crcSignoff.SignedHead, crcDisposition, now)
+				state, closing, closedDay = "closed", crcSource.d.ReportID, crcSource.d.Day
+				switch crcDisposition {
+				case "closed_to_gastro":
+					state, crcDecision.FollowUpCategory, crcDecision.FollowUpState = "awaiting_gastro", "crc-gastroenterology", "awaiting_acceptance_or_first_appointment"
+				case "closed_to_specialist":
+					state, crcDecision.FollowUpCategory, crcDecision.FollowUpState = "awaiting_specialist", "crc-specialist", "awaiting_acceptance_or_first_appointment"
+				}
+				if crcDecision.FollowUpCategory != "" && c.crcFollowUpCompleted(f, crcDecision.DispositionDay, crcDecision.FollowUpCategory) {
+					state = "closed"
+					crcDecision.FollowUpState = "accepted_or_first_appointment"
+				}
+				if state == "closed" {
+					crcDecision.ClosedInto = crcDisposition
+				}
+				chain = appendBlock(chain, "human_signoff", map[string]interface{}{"item": crcSignoff.ItemID, "reviewer": crcSignoff.Reviewer,
+					"evidence": crcSignoff.Evidence, "signed_head": crcSignoff.SignedHead, "report_version": crcSignoff.ReportVersion})
+				chain = appendBlock(chain, "crc_disposition", map[string]interface{}{"loop": f.LoopID, "state": state, "disposition": crcDisposition,
+					"closed_into": crcDecision.ClosedInto, "report": crcSource.d.ReportID, "report_version": crcSource.d.Version,
+					"procedure_day": crcProcedure.d.Day, "interval_days": crcProposal.IntervalDays, "follow_up": crcDecision.FollowUpCategory,
+					"boundary": "simulated downstream-care tracking only; no referral dispatched and no treatment delivered or scheduled"})
+				humanAssisted = true
+				if crcDecision.MDT != nil && crcDisposition != "closed_to_mdt" {
+					crcDecision.MDT.Status = "closed"
+				}
+			}
+		}
+		if crcDecision.MDT != nil && crcDecision.MDT.Status == "open" && !pendSet[crcDecision.MDT.ID] {
+			pendSet[crcDecision.MDT.ID] = true
+			pending = append(pending, crcDecision.MDT.ID)
+		}
+	}
+	if state == "closed" && crcSource == nil {
 		if auditNote != nil {
 			auditNote["result"] = "closed_after_audit"
 			chain = appendBlock(chain, "auto_audit", auditNote)
@@ -601,7 +738,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			"policy": "p_cal>=0.99|eid|human AND two-reader agreement|human", "rule": "doh:" + prog})
 		pending = nil
 		unlinked = false
-	} else {
+	} else if crcSource == nil {
 		if (awaiting || inadequate) && holdRow != nil { // record WHY the loop was not closed (false-closure trap)
 			why := "awaiting_histology"
 			if inadequate && !awaiting {
@@ -641,11 +778,30 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			state = "referral_rejected"
 		}
 	}
+	crcKids := map[string]*Decision{}
+	if crcSignoff != nil && crcDisposition != "" && crcDecision != nil {
+		parentHead := ""
+		if len(chain) > 0 {
+			parentHead = chain[len(chain)-1].Hash
+		}
+		if child := c.buildCRCChild(f, *crcSource, *crcProcedure, crcProposal, crcDisposition, crcDecision.DispositionDay, parentHead, now); child != nil {
+			crcKids[child.LoopID] = child
+			crcDecision.ChildLoops = []string{child.LoopID}
+			if child.State != "closed" && !pendSet[child.LoopID] {
+				pendSet[child.LoopID] = true
+				pending = append(pending, child.LoopID)
+			}
+		}
+	}
 	age := now - f.SRDay
 	d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: state, Owner: owner, Prog: prog, Priority: f.Priority,
 		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState, PrepQ: prepQ,
 		ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: notif, AckDay: ack, RefStatus: refStatus, RefDay: refDay,
 		CommFlags: commFlags, HumanAssisted: humanAssisted && state == "closed"}
+	d.CRC = crcDecision
+	if d.CRC != nil && d.Owner == "" {
+		d.Owner = d.CRC.Owner
+	}
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}
@@ -720,6 +876,17 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
+	if crcDecision != nil {
+		if crcDecision.MDT != nil && crcDecision.MDT.Status == "open" {
+			esc = append(esc, crcDecision.MDT.Escalation)
+		}
+		switch state {
+		case "awaiting_gastro":
+			esc = append(esc, "crc_gastro_followup_open")
+		case "awaiting_specialist":
+			esc = append(esc, "crc_specialist_followup_open")
+		}
+	}
 	if len(commFlags) > 0 {
 		esc = append(esc, "noncompliant_message")
 	}
@@ -790,6 +957,53 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	for _, it := range newItems {
 		out = append(out, OutMsg{ID: it.ItemID, Kind: "review", Item: it})
 	}
+	if ls.lastCRC == nil {
+		ls.lastCRC = map[string]*Decision{}
+	}
+	childIDs := make([]string, 0, len(crcKids))
+	for id := range crcKids {
+		childIDs = append(childIDs, id)
+	}
+	sort.Strings(childIDs)
+	for _, id := range childIDs {
+		child := crcKids[id]
+		if previous := ls.lastCRC[id]; previous == nil || previous.Sig != child.Sig {
+			child.Now, child.InSeq = now, inSeq
+			child.ID = fmt.Sprintf("dec-%s@%s", child.LoopID, mid)
+			ls.lastCRC[id] = child
+			out = append(out, OutMsg{ID: child.ID, Kind: "decision", Dec: child})
+		}
+	}
+	oldChildIDs := make([]string, 0, len(ls.lastCRC))
+	for id := range ls.lastCRC {
+		oldChildIDs = append(oldChildIDs, id)
+	}
+	sort.Strings(oldChildIDs)
+	for _, id := range oldChildIDs {
+		if _, active := crcKids[id]; active {
+			continue
+		}
+		previous := ls.lastCRC[id]
+		if previous.CRC != nil && previous.CRC.Withdrawn {
+			continue
+		}
+		withdrawn := *previous
+		if previous.CRC != nil {
+			cd := *previous.CRC
+			cd.Withdrawn = true
+			withdrawn.CRC = &cd
+		}
+		withdrawn.State, withdrawn.Overdue, withdrawn.ClosedDay = "review", false, 0
+		withdrawn.Pending = []string{id}
+		withdrawn.Escalations = []string{"crc_child_withdrawn_review"}
+		withdrawn.Chain = appendBlock(append([]Block{}, previous.Chain...), "crc_child_withdrawn", map[string]interface{}{
+			"loop": id, "parent": f.LoopID, "reason": "source report corrected/withdrawn or disposition no longer current", "requires_review": true})
+		withdrawn.Sig = sha(canon(withdrawn))
+		withdrawn.Now, withdrawn.InSeq = now, inSeq
+		withdrawn.ID = fmt.Sprintf("dec-%s@%s", id, mid)
+		ls.lastCRC[id] = &withdrawn
+		out = append(out, OutMsg{ID: withdrawn.ID, Kind: "decision", Dec: &withdrawn})
+	}
 	return out
 }
 
@@ -801,6 +1015,9 @@ func (c *ClosureCore) Final() map[string]*Decision {
 			m[v.lastFU.LoopID] = v.lastFU
 		}
 		for id, d := range v.lastFU2 {
+			m[id] = d
+		}
+		for id, d := range v.lastCRC {
 			m[id] = d
 		}
 	}

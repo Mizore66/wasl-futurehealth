@@ -75,7 +75,7 @@ type Event struct {
 	PatientKey    string      `json:"pk"` // provider|local MRN
 	RType         string      `json:"rtype"`
 	Status        string      `json:"status,omitempty"`
-	Version       int         `json:"ver,omitempty"` // FHIR meta.versionId; used for DiagnosticReport revision/withdrawal ordering
+	Version       int         `json:"ver,omitempty"` // FHIR meta.versionId; DiagnosticReport and Communication revision/withdrawal ordering
 	Day           float64     `json:"day"`
 	Name          string      `json:"name"`
 	Dob           string      `json:"dob,omitempty"`
@@ -114,6 +114,7 @@ type Event struct {
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
 type CommFact struct {
 	ID            string  `json:"id"`
+	Version       int     `json:"ver,omitempty"` // current Communication.meta.versionId; zero/one are legacy-compatible
 	Day           float64 `json:"day"`
 	Category      string  `json:"cat"`
 	Template      string  `json:"tpl,omitempty"`
@@ -123,7 +124,8 @@ type CommFact struct {
 	Status        string  `json:"status"`
 	Parse         string  `json:"parse,omitempty"`
 	Sha           string  `json:"tsha,omitempty"`
-	Report        string  `json:"rep,omitempty"` // prep-query thread: the colonoscopy report the query is about
+	RevisionSha   string  `json:"revision_sha,omitempty"` // normalized same-version conflict detection, including unprojected payload
+	Report        string  `json:"rep,omitempty"`          // prep-query thread: the colonoscopy report the query is about
 	ReportVersion int     `json:"report_version,omitempty"`
 	Grade         string  `json:"grade,omitempty"`  // prep-reply: adequate|inadequate|cannot_determine (structured, not free text)
 	Action        string  `json:"action,omitempty"` // handoff-reply: what the referrer did (re_referred)
@@ -194,6 +196,7 @@ type DownFact struct {
 	Reason   string      `json:"reason,omitempty"`
 	Parent   string      `json:"parent,omitempty"` // pathology addendum -> colonoscopy report id
 	Prog     string      `json:"prog,omitempty"`
+	FollowUp string      `json:"follow_up,omitempty"` // typed CRC downstream referral/appointment category
 	Ev       *TwoVerdict `json:"evv,omitempty"`
 	Strength float64     `json:"strength"`
 	Weak     Edge        `json:"weak"`
@@ -223,6 +226,8 @@ func evidenceReviewItemID(loopID, reportID string, version int, purpose string) 
 	key := reportVersionKey(reportID, version)
 	if purpose == OverrideConfirm {
 		key += "#confirm"
+	} else if purpose == CRCDispositionPurpose {
+		key += "#crc-disposition"
 	} else if suffix := pilotKey(purpose); suffix != "" {
 		key += suffix
 	}
@@ -360,6 +365,7 @@ type Decision struct {
 	Handoff        *HandoffPacket      `json:"handoff,omitempty"`        // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool                `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
 	Ifhas          *IfhasDecision      `json:"ifhas,omitempty"`          // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
+	CRC            *CRCDecision        `json:"crc,omitempty"`            // CRC post-procedure disposition and owned downstream tracking (crc.go)
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.

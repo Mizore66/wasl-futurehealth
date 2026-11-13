@@ -760,7 +760,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	act := reviewActFor(c, req.Decision)
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label (including a signed CRC disposition on CRC cases; docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {
@@ -782,6 +782,11 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if !found {
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
+			return
+		}
+		it := s.queueItem(c.ID, req.Item)
+		if it.Reason == CRCDispositionPurpose && !crcReviewDecisionLabel(req.Decision) || crcReviewDecisionLabel(req.Decision) && it.Reason != CRCDispositionPurpose {
+			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "CRC disposition labels are valid only on the crc_disposition item and must use its closed vocabulary"}))
 			return
 		}
 	}

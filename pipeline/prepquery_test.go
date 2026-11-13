@@ -70,8 +70,8 @@ func TestPrepThreadRates(t *testing.T) {
 }
 
 func TestPrepStatesAtNow(t *testing.T) {
-	cs := []CommFact{{Day: 1, Category: "prep-query", Report: "r1"}, {Day: 8, Category: "prep-escalation", Report: "r1"},
-		{Day: 12, Category: "prep-reply", Report: "r1", Grade: "inadequate"}}
+	cs := []CommFact{{Day: 1, Category: "prep-query", Report: "r1", Status: "completed"}, {Day: 8, Category: "prep-escalation", Report: "r1", Status: "completed"},
+		{Day: 12, Category: "prep-reply", Report: "r1", Grade: "inadequate", Status: "completed"}}
 	if s := prepStates(cs, 9)["r1"]; s.queryDay != 1 || !s.escalated || s.grade != "" {
 		t.Fatalf("day 9: %+v", *s)
 	}

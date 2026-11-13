@@ -56,7 +56,8 @@ type LinkerCore struct {
 	loops       map[string]*LoopFacts   // static part (sr info)
 	loopRec     map[string]int
 	tasks       map[string][]TaskFact // loop -> tasks
-	comms       map[string][]CommFact // loop -> communications
+	comms       map[string][]CommFact // loop -> current Communication revisions only
+	commHistory map[string][]CommFact // loop|Communication ID -> append-only normalized revision history
 	signoffs    map[string][]Signoff
 	evOver      map[string]map[string]string
 	lastHash    map[string]string
@@ -108,7 +109,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
-		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
+		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, commHistory: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
@@ -786,7 +787,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			continue
 		}
 		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
-			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog})
+			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog, FollowUp: e.Category})
 		if rt == "Pathology" {
 			out[len(out)-1].Parent = e.Focus
 		}
@@ -960,6 +961,47 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	return f
 }
 
+// foldCommunication retains only the greatest FHIR revision of each logical Communication.
+// Legacy missing versions and version 1 share an identity. A same-version payload
+// conflict becomes an inert tombstone until a greater revision resolves it; raw history
+// remains append-only in commHistory and in the FHIR/NATS logs.
+func (L *LinkerCore) foldCommunication(loop string, cf CommFact) bool {
+	key := loop + "|" + cf.ID
+	L.commHistory[key] = append(L.commHistory[key], cf)
+	version := func(v int) int {
+		if v <= 1 {
+			return 1
+		}
+		return v
+	}
+	for i := range L.comms[loop] {
+		current := &L.comms[loop][i]
+		if current.ID != cf.ID {
+			continue
+		}
+		cv, nv := version(current.Version), version(cf.Version)
+		if nv < cv {
+			L.Stats["stale_communication_version"]++
+			return false
+		}
+		if nv == cv {
+			a, b := *current, cf
+			a.Version, b.Version = 0, 0
+			if string(canon(a)) == string(canon(b)) {
+				L.Stats["duplicate_communication_version"]++
+				return false
+			}
+			L.comms[loop][i] = CommFact{ID: cf.ID, Version: cf.Version, Status: "conflicting_revision"}
+			L.Stats["conflicting_communication_version"]++
+			return true
+		}
+		L.comms[loop][i] = cf
+		return true
+	}
+	L.comms[loop] = append(L.comms[loop], cf)
+	return true
+}
+
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
 func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	out := []FactsMsg{}
@@ -1037,20 +1079,28 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		if so.Evidence != "" && so.ReportID != "" {
-			if so.ReportVersion >= 2 && so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) {
-				L.Stats["mismatched_evidence_signoff"]++
-				break
+			if so.Purpose == CRCDispositionPurpose {
+				// CRC dispositions never become generic EvOver adequacy labels.
+				if so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) || !crcReviewDecisionLabel(so.Evidence) {
+					L.Stats["mismatched_crc_disposition_signoff"]++
+					break
+				}
+			} else {
+				if so.ReportVersion >= 2 && so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) {
+					L.Stats["mismatched_evidence_signoff"]++
+					break
+				}
+				if L.evOver[so.LoopID] == nil {
+					L.evOver[so.LoopID] = map[string]string{}
+				}
+				key := reportVersionKey(so.ReportID, so.ReportVersion)
+				if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
+					key += "#confirm"
+				} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
+					key += k
+				}
+				L.evOver[so.LoopID][key] = so.Evidence
 			}
-			if L.evOver[so.LoopID] == nil {
-				L.evOver[so.LoopID] = map[string]string{}
-			}
-			key := reportVersionKey(so.ReportID, so.ReportVersion)
-			if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
-				key += "#confirm"
-			} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
-				key += k
-			}
-			L.evOver[so.LoopID][key] = so.Evidence
 		}
 		L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
 		affLoops[so.LoopID] = true
@@ -1072,7 +1122,10 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		if e.RType == "Communication" {
 			loop := e.Provider + "/" + e.Focus
-			cf := CommFact{ID: e.ID, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
+			cf := CommFact{ID: e.ID, Version: e.Version, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
+			revision := *e
+			revision.Version = 0 // legacy missing version and explicit v1 share a revision identity
+			cf.RevisionSha = sha(canon(&revision))
 			if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
 				cf.Report = e.ReportID
 				if e.Category == "prep-reply" {
@@ -1088,9 +1141,10 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
 				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
 			}
-			L.comms[loop] = append(L.comms[loop], cf)
-			if _, ok := L.loops[loop]; ok {
-				affLoops[loop] = true
+			if L.foldCommunication(loop, cf) {
+				if _, ok := L.loops[loop]; ok {
+					affLoops[loop] = true
+				}
 			}
 			break
 		}

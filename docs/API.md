@@ -97,10 +97,20 @@ The default-deny snapshot projector accepts this same contract for `docs/api-sam
  "fixture": "evidence_closure", "decisions": 11}
 ```
 
-- **States:** `open`, `booked`, `procedure_done`, `awaiting_histology`, `inadequate`, `no_show`, `referral_rejected`, `closed`.
+- **States:** `open`, `booked`, `procedure_done`, `awaiting_histology`, `inadequate`, `no_show`, `referral_rejected`, `closed`. CRC outcomes can additionally be `suspected_malignancy`, `awaiting_crc_disposition`, `awaiting_gastro`, or `awaiting_specialist`.
 - **Drop-off:** `never_notified`, `no_acknowledgement`, `not_booked`, `referral_rejected`, `referral_unanswered`, `no_show`, `inadequate`, `awaiting_histology`, `in_progress`, or `""` when closed.
 - **Consent:** `unknown`, `granted`, `denied`, `opted_out`.
 - **Days:** fractional days since 1 May 2026, the cohort epoch.
+
+### CRC post-procedure dispositions
+
+`Decision.crc` separates downstream outcome handling from colonoscopy completeness. Before confirmation, a non-normal or unsupported proposal remains `awaiting_crc_disposition`; a suspicious procedure without final histology is `suspected_malignancy` and carries an owned same-day `crc.mdt` coordinator item. Neither emits generic `criteria_met` closure.
+
+The stable `crc_disposition` review item is bound to its source report/version and signed chain head. Accepted evidence answers are `mdt`, `surveillance:<positive-days>`, `gastroenterology`, `specialist`, and `normal_after_suspicion`; the answer must exactly match the deterministic proposal and any documented interval. Wrong roles, items, heads, report versions, outcomes, and intervals have no canonical effect. The `crc` block carries `disposition`, `closed_into`, source report/version, owner, confirmation, proposal, and child references as applicable.
+
+Signed MDT and surveillance dispositions keep parent `state:"closed"` for consumer compatibility but require explicit `crc.disposition`/`closed_into` values (`closed_to_mdt` or `closed_surveillance`) and create exactly one signature-deduplicated `<parent>#crc-treatment` or `<parent>#crc-surveillance` child. Both use the colonoscopy day as `clock_start`; treatment uses 31 working days under the existing UAE business-day rule. Gastroenterology/specialist children remain open until a trusted downstream referral acceptance or first appointment after the disposition has the matching explicit `crc-gastroenterology`/`crc-specialist` category. Corrections append a child `review` state with `crc.withdrawn:true`; history is not deleted.
+
+These are **simulated care-tracking records only**. The MDT item does not dispatch a referral, and no child claims appointment scheduling, treatment delivery, a live feed, or clinical effectiveness. Communication evidence likewise uses only the current `completed` FHIR revision; newer withdrawals remove earlier effects while raw history remains append-only.
 
 ### Programme `lung_nodule` (second loop type: incidental pulmonary nodules, Fleischner 2017)
 
@@ -273,6 +283,7 @@ The default-deny snapshot projector accepts this same contract for `docs/api-sam
   - a clinic outcome: `examined_treated`, `examined_followup`, `examined_discharged`, `not_examined`, `dna`, `not_assessable`.
   Anything else (for example `R9M0`, `R2M2`, or a lung label) is rejected with 400.
 - On `lung_ldct` cases the evidence decision can be an LDCT label (same clinician role): `LR0`–`LR4X` or a work-up label `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`. A label of another programme (for example `B4`) is rejected with 400.
+- On a CRC `crc_disposition` item, the evidence decision must be the exact signed proposal: `mdt`, `surveillance:<days>`, `gastroenterology`, `specialist`, or `normal_after_suspicion`. These labels are rejected on other items; generic `adequate` cannot activate a CRC disposition.
 - `confirm_contact` needs one allowed to record consent (coordinator, clinician).
 
 **Response codes:**

@@ -16,7 +16,7 @@ func TestAddBDSkipsWeekend(t *testing.T) {
 	}
 	if got := addBD(0.5, 5); got != 7.5 {
 		t.Fatalf("addBD(0.5,5) = %v, want 7.5", got)
-	}	// Monday 25 May (day 24): Arafat and Eid al-Adha 26-29 May, then the weekend, so 2 business days end Tuesday 2 June
+	} // Monday 25 May (day 24): Arafat and Eid al-Adha 26-29 May, then the weekend, so 2 business days end Tuesday 2 June
 	if got := addBD(24, 2); got != 32 {
 		t.Fatalf("addBD over Eid al-Adha = %v, want 32", got)
 	}
@@ -28,7 +28,7 @@ func handoffFacts(comms ...CommFact) *LoopFacts {
 
 func TestBuildHandoffReject(t *testing.T) {
 	srs := []srFact{{day: 12, status: "rejected", prov: Providers[2].ID, reason: "capacity", ev: "sr-1"}}
-	f := handoffFacts(CommFact{ID: "c1", Day: 15, Category: "econsult-reply", Parse: "reject"})
+	f := handoffFacts(CommFact{ID: "c1", Day: 15, Category: "econsult-reply", Parse: "reject", Status: "completed"})
 	p := buildHandoff(f, "crc", srs, ecThread{"reject", 15, "rejected", Providers[2].ID}, 12, 16, "granted")
 	if p == nil {
 		t.Fatal("no packet for a rejected referral")
@@ -49,7 +49,7 @@ func TestBuildHandoffReject(t *testing.T) {
 		t.Fatalf("escalations %v", e)
 	}
 	// the referrer answers the packet: acted, no escalation
-	f.Comms = append(f.Comms, CommFact{ID: "c2", Day: 17, Category: "handoff-reply", Action: "re_referred"})
+	f.Comms = append(f.Comms, CommFact{ID: "c2", Day: 17, Category: "handoff-reply", Action: "re_referred", Status: "completed"})
 	p = buildHandoff(f, "crc", srs, ecThread{"reject", 15, "rejected", Providers[2].ID}, 12, 30, "granted")
 	if p.Status != "referrer_acted" || p.ActedAt != 17 || p.escalations(f.SRDay, 30) != nil {
 		t.Fatalf("acted %+v", p)
@@ -148,10 +148,10 @@ func TestBuildHandoffTraceCases(t *testing.T) {
 func TestHandoffFollowupTurnKeepsTrigger(t *testing.T) {
 	defer func(h bool) { Handoff = h }(Handoff)
 	Handoff = true
-	comms := []CommFact{{ID: "q1", Day: 3, Category: "econsult-question", Trigger: "rejected", Unit: Providers[2].ID},
-		{ID: "a1", Day: 4, Category: "econsult-reply", Parse: "needs_info"},
-		{ID: "q2", Day: 6, Category: "econsult-question", Trigger: "followup", Unit: Providers[2].ID},
-		{ID: "a2", Day: 8, Category: "econsult-reply", Parse: "reject"}}
+	comms := []CommFact{{ID: "q1", Day: 3, Category: "econsult-question", Trigger: "rejected", Unit: Providers[2].ID, Status: "completed"},
+		{ID: "a1", Day: 4, Category: "econsult-reply", Parse: "needs_info", Status: "completed"},
+		{ID: "q2", Day: 6, Category: "econsult-question", Trigger: "followup", Unit: Providers[2].ID, Status: "completed"},
+		{ID: "a2", Day: 8, Category: "econsult-reply", Parse: "reject", Status: "completed"}}
 	C := NewClosureCore(0, nil)
 	outs := C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", Provider: "PCP-A", SRDay: 0, Prog: "crc", Comms: comms}, InSeq: 1})
 	outs = append(outs, C.Apply(&FactsMsg{ID: "t", IsTick: true, TickDay: 12, InSeq: 2})...)
