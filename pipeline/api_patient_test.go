@@ -325,15 +325,15 @@ func TestPatientRequestReplayConflictsOffersAndNoOps(t *testing.T) {
 		t.Fatalf("same id changed head: %d %v", code, conflict)
 	}
 	code, noop := p.post(t, "teach_back_completed", patientUUID(2), journeyHead(first), data)
-	if code != 200 || noop["replayed"] != true || len(p.s.reviews) != 1 {
+	if code != 200 || noop["replayed"] != true || len(p.s.reviews) != 2 || p.s.reviews[1]["request_only"] != true || journeyHead(noop) != journeyHead(first) {
 		t.Fatalf("semantic no-op: %d %v", code, noop)
 	}
 	code, noopReplay := p.post(t, "teach_back_completed", patientUUID(2), journeyHead(first), data)
-	if code != 200 || noopReplay["event"] != nil || noopReplay["replayed"] != true || len(p.s.reviews) != 1 {
+	if code != 200 || noopReplay["event"] != nil || noopReplay["replayed"] != true || len(p.s.reviews) != 2 {
 		t.Fatalf("semantic no-op exact retry: %d %v", code, noopReplay)
 	}
 	code, reused := p.post(t, "preparation_changed", patientUUID(2), journeyHead(first), map[string]interface{}{"item_id": prepEscortHome, "completed": true})
-	if code != 409 || reused["conflict"] != "request" || len(p.s.reviews) != 1 || p.s.cases[patientTestCaseA].patient.Prep[prepEscortHome].Completed {
+	if code != 409 || reused["conflict"] != "request" || len(p.s.reviews) != 2 || p.s.cases[patientTestCaseA].patient.Prep[prepEscortHome].Completed {
 		t.Fatalf("semantic no-op request id reused for preparation_changed: %d %v", code, reused)
 	}
 	for _, tc := range []struct {
@@ -347,13 +347,13 @@ func TestPatientRequestReplayConflictsOffersAndNoOps(t *testing.T) {
 	} {
 		t.Run("semantic no-op request id reused with "+tc.name, func(t *testing.T) {
 			code, conflict := p.post(t, tc.kind, patientUUID(2), tc.head, tc.data)
-			if code != 409 || conflict["conflict"] != "request" || len(p.s.reviews) != 1 {
+			if code != 409 || conflict["conflict"] != "request" || len(p.s.reviews) != 2 {
 				t.Fatalf("request conflict: %d %v", code, conflict)
 			}
 		})
 	}
 	code, wrong := p.post(t, "teach_back_completed", patientUUID(3), journeyHead(first), map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "blood_test"})
-	if code != 400 || len(p.s.reviews) != 1 {
+	if code != 400 || len(p.s.reviews) != 2 {
 		t.Fatalf("wrong teach-back answer: %d %v", code, wrong)
 	}
 	head = journeyHead(first)
@@ -596,7 +596,7 @@ func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 
 		head = journeyHead(body)
 		code, body = p.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "granted"})
-		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || p.s.cases[patientTestCaseA].patient.Seq != 1 || len(p.s.reviews) != eventsBefore+1 {
+		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || p.s.cases[patientTestCaseA].patient.Seq != 1 || len(p.s.reviews) != eventsBefore+2 {
 			t.Fatalf("true first-choice repeat no-op: %d %v", code, body)
 		}
 	})
@@ -703,20 +703,20 @@ func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 		p2 := &patientTestAPI{s: s2, srv: httptest.NewServer(h), token: p.token, now: p.now}
 		defer p2.srv.Close()
 		code, body = p2.post(t, "contact_permission_changed", patientUUID(2), head, map[string]interface{}{"permission": "opted_out"})
-		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || len(s2.reviews) != eventsBefore+1 {
+		if code != http.StatusOK || body["replayed"] != true || body["event"] != nil || len(s2.reviews) != eventsBefore+2 {
 			t.Fatalf("true opt-out repeat after restart: %d %v", code, body)
 		}
 		for i, permission := range []string{"granted", "denied"} {
 			code, body = p2.post(t, "contact_permission_changed", patientUUID(byte(i+3)), head, map[string]interface{}{"permission": permission})
-			if code != http.StatusConflict || body["conflict"] != "consent" || len(s2.reviews) != eventsBefore+1 {
+			if code != http.StatusConflict || body["conflict"] != "consent" || len(s2.reviews) != eventsBefore+2 {
 				t.Fatalf("%s after patient terminal opt-out: %d %v", permission, code, body)
 			}
 		}
-		if code, body := contactOutcome(t, p2); code != http.StatusConflict || body["error"] == nil || len(s2.reviews) != eventsBefore+1 {
+		if code, body := contactOutcome(t, p2); code != http.StatusConflict || body["error"] == nil || len(s2.reviews) != eventsBefore+2 {
 			t.Fatalf("contact after reloaded patient opt-out: %d %v", code, body)
 		}
 		code, review, _ := p2.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/review", "staff-token-123456", map[string]interface{}{"decision": "confirm_contact"})
-		if code != http.StatusConflict || review["error"] == nil || len(s2.reviews) != eventsBefore+1 {
+		if code != http.StatusConflict || review["error"] == nil || len(s2.reviews) != eventsBefore+2 {
 			t.Fatalf("confirm_contact after reloaded patient opt-out: %d %v", code, review)
 		}
 	})
@@ -910,13 +910,21 @@ func TestPatientAppendFailureLeavesProjectionUntouched(t *testing.T) {
 func TestPatientExportRedactionAndRegistryContract(t *testing.T) {
 	p := newPatientTestAPI(t)
 	head := patientHead(p.s.cases[patientTestCaseA])
-	code, _ := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "denied"})
+	code, saved := p.post(t, "contact_permission_changed", patientUUID(1), head, map[string]interface{}{"permission": "denied"})
 	if code != 201 {
+		t.Fatal(code)
+	}
+	code, _ = p.post(t, "contact_permission_changed", patientUUID(2), journeyHead(saved), map[string]interface{}{"permission": "denied"})
+	if code != http.StatusOK {
 		t.Fatal(code)
 	}
 	_, exported, raw := p.request(t, http.MethodGet, "/api/cases/"+patientTestCaseA+"/export", "audit-token-1234567", nil)
 	if exported["detail"] == nil {
 		t.Fatalf("export failed: %v", exported)
+	}
+	history := exported["audit"].(map[string]interface{})["history"].([]interface{})
+	if len(history) != 2 || history[1].(map[string]interface{})["request_only"] != true {
+		t.Fatalf("export omitted receipt marker: %v", history)
 	}
 	for _, forbidden := range []string{p.token, patientLinksTokenHash(p.token), "patient-link/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", `"actor"`} {
 		if bytes.Contains(raw, []byte(forbidden)) {

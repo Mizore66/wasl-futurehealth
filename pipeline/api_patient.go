@@ -393,10 +393,7 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 			// A staff opt-out does not record the patient's own first choice. The common
 			// replay check below distinguishes that write from a true patient repeat.
 		}
-		if s.patientSemanticNoOpLocked(c, req.Kind, data) {
-			s.patientRequestsLocked()[req.RequestID] = patientRequestRecord{Fingerprint: fingerprint}
-			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
-		}
+		requestOnly := s.patientSemanticNoOpLocked(c, req.Kind, data)
 		action := patientSelfService
 		ev := map[string]interface{}{
 			"type": patientEventType, "kind": req.Kind, "case": link.Case, "link_id": link.LinkID,
@@ -405,7 +402,11 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 			"head": req.ExpectedHead, "head_signed": patientCanonicalSignature(c), "seq": c.patient.Seq + 1,
 			"data": data, "prev": s.lastHashLocked(),
 		}
-		if req.Kind == "contact_permission_changed" {
+		if requestOnly {
+			// Bind successful no-op request IDs durably without turning their
+			// intentions into new patient or consent mutations during replay.
+			ev["request_only"], ev["seq"] = true, c.patient.Seq
+		} else if req.Kind == "contact_permission_changed" {
 			ev["action"] = ActRecordConsent
 			ev["decision"] = patientConsentDecision(sstr(data, "permission"))
 		}
@@ -413,8 +414,11 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 		if err != nil {
 			return http.StatusInternalServerError, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
-		c.applyPatientEvent(stored)
 		s.patientRequestsLocked()[req.RequestID] = patientRequestRecord{Fingerprint: fingerprint}
+		if requestOnly {
+			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
+		}
+		c.applyPatientEvent(stored)
 		return http.StatusCreated, map[string]interface{}{"event": patientPublicEvent(stored), "journey": s.patientViewLocked(c, true), "replayed": false}
 	}()
 	writeJSONResp(w, code, s.envelope(body))
@@ -423,11 +427,12 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 var patientEventFields = map[string]bool{
 	"type": true, "kind": true, "case": true, "link_id": true, "role": true, "actor": true, "action": true,
 	"at": true, "mode": true, "request_id": true, "head": true, "head_signed": true, "seq": true,
-	"data": true, "prev": true, "hash": true, "decision": true,
+	"data": true, "prev": true, "hash": true, "decision": true, "request_only": true,
 }
 
-// replayPatientEvent validates and applies one historical patient action. Link
-// expiry is deliberately absent: this is the ledger's history, not a new login.
+// replayPatientEvent validates a historical patient mutation or no-op receipt.
+// Receipts bind request IDs only; they never advance the patient head or consent.
+// Link expiry is deliberately absent: this is ledger history, not a new login.
 func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	for key := range ev {
 		if !patientEventFields[key] {
@@ -449,11 +454,38 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if _, err := time.Parse(time.RFC3339Nano, sstr(ev, "at")); err != nil {
 		return errors.New("bad patient event timestamp")
 	}
-	if sstr(ev, "head_signed") != patientCanonicalSignature(c) || sstr(ev, "head") != patientHead(c) {
+	// Canonical decisions can legitimately advance after a patient action. Its
+	// signed evidence must belong to this case's retained history, not necessarily
+	// be the latest decision. The first mutation roots at that historical signature;
+	// subsequent mutations must still follow the patient-only head exactly.
+	signature := sstr(ev, "head_signed")
+	knownHead := false
+	for _, d := range c.decisions {
+		knownHead = knownHead || signature != "" && d.Sig == signature
+	}
+	if !knownHead {
+		return errors.New("patient event signed against a head the case never had")
+	}
+	head := c.patient.Head
+	if head == "" {
+		head = signature
+	}
+	if sstr(ev, "head") != head {
 		return errors.New("patient event does not follow the patient-only head")
 	}
+	requestOnly := false
+	if value, present := ev["request_only"]; present {
+		if value != true {
+			return errors.New("invalid patient request-only marker")
+		}
+		requestOnly = true
+	}
+	wantSeq := c.patient.Seq + 1
+	if requestOnly {
+		wantSeq = c.patient.Seq
+	}
 	seq, ok := ev["seq"].(float64)
-	if !ok || seq != float64(c.patient.Seq+1) {
+	if !ok || seq != float64(wantSeq) {
 		return errors.New("bad patient event sequence")
 	}
 	if !patientRequestIDRE.MatchString(sstr(ev, "request_id")) {
@@ -469,9 +501,11 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	}
 	expectedAction := patientSelfService
 	if kind == "contact_permission_changed" {
-		expectedAction = ActRecordConsent
-		if sstr(ev, "decision") != patientConsentDecision(sstr(data, "permission")) {
-			return errors.New("patient consent decision does not match permission")
+		if !requestOnly {
+			expectedAction = ActRecordConsent
+			if sstr(ev, "decision") != patientConsentDecision(sstr(data, "permission")) {
+				return errors.New("patient consent decision does not match permission")
+			}
 		}
 		overlay, _ := s.overlayLocked(c)
 		if overlay["status"] == "opted_out" && sstr(data, "permission") != "opted_out" {
@@ -479,8 +513,11 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 		}
 		// A staff opt-out does not record the patient's own first choice. The common
 		// semantic replay check below still rejects a true repeated patient opt-out.
-	} else if _, present := ev["decision"]; present {
-		return errors.New("non-consent patient event has a decision")
+	}
+	if expectedAction != ActRecordConsent {
+		if _, present := ev["decision"]; present {
+			return errors.New("non-consent patient event or request receipt has a decision")
+		}
 	}
 	if sstr(ev, "action") != expectedAction {
 		return errors.New("patient event action does not match its kind")
@@ -488,8 +525,8 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if kind == "slot_selected" && (sstr(data, "offers_version") != patientOffersVersion() || !patientOfferedSlot(sstr(data, "slot_id"))) {
 		return errors.New("patient event names an unoffered slot or offer version")
 	}
-	if s.patientSemanticNoOpLocked(c, kind, data) {
-		return errors.New("patient event repeats current state instead of being a no-op response")
+	if s.patientSemanticNoOpLocked(c, kind, data) != requestOnly {
+		return errors.New("patient event mutation or request receipt does not match current state")
 	}
 	link := patientLink{Case: id, LinkID: linkID}
 	fingerprint := patientRequestFingerprint(link, kind, sstr(ev, "head"), data)
@@ -498,7 +535,9 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 		return errors.New("duplicate patient request id")
 	}
 	s.reviews = append(s.reviews, ev)
-	c.applyPatientEvent(ev)
+	if !requestOnly {
+		c.applyPatientEvent(ev)
+	}
 	requests[sstr(ev, "request_id")] = patientRequestRecord{Fingerprint: fingerprint}
 	return nil
 }
