@@ -34,6 +34,7 @@ function Obligations({ journey, caseID }: { journey: PersonJourney; caseID: stri
 
 function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item: PersonCase; index: number }) {
   const { detail, contact } = item;
+  const trustedLinks = detail.links.filter((link) => !link.near_miss);
   const prefix = `case-${index}`;
   return (
     <article aria-labelledby={`${prefix}-heading`} className="border-t border-rule pt-5 first:border-t-0 first:pt-0">
@@ -105,9 +106,9 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
         <ul className="m-0 list-disc space-y-1 ps-5">
           {detail.identities.map((identity) => <li key={`${identity.role}-${identity.registration}`}>{identity.role} · {identity.provider} · <code className="break-all">{identity.registration}</code></li>)}
         </ul>
-        {detail.links.length ? (
+        {trustedLinks.length ? (
           <ul className="m-0 mt-2 list-disc space-y-1 ps-5">
-            {detail.links.map((link, linkIndex) => <li key={`${link.downstream_event}-${linkIndex}`}>Trusted case link: {shortId(link.downstream_event)} · {link.hops} hop{link.hops === 1 ? "" : "s"}</li>)}
+            {trustedLinks.map((link, linkIndex) => <li key={`${link.downstream_event}-${linkIndex}`}>Trusted case link: {shortId(link.downstream_event)} · {link.hops} hop{link.hops === 1 ? "" : "s"}</li>)}
           </ul>
         ) : <p className="text-small text-muted">No additional case link blocks are shown; cluster membership comes only from the canonical identity artifact.</p>}
       </section>

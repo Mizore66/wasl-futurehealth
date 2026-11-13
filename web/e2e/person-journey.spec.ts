@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import journey from "../data/api/person_journey.json";
+import fixtures from "../data/api/fixtures.json";
 
 const caseURL = `/app/patients/${encodeURIComponent(journey.person.anchor_case_id)}`;
 const personURL = `/app/people/${journey.person.id}`;
@@ -25,6 +26,18 @@ test("case navigation resolves an opaque person and renders the read-only journe
   await expect(page.getByRole("button", { name: /send|suppress|dismiss/i })).toHaveCount(0);
   await axeClean(page);
 });
+
+for (const [fixture, item] of Object.entries(fixtures.fixtures)) {
+  if (item.id === journey.person.anchor_case_id) continue;
+  test(`${fixture} does not navigate to an unpublished person journey`, async ({ page }) => {
+    await page.goto(`/app/patients/${encodeURIComponent(item.id)}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "View all programmes" })).toHaveCount(0);
+    const response = await page.goto(`/app/people?case_id=${encodeURIComponent(item.id)}`);
+    expect(response?.status()).toBe(404);
+    await expect(page).not.toHaveURL(/\/app\/people\/person_/);
+  });
+}
 
 test("programme anchors are keyboard accessible", async ({ page }) => {
   await page.goto(personURL);

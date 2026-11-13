@@ -72,6 +72,16 @@ describe("person journey presentation", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("never labels a near-miss link as trusted", async () => {
+    const journey = await sample();
+    const trusted = journey.cases[0].detail.links[0];
+    journey.cases[0].detail.links.push({ ...trusted, downstream_event: "provider/DiagnosticReport/untrusted-namesake", near_miss: true });
+    const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
+    expect(html).toContain("Trusted case link");
+    expect(html).not.toContain("untrusted-namesake");
+    expect(html).not.toContain("near miss");
+  });
+
   it("describes duplicate review without calling release delivery", async () => {
     const journey = await sample();
     journey.outreach_flags = [{

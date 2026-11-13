@@ -38,8 +38,8 @@ These routes require `ActReadQueue`. Missing/invalid credentials receive `401`; 
 The top-level schema is `wasl-person-journey/1`, with the ordinary API `meta` envelope and:
 
 - `person`: opaque ID, anchor case, maximum canonical decision day (`as_of_day`), sorted cases and programmes, pseudonymous registrations, and canonical-artifact provenance including its SHA-256;
-- `cases`: programme/case ordered projections containing only `case`, `identities`, `timeline`, `links`, `holds`, `outreach`, and decision history including consent transitions, outreach and signatures;
-- per-case `contact`: canonical permission, separate demo-overlay status, combined contact-blocked display, and `canonical_unchanged: true`;
+- `cases`: programme/case ordered projections containing only `case`, cluster-confirmed `identities` and `timeline`, trusted `links`, current `holds` from the latest canonical decision, `outreach`, and decision history including consent transitions, outreach and signatures; near-miss links and their associated records are excluded;
+- per-case `contact`: canonical permission, separate demo-overlay status, combined contact-blocked display, and `canonical_unchanged: true`; contact is blocked unless canonical permission is `granted`, or when the overlay records denial/opt-out;
 - `obligations`, `outreach_flags`, and one `next_action`.
 
 The person projection excludes evidence, current full decisions, review items, sign-offs, API review events/states, coordinator notes, claims, audit history, review ledger data and review hashes. Full evidence and independently blinded review remain on the existing case routes. Responses are deep-copied and registration-pseudonymized; the raw identity artifact is never served.

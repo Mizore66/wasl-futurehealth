@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -45,7 +46,7 @@ func newPersonTestAPI(t *testing.T) (*apiServer, map[string]string) {
 		c := &apiCase{ID: id, Programme: prog, State: d.State, Dropoff: d.Dropoff, Provider: d.Provider, SRDay: d.SRDay, Deadline: d.Deadline,
 			Consent: "granted", last: d, decisions: []*Decision{d}}
 		s.cases[id], s.order, regs[id] = c, append(s.order, id), reg
-		s.facts[id] = []map[string]interface{}{{"seq": uint64(i + 1), "type": "ServiceRequest", "id": id, "provider": "provider", "day": float64(1), "raw_sha": "abc123"}}
+		s.facts[id] = []map[string]interface{}{{"seq": uint64(i + 1), "type": "ServiceRequest", "id": id, "provider": "provider", "day": float64(1), "raw_sha": "abc123", "patient_key": reg}}
 		s.ids[id] = []map[string]string{{"registration": reg, "provider": "provider", "role": "referral"}}
 	}
 	writePersonTestSnapshot(t, s, regs, map[string][]string{
@@ -510,6 +511,138 @@ func TestPersonOverlayReviewsCannotChangeMembershipOrLeak(t *testing.T) {
 	}
 	if got := len(body["person"].(map[string]interface{})["case_ids"].([]interface{})); got != 3 {
 		t.Fatalf("API overlay review changed canonical membership: %d", got)
+	}
+}
+
+func personJourneyForCase(t *testing.T, h http.Handler, caseID string) map[string]interface{} {
+	t.Helper()
+	w := personRequest(t, h, http.MethodGet, "/api/people?case_id="+url.QueryEscape(caseID), "reviewer-token-1234567890")
+	if w.Code != http.StatusOK {
+		t.Fatalf("person journey for %s: %d %s", caseID, w.Code, w.Body.String())
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+func personJourneyCase(t *testing.T, body map[string]interface{}, caseID string) map[string]interface{} {
+	t.Helper()
+	for _, raw := range body["cases"].([]interface{}) {
+		c := raw.(map[string]interface{})
+		if c["case_id"] == caseID {
+			return c
+		}
+	}
+	t.Fatalf("case %s missing from person journey", caseID)
+	return nil
+}
+
+func TestPersonJourneyExcludesNearMissLinksAndRecords(t *testing.T) {
+	s, regs := newPersonTestAPI(t)
+	caseID := "provider/ServiceRequest/case-0"
+	referral, trusted, namesake := regs[caseID], "provider|registration-3", "provider|namesake-untrusted"
+	c := s.cases[caseID]
+	c.last.Chain = appendBlock(c.last.Chain, "link_decision", map[string]interface{}{
+		"loop": caseID, "referral_patient": referral, "downstream_event": "provider/DiagnosticReport/namesake-report", "hops": 1, "near_miss": true,
+		"weakest_edge": map[string]interface{}{"a": referral, "b": namesake, "p": 0.2, "basis": "model"},
+	})
+	c.last.Chain = appendBlock(c.last.Chain, "link_decision", map[string]interface{}{
+		"loop": caseID, "referral_patient": referral, "downstream_event": "provider/DiagnosticReport/trusted-report", "hops": 1, "near_miss": false,
+		"weakest_edge": map[string]interface{}{"a": referral, "b": trusted, "p": 1, "basis": "human"},
+	})
+	s.ids[caseID] = []map[string]string{
+		{"registration": referral, "provider": "provider", "role": "referral"},
+		{"registration": trusted, "provider": "provider", "role": "downstream"},
+		{"registration": namesake, "provider": "provider", "role": "downstream"},
+	}
+	s.facts[caseID] = []map[string]interface{}{
+		{"seq": uint64(1), "type": "ServiceRequest", "id": caseID, "provider": "provider", "day": float64(1), "patient_key": referral},
+		{"seq": uint64(2), "type": "DiagnosticReport", "id": "provider/DiagnosticReport/trusted-report", "provider": "provider", "day": float64(2), "patient_key": trusted},
+		{"seq": uint64(3), "type": "DiagnosticReport", "id": "provider/DiagnosticReport/namesake-report", "provider": "provider", "day": float64(3), "patient_key": namesake},
+	}
+
+	body := personJourneyForCase(t, secureTestHandler(t, s, ""), caseID)
+	detail := personJourneyCase(t, body, caseID)["detail"].(map[string]interface{})
+	links := detail["links"].([]interface{})
+	if len(links) != 1 || links[0].(map[string]interface{})["downstream_event"] != "provider/DiagnosticReport/trusted-report" {
+		t.Fatalf("near-miss link was presented as trusted: %+v", links)
+	}
+	identities := detail["identities"].([]interface{})
+	if len(identities) != 2 {
+		t.Fatalf("untrusted namesake identity was copied into the journey: %+v", identities)
+	}
+	allowedIdentities := map[string]bool{pseudonymizeRegistration(referral): true, pseudonymizeRegistration(trusted): true}
+	for _, raw := range identities {
+		if !allowedIdentities[raw.(map[string]interface{})["registration"].(string)] {
+			t.Fatalf("unexpected identity: %+v", raw)
+		}
+	}
+	timeline := detail["timeline"].([]interface{})
+	if len(timeline) != 2 {
+		t.Fatalf("untrusted namesake timeline was copied into the journey: %+v", timeline)
+	}
+	encoded := jsonOf(body)
+	if strings.Contains(encoded, "namesake-report") || strings.Contains(encoded, "patient_key") {
+		t.Fatalf("near-miss provenance or internal registration metadata leaked: %s", encoded)
+	}
+}
+
+func TestPersonJourneyContactBlockedUnlessCanonicalGranted(t *testing.T) {
+	for _, tc := range []struct {
+		name, canonical, overlay string
+		blocked                  bool
+	}{
+		{name: "unknown without overlay", canonical: "unknown", blocked: true},
+		{name: "unknown with overlay grant", canonical: "unknown", overlay: "granted", blocked: true},
+		{name: "canonical grant", canonical: "granted", blocked: false},
+		{name: "canonical and overlay grant", canonical: "granted", overlay: "granted", blocked: false},
+		{name: "canonical denial with overlay grant", canonical: "denied", overlay: "granted", blocked: true},
+		{name: "overlay denial", canonical: "granted", overlay: "denied", blocked: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s, _ := newPersonTestAPI(t)
+			caseID := "provider/ServiceRequest/case-0"
+			s.cases[caseID].Consent, s.cases[caseID].last.Contact = tc.canonical, tc.canonical
+			if tc.overlay != "" {
+				s.reviews = []map[string]interface{}{{"case": caseID, "decision": "consent_" + tc.overlay, "action": ActRecordConsent}}
+			}
+			body := personJourneyForCase(t, secureTestHandler(t, s, ""), caseID)
+			contact := personJourneyCase(t, body, caseID)["contact"].(map[string]interface{})
+			if contact["contact_blocked"] != tc.blocked {
+				t.Fatalf("canonical=%s overlay=%s contact_blocked=%v, want %v", tc.canonical, tc.overlay, contact["contact_blocked"], tc.blocked)
+			}
+		})
+	}
+}
+
+func TestPersonJourneyProjectsOnlyLatestDecisionHolds(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	caseID := "provider/ServiceRequest/case-0"
+	held := testPersonDecision(caseID, "crc")
+	held.Chain = appendBlock(nil, "hold_decision", map[string]interface{}{"loop": caseID, "state": "open", "rule": "review_hold", "reason": "review_hold"})
+	closed := testPersonDecision(caseID, "crc")
+	closed.ID, closed.State, closed.Now, closed.Dropoff = "d-closed", "closed", 30, ""
+	c := s.cases[caseID]
+	c.decisions, c.last = []*Decision{held, closed}, closed
+	c.State, c.Closed, c.Dropoff = "closed", true, ""
+	if got := len(s.caseDetailFor(c, nil)["holds"].([]map[string]interface{})); got != 1 {
+		t.Fatalf("test setup did not retain the historical hold: %d", got)
+	}
+	body := personJourneyForCase(t, secureTestHandler(t, s, ""), caseID)
+	detail := personJourneyCase(t, body, caseID)["detail"].(map[string]interface{})
+	if got := len(detail["holds"].([]interface{})); got != 0 {
+		t.Fatalf("closed case exposed a stale historical hold as current: %+v", detail["holds"])
+	}
+
+	closed.State = "open"
+	c.State, c.Closed = "open", false
+	closed.Chain = appendBlock(closed.Chain, "hold_decision", map[string]interface{}{"loop": caseID, "state": "open", "rule": "current_hold"})
+	body = personJourneyForCase(t, secureTestHandler(t, s, ""), caseID)
+	detail = personJourneyCase(t, body, caseID)["detail"].(map[string]interface{})
+	if got := len(detail["holds"].([]interface{})); got != 1 {
+		t.Fatalf("latest canonical hold was not retained: %+v", detail["holds"])
 	}
 }
 

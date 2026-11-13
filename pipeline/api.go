@@ -315,7 +315,7 @@ func (s *apiServer) loadTimelines() {
 		h := sha256.Sum256(m.Data)
 		row := map[string]interface{}{"seq": m.Seq, "type": e.RType, "id": prov + "/" + e.RType + "/" + e.ID, "provider": prov, "status": e.Status,
 			"day": round4(e.Day), "arrival_day": round4(arr), "category": e.Category, "raw_sha": hex.EncodeToString(h[:])[:16],
-			"source": firstNonEmpty(m.Hdr["Wsi-Src"], "fhir")}
+			"source": firstNonEmpty(m.Hdr["Wsi-Src"], "fhir"), "patient_key": e.PatientKey}
 		byPK[e.PatientKey] = append(byPK[e.PatientKey], row)
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey

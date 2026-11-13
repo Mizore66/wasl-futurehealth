@@ -634,6 +634,60 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 	return candidates
 }
 
+// personCaseDetail restricts copied case data to the canonical trusted cluster.
+// caseDetailFor intentionally retains full case history for the case routes; a
+// person journey must neither label near-miss links as trusted nor copy their
+// associated registrations and events into the unified timeline.
+func (s *apiServer) personCaseDetail(c *apiCase, viewer *apiPrincipal, registrations []string) map[string]interface{} {
+	detail := s.caseDetailFor(c, viewer)
+	trustedRegistrations := map[string]bool{}
+	for _, registration := range registrations {
+		trustedRegistrations[registration] = true
+	}
+	links := []map[string]interface{}{}
+	for _, link := range detail["links"].([]map[string]interface{}) {
+		if nearMiss, _ := link["near_miss"].(bool); nearMiss {
+			continue
+		}
+		links = append(links, link)
+	}
+	detail["links"] = links
+	identities := []map[string]string{}
+	for _, identity := range s.ids[c.ID] {
+		if trustedRegistrations[identity["registration"]] {
+			identities = append(identities, identity)
+		}
+	}
+	detail["identities"] = identities
+	timeline := []map[string]interface{}{}
+	for _, event := range s.facts[c.ID] {
+		registration, _ := event["patient_key"].(string)
+		if !trustedRegistrations[registration] {
+			continue
+		}
+		row := make(map[string]interface{}, len(event)-1)
+		for key, value := range event {
+			if key != "patient_key" {
+				row[key] = value
+			}
+		}
+		timeline = append(timeline, row)
+	}
+	detail["timeline"] = timeline
+	holds := []map[string]interface{}{}
+	seenHolds := map[string]bool{}
+	if c.last != nil {
+		for _, block := range c.last.Chain {
+			if block.Type == "hold_decision" && !seenHolds[block.Hash] {
+				seenHolds[block.Hash] = true
+				holds = append(holds, block.Body)
+			}
+		}
+	}
+	detail["holds"] = holds
+	return detail
+}
+
 func (s *apiServer) personJourney(projection *personProjection, cluster *personCluster, viewer apiPrincipal) (map[string]interface{}, error) {
 	cases := make([]*apiCase, 0, len(cluster.caseIDs))
 	caseBodies := make([]map[string]interface{}, 0, len(cluster.caseIDs))
@@ -655,7 +709,7 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 			seenProgrammes[c.Programme] = true
 			programmes = append(programmes, c.Programme)
 		}
-		detail := s.caseDetailFor(c, &viewer)
+		detail := s.personCaseDetail(c, &viewer, cluster.registrations)
 		allowed := map[string]interface{}{}
 		for _, key := range []string{"case", "identities", "timeline", "links", "holds", "outreach", "decisions"} {
 			allowed[key] = detail[key]
@@ -673,7 +727,7 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		}
 		body := map[string]interface{}{"case_id": caseID, "referral_registration": pseudonymizeRegistration(referral), "detail": allowed,
 			"contact": map[string]interface{}{"canonical": c.Consent, "overlay_status": overlay["status"],
-				"contact_blocked": overlay["contact_blocked"] == true || c.Consent == "denied" || c.Consent == "opted_out", "canonical_unchanged": true}}
+				"contact_blocked": overlay["contact_blocked"] == true || c.Consent != "granted", "canonical_unchanged": true}}
 		if baseLoop(caseID) != caseID {
 			body["parent_case_id"] = baseLoop(caseID)
 		}
