@@ -10,7 +10,7 @@ import { CaseAction } from "@/lib/api/schema";
  * never a name the frontend chose.
  */
 export type RecordResult =
-  | { ok: true; head: string; hash: string; at: string; actor: string }
+  | { ok: true; head: string; hash: string; at: string; actor: string; owner: string }
   | { ok: false; status: number; error: string; conflict?: string; currentHead?: string };
 
 const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min(1).max(128), action: CaseAction });
@@ -28,5 +28,5 @@ export async function recordAction(caseId: string, head: string, action: z.input
   revalidatePath("/app/today");
   revalidatePath("/app/patients/[id]", "page");
   const { event, api_overlay } = res.response;
-  return { ok: true, head: api_overlay.head, hash: event.hash, at: event.at, actor: event.actor };
+  return { ok: true, head: api_overlay.head, hash: event.hash, at: event.at, actor: event.actor, owner: api_overlay.owner };
 }

@@ -41,6 +41,13 @@ export function outcomeOf(draft: Draft, items: ReviewItems = { link: "link", evi
   return undefined;
 }
 
+/** The two pilot purposes of an evidence review item, from `review_items[].reason`. */
+export type ReviewPurpose = "shadow_confirm" | "auto_audit";
+
+export function purposeOf(reason: string | undefined): ReviewPurpose | undefined {
+  return reason === "shadow_confirm" || reason === "auto_audit" ? reason : undefined;
+}
+
 /** Each present item signs independently; a case with both keeps identity first and suppresses evidence after "different" or "ask". */
 export function signaturesFor(draft: Draft, items: ReviewItems): Signature[] {
   const outcome = outcomeOf(draft, items);
@@ -154,13 +161,60 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   },
 };
 
+/*
+ * A pilot review answers a different question from an ordinary evidence review, so its adequate / not adequate answers
+ * read as confirming or disagreeing with the automatic closure. Keyed by the generic outcome they replace.
+ */
+const PURPOSE_COPY: Record<ReviewPurpose, Partial<Record<OutcomeKey, Pick<Outcome, "commit" | "preview" | "text">>>> = {
+  shadow_confirm: {
+    close: {
+      commit: "Confirm the suggested closure",
+      preview: "Would confirm the suggested closure",
+      text: () => "Confirming the automatic suggestion permits closure of the case.",
+    },
+    inadequate: {
+      commit: "Sign: do not confirm closure",
+      preview: "Would not confirm the suggested closure",
+      text: () => "The suggestion is not confirmed, so the case follows your answer instead of closing automatically.",
+    },
+  },
+  auto_audit: {
+    close: {
+      commit: "Sign: audit agrees",
+      preview: "Would leave the case closed",
+      text: () => "Agreeing with the audit means the case stays closed.",
+    },
+    inadequate: {
+      commit: "Sign: audit disagrees",
+      preview: "Would reopen the case",
+      text: () => "Disagreeing with the audit reopens the case.",
+    },
+  },
+};
+
+/** The outcome as the review's purpose words it; ordinary reviews keep the generic copy. */
+export function outcomeFor(key: OutcomeKey, purpose?: ReviewPurpose): Outcome {
+  const copy = purpose && PURPOSE_COPY[purpose][key];
+  return copy ? { ...OUTCOMES[key], ...copy } : OUTCOMES[key];
+}
+
 /** Live confirmation copy is limited to answers actually appended for this case. */
 export function recordedOutcome(
   outcome: OutcomeKey,
   signatures: Signature[],
   confirmedClosed = false,
+  purpose?: ReviewPurpose,
 ): Pick<Outcome, "recordedText" | "recordedAnswerCell"> {
   const recorded = OUTCOMES[outcome];
+  if (purpose === "auto_audit" && (outcome === "close" || outcome === "inadequate")) {
+    return {
+      recordedText:
+        outcome === "close"
+          ? "Audit agreement was appended to the demo review log. The case state is not changed here; it stays as current case data shows it."
+          : "Audit disagreement was appended to the demo review log. The case state is not changed here; reopening is not confirmed unless refreshed case data shows it.",
+      recordedAnswerCell: recorded.recordedAnswerCell,
+    };
+  }
   if (outcome === "evidence") {
     const decision = signatures.find((s) => s.decision !== "same" && s.decision !== "different")?.decision;
     return {
