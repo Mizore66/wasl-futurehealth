@@ -584,6 +584,11 @@ var exportBookingAllow = exportObject(func() map[string]*exportAllow {
 	m["reason"] = exportOperationalLeaf
 	m["reservation_explanation"] = exportOperationalLeaf
 	m["eligible_slots"] = exportList(exportBookingSlotAllow)
+	m["readiness"] = exportObject(func() map[string]*exportAllow {
+		r := exportKeys("ready")
+		r["reason"] = exportOperationalLeaf
+		return r
+	}())
 	m["constraints"] = exportObject(exportKeys("female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show"))
 	m["booking"] = exportObject(exportKeys("loop_id", "session_id", "unit", "day", "endoscopist_female", "overbooked", "predicted_no_show",
 		"nurse_call", "prep_send_day", "deadline", "within_deadline", "booked_on"))

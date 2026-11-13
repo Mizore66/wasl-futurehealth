@@ -132,6 +132,12 @@ describe("booking server action read-back", () => {
       prep_send_day: 15, predicted_no_show: 0.14, nurse_call: false, cross_region: false, version: h("4"), availability: "available",
     }],
   });
+  it("keeps the server readiness projection that gates the booking controls", () => {
+    const blocked = Booking.parse({ ...booking, reservable: false, readiness: { ready: false, reason: "the returned referral is unresolved" } });
+    expect(blocked.readiness).toEqual({ ready: false, reason: "the returned referral is unresolved" });
+    expect(booking.readiness).toBeUndefined();
+  });
+
   const detail = CaseDetail.parse({
     ...baseDetail,
     case: { ...baseDetail.case, api_overlay: overlay(reservation("unreserved")) },

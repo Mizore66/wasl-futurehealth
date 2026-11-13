@@ -660,6 +660,7 @@ export const Booking = z.looseObject({
   calendar_version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   eligible_slots: z.array(EligibleBookingSlot).optional(),
   reservable: z.boolean().optional(),
+  readiness: z.object({ ready: z.boolean(), reason: z.string().optional() }).optional(),
   reservation_explanation: z.string().optional(),
 });
 

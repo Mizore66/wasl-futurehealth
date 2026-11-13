@@ -426,6 +426,27 @@ func bookingReservationActive(c *apiCase) bool {
 	return c != nil && c.ov.booking.status == "reserved" && c.ov.booking.reservationID != ""
 }
 
+// bookingReadiness is the single clinical-readiness decision for candidate offers, reservation writes and the frontend:
+// it returns why a case must not hold a simulated reservation yet, or "". Cancellation never consults it. A returned
+// referral becomes eligible only when a canonical accepted re-referral moves the case out of referral_rejected, so a
+// hand-off reply or referrer_acted alone never counts. An inadequate case waits for its pending confirming review.
+func bookingReadiness(c *apiCase) string {
+	if c == nil {
+		return ""
+	}
+	switch {
+	case c.State == "referral_rejected":
+		reason := "the returned referral is unresolved: an accepted re-referral is needed before a simulated reservation"
+		if c.last != nil && c.last.Handoff != nil && c.last.Handoff.Status != "" {
+			reason += " (hand-off " + c.last.Handoff.Status + ")"
+		}
+		return reason
+	case c.State == "inadequate" && c.last != nil && len(c.last.Pending) > 0:
+		return "a pending review must confirm the repeat before a simulated reservation"
+	}
+	return ""
+}
+
 func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[string]interface{}) (*bookingTransition, *bookingFailure) {
 	state := &c.ov.booking
 	status := state.status
@@ -434,6 +455,9 @@ func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[strin
 	}
 	transition := &bookingTransition{kind: kind}
 	if kind == "booking_accept" || kind == "booking_choose_slot" || kind == "booking_reschedule" {
+		if reason := bookingReadiness(c); reason != "" {
+			return nil, bookingFail(409, "not clinically ready for a simulated reservation: "+reason, "readiness", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
+		}
 		raw := s.bookingCase(c.ID)
 		suggestion, _ := raw["suggestion_version"].(string)
 		if suggestion == "" || data["expected_suggestion_version"] != suggestion {
@@ -586,6 +610,12 @@ func (s *apiServer) bookingForLocked(id string) map[string]interface{} {
 	}
 	out := cloneBookingJSON(raw).(map[string]interface{})
 	out["data_mode"], out["decision_support_only"] = "simulated", true
+	readiness := map[string]interface{}{"ready": true}
+	if reason := bookingReadiness(s.cases[id]); reason != "" {
+		readiness["ready"], readiness["reason"] = false, reason
+		out["reservable"] = false
+	}
+	out["readiness"] = readiness
 	if s.bookingCalendar != "" {
 		out["calendar_version"] = s.bookingCalendar
 	}

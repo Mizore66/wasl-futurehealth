@@ -35,6 +35,21 @@ PROV_REGION = {"ahs-mushrif": "AD", "medlab": "AA", "skmc-endo": "AD", "noor-end
 NEEDS_SLOT = {"open", "no_show", "inadequate", "referral_rejected"}  # still need (another) colonoscopy
 
 
+def readiness_hold(d):
+    """Why a case that needs a slot must not be offered one yet, or None. Mirrors pipeline bookingReadiness: a returned
+    referral stays blocked until a canonical re-referral changes its state; an inadequate case waits for its pending review."""
+    if d["state"] == "referral_rejected":
+        return "returned referral unresolved"
+    if d["state"] == "inadequate" and d.get("pending"):
+        return "repeat disposition review pending"
+    return None
+
+
+def held_case(d, procedure):
+    return {"status": "not_applicable", "procedure": procedure, "state_at_run_end": d["state"],
+            "reason": f"clinical_readiness: {readiness_hold(d)}"}
+
+
 def load(run):
     last = {}
     for l in open(os.path.join(run, "out_log.ndjson")):
@@ -211,7 +226,7 @@ COLPO_FEMALE_SHARE = 0.5   # assumed share of colposcopy clinics run by a female
 def cervical(last, sr, a, rng):
     """Cervical loops that still need a colposcopy: a repeat 6-12 weeks after an unsatisfactory exam (DoH 10.6.4), or a
     first colposcopy inside the loop's DoH window (App 5). Same engine, SYNTHETIC colposcopy-clinic calendar."""
-    need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT]
+    need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT and not readiness_hold(d)]
     # same slot density per day as the CRC calendar (slots_per_fit over its 95-day window), over 160 days so repeats fit
     cal, _ = calendar(len(need), a.slots_per_fit * 160 / 95, rng, a.misallocated, f_share=a.colpo_female_share, days=160)
     eng = make_engine(a, cal, 1)
@@ -286,7 +301,9 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     a = ap.parse_args(argv)
     last, sr = preloaded if preloaded is not None else load(a.run)
     rng = np.random.default_rng(a.seed)
-    open_cases = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "crc" and d["state"] in NEEDS_SLOT]
+    open_cases = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "crc" and d["state"] in NEEDS_SLOT and not readiness_hold(d)]
+    held = {k: held_case(d, "colonoscopy" if d["prog"] == "crc" else "colposcopy") for k, d in sorted(last.items())
+            if d.get("prog") in ("crc", "cervical") and d["state"] in NEEDS_SLOT and readiness_hold(d)}
     as_of = 0  # suggestions are made from the start of an empty synthetic calendar window
     cal, share = calendar(len(open_cases), a.slots_per_fit, rng, a.misallocated, f_share=a.female_share)
     eng = make_engine(a, cal, 5)  # female-list protection on by default
@@ -382,7 +399,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
                    "prep_risk_band": dict(collections.Counter(c["prep_risk"]["band"] for c in cases.values())),
                    "requires_clinician_order": True,
                    "simulated_effect": "booking/RESULTS.md, Queue levers (simulated)"},
-        "cases": {**cases, **cerv["cases"]},
+        "cases": {**cases, **cerv["cases"], **held},
         "cervical": cerv["summary"],
     }
     given = {"optimiser": (a.optimiser, "myopic"), "arrivals": (a.arrivals, "uniform"), "female_list_share": (a.female_share, 0.25),
