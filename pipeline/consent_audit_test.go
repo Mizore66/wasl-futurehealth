@@ -71,6 +71,34 @@ func TestConsentAuditUsesCanonicalReplayLifecycle(t *testing.T) {
 }
 
 func TestConsentAuditUsesDelayedOrderAndLinkedClusterReplay(t *testing.T) {
+	t.Run("equal_time_distinct_resources_deny_wins", func(t *testing.T) {
+		loop := "ahs-mushrif/ServiceRequest/SR1"
+		sr := &Prep{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}}
+		rp := replaySyntheticConsent(sr,
+			revisionConsent(2, "a-deny", "deny", "active", 4, 1),
+			revisionConsent(3, "z-permit", "permit", "active", 4, 1))
+		metrics := calculateConsentTiming(syntheticReleaseLog(loop, 3), rp, nil)
+		if metrics["released_without_granted_consent"] != 1 || metrics["released_after_opt_out_on_file"] != 1 {
+			t.Fatalf("equal-time distinct-resource conflict audit=%+v", metrics)
+		}
+	})
+	t.Run("equal_time_linked_registrations_deny_wins", func(t *testing.T) {
+		rPK, hPK := "phc-retina|P1", "eye-hosp|E1"
+		rLoop := "phc-retina/ServiceRequest/P-SR"
+		preps := []*Prep{
+			{Seq: 1, Kind: "event", Ev: &Event{ID: "P-SR", Provider: "phc-retina", RType: "ServiceRequest", Prog: "crc", PatientKey: rPK, Name: "Synthetic Linked Person", Dob: "2000-01-02", Sex: "F", Day: 1}},
+			{Seq: 2, Kind: "event", Ev: &Event{ID: "E-SR", Provider: "eye-hosp", RType: "ServiceRequest", Prog: "crc", PatientKey: hPK, Name: "Synthetic Linked Person", Dob: "2000-01-02", Sex: "F", Day: 1}},
+			canonicalConsent(3, "eye-deny", "eye-hosp", hPK, RoleClinician, "deny", "active", 4, 1),
+			canonicalConsent(4, "phc-permit", "phc-retina", rPK, RoleCoordinator, "permit", "active", 4, 1),
+			{Seq: 5, Kind: "signoff", So: &Signoff{ItemID: "confirmed-equal-time-link", LoopID: rLoop, Kinds: []string{"link"}, Pair: [2]string{rPK, hPK},
+				Link: "same", Role: RoleReviewer, Reads: []string{"synthetic-r1", "synthetic-r2"}}},
+		}
+		rp := replaySyntheticConsent(preps...)
+		metrics := calculateConsentTiming(syntheticReleaseLog(rLoop, 5), rp, nil)
+		if metrics["released_without_granted_consent"] != 1 || metrics["released_after_opt_out_on_file"] != 1 {
+			t.Fatalf("equal-time linked-registration conflict audit=%+v", metrics)
+		}
+	})
 	t.Run("deny_day2_delayed_permit_day1", func(t *testing.T) {
 		sr := &Prep{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}}
 		rp := replaySyntheticConsent(sr,

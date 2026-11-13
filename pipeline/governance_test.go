@@ -100,11 +100,15 @@ func TestConsentRBACInLinker(t *testing.T) {
 	if L.Stats["rbac_denied_consent"] != 3 {
 		t.Fatalf("denied=%d want 3", L.Stats["rbac_denied_consent"])
 	}
-	f := lastFacts(L.Apply(consentPrep(20, "ahs-mushrif|M1", RoleCoordinator, "deny")), loop)
+	deny := consentPrep(20, "ahs-mushrif|M1", RoleCoordinator, "deny")
+	deny.Ev.Day, deny.Ev.Version = 2, 2
+	f := lastFacts(L.Apply(deny), loop)
 	if f == nil || !f.MsgOptOut {
 		t.Fatal("coordinator opt-out not applied to the loop facts")
 	}
-	f = lastFacts(L.Apply(consentPrep(21, "ahs-mushrif|M1", RoleClinician, "permit")), loop)
+	permit := consentPrep(21, "ahs-mushrif|M1", RoleClinician, "permit")
+	permit.Ev.Day, permit.Ev.Version = 3, 3
+	f = lastFacts(L.Apply(permit), loop)
 	if f == nil || f.MsgOptOut {
 		t.Fatal("clinician re-consent (permit) not applied")
 	}

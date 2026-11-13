@@ -21,14 +21,16 @@ func orderedConsent(events []*Event) []*Event {
 		if a.Version != b.Version {
 			return a.Version < b.Version
 		}
+		// Deny wins every otherwise simultaneous conflict, regardless of which
+		// resource or confirmed registration supplied the permit.
+		if a.Status != b.Status {
+			return a.Status == "permit"
+		}
 		if a.PatientKey != b.PatientKey {
 			return a.PatientKey < b.PatientKey
 		}
 		if a.ID != b.ID {
 			return a.ID < b.ID
-		}
-		if a.Status != b.Status {
-			return a.Status == "permit"
 		}
 		// Same-provision conflicts cannot change the fold differently, but a final
 		// payload tie-breaker keeps the canonical journal itself deterministic.

@@ -348,6 +348,7 @@ func TestConsentSameDayRevisionAndCompleteTieFailClosed(t *testing.T) {
 	}{
 		{"same_day_revisions", revisionConsent(10, "permit-v1", "permit", "active", 4, 1), revisionConsent(11, "deny-v2", "deny", "active", 4, 2)},
 		{"same_resource_complete_tie", revisionConsent(10, "shared-v3", "permit", "active", 4, 3), revisionConsent(11, "shared-v3", "deny", "active", 4, 3)},
+		{"distinct_resources_complete_tie", revisionConsent(10, "z-permit", "permit", "active", 4, 1), revisionConsent(11, "a-deny", "deny", "active", 4, 1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, order := range [][]*Prep{{tc.permit, tc.deny}, {tc.deny, tc.permit}} {
@@ -357,9 +358,38 @@ func TestConsentSameDayRevisionAndCompleteTieFailClosed(t *testing.T) {
 				}
 				if f := L.factsFor(loop); f.Contact != "opted_out" || !f.MsgOptOut {
 					t.Fatalf("equal-time conflict did not fail closed: %+v", f)
+				} else if o := outreachFor(t, L, loop, nil); o[0].Released || DispatchC(RoleCoordinator, o[0], f.MsgOptOut, f.Contact) == nil {
+					t.Fatalf("equal-time conflict released or dispatched outreach: %+v", o)
 				}
 			}
 		})
+	}
+}
+
+func TestConsentEqualTimeConflictAcrossConfirmedClusterDenyWins(t *testing.T) {
+	permit := canonicalConsent(4, "phc-permit", "phc-retina", "phc-retina|P1", RoleCoordinator, "permit", "active", 4, 1)
+	deny := canonicalConsent(5, "eye-deny", "eye-hosp", "eye-hosp|E1", RoleClinician, "deny", "active", 4, 1)
+	for _, order := range [][]*Prep{{permit, deny}, {deny, permit}} {
+		L := NewLinkerCore(nil, 1)
+		rLoop := addConsentServiceRequest(L, 1, "phc-retina", "P1", "P-SR")
+		hLoop := addConsentServiceRequest(L, 2, "eye-hosp", "E1", "E-SR")
+		confirmConsentLink(L, 3, rLoop, "phc-retina|P1", "eye-hosp|E1")
+		var outs []FactsMsg
+		for _, p := range order {
+			outs = L.Apply(p)
+		}
+		for _, loop := range []string{rLoop, hLoop} {
+			f := lastFacts(outs, loop)
+			if f == nil {
+				f = L.factsFor(loop)
+			}
+			if f.Contact != "opted_out" || !f.MsgOptOut {
+				t.Fatalf("linked equal-time conflict did not fail closed for %s: %+v", loop, f)
+			}
+			if o := outreachFor(t, L, loop, outs); o[0].Released || o[0].Suppress != SupConsent || DispatchC(RoleCoordinator, o[0], f.MsgOptOut, f.Contact) == nil {
+				t.Fatalf("linked equal-time conflict released or dispatched outreach for %s: %+v", loop, o)
+			}
+		}
 	}
 }
 
