@@ -1111,7 +1111,8 @@ export const BookingAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("booking_cancel"), reservation_id: hash, expected_reservation_version: hash, reason: bookingReason }),
 ]);
 export const CaseAction = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
+  /** Without `owner` the API assigns the case to the actor bound to the coordinator token. */
+  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64).optional() }),
   z.object({ action: z.literal("snooze"), until: z.string(), reason: z.string().max(200).optional() }),
   z.object({
     action: z.literal("contact_outcome"),

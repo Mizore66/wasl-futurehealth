@@ -16,7 +16,7 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
 import { outcomeWords } from "@/components/case/words";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
@@ -79,6 +79,8 @@ const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", mi
 
 /** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
 const SESSION_WHO = "This browser";
+/** Fixtures mode only: the demo persona. A live save shows the owner the API recorded, the verified coordinator. */
+const SESSION_OWNER = "Hessa Al Ali";
 
 const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
@@ -260,7 +262,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
+        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
@@ -596,9 +598,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   className="max-sm:flex-1"
                   disabled={busy || ledgerInvalid}
                   onClick={() =>
-                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
+                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
                       action: "assign_owner",
-                      owner: "Hessa Al Ali",
                     })
                   }
                 >

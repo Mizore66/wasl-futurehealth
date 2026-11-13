@@ -366,7 +366,7 @@ Workflow A coordinator actions. Overlay metadata only: they never change a decis
 
 | `action` | Fields | Bounds |
 |---|---|---|
-| `assign_owner` | `owner` | 1 to 64 characters |
+| `assign_owner` | `owner` (optional) | 1 to 64 characters. Omitted, the owner is the verified actor bound to the token, so a client cannot name someone else as itself |
 | `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
 | `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted`. Records what happened; it does not send anything |
 | `note` | `text` | 1 to 1000 characters, newlines allowed |

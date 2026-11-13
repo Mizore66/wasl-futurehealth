@@ -118,6 +118,7 @@ test.describe("Today, live mode against a mock API", () => {
           if (invalid) return send(500, { meta, error: "review ledger failed validation; writes refused", detail: invalid });
           if (expected_head !== head(id)) return send(409, { meta, error: "stale expected_head", conflict: "head", current_head: head(id) });
           if (action === "contact_outcome" && byId.get(id)?.consent !== "granted") return send(409, { meta, error: "contact outcomes need contact permission granted", conflict: "consent" });
+          if (action === "assign_owner" && data.owner === undefined) data.owner = principal.actor;
           const ev = append(id, action, data, principal.actor);
           send(201, { meta, event: apiEvent(id, ev), api_overlay: overlay(id, true) });
         });
@@ -303,6 +304,23 @@ test.describe("Today, live mode against a mock API", () => {
       await expect(open.getByText("No answer (phone)")).toHaveCount(3);
     });
   }
+
+  test("Take this patient assigns the verified coordinator, not a fixed name (issue #148)", async ({ page }) => {
+    await page.goto("/app/today");
+    await page.getByRole("tab", { name: /^No owner/ }).click();
+    const open = page.getByRole("region", { name: "Open patient" });
+    const heading = await open.getByRole("heading", { level: 2 }).innerText();
+    await open.getByRole("button", { name: "Take this patient" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Yours now");
+    const events = [...ledger.values()].flat();
+    expect(events.map((e) => [e.kind, e.data.owner, e.actor])).toEqual([["assign_owner", "mock-coordinator", "mock-coordinator"]]);
+    await expect(open).not.toContainText("Hessa");
+
+    await page.reload();
+    await page.getByRole("tab", { name: /^To call/ }).click();
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: new RegExp(heading) }).click();
+    await expect(open).not.toContainText("Hessa");
+  });
 
   test("a partial ledger replay shows only the valid prefix under a warning and disables writes", async ({ page }) => {
     append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
