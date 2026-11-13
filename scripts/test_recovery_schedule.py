@@ -15,6 +15,7 @@ sys.path.insert(0, str(SCRIPTS))
 from recovery import write_file_bundle  # noqa: E402
 from recovery_catalog import Catalog, write_exclusive  # noqa: E402
 from recovery_crypto import new_keyring  # noqa: E402
+import recovery_schedule  # noqa: E402
 from recovery_schedule import (  # noqa: E402
     CommandResult,
     CommandRunner,
@@ -26,12 +27,17 @@ from recovery_schedule import (  # noqa: E402
     OperationalError,
     SafetyError,
     Scheduler,
+    atomic_json,
     load_json,
 )
 
 REVISION = "a" * 40
 HASH_A = "a" * 64
 HASH_B = "b" * 64
+
+
+class Crash(BaseException):
+    pass
 
 
 class FakeRunner:
@@ -421,6 +427,106 @@ class SchedulerTests(unittest.TestCase):
                 path.write_text(json.dumps(raw))
                 with self.assertRaises(ConfigError):
                     Config.load(path)
+
+    def set_cursor(self, backup, verify, days):
+        self.clock = datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(days=days)
+        atomic_json(self.state / "schedule.json", {"last_backup_slot": backup, "last_verify_slot": verify})
+
+    def tree(self):
+        return {str(p.relative_to(self.state)): p.read_bytes() for p in sorted(self.state.rglob("*"))
+                if p.is_file() and not p.name.startswith("schedule") and p.name != "events.jsonl"}
+
+    def missed_events(self):
+        path = self.state / "events.jsonl"
+        lines = path.read_text().splitlines() if path.exists() else []
+        return [e for e in map(json.loads, lines) if e["event"] == "slots_missed"]
+
+    def crash_once(self, target, name, when=lambda *a, **k: True):
+        original = getattr(target, name)
+        fired = []
+
+        def crashing(*args, **kwargs):
+            if not fired and when(*args, **kwargs):
+                fired.append(True)
+                raise Crash()
+            return original(*args, **kwargs)
+        return mock.patch.object(target, name, crashing)
+
+    def test_missed_slot_marker_replay_converges_after_each_crash_window(self):
+        self.preclaim_verify_zero()
+        windows = {
+            "after marker": lambda: self.crash_once(self.scheduler, "_event"),
+            "after event": lambda: self.crash_once(recovery_schedule, "atomic_json", lambda path, *_: Path(path).name == "schedule.json"),
+        }
+        for name, inject in windows.items():
+            with self.subTest(name):
+                self.setUp()
+                self.preclaim_verify_zero()
+                self.set_cursor(1, 0, 3)
+                with inject(), self.assertRaises(Crash):
+                    self.scheduler.run_due()
+                self.assertTrue((self.state / "slots/backup/missed-2-2.json").is_file())
+                first = self.scheduler.run_due()
+                self.assertEqual(len(first), 1)
+                self.assertEqual(load_json(self.state / "schedule.json")["last_backup_slot"], 3)
+                self.assertEqual(len(self.missed_events()), 1)
+                settled = self.tree()
+                self.assertEqual(self.scheduler.run_due(), [])
+                self.assertEqual(self.tree(), settled)
+                self.assertEqual(self.names().count("encrypted-generation-backup"), 1)
+
+    def test_missed_verification_slot_replay_converges(self):
+        self.set_cursor(20, 1, 21)  # backup slot 21 (claimed below), verify slot 3 with slot 2 missed
+        write_exclusive(self.state / "slots/backup/21.json", {"attempt_id": "preexisting"})
+        with self.crash_once(self.scheduler, "_event", lambda event: event["kind"] == "verify"), self.assertRaises(Crash):
+            self.scheduler.run_due()
+        self.assertTrue((self.state / "slots/verify/missed-2-2.json").is_file())
+        self.scheduler.run_due()
+        self.assertEqual(load_json(self.state / "schedule.json")["last_verify_slot"], 3)
+        self.assertEqual([e["kind"] for e in self.missed_events()], ["verify"])
+        self.assertTrue(list((self.state / "runs").glob("verify-3-*")))
+
+    def test_conflicting_missed_slot_marker_fails_closed_without_modification(self):
+        self.preclaim_verify_zero()
+        self.set_cursor(1, 0, 3)
+        marker = self.state / "slots/backup/missed-2-2.json"
+        write_exclusive(marker, {"schema": "wasl-recovery-missed-slots-v1", "kind": "backup", "first_missed": 2,
+                                 "last_missed": 2, "recorded_at": "2026-01-01T00:00:00Z", "catch_up": True})
+        before = marker.read_bytes()
+        with self.assertRaises(SafetyError):
+            self.scheduler.run_due()
+        self.assertEqual(marker.read_bytes(), before)
+        self.assertEqual(load_json(self.state / "schedule.json")["last_backup_slot"], 1)
+        self.assertEqual(self.names().count("encrypted-generation-backup"), 0)
+
+    def test_crash_before_attempt_evidence_never_loses_the_due_slot(self):
+        def midway_run_dir(*args, **kwargs):
+            (self.state / "runs" / "backup-3").mkdir()
+            raise Crash()
+        windows = {
+            "before run directory": lambda: self.crash_once(self.scheduler, "_new_attempt"),
+            "after run directory": lambda: mock.patch.object(self.scheduler, "_new_attempt", midway_run_dir),
+            "after started before claim": lambda: self.crash_once(self.scheduler, "_claim_slot"),
+        }
+        for name, inject in windows.items():
+            with self.subTest(name):
+                self.setUp()
+                self.preclaim_verify_zero()
+                self.set_cursor(2, 0, 3)
+                with inject(), self.assertRaises(Crash):
+                    self.scheduler.run_due()
+                self.assertEqual(load_json(self.state / "schedule.json")["last_backup_slot"], 3)
+                self.scheduler.reconcile()
+                self.scheduler.run_due()
+                self.assertTrue((self.state / "slots/backup/3.json").is_file())
+                runs = [p for p in (self.state / "runs").iterdir() if p.name.startswith("backup-3")]
+                self.assertEqual(len(runs), 1)
+                self.assertIn(load_json(runs[0] / "result.json")["status"], ("interrupted", "success"))
+                self.assertLessEqual(self.names().count("encrypted-generation-backup"), 1)
+                settled = self.tree()
+                self.scheduler.reconcile()
+                self.assertEqual(self.scheduler.run_due(), [])
+                self.assertEqual(self.tree(), settled)
 
 
 class CommandEvidenceTests(unittest.TestCase):

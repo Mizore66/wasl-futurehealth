@@ -436,7 +436,7 @@ resource creation, and process death releases the locks.
 
 Every attempt has an exclusively created `runs/<attempt-id>/started.json` and at most one `result.json`. On restart, a
 missing result is classified `interrupted`, its automatic slot is not retried, and its target/generation is never reused.
-Persisted source-API intent is reconciled before other work. Evidence includes the resolved nonsecret configuration and
+A slot whose cursor was published but whose attempt never reached `started.json` (the empty run directory is removed on restart) is still due and gets its single automatic attempt; a replayed identical missed-slot marker is accepted, and a conflicting one fails closed. Persisted source-API intent is reconciled before other work. Evidence includes the resolved nonsecret configuration and
 revision, generation/target identities, source/target/restart probes, backup/restore/verify summaries, explicit hash
 comparisons, exported manifest and SHA-256, sanitized per-command stdout/stderr, timestamps, durations, exit statuses,
 and failure diagnostics. `evidence-manifest.json` authenticates the final file set with SHA-256; files and directories

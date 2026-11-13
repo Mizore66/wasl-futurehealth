@@ -465,7 +465,12 @@ class Scheduler:
     def reconcile(self) -> None:
         """Classify crash-interrupted attempts and restore persisted source-API intent before new work."""
         for run_dir in sorted((self.state / "runs").iterdir()):
-            if not run_dir.is_dir() or not (run_dir / "started.json").is_file():
+            if not run_dir.is_dir():
+                continue
+            if not (run_dir / "started.json").is_file():
+                if not any(run_dir.iterdir()):
+                    run_dir.rmdir()  # a crash before started.json left no attempt evidence to preserve
+                    fsync_dir(run_dir.parent)
                 continue
             started = load_json(run_dir / "started.json")
             result_path = run_dir / "result.json"
@@ -531,11 +536,28 @@ class Scheduler:
             missed = {"schema": "wasl-recovery-missed-slots-v1", "kind": kind,
                       "first_missed": last + 1, "last_missed": current - 1, "recorded_at": now_iso(),
                       "catch_up": False}
-            write_exclusive(self.state / "slots" / kind / f"missed-{last + 1}-{current - 1}.json", missed)
-            self._event({"event": "slots_missed", "kind": kind, "first": last + 1, "last": current - 1})
+            self._record_missed(kind, missed)
         state[key] = current
         atomic_json(path, state)
-        return (str(current) if current > last else None), interval
+        due = current > last or not self._slot_path(kind, str(current)).exists()
+        return (str(current) if due else None), interval
+
+    def _record_missed(self, kind: str, missed: dict) -> None:
+        first, last = missed["first_missed"], missed["last_missed"]
+        marker = self.state / "slots" / kind / f"missed-{first}-{last}.json"
+        try:
+            write_exclusive(marker, missed)
+        except FileExistsError:
+            existing = load_json(marker)
+            if {k: v for k, v in existing.items() if k != "recorded_at"} != {k: v for k, v in missed.items() if k != "recorded_at"}:
+                raise SafetyError("conflicting missed-slot marker already exists") from None
+        event = {"event": "slots_missed", "kind": kind, "first": first, "last": last}
+        events = self.state / "events.jsonl"
+        if events.is_file():
+            for line in events.read_text(encoding="utf-8").splitlines():
+                if {k: v for k, v in json.loads(line).items() if k != "observed_at"} == event:
+                    return
+        self._event(event)
 
     def run_due(self) -> list[str]:
         completed = []
