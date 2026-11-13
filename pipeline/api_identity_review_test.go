@@ -220,6 +220,31 @@ func TestIdentityReviewIsWithheldFromOtherRolesAndTheExport(t *testing.T) {
 	}
 }
 
+func TestIdentityReviewCoversSeniorReviewersAndDropsSignedItems(t *testing.T) {
+	s := loadAPI(identityReviewRun(t), "")
+	c := s.cases[ledgerLoop]
+	has := func(role, item string) bool {
+		for _, e := range s.identityReview(c, apiPrincipal{role: role}) {
+			if e["item"] == item {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(RoleSeniorReviewer, "rv-dob-differ") || !has(RoleReviewer, "rv-dob-differ") {
+		t.Fatal("reviewer and senior_reviewer must receive the comparison for an unsigned link item")
+	}
+	s.signoffs[ledgerLoop] = append(s.signoffs[ledgerLoop], map[string]interface{}{"item": "rv-dob-differ"})
+	if has(RoleReviewer, "rv-dob-differ") || !has(RoleReviewer, "rv-eid-match") {
+		t.Fatal("a signed link item must drop out of the projection and the others must stay")
+	}
+	for _, role := range []string{RoleClinician, RoleCoordinator, RoleAuditor, ""} {
+		if s.identityReview(c, apiPrincipal{role: role}) != nil {
+			t.Fatalf("role %q received identifiers", role)
+		}
+	}
+}
+
 func TestIdentityReviewIsAbsentWhenTheCaseHasNoLinkItem(t *testing.T) {
 	h := ledgerHandler(t, loadAPI(ledgerRun(t), ""))
 	detail := ledgerGet(t, h, "/api/cases/"+url.PathEscape(ledgerLoop), tokReviewer1)
