@@ -436,6 +436,7 @@ export const ReviewItem = z.looseObject({
   pair: z.array(z.string()),
   p: z.number(),
   report: z.string(),
+  report_version: z.number().optional(),
   verdict: z.string(),
   conf: z.number().optional(),
   quote: z.string(),

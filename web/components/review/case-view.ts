@@ -1,4 +1,4 @@
-import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { Evidence, GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -43,7 +43,8 @@ export type ReviewView = {
   /** The checks the two readers could not settle: what the one evidence answer covers. */
   disputed: { field: string; says: string }[];
   referredOn: string;
-  report: { id: string; on: string };
+  report: { id: string; on: string; version?: number };
+  referralRegistration: string;
   link: { score: number; line: number; basis: string; rule: string };
   identity: IdentityRow[];
   identitySummary: string;
@@ -107,15 +108,28 @@ function checksFrom(fields: Record<string, unknown> | undefined): Check[] {
   });
 }
 
-export function reviewView(c: CaseDetail): ReviewView {
-  const referral = c.identities.find((i) => i.role === "referral");
-  const downstream = c.identities.find((i) => i.role === "downstream");
+type RaisedItem = CaseDetail["review_items"][number];
+
+/** The evidence one raised item judges: its own chain's block first, so a revised report keeps its own version's readers and quote. */
+function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean) {
+  if (!item) return only ? undefined : c.evidence[0];
+  const block = item.chain.find((e) => e.type === "evidence" && shortId(String(e.body.report)) === shortId(item.report));
+  const parsed = block && Evidence.safeParse(block.body);
+  return parsed?.success ? parsed.data : c.evidence.find((e) => shortId(e.report) === shortId(item.report));
+}
+
+/** With `only`, everything shown is derived from that one raised item; without it, from the case's first link and evidence items. */
+export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
+  const raised = only ? [only] : c.review_items;
+  const linkItem = raised.find((r) => r.kinds.includes("link"));
+  const evidenceItem = raised.find((r) => r.kinds.includes("evidence"));
+  const pair = linkItem?.pair;
+  const referral = c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral");
+  const downstream = c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream");
   const a = referral && personFor(referral.registration);
   const b = downstream && personFor(downstream.registration);
-  const linkItem = c.review_items.find((r) => r.kinds.includes("link"));
-  const evidenceItem = c.review_items.find((r) => r.kinds.includes("evidence"));
-  const ev = evidenceItem ? c.evidence.find((e) => shortId(e.report) === shortId(evidenceItem.report)) : c.evidence[0];
-  const link = c.links[0];
+  const ev = evidenceFor(c, evidenceItem, Boolean(only));
+  const link = c.links.find((l) => pair && l.weakest_edge.a === pair[0] && l.weakest_edge.b === pair[1]) ?? c.links[0];
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
@@ -214,7 +228,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     held: held.length ? `Held: ${held.join(", and ")}.` : "",
     disputed,
     referredOn: formatDay(c.case.referral_day),
-    report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "" },
+    report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "", version: evidenceItem?.report_version },
+    referralRegistration: referral?.registration ?? "",
     link: {
       score: link?.path_p_cal ?? 0,
       line: link?.tau ?? 0,
@@ -231,4 +246,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     items: { link: linkItem?.item, evidence: evidenceItem?.item },
     trail,
   };
+}
+
+export function reviewItemViews(c: CaseDetail): Record<string, ReviewView> {
+  return Object.fromEntries(c.review_items.map((item) => [item.item, reviewView(c, item)]));
 }

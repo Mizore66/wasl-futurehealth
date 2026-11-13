@@ -97,17 +97,18 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
 
 export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: IdentityAnswer }) {
   const [why, setWhy] = useState(false);
+  const suffix = view.items.link ?? "case";
   const joined = answer === "same" || (!answer && view.faces.report.state === "known");
   return (
-    <section aria-labelledby="bridge-h" className="@container rounded-card border border-line bg-surface p-4 md:p-6">
+    <section aria-labelledby={`bridge-h-${suffix}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-3">
-        <h2 id="bridge-h" className="m-0 text-section font-medium">
+        <h2 id={`bridge-h-${suffix}`} className="m-0 text-section font-medium">
           Is this the same person?
         </h2>
         <button
           type="button"
           aria-expanded={why}
-          aria-controls="why-held"
+          aria-controls={`why-held-${suffix}`}
           onClick={() => setWhy(!why)}
           className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 hover:bg-active"
         >
@@ -174,7 +175,7 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
       <p className="m-0 mt-4 font-medium">{view.identitySummary}</p>
 
       {why && (
-        <div id="why-held" className="mt-3 rounded-control bg-ground p-4">
+        <div id={`why-held-${suffix}`} className="mt-3 rounded-control bg-ground p-4">
           <div className="flex items-baseline justify-between">
             <span className="font-medium">Link score</span>
             <span>

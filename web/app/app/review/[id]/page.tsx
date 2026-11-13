@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { HistoryCard } from "@/components/case/audit-view";
 import { Card, ProgrammeFindingCard, ReadersCard, SignoffsCard } from "@/components/case/sections";
-import { reviewView } from "@/components/review/case-view";
+import { reviewItemViews, reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
@@ -98,6 +98,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
       {view.guided ? (
         <ReviewDesk
           view={view}
+          itemViews={reviewItemViews(detail)}
           mode={apiMode()}
           next={next}
           sharedEvidence={sharedEvidence}
