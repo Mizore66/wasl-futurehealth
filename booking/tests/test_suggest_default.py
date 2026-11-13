@@ -46,8 +46,10 @@ def test_default_unchanged():
         res = json.loads(raw)
         assert len(res["calendar_version"]) == 64
         suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
-        assert suggested and all(c["reservable"] and c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in suggested)
-        assert len({c["suggested_slot_id"] for c in suggested}) == len(suggested)
+        reservable = [c for c in suggested if c["reservable"]]
+        assert reservable and all(c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in reservable)
+        assert all(c["reservation_explanation"] == "suggested_session_has_no_regular_seat" and "suggested_slot_id" not in c for c in suggested if not c["reservable"])
+        assert len({c["suggested_slot_id"] for c in reservable}) == len(reservable)
         assert all(c["suggestion_version"] == suggest._sha({k: v for k, v in c.items() if k != "suggestion_version"}) for c in res["cases"].values())
         assert res["calendar_version"] == suggest._sha({k: v for k, v in res.items() if k != "calendar_version"})
         assert all(slot["slot_id"].startswith(f"sim:{case['procedure']}:{slot['session_id']}:") for case in res["cases"].values() for slot in case["eligible_slots"])
