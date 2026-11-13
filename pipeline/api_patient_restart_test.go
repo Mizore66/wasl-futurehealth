@@ -148,7 +148,7 @@ func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	later.ID, later.InSeq, later.State, later.Dropoff = "dec-2", original.InSeq+1, "open", "not_booked"
 	later.Sig = decSig(&later)
 	m := LogMsg{Seq: 2, Subject: "out.p0", Hdr: map[string]string{}}
-	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: &later})
+	encodeEnv(&m, OutEnvelope{Kind: "decision", OSeq: m.Seq, PSeq: m.Seq, FSeq: m.Seq, Dec: &later, Proc: "closure-0"})
 	line, err := json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)
@@ -156,6 +156,7 @@ func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	if err := appendLedgerLine(filepath.Join(run, "out_log.ndjson"), append(line, '\n')); err != nil {
 		t.Fatal(err)
 	}
+	writeRequiredAPIJSONForCaseStates(t, run, map[string]string{exportLoop: later.State})
 	reloaded, err := loadAPIVerified(run, "")
 	if err != nil {
 		t.Fatal(err)

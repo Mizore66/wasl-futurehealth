@@ -55,6 +55,7 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	links := []map[string]interface{}{}
 	holds := []map[string]interface{}{}
 	linkHistory := []map[string]interface{}{}
+	evidenceHistory := []map[string]interface{}{}
 	seen := map[string]bool{}
 	ci := s.currentIdentityFor(c)
 	inLast := map[string]bool{}
@@ -70,7 +71,18 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 			seen[key] = true
 			switch b.Type {
 			case "evidence":
-				ev = append(ev, b.Body)
+				label := s.evidenceHistoryLabel(c, b, ci, inLast[key])
+				if label == "" {
+					ev = append(ev, b.Body)
+					continue
+				}
+				past := make(map[string]interface{}, len(b.Body)+5)
+				for k, v := range b.Body {
+					past[k] = v
+				}
+				past["history"], past["block_hash"] = label, b.Hash
+				past["decision_id"], past["decision_sig"] = d.ID, d.Sig
+				evidenceHistory = append(evidenceHistory, past)
 			case "link_decision":
 				if ci == nil || ci.linkIsCurrent(b, inLast[key]) {
 					links = append(links, b.Body)
@@ -124,6 +136,9 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	}
 	if len(linkHistory) > 0 {
 		body["link_history"] = linkHistory
+	}
+	if len(evidenceHistory) > 0 {
+		body["evidence_history"] = evidenceHistory
 	}
 	s.mu.Lock()
 	if c.patient.Seq > 0 {
@@ -414,6 +429,14 @@ var exportEvidenceAllow = &exportAllow{kids: func() map[string]*exportAllow {
 		"photo_shas", "label_before_image", "hint")}
 	return m
 }()}
+
+var exportEvidenceHistoryAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("history", "block_hash", "decision_id", "decision_sig")
+	for key, allow := range exportEvidenceAllow.kids {
+		m[key] = allow
+	}
+	return m
+}())
 
 var exportTimelineAllow = &exportAllow{kids: exportKeys("seq", "type", "id", "provider", "status", "day", "arrival_day", "category", "raw_sha", "source")}
 
@@ -720,6 +743,7 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["link_history"] = exportList(exportLinkHistoryAllow)
 	m["identity_history"] = exportList(exportObject(exportKeys("provider", "role")))
 	m["evidence"] = exportList(exportEvidenceAllow)
+	m["evidence_history"] = exportList(exportEvidenceHistoryAllow)
 	m["holds"] = exportList(exportHoldAllow)
 	m["outreach"] = exportList(exportOutreachAllow)
 	m["decisions"] = exportList(exportDecisionHistoryAllow)

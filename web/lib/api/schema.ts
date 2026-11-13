@@ -781,7 +781,15 @@ export const CaseDetail = withMeta({
   identities: z.array(Identity),
   timeline: z.array(TimelineEvent),
   links: z.array(Link),
+  /** Only evidence supporting the current decision and current trusted registrations. */
   evidence: z.array(Evidence),
+  /** Preserved canonical reports, never the primary current readers' checklist. */
+  evidence_history: z.array(Evidence.extend({
+    history: z.enum(["rejected_registration", "superseded"]),
+    block_hash: z.string(),
+    decision_id: z.string(),
+    decision_sig: z.string(),
+  })).optional(),
   holds: z.array(Hold),
   outreach: z.array(z.looseObject({})),
   decisions: z.array(Decision),

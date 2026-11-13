@@ -944,17 +944,43 @@ func TestPatientExportRedactionAndRegistryContract(t *testing.T) {
 	}
 }
 
+// patientProvisioningRun is a miniature synthetic materialization, not a frozen
+// pipeline run. Every programme is valid operational input; only CRC authorizes
+// patient self-service. Keep declarations consistent so denial tests reach that gate.
+func patientProvisioningRun(t *testing.T, programmes []string) string {
+	t.Helper()
+	s, run := exportRun(t)
+	var rows []interface{}
+	states := map[string]string{}
+	counts := map[string]interface{}{}
+	for i, programme := range append([]string{"crc"}, programmes...) {
+		d := s.cases[exportLoop].last
+		if i > 0 {
+			id := "exp-prov/ServiceRequest/NON-CRC-" + programme
+			d = &Decision{ID: "decision-" + id, LoopID: id, Provider: "exp-prov", Prog: programme, State: "open", Contact: "granted", Policy: "v7strict"}
+			d.Sig = decSig(d)
+		}
+		seq := uint64(i + 1)
+		m := LogMsg{Seq: seq, Subject: "out.p0", Hdr: map[string]string{}}
+		encodeEnv(&m, OutEnvelope{Kind: "decision", OSeq: seq, PSeq: seq, FSeq: seq, Dec: d, Proc: "closure-0"})
+		rows = append(rows, m)
+		states[d.LoopID] = d.State
+		counts[programme] = map[string]int{"loops": 1}
+	}
+	writeAgentNDJSON(t, filepath.Join(run, "out_log.ndjson"), rows)
+	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
+	writeRequiredAPIJSONForCaseStates(t, run, states)
+	report := map[string]interface{}{"loops": len(states), "fhir_msgs": 1, "programmes_live": counts}
+	integrityWrite(t, run, "report7.json", string(canon(report)))
+	return run
+}
+
 func TestPatientLinkProvisioningContract(t *testing.T) {
 	t.Setenv("WASL_SYNTHETIC_DATA_ONLY", "1")
-	_, run := exportRun(t)
-	for _, name := range []string{"dashboard.json", "report7.json", "anchors.json"} {
-		if err := os.WriteFile(filepath.Join(run, name), []byte("{}"), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), []byte(preflightFHIRLine+"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	programmes := []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"}
+	run := patientProvisioningRun(t, programmes)
+	outBefore := actRead(t, filepath.Join(run, "out_log.ndjson"))
+	fhirBefore := actRead(t, filepath.Join(run, "fhir_log.ndjson"))
 	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
 	token, err := provisionPatientLink(run, exportLoop, 30*time.Minute, now)
 	if err != nil {
@@ -967,22 +993,18 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 	if _, err := provisionPatientLink(run, exportLoop, 24*time.Hour+time.Nanosecond, now); err == nil {
 		t.Fatal("TTL above 24 hours was accepted")
 	}
-	for i, programme := range []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"} {
+	registryBefore := actRead(t, patientRegistryPath(run))
+	for _, programme := range programmes {
 		id := "exp-prov/ServiceRequest/NON-CRC-" + programme
-		d := &Decision{ID: "decision-" + id, LoopID: id, Prog: programme, State: "open", Contact: "granted"}
-		d.Sig = decSig(d)
-		m := LogMsg{Seq: uint64(i + 2), Subject: "out.p0", Hdr: map[string]string{}}
-		encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: d})
-		line, _ := json.Marshal(m)
-		if err := appendLedgerLine(filepath.Join(run, "out_log.ndjson"), append(line, '\n')); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := provisionPatientLink(run, id, 30*time.Minute, now); err == nil {
-			t.Fatalf("provisioned CRC-specific patient link for %s", programme)
+		if deniedToken, err := provisionPatientLink(run, id, 30*time.Minute, now); err == nil || err.Error() != "patient self-service supports only synthetic CRC cases" || deniedToken != "" {
+			t.Fatalf("%s did not reach the patient programme authorization gate: token_empty=%v err=%v", programme, deniedToken == "", err)
 		}
 	}
-	if _, err := provisionPatientLink(run, "exp-prov/ServiceRequest/MISSING", 30*time.Minute, now); err == nil {
-		t.Fatal("provisioned patient link for an unknown case")
+	if deniedToken, err := provisionPatientLink(run, "exp-prov/ServiceRequest/MISSING", 30*time.Minute, now); err == nil || err.Error() != "unknown synthetic case" || deniedToken != "" {
+		t.Fatalf("unknown case did not reach patient case lookup: token_empty=%v err=%v", deniedToken == "", err)
+	}
+	if !bytes.Equal(registryBefore, actRead(t, patientRegistryPath(run))) {
+		t.Fatal("denied patient links appended registry entries")
 	}
 	registry, err := os.ReadFile(patientRegistryPath(run))
 	if err != nil {
@@ -1005,6 +1027,12 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 	s, err := loadAPIVerified(run, "")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(s.cases) != 1+len(programmes) || s.ledgerErr != "" {
+		t.Fatalf("patient provisioning control lost cases or history: cases=%d ledger=%q", len(s.cases), s.ledgerErr)
+	}
+	if !bytes.Equal(outBefore, actRead(t, filepath.Join(run, "out_log.ndjson"))) || !bytes.Equal(fhirBefore, actRead(t, filepath.Join(run, "fhir_log.ndjson"))) {
+		t.Fatal("patient provisioning/reload changed canonical evidence")
 	}
 	s.now = func() time.Time { return now }
 	rq := httptest.NewRequest(http.MethodGet, "/api/patient/journey", nil)

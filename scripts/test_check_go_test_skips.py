@@ -9,12 +9,15 @@ import unittest
 import check_go_test_skips as check
 
 
-REQUIRED = (
+MATERIALIZED_FIXTURES = (
     "TestAPIFixturesAndContracts",
     "TestAPIReviewRBACAndAppendOnly",
     "TestAPIBookingSupport",
     "TestHL7RoundTripCohort",
 )
+COUNT_CONTROL = "TestAPIIntegrityMaterializedRunCounts"
+COPIED_COUNT_CONTROL = COUNT_CONTROL + "/copied_materialized_run"
+REQUIRED = MATERIALIZED_FIXTURES + (COUNT_CONTROL, COPIED_COUNT_CONTROL)
 OPTIONAL = (
     "TestFresh2Reader",
     "TestAPIDRFixtureRun",
@@ -42,7 +45,7 @@ class SkipPolicyTests(unittest.TestCase):
         rows = required_passes() + [event("skip", name) for name in OPTIONAL]
         report, errors = check.evaluate(rows, "integration")
         self.assertEqual(errors, [])
-        self.assertEqual(report["summary"]["required_passed"], 4)
+        self.assertEqual(report["summary"]["required_passed"], len(REQUIRED))
         self.assertEqual(report["summary"]["allowed_skips"], len(OPTIONAL))
         self.assertNotIn("Output", json.dumps(report))
 
@@ -83,12 +86,27 @@ class SkipPolicyTests(unittest.TestCase):
     def test_materialized_fixtures_may_skip_only_outside_integration(self):
         for lane in ("go-test", "go-race"):
             with self.subTest(lane=lane):
-                rows = [event("run", REQUIRED[0])] + [event("skip", name) for name in REQUIRED] + [event("pass")]
+                rows = [event("run", REQUIRED[0])] + [event("skip", name) for name in MATERIALIZED_FIXTURES] + [event("pass")]
                 report, errors = check.evaluate(rows, lane)
                 self.assertEqual(errors, [])
                 self.assertEqual(report["summary"]["allowed_skips"], 4)
         _, errors = check.evaluate([event("skip", REQUIRED[0])], "integration")
         self.assertTrue(any("required test skipped" in error for error in errors))
+
+    def test_miniature_control_cannot_replace_copied_input_in_integration(self):
+        rows = [row for row in required_passes() if row.get("Test") != COPIED_COUNT_CONTROL]
+        rows += [event("pass", COUNT_CONTROL + "/miniature_synthetic_control")]
+        report, errors = check.evaluate(rows, "integration")
+        self.assertEqual(report["required"][COUNT_CONTROL], "passed")
+        self.assertEqual(report["required"][COPIED_COUNT_CONTROL], "missing")
+        self.assertIn("missing required pass: " + COPIED_COUNT_CONTROL, errors)
+
+    def test_count_control_never_gains_an_allowed_skip(self):
+        for lane in ("go-test", "go-race", "integration"):
+            for name in (COUNT_CONTROL, COPIED_COUNT_CONTROL):
+                with self.subTest(lane=lane, name=name):
+                    _, errors = check.evaluate(required_passes() + [event("skip", name)], lane)
+                    self.assertTrue(errors)
 
     def test_non_required_lane_has_no_required_pass_gate(self):
         report, errors = check.evaluate([event("run", OPTIONAL[0]), event("skip", OPTIONAL[0]), event("pass")], "go-test")
@@ -113,7 +131,7 @@ class SkipPolicyTests(unittest.TestCase):
         rows = required_passes() + [event("pass", REQUIRED[0]), event("fail", REQUIRED[0]), event("pass", REQUIRED[0])]
         report, errors = check.evaluate(rows, "integration")
         self.assertTrue(any("test failure" in error for error in errors))
-        self.assertEqual(report["summary"]["required_passed"], 3)
+        self.assertEqual(report["summary"]["required_passed"], len(REQUIRED) - 1)
         self.assertEqual(report["required"][REQUIRED[0]], "failed")
 
 
@@ -132,7 +150,7 @@ class CommandTests(unittest.TestCase):
             manifest = json.loads(output.read_text())
             self.assertEqual(manifest["schema"], "wasl-go-test-skip-manifest/1")
             self.assertEqual(manifest["lane"], "integration")
-            self.assertEqual(manifest["summary"]["required_passed"], 4)
+            self.assertEqual(manifest["summary"]["required_passed"], len(REQUIRED))
 
     def test_non_string_test_field_is_rejected_without_traceback(self):
         with tempfile.TemporaryDirectory() as tmp:
