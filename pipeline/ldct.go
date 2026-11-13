@@ -167,11 +167,23 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	if anchor < 0 {
 		scans = nil
 	} else {
+		var revisions, independent []row
+		for i := range scans {
+			if i == anchor {
+				continue
+			}
+			if inExplicitReportLineage(requestedScan, scans[i].d.ReportID, scanParents) {
+				revisions = append(revisions, scans[i])
+			} else {
+				independent = append(independent, scans[i])
+			}
+		}
+		// Resolve eligible index corrections before any interval scan can close the episode. Explicit descendants
+		// supersede ancestors regardless of exam day or lexical report ID; chronology only orders surviving branches.
 		anchored := make([]row, 0, len(scans))
 		anchored = append(anchored, scans[anchor])
-		anchored = append(anchored, scans[:anchor]...)
-		anchored = append(anchored, scans[anchor+1:]...)
-		scans = anchored
+		anchored = append(anchored, unsupersededReportRows(revisions, scanParents)...)
+		scans = append(anchored, independent...)
 	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
@@ -266,10 +278,6 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		if dec != nil && decLab == "LR0" {
 			if !linkedRevision {
 				continue // chronology alone never proves that a later scan completes this incomplete index
-			}
-			later := scans[i].d.Day > dec.d.Day || scans[i].d.Day == dec.d.Day && scans[i].d.EventID > dec.d.EventID
-			if !later {
-				continue
 			}
 		}
 		if dec != nil && (decLab == "LR3" || decLab == "LR4A") && !linkedRevision {

@@ -172,8 +172,9 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		fus = append(fus, row{d: d, pc: pc, trusted: trusted})
 	}
-	// Chronology orders only reports already authorized by the request's explicit, potentially multi-hop lineage. It
-	// never admits an unlinked report as an index substitute. Same-ID revision selection remains the linker's responsibility.
+	// Explicit descendants supersede their ancestors even when both retain the same exam day. Chronology only
+	// orders surviving branches in the authorized lineage; same-ID revision selection remains the linker's responsibility.
+	addenda = unsupersededReportRows(addenda, findingParents)
 	sort.SliceStable(addenda, func(i, j int) bool {
 		if addenda[i].d.Day != addenda[j].d.Day {
 			return addenda[i].d.Day < addenda[j].d.Day

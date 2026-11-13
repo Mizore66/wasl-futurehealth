@@ -239,6 +239,28 @@ func inExplicitReportLineage(root, reportID string, parents map[string]string) b
 	return false
 }
 
+// unsupersededReportRows removes ancestors of eligible explicit corrections before chronology is used to choose
+// between remaining branches. A child's exam day or lexical ID need not be later than its parent's. Callers supply
+// only eligible rows in the authorized index lineage; ineligible intermediates remain usable through parents.
+func unsupersededReportRows(reports []row, parents map[string]string) []row {
+	var current []row
+	for i := range reports {
+		id := reports[i].d.ReportID
+		superseded := false
+		for j := range reports {
+			other := reports[j].d.ReportID
+			if id != other && inExplicitReportLineage(id, other, parents) && !inExplicitReportLineage(other, id, parents) {
+				superseded = true
+				break
+			}
+		}
+		if !superseded {
+			current = append(current, reports[i])
+		}
+	}
+	return current
+}
+
 // reportVersionKey scopes active evidence decisions and review items to the
 // exact report version reviewed. Versions zero and one share the historical
 // replay key; corrections at v2 and above receive distinct identities.
