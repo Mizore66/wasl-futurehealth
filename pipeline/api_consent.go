@@ -44,19 +44,34 @@ func (s *apiServer) apiContactOverlay(c *apiCase, viewer ...apiPrincipal) (map[s
 	return o, h
 }
 
+// isConsentMutation identifies actual consent appends from either staff or
+// patient self-service. Patient no-op receipts bind request IDs, not consent.
+func isConsentMutation(ev map[string]interface{}) bool {
+	if ev["request_only"] == true || sstr(ev, "action") != ActRecordConsent {
+		return false
+	}
+	if _, ok := consentEvents[sstr(ev, "decision")]; !ok {
+		return false
+	}
+	return evKind(ev) == "review" || (sstr(ev, "type") == patientEventType && evKind(ev) == "contact_permission_changed")
+}
+
 // consentRevision is the optimistic-concurrency token for consent writes: the canonical signature until the case's
-// first consent-related ledger event, then the hash of the latest one (a consent event or an undo, contest or
-// resolution chained onto one). Unrelated ledger events never move it.
+// first consent-related ledger event, then the hash of the latest one (a staff or patient consent mutation or an undo,
+// contest or resolution chained onto one). Unrelated ledger events and no-op receipts never move it.
 func consentRevision(events []map[string]interface{}, canonical string) string {
 	related := map[string]bool{}
 	rev := canonical
 	for _, ev := range events {
-		if evKind(ev) == "review" {
-			if _, ok := consentEvents[sstr(ev, "decision")]; !ok || sstr(ev, "action") != ActRecordConsent {
+		if !isConsentMutation(ev) {
+			switch evKind(ev) {
+			case evKindUndo, evKindContest, evKindResolution:
+				if !related[sstr(ev, "target")] {
+					continue
+				}
+			default:
 				continue
 			}
-		} else if !related[sstr(ev, "target")] {
-			continue
 		}
 		related[sstr(ev, "hash")] = true
 		rev = sstr(ev, "hash")
@@ -71,7 +86,7 @@ func validateConsentRevision(ev map[string]interface{}, caseEvents []map[string]
 	if !present {
 		return nil
 	}
-	if _, ok := consentEvents[sstr(ev, "decision")]; !ok || sstr(ev, "action") != ActRecordConsent {
+	if !isConsentMutation(ev) {
 		return fmt.Errorf("consent_rev on a non-consent event")
 	}
 	if want := consentRevision(caseEvents, sstr(ev, "head_signed")); got != want {
@@ -101,11 +116,10 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	status, pending, last := "none", "", ""
 	undo, _ := foldUndo(s.caseEvents(c.ID))
 	for _, r := range s.reviews {
-		d := fmt.Sprint(r["decision"])
-		st, ok := consentEvents[d]
-		if r["case"] != c.ID || !ok || r["action"] != ActRecordConsent {
+		if r["case"] != c.ID || !isConsentMutation(r) {
 			continue
 		}
+		st := consentEvents[sstr(r, "decision")]
 		hist = append(hist, r)
 		if !consentEventCounts(undo[fmt.Sprint(r["hash"])], st) {
 			continue
@@ -124,7 +138,7 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 		"contact_blocked": status == "denied" || status == "opted_out",
 		"mode":            "demo", "canonical_consent": canon, "canonical_unchanged": true,
 		"last_event_hash": last, "revision": consentRevision(s.caseEvents(c.ID), c.last.Sig),
-		"note":            "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+		"note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
 	}
 	if pending == "" {
 		o["demo_pending_consent"] = "" // no overlay event yet

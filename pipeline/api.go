@@ -1679,12 +1679,15 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		return nil
 	}
 	if _, isCoord := ev["type"]; !isCoord {
+		if err := validateConsentRevision(ev, s.caseEvents(sstr(ev, "case"))); err != nil {
+			return err
+		}
 		if hasProtocolFields(ev) {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)
 			}
 		}
-		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
+		s.reviews = append(s.reviews, ev) // legacy review event; consent_rev, when present, is also checked
 		return nil
 	}
 	if ev["type"] != coordEventType {
