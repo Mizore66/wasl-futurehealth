@@ -1572,6 +1572,7 @@ func TestLegacyCheckpointDoesNotRewindScopedCheckpoint(t *testing.T) {
 
 func TestRecoverPendingClearsAlreadyAcknowledgedRecord(t *testing.T) {
 	env := startTestNATS(t)
+	assertCanonicalTransportOwner(t, env)
 	c := durableHookTestConsumer(t, env)
 	var err error
 	c.kv, err = env.js.CreateOrUpdateKeyValue(env.ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 1, Storage: jetstream.FileStorage})
@@ -1586,12 +1587,22 @@ func TestRecoverPendingClearsAlreadyAcknowledgedRecord(t *testing.T) {
 	if _, err := c.kv.Put(env.ctx, "pending.00000000000000000001", body); err != nil {
 		t.Fatal(err)
 	}
+	// Establish genuine prior publication through the existing producer, not
+	// invented proof metadata or a publication performed by cleanup itself.
+	seedCanonicalPendingPublication(t, env, body)
+	canonicalBefore := fhirMessageCount(t, env)
+	if canonicalBefore != 1 {
+		t.Fatalf("prior canonical publication count = %d, want 1", canonicalBefore)
+	}
 	c.next, c.ackHWM = 2, 1
 	if err := c.recoverPending(); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.kv.Get(env.ctx, "pending.00000000000000000001"); !errors.Is(err, jetstream.ErrKeyNotFound) {
 		t.Fatalf("already-acknowledged pending record remains: %v", err)
+	}
+	if canonicalAfter := fhirMessageCount(t, env); canonicalAfter != canonicalBefore {
+		t.Fatalf("cleanup changed canonical publication count: before=%d after=%d", canonicalBefore, canonicalAfter)
 	}
 }
 
