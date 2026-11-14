@@ -266,7 +266,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
           <section key={section.anchor} id={section.anchor} aria-labelledby={`${section.anchor}-heading`} className={sectionClass}>
             <h2 id={`${section.anchor}-heading`} className="m-0 mb-4 text-section font-semibold">{programmeLabels[section.programme]}</h2>
             <div className="space-y-5">
-              {section.cases.map((item) => <ProgrammeCase key={item.case_id} journey={journey} item={item} index={journey.cases.indexOf(item)} />)}
+              {section.cases.map((item) => <ProgrammeCase key={item.case_id} journey={journey} item={item} index={journey.cases.findIndex((candidate) => candidate.case_id === item.case_id)} />)}
             </div>
           </section>
         ))}

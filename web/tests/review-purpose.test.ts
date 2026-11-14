@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { reviewView } from "@/components/review/case-view";
 import { OUTCOMES, outcomeFor, recordedOutcome, signaturesFor } from "@/components/review/decision";
 import { ReviewDesk } from "@/components/review/review-desk";
-import { CaseDetail } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 
 const queue = vi.hoisted(() => ({ reviewQueue: vi.fn() }));
@@ -13,7 +13,7 @@ vi.mock("@/lib/api/source", () => ({ apiMode: () => "fixtures" }));
 vi.mock("@/lib/api/reviewer-session", () => ({ reviewerToken: async () => undefined }));
 
 function purposeCase(reason: "shadow_confirm" | "auto_audit"): CaseDetail {
-  const base = CaseDetail.parse(hold);
+  const base = CaseDetail.extend({ case: ActiveCaseSummary }).parse(hold);
   const item = base.review_items.find((i) => i.kinds.includes("evidence"))!;
   return {
     ...base,

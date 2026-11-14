@@ -102,8 +102,11 @@ class RedactedSnapshotTest(unittest.TestCase):
             person_snapshot(forged_policy)
         forged_basis = copy.deepcopy(alias_source)
         forged_basis["cases"][1]["detail"]["case"]["lung"]["surveillance"]["basis"] = "private clinical narrative"
-        with self.assertRaisesRegex(ValueError, "non-operational string"):
-            person_snapshot(forged_basis)
+        pruned_basis = person_snapshot(forged_basis)
+        # Unsupported containers are dropped, not traversed as emitted fields.
+        self.assertNotIn("surveillance", pruned_basis["cases"][1]["detail"]["case"]["lung"])
+        self.assertNotIn("private clinical narrative", json.dumps(pruned_basis))
+        self.assertEqual(pruned_basis, aliases)
 
     def test_person_snapshot_uses_strict_allowlist_and_aliases(self):
         source = json.loads((Path(__file__).parent.parent / "docs/api-samples/person_journey.json").read_text())
