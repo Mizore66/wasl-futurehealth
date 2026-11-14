@@ -374,6 +374,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 		c.phaseDiagnostics.retries.Add(1)
 	}
 	allowWire := w.providerOwned && c.providerHeads[w.event.Provider] == w && !w.returnApplied
+	frame := c.headStartLocked(w)
 	c.mu.Unlock()
 	defer func() {
 		c.mu.Lock()
@@ -392,34 +393,47 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	var err error
 	if w.canonical == nil {
 		c.mu.Lock()
+		frame.Live = 1
 		source, sourceErr := pendingSource(w.state, w.event, w.origin, w.legacyBinding)
 		c.mu.Unlock()
 		err = sourceErr
 		var inc canonicalIncarnation
 		var authority canonicalMetadataReceipt
 		if err == nil {
+			frame.Live = 2
 			inc, err = c.protectedCanonicalIncarnation(ctx)
 		}
 		if err == nil {
+			frame.Live = 3
 			authority, err = c.persistCanonicalSource(ctx, inc, source)
 		}
 		// Compatible first-observation metadata is positive, but the attempt adapter
 		// requires acknowledged source operation authority, not a mere observation.
 		if err == nil && authority.Authority == canonicalAuthPositive {
+			frame.Live = 4
 			authority, err = c.ensureCanonicalValue(ctx, authority.Key, authority.Revision, authority.Value)
 		}
 		if err == nil {
 			if w.message == nil {
 				w.message = canonicalEventMessage(&w.event)
 			}
+			frame.Live = 5
 			w.canonical, err = newCanonicalAttemptWork(canonicalAttemptInput{Message: w.message, Incarnation: inc, Source: source, SourceAuthority: authority})
 		}
 	}
 	if err == nil {
-		w.result = c.canonicalTurn(ctx, w.canonical, allowWire)
+		frame.Live = 6
+		turn := c.canonicalTurn(ctx, w.canonical, allowWire)
+		if turn.diagnostic != nil {
+			frame.Canonical = *turn.diagnostic
+			turn.diagnostic = nil // no per-backlog diagnostic frame/pointer retention
+		}
+		w.result = turn
 		if w.result.Receipt.valid() && w.result.Binding.valid() && w.result.Hole == "" {
+			frame.Live = 7
 			w.floor, err = c.ensureSourceFloor(ctx, w.state)
 			if err == nil {
+				frame.Live = 8
 				err = c.retirePendingTurn(ctx, w)
 			}
 		}
@@ -430,6 +444,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	} else {
 		w.blocker = w.result.Hole
 	}
+	frame = c.headEndLocked(w, token, frame)
 	if w.result.Result.Returned && !w.returnApplied && !w.recovery && w.positionRef == w.state.positionRef && w.positionRef == w.state.ref {
 		w.returnApplied = true
 		if c.phaseDiagnostics != nil {
@@ -446,6 +461,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 		w.state.acked[w.event.Num] = true
 		c.advanceLocked(w.state)
 	}
+	c.headCommitLocked(w, frame)
 	if c.phaseDiagnostics != nil {
 		if w.completed {
 			c.phaseDiagnostics.retired.Add(1)
@@ -740,6 +756,13 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 	}
 	c.serviceActive = true
 	q := c.knownWork
+	if c.phaseDiagnostics != nil {
+		for _, task := range q {
+			if task.Kind == "work" && task.Work != nil {
+				task.Work.diagnosticDetached = 1
+			}
+		}
+	}
 	c.knownWork = nil
 	c.mu.Unlock()
 	var unresolved []canonicalTask
@@ -748,6 +771,15 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 		c.mu.Lock()
 		untouched := append([]canonicalTask(nil), q[next:]...)
 		c.knownWork = append(append(untouched, unresolved...), c.knownWork...)
+		if d := c.phaseDiagnostics; d != nil {
+			for _, task := range q {
+				if task.Kind == "work" && task.Work != nil {
+					task.Work.diagnosticDetached = 0
+				}
+			}
+			d.headSelectedKind = 0
+			d.headSelectedWork = 0
+		}
 		c.serviceActive = false
 		if c.paced != nil {
 			c.paced.Broadcast()
@@ -761,6 +793,11 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 		}
 		task := q[next]
 		next++
+		if c.phaseDiagnostics != nil {
+			c.mu.Lock()
+			c.headSelectLocked(task)
+			c.mu.Unlock()
+		}
 		switch task.Kind {
 		case "work":
 			w := task.Work
@@ -778,6 +815,9 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 			done = w.completed
 			// liveCanonicalTurn's deferred enqueue sees this reserved identity and
 			// cannot schedule it twice. Restore membership until the next pass.
+			if c.phaseDiagnostics != nil {
+				w.diagnosticDetached = 3
+			}
 			if !done {
 				w.queued = true
 				unresolved = append(unresolved, task)
@@ -804,6 +844,12 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 			_ = c.retryCanonicalSequence(ctx, task.CaptureGeneration, task.Sequence)
 			c.mu.Lock()
 			delete(c.knownTasks, task)
+			c.mu.Unlock()
+		}
+		if d := c.phaseDiagnostics; d != nil {
+			c.mu.Lock()
+			d.headSelectedKind = 0
+			d.headSelectedWork = 0
 			c.mu.Unlock()
 		}
 	}

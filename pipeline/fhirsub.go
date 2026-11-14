@@ -84,6 +84,9 @@ type pendingWork struct {
 	claimIntent   []byte          // retained exact recovery-claim intent across an unknown Update
 	recovery      bool            // explicit validated below-HWM recovery, not a cleanup claim
 	blocker       string
+	// Diagnostic scalars only; c.mu owns these, never proof/ownership authority.
+	diagnosticID, diagnosticStarted, diagnosticFinished uint64
+	diagnosticDetached                                  uint8
 }
 
 // One exact owned mutation; it never changes the accepted event revision.

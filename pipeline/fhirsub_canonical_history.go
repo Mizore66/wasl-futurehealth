@@ -64,6 +64,7 @@ type canonicalHistoryResult struct {
 	Candidates []canonicalSlot
 	Receipt    *canonicalMetadataReceipt
 	Blockers   []canonicalSlot
+	diagnostic headHistory // immutable classification-cut observation, never authority
 }
 
 // Tests supply only raw stored messages, stream Info and transport failures.
@@ -102,6 +103,7 @@ type canonicalHistoryIndex struct {
 	unresolved                                       map[uint64]canonicalSlot
 	observed                                         jetstream.StreamState
 	knownFirst                                       uint64
+	diagnosticEnabled                                bool // immutable observer installation before workers
 }
 
 // The default adapter delegates ordinary retrieval to the already-reviewed
@@ -125,6 +127,7 @@ func (p canonicalHistoryProduction) Read(ctx context.Context, seq uint64) (*jets
 }
 
 func (s *canonicalHistoryIndex) prepareLocked(c *SubConsumer) {
+	s.diagnosticEnabled = c.phaseDiagnostics != nil
 	if s.transport == nil {
 		s.transport = canonicalHistoryProduction{consumer: c}
 	}
@@ -217,6 +220,9 @@ func (c *SubConsumer) canonicalHistory(ctx context.Context, id canonicalIdentity
 	s.mu.Lock()
 	s.prepareLocked(c)
 	if s.invalid {
+		if s.diagnosticEnabled {
+			unknown.diagnostic = s.headHistoryLocked(unknown, id, false)
+		}
 		s.mu.Unlock()
 		return unknown, errCanonicalUnknown
 	}
@@ -245,6 +251,10 @@ func (c *SubConsumer) canonicalHistory(ctx context.Context, id canonicalIdentity
 	}
 	if err != nil {
 		result := s.resultLocked(id, target, false)
+		if s.diagnosticEnabled {
+			result.diagnostic.InfoStartObserved = true
+			result.diagnostic.InfoStart = observationAtStart
+		}
 		if result.State == canonicalHistoryUnknown {
 			result.Blockers = append(result.Blockers, canonicalSlot{State: canonicalSlotTransient, Failure: "stream Info: " + err.Error()})
 		}
@@ -264,6 +274,10 @@ func (c *SubConsumer) canonicalHistory(ctx context.Context, id canonicalIdentity
 	turnErr := c.captureCanonicalTurn(ctx, generation)
 	s.mu.Lock()
 	result := s.resultLocked(id, target, ctx.Err() == nil && !s.infoBusy)
+	if s.diagnosticEnabled {
+		result.diagnostic.InfoStartObserved = true
+		result.diagnostic.InfoStart = observationAtStart
+	}
 	invalid := s.invalid
 	s.mu.Unlock()
 	if err := ctx.Err(); err != nil {
@@ -311,8 +325,13 @@ func (s *canonicalHistoryIndex) blockersLocked() []canonicalSlot {
 	return out
 }
 
-func (s *canonicalHistoryIndex) resultLocked(id canonicalIdentity, target uint64, current bool) canonicalHistoryResult {
-	r := canonicalHistoryResult{State: canonicalHistoryUnknown}
+func (s *canonicalHistoryIndex) resultLocked(id canonicalIdentity, target uint64, current bool) (r canonicalHistoryResult) {
+	r = canonicalHistoryResult{State: canonicalHistoryUnknown}
+	defer func() {
+		if s.diagnosticEnabled {
+			r.diagnostic = s.headHistoryLocked(r, id, current)
+		}
+	}()
 	if !s.initialized || s.invalid {
 		return r
 	}

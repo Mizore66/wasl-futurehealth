@@ -98,8 +98,13 @@ type phaseDiagnostics struct {
 	first       phaseProgress
 	samples     [phaseSampleLimit]phaseProgress
 	sampleCount uint64
+	// Fixed numeric-only head ring. Owned by c.mu, never sampleMu.
+	headNextID, headTurn, headCount, headSelectedWork uint64
+	headSelectedKind                                  uint8
+	headFrames                                        [headFrameLimit]headTurnFrame
 }
 type phaseDiagnosticsSnapshot struct {
+	HeadProbe    headProbeSnapshot                       `json:"head_probe"`
 	Schema       int                                     `json:"schema"`
 	Enabled      bool                                    `json:"enabled"`
 	Measurement  string                                  `json:"measurement"`
@@ -228,6 +233,18 @@ func (c *SubConsumer) phaseSnapshot() phaseDiagnosticsSnapshot {
 		}
 	}
 	p.KnownWork = uint64(len(c.knownWork))
+	v.HeadProbe.Scope = 1
+	v.HeadProbe.ServiceActive = c.serviceActive
+	v.HeadProbe.SelectedKind = d.headSelectedKind
+	v.HeadProbe.SelectedWork = d.headSelectedWork
+	v.HeadProbe.FrameCount = d.headCount
+	nframes := d.headCount
+	if nframes > headFrameLimit {
+		nframes = headFrameLimit
+	}
+	for i := d.headCount - nframes; i < d.headCount; i++ {
+		v.HeadProbe.Frames = append(v.HeadProbe.Frames, d.headFrames[i%headFrameLimit])
+	}
 	// Borrow at most eight registry keys on this stack, in deterministic order;
 	// retain/output only ordinal numbers. The production provider registry is
 	// fixed before status starts. Ordinals are process/registry-local, not IDs.
@@ -265,6 +282,7 @@ func (c *SubConsumer) phaseSnapshot() phaseDiagnosticsSnapshot {
 		name := names[i]
 		q := phaseProviderProgress{Ordinal: uint64(i + 1), Queue: uint64(len(c.provCh[name]))}
 		if w := c.providerHeads[name]; w != nil {
+			v.HeadProbe.Heads[i] = c.headSelectionLocked(w)
 			q.Head = uint64(w.event.Num)
 			q.Inflight = w.inflight
 			q.Returned = w.returnApplied
@@ -328,7 +346,7 @@ func snapshotPhaseDiagnostics(run string) any {
 	var v phaseDiagnosticsSnapshot
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
-	if dec.Decode(&v) != nil || v.Schema != 1 || v.Measurement != phaseMeasurement || len(v.Samples) > phaseSampleLimit {
+	if dec.Decode(&v) != nil || v.Schema != 1 || v.Measurement != phaseMeasurement || len(v.Samples) > phaseSampleLimit || !v.HeadProbe.valid() {
 		return map[string]any{"state": "invalid"}
 	}
 	return v

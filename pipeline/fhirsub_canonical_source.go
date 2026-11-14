@@ -53,17 +53,30 @@ func canonicalRealSource(source canonicalSource) error {
 // are first-observation provenance, deliberately not logical source identity.
 // The one asymmetric exception permits a named observation ONLY when an actual
 // earlier empty-origin descriptor already records this exact legacy transition.
-func canonicalCompatibleSource(stored, observed canonicalSource) error {
+func canonicalCompatibleSource(stored, observed canonicalSource, diagnostic ...*headPredicate) error {
+	headPredicateStep(diagnostic, 20)
 	if err := canonicalRealSource(stored); err != nil {
 		return err
 	}
+	headPredicateStep(diagnostic, 21)
 	if err := canonicalRealSource(observed); err != nil {
 		return err
+	}
+	headPredicateStep(diagnostic, 22)
+	if len(diagnostic) > 0 && diagnostic[0] != nil {
+		p := diagnostic[0]
+		p.Equal = 0
+		for i, equal := range [7]bool{stored.EffectiveSub == observed.EffectiveSub, stored.Num == observed.Num, stored.Provider == observed.Provider, stored.Focus == observed.Focus, stored.Occurred == observed.Occurred, stored.PendingKey == observed.PendingKey, stored.Identity == observed.Identity} {
+			if equal {
+				p.Equal |= 1 << i
+			}
+		}
 	}
 	if stored.EffectiveSub != observed.EffectiveSub || stored.Num != observed.Num || stored.Provider != observed.Provider ||
 		stored.Focus != observed.Focus || stored.Occurred != observed.Occurred || stored.PendingKey != observed.PendingKey || stored.Identity != observed.Identity {
 		return canonicalConflictf("complete logical source differs from the stored descriptor")
 	}
+	headPredicateStep(diagnostic, 23)
 	if stored.OriginSub == observed.OriginSub && stored.BindingRule == observed.BindingRule {
 		return nil
 	}
@@ -71,21 +84,26 @@ func canonicalCompatibleSource(stored, observed canonicalSource) error {
 		observed.OriginSub == stored.EffectiveSub && observed.BindingRule == "" {
 		return nil
 	}
+	headPredicateStep(diagnostic, 24)
 	return canonicalConflictf("literal origin/binding rule conflicts with first source provenance")
 }
 
 // readCanonicalSource distinguishes a public negative from positive authority.
 // A negative can lead only to guarded Create, never to a successful result.
-func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalIncarnation, source canonicalSource) (canonicalMetadataReceipt, canonicalSourceRecord, bool, error) {
+func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalIncarnation, source canonicalSource, diagnostic ...*headPredicate) (canonicalMetadataReceipt, canonicalSourceRecord, bool, error) {
+	headPredicateStep(diagnostic, 1)
 	if c == nil || c.kv == nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, errCanonicalUnavailable
 	}
+	headPredicateStep(diagnostic, 2)
 	if err := ctx.Err(); err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, fmt.Errorf("%w: %v", errCanonicalUnknown, err)
 	}
 	key := canonicalSourceKey(source)
+	headPredicateStep(diagnostic, 3)
 	entry, err := c.kv.Get(ctx, key)
 	if errors.Is(err, jetstream.ErrKeyNotFound) {
+		headPredicateStep(diagnostic, 4)
 		// A named observation cannot create/retrofit an empty-origin transition.
 		if source.PendingKey == pendingEventKey(source.Num) && source.BindingRule != canonicalRuleLegacy {
 			return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("named legacy observation has no prior explicit empty-origin descriptor")
@@ -95,20 +113,27 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, fmt.Errorf("%w: source read: %v", errCanonicalUnknown, err)
 	}
+	headPredicateStep(diagnostic, 5)
+	if len(diagnostic) > 0 && diagnostic[0] != nil {
+		diagnostic[0].Present = entry != nil
+	}
 	meta, value, err := canonicalPositiveValue(key, entry)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
 	record := value.source
+	headPredicateStep(diagnostic, 6)
 	if !record.Incarnation.equal(inc) {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("source incarnation changed")
 	}
+	headPredicateStep(diagnostic, 7)
 	if record.Source.PendingKey == pendingEventKey(record.Source.Num) && record.Source.BindingRule != canonicalRuleLegacy {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("stored unscoped source lacks explicit empty-origin binding provenance")
 	}
-	if err := canonicalCompatibleSource(record.Source, source); err != nil {
+	if err := canonicalCompatibleSource(record.Source, source, diagnostic...); err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
+	headPredicateStep(diagnostic, 9)
 	return meta, record, true, nil
 }
 
