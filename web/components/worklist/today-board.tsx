@@ -25,6 +25,8 @@ import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
 import { ApiOverlay, Booking, CasePatient, CaseSummary, type CaseAction } from "@/lib/api/schema";
 import { z } from "zod";
+import { Pager } from "./pager";
+import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
 
 /*
  * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
@@ -44,6 +46,7 @@ type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
   tab: View;
+  page: number;
   /** Below lg the list and the open patient take turns; from lg up both show. */
   mobile: "list" | "detail";
   sel: string | null;
@@ -111,7 +114,7 @@ function useReadFence() {
 }
 
 export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
-  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
+  const [s, setS] = useState<State>({ tab: "call", page: 1, mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
   /**
@@ -152,13 +155,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const root = useRef<HTMLDivElement>(null);
   const [want, setWant] = useState<{ k: string } | null>(null);
   useEffect(() => {
-    if (want) root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
+    if (!want) return;
+    // A delayed action may finish after returning to the phone list. Use the mounted pane,
+    // not the action's old state; direct pager requests keep their existing focus policy.
+    const phoneList = !want.k.startsWith("pager-") &&
+      root.current?.querySelector('section[aria-label="Open patient"]')?.classList.contains("hidden") &&
+      !window.matchMedia("(min-width: 1024px)").matches;
+    const target = phoneList
+      ? rowRef.current ?? root.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+      : root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`);
+    target?.focus();
   }, [want]);
 
   const roving = useRovingTabs({
     ids: TABS.map(([id]) => id),
     selected: s.tab,
-    onSelect: (id) => setS((prev) => ({ ...prev, tab: id, sel: null, calling: null, stage: null, last: null })),
+    onSelect: (id) => setS((prev) => ({ ...prev, tab: id, page: 1, sel: null, calling: null, stage: null, last: null })),
     prefix: "today",
   });
 
@@ -171,8 +183,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const list = inView(s.tab).filter((p) => !q || p.name.toLowerCase().includes(q) || p.short.toLowerCase().includes(q));
   const toCall = inView("call");
   /* The open patient is always one of the visible results, so Call, Snooze and Hand-off never act on someone filtered or moved out. */
-  const p = list.find((x) => x.id === s.sel) ?? list[0];
+  const paging = paginate(list, pageWith(list, s.sel, s.page));
+  const p = paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
+  if (s.page !== paging.page) setS((prev) => (prev.page === paging.page ? prev : { ...prev, page: paging.page }));
   const fresh = { calling: null, stage: null, last: null };
+  const goPage = (to: number, via: PagerControl) => {
+    const target = paginate(list, to);
+    const focus = pagerFocusAfter(via, target);
+    if (focus) setWant({ k: `pager-${focus}` });
+    setS((prev) => ({ ...prev, page: target.page, sel: target.rows[0]?.id ?? null, ...fresh }));
+  };
 
   /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
   const selId = live ? p?.id : undefined;
@@ -497,7 +517,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 <button
                   key={id}
                   {...roving.tabProps(id)}
-                  onClick={() => setS((prev) => ({ ...prev, tab: id, sel: null, ...fresh }))}
+                  onClick={() => setS((prev) => ({ ...prev, tab: id, page: 1, sel: null, ...fresh }))}
                   className={cn(
                     "-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-body",
                     TAB_FOCUS,
@@ -510,10 +530,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             })}
           </div>
           <div className="px-4 pb-2 pt-3">
-            <SearchField label="Search" placeholder="Name or case id" value={s.q} onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value }))} />
+            <SearchField label="Search" placeholder="Name or case id" value={s.q} onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value, page: 1 }))} />
           </div>
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(s.tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
-            {list.map((r) => {
+            {paging.rows.map((r) => {
               const on = p?.id === r.id;
               const over = r.days > STANDARD_DAYS;
               return (
@@ -550,6 +570,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             })}
             {list.length === 0 && <p className="m-2 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">Nobody left in this view.</p>}
           </div>
+          <Pager paging={paging} label="Your list pages" testId="page-range" onPage={goPage} />
+          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
           <div className="border-t border-rule px-4 py-3 text-small text-muted">
             {s.tab === "call"
               ? `${list.length} to call · ${list.filter((r) => r.days > STANDARD_DAYS).length} over ${STANDARD_DAYS} days`
