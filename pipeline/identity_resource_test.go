@@ -301,60 +301,70 @@ func TestIdentityResourcePolicyControls(t *testing.T) {
 
 func TestIdentityResourceRevisionsAndCrossTransport(t *testing.T) {
 	identityPolicy(t)
-	for _, badFirst := range []bool{false, true} {
-		for _, transport := range []string{"fhir", "hl7"} {
-			for _, sameVersion := range []bool{false, true} {
-				t.Run(fmt.Sprintf("%s/badFirst=%v/collision=%v", transport, badFirst, sameVersion), func(t *testing.T) {
-					h := newIdentityRuntime(t, transport, false)
-					good := identityReport("R", "final", 1, identityAdequate)
-					version := 2
-					if sameVersion {
-						version = 1
-					}
-					status := "corrected"
-					if sameVersion {
-						status = "final"
-					} // v1 corrected is invalid at normalization, not an identity-collision test
-					bad := identityReport("R", status, version, identityAdequate)
-					sendGood := func() { h.feed("skmc-endo", "H-A", identityA, good) }
-					sendBad := func() { p := h.feed("skmc-endo", "H-A", identityB, bad); h.assertQuarantine(p) }
-					if badFirst {
-						sendBad()
-						if h.C.Final()[identityLoop].State == "closed" {
-							t.Fatal("bad revision closed before any accepted evidence")
+	for _, conflict := range []struct {
+		name string
+		id   syntheticIdentity
+	}{
+		{"combined", identityB},
+		{"DOB_only", syntheticIdentity{identityA.name, identityB.dob, identityA.sex, identityA.eid}},
+		{"sex_only", syntheticIdentity{identityA.name, identityA.dob, identityB.sex, identityA.eid}},
+		{"EID_only", syntheticIdentity{identityA.name, identityA.dob, identityA.sex, identityB.eid}},
+	} {
+		for _, badFirst := range []bool{false, true} {
+			for _, transport := range []string{"fhir", "hl7"} {
+				for _, sameVersion := range []bool{false, true} {
+					t.Run(fmt.Sprintf("%s/%s/badFirst=%v/collision=%v", transport, conflict.name, badFirst, sameVersion), func(t *testing.T) {
+						h := newIdentityRuntime(t, transport, false)
+						good := identityReport("R", "final", 1, identityAdequate)
+						version := 2
+						if sameVersion {
+							version = 1
 						}
-						sendGood()
-					} else {
-						sendGood()
+						status := "corrected"
+						if sameVersion {
+							status = "final"
+						} // v1 corrected is invalid at normalization, not an identity-collision test
+						bad := identityReport("R", status, version, identityAdequate)
+						sendGood := func() { h.feed("skmc-endo", "H-A", identityA, good) }
+						sendBad := func() { p := h.feed("skmc-endo", "H-A", conflict.id, bad); h.assertQuarantine(p) }
+						if badFirst {
+							sendBad()
+							if h.C.Final()[identityLoop].State == "closed" {
+								t.Fatal("bad revision closed before any accepted evidence")
+							}
+							sendGood()
+						} else {
+							sendGood()
+							sendBad()
+						}
+						rec := h.L.recs[h.L.byPk["skmc-endo|H-A"]]
+						if e := rec.evs["DiagnosticReport/R"]; e == nil || e.Version != 1 || e.Eid != identityA.eid {
+							t.Fatal("bad raw higher version or collision selected as accepted context")
+						}
+						if h.C.Final()[identityLoop].State != "closed" {
+							t.Fatal("legitimate accepted v1 evidence was lost")
+						}
+						// An alias in another transport cannot replace identity checks with body dedup.
+						if transport == "fhir" {
+							h.transport = "hl7"
+						} else {
+							h.transport = "fhir"
+						}
+						p := h.feed("skmc-endo", "H-A", conflict.id, identityReport("alias", "final", version, identityAdequate))
+						h.assertQuarantine(p)
+						h.verify(true)
+						h.feed("skmc-endo", "H-A", identityA, identityReport("R", "entered-in-error", 3, identityAdequate))
+						if h.C.Final()[identityLoop].State == "closed" {
+							t.Fatal("accepted withdrawal failed to remove v1 evidence")
+						}
 						sendBad()
-					}
-					rec := h.L.recs[h.L.byPk["skmc-endo|H-A"]]
-					if e := rec.evs["DiagnosticReport/R"]; e == nil || e.Version != 1 || e.Eid != identityA.eid {
-						t.Fatal("bad raw higher version or collision selected as accepted context")
-					}
-					if h.C.Final()[identityLoop].State != "closed" {
-						t.Fatal("legitimate accepted v1 evidence was lost")
-					}
-					// An alias in another transport cannot replace identity checks with body dedup.
-					if transport == "fhir" {
-						h.transport = "hl7"
-					} else {
-						h.transport = "fhir"
-					}
-					p := h.feed("skmc-endo", "H-A", identityB, identityReport("alias", "final", version, identityAdequate))
-					h.assertQuarantine(p)
-					h.verify(true)
-					h.feed("skmc-endo", "H-A", identityA, identityReport("R", "entered-in-error", 3, identityAdequate))
-					if h.C.Final()[identityLoop].State == "closed" {
-						t.Fatal("accepted withdrawal failed to remove v1 evidence")
-					}
-					sendBad()
-					sendGood()
-					if h.C.Final()[identityLoop].State == "closed" {
-						t.Fatal("stale good/bad delivery resurrected accepted withdrawal")
-					}
-					h.verify(true)
-				})
+						sendGood()
+						if h.C.Final()[identityLoop].State == "closed" {
+							t.Fatal("stale good/bad delivery resurrected accepted withdrawal")
+						}
+						h.verify(true)
+					})
+				}
 			}
 		}
 	}
@@ -527,4 +537,25 @@ func TestIdentityResourceProviderIsolationAndNoOrdinaryOverride(t *testing.T) {
 		t.Fatal("matching follow-up blocked after quarantine")
 	}
 	h.verify(true)
+}
+
+func TestIdentityResourceMatchingCorrectionRetainsRevisionPolicy(t *testing.T) {
+	identityPolicy(t)
+	for _, transport := range []string{"fhir", "hl7"} {
+		t.Run(transport, func(t *testing.T) {
+			h := newIdentityRuntime(t, transport, false)
+			h.feed("skmc-endo", "H-A", identityA, identityReport("R", "final", 1, identityAdequate))
+			h.feed("skmc-endo", "H-A", identityA, identityReport("R", "corrected", 2, identityAdequate))
+			e := h.L.recs[h.L.byPk["skmc-endo|H-A"]].evs["DiagnosticReport/R"]
+			if e == nil || e.Version != 2 || len(h.L.IdentityQuarantines) != 0 || h.C.Final()[identityLoop].State != "closed" {
+				t.Fatal("matching accepted correction lost normal revision/closure semantics")
+			}
+			h.verify(true)
+			h.feed("skmc-endo", "H-A", identityA, identityReport("R", "entered-in-error", 3, identityAdequate))
+			if h.C.Final()[identityLoop].State == "closed" {
+				t.Fatal("matching withdrawal kept retired evidence")
+			}
+			h.verify(true)
+		})
+	}
 }
