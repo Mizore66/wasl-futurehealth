@@ -276,6 +276,8 @@ func TestRecoverPendingRetainsAlreadyAcknowledgedRecordWithoutCanonicalEvidence(
 	if count := fhirMessageCount(t, env); count != 0 {
 		t.Fatalf("negative fixture has canonical evidence: %d messages", count)
 	}
+	// Named replay coverage, not a mutable name applied to anonymous dispatch.
+	c.stateForLocked("cleanup")
 	c.next, c.ackHWM = 2, 1
 	if err := c.recoverPending(); err != nil {
 		t.Fatal(err)

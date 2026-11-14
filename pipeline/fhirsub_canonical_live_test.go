@@ -273,6 +273,8 @@ func TestCanonicalLiveBelowHWMAmbiguousRecoveryClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 	seedCanonicalPendingPublication(t, env, pending)
+	// Establish the fixture's named prefix before supplying its known counters.
+	c.stateForLocked("cleanup")
 	c.next, c.ackHWM = 2, 1
 	f := &canonicalLiveRecoveryKV{KeyValue: kv}
 	c.kv = f

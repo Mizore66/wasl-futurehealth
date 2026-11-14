@@ -96,7 +96,11 @@ func TestReviewWithdrawnCRCChildCurrentCanonicalConsent(t *testing.T) {
 
 func TestReviewD3AcceptsOnlySourceBoundTypedCRCTerminals(t *testing.T) {
 	for _, path := range []string{"Diagnosis: invasive adenocarcinoma.", "Diagnosis: tubular adenoma. Repeat colonoscopy in 3 years.", "Microscopic examination: benign colonic mucosa."} {
-		t.Run(path, func(t *testing.T) {
+		name := path
+		if path == "Microscopic examination: benign colonic mucosa." {
+			name = "completed-gastroenterology-child"
+		}
+		t.Run(name, func(t *testing.T) {
 			procedure := ""
 			if path == "Microscopic examination: benign colonic mucosa." {
 				procedure = "Colonoscopy: advanced to the cecum. Prep adequate. Severe ulcerative colitis biopsied. Gastroenterology follow-up required."

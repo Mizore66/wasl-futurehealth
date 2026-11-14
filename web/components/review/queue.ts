@@ -1,4 +1,5 @@
-import { getCase, getCases, getCaseWithToken, getFixtures } from "@/lib/api/source";
+import { getAllCases } from "@/lib/api/all-cases";
+import { getCase, getCaseWithToken, getFixtures } from "@/lib/api/source";
 import { isGuided, type CaseDetail } from "@/lib/api/schema";
 import { beforeReview } from "@/lib/people/identity";
 
@@ -29,7 +30,7 @@ export async function reviewQueue(token?: string): Promise<ReviewQueue> {
     const result = await getCaseWithToken(id, token);
     return result.ok ? result.detail : { id, status: result.status };
   };
-  const open = await getCases({ review: "open", limit: 50 });
+  const open = await getAllCases({ review: "open" });
   const guided = open.cases.filter((c) => isGuided(c.programme));
   if (guided.length > 0) {
     const details = await Promise.all(guided.map((c) => detail(c.id)));

@@ -38,9 +38,12 @@ func crcClosedTerminal(d *Decision) bool {
 		return false
 	}
 	// Bind every declared signed need to the actual nested evidence chain and
-	// original review head. Rehashing the public plan is not a source signature.
+	// original review head. closed_normal is the existing signed no-child
+	// normal_after_suspicion contract, not a care-child kind or CRC exemption.
+	// Its exact signed answer and source are validated below just like other needs.
+	// Rehashing the public plan is not a source signature.
 	for _, plan := range cd.Obligations {
-		if plan.ID == "" || plan.SourceReport == "" || plan.ProcedureReport == "" || plan.SourceVersion < 0 || plan.ProcedureVersion < 0 || plan.Confirmation == "" || plan.Reviewer == "" || plan.ExpectedHead == "" || crcCareKind(plan.Disposition) == "" {
+		if plan.ID == "" || plan.SourceReport == "" || plan.ProcedureReport == "" || plan.SourceVersion < 0 || plan.ProcedureVersion < 0 || plan.Confirmation == "" || plan.Reviewer == "" || plan.ExpectedHead == "" || (crcCareKind(plan.Disposition) == "" && plan.Disposition != "closed_normal") {
 			return false
 		}
 		matched := false

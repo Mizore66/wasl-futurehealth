@@ -226,6 +226,8 @@ func TestReviewRecoveryLostClaimThenActualScan(t *testing.T) {
 		t.Fatal(err)
 	}
 	seedCanonicalPendingPublication(t, env, raw)
+	// The preexisting replay baseline belongs to this named subscription.
+	c.stateForLocked("cleanup")
 	c.next, c.ackHWM = 2, 1
 	fault := &canonicalLiveRecoveryKV{KeyValue: kv}
 	c.kv = fault

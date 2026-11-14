@@ -808,9 +808,13 @@ func TestSubscriptionCheckpointsAreScopedByIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := durableHookTestConsumer(t, env)
-	first.kv, first.subID, first.ackHWM = kv, "sub-a", 7
+	first.kv = kv
+	first.stateForLocked("sub-a") // explicit named fixture baseline, not anonymous return coverage
+	first.ackHWM = 7
 	second := durableHookTestConsumer(t, env)
-	second.kv, second.subID, second.ackHWM = kv, "sub-b", 11
+	second.kv = kv
+	second.stateForLocked("sub-b")
+	second.ackHWM = 11
 	first.saveCheckpoint()
 	second.saveCheckpoint()
 	keys := durableKeys(t, kv, "checkpoint.*")
@@ -1594,6 +1598,8 @@ func TestRecoverPendingClearsAlreadyAcknowledgedRecord(t *testing.T) {
 	if canonicalBefore != 1 {
 		t.Fatalf("prior canonical publication count = %d, want 1", canonicalBefore)
 	}
+	// This fixture's prefix is explicitly cleanup's, not dispatched anonymous state.
+	c.stateForLocked("cleanup")
 	c.next, c.ackHWM = 2, 1
 	if err := c.recoverPending(); err != nil {
 		t.Fatal(err)

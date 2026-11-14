@@ -77,7 +77,10 @@ type pendingWork struct {
 	queued        bool
 	cleanupRetry  bool
 	cleanupRev    uint64          // reacquired authority; event.Revision stays immutable
-	mutation      pendingMutation // exact reserved own write, not payload-equality authority
+	mutation      pendingMutation // last positive own mutation; reservation never overwrites it
+	reservation   pendingMutation // the one current in-flight operation, not a receipt
+	unknown       pendingMutation // compact fixed-envelope returned-unknown lineage; defer only
+	positionRef   string          // immutable accepted effective subscription
 	claimIntent   []byte          // retained exact recovery-claim intent across an unknown Update
 	recovery      bool            // explicit validated below-HWM recovery, not a cleanup claim
 	blocker       string
@@ -94,11 +97,14 @@ type pendingMutation struct {
 // a publisher can retire a generation while that scan still holds its snapshot.
 type pendingScan struct {
 	completed map[string][]*pendingWork
-	writes    map[*pendingWork][]pendingMutation // compact receipts, only for this real scan epoch
+	writes    map[*pendingWork][]pendingMutation // seeded positive plus at most two admitted operations
+	intents   map[*pendingWork]pendingMutation   // returned unknown: never positive ownership
+	reserved  map[*pendingWork][]pendingMutation // admission bound, not an eviction cache
 }
 
 type subscriptionState struct {
-	ref             string // canonical Subscription/<id> identity
+	ref             string // mutable container name; not numeric-prefix authority
+	positionRef     string // subscription to which next/acked/buffered positions belong
 	next            int64
 	buf             map[int64]*subEvent
 	pending         map[int64]bool
@@ -168,7 +174,7 @@ func canonicalSubscriptionRef(ref string) string {
 }
 
 func newSubscriptionState(ref string) subscriptionState {
-	return subscriptionState{ref: canonicalSubscriptionRef(ref), next: 1, buf: map[int64]*subEvent{}, pending: map[int64]bool{}, pendingProvider: map[int64]string{}, acked: map[int64]bool{}}
+	return subscriptionState{ref: canonicalSubscriptionRef(ref), positionRef: canonicalSubscriptionRef(ref), next: 1, buf: map[int64]*subEvent{}, pending: map[int64]bool{}, pendingProvider: map[int64]string{}, acked: map[int64]bool{}}
 }
 
 func (c *SubConsumer) stateForLocked(ref string) *subscriptionState {
@@ -195,6 +201,17 @@ func (c *SubConsumer) stateForLocked(ref string) *subscriptionState {
 		return &c.subscriptionState
 	}
 	if c.subscriptionState.ref == "" && len(c.subscriptions) == 0 {
+		// Only a pristine numeric prefix can acquire its first name. Inactive,
+		// never-attempted overflow still needs its separate exact legacy claim.
+		pristine := c.next <= 1 && c.ackHWM == 0 && len(c.acked) == 0
+		for w := range c.holes {
+			if w.active || w.providerOwned || w.attempt != 0 || w.canonical != nil {
+				pristine = false
+			}
+		}
+		if pristine {
+			c.subscriptionState.positionRef = ref
+		}
 		c.subscriptionState.ref = ref
 		c.subID = strings.TrimPrefix(ref, "Subscription/")
 		c.subscriptions[ref] = &c.subscriptionState
@@ -264,7 +281,11 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 		provCh: map[string]chan *subEvent{}, stats: map[string]int64{}, start: time.Now()}
 	c.paced = sync.NewCond(&c.mu)
 	retry("kv", func() (err error) {
-		c.kv, err = js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 3, Storage: jetstream.FileStorage})
+		var kv jetstream.KeyValue
+		kv, err = js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 3, Storage: jetstream.FileStorage})
+		if err == nil {
+			c.kv, err = bindPendingLeaderKV(ctx, js, kv)
+		}
 		return
 	})
 	c.seen = openSeen(js)
@@ -556,7 +577,8 @@ func (c *SubConsumer) alreadyHave(ref string, n int64) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	s := c.existingStateLocked(ref)
-	return s != nil && (n < s.next || s.buf[n] != nil)
+	return s != nil && s.positionRef == canonicalSubscriptionRef(ref) && s.positionRef == s.ref &&
+		(n < s.next || s.buf[n] != nil) && (s.work[n] == nil || s.work[n].positionRef == s.positionRef)
 }
 
 func (c *SubConsumer) processInboxMessage(msg jetstream.Msg) error {
@@ -606,14 +628,32 @@ func (c *SubConsumer) processLoop() {
 func (c *SubConsumer) beginPendingScan() *pendingScan {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	epoch := &pendingScan{completed: map[string][]*pendingWork{}, writes: map[*pendingWork][]pendingMutation{}}
+	if c.scan != nil {
+		panic("overlapping pending scan epochs")
+	} // replayMu owns the sole lifetime
+	epoch := &pendingScan{completed: map[string][]*pendingWork{}, writes: map[*pendingWork][]pendingMutation{}, intents: map[*pendingWork]pendingMutation{}, reserved: map[*pendingWork][]pendingMutation{}}
 	c.scan = epoch
+	// holes includes detached live generations, not just the current map slot.
+	for _, s := range c.statesLocked() {
+		for w := range s.holes {
+			c.rememberPendingMutationLocked(w)
+			if w.unknown.Token != 0 {
+				epoch.intents[w] = w.unknown
+			}
+			if w.reservation.Token != 0 {
+				epoch.reserved[w] = []pendingMutation{w.reservation}
+			}
+		}
+	}
 	return epoch
 }
 
 func (c *SubConsumer) endPendingScan(epoch *pendingScan) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.scan != epoch {
+		return
+	} // a late exit cannot release another epoch
 	for _, works := range epoch.completed {
 		for _, w := range works {
 			s := w.state
@@ -645,7 +685,7 @@ func (c *SubConsumer) rememberPendingLocked(s *subscriptionState, e *subEvent, l
 		origin = *e.origin
 		origin.Raw = bytes.Clone(origin.Raw)
 	}
-	w := &pendingWork{event: identity, state: s, origin: origin, local: local, legacyBinding: c.pendingLegacyBindingLocked(s, e.Key, e.Num)}
+	w := &pendingWork{event: identity, state: s, positionRef: canonicalSubscriptionRef(e.Sub), origin: origin, local: local, legacyBinding: c.pendingLegacyBindingLocked(s, e.Key, e.Num)}
 	w.event.origin = nil
 	c.addPendingHoleLocked(s, w)
 	if s.work == nil {
@@ -663,7 +703,7 @@ func (c *SubConsumer) rememberPendingLocked(s *subscriptionState, e *subEvent, l
 }
 
 func (c *SubConsumer) matchesPendingLocked(s *subscriptionState, w *pendingWork, e *subEvent) bool {
-	return w.state == s && w.event.Revision != 0 && w.event.Revision == e.Revision && w.event.Key == e.Key && w.event.Owner == e.Owner &&
+	return w.state == s && w.positionRef == s.positionRef && w.event.Revision != 0 && w.event.Revision == e.Revision && w.event.Key == e.Key && w.event.Owner == e.Owner &&
 		w.legacyBinding == c.pendingLegacyBindingLocked(s, e.Key, e.Num) && samePendingPayload(&w.event, e)
 }
 
@@ -847,6 +887,10 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 	var nums []int64
 	unclaimed := false
 	c.mu.Lock()
+	if s.positionRef != s.ref {
+		c.mu.Unlock()
+		return fmt.Errorf("unassociated subscription positions for %s", s.ref)
+	}
 	// Validate the complete observation set before reusing any local work.
 	// Skipped active/retired observations must still detect aliases/duplicates.
 	for _, entry := range entries {
@@ -889,6 +933,26 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 			for _, w := range c.scan.completed[e.Key] {
 				own, _ := c.matchesPendingMutationLocked(s, w, e)
 				if c.matchesPendingLocked(s, w, e) || own {
+					covered = true
+					break
+				}
+			}
+		}
+		lookDetached := s.work[n] == nil
+		if w := s.work[n]; w != nil {
+			own, deferred := c.matchesPendingMutationLocked(s, w, e)
+			lookDetached = !own && !deferred && !c.matchesPendingLocked(s, w, e) && !c.bindInactiveDefaultLegacyLocked(s, w, e, observations[n])
+		}
+		if !covered && lookDetached && s.holeCounts[n] > 0 {
+			// A conflicting observation may have detached the original operation
+			// owner from s.work. Its exact old receipts still belong to that owner.
+			for w := range s.holes {
+				if w == s.work[n] || w.event.Num != n {
+					continue
+				}
+				own, deferred := c.matchesPendingMutationLocked(s, w, e)
+				if c.matchesPendingLocked(s, w, e) || own || deferred {
+					c.queueCanonicalLocked(canonicalTask{Kind: "work", Work: w})
 					covered = true
 					break
 				}
@@ -1043,6 +1107,21 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	s := c.stateForLocked(st.Sub)
+	if s.positionRef != s.ref {
+		return fmt.Errorf("unassociated subscription positions for %s", s.ref)
+	}
+	// Recheck omitted-body coverage at admission: decode's shortcut is not an ACK.
+	for _, e := range evs {
+		if canonicalSubscriptionRef(e.Sub) != s.positionRef {
+			return errCanonicalConflict
+		}
+		if w := s.work[e.Num]; w != nil && w.positionRef != s.positionRef {
+			return errCanonicalConflict
+		}
+		if e.Body == nil && !(e.Num < s.next || s.buf[e.Num] != nil) {
+			return errCanonicalUnknown
+		}
+	}
 	if st.Type != "query-event" && st.EventsSince > s.maxSeen {
 		s.maxSeen = st.EventsSince
 	}
@@ -1167,6 +1246,12 @@ func samePendingPayload(a, b *subEvent) bool {
 }
 
 func (c *SubConsumer) validatePendingPayloadLocked(s *subscriptionState, e *subEvent) error {
+	if s.positionRef != s.ref || canonicalSubscriptionRef(e.Sub) != s.positionRef {
+		return errCanonicalConflict
+	}
+	if w := s.work[e.Num]; w != nil && (w.positionRef != s.positionRef || !samePendingPayload(&w.event, e)) {
+		return errCanonicalConflict
+	}
 	ref := s.ref
 	return c.pendingIOLocked(s, e.Num, func() error {
 		for _, key := range []string{pendingEventKeyFor(ref, e.Num), pendingEventKey(e.Num)} {
@@ -1285,7 +1370,7 @@ func (c *SubConsumer) replayNeeded(ref string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	s := c.stateForLocked(ref)
-	return s.overflowPending && len(s.buf) < maxSubscriptionReorder
+	return s.positionRef == s.ref && s.overflowPending && len(s.buf) < maxSubscriptionReorder
 }
 
 func (c *SubConsumer) dispatchLocked(s *subscriptionState, e *subEvent) bool {
@@ -1314,6 +1399,9 @@ func (c *SubConsumer) dispatchLocked(s *subscriptionState, e *subEvent) bool {
 const PaceWindow = 128
 
 func (c *SubConsumer) advanceLocked(s *subscriptionState) {
+	if s.positionRef != s.ref {
+		return
+	}
 	for s.acked[s.ackHWM+1] {
 		delete(s.acked, s.ackHWM+1)
 		s.ackHWM++
@@ -1325,6 +1413,9 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 	for e := range ch {
 		c.mu.Lock()
 		s := c.stateForLocked(e.Sub)
+		if e.work != nil {
+			s = e.work.state
+		} // never follow a mutable default name
 		for e.Num > s.ackHWM+PaceWindow {
 			c.paced.Wait()
 		}
@@ -1423,6 +1514,10 @@ func (c *SubConsumer) loadCheckpoints() error {
 		}
 		c.mu.Lock()
 		s := c.stateForLocked(cp.Sub)
+		if s.positionRef != s.ref {
+			c.mu.Unlock()
+			return fmt.Errorf("checkpoint cannot bind active anonymous positions")
+		}
 		if key == "checkpoint" {
 			c.legacySubID = cp.Sub
 		}
@@ -1454,6 +1549,10 @@ func (c *SubConsumer) saveCheckpoint() {
 
 func (c *SubConsumer) saveCheckpointFor(s *subscriptionState) {
 	c.mu.Lock()
+	if s.positionRef != s.ref {
+		c.mu.Unlock()
+		return
+	}
 	ref := s.ref
 	ceiling := c.checkpointCeilingLocked(s)
 	cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(ref, "Subscription/"), HWM: ceiling, Eof: s.eofSent && len(s.holes) == 0 && c.discoveryComplete}
@@ -1482,7 +1581,7 @@ func (c *SubConsumer) maybeEOF() {
 	states := c.statesLocked()
 	ready := c.discoveryComplete && !c.eofBusy && c.legacyNotifications == 0 && len(states) > 0
 	for _, s := range states {
-		if s.ref == "" || !s.feedOff || s.maxSeen == 0 || s.ackHWM < s.maxSeen || len(s.holes) > 0 || len(s.pending) > 0 || s.filling {
+		if s.positionRef != s.ref || s.ref == "" || !s.feedOff || s.maxSeen == 0 || s.ackHWM < s.maxSeen || len(s.holes) > 0 || len(s.pending) > 0 || s.filling {
 			ready = false
 		}
 	}
@@ -1535,7 +1634,7 @@ func (c *SubConsumer) maybeEOF() {
 	_ = token // eofBusy is the nonblocking operation reservation, released on all paths
 	for _, s := range states {
 		c.mu.Lock()
-		valid := len(s.holes) == 0 && len(s.pending) == 0 && s.ackHWM >= s.maxSeen
+		valid := s.positionRef == s.ref && len(s.holes) == 0 && len(s.pending) == 0 && s.ackHWM >= s.maxSeen
 		cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(s.ref, "Subscription/"), HWM: c.checkpointCeilingLocked(s), Eof: true}
 		c.mu.Unlock()
 		if !valid {
@@ -1548,7 +1647,7 @@ func (c *SubConsumer) maybeEOF() {
 			return
 		}
 		c.mu.Lock()
-		if len(s.holes) == 0 && len(s.pending) == 0 {
+		if s.positionRef == s.ref && len(s.holes) == 0 && len(s.pending) == 0 {
 			s.eofSent = true
 		}
 		c.mu.Unlock()
@@ -1569,6 +1668,10 @@ func (c *SubConsumer) pollStatus() {
 
 func (c *SubConsumer) pollStatusFor(s *subscriptionState) {
 	c.mu.Lock()
+	if s.positionRef != s.ref {
+		c.mu.Unlock()
+		return
+	}
 	id := strings.TrimPrefix(s.ref, "Subscription/")
 	c.mu.Unlock()
 	if id == "" {
@@ -1622,7 +1725,7 @@ func (c *SubConsumer) checkGap() {
 func (c *SubConsumer) checkGapFor(s *subscriptionState) {
 	c.mu.Lock()
 	id := strings.TrimPrefix(s.ref, "Subscription/")
-	if s.filling || s.gapSince.IsZero() || time.Since(s.gapSince) < gapWait || id == "" {
+	if s.positionRef != s.ref || s.filling || s.gapSince.IsZero() || time.Since(s.gapSince) < gapWait || id == "" {
 		c.mu.Unlock()
 		return
 	}
@@ -1705,7 +1808,7 @@ func (c *SubConsumer) statusLoop() {
 			if state.ref == "" {
 				continue
 			}
-			done = done && state.eofSent && c.discoveryComplete && len(state.holes) == 0 && len(state.pending) == 0
+			done = done && state.positionRef == state.ref && state.eofSent && c.discoveryComplete && len(state.holes) == 0 && len(state.pending) == 0
 			durablePending += int64(len(state.pending))
 			subscriptions[state.ref] = map[string]interface{}{"next": state.next, "ack_hwm": state.ackHWM, "max_seen": state.maxSeen,
 				"buffered": len(state.buf), "feed_off": state.feedOff, "eof_sent": state.eofSent, "durable_pending": len(state.pending)}

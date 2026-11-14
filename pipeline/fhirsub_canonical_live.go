@@ -89,6 +89,9 @@ func (c *SubConsumer) completePendingHoleLocked(w *pendingWork) {
 	}
 }
 func (c *SubConsumer) checkpointCeilingLocked(s *subscriptionState) int64 {
+	if s.positionRef != s.ref {
+		return 0
+	}
 	for len(s.holePositions) > 0 && s.holeCounts[s.holePositions[0]] == 0 {
 		heap.Pop(&s.holePositions)
 	}
@@ -141,6 +144,14 @@ func (c *SubConsumer) saveCheckpointReceipt(ctx context.Context, s *subscription
 	ref := s.ref
 	legacy := c.legacySubID
 	c.mu.Unlock()
+	if coverage == "verified-position" {
+		c.mu.Lock()
+		associated := s.positionRef == ref
+		c.mu.Unlock()
+		if !associated {
+			return checkpointReceipt{}, errCanonicalConflict
+		}
+	}
 	if ref == "" || canonicalSubscriptionRef(desired.Sub) != ref || desired.HWM < 0 || (coverage != "discovery-floor" && coverage != "verified-position") {
 		return checkpointReceipt{}, errCanonicalInvalid
 	}
@@ -253,8 +264,12 @@ func (c *SubConsumer) protectedCanonicalIncarnation(ctx context.Context) (canoni
 }
 
 func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin, legacyBinding string) (canonicalSource, error) {
+	ref := canonicalSubscriptionRef(e.Sub)
+	if s.positionRef != s.ref || ref != s.positionRef {
+		return canonicalSource{}, errCanonicalConflict
+	}
 	typ, id, version := splitFocus(e.Focus)
-	source := canonicalSource{EffectiveSub: s.ref, Num: e.Num, Provider: e.Provider, Focus: e.Focus, Occurred: e.Occurred, PendingKey: e.Key,
+	source := canonicalSource{EffectiveSub: ref, Num: e.Num, Provider: e.Provider, Focus: e.Focus, Occurred: e.Occurred, PendingKey: e.Key,
 		Identity:  canonicalIdentity{Subject: "fhir." + e.Provider + ".res", FullID: e.Provider + "/" + typ + "/" + id + "/v" + version, BodySHA256: canonicalSHA(e.Body), BodyLength: uint64(len(e.Body))},
 		OriginSub: origin.Sub, OriginPendingSHA256: canonicalSHA(origin.Raw), OriginRevision: origin.Revision, OriginKnown: true}
 	if origin.Sub == "" && s.ref != "" && legacyBinding == s.ref && e.Key == pendingEventKey(e.Num) {
@@ -410,7 +425,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	} else {
 		w.blocker = w.result.Hole
 	}
-	if w.result.Result.Returned && !w.returnApplied && !w.recovery {
+	if w.result.Result.Returned && !w.returnApplied && !w.recovery && w.positionRef == w.state.positionRef && w.positionRef == w.state.ref {
 		w.returnApplied = true
 		w.published = w.result.Result.ReturnKind == canonicalReturnFresh
 		atomic.AddInt64(&c.published, 1)
@@ -440,63 +455,112 @@ func canonicalEventMessage(e *subEvent) *nats.Msg {
 	return m
 }
 
-// Record no permanent revision history. A live scan may hold an older own
-// positive write, so retain its compact receipt only until that scan ends.
+// P survives reserve(R), even without a scan. A new ordinary read after an
+// applied local ACK cannot return the preceding Put; an already live E can.
 func (c *SubConsumer) rememberPendingMutationLocked(w *pendingWork) {
 	if c.scan == nil || w.mutation.Revision == 0 {
 		return
 	}
-	if c.scan.writes == nil {
-		c.scan.writes = map[*pendingWork][]pendingMutation{}
+	for _, r := range c.scan.writes[w] {
+		if r == w.mutation {
+			return
+		}
 	}
-	receipts := c.scan.writes[w]
-	if len(receipts) == 0 || receipts[len(receipts)-1] != w.mutation {
-		c.scan.writes[w] = append(receipts, w.mutation)
-	}
+	c.scan.writes[w] = append(c.scan.writes[w], w.mutation)
 }
 
+// Refuse the next effect BEFORE exceeding the epoch's bound. This is admission,
+// not receipt eviction: seeded P plus at most two intersecting reservations.
 func (c *SubConsumer) reservePendingMutation(w *pendingWork, raw []byte) pendingMutation {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.rememberPendingMutationLocked(w)
-	w.mutation = pendingMutation{Token: w.attempt, BodySHA256: canonicalSHA(raw)}
-	return w.mutation
+	r := pendingMutation{Token: w.attempt, BodySHA256: canonicalSHA(raw)}
+	if !w.inflight || w.reservation.Token != 0 || w.unknown.Token != 0 && w.unknown.BodySHA256 != r.BodySHA256 {
+		return pendingMutation{}
+	}
+	if c.scan != nil {
+		if len(c.scan.reserved[w]) >= 2 {
+			return pendingMutation{}
+		}
+		c.rememberPendingMutationLocked(w)
+		if w.unknown.Token != 0 {
+			c.scan.intents[w] = w.unknown
+		}
+		c.scan.reserved[w] = append(c.scan.reserved[w], r)
+	}
+	w.reservation = r
+	return r
+}
+
+// Returned unknown is not an in-flight operation and never owns a revision.
+// Repeated errors coalesce only within the work's fixed reacquisition envelope.
+func (c *SubConsumer) unknownPendingMutation(w *pendingWork, r pendingMutation) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if r.Token == 0 || !w.inflight || w.attempt != r.Token || w.reservation != r {
+		return
+	}
+	w.unknown = r
+	w.reservation = pendingMutation{}
+	if c.scan != nil {
+		c.scan.intents[w] = r
+	}
 }
 
 func (c *SubConsumer) acknowledgePendingMutation(w *pendingWork, reserved pendingMutation, revision uint64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if !w.inflight || w.attempt != reserved.Token || w.mutation != reserved || revision == 0 {
+	if reserved.Token == 0 || !w.inflight || w.attempt != reserved.Token || w.reservation != reserved || revision == 0 {
 		return errCanonicalUnknown
 	}
+	c.rememberPendingMutationLocked(w)
+	if c.scan != nil && w.unknown.Token != 0 {
+		c.scan.intents[w] = w.unknown
+	}
+	w.mutation = reserved
 	w.mutation.Revision = revision
 	w.cleanupRev = revision
+	w.reservation = pendingMutation{}
+	w.unknown = pendingMutation{}
+	if c.scan != nil {
+		for i, r := range c.scan.reserved[w] {
+			if r == reserved {
+				c.scan.reserved[w][i].Revision = revision
+			}
+		}
+	}
 	c.rememberPendingMutationLocked(w)
 	return nil
 }
 
-// Caller holds c.mu. Exact positive receipts can reconcile a scan. An exact
-// owned but unacknowledged intent can only postpone it to the original owner;
-// it grants neither cleanup nor a revision/payload-equality claim.
+// Exact positive receipts reconcile; R/U can only defer to the same live owner.
 func (c *SubConsumer) matchesPendingMutationLocked(s *subscriptionState, w *pendingWork, e *subEvent) (bool, bool) {
-	if w.state != s || e.Key != w.event.Key || e.origin == nil || e.Revision == 0 {
+	if w.state != s || w.positionRef != s.positionRef || e.Key != w.event.Key || e.origin == nil || e.Revision == 0 {
 		return false, false
 	}
 	digest := canonicalSHA(e.origin.Raw)
 	matches := func(r pendingMutation) bool {
 		return r.Token > 0 && r.Revision > 0 && r.Revision == e.Revision && r.BodySHA256 == digest
 	}
+	intent := func(r pendingMutation) bool {
+		return !w.completed && r.Token > 0 && r.Revision == 0 && r.BodySHA256 == digest
+	}
 	if matches(w.mutation) {
 		return true, false
 	}
+	deferred := intent(w.reservation) || intent(w.unknown)
 	if c.scan != nil {
-		for _, receipt := range c.scan.writes[w] {
-			if matches(receipt) {
+		for _, r := range c.scan.writes[w] {
+			if matches(r) {
 				return true, false
 			}
 		}
+		deferred = deferred || intent(c.scan.intents[w])
+		for _, r := range c.scan.reserved[w] {
+			deferred = deferred || intent(r)
+		}
 	}
-	return false, w.mutation.Token > 0 && w.mutation.Revision == 0 && w.mutation.BodySHA256 == digest
+	return false, deferred
 }
 
 func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) error {
@@ -540,11 +604,15 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		w.claimIntent = bytes.Clone(raw)
 		c.mu.Unlock()
 		reserved := c.reservePendingMutation(w, raw)
-		rev, err := c.kv.Update(ctx, w.event.Key, raw, observed.Revision())
-		if err != nil {
-			return err
+		if reserved.Token == 0 {
+			return errCanonicalUnknown
 		}
-		if rev == 0 {
+		rev, err := c.kv.Update(ctx, w.event.Key, raw, observed.Revision())
+		if err != nil || rev == 0 {
+			c.unknownPendingMutation(w, reserved)
+			if err != nil {
+				return err
+			}
 			return errCanonicalUnknown
 		}
 		if err := c.acknowledgePendingMutation(w, reserved, rev); err != nil {
@@ -568,12 +636,15 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		c.mu.Lock()
 		intent.Owner = c.ensureInstanceIDLocked()
 		c.mu.Unlock()
-		intent.Sub = w.state.ref
+		intent.Sub = w.positionRef
 		raw, _ := json.Marshal(intent)
 		var rev uint64
 		var reserved pendingMutation
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			reserved = c.reservePendingMutation(w, raw)
+			if reserved.Token == 0 {
+				return errCanonicalUnknown
+			}
 			rev, err = c.kv.Create(ctx, w.event.Key, raw)
 		} else if err == nil {
 			e, decodeErr := decodePendingEntry(w.event.Key, current)
@@ -584,12 +655,16 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 				return errCanonicalConflict
 			}
 			reserved = c.reservePendingMutation(w, raw)
+			if reserved.Token == 0 {
+				return errCanonicalUnknown
+			}
 			rev, err = c.kv.Update(ctx, w.event.Key, raw, current.Revision())
 		}
-		if err != nil {
-			return err
-		}
-		if rev == 0 {
+		if err != nil || rev == 0 {
+			c.unknownPendingMutation(w, reserved)
+			if err != nil {
+				return err
+			}
 			return errCanonicalUnknown
 		}
 		if err := c.acknowledgePendingMutation(w, reserved, rev); err != nil {
@@ -599,6 +674,15 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 	}
 	if revision == 0 {
 		return errCanonicalInvalid
+	}
+	// An E-pinned returned-unknown observation belongs only to this live owner.
+	// Do not complete it while E can still process that defer-only B after C ACK.
+	c.mu.Lock()
+	ambiguous := c.scan != nil && c.scan.intents[w].Token != 0
+	associated := w.positionRef == w.state.positionRef && w.positionRef == w.state.ref
+	c.mu.Unlock()
+	if ambiguous || !associated {
+		return errCanonicalUnknown
 	}
 	// Every non-nil result, including not-found, requires new positive authority.
 	w.cleanupRetry = true
@@ -716,6 +800,8 @@ func releasePendingBodyLocked(w *pendingWork) {
 	w.origin.Raw = nil
 	w.claimIntent = nil
 	w.mutation = pendingMutation{}
+	w.reservation = pendingMutation{}
+	w.unknown = pendingMutation{}
 	w.message = nil
 	w.canonical = nil
 }

@@ -1,0 +1,1032 @@
+{
+  "parent_commit": "80ef8fd44bf63ec7a7f04fb866bb2b0984b57469",
+  "data_mode": "synthetic",
+  "generator": "private test harness linked into exact parent archive; ClosureCore.Apply on synthetic typed facts, not full linker/model/NATS pipeline",
+  "wrapper": "LogMsg.data = parent OutEnvelope with dec (materializeAgentRun shape)",
+  "required_api_json_provenance": "parent writeRequiredAPIJSON typed-test helper; NOT pipeline statistics",
+  "go_version": "go1.27.4",
+  "python_environment": {
+    "python_version": "3.13.9 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 19:11:29) [Clang 20.1.8 ]",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1",
+    "suggest_sha256": "7c3cd1770fcbb377dcd5d323a7d7bd5d1434e36912a8619af4bb096314fc6ae5"
+  },
+  "files": {
+    "anchors.json": {
+      "sha256": "fef9f8e5fd842f2ce84352c5434e0ef618b479354b694403fd98a39a2334d960",
+      "bytes": 40
+    },
+    "report7.json": {
+      "sha256": "397344e9da6851664be1d1a9814acfed2fcb13fef3b29fbfbe7f1b19a94ba91c",
+      "bytes": 50
+    },
+    "out_log.ndjson": {
+      "sha256": "5cdd5af58bc1511228566e608988d50615597f44cc7af947475b93b329fb80ed",
+      "bytes": 24239
+    },
+    "reviewer_decisions.ndjson": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "dashboard.json": {
+      "sha256": "6b953aabdf36445c85ce69744e9e6843e7e5d726cc007f33b781f42c8f35bfe9",
+      "bytes": 39
+    },
+    "fhir_log.ndjson": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "api_reviews.ndjson": {
+      "sha256": "2208e7e319f895f888622060c9c1206e5f61f02cf2275cd832cc205e716431c7",
+      "bytes": 1328
+    },
+    "booking.json": {
+      "sha256": "435b2320630e5fdee3d5e14a23e2caee0d58140d78f00d3b29b5587579729c85",
+      "bytes": 169123
+    }
+  },
+  "cases": {
+    "pr205-control-00": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "5a9fe8abe15b13ef1738f997f8a8fe78a002485f900bf57db1c3755fad310fdf",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "5a9fe8abe15b13ef1738f997f8a8fe78a002485f900bf57db1c3755fad310fdf",
+      "state": "open"
+    },
+    "pr205-control-01": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "5781cbf3b4c1401115c4bf8ab2713ebdf0cf13bc95764acf4e1a4c0907f0ba46",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "5781cbf3b4c1401115c4bf8ab2713ebdf0cf13bc95764acf4e1a4c0907f0ba46",
+      "state": "open"
+    },
+    "pr205-control-02": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "c2bf9ca3b9571ec3d772d6c73854df97a57c8ff25ed28dae783d81ec20adfdeb",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "c2bf9ca3b9571ec3d772d6c73854df97a57c8ff25ed28dae783d81ec20adfdeb",
+      "state": "open"
+    },
+    "pr205-control-03": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "3dffcff36744b944ef6cee3d2cd5103ab40ca0232dda5c142bd2de0781672ed3",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "3dffcff36744b944ef6cee3d2cd5103ab40ca0232dda5c142bd2de0781672ed3",
+      "state": "open"
+    },
+    "pr205-control-04": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "6654bf20b5ff4b409411a69e38aabf2f9b0bf8fecf31627d7ef449a0583809ef",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "6654bf20b5ff4b409411a69e38aabf2f9b0bf8fecf31627d7ef449a0583809ef",
+      "state": "open"
+    },
+    "pr205-control-05": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "53b4694b0a72b89979da6f7d470e61e3889443b42f10c0efa92aaa7656c265ec",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "53b4694b0a72b89979da6f7d470e61e3889443b42f10c0efa92aaa7656c265ec",
+      "state": "open"
+    },
+    "pr205-control-06": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "4c0d7fe76bf90dc0eebc8d92bf0547543af214a63a767df43bcb5daee3cd31eb",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "4c0d7fe76bf90dc0eebc8d92bf0547543af214a63a767df43bcb5daee3cd31eb",
+      "state": "open"
+    },
+    "pr205-control-07": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "b56264a739f47c69d34d7392b3633568c87006334237d07d303358e449afa080",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "b56264a739f47c69d34d7392b3633568c87006334237d07d303358e449afa080",
+      "state": "open"
+    },
+    "pr205-control-08": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "53a4227f8b1f946e3f7e138fe443b0f2ebd881e2295681682a8bbf30dae80702",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "53a4227f8b1f946e3f7e138fe443b0f2ebd881e2295681682a8bbf30dae80702",
+      "state": "open"
+    },
+    "pr205-control-09": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "91c973d54497597f3739140248fd38e60ebe176232d64c5cae3d33719fe84415",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "91c973d54497597f3739140248fd38e60ebe176232d64c5cae3d33719fe84415",
+      "state": "open"
+    },
+    "pr205-control-10": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "f8890b81fb0d70bb0554996b8eb2fd67a5601a9767fefb7673423866afa4b2cd",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "f8890b81fb0d70bb0554996b8eb2fd67a5601a9767fefb7673423866afa4b2cd",
+      "state": "open"
+    },
+    "pr205-control-11": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "98bbb1afacfda20def0f9ae969e0657424406d77f5520bcfae40364ca8ad1e07",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "98bbb1afacfda20def0f9ae969e0657424406d77f5520bcfae40364ca8ad1e07",
+      "state": "open"
+    },
+    "pr205-control-12": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "2f4d71e83acad3c7284a10133be4749807fea5ad8d922231142dbb6fe6e1311b",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "2f4d71e83acad3c7284a10133be4749807fea5ad8d922231142dbb6fe6e1311b",
+      "state": "open"
+    },
+    "pr205-control-13": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "32414b0f412100135634320e5bb09d0ab1ef559ca24a8b5b25489a83207422ea",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "32414b0f412100135634320e5bb09d0ab1ef559ca24a8b5b25489a83207422ea",
+      "state": "open"
+    },
+    "pr205-control-14": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "684c7f5ccd4df73fde1f1b5da5cb70cecab0fbca13bbe0e8c05d05201883e2bf",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "684c7f5ccd4df73fde1f1b5da5cb70cecab0fbca13bbe0e8c05d05201883e2bf",
+      "state": "open"
+    },
+    "pr205-control-15": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "eed29e673d4d6ad32c69e5f3afe38ce9b5a705d202ccf4e1ac8e5929fce5e5f5",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "eed29e673d4d6ad32c69e5f3afe38ce9b5a705d202ccf4e1ac8e5929fce5e5f5",
+      "state": "open"
+    },
+    "pr205-control-16": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "32ff6dbe2f8fd328f42f0623225312689ce1dbfe309c7b69bdca58d220d4148d",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "32ff6dbe2f8fd328f42f0623225312689ce1dbfe309c7b69bdca58d220d4148d",
+      "state": "open"
+    },
+    "pr205-control-17": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "0d813090870431dcb7cf68661b3d51ac2e2a890a9325c3fa4eac84bb4df8ba80",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "0d813090870431dcb7cf68661b3d51ac2e2a890a9325c3fa4eac84bb4df8ba80",
+      "state": "open"
+    },
+    "pr205-control-18": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "f8f3ea3d64ac49f54a25bb2a8b7518e16c1f19f1f94255042ee269cddc0e5826",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "f8f3ea3d64ac49f54a25bb2a8b7518e16c1f19f1f94255042ee269cddc0e5826",
+      "state": "open"
+    },
+    "pr205-control-19": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "15f8a57b4e8d2855381506c312f15c3aa24621397816dbcea2cdcaa3a7d8a1fc",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "15f8a57b4e8d2855381506c312f15c3aa24621397816dbcea2cdcaa3a7d8a1fc",
+      "state": "open"
+    },
+    "pr205-control-20": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "1c19a7ad5dac0f469537a5d5e47d0161afdf7907789ebfcbb1647d81ff37e21f",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "1c19a7ad5dac0f469537a5d5e47d0161afdf7907789ebfcbb1647d81ff37e21f",
+      "state": "open"
+    },
+    "pr205-control-21": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "b7fe45478cf1a0b4e29eee2f85899231570c20370e7410afa86d8680c691b6c9",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "b7fe45478cf1a0b4e29eee2f85899231570c20370e7410afa86d8680c691b6c9",
+      "state": "open"
+    },
+    "pr205-control-22": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "7a9189247d3d9504696d3e030ee7fa4bdd945ec5c7e2cf1929df40f8eb8b7701",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "7a9189247d3d9504696d3e030ee7fa4bdd945ec5c7e2cf1929df40f8eb8b7701",
+      "state": "open"
+    },
+    "pr205-control-23": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "5d231652794fa5393955038893876f195b32c72e48435ab8473abe0abab8152a",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "5d231652794fa5393955038893876f195b32c72e48435ab8473abe0abab8152a",
+      "state": "open"
+    },
+    "pr205-pending": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "bb36ae145af8f0c3e6da4ab95ca4ba29fb27203aac655143a750112e40474425",
+      "pending_length": 1,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "bb36ae145af8f0c3e6da4ab95ca4ba29fb27203aac655143a750112e40474425",
+      "state": "inadequate"
+    },
+    "pr205-ready": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "f3619ad94b0e38ef6aa06c2fb5b1425b1dc862738a7e0d7501dfec632e816e9e",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "f3619ad94b0e38ef6aa06c2fb5b1425b1dc862738a7e0d7501dfec632e816e9e",
+      "state": "open"
+    },
+    "pr205-returned": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "2e733048b634e7a401f06185a2a07a532dc2805fa029987b8def902a4d92f3bc",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "2e733048b634e7a401f06185a2a07a532dc2805fa029987b8def902a4d92f3bc",
+      "state": "referral_rejected"
+    },
+    "pr205-unrelated": {
+      "canonical_provenance": "real_pipeline",
+      "expected_head": "5608011615de0ef4dfd11cfc38cda0675d5584517c5d3cc86d02f62fdb37eb58",
+      "pending_length": 0,
+      "producer": "parent ClosureCore.Apply on synthetic typed LoopFacts; private materializer harness",
+      "sig": "5608011615de0ef4dfd11cfc38cda0675d5584517c5d3cc86d02f62fdb37eb58",
+      "state": "open"
+    }
+  },
+  "F1": {
+    "canonical": true,
+    "catalogue": true,
+    "HTTP": 201
+  },
+  "F2": {
+    "canonical": true,
+    "catalogue": true,
+    "HTTP": 201,
+    "withheld": false
+  },
+  "F3": {
+    "ready": "pr205-ready",
+    "unrelated": "pr205-unrelated",
+    "canonical": true
+  },
+  "HTTP": [
+    {
+      "method": "POST",
+      "path": "/api/cases/pr205-returned/actions",
+      "request": {
+        "action": "booking_accept",
+        "expected_head": "2e733048b634e7a401f06185a2a07a532dc2805fa029987b8def902a4d92f3bc",
+        "expected_slot_version": "57ef1862686668235efa9609d1d2600a1ab0c91a08a608b10b5e6a5d721e1888",
+        "expected_suggestion_version": "9b996c163945679b3683aeefeb5e4bc5c23d69db24be74740f2311e0d55f3994",
+        "slot_id": "sim:colonoscopy:1:1"
+      },
+      "status": 201,
+      "event": {
+        "action": "coordinate_case",
+        "actor": "synthetic-parent-fixture",
+        "at": "2026-11-14T17:14:34.634546Z",
+        "case": "pr205-returned",
+        "data": {
+          "expected_slot_version": "57ef1862686668235efa9609d1d2600a1ab0c91a08a608b10b5e6a5d721e1888",
+          "expected_suggestion_version": "9b996c163945679b3683aeefeb5e4bc5c23d69db24be74740f2311e0d55f3994",
+          "slot_id": "sim:colonoscopy:1:1"
+        },
+        "hash": "4ea62df0d9d284104722379bd22ea50f799476ed6bba2d35dc1c61448920f454",
+        "head": "2e733048b634e7a401f06185a2a07a532dc2805fa029987b8def902a4d92f3bc",
+        "kind": "booking_accept",
+        "mode": "demo",
+        "prev": "genesis",
+        "role": "coordinator",
+        "seq": 1,
+        "type": "coordinator_action"
+      },
+      "reservation": {
+        "mode": "simulated",
+        "reservation_id": "4ea62df0d9d284104722379bd22ea50f799476ed6bba2d35dc1c61448920f454",
+        "reservation_version": "4ea62df0d9d284104722379bd22ea50f799476ed6bba2d35dc1c61448920f454",
+        "revision": 1,
+        "slot": {
+          "day": 12,
+          "deadline": 38,
+          "procedure": "colonoscopy",
+          "session_id": 1,
+          "slot_id": "sim:colonoscopy:1:1",
+          "unit": "AA-1"
+        },
+        "status": "reserved",
+        "updated_at": "2026-11-14T17:14:34.634546Z",
+        "updated_event": "4ea62df0d9d284104722379bd22ea50f799476ed6bba2d35dc1c61448920f454"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/cases/pr205-pending/actions",
+      "request": {
+        "action": "booking_choose_slot",
+        "expected_head": "bb36ae145af8f0c3e6da4ab95ca4ba29fb27203aac655143a750112e40474425",
+        "expected_slot_version": "57ef1862686668235efa9609d1d2600a1ab0c91a08a608b10b5e6a5d721e1888",
+        "expected_suggestion_version": "6ee01824f12090cdde0699b901601cf86169a159659fe6886b301bd08901e2c7",
+        "reason": "Synthetic parent history fixture",
+        "slot_id": "sim:colposcopy:2:1"
+      },
+      "status": 201,
+      "event": {
+        "action": "coordinate_case",
+        "actor": "synthetic-parent-fixture",
+        "at": "2026-11-14T17:14:34.643476Z",
+        "case": "pr205-pending",
+        "data": {
+          "expected_slot_version": "57ef1862686668235efa9609d1d2600a1ab0c91a08a608b10b5e6a5d721e1888",
+          "expected_suggestion_version": "6ee01824f12090cdde0699b901601cf86169a159659fe6886b301bd08901e2c7",
+          "reason": "Synthetic parent history fixture",
+          "slot_id": "sim:colposcopy:2:1"
+        },
+        "hash": "064b24b6dbb0224153e486c830f2580e84113a81969c64fc18c8a468dce0c68c",
+        "head": "bb36ae145af8f0c3e6da4ab95ca4ba29fb27203aac655143a750112e40474425",
+        "kind": "booking_choose_slot",
+        "mode": "demo",
+        "prev": "4ea62df0d9d284104722379bd22ea50f799476ed6bba2d35dc1c61448920f454",
+        "role": "coordinator",
+        "seq": 1,
+        "type": "coordinator_action"
+      },
+      "reservation": {
+        "mode": "simulated",
+        "reservation_id": "064b24b6dbb0224153e486c830f2580e84113a81969c64fc18c8a468dce0c68c",
+        "reservation_version": "064b24b6dbb0224153e486c830f2580e84113a81969c64fc18c8a468dce0c68c",
+        "revision": 1,
+        "slot": {
+          "day": 55,
+          "deadline": 97,
+          "procedure": "colposcopy",
+          "session_id": 2,
+          "slot_id": "sim:colposcopy:2:1",
+          "unit": "AD-2"
+        },
+        "status": "reserved",
+        "updated_at": "2026-11-14T17:14:34.643476Z",
+        "updated_event": "064b24b6dbb0224153e486c830f2580e84113a81969c64fc18c8a468dce0c68c"
+      }
+    }
+  ],
+  "ledger_provenance": "api_reviews.ndjson written ONLY by actual parent HTTP POSTs; original ledger never assembled, edited, truncated or rehashed",
+  "clock": "at values are actual parent time.Now().UTC(); original timestamps retained",
+  "command_disclosure": "The argv below are path-normalized reproduction TEMPLATES, NOT exact raw argv. Exact argv, cwd, environment, raw outputs and hashes are retained privately with mode 0600. $PARENT_ARCHIVE is a fresh 0700 git archive; $HARNESS_DIR holds the disclosed private generator, separate from archive; $RUN is the same canonical run for Python and HTTP.",
+  "reproduction_templates": [
+    {
+      "label": "parent-compile",
+      "argv_template": [
+        "$GO",
+        "test",
+        "-mod=readonly",
+        "-p=1",
+        "-parallel=1",
+        "-count=1",
+        "-timeout=110s",
+        "-c",
+        "-o",
+        "$PRIVATE/parent-fixture.test",
+        "."
+      ],
+      "exit_code": 0,
+      "raw_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "parent-canonical",
+      "argv_template": [
+        "$PRIVATE/parent-fixture.test",
+        "-test.run",
+        "^TestPR205ParentCanonical$",
+        "-test.v",
+        "-test.parallel=1",
+        "-test.count=1",
+        "-test.timeout=110s"
+      ],
+      "exit_code": 0,
+      "raw_output_sha256": "724fccc958dcd0b425c2f97c496f62b71a101bd27e96dcd2b6073676558fa89c"
+    },
+    {
+      "label": "parent-catalogue",
+      "argv_template": [
+        "$PYTHON",
+        "-I",
+        "$PARENT_ARCHIVE/booking/suggest.py",
+        "$RUN",
+        "--seed",
+        "2026"
+      ],
+      "exit_code": 1,
+      "raw_output_sha256": "f9981bab6a054e031156a54258f242964fc1ce69d89cd3ce9675dcf0068e50b2"
+    },
+    {
+      "label": "parent-catalogue-import-bootstrap",
+      "argv_template": [
+        "$PYTHON",
+        "-I",
+        "$HARNESS_DIR/parent_catalogue.py",
+        "$PARENT_ARCHIVE/booking/suggest.py",
+        "$RUN",
+        "--seed",
+        "2026"
+      ],
+      "exit_code": 0,
+      "raw_output_sha256": "c2ddb0c4b518dc5f2868242cc00f02ac3d76e33b13dce852dd4a96c02bd02c1c"
+    },
+    {
+      "label": "parent-http",
+      "argv_template": [
+        "$PRIVATE/parent-fixture.test",
+        "-test.run",
+        "^TestPR205ParentHTTP$",
+        "-test.v",
+        "-test.parallel=1",
+        "-test.count=1",
+        "-test.timeout=110s"
+      ],
+      "exit_code": 0,
+      "raw_output_sha256": "6fb45b6891c9450f41ee0e8d2515b9ac020c0fc8dd8ddfd69fc8775f9e51aa16"
+    }
+  ],
+  "private_harness_sha256": {
+    "parent_catalogue.py": "267a52ee7714ef0d1771b6f016cac79301c5a4e9024b9cfb2095baa5fec4c969",
+    "parent_fixture_test.go": "99a58d64c35731793295614cb0b1bce3ea1e0b52a66624d5a5c0601c5fa1cfeb"
+  },
+  "synthetic_facts": [
+    {
+      "id": "synthetic-facts-0",
+      "in_seq": 1,
+      "facts": {
+        "loop": "pr205-returned",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "ahs-mushrif/ServiceRequest/pr205-returned",
+        "prog": "crc",
+        "tasks": null,
+        "down": [
+          {
+            "ev": "ServiceRequestrevokedeid1.0000",
+            "prov": "skmc-endo",
+            "rtype": "ServiceRequest",
+            "status": "revoked",
+            "day": 10,
+            "prog": "crc",
+            "strength": 1,
+            "weak": {
+              "a": "",
+              "b": "",
+              "p": 0,
+              "basis": "eid"
+            },
+            "hops": 0
+          }
+        ],
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-1",
+      "in_seq": 2,
+      "facts": {
+        "loop": "pr205-pending",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "ahs-mushrif/ServiceRequest/pr205-pending",
+        "prog": "cervical",
+        "tasks": null,
+        "down": [
+          {
+            "ev": "DiagnosticReportfinaleid1.0000",
+            "prov": "skmc-endo",
+            "rtype": "DiagnosticReport",
+            "status": "final",
+            "day": 10,
+            "report": "R1",
+            "prog": "cervical",
+            "evv": {
+              "kind": "colposcopy",
+              "regex": {
+                "state": "needs_human",
+                "reason": "missing_documentation"
+              },
+              "gemma": {
+                "state": "not_closed",
+                "reason": "unsatisfactory_exam",
+                "quote": "conclusionCode=unsatisfactory"
+              },
+              "gemma_hit": false,
+              "agree": false,
+              "label": "disagree"
+            },
+            "strength": 1,
+            "weak": {
+              "a": "",
+              "b": "",
+              "p": 0,
+              "basis": "eid"
+            },
+            "hops": 0
+          }
+        ],
+        "ev_over": {
+          "R1": "adequate"
+        },
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-2",
+      "in_seq": 3,
+      "facts": {
+        "loop": "pr205-ready",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-3",
+      "in_seq": 4,
+      "facts": {
+        "loop": "pr205-unrelated",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-4",
+      "in_seq": 5,
+      "facts": {
+        "loop": "pr205-control-00",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-5",
+      "in_seq": 6,
+      "facts": {
+        "loop": "pr205-control-01",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-6",
+      "in_seq": 7,
+      "facts": {
+        "loop": "pr205-control-02",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-7",
+      "in_seq": 8,
+      "facts": {
+        "loop": "pr205-control-03",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-8",
+      "in_seq": 9,
+      "facts": {
+        "loop": "pr205-control-04",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-9",
+      "in_seq": 10,
+      "facts": {
+        "loop": "pr205-control-05",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-10",
+      "in_seq": 11,
+      "facts": {
+        "loop": "pr205-control-06",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-11",
+      "in_seq": 12,
+      "facts": {
+        "loop": "pr205-control-07",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-12",
+      "in_seq": 13,
+      "facts": {
+        "loop": "pr205-control-08",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-13",
+      "in_seq": 14,
+      "facts": {
+        "loop": "pr205-control-09",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-14",
+      "in_seq": 15,
+      "facts": {
+        "loop": "pr205-control-10",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-15",
+      "in_seq": 16,
+      "facts": {
+        "loop": "pr205-control-11",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "crc",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-16",
+      "in_seq": 17,
+      "facts": {
+        "loop": "pr205-control-12",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-17",
+      "in_seq": 18,
+      "facts": {
+        "loop": "pr205-control-13",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-18",
+      "in_seq": 19,
+      "facts": {
+        "loop": "pr205-control-14",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-19",
+      "in_seq": 20,
+      "facts": {
+        "loop": "pr205-control-15",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-20",
+      "in_seq": 21,
+      "facts": {
+        "loop": "pr205-control-16",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-21",
+      "in_seq": 22,
+      "facts": {
+        "loop": "pr205-control-17",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-22",
+      "in_seq": 23,
+      "facts": {
+        "loop": "pr205-control-18",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-23",
+      "in_seq": 24,
+      "facts": {
+        "loop": "pr205-control-19",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-24",
+      "in_seq": 25,
+      "facts": {
+        "loop": "pr205-control-20",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-25",
+      "in_seq": 26,
+      "facts": {
+        "loop": "pr205-control-21",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-26",
+      "in_seq": 27,
+      "facts": {
+        "loop": "pr205-control-22",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-facts-27",
+      "in_seq": 28,
+      "facts": {
+        "loop": "pr205-control-23",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 0,
+        "sr_rec": "",
+        "prog": "cervical",
+        "tasks": null,
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    }
+  ],
+  "threat_boundary": "An unkeyed SHA-256 chain is not file-writer authentication. Before the first stamp (old or fresh ledger), a chain-valid forged unstamped acquisition can waive readiness only; all other guards remain. This fixture is actual parent HTTP history, not that synthetic forgery."
+}
