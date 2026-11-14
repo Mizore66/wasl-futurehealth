@@ -49,7 +49,8 @@ export function BookingControls({
   const available = candidates.filter((slot) => slot.availability === "available" && !!slot.version);
   const suggested = candidates.find((slot) => slot.slot_id === booking.suggested_slot_id);
   const hasCatalogue = !!booking.suggestion_version && !!booking.calendar_version && booking.eligible_slots !== undefined;
-  const eligibleCase = current.case.consent === "granted" && !current.case.closed && OPEN.has(current.case.state);
+  const notReady = booking.readiness?.ready === false;
+  const eligibleCase = current.case.consent === "granted" && !current.case.closed && OPEN.has(current.case.state) && !notReady;
   const ledgerReady = overlay.ledger_status === "ok";
   const writesReady = live && locked === false && ledgerReady && !pending;
   const reserveReady = writesReady && hasCatalogue && eligibleCase && candidates.length > 0;
@@ -62,6 +63,7 @@ export function BookingControls({
   else if (locked) disabledReason = "Reload this case before another booking action.";
   else if (!ledgerReady) disabledReason = "The case ledger is invalid, so booking writes are disabled.";
   else if (!hasCatalogue && !active) disabledReason = "This older booking document has no versioned slot catalogue. Regenerate it to enable reservations.";
+  else if (notReady) disabledReason = `Not clinically ready: ${booking.readiness?.reason ?? "a referral or repeat disposition is unresolved"}.`;
   else if (!eligibleCase && !active) disabledReason = "A simulated reservation needs an open booking-eligible case with canonical contact permission granted.";
 
   const open = (next: Mode) => {

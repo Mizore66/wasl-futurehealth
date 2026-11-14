@@ -16,7 +16,7 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
 import { outcomeWords } from "@/components/case/words";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
@@ -41,7 +41,7 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
 type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
-type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; log: Contact[] };
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -73,6 +73,12 @@ type LedgerRead = LedgerSnapshot | { error: string };
 const isLedger = (l: LedgerRead | undefined): l is LedgerSnapshot => !!l && !("error" in l);
 const contactProjection = (item: WorkItem): ContactProjection => ({
   contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped,
+});
+/** Keep the row's booking workflow and action-driving flags on the same projection as its write head. */
+const bookingRowProjection = (item: WorkItem) => ({
+  view: item.view, status: item.status, next: item.next, head: item.head,
+  snoozed: item.snoozed, noAnswer: item.noAnswer, awaitingNext: item.awaitingNext,
+  reserved: item.reserved, cancelled: item.cancelled,
 });
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
@@ -232,10 +238,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         // separate; only the validated current shared case projection may change these affordances and their head.
         if (ledger.status === "ok" && panel?.overlay.ledger_status === "ok") {
           const latest = workItem(panel.case, now, true);
-          setS((prev) => ({
-            ...prev,
-            over: { ...prev.over, [selId]: { ...(prev.over[selId] ?? { log: [] }), ...contactProjection(latest), head: panel.overlay.head } },
-          }));
+          setS((prev) => {
+            const before = prev.over[selId] ?? { log: [] };
+            return {
+              ...prev,
+              over: {
+                ...prev.over,
+                [selId]: {
+                  ...before,
+                  // A new writable head must not retain booking flags/Next from an older local save. A same-head
+                  // read can retain the just-saved presentation; contact permission is always refreshed below.
+                  ...(before.head !== latest.head ? bookingRowProjection(latest) : {}),
+                  ...contactProjection(latest), head: latest.head,
+                },
+              },
+            };
+          });
         }
       })
       .catch((e: unknown) => {
@@ -265,9 +283,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         over: {
           ...prev.over,
           [id]: {
-            ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
+            ...before, ...bookingRowProjection(latest),
             ...(projection.overlay.ledger_status === "ok" ? contactProjection(latest) : {}),
-            snoozed: latest.snoozed, noAnswer: latest.noAnswer, awaitingNext: latest.awaitingNext,
           },
         },
       };
@@ -444,7 +461,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false, ...(p.reserved ? { next: DECLINED_RESERVED_NEXT } : p.cancelled ? { next: DECLINED_CANCELLED_NEXT } : {}) },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },

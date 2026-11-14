@@ -141,11 +141,18 @@ export type WorkItem = {
   awaitingNext?: boolean;
   /** `invalid`: ledger replay stopped part-way, so this row's overlay is only a prefix and not authoritative. */
   ledgerStatus?: "ok" | "invalid";
+  /** An active simulated reservation (live API only). */
+  reserved?: boolean;
+  /** The simulated reservation was cancelled (live API only). */
+  cancelled?: boolean;
 };
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
+export const DECLINED_RESERVED_NEXT = "GP to sign the decline · cancel the simulated reservation to release the slot";
+/** A decline recorded after the reservation was cancelled needs the GP's sign-off, not another booking. */
+export const DECLINED_CANCELLED_NEXT = "GP to sign the decline";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
@@ -208,11 +215,19 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
   // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
   const booking = ov?.booking;
+  const declinedAfterBooking = lc?.outcome === "declined" && !!booking?.updated_at && compareInstants(lc.at, booking.updated_at) > 0;
   if (booking?.status === "reserved") {
     awaitingNext = false;
-    view = "waiting";
-    words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
-    words.next = "Manage the simulated reservation";
+    if (declinedAfterBooking) {
+      words.next = DECLINED_RESERVED_NEXT;
+    } else {
+      view = "waiting";
+      words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
+      words.next = "Manage the simulated reservation";
+    }
+  } else if (booking?.status === "cancelled" && declinedAfterBooking) {
+    awaitingNext = false;
+    words.next = DECLINED_CANCELLED_NEXT;
   } else if (booking?.status === "cancelled") {
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
@@ -251,7 +266,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
-    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status } : {}),
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
   };
 }
 
