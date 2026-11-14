@@ -62,17 +62,19 @@ func EnableIfhas() {
 
 // IfhasTruth: the generator's ground truth for one IFHAS loop.
 type IfhasTruth struct {
-	Label     string             `json:"label"`         // screening label from the printed results
-	Rec       IfhasRec           `json:"rec"`           // ifhasRule(Label)
-	Screen    string             `json:"screen_report"` // results DiagnosticReport id
-	CodeError string             `json:"coding_error,omitempty"`
-	GradeDay  float64            `json:"screen_day"`
-	Adherence string             `json:"adherence"`        // within | late | never | n/a
-	Status    map[string]string  `json:"status,omitempty"` // abnormal domain -> last documented status by the end of observation
-	ResDay    map[string]float64 `json:"resolved_day,omitempty"`
-	Outcome   string             `json:"outcome,omitempty"` // label of the last document seen
-	Notes     []string           `json:"notes,omitempty"`   // follow-up document ids in time order
-	Within    bool               `json:"within_deadline,omitempty"`
+	Label         string             `json:"label"`         // screening label from the printed results
+	Rec           IfhasRec           `json:"rec"`           // ifhasRule(Label)
+	Screen        string             `json:"screen_report"` // results DiagnosticReport id
+	CodeError     string             `json:"coding_error,omitempty"`
+	GradeDay      float64            `json:"screen_day"`
+	Adherence     string             `json:"adherence"`        // within | late | never | n/a
+	Status        map[string]string  `json:"status,omitempty"` // abnormal domain -> last documented status by the end of observation
+	ResDay        map[string]float64 `json:"resolved_day,omitempty"`
+	Outcome       string             `json:"outcome,omitempty"` // label of the last document seen
+	Notes         []string           `json:"notes,omitempty"`   // follow-up document ids in time order
+	Within        bool               `json:"within_deadline,omitempty"`
+	ClosingReport string             `json:"closing_report,omitempty"`
+	ReopenDomain  string             `json:"reopen_domain,omitempty"` // deterministic resolved -> pending -> resolved pathway
 }
 
 type ifhasGen struct {
@@ -316,6 +318,22 @@ func (g *ifhasGen) report(prov string, x *reg, day, arr float64, code, text, uid
 // ifhasFinal: P(managed) by domain cell (the rest: not confirmed).
 var ifhasFinal = map[string]float64{"glyc/D": .75, "glyc/S": .95, "bp/H": .60, "bp/S": .90, "lipid/H": .70, "weight/O": .97}
 
+// ifhasReopenChoice adds a loop-keyed resolved -> pending -> resolved pathway
+// without drawing from, or tuning against, any evaluation seed stream.
+func ifhasReopenChoice(seed int64, loop string, rec IfhasRec) string {
+	if rec.Action != IfhasFollowUp || u01(seed, loop, "ifhas-reopen-v1", "select") >= .25 {
+		return ""
+	}
+	for _, domain := range []string{"glyc", "bp", "lipid", "weight"} {
+		for _, abnormal := range rec.Domains {
+			if domain == abnormal {
+				return domain
+			}
+		}
+	}
+	return ""
+}
+
 // genIfhas appends nIfhas IFHAS loops (+ distractor follow-up notes). bg = background persons; persons with any loop
 // are skipped.
 func genIfhas(dir string, seed int64, nIfhas int, bg []*Person, tr *Truth, evs *[]GenEvent, regs map[string]*reg, mrnN, ctr, textUse map[string]int) {
@@ -482,9 +500,55 @@ func genIfhas(dir string, seed int64, nIfhas int, bg []*Person, tr *Truth, evs *
 				t += 7 + 14*r.Float64()
 			}
 		}
+		// A selected loop continues beyond its first fully resolving note. Truth
+		// is reduced after every emitted note exactly as the evaluator does.
+		if rec.Action == IfhasFollowUp && state == "closed" {
+			it.ClosingReport = it.Notes[len(it.Notes)-1]
+			domain := ifhasReopenChoice(seed, loop, rec)
+			if domain != "" && closed+21 <= TEnd {
+				resolvedStatus := it.Status[domain]
+				pendingDay := closed + 7
+				if id, seen := note(p, pendingDay, domain+"="+IfhasPending); seen {
+					it.ReopenDomain = domain
+					it.Notes, it.Outcome = append(it.Notes, id), domain+"="+IfhasPending
+					it.Status[domain] = IfhasPending
+					delete(it.ResDay, domain)
+					it.ClosingReport, it.Within = "", false
+					state, closed = "open", 0
+					lt.ProcDay = -1
+					finalDay := pendingDay + 7
+					if id, seen := note(p, finalDay, domain+"="+resolvedStatus); seen {
+						it.Notes, it.Outcome = append(it.Notes, id), domain+"="+resolvedStatus
+						it.Status[domain] = resolvedStatus
+						it.ResDay[domain] = finalDay
+						it.ClosingReport = id
+						state, closed = "closed", finalDay
+					}
+				}
+			}
+		}
+		if rec.Action == IfhasFollowUp {
+			all := true
+			for _, d := range rec.Domains {
+				all = all && ifhasResolved(it.Status[d])
+			}
+			if !all {
+				state, closed = "open", 0
+				it.ClosingReport, it.Within = "", false
+				lt.ProcDay = -1
+			} else if state == "closed" {
+				it.Within = true
+				for _, d := range rec.Domains {
+					it.Within = it.Within && it.ResDay[d] <= S+float64(rec.DomDays[d])
+				}
+				lt.ProcDay = closed
+			}
+		}
 		lt.State = state
 		if state == "closed" || state == "no_followup_needed" {
 			lt.ClosedDay = closed
+		} else {
+			lt.ClosedDay = 0
 		}
 		lt.Overdue = ifhasOverdue(state, rec, it.Status, S, TEnd)
 		lt.Dropoff = ifhasDropoff(state, false)

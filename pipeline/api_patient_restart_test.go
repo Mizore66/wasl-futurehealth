@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -121,6 +122,9 @@ func TestPatientNoOpAppendFailureDoesNotBindRequest(t *testing.T) {
 func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	s, run := exportRun(t)
 	writeRequiredAPIJSON(t, run)
+	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), []byte(preflightFHIRLine+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
 	s.now = func() time.Time { return now }
 	h, err := s.handler("staff-token-123456:coordinator:coordinator-one", "")

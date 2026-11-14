@@ -81,6 +81,45 @@ describe("reviewQueue", () => {
     expect(questionAnchor(link.item, "link")).not.toBe(questionAnchor(evidence.item, "evidence"));
   });
 
+  function openGuided(id: string) {
+    const detail = programmeDetail("lung_ldct");
+    detail.case = { ...detail.case, id, review: "open" };
+    detail.review_items = [{ item: `rv-${id}`, loop: id, kinds: ["evidence"], pair: [], p: 0, report: detail.evidence[0].report, verdict: "disagree", quote: "", chain: [] }];
+    return detail;
+  }
+
+  it.each([401, 403, 404] as const)("reports a %s detail read as an incomplete queue and never selects review_hold", async (status) => {
+    const detail = openGuided("case-a");
+    source.getCases.mockResolvedValue({ cases: [detail.case], total: 1, limit: 50, offset: 0, meta: {} });
+    source.getCaseWithToken.mockResolvedValue({ ok: false, status });
+
+    const queue = await reviewQueue("stored-token-1234567890");
+    expect(queue).toEqual({ cases: [], source: "incomplete", failures: [{ id: "case-a", status }] });
+    expect(source.getFixtures).not.toHaveBeenCalled();
+  });
+
+  it("keeps the readable cases of a mixed response and names the cases that failed", async () => {
+    const good = openGuided("case-good");
+    const bad = openGuided("case-bad");
+    source.getCases.mockResolvedValue({ cases: [good.case, bad.case], total: 2, limit: 50, offset: 0, meta: {} });
+    source.getCaseWithToken.mockImplementation(async (id: string) => (id === "case-good" ? { ok: true, detail: good } : { ok: false, status: 403 }));
+
+    const queue = await reviewQueue("stored-token-1234567890");
+    expect(queue).toEqual({ cases: [good], source: "incomplete", failures: [{ id: "case-bad", status: 403 }] });
+    expect(source.getFixtures).not.toHaveBeenCalled();
+  });
+
+  it("keeps the practice queue when every detail read succeeds and none is actionable", async () => {
+    const settled = openGuided("case-done");
+    settled.review_items = [];
+    source.getCases.mockResolvedValue({ cases: [settled.case], total: 1, limit: 50, offset: 0, meta: {} });
+    source.getCaseWithToken.mockResolvedValue({ ok: true, detail: settled });
+    source.getFixtures.mockResolvedValue({ fixtures: { review_hold: { id: "hold" } } });
+
+    const queue = await reviewQueue("stored-token-1234567890");
+    expect(queue.source).toBe("rebuilt");
+  });
+
   it("falls back to the rebuilt hold case when only cervical cases are open", async () => {
     const detail = programmeDetail("lung_ldct");
     detail.case = { ...detail.case, programme: "cervical", review: "open" };

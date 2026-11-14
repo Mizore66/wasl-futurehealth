@@ -954,6 +954,9 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), []byte(preflightFHIRLine+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
 	token, err := provisionPatientLink(run, exportLoop, 30*time.Minute, now)
 	if err != nil {

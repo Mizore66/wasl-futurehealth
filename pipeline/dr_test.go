@@ -14,6 +14,12 @@ func drScreen(id string, day float64, label string) DownFact {
 		Ev: ev, Strength: 1, Weak: Edge{A: drSRRec, B: drSRRec, P: 1, Basis: "self"}}
 }
 
+func drRepeat(id, parent string, day float64, label string) DownFact {
+	d := drScreen(id, day, label)
+	d.Parent, d.Relation = parent, repeatRelation
+	return d
+}
+
 // drNote: an eye-clinic note at the hospital. label "" = readers disagree; basis eid = trusted; wasl with p < tau = untrusted.
 func drNote(id string, day float64, label, basis string, p float64, nearMiss bool) DownFact {
 	ev := &TwoVerdict{Kind: "dr-clinic", Agree: label != "", Label: "disagree"}
@@ -115,11 +121,11 @@ func TestDRUngradableThenRepeat(t *testing.T) {
 	if d.State != "open" || !d.Overdue || d.Dropoff != "ungradable_no_repeat" {
 		t.Fatalf("U without repeat: want open overdue, got %s %v %q", d.State, d.Overdue, d.Dropoff)
 	}
-	d, _ = runLung(t, drFacts(drScreen("PHC-dr-1", 10, "U"), drScreen("PHC-dr-2", 30, "R0M0")), 120)
+	d, _ = runLung(t, drFacts(drScreen("PHC-dr-1", 10, "U"), drRepeat("PHC-dr-2", "PHC-dr-1", 30, "R0M0")), 120)
 	if d.State != "no_referral_needed" || d.ClosingReport != "PHC-dr-2" {
 		t.Fatalf("U then R0M0: want no_referral_needed on the repeat, got %s %s", d.State, d.ClosingReport)
 	}
-	d, _ = runLung(t, drFacts(drScreen("PHC-dr-1", 10, "U"), drScreen("PHC-dr-2", 30, "R2M0"), drNote("EYE-dr-1", 25, "examined_followup", "eid", 1, false)), 120)
+	d, _ = runLung(t, drFacts(drScreen("PHC-dr-1", 10, "U"), drRepeat("PHC-dr-2", "PHC-dr-1", 30, "R2M0"), drNote("EYE-dr-1", 25, "examined_followup", "eid", 1, false)), 120)
 	if d.State == "closed" || d.DR.GradeDay != 30 {
 		t.Fatalf("an exam before the deciding grade must not close it: %s grade day %v", d.State, d.DR.GradeDay)
 	}

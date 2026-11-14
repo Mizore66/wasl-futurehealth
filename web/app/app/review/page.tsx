@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
-import { reviewView } from "@/components/review/case-view";
+import { PURPOSE_LABEL, reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { apiMode } from "@/lib/api/source";
@@ -10,6 +10,12 @@ import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
 
 export const metadata = { title: "Review" };
+
+const FAILURE_COPY = {
+  401: "Your reviewer sign-in was not accepted or has ended. Open a case on the review desk and sign in again.",
+  403: "Your reviewer credential is not allowed to read them. Ask the operator to check your role.",
+  404: "The API lists them as open but returned no detail for them. Reload, or contact the operator.",
+} as const;
 
 export default async function Page({ searchParams }: PageProps<"/app/review">) {
   const query = await searchParams;
@@ -28,9 +34,11 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="m-0 text-title font-semibold">Review</h1>
-          <p className="m-0 mt-1 text-muted">
-            {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer. Nothing closes without it.
-          </p>
+          {queue.source !== "incomplete" && (
+            <p className="m-0 mt-1 text-muted">
+              {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer.
+            </p>
+          )}
         </div>
         <QueueLabel source={queue.source} />
       </header>
@@ -39,6 +47,17 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
         <p role="status" className="m-0 mt-3 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
           OIDC sign-in could not be completed. Try again from a review case or contact the operator.
         </p>
+      )}
+
+      {queue.source === "incomplete" && (
+        <div role="alert" className="m-0 mt-3 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="queue-incomplete">
+          <p className="m-0">
+            {queue.failures.length === 1 ? "1 open case could not be loaded" : `${queue.failures.length} open cases could not be loaded`}, so this queue is incomplete.
+          </p>
+          {[...new Set(queue.failures.map((f) => f.status))].map((status) => (
+            <p key={status} className="m-0 mt-1">{FAILURE_COPY[status]}</p>
+          ))}
+        </div>
       )}
 
       {live && !token && <p className="m-0 mt-3 max-w-[72ch] text-muted">Open a case on the review desk and sign in to claim or answer a question.</p>}
@@ -86,7 +105,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
               </span>
               <span className="col-start-2 min-w-0 text-muted md:col-start-auto">{view.held}</span>
               <span className="col-start-2 text-small text-muted md:col-start-auto">
-                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
+                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : view.purpose ? PURPOSE_LABEL[view.purpose] : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
               </span>
             </Link>
             {(detail.api_review_states ?? []).filter((s) => s.next_read !== null && !s.frozen && s.claim_actions).map((state) => {

@@ -16,7 +16,8 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
+import { outcomeWords } from "@/components/case/words";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
@@ -36,7 +37,7 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
+type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -53,7 +54,7 @@ type State = {
   over: Record<string, Patch>;
 };
 
-type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
+type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; log: Contact[] };
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
 type LedgerRead = (PersistedLedger & { bookingPanel?: BookingProjection | null }) | { error: string };
@@ -72,10 +73,14 @@ const TABS: [View, string][] = [
   ["none", "No owner"],
 ];
 
+const OUTCOME_CHIP = { voicemail: "Voicemail", wrong_number: "Wrong number" } as const;
+
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 /** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
 const SESSION_WHO = "This browser";
+/** Fixtures mode only: the demo persona. A live save shows the owner the API recorded, the verified coordinator. */
+const SESSION_OWNER = "Hessa Al Ali";
 
 const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
@@ -192,7 +197,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           ...prev.over,
           [id]: {
             ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
-            snoozed: latest.snoozed, noAnswer: latest.noAnswer,
+            snoozed: latest.snoozed, noAnswer: latest.noAnswer, awaitingNext: latest.awaitingNext,
           },
         },
       };
@@ -257,7 +262,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
+        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
@@ -290,7 +295,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       </span>
     </div>
   );
-  const stage = last ? s.stage : null;
+  /* A persisted Reached outcome keeps its follow-up choices until a later outcome, snooze or booking replaces it. */
+  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" ? "callback" : null) : p?.awaitingNext ? "reached" : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
 
@@ -298,7 +304,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   let chipsTitle = "";
   let chips: Chip[] = [];
   if (p) {
-    if (!last) {
+    if (!last && !stage) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
         [
@@ -307,7 +313,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Reached on the phone",
-              { status: `Reached · ${p.next}`, snoozed: false },
+              { status: `Reached · ${p.next}`, snoozed: false, awaitingNext: true },
               "Logged: Reached",
               "Next: appointment agreed or a call back",
               { action: "contact_outcome", outcome: "reached", channel: "phone" },
@@ -318,13 +324,25 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true }, "Logged: No answer", toEnd, {
+            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true, awaitingNext: false }, "Logged: No answer", toEnd, {
               action: "contact_outcome",
               outcome: "no_answer",
               channel: "phone",
             });
           },
         ],
+        ...(["voicemail", "wrong_number"] as const).map((outcome): Chip => [
+          OUTCOME_CHIP[outcome],
+          () =>
+            log(
+              p,
+              outcomeWords(outcome, "phone"),
+              { noAnswer: 0, status: outcomeStatus(outcome), snoozed: false, awaitingNext: false },
+              `Logged: ${OUTCOME_CHIP[outcome]}`,
+              outcomeStatus(outcome),
+              { action: "contact_outcome", outcome, channel: "phone" },
+            ),
+        ]),
       ];
     } else if (stage === "reached") {
       chipsTitle = "What next?";
@@ -336,7 +354,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Appointment agreed",
-              { view: "waiting", status: BOOKING_NEEDED, snoozed: false },
+              { view: "waiting", status: BOOKING_NEEDED, snoozed: false, awaitingNext: false },
               "Logged: Appointment agreed",
               `${first} moved to Waiting`,
               { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
@@ -346,7 +364,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "Call back on…",
           () => {
             setWant({ k: "chips" });
-            setS((prev) => ({ ...prev, stage: "callback", callbackFrom: Date.now() }));
+            setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "callback", callbackFrom: Date.now() }));
           },
         ],
         [
@@ -355,7 +373,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: DECLINED_STATUS, snoozed: false },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },
@@ -367,7 +385,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       // One wall-clock `until` per choice drives both the label and the saved snooze (issue #37); never the run day.
       chips = [1, 2, 3].map((k) => {
         const { label: d, action } = callbackChoice(k, s.callbackFrom);
-        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
+        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true, awaitingNext: false }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
       });
     }
   }
@@ -564,7 +582,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 className="max-sm:flex-1"
                 disabled={busy || ledgerInvalid}
                 onClick={() =>
-                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
+                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
                     action: "snooze",
                     until: fromNow(1),
                     reason: "Snoozed to tomorrow",
@@ -580,9 +598,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   className="max-sm:flex-1"
                   disabled={busy || ledgerInvalid}
                   onClick={() =>
-                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
+                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
                       action: "assign_owner",
-                      owner: "Hessa Al Ali",
                     })
                   }
                 >

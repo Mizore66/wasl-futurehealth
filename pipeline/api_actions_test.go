@@ -501,3 +501,26 @@ func TestActionsCanonicalImmutability(t *testing.T) {
 		t.Error("coordinator events missing from audit history")
 	}
 }
+
+func TestAssignOwnerWithoutOwnerTakesTheVerifiedActor(t *testing.T) {
+	run := twoCaseRun(t)
+	s, srv := serveAgent(t, run)
+	l := agentLoop("1")
+	code, m := postAction(t, srv, l, RoleCoordinator, "nurse-7", hb(headOf(s, l), `"action":"assign_owner"`))
+	if code != 201 {
+		t.Fatalf("self-assignment refused: %d %v", code, m)
+	}
+	if actor := m["event"].(map[string]interface{})["actor"]; actor != "nurse-7" {
+		t.Fatalf("event actor = %v", actor)
+	}
+	if owner := m["api_overlay"].(map[string]interface{})["owner"]; owner != "nurse-7" {
+		t.Fatalf("owner = %v, want the event actor", owner)
+	}
+	s2, _ := serveAgent(t, run)
+	if owner := s2.overlayView(s2.cases[l], false)["owner"]; owner != "nurse-7" {
+		t.Fatalf("owner after ledger replay = %v", owner)
+	}
+	if code, m := postAction(t, srv, l, RoleCoordinator, "nurse-7", hb(headOf(s, l), `"action":"assign_owner","owner":"Dr Al Kaabi"`)); code != 201 || m["event"].(map[string]interface{})["actor"] != "nurse-7" || m["api_overlay"].(map[string]interface{})["owner"] != "Dr Al Kaabi" {
+		t.Fatalf("explicit hand-off: %d %v", code, m)
+	}
+}
