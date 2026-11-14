@@ -198,6 +198,77 @@ it("T-TODAY-LIVE-INFLIGHT invokes recordAction before paging, then follows that 
   expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
 });
 
+it.each([
+  { count: 1201, action: "Snooze to tomorrow", kind: "snooze", page: "Page 49 of 49", selected: 0 },
+  { count: 26, action: "Hand to Dr Al Kaabi", kind: "assign_owner", page: undefined, selected: 1 },
+])("phone delayed $kind follows the action but focuses the visible row, including a disappearing pager ($count rows)", async ({ count, action, kind, page, selected }) => {
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
+  // SYNTHETIC per-row heads added after workItem, not production authority or API captures.
+  const items = allCallWorkItems(count).map((item, i) => ({ ...item, head: `synthetic-phone-head-${i}` }));
+  const saved = pending<{ ok: true; head: string; hash: string; actor: string }>();
+  recordAction.mockReturnValue(saved.promise);
+  vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+  await mount(items, true); await click(action);
+  expect(recordAction).toHaveBeenCalledExactlyOnceWith(items[0].id, items[0].head, expect.objectContaining({ action: kind }));
+  await click(`Your list · ${count}`); await pager("Next");
+  const focusedPager = button(count === 26 ? "Previous" : "Next", list().querySelector("nav")!);
+  expect(document.activeElement).toBe(focusedPager);
+  expect(heading()).toBe(items[25].name);
+  await act(async () => saved.resolve({ ok: true, head: "synthetic-phone-saved-head", hash: "synthetic-phone-write-hash", actor: "Synthetic coordinator" }));
+  expect(heading()).toBe(items[selected].name); assertMounted();
+  if (page) expect(status()).toBe(`${page}, showing 1201 to 1201 of 1201.`);
+  else { expect(status()).toBeUndefined(); expect(list().querySelector("nav")).toBeNull(); }
+  expect(focusedPager.isConnected).toBe(false);
+  // happy-dom has no responsive CSS: assert production pane classes and intentional list focus,
+  // not browser display:none behavior, layout, or axe evidence.
+  expect(list().classList.contains("hidden")).toBe(false);
+  expect(list().classList.contains("flex")).toBe(true);
+  expect(open().classList.contains("hidden")).toBe(true);
+  expect(document.activeElement).toBe(rows().find((row) => row.getAttribute("aria-pressed") === "true"));
+  expect(list().contains(document.activeElement)).toBe(true);
+  expect(open().contains(document.activeElement)).toBe(false);
+  expect(document.activeElement).not.toBe(document.body);
+  expect(open().textContent).toContain("saved to the case ledger");
+  if (kind === "snooze") expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
+  else expect(host.querySelector('[data-testid="removed-notice"]')?.textContent).toContain("moved to Waiting");
+});
+
+it("phone delayed hand-off of the only row focuses the surviving selected list tab", async () => {
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
+  const items = allCallWorkItems(1).map((item) => ({ ...item, head: "synthetic-empty-head" }));
+  const saved = pending<{ ok: true; head: string; hash: string; actor: string }>();
+  recordAction.mockReturnValue(saved.promise);
+  vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+  await mount(items, true); await click("Hand to Dr Al Kaabi");
+  expect(recordAction).toHaveBeenCalledExactlyOnceWith(items[0].id, items[0].head, expect.objectContaining({ action: "assign_owner" }));
+  await click("Your list · 1"); expect(document.activeElement).toBe(rows()[0]);
+  await act(async () => saved.resolve({ ok: true, head: "synthetic-empty-saved-head", hash: "synthetic-empty-write-hash", actor: "Synthetic coordinator" }));
+  expect(rows()).toHaveLength(0); expect(list().querySelector("nav")).toBeNull();
+  expect(list().classList.contains("hidden")).toBe(false); expect(open().classList.contains("hidden")).toBe(true);
+  expect(document.activeElement).toBe(list().querySelector('[role="tab"][aria-selected="true"]'));
+  expect(document.activeElement).not.toBe(document.body);
+  expect(host.querySelector('[data-testid="removed-notice"]')?.textContent).toContain("moved to Waiting");
+});
+
+it.each(["phone detail", "desktop list after resize"])("delayed action retains its normal detail focus on %s", async (pane) => {
+  const media = vi.fn().mockReturnValue({ matches: false }); vi.stubGlobal("matchMedia", media);
+  const items = allCallWorkItems(26).map((item, i) => ({ ...item, head: `synthetic-focus-head-${i}` }));
+  const saved = pending<{ ok: true; head: string; hash: string; actor: string }>();
+  recordAction.mockReturnValue(saved.promise);
+  vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+  await mount(items, true); await click("Snooze to tomorrow");
+  expect(recordAction).toHaveBeenCalledExactlyOnceWith(items[0].id, items[0].head, expect.objectContaining({ action: "snooze" }));
+  if (pane === "desktop list after resize") {
+    await click("Your list · 26"); await pager("Next");
+    // The viewport at completion, not at action start, decides whether detail is hidden.
+    media.mockReturnValue({ matches: true });
+  } else await pager("Next");
+  await act(async () => saved.resolve({ ok: true, head: "synthetic-focus-saved-head", hash: "synthetic-focus-write-hash", actor: "Synthetic coordinator" }));
+  expect(heading()).toBe(items[0].name); expect(status()).toContain("Page 2 of 2"); assertMounted();
+  expect(document.activeElement).toBe(open().querySelector('[data-focus="undo"]'));
+  expect(open().classList.contains("hidden")).toBe(pane === "desktop list after resize");
+});
+
 it("unmounted synthetic invalid row still warns for the whole board", async () => {
   const items = allCallWorkItems(1201);
   // F2: explicit SYNTHETIC status only on the unmounted last row, AFTER actual workItem.

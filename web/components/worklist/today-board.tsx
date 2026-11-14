@@ -155,7 +155,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const root = useRef<HTMLDivElement>(null);
   const [want, setWant] = useState<{ k: string } | null>(null);
   useEffect(() => {
-    if (want) root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
+    if (!want) return;
+    // A delayed action may finish after returning to the phone list. Use the mounted pane,
+    // not the action's old state; direct pager requests keep their existing focus policy.
+    const phoneList = !want.k.startsWith("pager-") &&
+      root.current?.querySelector('section[aria-label="Open patient"]')?.classList.contains("hidden") &&
+      !window.matchMedia("(min-width: 1024px)").matches;
+    const target = phoneList
+      ? rowRef.current ?? root.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+      : root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`);
+    target?.focus();
   }, [want]);
 
   const roving = useRovingTabs({
