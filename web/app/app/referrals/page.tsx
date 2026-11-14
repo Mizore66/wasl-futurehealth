@@ -2,7 +2,8 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { referralFrom } from "@/components/worklist/referrals";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { getCases, getDashboard } from "@/lib/api/source";
+import { getAllCases } from "@/lib/api/all-cases";
+import { getDashboard } from "@/lib/api/source";
 import { formatDay } from "@/lib/domain/day";
 
 export const metadata = { title: "Referrals" };
@@ -14,7 +15,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
   const [{ cases }, dashboard, now] = await Promise.all([
-    getCases({ provider: "ahs-mushrif", programme: "crc", limit: 500, ...(q && { q }) }),
+    getAllCases({ provider: "ahs-mushrif", programme: "crc", ...(q && { q }) }),
     getDashboard(),
     runClock(),
   ]);
