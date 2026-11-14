@@ -9,7 +9,7 @@ package main
 // Detectors
 //   D1 stream sequence continuity (JetStream seq 1..N, strictly increasing)
 //   D2 per-partition output sequence (OSeq) is exactly {1..N}, no gaps or duplicates
-//   D3 provenance chain verifies + closed decisions end in closure_decision + decision Sig recomputes
+//   D3 provenance chain + generic closure_decision or source-bound typed CRC terminal + decision Sig
 //   D4 deterministic replay from the FHIR log: every expected output present, same OSeq and content, nothing extra
 //   D5 v6 ledger: per-partition prev/hash links verify and the head equals the anchor held by the auditor (v6 runs)
 //   D6 ingest completeness: every provider-manifest message id is in the FHIR log exactly once
@@ -107,6 +107,7 @@ func decSig(d *Decision) string {
 }
 
 func d3Prov(out []LogMsg) string {
+	typedCRC := false
 	for _, m := range out {
 		oe := decodeEnv(m)
 		if oe.Dec == nil {
@@ -119,11 +120,25 @@ func d3Prov(out []LogMsg) string {
 		if len(d.Chain) > 0 && !verifyChain(d.Chain) {
 			return "chain " + d.ID
 		}
-		if d.State == "closed" && (len(d.Chain) == 0 || d.Chain[len(d.Chain)-1].Type != "closure_decision") {
-			return "closed without closure_decision " + d.ID
+		if d.State == "closed" {
+			if d.CRC != nil {
+				if !crcClosedTerminal(d) {
+					return "invalid typed CRC terminal " + d.ID
+				}
+				typedCRC = true
+			} else if len(d.Chain) == 0 || d.Chain[len(d.Chain)-1].Type != "closure_decision" {
+				return "closed without closure_decision " + d.ID
+			}
 		}
 		if decSig(d) != d.Sig {
 			return "sig " + d.ID
+		}
+	}
+	if typedCRC {
+		// Reuse the actual materialization validators: a child terminal must
+		// match signed parent/source history, not merely a self-consistent CRC tag.
+		if _, _, err := projectMaterializedDecisions(out); err != nil {
+			return "CRC source provenance: " + err.Error()
 		}
 	}
 	return ""

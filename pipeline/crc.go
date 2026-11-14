@@ -52,14 +52,18 @@ type CRCProposal struct {
 // CRCWorkItem is simulated coordinator work. It is not a referral dispatch or a
 // treatment-delivery/scheduling claim.
 type CRCWorkItem struct {
-	ID            string  `json:"id"`
-	Kind          string  `json:"kind"`
-	Owner         string  `json:"owner"`
-	DueDay        float64 `json:"due_day"`
-	SourceReport  string  `json:"source_report"`
-	SourceVersion int     `json:"source_version,omitempty"`
-	Escalation    string  `json:"escalation"`
-	Status        string  `json:"status"`
+	ID                string  `json:"id"`
+	Kind              string  `json:"kind"`
+	Owner             string  `json:"owner"`
+	DueDay            float64 `json:"due_day"`
+	SourceReport      string  `json:"source_report"`
+	SourceVersion     int     `json:"source_version,omitempty"`
+	SourceProvider    string  `json:"source_provider,omitempty"`
+	ProcedureProvider string  `json:"procedure_provider,omitempty"`
+	ProcedureReport   string  `json:"procedure_report,omitempty"`
+	ProcedureVersion  int     `json:"procedure_version,omitempty"`
+	Escalation        string  `json:"escalation"`
+	Status            string  `json:"status"`
 }
 
 // CRCDecision records both the screening disposition and the state of an owned
@@ -622,8 +626,10 @@ func crcPathologyLess(a, b row) bool {
 
 func crcWorkItem(loop string, source, procedure row) *CRCWorkItem {
 	return &CRCWorkItem{
-		ID:   "crc-mdt-" + sha([]byte(loop + "|" + reportVersionKey(procedure.d.ReportID, procedure.d.Version)))[:16],
+		ID:   "crc-mdt-" + sha([]byte(loop + "|" + procedure.d.Provider + "|" + reportVersionKey(procedure.d.ReportID, procedure.d.Version)))[:16],
 		Kind: "mdt_coordinator", Owner: "crc-mdt-coordinator", DueDay: procedure.d.Day,
-		SourceReport: source.d.ReportID, SourceVersion: source.d.Version, Escalation: "crc_mdt_same_day", Status: "open",
+		SourceReport: source.d.ReportID, SourceVersion: source.d.Version, SourceProvider: source.d.Provider,
+		ProcedureProvider: procedure.d.Provider, ProcedureReport: procedure.d.ReportID, ProcedureVersion: procedure.d.Version,
+		Escalation: "crc_mdt_same_day", Status: "open",
 	}
 }

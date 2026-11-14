@@ -55,6 +55,7 @@ type canonicalTask struct {
 	CaptureGeneration uint64
 	Sequence          uint64
 	Token             uint64
+	LegacyKey         string // compact deferred compatibility notification, not proof
 }
 
 type canonicalHistoryResult struct {

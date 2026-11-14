@@ -1042,9 +1042,24 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		previous := ls.lastCRC[id]
 		if previous.CRC != nil && previous.CRC.Withdrawn {
+			if previous.Contact != f.Contact {
+				// Withdrawal preserves the signed care/source history, not a stale
+				// permission to contact. Emit a new current projection; never edit
+				// the old decision or infer consent from the root's activity flag.
+				current := *previous
+				current.Contact = f.Contact
+				current.Chain = appendCRCBlock(append([]Block{}, previous.Chain...), "crc_contact_permission", map[string]interface{}{
+					"loop": id, "parent": f.LoopID, "previous": previous.Contact, "contact": f.Contact})
+				current.Sig = decSig(&current)
+				current.Now, current.InSeq = now, inSeq
+				current.ID = fmt.Sprintf("dec-%s@%s", id, mid)
+				ls.lastCRC[id] = &current
+				out = append(out, OutMsg{ID: current.ID, Kind: "decision", Dec: &current})
+			}
 			continue
 		}
 		withdrawn := *previous
+		withdrawn.Contact = f.Contact
 		if previous.CRC != nil {
 			cd := *previous.CRC
 			cd.Withdrawn = true

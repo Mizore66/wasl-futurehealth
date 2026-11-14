@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -904,5 +903,4 @@ func TestCanonicalAttemptInputRejectsUnvalidatedAuthority(t *testing.T) {
 			}
 		})
 	}
-	fmt.Sprint(input) // Keep test imports simple without runtime inspection helpers.
 }

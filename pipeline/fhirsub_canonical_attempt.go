@@ -33,15 +33,16 @@ type canonicalAttemptInput struct {
 }
 
 type canonicalAttemptWork struct {
-	mu          sync.Mutex
-	busy        bool
-	token       uint64
-	input       canonicalAttemptInput
-	attempt     *canonicalAttempt
-	attemptMeta canonicalMetadataReceipt
-	result      canonicalResult
-	proofOnly   bool
-	wireUnknown bool
+	mu                 sync.Mutex
+	busy               bool
+	token              uint64
+	input              canonicalAttemptInput
+	attempt            *canonicalAttempt
+	attemptMeta        canonicalMetadataReceipt
+	result             canonicalResult
+	proofOnly          bool
+	wireUnknown        bool
+	legacyNotification bool // enqueued once only after independent body/source proof
 }
 
 // The caller separately accounts one logical returned disposition. Hole prevents
@@ -306,6 +307,11 @@ func (c *SubConsumer) finishCanonicalAttempt(ctx context.Context, w *canonicalAt
 	}
 	if err != nil {
 		out.Hole = err.Error()
+	} else if !w.legacyNotification {
+		// Compatibility only, never body/source/first-send authority. The
+		// existing writer remains unchanged and a full queue cannot block us.
+		c.notifyCanonicalLegacy(seenKey(w.input.Source.Identity.FullID))
+		w.legacyNotification = true
 	}
 	return out
 }

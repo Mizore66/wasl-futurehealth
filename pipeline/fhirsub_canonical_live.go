@@ -252,12 +252,12 @@ func (c *SubConsumer) protectedCanonicalIncarnation(ctx context.Context) (canoni
 	return idx.incarnation, nil
 }
 
-func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin) (canonicalSource, error) {
+func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin, legacyBinding string) (canonicalSource, error) {
 	typ, id, version := splitFocus(e.Focus)
 	source := canonicalSource{EffectiveSub: s.ref, Num: e.Num, Provider: e.Provider, Focus: e.Focus, Occurred: e.Occurred, PendingKey: e.Key,
 		Identity:  canonicalIdentity{Subject: "fhir." + e.Provider + ".res", FullID: e.Provider + "/" + typ + "/" + id + "/v" + version, BodySHA256: canonicalSHA(e.Body), BodyLength: uint64(len(e.Body))},
 		OriginSub: origin.Sub, OriginPendingSHA256: canonicalSHA(origin.Raw), OriginRevision: origin.Revision, OriginKnown: true}
-	if origin.Sub == "" && s.ref != "" && e.Key == pendingEventKey(e.Num) {
+	if origin.Sub == "" && s.ref != "" && legacyBinding == s.ref && e.Key == pendingEventKey(e.Num) {
 		source.BindingRule = canonicalRuleLegacy
 	}
 	return source, canonicalRealSource(source)
@@ -276,8 +276,8 @@ func (c *SubConsumer) bindInactiveDefaultLegacyLocked(s *subscriptionState, w *p
 
 // Persist spelling provenance BEFORE the exact legacy claim. No body/time field
 // is normalized or invented for old malformed synthetic records: held is safe.
-func (c *SubConsumer) persistLegacyDescriptor(ctx context.Context, s *subscriptionState, e *subEvent, origin pendingOrigin) error {
-	source, err := pendingSource(s, *e, origin)
+func (c *SubConsumer) persistLegacyDescriptor(ctx context.Context, s *subscriptionState, e *subEvent, origin pendingOrigin, binding string) error {
+	source, err := pendingSource(s, *e, origin, binding)
 	if err != nil {
 		return err
 	}
@@ -304,7 +304,32 @@ func (c *SubConsumer) queueCanonicalLocked(task canonicalTask) {
 		return
 	}
 	c.knownTasks[task] = true
+	if task.Kind == "legacy-seen" {
+		c.legacyNotifications++
+	}
 	c.knownWork = append(c.knownWork, task)
+}
+
+func (c *SubConsumer) tryCanonicalLegacy(key string) bool {
+	if c.seen != nil && c.seen.q != nil {
+		select {
+		case c.seen.q <- key:
+			return true
+		default:
+		}
+	}
+	return false
+}
+
+func (c *SubConsumer) notifyCanonicalLegacy(key string) {
+	if c.tryCanonicalLegacy(key) {
+		return
+	}
+	// One compact task per known ID, serviced by the existing finite Q0 owner.
+	// No blocking send, timer, new writer or legacy SEEN authority is introduced.
+	c.mu.Lock()
+	c.queueCanonicalLocked(canonicalTask{Kind: "legacy-seen", LegacyKey: key})
+	c.mu.Unlock()
 }
 func (c *SubConsumer) queueHistoryTasks() {
 	tasks := c.canonicalHistoryTasks()
@@ -346,7 +371,9 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	}()
 	var err error
 	if w.canonical == nil {
-		source, sourceErr := pendingSource(w.state, w.event, w.origin)
+		c.mu.Lock()
+		source, sourceErr := pendingSource(w.state, w.event, w.origin, w.legacyBinding)
+		c.mu.Unlock()
 		err = sourceErr
 		var inc canonicalIncarnation
 		var authority canonicalMetadataReceipt
@@ -413,6 +440,65 @@ func canonicalEventMessage(e *subEvent) *nats.Msg {
 	return m
 }
 
+// Record no permanent revision history. A live scan may hold an older own
+// positive write, so retain its compact receipt only until that scan ends.
+func (c *SubConsumer) rememberPendingMutationLocked(w *pendingWork) {
+	if c.scan == nil || w.mutation.Revision == 0 {
+		return
+	}
+	if c.scan.writes == nil {
+		c.scan.writes = map[*pendingWork][]pendingMutation{}
+	}
+	receipts := c.scan.writes[w]
+	if len(receipts) == 0 || receipts[len(receipts)-1] != w.mutation {
+		c.scan.writes[w] = append(receipts, w.mutation)
+	}
+}
+
+func (c *SubConsumer) reservePendingMutation(w *pendingWork, raw []byte) pendingMutation {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.rememberPendingMutationLocked(w)
+	w.mutation = pendingMutation{Token: w.attempt, BodySHA256: canonicalSHA(raw)}
+	return w.mutation
+}
+
+func (c *SubConsumer) acknowledgePendingMutation(w *pendingWork, reserved pendingMutation, revision uint64) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !w.inflight || w.attempt != reserved.Token || w.mutation != reserved || revision == 0 {
+		return errCanonicalUnknown
+	}
+	w.mutation.Revision = revision
+	w.cleanupRev = revision
+	c.rememberPendingMutationLocked(w)
+	return nil
+}
+
+// Caller holds c.mu. Exact positive receipts can reconcile a scan. An exact
+// owned but unacknowledged intent can only postpone it to the original owner;
+// it grants neither cleanup nor a revision/payload-equality claim.
+func (c *SubConsumer) matchesPendingMutationLocked(s *subscriptionState, w *pendingWork, e *subEvent) (bool, bool) {
+	if w.state != s || e.Key != w.event.Key || e.origin == nil || e.Revision == 0 {
+		return false, false
+	}
+	digest := canonicalSHA(e.origin.Raw)
+	matches := func(r pendingMutation) bool {
+		return r.Token > 0 && r.Revision > 0 && r.Revision == e.Revision && r.BodySHA256 == digest
+	}
+	if matches(w.mutation) {
+		return true, false
+	}
+	if c.scan != nil {
+		for _, receipt := range c.scan.writes[w] {
+			if matches(receipt) {
+				return true, false
+			}
+		}
+	}
+	return false, w.mutation.Token > 0 && w.mutation.Revision == 0 && w.mutation.BodySHA256 == digest
+}
+
 func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) error {
 	if !w.result.Receipt.valid() || !w.result.Binding.valid() || !w.floor.validFor(w.state.ref) {
 		return errCanonicalUnknown
@@ -450,7 +536,10 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		// The reserved recovery claim, not cleanup owner equality, authorizes this
 		// exact intent. An applied/lost reply must be positively observed and CASed
 		// again; neither its proposed revision nor its visible bytes complete it.
+		c.mu.Lock()
 		w.claimIntent = bytes.Clone(raw)
+		c.mu.Unlock()
+		reserved := c.reservePendingMutation(w, raw)
 		rev, err := c.kv.Update(ctx, w.event.Key, raw, observed.Revision())
 		if err != nil {
 			return err
@@ -458,8 +547,10 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		if rev == 0 {
 			return errCanonicalUnknown
 		}
+		if err := c.acknowledgePendingMutation(w, reserved, rev); err != nil {
+			return err
+		}
 		c.mu.Lock()
-		w.cleanupRev = rev
 		w.local = true
 		w.cleanupRetry = false
 		c.mu.Unlock()
@@ -480,7 +571,9 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		intent.Sub = w.state.ref
 		raw, _ := json.Marshal(intent)
 		var rev uint64
+		var reserved pendingMutation
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			reserved = c.reservePendingMutation(w, raw)
 			rev, err = c.kv.Create(ctx, w.event.Key, raw)
 		} else if err == nil {
 			e, decodeErr := decodePendingEntry(w.event.Key, current)
@@ -490,6 +583,7 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 			if e.Owner != intent.Owner || !samePendingPayload(e, &intent) {
 				return errCanonicalConflict
 			}
+			reserved = c.reservePendingMutation(w, raw)
 			rev, err = c.kv.Update(ctx, w.event.Key, raw, current.Revision())
 		}
 		if err != nil {
@@ -498,7 +592,9 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 		if rev == 0 {
 			return errCanonicalUnknown
 		}
-		w.cleanupRev = rev
+		if err := c.acknowledgePendingMutation(w, reserved, rev); err != nil {
+			return err
+		}
 		revision = rev
 	}
 	if revision == 0 {
@@ -588,6 +684,15 @@ func (c *SubConsumer) serviceKnownWork(ctx context.Context) error {
 				delete(c.knownTasks, task)
 			}
 			c.mu.Unlock()
+		case "legacy-seen":
+			if c.tryCanonicalLegacy(task.LegacyKey) {
+				c.mu.Lock()
+				delete(c.knownTasks, task)
+				c.legacyNotifications--
+				c.mu.Unlock()
+			} else {
+				unresolved = append(unresolved, task)
+			}
 		case "capture":
 			_ = c.captureCanonicalTurn(ctx, task.CaptureGeneration)
 			c.mu.Lock()
@@ -610,6 +715,7 @@ func releasePendingBodyLocked(w *pendingWork) {
 	w.event.Body = nil
 	w.origin.Raw = nil
 	w.claimIntent = nil
+	w.mutation = pendingMutation{}
 	w.message = nil
 	w.canonical = nil
 }

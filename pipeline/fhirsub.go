@@ -76,16 +76,25 @@ type pendingWork struct {
 	inflight      bool
 	queued        bool
 	cleanupRetry  bool
-	cleanupRev    uint64 // reacquired authority; event.Revision stays immutable
-	claimIntent   []byte // retained exact recovery-claim intent across an unknown Update
-	recovery      bool   // explicit validated below-HWM recovery, not a cleanup claim
+	cleanupRev    uint64          // reacquired authority; event.Revision stays immutable
+	mutation      pendingMutation // exact reserved own write, not payload-equality authority
+	claimIntent   []byte          // retained exact recovery-claim intent across an unknown Update
+	recovery      bool            // explicit validated below-HWM recovery, not a cleanup claim
 	blocker       string
+}
+
+// One exact owned mutation; it never changes the accepted event revision.
+type pendingMutation struct {
+	Token      uint64
+	BodySHA256 string
+	Revision   uint64 // zero is an unknown/inflight intent and permits deferral ONLY
 }
 
 // replayMu permits one scan. Reserve its lifetime before any List/Get so that
 // a publisher can retire a generation while that scan still holds its snapshot.
 type pendingScan struct {
 	completed map[string][]*pendingWork
+	writes    map[*pendingWork][]pendingMutation // compact receipts, only for this real scan epoch
 }
 
 type subscriptionState struct {
@@ -129,6 +138,7 @@ type SubConsumer struct {
 	knownWork           []canonicalTask
 	knownTasks          map[canonicalTask]bool
 	serviceActive       bool
+	legacyNotifications int // distinct deferred IDs; drained before finite-source EOF
 	providerHeads       map[string]*pendingWork
 	pendingOperations   map[pendingPosition]uint64
 	operation           uint64
@@ -596,7 +606,7 @@ func (c *SubConsumer) processLoop() {
 func (c *SubConsumer) beginPendingScan() *pendingScan {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	epoch := &pendingScan{completed: map[string][]*pendingWork{}}
+	epoch := &pendingScan{completed: map[string][]*pendingWork{}, writes: map[*pendingWork][]pendingMutation{}}
 	c.scan = epoch
 	return epoch
 }
@@ -653,7 +663,7 @@ func (c *SubConsumer) rememberPendingLocked(s *subscriptionState, e *subEvent, l
 }
 
 func (c *SubConsumer) matchesPendingLocked(s *subscriptionState, w *pendingWork, e *subEvent) bool {
-	return w.event.Revision != 0 && w.event.Revision == e.Revision && w.event.Key == e.Key && w.event.Owner == e.Owner &&
+	return w.state == s && w.event.Revision != 0 && w.event.Revision == e.Revision && w.event.Key == e.Key && w.event.Owner == e.Owner &&
 		w.legacyBinding == c.pendingLegacyBindingLocked(s, e.Key, e.Num) && samePendingPayload(&w.event, e)
 }
 
@@ -794,11 +804,12 @@ func (c *SubConsumer) recoverPendingFor(ref string) error {
 func (c *SubConsumer) claimPendingLocked(s *subscriptionState, e *subEvent, entry pendingEntry) (bool, error) {
 	e.Sub, e.Owner, e.Key = s.ref, c.ensureInstanceIDLocked(), entry.key
 	var owned bool
+	binding := c.pendingLegacyBindingLocked(s, e.Key, e.Num)
 	err := c.pendingIOLocked(s, e.Num, func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if e.origin != nil && e.origin.Sub == "" && s.ref != "" {
-			if err := c.persistLegacyDescriptor(ctx, s, e, *e.origin); err != nil {
+			if err := c.persistLegacyDescriptor(ctx, s, e, *e.origin, binding); err != nil {
 				return err
 			}
 		}
@@ -876,7 +887,8 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 		covered := false
 		if c.scan != nil {
 			for _, w := range c.scan.completed[e.Key] {
-				if c.matchesPendingLocked(s, w, e) {
+				own, _ := c.matchesPendingMutationLocked(s, w, e)
+				if c.matchesPendingLocked(s, w, e) || own {
 					covered = true
 					break
 				}
@@ -886,15 +898,24 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 			continue // exact old receipt, never clear a replacement's marker
 		}
 		if w := s.work[n]; w != nil {
-			if !w.local || (!c.matchesPendingLocked(s, w, e) && !c.bindInactiveDefaultLegacyLocked(s, w, e, observations[n])) {
+			own, deferred := c.matchesPendingMutationLocked(s, w, e)
+			matched := c.matchesPendingLocked(s, w, e) || own
+			if deferred || w.recovery && !w.local && matched {
+				// The original operation owner must positively reacquire an unknown
+				// write. A scan cannot turn its exact intent into a foreign orphan,
+				// nor may it promote that intent to cleanup/publication authority.
+				c.queueCanonicalLocked(canonicalTask{Kind: "work", Work: w})
+				continue
+			}
+			if !w.local || (!matched && !c.bindInactiveDefaultLegacyLocked(s, w, e, observations[n])) {
 				// Retain the positively observed replacement independently of
 				// the old publisher. This path never claims or deletes it.
 				c.rememberPendingLocked(s, e, false)
 				c.mu.Unlock()
 				return fmt.Errorf("conflicting local pending generation for %s event %d", s.ref, n)
 			}
-			if w.active {
-				continue // exact acknowledged revision with a scheduling owner
+			if w.active || w.inflight {
+				continue // exact acknowledged revision with a scheduling/operation owner
 			}
 			if n < s.next {
 				// A known returned/unknown generation is serviced by its original
@@ -1459,7 +1480,7 @@ func (c *SubConsumer) checkpointLoop() {
 func (c *SubConsumer) maybeEOF() {
 	c.mu.Lock()
 	states := c.statesLocked()
-	ready := c.discoveryComplete && !c.eofBusy && len(states) > 0
+	ready := c.discoveryComplete && !c.eofBusy && c.legacyNotifications == 0 && len(states) > 0
 	for _, s := range states {
 		if s.ref == "" || !s.feedOff || s.maxSeen == 0 || s.ackHWM < s.maxSeen || len(s.holes) > 0 || len(s.pending) > 0 || s.filling {
 			ready = false
@@ -1678,7 +1699,7 @@ func (c *SubConsumer) statusLoop() {
 		st := map[string]interface{}{"sub": c.subID, "next": c.next, "ack_hwm": c.ackHWM, "max_seen": c.maxSeen, "buffered": len(c.buf),
 			"feed_off": c.feedOff, "eof_sent": c.eofSent, "uptime": time.Since(c.start).Seconds()}
 		subscriptions := map[string]interface{}{}
-		done := len(c.subscriptions) > 0
+		done := len(c.subscriptions) > 0 && c.legacyNotifications == 0
 		var durablePending int64
 		for _, state := range c.statesLocked() {
 			if state.ref == "" {

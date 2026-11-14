@@ -51,7 +51,7 @@ func TestCanonicalLiveMetadataUpdateChecksObservedKey(t *testing.T) {
 	defer c.seen.Flush()
 	pendingRepairAdmit(t, c, "pending-owner", 1)
 	w := c.work[1]
-	source, err := pendingSource(w.state, w.event, w.origin)
+	source, err := pendingSource(w.state, w.event, w.origin, w.legacyBinding)
 	if err != nil {
 		t.Fatal(err)
 	}
