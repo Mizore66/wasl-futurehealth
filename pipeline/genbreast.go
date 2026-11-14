@@ -83,6 +83,7 @@ type BreastTruth struct {
 type breastGen struct {
 	*lungGen
 	screens, notes []lungDoc
+	repeatOf       string // explicit same-episode repeat link for the next screening report
 }
 
 func (g *breastGen) pick(docs []lungDoc, label string) lungDoc {
@@ -147,6 +148,9 @@ func (g *breastGen) report(prov string, x *reg, day, arr float64, code, text, ui
 		"presentedForm":     []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text)), "title": "breast corpus " + uid}}}
 	if coded != "" {
 		res["conclusionCode"] = []interface{}{map[string]string{"system": "http://www.ama-assn.org/go/cpt", "code": coded, "text": coded}}
+	}
+	if code == "breast-screen" && g.repeatOf != "" {
+		res["extension"] = []interface{}{map[string]string{"url": repeatRelation, "valueString": "DiagnosticReport/" + g.repeatOf}}
 	}
 	g.emit(prov, arr, res, x)
 	if arr <= TEnd {
@@ -266,7 +270,9 @@ func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Tru
 		if label == "TR" && r.Float64() < .75 { // technical repeat; the new category decides the loop from its own day
 			S2 := S + 5 + 16*r.Float64()
 			l2 := g.drawCat(false)
+			g.repeatOf = sid
 			sid2, a2 := g.screen(src.ID, x, S2, l2, r.Float64() < .7)
+			g.repeatOf = ""
 			if a2 <= TEnd {
 				bt.Screens = append(bt.Screens, sid2)
 				bt.Label, bt.GradeDay = l2, S2

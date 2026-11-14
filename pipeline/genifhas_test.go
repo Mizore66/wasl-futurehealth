@@ -68,6 +68,7 @@ func TestGenIfhasLeavesOtherProgrammesUnchanged(t *testing.T) {
 		persons[p.Qid] = p
 	}
 	n, progs, states, codeErr := 0, map[string]map[string]bool{}, map[string]int{}, map[string]bool{}
+	reopened, completeReopen := 0, 0
 	for _, lt := range tr.Loops {
 		if progs[lt.Qid] == nil {
 			progs[lt.Qid] = map[string]bool{}
@@ -90,6 +91,37 @@ func TestGenIfhasLeavesOtherProgrammesUnchanged(t *testing.T) {
 					t.Errorf("IFHAS loop %s closed with domain %s %q", lt.Loop, d, lt.Ifhas.Status[d])
 				}
 			}
+			if lt.Ifhas.Rec.Action == IfhasFollowUp && lt.Ifhas.ClosingReport == "" {
+				t.Errorf("IFHAS loop %s closed without closing evidence", lt.Loop)
+			}
+		}
+		if domain := lt.Ifhas.ReopenDomain; domain != "" {
+			reopened++
+			phase := 0 // 0 initial, 1 resolved, 2 pending after resolution, 3 resolved again
+			for _, note := range lt.Ifhas.Notes {
+				_, statuses, _ := ifhasNoteParse(tr.Reports[note])
+				switch statuses[domain] {
+				case IfhasPending:
+					if phase == 1 {
+						phase = 2
+					}
+				case IfhasManaged, IfhasNotConfirmed:
+					if phase == 0 {
+						phase = 1
+					} else if phase == 2 {
+						phase = 3
+						completeReopen++
+						if lt.Ifhas.ClosingReport != note || lt.Ifhas.ResDay[domain] != lt.ClosedDay {
+							t.Errorf("%s final reopening truth does not use final note/day: %+v", lt.Loop, lt.Ifhas)
+						}
+					}
+				}
+			}
+			if lt.Ifhas.Status[domain] == IfhasPending {
+				if _, ok := lt.Ifhas.ResDay[domain]; ok || lt.State == "closed" {
+					t.Errorf("%s pending truth retained resolution/closure: %+v", lt.Loop, lt.Ifhas)
+				}
+			}
 		}
 		p := persons[lt.Qid]
 		if a := personAge(&p, 0); a < 18 || a > 75 {
@@ -103,6 +135,9 @@ func TestGenIfhasLeavesOtherProgrammesUnchanged(t *testing.T) {
 	}
 	if n != 120 {
 		t.Errorf("want 120 IFHAS loops, got %d", n)
+	}
+	if reopened == 0 || completeReopen == 0 {
+		t.Errorf("resolved -> pending -> resolved generator coverage missing: reopened=%d complete=%d", reopened, completeReopen)
 	}
 	if states["no_followup_needed"] == 0 || states["closed"] == 0 {
 		t.Errorf("implausible IFHAS state mix %v", states)

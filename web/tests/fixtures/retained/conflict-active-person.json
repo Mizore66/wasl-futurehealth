@@ -1,0 +1,156 @@
+{
+  "cases": [
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/b",
+      "contact": {
+        "canonical": "unknown",
+        "canonical_unchanged": true,
+        "contact_blocked": true,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": false,
+          "closed_day": 0,
+          "consent": "unknown",
+          "deadline_day": 31,
+          "decisions": 1,
+          "dropoff": "never_notified",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/b",
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "crc",
+          "provider": "ahs-mushrif",
+          "referral_day": 1,
+          "review": "none",
+          "state": "open"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/b@ahs-mushrif/ServiceRequest/b@3",
+            "dropoff": "never_notified",
+            "escalations": [],
+            "in_seq": 3,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "7f340314153317e13676528ecb9bf25ea917d38f734568e80d74cf5bcdec657c",
+            "state": "open"
+          }
+        ],
+        "holds": [],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec",
+            "role": "referral"
+          }
+        ],
+        "links": [],
+        "outreach": [],
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": 1,
+            "id": "ahs-mushrif/ServiceRequest/b",
+            "provider": "ahs-mushrif",
+            "raw_sha": "78abf2944f88ce00",
+            "seq": 3,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          }
+        ]
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "referral_registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "case_id": "ahs-mushrif/ServiceRequest/b",
+    "deadline_day": 32,
+    "kind": "review_contact_permission",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "dropoff_never_notified",
+      "consent_not_granted"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/b",
+      "due_day": 32,
+      "kind": "programme_deadline",
+      "programme": "crc",
+      "source_field": "sr_day+deadline",
+      "status": "open"
+    }
+  ],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/b",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/b"
+    ],
+    "id": "person_fe13ee60e511f422ce36dfc436992e03c602ae53305e726ec8c4f5fdc8127ac1",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "64cc7c4cf32d6d6b3bf246a87cfaedf2c2fe881038dd53179ef72d8b39fa11f0",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [
+      "crc"
+    ],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/b",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/b@ahs-mushrif/ServiceRequest/b@3",
+          "facts_seq": 3,
+          "in_seq": 3,
+          "inactive": false,
+          "programme": "crc",
+          "sig": "7f340314153317e13676528ecb9bf25ea917d38f734568e80d74cf5bcdec657c"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [],
+      "programmes": [
+        "crc"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}

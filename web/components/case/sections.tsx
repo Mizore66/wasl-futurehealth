@@ -13,6 +13,7 @@ import { recordFace } from "@/lib/people/identity";
 import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
+import { PatientJourneyCard } from "./patient-journey-card";
 import { BookingControls } from "./booking-controls";
 import {
   atWords,
@@ -545,6 +546,11 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
   return <></>;
 }
 
+/** Focused patient-link projection, deliberately outside canonical source events. */
+export function PatientJourneySection({ detail }: { detail: CaseDetail }) {
+  return <PatientJourneyCard detail={detail} />;
+}
+
 /** Consent history and the messages Wasl sent or held back. */
 export function ConsentCard({ detail }: { detail: CaseDetail }) {
   const consent = consentRows(detail);
@@ -569,7 +575,7 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
       )}
       <ConsentActions
         caseId={detail.case.id}
-        expectedHead={detail.current.sig}
+        expectedHead={detail.api_contact?.overlay.revision ?? detail.current.sig}
         contact={detail.api_contact}
         live={apiMode() === "live"}
         canWrite={detail.review_ledger?.status !== "invalid"}

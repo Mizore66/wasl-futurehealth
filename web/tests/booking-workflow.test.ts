@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recordBooking } from "@/app/app/patients/[id]/booking-actions";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
 import { BOOKING_NEEDED, recordNodes, workItem } from "@/components/worklist/model";
-import { Booking, BookingSummary, CaseDetail, type ApiOverlay } from "@/lib/api/schema";
+import { ActiveCaseSummary, Booking, BookingSummary, CaseDetail, type ApiOverlay } from "@/lib/api/schema";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
@@ -31,7 +31,7 @@ function overlay(booking: BookingSummary, agreementAt?: string): ApiOverlay {
   };
 }
 
-const workCase = { ...baseDetail.case, owner: "someone", state: "no_show" as const, dropoff: "no_show" as const, closed: false };
+const workCase = { ...ActiveCaseSummary.parse(baseDetail.case), owner: "someone", state: "no_show" as const, dropoff: "no_show" as const, closed: false };
 
 afterEach(() => {
   vi.unstubAllEnvs();

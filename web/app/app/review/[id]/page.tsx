@@ -37,6 +37,11 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   const queue = live ? undefined : await reviewQueue();
   const detail = queue?.cases.find((c) => c.case.id === id) ?? viewer.detail;
   if (!detail) notFound();
+  if (detail.case.lifecycle === "retained") return <section>
+    <h1 className="text-title font-semibold">Retired case: review history only</h1>
+    <p>No new claim, clinical read or review work is available from this tracking request.</p>
+    <Link href={caseHref("/app/patients", id)}>Open the retained case and authorized audit history</Link>
+  </section>;
   const view = reviewView(detail);
   const sharedEvidence = view.programme !== "crc" && view.programme !== "cervical" ? (
     <>

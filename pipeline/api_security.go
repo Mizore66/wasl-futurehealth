@@ -73,7 +73,7 @@ func apiReadAction(path string) string {
 // Preflight carries no credentials or case data and is handled by the downstream CORS policy.
 func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/api/") || r.Method == http.MethodOptions {
+		if r.URL.Path == "/api/patient/journey" || !strings.HasPrefix(r.URL.Path, "/api/") || r.Method == http.MethodOptions {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -87,7 +87,7 @@ func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
 
 func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/api/") {
+		if r.URL.Path == "/api/patient/journey" || !strings.HasPrefix(r.URL.Path, "/api/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -126,6 +126,12 @@ func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Han
 
 func corsWithOrigins(h http.Handler, origins map[string]bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/patient/journey" {
+			// The Next.js server proxies patient requests. No browser origin is
+			// granted direct CORS access to this credentialed endpoint.
+			h.ServeHTTP(w, r)
+			return
+		}
 		origin := r.Header.Get("Origin")
 		if origin != "" {
 			if !origins[origin] {
@@ -161,6 +167,7 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/api/patient/journey", s.patientJourney)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)

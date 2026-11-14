@@ -4,7 +4,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-13T03:26:25Z",
+    "loaded_at": "2026-11-13T08:26:41Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",
