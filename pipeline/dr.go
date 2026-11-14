@@ -287,9 +287,21 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				lab, h := labelOf(r)
 				if lab == "" {
 					raise(r, "evidence")
-					if state != "not_assessable" { // an unread later note never clears an established no-fundal-view hold (#150)
+					if state != "not_assessable" {
 						holdRow = &notes[i]
 						state = "open"
+						// The unread barrier still forbids later automatic closure, but
+						// cannot hide a trusted no-view hold in the current facts (#150).
+						for j := i + 1; j < len(notes); j++ {
+							if !notes[j].trusted {
+								continue
+							}
+							if label, _ := labelOf(notes[j]); label == "not_assessable" {
+								state, holdRow = "not_assessable", &notes[j]
+								dd.Clinic, dd.Outcome = notes[j].d.ReportID, label
+								break
+							}
+						}
 					}
 					break // an unread earlier note blocks a decision on a later one
 				}

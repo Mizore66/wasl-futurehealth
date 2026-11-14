@@ -190,6 +190,120 @@ func TestDRNoViewOverdueClearsOnTrustedExam(t *testing.T) {
 	}
 }
 
+// #150: clinical time is not arrival order. An unread day-30 note delivered after
+// the day-40 no-view note must not erase its hold, including on a cold rebuild.
+func TestDRNoViewHoldSurvivesLateEarlierUnreadFacts(t *testing.T) {
+	defer func(o, h bool, cal *Cal7) { OutreachOn, ConsentHold, V7Cal = o, h, cal }(OutreachOn, ConsentHold, V7Cal)
+	OutreachOn, ConsentHold, V7Cal = true, true, nil
+	for _, tc := range []struct {
+		grade    string
+		deadline float64
+	}{{"R2M0", 101}, {"R3AM0", 52}} {
+		t.Run(tc.grade, func(t *testing.T) {
+			screen := drScreen("PHC-dr-1", 10, tc.grade)
+			view := drNote("EYE-view", 40, "not_assessable", "eid", 1, false)
+			unread := drNote("EYE-unread", 30, "", "eid", 1, false)
+			assertHold := func(t *testing.T, d *Decision) {
+				t.Helper()
+				if d == nil || d.State != "not_assessable" || !d.Overdue || d.Dropoff != "not_assessable" ||
+					!hasEsc(d, "overdue_dr_referral") || !hasEsc(d, "clinician_decision_no_fundal_view") {
+					t.Fatalf("current no-view facts must retain overdue clinician hold, got %+v", d)
+				}
+				if d.DR.DeadlineDay != tc.deadline || d.DR.Clinic != "EYE-view" || d.DR.Outcome != "not_assessable" ||
+					d.DR.Examined || d.ClosingReport != "" || !verifyChain(d.Chain) ||
+					!strings.Contains(string(canon(d.Chain)), "no_fundal_view_clinician_decides") ||
+					!strings.Contains(string(canon(d.Chain)), "eye-hosp/DiagnosticReport/EYE-view") {
+					t.Fatalf("no-view provenance or encoded clock lost: %+v", d)
+				}
+				if len(d.Outreach) != 0 {
+					t.Fatalf("no-view hold must not create overdue recall even with granted consent: %+v", d.Outreach)
+				}
+			}
+			t.Run("sequential-new-facts", func(t *testing.T) {
+				c := NewClosureCore(0, nil)
+				c.Apply(&FactsMsg{ID: "tick", InSeq: 1, IsTick: true, TickDay: 120})
+				initial := drFacts(screen, view)
+				initial.Contact, initial.InSeq = "granted", 2
+				c.Apply(&FactsMsg{ID: "establish-no-view", InSeq: 2, Facts: initial})
+				assertHold(t, c.Final()[initial.LoopID])
+				updated := drFacts(screen, view, unread)
+				updated.Contact, updated.InSeq = "granted", 3
+				out := c.Apply(&FactsMsg{ID: "late-earlier-unread", InSeq: 3, Facts: updated})
+				assertHold(t, c.Final()[updated.LoopID])
+				if !hasReview(out, "evidence") || len(c.Final()[updated.LoopID].Pending) != 1 {
+					t.Fatal("earlier unread note must still raise its evidence review")
+				}
+				// Current complete facts, not the previous decision, sustain the hold.
+				withoutView := drFacts(screen, unread)
+				withoutView.Contact, withoutView.InSeq = "granted", 4
+				c.Apply(&FactsMsg{ID: "current-facts-without-view", InSeq: 4, Facts: withoutView})
+				cold, _ := runLung(t, withoutView, 120)
+				if d := c.Final()[withoutView.LoopID]; d.State != "open" || d.State != cold.State || hasEsc(d, "clinician_decision_no_fundal_view") {
+					t.Fatalf("absent no-view evidence must not leave a sticky prior hold: %+v", d)
+				}
+			})
+			for _, order := range []struct {
+				name string
+				down []DownFact
+			}{
+				{"screen-view-unread", []DownFact{screen, view, unread}},
+				{"screen-unread-view", []DownFact{screen, unread, view}},
+				{"view-screen-unread", []DownFact{view, screen, unread}},
+				{"view-unread-screen", []DownFact{view, unread, screen}},
+				{"unread-screen-view", []DownFact{unread, screen, view}},
+				{"unread-view-screen", []DownFact{unread, view, screen}},
+			} {
+				t.Run("cold-"+order.name, func(t *testing.T) {
+					f := drFacts(order.down...)
+					f.Contact = "granted"
+					d, out := runLung(t, f, 120)
+					assertHold(t, d)
+					if !hasReview(out, "evidence") || len(d.Pending) != 1 {
+						t.Fatal("cold rebuild must retain the unread evidence barrier")
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestDRNoViewUnreadBarrierUsesOnlyEligibleHoldFacts(t *testing.T) {
+	defer func(o, h bool) { OutreachOn, ConsentHold = o, h }(OutreachOn, ConsentHold)
+	OutreachOn, ConsentHold = true, true
+	view := drNote("EYE-view", 40, "not_assessable", "eid", 1, false)
+	disagreed, otherProgramme, contra := view, view, view
+	disagreed.Ev = &TwoVerdict{Kind: "dr-clinic", Agree: false, Label: "not_assessable"}
+	otherProgramme.Prog = "lung_nodule"
+	contra.EIDContra = "conflicting-eid"
+	for _, tc := range []struct {
+		name string
+		note DownFact
+		want string
+	}{
+		{"trusted-no-view-behind-barrier", view, "not_assessable"},
+		{"untrusted", drNote("EYE-view", 40, "not_assessable", "wasl", 0.80, false), "open"},
+		{"near-miss", drNote("EYE-view", 40, "not_assessable", "eid", 1, true), "open"},
+		{"before-grade", drNote("EYE-view", 5, "not_assessable", "eid", 1, false), "open"},
+		{"readers-disagree", disagreed, "open"},
+		{"other-programme", otherProgramme, "open"},
+		{"eid-conflict", contra, "open"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := drFacts(drScreen("PHC-dr-1", 10, "R2M0"), tc.note,
+				drNote("EYE-unread", 30, "", "eid", 1, false),
+				drNote("EYE-exam", 110, "examined_followup", "eid", 1, false))
+			f.Contact = "granted"
+			d, out := runLung(t, f, 120)
+			if d.State != tc.want || d.DR.Examined || d.ClosingReport != "" || !hasReview(out, "evidence") || len(d.Pending) == 0 {
+				t.Fatalf("unread barrier must block the later trusted exam; only eligible no-view facts sustain its hold: %+v", d)
+			}
+			if tc.want == "not_assessable" && (!hasEsc(d, "clinician_decision_no_fundal_view") || len(d.Outreach) != 0) {
+				t.Fatalf("unresolved no-view hold must suppress outreach despite later exam behind unread barrier: %+v", d)
+			}
+		})
+	}
+}
+
 // #150: an established no-fundal-view state and its clinician hold survive a later unread or untrusted note, and the
 // overdue projection never releases outreach. Only a trusted, agreed examined_* note (or a clinician) resolves it.
 func TestDRNoViewHoldSurvivesLaterUnreadOrUntrustedNote(t *testing.T) {
