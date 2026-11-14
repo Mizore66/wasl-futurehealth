@@ -69,8 +69,8 @@
    }
   ]
  },
- "comparison_sha256": "6c323282004e50ac7c89daa8f582f924fc1ebaa4beb9c31a80e6e503e130740d",
- "content_sha256": "7f9ea6f1455aff367ab52a8d0502a13002b214079890f9f91f8a26967e9fc179",
+ "comparison_sha256": "dd8aa90177ea1779492d6e08397dadcc05a79330282ab8bda41cf0593d9349b1",
+ "content_sha256": "ef9e50362cedb4b3812e840b0e2d1994e7043d3f4e979137c868d47596fae921",
  "detail": {
   "agent_investigations": [
    {
@@ -123,7 +123,10 @@
   ],
   "booking": {
    "data_mode": "simulated",
-   "decision_support_only": true
+   "decision_support_only": true,
+   "readiness": {
+    "ready": true
+   }
   },
   "case": {
    "api_overlay": {
@@ -370,7 +373,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-13T03:26:26Z",
+  "loaded_at": "2026-11-13T09:38:55Z",
   "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
   "policy": "redacted-internal-audit",
   "reader_model": "not-disclosed",
