@@ -388,7 +388,7 @@ func TestCRCUncertainResolutionCanonicalPrepReplay(t *testing.T) {
 					if reverse {
 						events[0], events[1] = events[1], events[0]
 					}
-					preps := []*Prep{{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Synthetic Person", Eid: "784198045658287", Dob: "1980-01-02", Sex: "female", Day: 1}}}
+					preps := []*Prep{{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Synthetic Person", Eid: "784198045658287", Dob: "1980-01-02", Sex: "female", Day: 1}}}
 					for _, e := range events {
 						e.Prog = "crc"
 						e.Eid = "784198045658287"

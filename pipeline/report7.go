@@ -511,7 +511,8 @@ func report7(data, wasl, run string, P int) {
 	}
 	imgOut := imageReport(preps, fhir, &tr, liveFinal)
 	res := map[string]interface{}{
-		"image_reader": imgOut,
+		"image_reader":         imgOut,
+		"identity_quarantines": rp.L.identityQuarantineSnapshot(),
 		// Native loops and programme metrics retain the screening/index cohort denominator.
 		"run": run, "loops": total, "loops_by_programme": nLoops, "materialization": counts,
 		"closure": closure, "programmes_live": analyze6(liveFinal, &tr), "programmes_no_review": analyze6(noRev.final, &tr),

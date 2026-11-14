@@ -1111,6 +1111,11 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 	if projection.artifactSchema == retainedIdentitySchema {
 		body["schema"] = "wasl-person-journey/2"
 		body["retained_references"] = references
+		if s.dashboard["materialization"] == nil && s.report["materialization"] == nil {
+			// Legacy root-only retained exports did not declare CRC materialization.
+			// Preserve their exact payloads; never rewrite frozen export digests.
+			delete(body, "materialization")
+		}
 	}
 	generic, err := exportGeneric(body)
 	if err != nil {

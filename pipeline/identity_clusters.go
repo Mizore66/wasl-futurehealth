@@ -516,9 +516,8 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 			wanted[ctx.FactsSeq][retainedRoot(row.CaseID, actual)] = retainedAssociation{}
 		}
 	}
-	L := &LinkerCore{requests: map[string]*trackingRevision{}, loops: map[string]*LoopFacts{}, loopRec: map[string]int{}, Stats: map[string]int{}}
+	L := &LinkerCore{requests: map[string]*trackingRevision{}, loops: map[string]*LoopFacts{}, loopRec: map[string]int{}, byPk: map[string]int{}, Stats: map[string]int{}}
 	evidence := newRetainedEvidence()
-	registrations := map[string]int{}
 	lastSeq := uint64(0)
 	_, err := scanAPILog(filepath.Join(run, "fhir_log.ndjson"), func(m LogMsg) error {
 		if m.Seq <= lastSeq {
@@ -535,22 +534,31 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 				arr = 0
 			}
 			ev, _, normErr := normaliseChecked(parts[1], arr, m.Data)
-			if normErr == nil && ev != nil && ev.RType == "ServiceRequest" {
-				loop := ev.Provider + "/ServiceRequest/" + ev.ID
+			if normErr == nil && ev != nil && len(L.sourceIdentityConflicts(ev)) == 0 {
+				// Establish exactly the canonical first identity, including an
+				// Encounter before an order. Never select a quarantined raw revision.
 				rec := -1
-				if ev.PatientKey != "" {
+				if establishesRegistration(ev) {
 					var ok bool
-					rec, ok = registrations[ev.PatientKey]
+					rec, ok = L.byPk[ev.PatientKey]
 					if !ok {
 						rec = len(L.recs)
-						registrations[ev.PatientKey] = rec
-						L.recs = append(L.recs, &Rec{Pk: ev.PatientKey, evs: map[string]*Event{}})
+						L.byPk[ev.PatientKey] = rec
+						r := registrationIdentity(ev)
+						r.evs = map[string]*Event{}
+						L.recs = append(L.recs, r)
 					}
-				} else if prior := L.requests[loop]; prior != nil {
-					rec = prior.rec
 				}
-				L.foldTrackingRequest(ev, rec)
-				evidence.observe(L, &Prep{Seq: m.Seq, Ev: ev})
+				if ev.RType == "ServiceRequest" {
+					loop := ev.Provider + "/ServiceRequest/" + ev.ID
+					if ev.PatientKey == "" {
+						if prior := L.requests[loop]; prior != nil {
+							rec = prior.rec
+						}
+					}
+					L.foldTrackingRequest(ev, rec)
+					evidence.observe(L, &Prep{Seq: m.Seq, Ev: ev})
+				}
 			}
 		}
 		for loop := range wanted[m.Seq] {

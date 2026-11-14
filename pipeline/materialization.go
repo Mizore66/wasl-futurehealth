@@ -101,7 +101,7 @@ func countMaterializedCases(final map[string]*Decision) (materializationCounts, 
 		counts.TotalCurrentMaterialized++
 		if kind == "derived_care" {
 			parent := final[d.CRC.Parent]
-			if parent == nil || parent.Prog != "crc" || parent.CRC != nil && parent.CRC.Kind != "screening" {
+			if parent == nil || (parent.Prog != "crc" && !parent.Inactive) || parent.CRC != nil && parent.CRC.Kind != "screening" {
 				return counts, fmt.Errorf("orphan CRC derived-care case %s", id)
 			}
 			counts.DerivedCare++

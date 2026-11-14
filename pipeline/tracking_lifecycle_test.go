@@ -257,8 +257,9 @@ func TestAPIRetirementWithdrawsCurrentWorklistButRetainsHistory(t *testing.T) {
 	retired := &Decision{ID: "dec-retired", LoopID: trackingTestLoop, Provider: "ahs-mushrif", Prog: "crc", State: "inactive", Inactive: true,
 		RequestStatus: "entered-in-error", RequestVersion: 2, NotifDay: -1, AckDay: -1, RefDay: -1}
 	var lines []byte
-	for _, env := range []OutEnvelope{{Kind: "decision", Dec: active}, {Kind: "review", Item: &ReviewItem{ItemID: "review-1", LoopID: trackingTestLoop}}, {Kind: "decision", Dec: retired}} {
-		m := LogMsg{Subject: "out.p0"}
+	for i, env := range []OutEnvelope{{Kind: "decision", Dec: active}, {Kind: "review", Item: &ReviewItem{ItemID: "review-1", LoopID: trackingTestLoop}}, {Kind: "decision", Dec: retired}} {
+		m := LogMsg{Seq: uint64(i + 1), Subject: "out.p0"}
+		env.OSeq = uint64(i + 1)
 		encodeEnv(&m, env)
 		b, _ := json.Marshal(m)
 		lines = append(lines, b...)

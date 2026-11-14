@@ -244,7 +244,7 @@ func TestCRCSuspicionCanonicalMaterializedPrepReplay(t *testing.T) {
 	gastro := "Microscopic examination: ulcerative colitis."
 	j := &Judge2{cache: map[string]gemmaEntry{textSha(col): {Caecum: "yes", Prep: "adequate", Polyps: "yes", Histology: "no"}, textSha(suspect): {Histology: "yes"}, textSha(gastro): {Histology: "yes"}}}
 	for _, reverse := range []bool{false, true} {
-		preps := []*Prep{{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Synthetic Person", Eid: "784198045658287", Dob: "1980-01-02", Sex: "female", Day: 1}}}
+		preps := []*Prep{{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Synthetic Person", Eid: "784198045658287", Dob: "1980-01-02", Sex: "female", Day: 1}}}
 		for i, r := range []struct{ id, text, kind, parent string }{{"C1", col, "colonoscopy", ""}, {"P1", suspect, "pathology", "C1"}, {"P2", gastro, "pathology", "C1"}} {
 			preps = append(preps, &Prep{Seq: uint64(i + 2), Kind: "event", Ev: &Event{ID: r.id, ReportID: r.id, Version: 1, Provider: "skmc-endo", RType: "DiagnosticReport", Prog: "crc", PatientKey: "skmc-endo|H1", Name: "Synthetic Person", Eid: "784198045658287", Dob: "1980-01-02", Sex: "female", Day: float64(10 + i), Focus: r.parent, Category: r.kind, Status: "final", Text: r.text, Ev: j.Judge(r.text, r.kind)}})
 		}

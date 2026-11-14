@@ -29,7 +29,7 @@ func TestCommunicationReassociationRetractsOldLoopAndReemitsBoth(t *testing.T) {
 		var final []map[string][]CommFact
 		for _, order := range [][]int{{0, 1, 0}, {1, 0, 1}} {
 			L, C, loop := crcLinkedCore(t)
-			sr2 := &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}
+			sr2 := &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}
 			crcFeed(L, C, &Prep{Seq: 3, Kind: "event", Ev: sr2})
 			loop2 := "ahs-mushrif/ServiceRequest/SR2"
 			report := &Event{ID: "R1", ReportID: "R1", Version: 1, Provider: "skmc-endo", RType: "DiagnosticReport", Category: "colonoscopy", PatientKey: "skmc-endo|H1", Name: "Test Person", Day: 2, Status: "final", Ev: &TwoVerdict{Label: "needs_human", PrepUngraded: true, GradedLabel: "adequate"}}

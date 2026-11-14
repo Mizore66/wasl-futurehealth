@@ -663,7 +663,10 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
-	if c.last != nil {
+	if c.last != nil && (c.last.CRC != nil || s.dashboard["materialization"] != nil || s.report["materialization"] != nil) {
+		// Root-only legacy retained artifacts predate this additive contract.
+		// Keep their exported payloads/digests unchanged; new materializations
+		// and every typed CRC care projection expose the care metadata.
 		kind, _ := materializedCaseKind(c.last)
 		m["case_kind"] = kind
 		m["screening_complete"] = screeningComplete(c.last)

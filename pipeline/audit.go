@@ -324,6 +324,7 @@ func audit(data, wasl, run string, P int) {
 	ob, _ := os.ReadFile(filepath.Join(run, "orchestrate.json"))
 	json.Unmarshal(ob, &orch)
 	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run, analysisLiveOUT)
+	res["identity_quarantines"] = rp.L.identityQuarantineSnapshot()
 	res["crash_recovery"] = crash
 	res["throughput_ev_s"], res["wall_s"], res["chaos"] = orch["throughput_ev_s"], orch["wall_s"], orch["chaos"]
 	res["latency_ms"] = map[string]float64{"n": float64(len(lat)), "p50": r3(pctl(lat, .5)), "p90": r3(pctl(lat, .9)), "p99": r3(pctl(lat, .99)), "max": r3(pctl(lat, 1))}

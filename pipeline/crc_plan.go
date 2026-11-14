@@ -316,7 +316,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 							cd.CareState = "ongoing"
 						}
 					}
-					child.Sig = sha(canon(child))
+					child.Sig = decSig(child)
 					kids[child.LoopID] = child
 					p.ChildLoop = child.LoopID
 					p.IntervalDays, p.DueDay = child.CRC.IntervalDays, child.CRC.DueDay
