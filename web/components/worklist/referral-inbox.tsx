@@ -103,6 +103,17 @@ export function ReferralInbox({
   const r = list.find((x) => x.id === sel) ?? (sel ? all.find((x) => x.id === sel) : undefined) ?? list[0];
   const needCount = all.filter(TABS[0][2]).length;
 
+  /* An unconfirmed mode and picks belong to the referral shown when they were started. A search can change which
+     referral is shown (or show none) without any click here, so they are dropped when the displayed id changes.
+     Committed decisions live in `over` and are untouched. */
+  const [draftFor, setDraftFor] = useState<string | null>(null);
+  const shownId = r?.id ?? null;
+  if (draftFor !== shownId) {
+    setDraftFor(shownId);
+    setMode(null);
+    setPicked([]);
+  }
+
   const late = sorted.filter((x) => x.state === "new" && x.waiting > window);
   const grade = sorted.find((x) => x.state === "grade");
   const finding = [
