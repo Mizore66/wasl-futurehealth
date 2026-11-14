@@ -157,7 +157,7 @@ describe("a decline while the reservation is active", () => {
  *   initial/reload   workItem(case)                    -> view,status,next,head,snoozed,noAnswer,reserved,cancelled  (one overlay)
  *   booking save,    BookingControls.install(readback) -> bookingProjection(workItem(projection.case))               (one projection)
  *   cancel, rebook,  409 conflict re-read              -> same path; before this repair reserved/cancelled stayed from page load
- *   selection        ledger read bookingPanel          -> controls only; row flags come from the loaded item or the last patch
+ *   selection        validated new-head bookingPanel  -> same row projection as booking save, preserving case-local history
  *   Declined patch   p.reserved / p.cancelled          -> next text; must read the flags of the latest projection
  * These tests drive the production callbacks (BookingControls -> recordBooking -> bookingProjection -> log), not a parallel model.
  */
@@ -223,6 +223,13 @@ describe("booking flags follow the latest successful booking projection", () => 
 
   beforeEach(() => {
     server.clear();
+    // The selection refresh after a successful contact write reads that write, not a contradictory pre-write packet.
+    actions.recordAction.mockImplementation(async (id: string, _head: string, action: { outcome: "reached" | "declined" }) => {
+      const current = server.get(id)!;
+      const head = action.outcome === "reached" ? h("f") : h("9");
+      server.set(id, { ...current, head, last_contact: { at: DECLINED_LATER, event: head, outcome: action.outcome, channel: "phone" } });
+      return { ok: true, head, hash: head, at: DECLINED_LATER, actor: "coordinator-bound" };
+    });
     vi.mocked(recordBooking).mockImplementation(async (id, _head, action) => {
       const next = action.action === "booking_cancel"
         ? overlay(booking("cancelled", CANCELLED_LATER), undefined, NEW_HEAD)
@@ -265,6 +272,131 @@ describe("booking flags follow the latest successful booking projection", () => 
     const reloaded = itemOf(ID_A, overlay(booking("cancelled", CANCELLED_LATER), DECLINED_LATER, NEW_HEAD));
     expect([reloaded.status, reloaded.next, reloaded.reserved, reloaded.cancelled]).toEqual([DECLINED_STATUS, DECLINED_CANCELLED_NEXT, false, true]);
   });
+
+  // A coordinator in this mounted board first writes a local booking override. A different coordinator then changes
+  // the booking. These synthetic packets exercise the real selection reader and action callbacks, not API captures.
+  const EXTERNAL_HEAD = h("5");
+  const REACHED_HEAD = h("6");
+  const DECLINED_HEAD = h("7");
+  const packet = (id: string, ov: ApiOverlay, status = "ok") => ({
+    status, detail: "", applied: 4, entries: [], bookingPanel: projectionOf(id, ov),
+  });
+  const selectedName = () => container!.querySelector("h2")?.textContent;
+  async function selectA() {
+    // An accepted refresh may move A between tabs; that must not make the test act on the fallback case B.
+    for (const tab of ["To call", "Waiting", "To call", "Waiting"]) {
+      await click(tab, "[role=tab]");
+      const row = [...container!.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")].find((b) => b.textContent?.includes("EXP-sr-1"));
+      if (row) {
+        await act(async () => row.click());
+        if (selectedName() === "EXP-sr-1") return;
+      }
+    }
+    throw new Error("case A was not selectable after refresh");
+  }
+
+  for (const externalStatus of ["reserved", "cancelled"] as const) {
+    it(`local ${externalStatus === "reserved" ? "cancel" : "rebook"} then external ${externalStatus}: refreshed current-head Reached/Declined agrees with reload`, async () => {
+      const locallyCancelled = externalStatus === "reserved";
+      server.set(ID_A, overlay(booking(locallyCancelled ? "reserved" : "cancelled", locallyCancelled ? RESERVED : CANCELLED)));
+      server.set(ID_B, overlay(booking("cancelled", CANCELLED)));
+      await mount([itemOf(ID_A, server.get(ID_A)!), itemOf(ID_B, server.get(ID_B)!)]);
+      if (locallyCancelled) await click("Waiting", "[role=tab]");
+      await bookingSave(locallyCancelled ? "Cancel simulated reservation" : "Choose another simulated slot");
+      expect(recordBooking).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(recordBooking).mock.calls[0].slice(0, 2)).toEqual([ID_A, h("c")]);
+      await selectA();
+      const localNext = nextField();
+      expect(localNext).toBe(locallyCancelled ? "Choose another simulated slot" : "Manage the simulated reservation");
+
+      // Start a packet for A, leave it unresolved, then change A externally and return. The abandoned read ignores
+      // abort deliberately so the production abort/revision fences, rather than the fetch mock, must discard it.
+      await click("To call", "[role=tab]");
+      await click("EXP-sr-2", "button[aria-pressed]");
+      let resolveOld!: (value: Response) => void;
+      const oldRead = new Promise<Response>((resolve) => { resolveOld = resolve; });
+      vi.mocked(fetch).mockReturnValueOnce(oldRead);
+      await click(locallyCancelled ? "To call" : "Waiting", "[role=tab]");
+      if (locallyCancelled) await click("EXP-sr-1", "button[aria-pressed]");
+      const oldSignal = vi.mocked(fetch).mock.calls.at(-1)![1]!.signal!;
+      const oldOverlay = server.get(ID_A)!;
+      const external = overlay(booking(externalStatus, REBOOKED), undefined, EXTERNAL_HEAD);
+      server.set(ID_A, external);
+      await click("To call", "[role=tab]");
+      await click("EXP-sr-2", "button[aria-pressed]");
+      await selectA();
+      expect(oldSignal.aborted).toBe(true);
+      await act(async () => resolveOld(new Response(JSON.stringify({ ...packet(ID_A, oldOverlay),
+        entries: [{ what: "ABORTED-BOOKING-PACKET", when: "Saved", who: "Synthetic" }],
+      }), { status: 200 })));
+      const refreshedNext = nextField();
+      const refreshedTrailCount = count(itemOf(ID_A, external).next);
+      expect(container!.textContent).not.toContain("ABORTED-BOOKING-PACKET");
+
+      // Unlike a canned successful response, this mock refuses stale expected heads and persists the actual contact
+      // outcomes into the next ledger read. Reached and Declined must both succeed on successive CURRENT heads.
+      actions.recordAction.mockImplementation(async (id: string, expectedHead: string, action: { outcome: "reached" | "declined" }) => {
+        const current = server.get(id)!;
+        if (current.head !== expectedHead) return { ok: false, status: 409, conflict: "head", error: "stale head" };
+        const head = action.outcome === "reached" ? REACHED_HEAD : DECLINED_HEAD;
+        server.set(id, { ...current, head, last_contact: { at: DECLINED_LATER, event: head, outcome: action.outcome, channel: "phone" } });
+        return { ok: true, head, hash: head, at: DECLINED_LATER, actor: "coordinator-bound" };
+      });
+      await click("Log call");
+      await click("Reached");
+      await click("Declined");
+      await selectA();
+      expect(actions.recordAction.mock.calls.map((call) => call.slice(0, 3))).toEqual([
+        [ID_A, EXTERNAL_HEAD, { action: "contact_outcome", outcome: "reached", channel: "phone" }],
+        [ID_A, REACHED_HEAD, { action: "contact_outcome", outcome: "declined", channel: "phone" }],
+      ]);
+      expect(server.get(ID_A)!.head).toBe(DECLINED_HEAD);
+      expect(container!.querySelector('[data-testid="action-refused"]')).toBeNull();
+      const reloaded = itemOf(ID_A, server.get(ID_A)!);
+      const expectedNext = locallyCancelled ? DECLINED_RESERVED_NEXT : DECLINED_CANCELLED_NEXT;
+      expect(nextField()).toBe(expectedNext);
+      expect(count(expectedNext)).toBeGreaterThanOrEqual(2); // Next and current trail agree, not just the controls.
+      expect([reloaded.next, reloaded.reserved, reloaded.cancelled]).toEqual([expectedNext, locallyCancelled, !locallyCancelled]);
+      expect(refreshedNext).toBe(itemOf(ID_A, external).next);
+      expect(refreshedTrailCount).toBeGreaterThanOrEqual(2);
+      expect(recordBooking).toHaveBeenCalledTimes(1); // Declining never cancels or acquires capacity.
+      expect(server.get(ID_A)!.booking!.status).toBe(externalStatus);
+      expect(server.get(ID_B)!.head).toBe(h("c"));
+      await click("To call", "[role=tab]");
+      await click("EXP-sr-2", "button[aria-pressed]");
+      expect(nextField()).toBe("Choose another simulated slot");
+      expect(container!.textContent).not.toContain(expectedNext);
+    });
+  }
+
+  for (const invalidPart of ["ledger", "overlay"] as const) {
+    it(`an invalid ${invalidPart} prefix cannot replace a local cancellation or authorize a current-head decline`, async () => {
+      server.set(ID_A, overlay(booking("reserved", RESERVED)));
+      server.set(ID_B, overlay(booking("cancelled", CANCELLED)));
+      await mount([itemOf(ID_A, server.get(ID_A)!), itemOf(ID_B, server.get(ID_B)!)]);
+      await click("Waiting", "[role=tab]");
+      await bookingSave("Cancel simulated reservation");
+      await selectA();
+      await click("EXP-sr-2", "button[aria-pressed]");
+      const invalidOverlay = { ...overlay(booking("reserved", REBOOKED), undefined, EXTERNAL_HEAD),
+        ledger_status: invalidPart === "overlay" ? "invalid" as const : "ok" as const };
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify(packet(ID_A, invalidOverlay, invalidPart === "ledger" ? "invalid" : "ok")), { status: 200 }));
+      await click("EXP-sr-1", "button[aria-pressed]");
+      expect(nextField()).toBe("Choose another simulated slot");
+      if (invalidPart === "ledger") {
+        expect((docButton("Log call") as HTMLButtonElement).disabled).toBe(true);
+        expect(container!.textContent).toContain("not trustworthy");
+      } else {
+        // The envelope is ok but its prefix is not authoritative: the last trusted row head must still be used.
+        actions.recordAction.mockResolvedValue({ ok: false, status: 409, conflict: "head", error: "stale head" });
+        await click("Log call");
+        await click("Reached");
+        expect(actions.recordAction.mock.calls[0][1]).toBe(NEW_HEAD);
+        expect(container!.textContent).toContain("Not saved:");
+      }
+      expect(recordBooking).toHaveBeenCalledTimes(1);
+    });
+  }
 
   it("a rebook of one case does not change what Declined says for another case", async () => {
     server.set(ID_A, overlay(booking("cancelled", CANCELLED)));

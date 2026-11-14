@@ -74,6 +74,12 @@ const isLedger = (l: LedgerRead | undefined): l is LedgerSnapshot => !!l && !("e
 const contactProjection = (item: WorkItem): ContactProjection => ({
   contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped,
 });
+/** Keep the row's booking workflow and action-driving flags on the same projection as its write head. */
+const bookingRowProjection = (item: WorkItem) => ({
+  view: item.view, status: item.status, next: item.next, head: item.head,
+  snoozed: item.snoozed, noAnswer: item.noAnswer, awaitingNext: item.awaitingNext,
+  reserved: item.reserved, cancelled: item.cancelled,
+});
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
   delete next[id];
@@ -232,10 +238,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         // separate; only the validated current shared case projection may change these affordances and their head.
         if (ledger.status === "ok" && panel?.overlay.ledger_status === "ok") {
           const latest = workItem(panel.case, now, true);
-          setS((prev) => ({
-            ...prev,
-            over: { ...prev.over, [selId]: { ...(prev.over[selId] ?? { log: [] }), ...contactProjection(latest), head: panel.overlay.head } },
-          }));
+          setS((prev) => {
+            const before = prev.over[selId] ?? { log: [] };
+            return {
+              ...prev,
+              over: {
+                ...prev.over,
+                [selId]: {
+                  ...before,
+                  // A new writable head must not retain booking flags/Next from an older local save. A same-head
+                  // read can retain the just-saved presentation; contact permission is always refreshed below.
+                  ...(before.head !== latest.head ? bookingRowProjection(latest) : {}),
+                  ...contactProjection(latest), head: latest.head,
+                },
+              },
+            };
+          });
         }
       })
       .catch((e: unknown) => {
@@ -265,11 +283,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         over: {
           ...prev.over,
           [id]: {
-            ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
+            ...before, ...bookingRowProjection(latest),
             ...(projection.overlay.ledger_status === "ok" ? contactProjection(latest) : {}),
-            snoozed: latest.snoozed, noAnswer: latest.noAnswer, awaitingNext: latest.awaitingNext,
-            // Every action-driving flag comes from this same projection as next/head: no page-load flag may contradict it.
-            reserved: latest.reserved, cancelled: latest.cancelled,
           },
         },
       };
