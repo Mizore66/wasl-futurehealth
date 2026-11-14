@@ -82,10 +82,15 @@ def waitlist(case_id, decision, booking_case):
     requested = int(booking_case.get("requested_day", decision.get("sr_day", 0)))
     repeat = bool(booking_case.get("repeat_after_unsatisfactory"))
     window = booking_case.get("window_days") or []
+    absolute_deadline = booking_case.get("deadline_day")   # CRC: authoritative clinical deadline, present even with no slot
+    lower = 0  # only an unsatisfactory-exam repeat has a lower-bound clinical window
     if repeat and len(window) == 2:
         lower, deadline = int(window[0]), int(window[1])
-    else:
-        lower = 0  # only an unsatisfactory-exam repeat has a lower-bound clinical window
+    elif len(window) == 2:   # initial cervical window [referral, referral + window_days]
+        deadline = int(window[1])
+    elif absolute_deadline is not None:
+        deadline = int(absolute_deadline)
+    else:   # legacy fallback only when no absolute metadata exists
         deadline = int(booking_case.get("booking", {}).get("deadline", requested + int(decision.get("deadline") or 31)))
     return {
         "case_id": case_id, "programme": decision.get("prog"), "state": decision.get("state"),

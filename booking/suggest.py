@@ -319,7 +319,8 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     urgent = {k for k in meta if a.crc_urgent_share > 0 and stable_u(k, "urgent") < a.crc_urgent_share}
     by_day = collections.defaultdict(list)
     for k, (_, prefs, day, anchor) in meta.items():
-        by_day[day].append(Event("result_accepted", k, day, prefs, anchor["day"] + (14 if k in urgent else 31)))
+        # earliest: the actual clinical anchor (referral / unsatisfactory exam) as well as the usual request + prep lead
+        by_day[day].append(Event("result_accepted", k, day, prefs, anchor["day"] + (14 if k in urgent else 31), anchor["day"]))
     if a.forecast == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
@@ -341,7 +342,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     for k, (d, prefs, day, anchor) in meta.items():
         b = out.get(k)
         deadline = anchor["day"] + (14 if k in urgent else 31)
-        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5)
+        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, max(day + 5, anchor["day"]), 5)
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
         if b is None:

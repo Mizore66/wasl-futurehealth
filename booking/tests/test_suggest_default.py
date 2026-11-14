@@ -7,7 +7,7 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "6ffbad1b4f31850e30a012370df2ab770da100d62cffb56de32665d7d13574ad"
+GOLDEN = "068dcb049ea1a125193dc9af06605d7d7c1b66606993396086e7e03a008fc359"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -75,6 +75,16 @@ def test_lookahead_labelled():
     return f"lookahead run labelled {opt['method'][:40]}...; {res['summary']['suggested']}/{len(crc)} CRC suggested"
 
 
+def test_clinical_date_cases_are_collected():
+    """The CI step runs this script, so execute the clinical-date module here; run_all() fails on a missing/failing case."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import test_clinical_dates
+    names = test_clinical_dates.run_all()
+    return f"{len(names)} clinical-date cases executed"
+
+
 if __name__ == "__main__":
+    for f in (test_clinical_date_cases_are_collected,):
+        print(f.__name__, "->", f())
     for f in (test_default_unchanged, test_lookahead_labelled):
         print(f.__name__, "->", f())
