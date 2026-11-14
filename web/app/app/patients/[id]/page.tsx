@@ -8,6 +8,7 @@ import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
+import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
@@ -98,7 +99,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
+                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
               </span>
             </p>
           </div>

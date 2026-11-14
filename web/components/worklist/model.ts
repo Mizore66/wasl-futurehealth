@@ -1,4 +1,5 @@
 import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/schema";
+import { effectiveOwner } from "@/lib/api/owner";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { compareInstants } from "@/lib/domain/instant";
@@ -168,7 +169,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   }
   const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
-  const owner = ov?.owner || c.owner;
+  const owner = effectiveOwner(c);
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
