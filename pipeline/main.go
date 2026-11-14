@@ -6,10 +6,13 @@ package main
 //   wsi audit        -run run/x                       replay FHIR log offline, diff vs live outputs (dups/losses), accuracy, dashboard
 //   wsi producer|prep|linker|closure|reviewer|setup   individual services (spawned by orchestrate)
 import (
+	"bufio"
+	"bytes"
 	"context"
 	crand "crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -17,7 +20,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -680,19 +682,27 @@ type proc struct {
 	kills   int
 	crashes int
 	gen     int
+	exited  <-chan struct{} // closed only after exec.Cmd.Wait has reaped this generation
 }
 
 type Orch struct {
-	run      string
-	bin      string
-	procs    map[string]*proc
-	order    []string
-	mu       sync.Mutex
-	stopping bool
+	run            string
+	bin            string
+	procs          map[string]*proc
+	order          []string
+	mu             sync.Mutex
+	stopping       bool
+	writersStopped bool
 }
 
 func (o *Orch) start(name string, bin string, args ...string) {
 	o.mu.Lock()
+	// Also guard the actual start: a supervisor may already have decided to
+	// restart when snapshot shutdown acquired the lock.
+	if o.stopping || (o.writersStopped && !strings.HasPrefix(name, "nats-")) {
+		o.mu.Unlock()
+		return
+	}
 	p, ok := o.procs[name]
 	if !ok {
 		p = &proc{name: name, args: args}
@@ -701,14 +711,12 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		os.MkdirAll(filepath.Join(o.run, "logs"), 0700)
 		p.log, _ = os.OpenFile(filepath.Join(o.run, "logs", name+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	}
-	o.mu.Unlock()
 	if bin != "" {
 		p.bin = bin
 	}
 	if p.bin == "" {
 		p.bin = o.bin
 	}
-	o.mu.Lock()
 	p.gen++
 	gen := p.gen
 	cmd := exec.Command(p.bin, p.args...)
@@ -718,14 +726,17 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		panic(err)
 	}
 	p.cmd = cmd
+	exited := make(chan struct{})
+	p.exited = exited
 	o.mu.Unlock()
 	fmt.Fprintf(p.log, "=== started pid %d at %s\n", cmd.Process.Pid, time.Now().Format(time.RFC3339Nano))
 	// supervisor: restart on unexpected exit (restartPolicy: Always), unless killed by chaos or shutting down
 	go func() {
 		cmd.Wait()
+		close(exited)
 		time.Sleep(300 * time.Millisecond)
 		o.mu.Lock()
-		restart := !o.stopping && p.gen == gen && !strings.HasPrefix(name, "producer-") && name != "hl7send" // one-shot jobs exit when done
+		restart := !o.stopping && !o.writersStopped && p.gen == gen && !strings.HasPrefix(name, "producer-") && name != "hl7send" // one-shot jobs exit when done
 		if restart {
 			p.crashes++
 		}
@@ -1010,144 +1021,85 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		subDone.Wait()
 		done <- true
 	}()
-	// wait for quiescence
+	// A timeout is an incomplete run, never permission to export an advancing
+	// graph. The budget still starts at ingest start; it is not extended here.
 	nc, js := connect("orchestrator")
 	defer nc.Close()
-	ctx := context.Background()
-	stable := 0
-	chaosDone := chaos == 0 && !natsKill
-	var tQuiet time.Time
-	lastSig := ""
-	for {
-		time.Sleep(500 * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), t0.Add(QuietTimeout))
+	defer cancel()
+	sources := []string{}
+	switch SrcCfg.Source {
+	case "fhir":
+		sources = append(sources, "fhirsub")
+	case "fhirpoll":
+		sources = append(sources, "fhirpoll")
+	case "hl7":
+		sources = append(sources, "hl7send")
+	default:
+		for _, pc := range Providers {
+			sources = append(sources, "producer-"+pc.ID)
+		}
+	}
+	chaosDone := false // includes subDone even when ordinary chaos is disabled
+	observe := func(ctx context.Context) (snapshotBoundary, error) {
 		select {
 		case <-done:
 			chaosDone = true
 		default:
 		}
-		ok := chaosDone
-		if SrcCfg.Source == "fhir" {
-			if st := readStatus(run, "fhirsub"); st == nil || st["done"] != true {
-				ok = false
-			}
-		} else if SrcCfg.Source == "fhirpoll" {
-			if st := readStatus(run, "fhirpoll"); st == nil || st["done"] != true {
-				ok = false
-			}
-		} else if SrcCfg.Source == "hl7" {
-			if st := readStatus(run, "hl7send"); st == nil || st["done"] != true {
-				ok = false
-			}
-		} else {
-			for _, pc := range Providers {
-				st := readStatus(run, "producer-"+pc.ID)
-				if st == nil || st["done"] != true {
-					ok = false
-				}
-			}
+		if !chaosDone {
+			return snapshotBoundary{}, errors.New("chaos/source restart schedule still running")
 		}
-		fs, err1 := js.Stream(ctx, "FHIR")
-		ps, err2 := js.Stream(ctx, "PREP")
-		if err1 != nil || err2 != nil {
-			continue
-		}
-		fi, e1 := fs.Info(ctx)
-		pi, e2 := ps.Info(ctx)
-		if e1 != nil || e2 != nil {
-			continue
-		}
-		ls := readStatus(run, "linker")
-		if ls == nil || uint64(ls["processed"].(float64)) != fi.State.Msgs || pi.State.Msgs != fi.State.Msgs {
-			ok = false
-		}
-		sigParts := []string{fmt.Sprint(fi.State.Msgs)}
-		if ls == nil || ls["inflight"].(float64) != 0 {
-			ok = false
-		}
-		for k := 0; k < P; k++ {
-			cs := readStatus(run, fmt.Sprintf("closure-%d", k))
-			if ls == nil || cs == nil || cs["inflight"].(float64) != 0 ||
-				uint64(cs["next_pseq"].(float64))-1 != uint64(ls["pseq"].([]interface{})[k].(float64)) {
-				ok = false
-			} else {
-				sigParts = append(sigParts, fmt.Sprint(cs["next_pseq"]))
-			}
-		}
-		if !noReview {
-			ost, err := js.Stream(ctx, "OUT")
-			if err != nil {
-				continue
-			}
-			oinf, err := ost.Info(ctx)
-			rs := readStatus(run, "reviewer")
-			if err != nil || rs == nil || uint64(rs["last_out_seq"].(float64)) != oinf.State.LastSeq {
-				ok = false
-			}
-		}
-		s := strings.Join(sigParts, ",")
-		if ok && s == lastSig {
-			stable++
-		} else {
-			stable = 0
-			tQuiet = time.Now()
-		}
-		lastSig = s
-		if stable >= 6 {
-			break
-		}
-		if time.Since(t0) > QuietTimeout {
-			fmt.Println("timeout waiting for quiescence")
-			break
-		}
+		return captureSnapshotBoundary(ctx, js, run, P, noReview, sources, SrcCfg.Source == "fhir")
 	}
-	// last OUT publish time = end of processing
-	info := func(name string) (i *jetstream.StreamInfo) {
-		retry("info "+name, func() error {
-			s, err := js.Stream(ctx, name)
-			if err != nil {
-				return err
-			}
-			i, err = s.Info(ctx)
+	boundary, err := waitSnapshotBoundary(ctx, 500*time.Millisecond, 7, observe)
+	if err != nil {
+		writeStatus(run, "snapshot", map[string]any{"status": "incomplete", "error": err.Error()})
+		panic(err)
+	}
+	tQuiet := time.Now()
+	fi, oi := boundary.Streams["FHIR"], boundary.Streams["OUT"]
+	lastOut := oi.LastTime
+	wall := lastOut.Sub(t0).Seconds()
+	throughput := 0.0
+	if wall > 0 {
+		throughput = float64(fi.Msgs) / wall
+	}
+	res := map[string]interface{}{"speed": speed, "P": P, "preps": preps, "threads": threads, "replicas": replicas,
+		"fhir_msgs": fi.Msgs, "out_msgs": oi.Msgs, "t_start": t0, "t_last_out": lastOut, "t_quiet": tQuiet,
+		"wall_s": wall, "throughput_ev_s": throughput, "source": SrcCfg}
+	// Writer shutdown is awaited, not a deferred cancel or an assumed flush.
+	// Any in-flight publication/status change during shutdown invalidates the
+	// candidate cut. NATS stays available for the final checks and export.
+	exportCtx, exportCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer exportCancel()
+	stop := func(ctx context.Context) error {
+		if err := o.stopSnapshotWriters(ctx); err != nil {
 			return err
-		})
-		return
-	}
-	oi, fi := info("OUT"), info("FHIR")
-	lastOut := oi.State.LastTime
-	res := map[string]interface{}{"speed": speed, "P": P, "preps": preps, "threads": threads, "replicas": replicas, "chaos": events,
-		"fhir_msgs": fi.State.Msgs, "out_msgs": oi.State.Msgs, "t_start": t0, "t_last_out": lastOut, "t_quiet": tQuiet,
-		"wall_s": lastOut.Sub(t0).Seconds(), "throughput_ev_s": float64(fi.State.Msgs) / lastOut.Sub(t0).Seconds(),
-		"linker": readStatus(run, "linker"), "reviewer": readStatus(run, "reviewer"), "source": SrcCfg,
-		"fhirsub": readStatus(run, "fhirsub"), "malaffi": readStatus(run, "malaffi")}
-	sup := map[string]interface{}{}
-	for n, p := range o.procs {
-		sup[n] = map[string]int{"chaos_kills": p.kills, "unexpected_exits_restarted": p.crashes}
-	}
-	res["supervisor"] = sup
-	cl := map[string]interface{}{}
-	for k := 0; k < P; k++ {
-		cl[fmt.Sprint(k)] = readStatus(run, fmt.Sprintf("closure-%d", k))
-	}
-	res["closures"] = cl
-	anchors := map[string]string{} // v6: ledger heads handed to the auditor (in production: an external, append-only anchor store)
-	for k := 0; k < P; k++ {
-		if st := readStatus(run, fmt.Sprintf("closure-%d", k)); st != nil && st["ledger_head"] != nil {
-			anchors["out.p"+fmt.Sprint(k)] = fmt.Sprint(st["ledger_head"])
 		}
+		evMu.Lock()
+		res["chaos"] = events
+		evMu.Unlock()
+		o.mu.Lock()
+		sup := map[string]interface{}{}
+		for n, p := range o.procs {
+			sup[n] = map[string]int{"chaos_kills": p.kills, "unexpected_exits_restarted": p.crashes}
+		}
+		o.mu.Unlock()
+		res["supervisor"] = sup
+		res["linker"], res["reviewer"] = readStatus(run, "linker"), readStatus(run, "reviewer")
+		res["fhirsub"], res["malaffi"] = readStatus(run, "fhirsub"), readStatus(run, "malaffi")
+		cl := map[string]interface{}{}
+		for k := 0; k < P; k++ {
+			cl[fmt.Sprint(k)] = readStatus(run, fmt.Sprintf("closure-%d", k))
+		}
+		res["closures"] = cl
+		return nil
 	}
-	defer func() { // FHIR input anchor: computed over the dumped log, written once (0400) next to the OUT heads
-		anchors["fhir"] = fhirAnchor(readLog(filepath.Join(run, "fhir_log.ndjson")))
-		ab, _ := json.MarshalIndent(anchors, "", " ")
-		os.WriteFile(filepath.Join(run, "anchors.json"), ab, 0400)
-	}()
-	b, _ := json.MarshalIndent(res, "", " ")
-	os.WriteFile(filepath.Join(run, "orchestrate.json"), b, 0600)
-	for _, s := range []string{"FHIR", "OUT", "PREP"} {
-		n := dumpStream(js, s, filepath.Join(run, strings.ToLower(s)+"_log.ndjson"))
-		fmt.Printf("dumped %s: %d msgs\n", s, n)
+	if err := exportSnapshot(exportCtx, js, run, boundary, stop, observe, res); err != nil {
+		panic(err)
 	}
-	fmt.Printf("quiescent: %d FHIR msgs, %d outputs, %.1fs, %.0f ev/s\n", fi.State.Msgs, oi.State.Msgs, res["wall_s"], res["throughput_ev_s"])
-	_ = sort.Ints
+	fmt.Printf("quiescent: %d FHIR msgs, %d outputs, %.1fs, %.0f ev/s\n", fi.Msgs, oi.Msgs, wall, throughput)
 }
 
 var govArgs []string // v6 reviewer/governance flags forwarded to every child process
@@ -1160,54 +1112,701 @@ type LogMsg struct {
 	Ts      int64             `json:"ts"`
 }
 
+// streamFence excludes consumer counts: export itself creates ordered consumers.
+// Messages are immutable in JetStream, but counts/endpoints can change through
+// append, retention or deletion; all of those changes invalidate a canonical cut.
+type streamFence struct {
+	Msgs     uint64    `json:"msgs"`
+	First    uint64    `json:"first"`
+	Last     uint64    `json:"last"`
+	Bytes    uint64    `json:"bytes"`
+	Deleted  int       `json:"deleted"`
+	LastTime time.Time `json:"last_time"`
+}
+
+func (f streamFence) validate() error {
+	if f.Deleted < 0 {
+		return errors.New("negative deleted count")
+	}
+	if f.Msgs == 0 {
+		if (f.First == 0 && f.Last == 0) || (f.First > 0 && f.First-1 == f.Last) {
+			return nil
+		}
+		return errors.New("invalid empty stream endpoints")
+	}
+	if f.First == 0 || f.Last < f.First || f.Msgs > f.Last-f.First+1 {
+		return errors.New("invalid stream count/endpoints")
+	}
+	return nil
+}
+
+func captureStreamFence(ctx context.Context, js jetstream.JetStream, name string) (streamFence, error) {
+	s, err := js.Stream(ctx, name)
+	if err != nil {
+		return streamFence{}, fmt.Errorf("stream %s: %w", name, err)
+	}
+	i, err := s.Info(ctx)
+	if err != nil {
+		return streamFence{}, fmt.Errorf("info %s: %w", name, err)
+	}
+	if i == nil || i.Config.Name != name {
+		return streamFence{}, fmt.Errorf("invalid info for %s", name)
+	}
+	f := streamFence{Msgs: i.State.Msgs, First: i.State.FirstSeq, Last: i.State.LastSeq, Bytes: i.State.Bytes, Deleted: i.State.NumDeleted, LastTime: i.State.LastTime}
+	return f, f.validate()
+}
+
 func dumpStream(js jetstream.JetStream, stream, path string) int {
-	ctx := context.Background()
-	var s jetstream.Stream
-	var info *jetstream.StreamInfo
-	var cons jetstream.Consumer
-	retry("dump "+stream, func() (err error) {
-		if s, err = js.Stream(ctx, stream); err != nil {
-			return
-		}
-		if info, err = s.Info(ctx); err != nil {
-			return
-		}
-		cons, err = s.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
-		return
-	})
-	f, _ := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	f, err := captureStreamFence(ctx, js, stream)
+	if err != nil {
+		panic(err)
+	}
+	n, err := dumpStreamAt(ctx, js, stream, path, f)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+// dumpStreamAt never resamples its fence. In particular, the final Fetch batch
+// can contain later messages even when the outer count was below the endpoint.
+// Sequence gaps are legal for retained streams: require the captured row count,
+// first/last endpoints and strict order, not Last-First+1 rows.
+func dumpStreamAt(ctx context.Context, js jetstream.JetStream, stream, path string, fence streamFence) (n int, err error) {
+	if err = fence.validate(); err != nil {
+		return 0, err
+	}
+	if err = ctx.Err(); err != nil {
+		return 0, err
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+"-partial-*")
+	if err != nil {
+		return 0, err
+	}
+	tmp := f.Name()
+	// Keep a failed partial under its private, noncanonical name as evidence.
 	defer f.Close()
-	n := 0
-	misses := 0
-	for uint64(n) < info.State.Msgs {
-		batch, err := cons.Fetch(1000, jetstream.FetchMaxWait(2*time.Second))
-		if err != nil {
-			if misses++; misses > 30 {
-				panic("dump incomplete: " + stream)
-			}
-			continue
+	var cons jetstream.Consumer
+	if fence.Msgs > 0 {
+		s, e := js.Stream(ctx, stream)
+		if e != nil {
+			return n, e
+		}
+		cons, e = s.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
+		if e != nil {
+			return n, e
+		}
+	}
+	var last uint64
+	for uint64(n) < fence.Msgs {
+		if e := ctx.Err(); e != nil {
+			return n, e
+		}
+		want := fence.Msgs - uint64(n)
+		if want > 1000 {
+			want = 1000
+		}
+		batch, e := cons.Fetch(int(want), jetstream.FetchMaxWait(2*time.Second))
+		if e != nil {
+			return n, fmt.Errorf("dump %s fetch: %w", stream, e)
+		}
+		if batch == nil {
+			return n, fmt.Errorf("dump %s: nil batch", stream)
 		}
 		got := 0
-		for m := range batch.Messages() {
-			md, _ := m.Metadata()
-			h := map[string]string{}
-			for k, v := range m.Headers() {
-				h[k] = v[0]
+		messages := batch.Messages()
+	batchLoop:
+		for {
+			select {
+			case <-ctx.Done():
+				return n, ctx.Err()
+			case m, ok := <-messages:
+				if !ok {
+					break batchLoop
+				}
+				if m == nil {
+					return n, fmt.Errorf("dump %s: nil message", stream)
+				}
+				md, e := m.Metadata()
+				if e != nil || md == nil {
+					return n, fmt.Errorf("dump %s: invalid message metadata (%v)", stream, e)
+				}
+				seq := md.Sequence.Stream
+				if md.Stream != stream || seq == 0 || md.Timestamp.IsZero() || seq <= last {
+					return n, fmt.Errorf("dump %s: invalid sequence/stream/timestamp at %d", stream, seq)
+				}
+				// Later appends may be delivered in this same batch, but never
+				// written or counted as a substitute for a missing captured row.
+				if seq > fence.Last {
+					if uint64(n) != fence.Msgs {
+						return n, fmt.Errorf("dump %s incomplete before endpoint %d", stream, fence.Last)
+					}
+					continue
+				}
+				if uint64(n) >= fence.Msgs || (n == 0 && seq != fence.First) {
+					return n, fmt.Errorf("dump %s: captured count/first endpoint mismatch", stream)
+				}
+				h := map[string]string{}
+				for k, v := range m.Headers() {
+					if len(v) == 0 {
+						return n, fmt.Errorf("dump %s: empty header %s", stream, k)
+					}
+					h[k] = v[0]
+				}
+				data := m.Data()
+				if !json.Valid(data) {
+					data, _ = json.Marshal(string(data))
+				} // preserve existing non-JSON log representation
+				b, e := json.Marshal(LogMsg{Seq: seq, Subject: m.Subject(), Hdr: h, Data: data, Ts: md.Timestamp.UnixNano()})
+				if e != nil {
+					return n, e
+				}
+				if _, e = f.Write(append(b, '\n')); e != nil {
+					return n, e
+				}
+				last = seq
+				n++
+				got++
 			}
-			data := m.Data()
-			if !json.Valid(data) {
-				data, _ = json.Marshal(string(data))
-			}
-			b, _ := json.Marshal(LogMsg{Seq: md.Sequence.Stream, Subject: m.Subject(), Hdr: h, Data: data, Ts: md.Timestamp.UnixNano()})
-			f.Write(append(b, '\n'))
-			n++
-			got++
+		}
+		if e := batch.Error(); e != nil {
+			return n, fmt.Errorf("dump %s batch: %w", stream, e)
 		}
 		if got == 0 {
-			if misses++; misses > 30 {
-				panic("dump incomplete: " + stream)
+			return n, fmt.Errorf("dump %s incomplete: %d of %d", stream, n, fence.Msgs)
+		}
+	}
+	if fence.Msgs > 0 && last != fence.Last {
+		return n, fmt.Errorf("dump %s: last endpoint mismatch", stream)
+	}
+	if err = f.Sync(); err != nil {
+		return n, err
+	}
+	if err = f.Close(); err != nil {
+		return n, err
+	}
+	err = os.Rename(tmp, path)
+	return n, err
+}
+
+type snapshotClosure struct {
+	Next uint64 `json:"next_pseq"`
+	OSeq uint64 `json:"ledger_oseq"`
+	Head string `json:"ledger_head"`
+}
+type snapshotAck struct {
+	Last     uint64 `json:"ack_floor"`
+	Pending  uint64 `json:"pending"`
+	Inflight int    `json:"inflight"`
+}
+type snapshotBoundary struct {
+	Streams      map[string]streamFence `json:"streams"`
+	Processed    uint64                 `json:"processed"`
+	PSeq         []uint64               `json:"pseq"`
+	Closures     []snapshotClosure      `json:"closures"`
+	ReviewerLast uint64                 `json:"reviewer_last"`
+	Consumers    map[string]snapshotAck `json:"consumers"`
+}
+
+// Status files are observations, not authority to coerce missing/null/negative
+// or fractional fields into zero (or to panic on failed type assertions).
+func snapshotStatus(run, name string) (map[string]json.RawMessage, error) {
+	b, err := os.ReadFile(filepath.Join(run, "status-"+name+".json"))
+	if err != nil {
+		return nil, err
+	}
+	if err := rejectDuplicateKeys(b); err != nil {
+		return nil, err
+	}
+	var st map[string]json.RawMessage
+	if err := json.Unmarshal(b, &st); err != nil {
+		return nil, err
+	}
+	if st == nil {
+		return nil, fmt.Errorf("missing status %s", name)
+	}
+	for _, key := range []string{"error", "link_funnel_error"} {
+		if raw, ok := st[key]; ok && string(raw) != `""` {
+			return nil, fmt.Errorf("%s status %s: %s", name, key, raw)
+		}
+	}
+	return st, nil
+}
+func snapshotField(st map[string]json.RawMessage, key string, dest any) error {
+	raw, ok := st[key]
+	if !ok || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return fmt.Errorf("missing status field %s", key)
+	}
+	if err := json.Unmarshal(raw, dest); err != nil {
+		return fmt.Errorf("status field %s: %w", key, err)
+	}
+	return nil
+}
+func snapshotUint(st map[string]json.RawMessage, key string) (uint64, error) {
+	var n uint64
+	err := snapshotField(st, key, &n)
+	return n, err
+}
+func snapshotConsumerAck(ctx context.Context, js jetstream.JetStream, stream, name string, last uint64) (snapshotAck, error) {
+	c, err := js.Consumer(ctx, stream, name)
+	if err != nil {
+		return snapshotAck{}, err
+	}
+	i, err := c.Info(ctx)
+	if err != nil {
+		return snapshotAck{}, err
+	}
+	if i == nil || i.Stream != stream || i.Name != name || i.Config.AckPolicy != jetstream.AckExplicitPolicy ||
+		i.Config.DeliverPolicy != jetstream.DeliverAllPolicy || i.Config.FilterSubject != "" || len(i.Config.FilterSubjects) != 0 || i.NumRedelivered != 0 {
+		return snapshotAck{}, fmt.Errorf("invalid/undrained %s/%s consumer info", stream, name)
+	}
+	a := snapshotAck{Last: i.AckFloor.Stream, Pending: i.NumPending, Inflight: i.NumAckPending}
+	if a.Pending != 0 || a.Inflight != 0 || a.Last != last {
+		return a, fmt.Errorf("%s/%s undrained: pending=%d inflight=%d ack=%d want=%d", stream, name, a.Pending, a.Inflight, a.Last, last)
+	}
+	return a, nil
+}
+
+func captureSnapshotBoundary(ctx context.Context, js jetstream.JetStream, run string, P int, noReview bool, sources []string, inbox bool) (b snapshotBoundary, err error) {
+	if err = ctx.Err(); err != nil {
+		return b, err
+	}
+	if P <= 0 || len(sources) == 0 {
+		return b, errors.New("missing snapshot partitions/sources")
+	}
+	for _, name := range sources {
+		st, e := snapshotStatus(run, name)
+		if e != nil {
+			return b, e
+		}
+		var done bool
+		if e = snapshotField(st, "done", &done); e != nil {
+			return b, e
+		}
+		if !done {
+			return b, fmt.Errorf("source %s unfinished", name)
+		}
+	}
+	b.Streams = map[string]streamFence{}
+	b.Consumers = map[string]snapshotAck{}
+	for _, name := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
+		f, e := captureStreamFence(ctx, js, name)
+		if e != nil {
+			return b, e
+		}
+		// A retained prefix with holes cannot represent a newly completed
+		// canonical run, even though the individual dumper supports gaps.
+		if f.Msgs != f.Last || (f.Msgs > 0 && f.First != 1) || f.Deleted != 0 {
+			return b, fmt.Errorf("%s canonical history incomplete", name)
+		}
+		b.Streams[name] = f
+	}
+	fhir, prep := b.Streams["FHIR"], b.Streams["PREP"]
+	if prep.Msgs != fhir.Msgs {
+		return b, errors.New("FHIR/PREP not drained")
+	}
+	ls, e := snapshotStatus(run, "linker")
+	if e != nil {
+		return b, e
+	}
+	if b.Processed, e = snapshotUint(ls, "processed"); e != nil {
+		return b, e
+	}
+	inflight, e := snapshotUint(ls, "inflight")
+	if e != nil {
+		return b, e
+	}
+	if b.Processed != fhir.Last || inflight != 0 {
+		return b, errors.New("linker unfinished/inflight")
+	}
+	if e = snapshotField(ls, "pseq", &b.PSeq); e != nil {
+		return b, e
+	}
+	if len(b.PSeq) != P {
+		return b, errors.New("invalid linker partition watermarks")
+	}
+	var facts, outs uint64
+	for k := 0; k < P; k++ {
+		st, e := snapshotStatus(run, fmt.Sprintf("closure-%d", k))
+		if e != nil {
+			return b, e
+		}
+		var c snapshotClosure
+		if c.Next, e = snapshotUint(st, "next_pseq"); e != nil {
+			return b, e
+		}
+		if c.OSeq, e = snapshotUint(st, "ledger_oseq"); e != nil {
+			return b, e
+		}
+		if e = snapshotField(st, "ledger_head", &c.Head); e != nil {
+			return b, e
+		}
+		inflight, e := snapshotUint(st, "inflight")
+		if e != nil {
+			return b, e
+		}
+		if c.Next == 0 || c.Next-1 != b.PSeq[k] || inflight != 0 {
+			return b, fmt.Errorf("closure %d unfinished/inflight", k)
+		}
+		if c.OSeq > 0 && len(c.Head) != 64 {
+			return b, fmt.Errorf("closure %d invalid ledger anchor", k)
+		}
+		if ^uint64(0)-facts < b.PSeq[k] || ^uint64(0)-outs < c.OSeq {
+			return b, errors.New("snapshot count overflow")
+		}
+		facts += b.PSeq[k]
+		outs += c.OSeq
+		b.Closures = append(b.Closures, c)
+	}
+	if facts != b.Streams["FACTS"].Msgs || outs != b.Streams["OUT"].Msgs {
+		return b, errors.New("FACTS/OUT publications not drained")
+	}
+	a, e := snapshotConsumerAck(ctx, js, "FHIR", "prep", fhir.Last)
+	if e != nil {
+		return b, e
+	}
+	b.Consumers["FHIR/prep"] = a
+	if !noReview {
+		st, e := snapshotStatus(run, "reviewer")
+		if e != nil {
+			return b, e
+		}
+		if b.ReviewerLast, e = snapshotUint(st, "last_out_seq"); e != nil {
+			return b, e
+		}
+		if b.ReviewerLast != b.Streams["OUT"].Last {
+			return b, errors.New("reviewer unfinished")
+		}
+		// LastOut alone can pass despite an earlier failed review: require the
+		// durable explicit-ACK floor and no pending delivery/effect as well.
+		a, e := snapshotConsumerAck(ctx, js, "OUT", "reviewer", b.Streams["OUT"].Last)
+		if e != nil {
+			return b, e
+		}
+		b.Consumers["OUT/reviewer"] = a
+	}
+	if inbox {
+		f, e := captureStreamFence(ctx, js, "FHIRIN")
+		if e != nil {
+			return b, e
+		}
+		b.Streams["FHIRIN"] = f
+		if f.Msgs != 0 {
+			return b, errors.New("notification inbox unfinished")
+		}
+		a, e := snapshotConsumerAck(ctx, js, "FHIRIN", "notifications", f.Last)
+		if e != nil {
+			return b, e
+		}
+		b.Consumers["FHIRIN/notifications"] = a
+	}
+	return b, ctx.Err()
+}
+
+func waitSnapshotBoundary(ctx context.Context, interval time.Duration, samples int, observe func(context.Context) (snapshotBoundary, error)) (snapshotBoundary, error) {
+	if interval <= 0 || samples < 2 {
+		return snapshotBoundary{}, errors.New("snapshot incomplete: invalid stability window")
+	}
+	var previous []byte
+	stable := 0
+	lastErr := errors.New("no drained observation")
+	for {
+		if err := ctx.Err(); err != nil {
+			return snapshotBoundary{}, fmt.Errorf("snapshot incomplete: bounded quiescence wait: %w (last observation: %v)", err, lastErr)
+		}
+		b, err := observe(ctx)
+		if ctx.Err() != nil {
+			continue
+		}
+		if err != nil {
+			stable = 0
+			previous = nil
+			lastErr = err
+		} else {
+			next := canon(b)
+			if bytes.Equal(previous, next) {
+				stable++
+			} else {
+				stable = 1
+				previous = next
+			}
+			if stable >= samples {
+				return b, nil
+			}
+			lastErr = errors.New("boundary not yet stable")
+		}
+		timer := time.NewTimer(interval)
+		select {
+		case <-ctx.Done():
+			if !timer.Stop() {
+				<-timer.C
+			}
+		case <-timer.C:
+		}
+	}
+}
+
+// No worker implements a graceful flush protocol. First prove it drained;
+// then prevent restarts, signal, and await actual process exit. Finally the
+// caller rechecks every stream, ACK floor and ledger watermark. A change or
+// timeout is failure, never a claim that SIGTERM itself flushed anything.
+func (o *Orch) stopSnapshotWriters(ctx context.Context) error {
+	o.mu.Lock()
+	o.writersStopped = true
+	var writers []*proc
+	for _, name := range o.order {
+		if !strings.HasPrefix(name, "nats-") {
+			writers = append(writers, o.procs[name])
+		}
+	}
+	for _, p := range writers {
+		if p.cmd != nil && p.cmd.Process != nil {
+			if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
+				o.mu.Unlock()
+				return err
 			}
 		}
 	}
-	return n
+	o.mu.Unlock()
+	for _, p := range writers {
+		if p.exited == nil {
+			return fmt.Errorf("snapshot incomplete: writer %s has no exit acknowledgement", p.name)
+		}
+		select {
+		case <-p.exited:
+		case <-ctx.Done():
+			for _, p := range writers {
+				if p.cmd != nil && p.cmd.Process != nil {
+					p.cmd.Process.Kill()
+				}
+			}
+			return fmt.Errorf("snapshot incomplete: waiting for writer %s exit: %w", p.name, ctx.Err())
+		}
+	}
+	return ctx.Err()
+}
+
+// Read staged logs strictly, without normalizing, reconstructing or rehashing
+// the original producer rows. Only recompute/compare the existing anchor rules.
+func scanSnapshotLog(path string, visit func(LogMsg) error) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	s.Buffer(make([]byte, 65536), 1<<24)
+	for s.Scan() {
+		var m LogMsg
+		if err := json.Unmarshal(s.Bytes(), &m); err != nil {
+			return err
+		}
+		if err := visit(m); err != nil {
+			return err
+		}
+	}
+	return s.Err()
+}
+func snapshotAnchors(stage string, b snapshotBoundary) (map[string]string, error) {
+	anchors := map[string]string{"fhir": ""}
+	if err := scanSnapshotLog(filepath.Join(stage, "fhir_log.ndjson"), func(m LogMsg) error {
+		anchors["fhir"] = sha(append([]byte(anchors["fhir"]+"|"+utoa(m.Seq)+"|"+m.Subject+"|"+m.Hdr["Nats-Msg-Id"]+"|"), m.Data...))
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	seenPrep := map[uint64]bool{}
+	if err := scanSnapshotLog(filepath.Join(stage, "prep_log.ndjson"), func(m LogMsg) error {
+		var p Prep
+		if err := json.Unmarshal(m.Data, &p); err != nil {
+			return err
+		}
+		if p.Seq == 0 || p.Seq > b.Streams["FHIR"].Last || seenPrep[p.Seq] {
+			return errors.New("PREP missing/duplicate/source outside snapshot")
+		}
+		seenPrep[p.Seq] = true
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if uint64(len(seenPrep)) != b.Streams["FHIR"].Msgs {
+		return nil, errors.New("PREP source coverage incomplete")
+	}
+	facts := make([]map[uint64]bool, len(b.Closures))
+	for k := range facts {
+		facts[k] = map[uint64]bool{}
+	}
+	if err := scanSnapshotLog(filepath.Join(stage, "facts_log.ndjson"), func(m LogMsg) error {
+		var f FactsMsg
+		if err := json.Unmarshal(m.Data, &f); err != nil {
+			return err
+		}
+		if f.Part < 0 || f.Part >= len(facts) || m.Subject != fmt.Sprintf("facts.p%d", f.Part) || f.InSeq == 0 || f.InSeq > b.Streams["FHIR"].Last {
+			return errors.New("FACTS outside source/partition boundary")
+		}
+		if f.PSeq == 0 || f.PSeq > b.PSeq[f.Part] || facts[f.Part][f.PSeq] {
+			return errors.New("FACTS duplicate/outside partition watermark")
+		}
+		facts[f.Part][f.PSeq] = true
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	type link struct{ prev, hash string }
+	ledgers := make([]map[uint64]link, len(b.Closures))
+	for k := range ledgers {
+		ledgers[k] = map[uint64]link{}
+	}
+	if err := scanSnapshotLog(filepath.Join(stage, "out_log.ndjson"), func(m LogMsg) error {
+		var env OutEnvelope
+		if err := json.Unmarshal(m.Data, &env); err != nil {
+			return err
+		}
+		k := -1
+		for part := range ledgers {
+			if m.Subject == fmt.Sprintf("out.p%d", part) {
+				k = part
+				break
+			}
+		}
+		if k < 0 || env.OSeq == 0 || env.OSeq > b.Closures[k].OSeq {
+			return errors.New("OUT outside partition ledger boundary")
+		}
+		if _, ok := ledgers[k][env.OSeq]; ok {
+			return errors.New("duplicate OUT ledger sequence")
+		}
+		if env.PSeq == 0 || env.PSeq > b.PSeq[k] || env.FSeq == 0 || env.FSeq > b.Streams["FACTS"].Last {
+			return errors.New("OUT outside FACTS boundary")
+		}
+		var id string
+		var body []byte
+		var inSeq uint64
+		switch {
+		case env.Kind == "decision" && env.Dec != nil && env.Item == nil:
+			d := env.Dec
+			id, body, inSeq = d.ID, canon(d), d.InSeq
+			if d.Sig != decSig(d) || !verifyChain(d.Chain) {
+				return errors.New("OUT original decision signature/chain invalid")
+			}
+		case env.Kind == "review" && env.Item != nil && env.Dec == nil:
+			r := env.Item
+			id, body, inSeq = r.ItemID, canon(r), r.InSeq
+			if !verifyChain(r.Chain) {
+				return errors.New("OUT original review chain invalid")
+			}
+		default:
+			return errors.New("unknown OUT envelope")
+		}
+		if id == "" || inSeq == 0 || inSeq > b.Streams["FHIR"].Last || env.Hash != ledgerHash(env.Prev, env.OSeq, id, env.Kind, body) {
+			return errors.New("OUT original ledger hash/source invalid")
+		}
+		ledgers[k][env.OSeq] = link{env.Prev, env.Hash}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	for k, c := range b.Closures {
+		if uint64(len(facts[k])) != b.PSeq[k] || uint64(len(ledgers[k])) != c.OSeq {
+			return nil, errors.New("partition counts incomplete")
+		}
+		head := ""
+		for seq := uint64(1); seq <= c.OSeq; seq++ {
+			l, ok := ledgers[k][seq]
+			if !ok || l.prev != head {
+				return nil, errors.New("OUT original ledger chain incomplete")
+			}
+			head = l.hash
+		}
+		if head != c.Head {
+			return nil, fmt.Errorf("out.p%d original ledger anchor mismatch", k)
+		}
+		anchors[fmt.Sprintf("out.p%d", k)] = head
+	}
+	return anchors, nil
+}
+
+func exportSnapshot(ctx context.Context, js jetstream.JetStream, run string, b snapshotBoundary, stop func(context.Context) error, observe func(context.Context) (snapshotBoundary, error), res map[string]any) (err error) {
+	defer func() {
+		if err != nil {
+			writeStatus(run, "snapshot", map[string]any{"status": "incomplete", "error": err.Error(), "candidate": b})
+		}
+	}()
+	if err = ctx.Err(); err != nil {
+		return err
+	}
+	if stop == nil {
+		return errors.New("snapshot incomplete: no awaited writer shutdown")
+	}
+	if err = stop(ctx); err != nil {
+		return err
+	}
+	check := func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		now, err := observe(ctx)
+		if err != nil {
+			return fmt.Errorf("snapshot incomplete: %w", err)
+		}
+		if !bytes.Equal(canon(b), canon(now)) {
+			return errors.New("snapshot incomplete: stream/status/anchor advanced across export")
+		}
+		return ctx.Err()
+	}
+	if err = check(); err != nil {
+		return err
+	}
+	stage, err := os.MkdirTemp(run, ".snapshot-")
+	if err != nil {
+		return err
+	} // retain failed staging as evidence
+	names := []string{"FHIR", "PREP", "FACTS", "OUT"}
+	for _, name := range names {
+		if _, err = dumpStreamAt(ctx, js, name, filepath.Join(stage, strings.ToLower(name)+"_log.ndjson"), b.Streams[name]); err != nil {
+			return err
+		}
+		if err = check(); err != nil {
+			return err
+		}
+	}
+	anchors, err := snapshotAnchors(stage, b)
+	if err != nil {
+		return err
+	}
+	if err = check(); err != nil {
+		return err
+	}
+	ab, err := json.MarshalIndent(anchors, "", " ")
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(filepath.Join(stage, "anchors.json"), ab, 0400); err != nil {
+		return err
+	}
+	res["snapshot_status"], res["snapshot_boundary"] = "complete", b
+	rb, err := json.MarshalIndent(res, "", " ")
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(filepath.Join(stage, "orchestrate.json"), rb, 0600); err != nil {
+		return err
+	}
+	// Publish only after all original anchors and all cross-stream fences have
+	// passed. orchestrate.json is the final success/commit marker, never deferred.
+	if err = check(); err != nil {
+		return err
+	}
+	for _, name := range append(names, "anchors", "orchestrate") {
+		file := strings.ToLower(name) + "_log.ndjson"
+		if name == "anchors" || name == "orchestrate" {
+			file = name + ".json"
+		}
+		if err = os.Rename(filepath.Join(stage, file), filepath.Join(run, file)); err != nil {
+			return err
+		}
+	}
+	os.Remove(stage) // empty owned staging directory only
+	return nil
 }
