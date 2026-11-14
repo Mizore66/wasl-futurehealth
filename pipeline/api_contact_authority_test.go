@@ -102,7 +102,7 @@ func TestContactAuthorityPatientDenialThenStaffRegrantProjection(t *testing.T) {
 	if code != 201 {
 		t.Fatalf("denial: %d %v", code, body)
 	}
-	code, body, _ = p.request(t, "POST", "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_granted", "expected_head": c.last.Sig})
+	code, body, _ = p.request(t, "POST", "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_granted", "expected_head": patientConsentOverlay(t, p)["revision"]})
 	if code != 201 {
 		t.Fatalf("staff regrant: %d %v", code, body)
 	}
@@ -336,7 +336,7 @@ func TestContactAuthorityContactPrefixAndRegrantControls(t *testing.T) {
 				if err != nil || !bytes.Equal(before, after) {
 					t.Fatal("blocked confirm_contact appended", err)
 				}
-				code, body, _ := p.request(t, "POST", "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_granted", "expected_head": c.last.Sig})
+				code, body, _ := p.request(t, "POST", "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_granted", "expected_head": patientConsentOverlay(t, p)["revision"]})
 				if permission == "denied" {
 					if code != 201 {
 						t.Fatal(code, body)

@@ -26,7 +26,13 @@ describe("authoritative shared contact projection", () => {
       expect([item.contactBlocked, item.textsAllowed, item.textsStopped]).toEqual([false, true, false]);
       const html = renderToStaticMarkup(createElement(TodayBoard, { items: [item], now: 40, live: true, aside: null }));
       expect(html).toContain("Allowed");
-      expect(html).toContain("After the call");
+      expect(html).toContain(phase === "restarted" ? "What next?" : "After the call");
+      if (phase === "restarted") {
+        expect(item.awaitingNext).toBe(true);
+        expect(html).toContain("Appointment agreed");
+        expect(html).toContain("Call back on");
+        expect(html).toContain("Declined");
+      }
       expect(html).not.toContain("Stopped by patient");
       expect(html).not.toMatch(/<button[^>]* disabled=""[^>]*>(?:(?!<\/button>).)*Log call/);
     });

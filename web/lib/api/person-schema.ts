@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CaseSummary, Consent, Decision, Hold, Identity, Link, Meta, Programme, TimelineEvent } from "./schema";
+import { ActiveCaseSummary, ActiveDecision, RetainedDecision, Consent, Hold, Identity, Link, Meta, Programme, TimelineEvent } from "./schema";
 
 const hex64 = /^[0-9a-f]{64}$/;
 
@@ -17,7 +17,10 @@ export const PersonOutreach = z.looseObject({
   tpl: z.string().optional(),
 });
 
-export const PersonDecision = Decision.extend({ outreach: z.array(PersonOutreach).default([]) });
+export const PersonDecision = z.union([
+  ActiveDecision.extend({ outreach: z.array(PersonOutreach).default([]) }),
+  RetainedDecision.extend({ outreach: z.array(PersonOutreach).max(0).default([]) }),
+]);
 
 export const PersonObligation = z.looseObject({
   case_id: z.string(),
@@ -37,6 +40,7 @@ export const OutreachIntent = z.looseObject({
   latest_decision_id: z.string(),
   latest_decision_sig: z.string(),
   lifecycle: z.enum(["released", "held", "withheld", "recorded"]),
+  participation: z.enum(["current", "historical"]).optional(),
   outreach: PersonOutreach,
 });
 
@@ -62,8 +66,10 @@ export const PersonCase = z.looseObject({
   case_id: z.string(),
   parent_case_id: z.string().optional(),
   referral_registration: z.string().regex(/^reg_[0-9a-f]{64}$/),
+  lifecycle: z.literal("active").optional(),
+  history_availability: z.literal("reference_only").optional(),
   detail: z.looseObject({
-    case: CaseSummary,
+    case: ActiveCaseSummary,
     identities: z.array(Identity),
     timeline: z.array(TimelineEvent),
     links: z.array(Link),
@@ -79,7 +85,7 @@ export const PersonCase = z.looseObject({
   }),
 });
 
-export const PersonJourney = z.looseObject({
+const LegacyPersonJourney = z.looseObject({
   schema: z.literal("wasl-person-journey/1"),
   meta: Meta,
   person: z.looseObject({
@@ -102,6 +108,30 @@ export const PersonJourney = z.looseObject({
   next_action: NextAction,
 });
 
+export const RetainedPersonReference = z.looseObject({
+  case_id: z.string(), parent_case_id: z.string().optional(),
+  lifecycle: z.enum(["active", "retained"]), availability: z.literal("reference_only"),
+  history_access: z.literal("authorized_case_audit"), actionable: z.literal(false),
+  programmes: z.array(Programme),
+  decisions: z.array(z.looseObject({ decision_id: z.string(), sig: z.string().regex(hex64), in_seq: z.number().int().positive(), facts_seq: z.number().int().positive(), inactive: z.boolean(), programme: Programme.optional() })),
+  outreach_intents: z.array(OutreachIntent.safeExtend({ participation: z.literal("historical") })),
+});
+
+const RetainedPersonJourney = LegacyPersonJourney.extend({
+  schema: z.literal("wasl-person-journey/2"),
+  person: LegacyPersonJourney.shape.person.extend({ identity_provenance: LegacyPersonJourney.shape.person.shape.identity_provenance.extend({ artifact_schema: z.literal("wasl-identity-clusters/2") }) }),
+  cases: z.array(PersonCase.safeExtend({ lifecycle: z.literal("active"), history_availability: z.literal("reference_only") })),
+  retained_references: z.array(RetainedPersonReference),
+});
+export const PersonJourney = z.union([LegacyPersonJourney, RetainedPersonJourney]);
+
+export const PersonAssociationUnavailable = z.object({
+  schema: z.literal("wasl-person-association-unavailable/2"), meta: Meta,
+  case_id: z.string(), lifecycle: z.enum(["active", "retained"]), actionable: z.literal(false),
+  history_access: z.literal("authorized_case_audit"),
+  association: z.object({ status: z.literal("unavailable"), reason: z.enum(["conflicting_request", "unbound_request", "unknown_programme", "unproven_binding", "multiple_historical_subjects"]) }),
+});
+export type PersonAssociationUnavailable = z.infer<typeof PersonAssociationUnavailable>;
 export type PersonJourney = z.infer<typeof PersonJourney>;
 export type PersonCase = z.infer<typeof PersonCase>;
 export type NextAction = z.infer<typeof NextAction>;

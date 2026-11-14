@@ -1,10 +1,10 @@
-import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
 import { recordFace, type Face } from "@/lib/people/identity";
-import type { ReviewItems } from "./decision";
+import { purposeOf, type ReviewItems, type ReviewPurpose } from "./decision";
 
 /*
  * Everything the review desk shows, derived from one case detail.
@@ -24,7 +24,7 @@ export type ReviewView = {
   closed: boolean;
   /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
-  programme: CaseDetail["case"]["programme"];
+  programme: Programme;
   evidenceQuestion: string;
   evidenceChoices: string[];
   shortId: string;
@@ -40,6 +40,8 @@ export type ReviewView = {
   reportSource: string;
   unit: string;
   held: string;
+  /** Set when the evidence item is a pilot review: a suggested closure to confirm, or an audit of a closed case. */
+  purpose?: ReviewPurpose;
   /** The checks the two readers could not settle: what the one evidence answer covers. */
   disputed: { field: string; says: string }[];
   referredOn: string;
@@ -61,7 +63,7 @@ const PROVIDERS: Record<string, string> = {
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
 
-const PROGRAMME_COPY: Record<CaseDetail["case"]["programme"], { procedure: string; referral: string; report: string }> = {
+const PROGRAMME_COPY: Record<Programme, { procedure: string; referral: string; report: string }> = {
   crc: { procedure: "colonoscopy", referral: "stool test referral", report: "colonoscopy report" },
   cervical: { procedure: "colposcopy", referral: "cervical screening referral", report: "colposcopy report" },
   lung_nodule: { procedure: "follow-up CT", referral: "lung nodule referral", report: "CT report" },
@@ -107,7 +109,17 @@ function checksFrom(fields: Record<string, unknown> | undefined): Check[] {
   });
 }
 
+export const PURPOSE_LABEL: Record<ReviewPurpose, string> = { shadow_confirm: "Suggested closure", auto_audit: "Post-closure audit" };
+
+const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
+  shadow_confirm: (closed) =>
+    `Suggested automatic closure to confirm. The case is ${closed ? "closed" : "open"}. Confirming permits closure; a different answer is followed instead.`,
+  auto_audit: (closed) =>
+    `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed; disagreeing reopens it.`,
+};
+
 export function reviewView(c: CaseDetail): ReviewView {
+  if (c.case.lifecycle === "retained") throw new Error("Retained cases have no current review work");
   const referral = c.identities.find((i) => i.role === "referral");
   const downstream = c.identities.find((i) => i.role === "downstream");
   const a = referral && personFor(referral.registration);
@@ -144,6 +156,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
     : ev && !ev.agree && `${copy.report} readers disagree`;
   const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
+
+  const purpose = purposeOf(evidenceItem?.reason);
 
   const identity: IdentityRow[] = [
     { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
@@ -211,7 +225,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     referralSource: `${providerName(c.case.provider)} · ${copy.referral}`,
     reportSource: `${unit} · ${copy.report}`,
     unit,
-    held: held.length ? `Held: ${held.join(", and ")}.` : "",
+    held: purpose ? PURPOSE_SUMMARY[purpose](c.case.closed) : held.length ? `Held: ${held.join(", and ")}.` : "",
+    purpose,
     disputed,
     referredOn: formatDay(c.case.referral_day),
     report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "" },

@@ -1,0 +1,212 @@
+{
+  "agent_investigations": [],
+  "agent_provenance": {
+    "cached": false,
+    "experimental": false
+  },
+  "api_contact": {
+    "history": [],
+    "overlay": {
+      "canonical_consent": "unknown",
+      "canonical_unchanged": true,
+      "contact_blocked": false,
+      "demo_pending_consent": "",
+      "events": 0,
+      "last_event_hash": "",
+      "mode": "demo",
+      "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+      "revision": "b259ae607d05aecaaccea84551311e676656bdf7ff940d0bcd1e9f6b74e29e70",
+      "status": "none"
+    }
+  },
+  "api_overlay": {
+    "actions": 0,
+    "booking": {
+      "mode": "simulated",
+      "reservation_id": null,
+      "reservation_version": null,
+      "revision": 0,
+      "slot": null,
+      "status": "unreserved",
+      "updated_at": null,
+      "updated_event": null
+    },
+    "canonical_owner": "",
+    "contact_outcomes": [],
+    "head": "b259ae607d05aecaaccea84551311e676656bdf7ff940d0bcd1e9f6b74e29e70",
+    "last_action_at": "",
+    "ledger_status": "ok",
+    "notes": [],
+    "owner": ""
+  },
+  "api_review_states": [],
+  "api_reviews": [],
+  "booking": {
+    "status": "not_generated"
+  },
+  "case": {
+    "actionable": false,
+    "api_overlay": {
+      "actions": 0,
+      "booking": {
+        "mode": "simulated",
+        "reservation_id": null,
+        "reservation_version": null,
+        "revision": 0,
+        "slot": null,
+        "status": "unreserved",
+        "updated_at": null,
+        "updated_event": null
+      },
+      "head": "b259ae607d05aecaaccea84551311e676656bdf7ff940d0bcd1e9f6b74e29e70",
+      "last_action_at": "",
+      "ledger_status": "ok",
+      "owner": ""
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "unknown",
+    "deadline_day": 0,
+    "decisions": 2,
+    "dropoff": "",
+    "fixture": "",
+    "id": "ahs-mushrif/ServiceRequest/a",
+    "inactive": true,
+    "lifecycle": "retained",
+    "overdue": false,
+    "owner": "",
+    "priority": "",
+    "programme": "",
+    "programme_availability": "unavailable",
+    "provider": "ahs-mushrif",
+    "referral_day": 0,
+    "request_conflict": true,
+    "request_status": "conflict",
+    "request_version": 1,
+    "review": "none",
+    "state": "inactive"
+  },
+  "current": {
+    "ack_day": -1,
+    "chain": [
+      {
+        "body": {
+          "conflict": true,
+          "loop": "ahs-mushrif/ServiceRequest/a",
+          "policy": "only the current active same-ID tracking ServiceRequest version sustains actionable care",
+          "status": "conflict",
+          "version": 1
+        },
+        "hash": "dde19a918df23d8a19ec713cb01128ba42cc6d0b3b101285ccb58a4aeb5bd3b0",
+        "prev": "genesis",
+        "type": "tracking_request_retirement"
+      }
+    ],
+    "dropoff": "",
+    "id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+    "in_seq": 2,
+    "inactive": true,
+    "loop": "ahs-mushrif/ServiceRequest/a",
+    "notif_day": -1,
+    "now": 0,
+    "overdue": false,
+    "policy": "v6",
+    "proc_day": -1,
+    "prov": "ahs-mushrif",
+    "ref_day": -1,
+    "ref_status": "none",
+    "reported_closed": false,
+    "request_conflict": true,
+    "request_status": "conflict",
+    "request_version": 1,
+    "sig": "b259ae607d05aecaaccea84551311e676656bdf7ff940d0bcd1e9f6b74e29e70",
+    "sr_day": 0,
+    "state": "inactive",
+    "unowned": false
+  },
+  "decisions": [
+    {
+      "consent_log": [],
+      "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@1",
+      "dropoff": "never_notified",
+      "escalations": [],
+      "in_seq": 1,
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v6",
+      "sig": "a3dd9a0421a42253d257c7c2072d604e8677baf1e7ac05c72ad3d054601b9782",
+      "state": "open"
+    },
+    {
+      "consent_log": [],
+      "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+      "dropoff": "",
+      "escalations": [],
+      "in_seq": 2,
+      "inactive": true,
+      "lifecycle": "retained",
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v6",
+      "request_conflict": true,
+      "request_status": "conflict",
+      "request_version": 1,
+      "sig": "b259ae607d05aecaaccea84551311e676656bdf7ff940d0bcd1e9f6b74e29e70",
+      "state": "inactive"
+    }
+  ],
+  "evidence": [],
+  "holds": [],
+  "identities": [
+    {
+      "provider": "ahs-mushrif",
+      "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+      "role": "referral"
+    }
+  ],
+  "links": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "retained-synthetic-contract"
+  },
+  "outreach": [],
+  "review_items": [],
+  "review_ledger": {
+    "events_applied": 0,
+    "status": "ok"
+  },
+  "signoffs": [],
+  "timeline": [
+    {
+      "arrival_day": 1,
+      "category": "",
+      "day": 1,
+      "id": "ahs-mushrif/ServiceRequest/a",
+      "provider": "ahs-mushrif",
+      "raw_sha": "000aefbda68ea435",
+      "seq": 1,
+      "source": "fhir",
+      "status": "active",
+      "type": "ServiceRequest"
+    },
+    {
+      "arrival_day": 1,
+      "category": "",
+      "day": 1,
+      "id": "ahs-mushrif/ServiceRequest/a",
+      "provider": "ahs-mushrif",
+      "raw_sha": "f1da1f4064c61eed",
+      "seq": 2,
+      "source": "fhir",
+      "status": "revoked",
+      "type": "ServiceRequest"
+    }
+  ]
+}

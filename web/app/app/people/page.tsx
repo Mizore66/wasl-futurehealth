@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getPersonByCase } from "@/lib/api/person-source";
+import { PersonAssociationUnavailableView } from "@/components/person/journey";
 
 export default async function Page({ searchParams }: PageProps<"/app/people">) {
   const caseID = (await searchParams).case_id;
@@ -15,5 +16,6 @@ export default async function Page({ searchParams }: PageProps<"/app/people">) {
   if (typeof caseID !== "string" || !caseID) notFound();
   const journey = await getPersonByCase(caseID);
   if (!journey) notFound();
+  if (journey.schema === "wasl-person-association-unavailable/2") return <PersonAssociationUnavailableView result={journey} />;
   redirect(`/app/people/${journey.person.id}`);
 }

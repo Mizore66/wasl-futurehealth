@@ -243,7 +243,7 @@ export const BookingSummarySlot = z.looseObject({
 });
 
 /** Server-replayed simulated reservation state. No provider or patient system is involved. */
-export const BookingSummary = z.looseObject({
+const BookingSummaryObject = z.looseObject({
   status: z.enum(["unreserved", "reserved", "cancelled"]),
   mode: z.literal("simulated"),
   revision: z.number().int().nonnegative(),
@@ -253,6 +253,15 @@ export const BookingSummary = z.looseObject({
   updated_at: z.string().nullable(),
   updated_event: z.string().nullable(),
 });
+
+// Redacted exports omit nullable objects. Restore only an absent, explicitly unreserved slot.
+export const BookingSummary = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)
+      && "status" in value && value.status === "unreserved" && !("slot" in value)) {
+    return { ...value, slot: null };
+  }
+  return value;
+}, BookingSummaryObject);
 
 export const EligibleBookingSlot = z.looseObject({
   slot_id: z.string(),
@@ -338,7 +347,9 @@ export const RecoveryCase = z.looseObject({
   source_releases: z.array(z.looseObject({ slot_id: z.string(), status: z.string(), day: z.number() })).default([]),
 });
 
-export const CaseSummary = z.looseObject({
+export const ActiveCaseSummary = z.looseObject({
+  lifecycle: z.literal("active").optional(),
+  inactive: z.literal(false).optional(),
   id: z.string(),
   programme: Programme,
   state: CaseState,
@@ -365,6 +376,28 @@ export const CaseSummary = z.looseObject({
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
 });
+
+const RetainedRequest = {
+  lifecycle: z.literal("retained"),
+  inactive: z.literal(true),
+  request_status: z.enum(["", "draft", "on-hold", "revoked", "completed", "entered-in-error", "unknown", "active", "conflict"]),
+  request_version: z.number().int().positive(),
+  request_conflict: z.boolean(),
+};
+
+/** Empty programme exists only in a verified, non-actionable tombstone. */
+export const RetainedCaseSummary = ActiveCaseSummary.omit({ lifecycle: true, inactive: true }).extend({
+  ...RetainedRequest,
+  state: z.literal("inactive"),
+  dropoff: z.literal("").default(""),
+  programme: z.union([Programme, z.literal("")]),
+  programme_availability: z.enum(["selected", "unavailable"]),
+  actionable: z.literal(false),
+  overdue: z.literal(false),
+  closed: z.literal(false),
+}).refine((row) => (row.programme === "") === (row.programme_availability === "unavailable"));
+
+export const CaseSummary = z.union([ActiveCaseSummary, RetainedCaseSummary]);
 
 export const ChainEntry = z.looseObject({
   type: z.string(),
@@ -442,7 +475,9 @@ export const ConsentLogEntry = z.looseObject({
   contact: z.string().optional(),
 });
 
-export const Decision = z.looseObject({
+export const ActiveDecision = z.looseObject({
+  lifecycle: z.literal("active").optional(),
+  inactive: z.literal(false).optional(),
   decision_id: z.string(),
   state: CaseState,
   dropoff: Dropoff,
@@ -454,6 +489,11 @@ export const Decision = z.looseObject({
   escalations: z.array(z.string()),
   consent_log: z.array(ConsentLogEntry),
 });
+
+export const RetainedDecision = ActiveDecision.omit({ lifecycle: true, inactive: true }).extend({
+  ...RetainedRequest, state: z.literal("inactive"), overdue: z.literal(false), dropoff: z.literal("").default(""),
+});
+export const Decision = z.union([ActiveDecision, RetainedDecision]);
 
 export const ReviewItem = z.looseObject({
   item: z.string(),
@@ -505,6 +545,7 @@ export const ApiReview = z.looseObject({
 
 /** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
 export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
+/** `prev` is absent when it would repeat the hash of a first independent read still concealed from the viewer. */
 export const ConsentEvent = ApiReview.extend({
   /** Patient consent overlays share this history but use patient_journey events without review item/note fields. */
   item: z.string().optional(),
@@ -526,6 +567,7 @@ export const ConsentOverlay = z.looseObject({
   canonical_consent: Consent,
   canonical_unchanged: z.literal(true),
   last_event_hash: z.string(),
+  revision: z.string().min(1),
   note: z.string(),
 });
 export const ConsentHistoryEvent = z.union([ConsentEvent, z.lazy(() => PatientJourneyEvent)]);
@@ -721,7 +763,8 @@ export const Booking = z.looseObject({
   reservation_explanation: z.string().optional(),
 });
 
-export const CurrentDecision = z.looseObject({
+export const ActiveCurrentDecision = z.looseObject({
+  inactive: z.literal(false).optional(),
   id: z.string(),
   loop: z.string(),
   state: CaseState,
@@ -733,6 +776,15 @@ export const CurrentDecision = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
 });
+
+export const RetainedCurrentDecision = ActiveCurrentDecision.omit({ inactive: true }).extend({
+  inactive: z.literal(true), state: z.literal("inactive"),
+  request_status: RetainedRequest.request_status.default(""),
+  request_version: RetainedRequest.request_version,
+  request_conflict: RetainedRequest.request_conflict.default(false),
+  prog: z.union([Programme, z.literal("")]).optional(),
+});
+export const CurrentDecision = z.union([ActiveCurrentDecision, RetainedCurrentDecision]);
 
 export const ReviewSlot = z.enum(["r1", "r2", "r3"]);
 
@@ -1129,7 +1181,7 @@ export const UndoEventProjection = z.looseObject({
 const undoProjectionShape = {
   case: z.string(),
   case_status: z.enum(["none", "active", "contested", "compensated"]),
-  canonical_state: CaseState,
+  canonical_state: z.union([CaseState, z.literal("inactive")]),
   note: z.string(),
   events: z.array(UndoEventProjection),
 };
@@ -1145,11 +1197,20 @@ export const ContestResolutionRequest = z.object({
   resolution: z.enum(["upheld", "rejected"]),
   note: governanceReason,
 });
+/** The compensation event as a viewer receives it: `prev` and `action_head` are omitted when they would repeat a concealed first-read hash. */
+export const ViewerCompensationEvent = z.looseObject({
+  ...compensationShape,
+  prev: z.string().optional(),
+  action_head: z.string().optional(),
+  actor: z.string(),
+  target_actor: z.string(),
+  note: z.string(),
+});
 export const CompensationResponse = withMeta({
-  event: CompensationEvent,
+  event: ViewerCompensationEvent,
   canonical_reopened: z.literal(false),
   auto_closure: z.literal(false),
-  canonical_state: CaseState,
+  canonical_state: z.union([CaseState, z.literal("inactive")]),
   requires_resolution: z.literal(true).optional(),
   projection: UndoProjectionData,
   note: z.string(),
@@ -1171,7 +1232,8 @@ export const BookingAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("booking_cancel"), reservation_id: hash, expected_reservation_version: hash, reason: bookingReason }),
 ]);
 export const CaseAction = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
+  /** Without `owner` the API assigns the case to the actor bound to the coordinator token. */
+  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64).optional() }),
   z.object({ action: z.literal("snooze"), until: z.string(), reason: z.string().max(200).optional() }),
   z.object({
     action: z.literal("contact_outcome"),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Audit, CaseDetail, CaseList, CaseSummary, Dashboard, Healthz, Meta } from "./schema";
+import { ActiveCaseSummary, RetainedCaseSummary, Audit, CaseDetail, CaseList, Dashboard, Healthz, Meta } from "./schema";
 
 /*
  * Schemas for the separate r1agent10 lane (docs/api-samples/agent/).
@@ -7,7 +7,8 @@ import { Audit, CaseDetail, CaseList, CaseSummary, Dashboard, Healthz, Meta } fr
  */
 
 /** The main schema's fixture enum has no agent_review; this lane adds it. */
-export const AgentCaseSummary = CaseSummary.extend({ fixture: z.union([z.enum(["agent_review", "evidence_closure", "false_closure_trap"]), z.literal("")]).default("") });
+const AgentFixture = { fixture: z.union([z.enum(["agent_review", "evidence_closure", "false_closure_trap"]), z.literal("")]).default("") };
+export const AgentCaseSummary = z.union([ActiveCaseSummary.extend(AgentFixture), RetainedCaseSummary]);
 
 export const AgentCaseList = CaseList.extend({ cases: z.array(AgentCaseSummary) });
 

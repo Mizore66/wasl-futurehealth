@@ -17,8 +17,14 @@ package main
 // a review item and holds.
 import (
 	"fmt"
+	"math"
 	"sort"
 )
+
+// IFHASSR scopes a tracking request to its index IFHAS results panel.
+type IFHASSR struct {
+	Screen string `json:"screen,omitempty"`
+}
 
 // IfhasDecision: the IFHAS-specific part of a decision (also served by the API).
 type IfhasDecision struct {
@@ -36,22 +42,27 @@ type IfhasDecision struct {
 	NextStep       string             `json:"next_step,omitempty"`
 }
 
-// ifhasScreenFacts: results reports on the tracking ServiceRequest's own registration (no identity link needed).
-func ifhasScreenFacts(rec *Rec) []DownFact {
-	var out []DownFact
+// ifhasScreenFacts: only the index results episode on the request's own registration.
+func ifhasScreenFacts(rec *Rec, index string) ([]DownFact, string) {
+	var rows []row
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
 		if e.RType != "DiagnosticReport" || e.Category != "ifhas-screen" || !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "IfhasScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "IfhasScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus, Relation: e.Relation,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "ifhas", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
-		out = append(out, d)
+		rows = append(rows, row{d: d, pc: 1, trusted: true})
 	}
-	return out
+	rows, scopeErr := episodeRows(rows, index, "ifhas")
+	out := make([]DownFact, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.d)
+	}
+	return out, scopeErr
 }
 
 func ifhasEvBlock(d DownFact, human string) map[string]interface{} {
@@ -94,6 +105,147 @@ func ifhasDropoff(state string, unlinked bool) string {
 	return "no_followup_documented"
 }
 
+// ifhasFollowupRows preserves clinical-time ordering, but orders same-time
+// addenda after their explicit ancestors. Resource spelling and version numbers
+// on different resources cannot override that precedence. References are local
+// to a provider; an identically named report elsewhere is not an ancestor.
+func ifhasFollowupRows(notes []row) ([]row, string) {
+	byReport := map[string]DownFact{}
+	key := func(provider, id string) string { return provider + "/DiagnosticReport/" + id }
+	for _, r := range notes {
+		byReport[key(r.d.Provider, r.d.ReportID)] = r.d
+	}
+	ids := make([]string, 0, len(byReport))
+	for id := range byReport {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	depth := map[string]int{}
+	for _, id := range ids {
+		seen := map[string]bool{id: true}
+		for d := byReport[id]; d.Relation == addendumRelation && d.Parent != ""; {
+			parentID := key(d.Provider, d.Parent)
+			parent, ok := byReport[parentID]
+			if !ok {
+				break
+			}
+			if seen[parentID] {
+				return nil, "cyclic_followup_evidence_lineage"
+			}
+			if d.Day < parent.Day {
+				return nil, "contradictory_followup_evidence_chronology"
+			}
+			seen[parentID] = true
+			depth[id]++
+			d = parent
+		}
+	}
+	sort.SliceStable(notes, func(i, j int) bool {
+		a, b := notes[i].d, notes[j].d
+		if a.Day != b.Day {
+			return a.Day < b.Day
+		}
+		ad, bd := depth[key(a.Provider, a.ReportID)], depth[key(b.Provider, b.ReportID)]
+		if ad != bd {
+			return ad < bd
+		}
+		return key(a.Provider, a.EventID) < key(b.Provider, b.EventID)
+	})
+	return notes, ""
+}
+
+// Include the complete explicitly connected lineage of eligible notes before
+// checking dates. Unrelated historical notes must not affect this episode.
+func ifhasEpisodeFollowups(notes []row, minDay float64) []row {
+	key := func(provider, id string) string { return provider + "/DiagnosticReport/" + id }
+	included := map[string]bool{}
+	for _, r := range notes {
+		if r.d.Day >= minDay {
+			included[key(r.d.Provider, r.d.ReportID)] = true
+		}
+	}
+	for changed := true; changed; {
+		changed = false
+		for _, r := range notes {
+			if r.d.Relation != addendumRelation || r.d.Parent == "" {
+				continue
+			}
+			id, parent := key(r.d.Provider, r.d.ReportID), key(r.d.Provider, r.d.Parent)
+			if included[id] || included[parent] {
+				if !included[id] || !included[parent] {
+					included[id], included[parent], changed = true, true, true
+				}
+			}
+		}
+	}
+	var scoped []row
+	for _, r := range notes {
+		if included[key(r.d.Provider, r.d.ReportID)] {
+			scoped = append(scoped, r)
+		}
+	}
+	return scoped
+}
+
+// A domain's active same-time frontier is a partial order, not a total order
+// by resource ID, ancestry depth, or versions from different resources.
+func ifhasFollowupConflicts(notes []row, minDay float64, abnormal map[string]bool, labelOf func(row) (string, string)) map[string]bool {
+	key := func(d DownFact) string { return d.Provider + "/DiagnosticReport/" + d.ReportID }
+	byReport := map[string]DownFact{}
+	for _, r := range notes {
+		byReport[key(r.d)] = r.d
+	}
+	ancestor := func(a, b DownFact) bool {
+		for b.Relation == addendumRelation && b.Parent != "" {
+			p, ok := byReport[b.Provider+"/DiagnosticReport/"+b.Parent]
+			if !ok {
+				break
+			}
+			if key(a) == key(p) {
+				return true
+			}
+			b = p
+		}
+		return false
+	}
+	type value struct {
+		d DownFact
+		s string
+	}
+	frontier := map[string][]value{}
+	for _, r := range notes {
+		if !r.trusted || r.d.Day < minDay {
+			continue
+		}
+		lab, _ := labelOf(r)
+		dna, statuses, ok := ifhasNoteParse(lab)
+		if !ok || dna {
+			continue
+		}
+		for domain, status := range statuses {
+			if !abnormal[domain] {
+				continue
+			}
+			var active []value
+			for _, v := range frontier[domain] {
+				if v.d.Day == r.d.Day && !ancestor(v.d, r.d) {
+					active = append(active, v)
+				}
+			}
+			frontier[domain] = append(active, value{r.d, status})
+		}
+	}
+	conflicts := map[string]bool{}
+	for domain, active := range frontier {
+		for _, v := range active[1:] {
+			if v.s != active[0].s {
+				conflicts[domain] = true
+			}
+		}
+	}
+	return conflicts
+}
+
 func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	f := ls.facts
 	now := c.now
@@ -112,10 +264,11 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row
 	for _, d := range f.Down {
-		if d.Prog != "ifhas" || d.Day < f.SRDay-1 {
+		if d.Prog != "ifhas" {
 			continue
 		}
 		if d.RType == "IfhasScreen" {
+			// Keep older ancestors for full lineage validation, not grade selection.
 			screens = append(screens, row{d: d, pc: 1, trusted: true})
 			continue
 		}
@@ -130,16 +283,16 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		}
 		notes = append(notes, row{d: d, pc: pc, trusted: trusted})
 	}
-	byDay := func(rs []row) {
-		sort.SliceStable(rs, func(i, j int) bool {
-			if rs[i].d.Day != rs[j].d.Day {
-				return rs[i].d.Day < rs[j].d.Day
-			}
-			return rs[i].d.EventID < rs[j].d.EventID
-		})
+	// episodeRows orders screens by clinical time and explicit lineage.
+	index := ""
+	if f.IFHAS != nil {
+		index = f.IFHAS.Screen
 	}
-	byDay(screens)
-	byDay(notes)
+	var scopeErr string
+	screens, scopeErr = episodeRows(screens, index, "ifhas")
+	if f.EpisodeError != "" {
+		scopeErr = f.EpisodeError
+	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
@@ -212,17 +365,30 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the results: the last read screen; an unread screen blocks
+	// ---- the results: current index and explicitly linked corrections/addenda only.
 	var grade *row
 	var gradeLab, gradeHuman string
 	var unread *row
+	authorized := map[string]bool{index: true}
 	for i := range screens {
+		d := screens[i].d
+		if d.Day < f.SRDay-1 {
+			continue
+		}
+		// The explicitly named index is authorised even when it is an addendum.
+		// Its ancestors are retained only to validate the complete graph.
+		if d.ReportID != index {
+			if d.Relation != addendumRelation || !authorized[d.Parent] {
+				continue
+			}
+		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {
 			unread = &screens[i]
 			raise(screens[i], "evidence")
 			break
 		}
+		authorized[d.ReportID] = true
 		grade, gradeLab, gradeHuman = &screens[i], lab, h
 	}
 	var rec IfhasRec
@@ -231,6 +397,8 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		rec, recOK = ifhasRule(gradeLab)
 	}
 	switch {
+	case scopeErr != "":
+		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "index_evidence_" + scopeErr})
 	case len(screens) == 0:
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "screening_results_not_received"})
 	case unread != nil:
@@ -262,22 +430,23 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 				"policy": "screening results read by two agreeing readers (printed panel = coded results, or a clinician) AND no abnormal domain"})
 			break
 		}
-		// ---- follow-up documents, in time order
+		// ---- reduce the complete eligible follow-up sequence in time/lineage order.
+		minDay := math.Max(ib.GradeDay, f.SRDay-1)
+		notes, noteErr := ifhasFollowupRows(ifhasEpisodeFollowups(notes, minDay))
 		ib.Status, ib.ResDay = map[string]string{}, map[string]float64{}
-		for _, d := range rec.Domains {
-			ib.Status[d] = ""
-		}
 		abnormal := map[string]bool{}
 		for _, d := range rec.Domains {
+			ib.Status[d] = ""
 			abnormal[d] = true
 		}
 		var holdRow *row
-		holdWhy := ""
+		holdWhy := noteErr
 		ch := gchain
 		dna := false
+		var candidate *row // final all-resolved point; cleared by any later reopening
 		for i := range notes {
 			r := notes[i]
-			if r.d.Day < ib.GradeDay {
+			if r.d.Day < minDay {
 				continue
 			}
 			if !r.trusted {
@@ -289,10 +458,10 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			if lab == "" {
 				raise(r, "evidence")
 				holdRow, holdWhy = &notes[i], "followup_readers_disagree"
-				break // an unread earlier document blocks a decision on a later one
+				break // an earlier unread document prevents complete interpretation
 			}
 			isDNA, m, ok := ifhasNoteParse(lab)
-			if !ok { // a human label the rule does not know
+			if !ok {
 				holdRow, holdWhy = &notes[i], "followup_label_unknown"
 				break
 			}
@@ -304,14 +473,14 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			used := false
 			for d, s := range m {
 				if !abnormal[d] {
-					continue // a domain that was not abnormal on the screen decides nothing
+					continue // domains normal on the index screen never decide this loop
 				}
 				used = true
 				ib.Status[d] = s
 				if ifhasResolved(s) {
 					ib.ResDay[d] = r.d.Day
 				} else {
-					delete(ib.ResDay, d)
+					delete(ib.ResDay, d) // a later pending reopens the domain
 				}
 			}
 			if !used {
@@ -328,12 +497,28 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			for _, d := range rec.Domains {
 				all = all && ifhasResolved(ib.Status[d])
 			}
-			if all {
-				state, closedDay, closing, procDay = "closed", r.d.Day, r.d.ReportID, r.d.Day
-				break
+			if !all {
+				candidate = nil
+			} else {
+				// Resolved statuses also refresh their clinical resolution day;
+				// keep closure provenance on the latest all-resolved document.
+				candidate = &notes[i]
 			}
 		}
-		if state == "closed" {
+		// Resolve only when the final active frontier agrees. Serialization
+		// order is useful for provenance, never for choosing between siblings.
+		if noteErr == "" {
+			for domain := range ifhasFollowupConflicts(notes, minDay, abnormal, labelOf) {
+				ib.Outcome, dna = "", false
+				ib.Status[domain] = ""
+				delete(ib.ResDay, domain)
+				if holdWhy == "" {
+					holdWhy = "ambiguous_followup_evidence_lineage"
+				}
+			}
+		}
+		if candidate != nil && holdRow == nil && holdWhy == "" {
+			state, closedDay, closing, procDay = "closed", candidate.d.Day, candidate.d.ReportID, candidate.d.Day
 			ib.WithinDeadline = true
 			for _, d := range rec.Domains {
 				ib.WithinDeadline = ib.WithinDeadline && ib.ResDay[d] <= ib.GradeDay+float64(rec.DomDays[d])
@@ -342,11 +527,11 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 			ib.NextStep = "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
 			chain = appendBlock(ch, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "closed",
 				"programme": "ifhas", "rule": "doh2025ifhas", "domain_status": ib.Status, "closed_day": round4(closedDay),
-				"within_deadline": ib.WithinDeadline, "next_step": ib.NextStep,
-				"policy": "every abnormal domain resolved (managed or not confirmed) by documents on a trusted link (p_cal>=tau|eid|human) with two-reader agreement (or clinician sign-off)"})
+				"closing_report": closing, "within_deadline": ib.WithinDeadline, "next_step": ib.NextStep,
+				"policy": "the final state of every abnormal domain is resolved across the complete trusted, agreed chronological sequence (or authorised clinician sign-off)"})
 			break
 		}
-		// deadline shown: the earliest clock among the domains still unresolved
+		// deadline shown: the earliest clock among domains unresolved at sequence end
 		ib.DeadlineDay = -1
 		for _, d := range rec.Domains {
 			if !ifhasResolved(ib.Status[d]) {
@@ -367,7 +552,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 		switch {
 		case state == "no_show":
 			reason = "did_not_attend_rebook"
-		case holdRow != nil:
+		case holdWhy != "":
 			reason = holdWhy
 		case unlinked:
 			reason = "followup_identity_link_unconfirmed"

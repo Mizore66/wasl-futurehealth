@@ -1,0 +1,65 @@
+{
+  "auto_closure": false,
+  "canonical_reopened": false,
+  "canonical_state": "open",
+  "event": {
+    "action": "signoff_link",
+    "actor": "sr-one",
+    "at": "2026-11-13T08:32:44.9391029Z",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "hash": "861064b13c1d218dd1ab211e7f1e7e0c1fafd8bc7b9dc49f91505495c2966b36",
+    "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "kind": "undo",
+    "mode": "demo",
+    "note": "synthetic",
+    "role": "senior_reviewer",
+    "target": "10f266b10e5abe214c6a8e0c55a96b3266f981dc62d56765013c3ce402201081",
+    "target_action": "signoff_link",
+    "target_actor": "Rev-A"
+  },
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-13T08:32:44Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "002"
+  },
+  "note": "compensating event appended; the original event is preserved and the canonical decision is unchanged",
+  "projection": {
+    "canonical_state": "open",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "case_status": "compensated",
+    "events": [
+      {
+        "action": "signoff_link",
+        "actor": "Rev-A",
+        "at": "2026-11-13T08:32:44.8823519Z",
+        "hash": "10f266b10e5abe214c6a8e0c55a96b3266f981dc62d56765013c3ce402201081",
+        "kind": "review",
+        "status": "compensated",
+        "target": ""
+      },
+      {
+        "action": "signoff_link",
+        "actor": "Rev-A",
+        "at": "2026-11-13T08:32:44.888803Z",
+        "hash": "8b63bb98c6eba49fb4675bf9da4e5c0bcbe64e18aa36697f2b22f0d1e47912bb",
+        "kind": "claim",
+        "status": "",
+        "target": ""
+      },
+      {
+        "action": "signoff_link",
+        "actor": "sr-one",
+        "at": "2026-11-13T08:32:44.9391029Z",
+        "hash": "861064b13c1d218dd1ab211e7f1e7e0c1fafd8bc7b9dc49f91505495c2966b36",
+        "kind": "undo",
+        "status": "applied",
+        "target": "10f266b10e5abe214c6a8e0c55a96b3266f981dc62d56765013c3ce402201081"
+      }
+    ],
+    "note": "case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest"
+  }
+}

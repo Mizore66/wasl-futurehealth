@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,6 +49,7 @@ func TestGenDRLeavesOtherProgrammesUnchanged(t *testing.T) {
 	bb, _ := os.ReadFile(filepath.Join(b, "truth.json"))
 	json.Unmarshal(bb, &tr)
 	n, owners := 0, map[string]string{}
+	repeatParents := map[string]string{}
 	states := map[string]int{}
 	for _, lt := range tr.Loops {
 		if prev, ok := owners[lt.Qid]; ok && (prev == "diabetic_retinopathy") != (lt.Prog == "diabetic_retinopathy") {
@@ -60,10 +62,35 @@ func TestGenDRLeavesOtherProgrammesUnchanged(t *testing.T) {
 			if lt.DR == nil || lt.DR.Screen == "" {
 				t.Fatalf("DR loop %s without screening truth", lt.Loop)
 			}
+			if len(lt.DR.Screens) > 1 {
+				repeatParents[lt.DR.Screens[1]] = lt.DR.Screen
+			}
 			if lt.State == "closed" && !drClosingClinic(lt.DR.Outcome) {
 				t.Errorf("DR loop %s closed with outcome %q", lt.Loop, lt.DR.Outcome)
 			}
 		}
+	}
+	if len(repeatParents) == 0 {
+		t.Fatal("synthetic DR cohort did not exercise a U repeat")
+	}
+	feed, _ := os.ReadFile(filepath.Join(b, "fhir_phc-retina.ndjson"))
+	for _, line := range bytes.Split(feed, []byte("\n")) {
+		var ge GenEvent
+		if json.Unmarshal(line, &ge) != nil {
+			continue
+		}
+		parent, ok := repeatParents[fmt.Sprint(ge.Res["id"])]
+		if !ok {
+			continue
+		}
+		xs, _ := ge.Res["extension"].([]interface{})
+		if len(xs) != 1 || gs(xs[0].(map[string]interface{}), "url") != repeatRelation || gs(xs[0].(map[string]interface{}), "valueString") != "DiagnosticReport/"+parent {
+			t.Errorf("repeat %v lacks explicit parent %s: %v", ge.Res["id"], parent, ge.Res["extension"])
+		}
+		delete(repeatParents, fmt.Sprint(ge.Res["id"]))
+	}
+	if len(repeatParents) != 0 {
+		t.Errorf("repeat reports missing from feed: %v", repeatParents)
 	}
 	if n != 80 {
 		t.Errorf("want 80 DR loops, got %d", n)

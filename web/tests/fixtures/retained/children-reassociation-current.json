@@ -1,0 +1,160 @@
+{
+  "cases": [
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "contact": {
+        "canonical": "unknown",
+        "canonical_unchanged": true,
+        "contact_blocked": true,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": false,
+          "closed_day": 0,
+          "consent": "unknown",
+          "deadline_day": 0,
+          "decisions": 1,
+          "dropoff": "no_followup_ct",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/a",
+          "lung": {
+            "risk": "high",
+            "risk_recorded": true,
+            "scope": "in_scope"
+          },
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "lung_nodule",
+          "provider": "ahs-mushrif",
+          "referral_day": -719.9999,
+          "review": "none",
+          "state": "open"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@7",
+            "dropoff": "no_followup_ct",
+            "escalations": [],
+            "in_seq": 7,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "ff696b63d72da5eaef5bc2ce42fa4ea3763b26ece8a5f6e6101262bb73b7308d",
+            "state": "open"
+          }
+        ],
+        "holds": [
+          {
+            "loop": "ahs-mushrif/ServiceRequest/a",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "lung_nodule",
+            "reason": "index_ct_report_not_received",
+            "rule": "fleischner2017",
+            "state": "review_hold"
+          }
+        ],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec",
+            "role": "referral"
+          }
+        ],
+        "links": [],
+        "outreach": [],
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "0534dbbaf9f55706",
+            "seq": 7,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          }
+        ]
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "referral_registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "case_id": "ahs-mushrif/ServiceRequest/a",
+    "kind": "review_contact_permission",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "dropoff_no_followup_ct",
+      "consent_not_granted"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/a",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/a"
+    ],
+    "id": "person_fe13ee60e511f422ce36dfc436992e03c602ae53305e726ec8c4f5fdc8127ac1",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "d83b43042da866b79011baf4ce19bdd9781ca5c931579bfacdc62f27206113dc",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [
+      "lung_nodule"
+    ],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@7",
+          "facts_seq": 7,
+          "in_seq": 7,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "ff696b63d72da5eaef5bc2ce42fa4ea3763b26ece8a5f6e6101262bb73b7308d"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [],
+      "programmes": [
+        "lung_nodule"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}

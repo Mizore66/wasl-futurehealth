@@ -4,14 +4,34 @@ import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
 import { failureSentence, outcomeOf, OUTCOMES, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
 import { ReviewDesk } from "@/components/review/review-desk";
-import { CaseDetail } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 import multiReport from "@/data/api/case_dr_exam_closure.json";
+import retainedConflict from "./fixtures/retained/conflict-case.json";
+import retainedRetired from "./fixtures/retained/retired-case.json";
 import { programmeDetail } from "./programme-cases";
 
-const detail = CaseDetail.parse(hold);
+const detail = CaseDetail.extend({ case: ActiveCaseSummary }).parse(hold);
 const view = reviewView(detail);
 const items = { link: "rv-link", evidence: "rv-evidence" };
+
+describe("review lifecycle boundary", () => {
+  it("accepts legacy active cases without lifecycle or inactive metadata", () => {
+    const legacy = CaseDetail.parse({ ...detail, case: { ...detail.case, lifecycle: undefined, inactive: undefined } });
+    expect(legacy.case.lifecycle).toBeUndefined();
+    expect(legacy.case.inactive).toBeUndefined();
+    expect(reviewView(legacy).programme).toBe("crc");
+  });
+
+  it.each([
+    { scenario: "retired", source: retainedRetired },
+    { scenario: "conflict", source: retainedConflict },
+  ])("rejects the actual $scenario retained case before building active review copy", ({ source }) => {
+    const retained = CaseDetail.parse(source);
+    expect(retained.case.lifecycle).toBe("retained");
+    expect(() => reviewView(retained)).toThrow("Retained cases have no current review work");
+  });
+});
 
 describe("review decision", () => {
   it("has no outcome until identity, then the report for the same patient, are answered", () => {

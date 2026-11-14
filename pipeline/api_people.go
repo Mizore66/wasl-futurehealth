@@ -40,6 +40,9 @@ type personProjection struct {
 	byPerson       map[string]*personCluster
 	byCase         map[string]*personCluster
 	referralByCase map[string]string
+	artifactSchema string
+	catalog        map[string]retainedIdentityCase
+	historical     map[string][]string // person ID -> proven non-actionable references
 }
 
 func personProgrammeRank(programme string) int {
@@ -58,11 +61,51 @@ func personCaseLess(s *apiServer, a, b string) bool {
 }
 
 func decodeIdentitySnapshot(body []byte) (*identityClusterSnapshot, error) {
+	if err := rejectSemanticDuplicateKeys(body); err != nil {
+		return nil, err
+	}
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.DisallowUnknownFields()
-	var snapshot identityClusterSnapshot
-	if err := dec.Decode(&snapshot); err != nil {
+	var header struct {
+		Schema string `json:"schema"`
+	}
+	if err := json.Unmarshal(body, &header); err != nil {
 		return nil, err
+	}
+	// Decode each version with its own closed wire type. In particular, /1 may
+	// not silently acquire catalog/unavailable fields from the /2 representation.
+	type legacy struct {
+		Schema       string            `json:"schema"`
+		Policy       string            `json:"policy"`
+		FHIRSHA256   string            `json:"fhir_sha256"`
+		OutLogSHA256 string            `json:"out_log_sha256"`
+		Clusters     []identityCluster `json:"clusters"`
+		Cases        []identityCase    `json:"cases"`
+	}
+	type retained struct {
+		Schema       string                 `json:"schema"`
+		Policy       string                 `json:"policy"`
+		FHIRSHA256   string                 `json:"fhir_sha256"`
+		OutLogSHA256 string                 `json:"out_log_sha256"`
+		Clusters     []identityCluster      `json:"clusters"`
+		Catalog      []retainedIdentityCase `json:"catalog"`
+	}
+	var snapshot identityClusterSnapshot
+	switch header.Schema {
+	case identityClusterSchema:
+		var old legacy
+		if err := dec.Decode(&old); err != nil {
+			return nil, err
+		}
+		snapshot = identityClusterSnapshot{Schema: old.Schema, Policy: old.Policy, FHIRSHA256: old.FHIRSHA256, OutLogSHA256: old.OutLogSHA256, Clusters: old.Clusters, Cases: old.Cases}
+	case retainedIdentitySchema:
+		var doc retained
+		if err := dec.Decode(&doc); err != nil {
+			return nil, err
+		}
+		snapshot = identityClusterSnapshot{Schema: doc.Schema, Policy: doc.Policy, FHIRSHA256: doc.FHIRSHA256, OutLogSHA256: doc.OutLogSHA256, Clusters: doc.Clusters, Catalog: doc.Catalog}
+	default:
+		return nil, fmt.Errorf("unsupported identity projection schema")
 	}
 	if err := dec.Decode(new(interface{})); err != io.EOF {
 		return nil, fmt.Errorf("identity projection has trailing data")
@@ -79,8 +122,9 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 		return nil, err
 	}
 	snapshot, err := decodeIdentitySnapshot(body)
-	if err != nil || snapshot.Schema != identityClusterSchema || !exportOpCode.MatchString(snapshot.Policy) || len(snapshot.Policy) > 160 ||
-		!sha256Pattern.MatchString(snapshot.FHIRSHA256) || !sha256Pattern.MatchString(snapshot.OutLogSHA256) || len(snapshot.Clusters) == 0 || snapshot.Cases == nil {
+	if err != nil || !exportOpCode.MatchString(snapshot.Policy) || len(snapshot.Policy) > 160 ||
+		!sha256Pattern.MatchString(snapshot.FHIRSHA256) || !sha256Pattern.MatchString(snapshot.OutLogSHA256) ||
+		(snapshot.Schema == identityClusterSchema && (len(snapshot.Clusters) == 0 || snapshot.Cases == nil)) || (snapshot.Schema == retainedIdentitySchema && (snapshot.Catalog == nil || snapshot.Clusters == nil)) {
 		return nil, fmt.Errorf("invalid identity projection")
 	}
 	fhirSHA, err := fileSHA256(filepath.Join(s.run, "fhir_log.ndjson"))
@@ -97,7 +141,8 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 	}
 
 	projection := &personProjection{artifactSHA: sha(body), policy: snapshot.Policy,
-		clusters: []*personCluster{}, byPerson: map[string]*personCluster{}, byCase: map[string]*personCluster{}, referralByCase: map[string]string{}}
+		clusters: []*personCluster{}, byPerson: map[string]*personCluster{}, byCase: map[string]*personCluster{}, referralByCase: map[string]string{},
+		artifactSchema: snapshot.Schema, catalog: map[string]retainedIdentityCase{}, historical: map[string][]string{}}
 	clusterByRoot := map[string]*personCluster{}
 	registrationOwner := map[string]*personCluster{}
 	lastRoot := ""
@@ -129,6 +174,12 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 		}
 		projection.byPerson[person] = cluster
 	}
+	if snapshot.Schema == retainedIdentitySchema {
+		if err := s.loadRetainedPersonCatalog(snapshot, projection, registrationOwner); err != nil {
+			return nil, err
+		}
+		return projection, nil
+	}
 	seenCases := map[string]bool{}
 	lastCase := ""
 	for _, mapping := range snapshot.Cases {
@@ -147,6 +198,9 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 	// Surveillance children inherit only their canonical parent loop's referral
 	// membership. Every materialised case must resolve; singleton guesses are not allowed.
 	for caseID := range s.cases {
+		if s.cases[caseID].last != nil && s.cases[caseID].last.Inactive {
+			return nil, fmt.Errorf("legacy identity artifact cannot represent retained cases")
+		}
 		cluster := projection.byCase[caseID]
 		if cluster == nil && baseLoop(caseID) != caseID {
 			cluster = projection.byCase[baseLoop(caseID)]
@@ -168,6 +222,121 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 		sort.Slice(cluster.caseIDs, func(i, j int) bool { return personCaseLess(s, cluster.caseIDs[i], cluster.caseIDs[j]) })
 	}
 	return projection, nil
+}
+
+func (s *apiServer) loadRetainedPersonCatalog(snapshot *identityClusterSnapshot, p *personProjection, owners map[string]*personCluster) error {
+	actual, err := retainedOutDecisions(s.run)
+	if err != nil {
+		return err
+	}
+	if len(snapshot.Catalog) != len(actual) || len(actual) != len(s.cases) {
+		return fmt.Errorf("incomplete retained case catalog")
+	}
+	lastID := ""
+	for _, row := range snapshot.Catalog {
+		history := actual[row.CaseID]
+		c := s.cases[row.CaseID]
+		if row.CaseID <= lastID || len(history) == 0 || c == nil || string(canon(c.decisions)) != string(canon(history)) {
+			return fmt.Errorf("duplicate, unknown or stale retained case")
+		}
+		lastID = row.CaseID
+		last := history[len(history)-1]
+		lifecycle := "active"
+		if last.Inactive {
+			lifecycle = "retained"
+		}
+		parent, err := retainedParent(row.CaseID, actual)
+		if err != nil || row.ParentCaseID != parent || row.Lifecycle != lifecycle || len(row.History) != len(history) {
+			return fmt.Errorf("invalid retained lifecycle, parent or history")
+		}
+		if !last.Inactive && (last.State == "inactive" || personProgrammeRank(last.Prog) == len(personProgrammes)) {
+			return fmt.Errorf("invalid active case")
+		}
+		if last.Inactive && (last.State != "inactive" || last.ReportedClosed || last.Overdue || len(last.Outreach) != 0) {
+			return fmt.Errorf("actionable retained tombstone")
+		}
+		if last.Inactive {
+			if row.Current != unavailableAssociation("inactive_request") || row.Participation != "reference_only" {
+				return fmt.Errorf("retained case has current identity authority")
+			}
+		} else if row.Participation == "reference_only" {
+			// This is not an inactive clinical decision or missing-map forgiveness.
+			// Exact origin, transition and signed parent lineage are validated below.
+			if parent == "" || row.Current != unavailableAssociation("detached_child") {
+				return fmt.Errorf("invalid detached child participation")
+			}
+		} else {
+			if row.Participation != "current" {
+				return fmt.Errorf("missing positive current participation")
+			}
+			cluster := owners[row.Current.Registration]
+			if row.Current.Status != "resolved" || cluster == nil {
+				return fmt.Errorf("active case has no proven current association")
+			}
+			p.byCase[row.CaseID] = cluster
+			p.referralByCase[row.CaseID] = row.Current.Registration
+			cluster.caseIDs = append(cluster.caseIDs, row.CaseID)
+		}
+		seenPeople := map[string]bool{}
+		for i, ctx := range row.History {
+			d := history[i]
+			if ctx.DecisionID != d.ID || ctx.DecisionSig != d.Sig || d.Policy != snapshot.Policy || !sha256Pattern.MatchString(d.Sig) || d.Sig != decSig(d) || !verifyChain(d.Chain) || ctx.FactsSeq == 0 {
+				return fmt.Errorf("invalid same-case history signature")
+			}
+			if ctx.Association.Status == "resolved" {
+				cluster := owners[ctx.Association.Registration]
+				if cluster == nil {
+					return fmt.Errorf("unmapped historical registration")
+				}
+				person := personIDForRegistrations(cluster.registrations)
+				if !seenPeople[person] {
+					p.historical[person] = append(p.historical[person], row.CaseID)
+					seenPeople[person] = true
+				}
+			} else if ctx.Association.Status != "unavailable" {
+				return fmt.Errorf("invalid history availability")
+			}
+		}
+		p.catalog[row.CaseID] = row
+	}
+	canonical := map[string]string{}
+	for registration, cluster := range owners {
+		canonical[registration] = personIDForRegistrations(cluster.registrations)
+	}
+	if err := validateRetainedSources(s.run, snapshot.Catalog, actual, canonical); err != nil {
+		return err
+	}
+	for person, cluster := range p.byPerson {
+		if len(cluster.caseIDs) == 0 && len(p.historical[person]) == 0 {
+			delete(p.byPerson, person)
+			continue
+		}
+		sort.Slice(cluster.caseIDs, func(i, j int) bool { return personCaseLess(s, cluster.caseIDs[i], cluster.caseIDs[j]) })
+		sort.Strings(p.historical[person])
+	}
+	// A reference-only case (retired or clinically active but detached) resolves
+	// only a UNIQUE historical subject. Never guess between truthful subjects.
+	for id, row := range p.catalog {
+		if row.Participation != "reference_only" {
+			continue
+		}
+		var selected *personCluster
+		ambiguous := false
+		for _, ctx := range row.History {
+			if ctx.Association.Status != "resolved" {
+				continue
+			}
+			candidate := owners[ctx.Association.Registration]
+			if selected != nil && selected != candidate {
+				ambiguous = true
+			}
+			selected = candidate
+		}
+		if !ambiguous {
+			p.byCase[id] = selected
+		}
+	}
+	return nil
 }
 
 func (s *apiServer) personError(w http.ResponseWriter, status int, message string) {
@@ -216,6 +385,24 @@ func (s *apiServer) peopleRoutes(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		cluster = projection.byCase[caseID]
+		if cluster == nil && projection.artifactSchema == retainedIdentitySchema {
+			row := projection.catalog[caseID]
+			reason := "multiple_historical_subjects"
+			resolved := false
+			for _, ctx := range row.History {
+				if ctx.Association.Status == "resolved" {
+					resolved = true
+				} else {
+					reason = ctx.Association.Reason
+				}
+			}
+			if resolved {
+				reason = "multiple_historical_subjects"
+			}
+			writeJSONResp(w, http.StatusConflict, s.envelope(map[string]interface{}{"schema": "wasl-person-association-unavailable/2", "case_id": caseID, "lifecycle": row.Lifecycle,
+				"association": map[string]interface{}{"status": "unavailable", "reason": reason}, "history_access": "authorized_case_audit", "actionable": false}))
+			return
+		}
 	} else {
 		cluster = projection.byPerson[person]
 	}
@@ -254,7 +441,7 @@ func openStatus(c *apiCase, due float64) string {
 // never computes a new interval or a due-soon threshold.
 func personObligations(c *apiCase, sharedSurveillance ...map[string]bool) []map[string]interface{} {
 	out := []map[string]interface{}{}
-	if c == nil || c.last == nil {
+	if c == nil || c.last == nil || c.last.Inactive {
 		return out
 	}
 	d := c.last
@@ -373,6 +560,7 @@ type personIntent struct {
 	LatestDecisionID  string
 	LatestDecisionSig string
 	Lifecycle         string
+	Historical        bool
 	Outreach          Outreach
 }
 
@@ -401,11 +589,13 @@ func foldPersonIntents(c *apiCase) []personIntent {
 			key := c.ID + "\x00" + outreach.Event + "\x00" + outreach.Kind
 			intent, exists := latest[key]
 			if !exists {
-				intent = personIntent{CaseID: c.ID, Programme: c.Programme, FirstDecisionID: decision.ID}
+				intent = personIntent{CaseID: c.ID, Programme: decision.Prog, FirstDecisionID: decision.ID}
 				order = append(order, key)
 			}
 			intent.LatestDecisionID, intent.LatestDecisionSig = decision.ID, decision.Sig
 			intent.Lifecycle, intent.Outreach = intentLifecycle(outreach), outreach
+			intent.Programme = decision.Prog
+			intent.Historical = c.last != nil && c.last.Inactive
 			latest[key] = intent
 		}
 	}
@@ -417,7 +607,7 @@ func foldPersonIntents(c *apiCase) []personIntent {
 }
 
 func actionableIntent(intent personIntent) bool {
-	return intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded"
+	return !intent.Historical && (intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded")
 }
 
 func personFlagID(match string, intents []personIntent) string {
@@ -430,9 +620,13 @@ func personFlagID(match string, intents []personIntent) string {
 }
 
 func intentBody(intent personIntent) map[string]interface{} {
-	return map[string]interface{}{"case_id": intent.CaseID, "programme": intent.Programme,
+	body := map[string]interface{}{"case_id": intent.CaseID, "programme": intent.Programme,
 		"first_decision_id": intent.FirstDecisionID, "latest_decision_id": intent.LatestDecisionID,
 		"latest_decision_sig": intent.LatestDecisionSig, "lifecycle": intent.Lifecycle, "outreach": intent.Outreach}
+	if intent.Historical {
+		body["participation"] = "historical"
+	}
+	return body
 }
 
 func flagBody(match string, intents []personIntent) map[string]interface{} {
@@ -545,7 +739,9 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 	candidates := []personActionCandidate{}
 	caseByID := map[string]*apiCase{}
 	for _, c := range cases {
-		caseByID[c.ID] = c
+		if c.last != nil && !c.last.Inactive {
+			caseByID[c.ID] = c
+		}
 	}
 	for _, flag := range flags {
 		if flag["actionable"] != true {
@@ -555,7 +751,16 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		if len(intents) == 0 {
 			continue
 		}
-		anchor := intents[0]["case_id"].(string)
+		anchor := ""
+		for _, intent := range intents {
+			if caseByID[intent["case_id"].(string)] != nil && intent["participation"] != "historical" {
+				anchor = intent["case_id"].(string)
+				break
+			}
+		}
+		if anchor == "" {
+			continue
+		}
 		candidate := personActionCandidate{kind: "review_duplicate_outreach", caseID: anchor, flagID: flag["id"].(string),
 			priority: "routine", reasons: []string{"duplicate_outreach_requires_review"}}
 		for _, raw := range intents {
@@ -581,6 +786,9 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		candidates = append(candidates, candidate)
 	}
 	for _, c := range cases {
+		if c.last == nil || c.last.Inactive {
+			continue
+		}
 		patientFollowup := false
 		reason := ""
 		if !c.Closed && coordinatorDropoffs[c.Dropoff] {
@@ -688,6 +896,64 @@ func (s *apiServer) personCaseDetail(c *apiCase, viewer *apiPrincipal, registrat
 	return detail
 }
 
+func (s *apiServer) personHistoryReferences(p *personProjection, cluster *personCluster) []map[string]interface{} {
+	out := []map[string]interface{}{}
+	person := personIDForRegistrations(cluster.registrations)
+	members := map[string]bool{}
+	for _, registration := range cluster.registrations {
+		members[registration] = true
+	}
+	for _, id := range p.historical[person] {
+		row, c := p.catalog[id], s.cases[id]
+		decisions := []map[string]interface{}{}
+		s.mu.Lock()
+		historical := *c
+		s.mu.Unlock()
+		historical.decisions = nil
+		programmes := []string{}
+		seenProgrammes := map[string]bool{}
+		for i, ctx := range row.History {
+			if ctx.Association.Status != "resolved" || !members[ctx.Association.Registration] {
+				continue
+			}
+			d := c.decisions[i]
+			ref := map[string]interface{}{"decision_id": d.ID, "sig": d.Sig, "in_seq": d.InSeq, "facts_seq": ctx.FactsSeq, "inactive": d.Inactive}
+			if personProgrammeRank(d.Prog) < len(personProgrammes) {
+				ref["programme"] = d.Prog
+				if !seenProgrammes[d.Prog] {
+					programmes = append(programmes, d.Prog)
+					seenProgrammes[d.Prog] = true
+				}
+			}
+			decisions = append(decisions, ref)
+			historical.decisions = append(historical.decisions, d)
+		}
+		intents := []map[string]interface{}{}
+		for _, intent := range foldPersonIntents(&historical) {
+			intent.Historical = true
+			body := intentBody(intent)
+			// References carry an operational summary, not new downstream identity
+			// aliases. The unchanged original object stays on the authorized case.
+			summary := map[string]interface{}{"kind": intent.Outreach.Kind, "ev": intent.Outreach.Event, "basis": intent.Outreach.Basis, "p_cal": intent.Outreach.PCal, "released": intent.Outreach.Released}
+			if intent.Outreach.Suppress != "" {
+				summary["suppress"] = intent.Outreach.Suppress
+			}
+			if intent.Outreach.Guard != "" {
+				summary["guard"] = intent.Outreach.Guard
+			}
+			body["outreach"] = summary
+			intents = append(intents, body)
+		}
+		ref := map[string]interface{}{"case_id": id, "lifecycle": row.Lifecycle, "availability": "reference_only", "history_access": "authorized_case_audit", "actionable": false,
+			"programmes": programmes, "decisions": decisions, "outreach_intents": intents}
+		if row.ParentCaseID != "" {
+			ref["parent_case_id"] = row.ParentCaseID
+		}
+		out = append(out, ref)
+	}
+	return out
+}
+
 func (s *apiServer) personJourney(projection *personProjection, cluster *personCluster, viewer apiPrincipal) (map[string]interface{}, error) {
 	cases := make([]*apiCase, 0, len(cluster.caseIDs))
 	caseBodies := make([]map[string]interface{}, 0, len(cluster.caseIDs))
@@ -700,6 +966,24 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		c := s.cases[caseID]
 		if c == nil || c.last == nil {
 			return nil, fmt.Errorf("incomplete case projection")
+		}
+		if projection.artifactSchema == retainedIdentitySchema {
+			// /2 current detail is deliberately latest-only. Old subject decisions
+			// remain separately provenance-scoped references, never this journey's
+			// current clinical/outreach history after same-ID reassociation.
+			s.mu.Lock()
+			current := *c
+			s.mu.Unlock()
+			current.decisions = nil
+			row := projection.catalog[caseID]
+			latest := row.History[len(row.History)-1].Association
+			for _, registration := range cluster.registrations {
+				if latest.Status == "resolved" && latest.Registration == registration {
+					current.decisions = []*Decision{c.last}
+					break
+				}
+			}
+			c = &current
 		}
 		cases = append(cases, c)
 		if len(cases) == 1 || c.last.Now > asOf {
@@ -719,7 +1003,16 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 			delete(summary, "api_patient")
 			delete(summary, "contact_state")
 		}
+		if projection.artifactSchema == retainedIdentitySchema && len(c.decisions) == 0 {
+			for _, key := range []string{"links", "holds", "outreach", "decisions", "timeline", "identities"} {
+				allowed[key] = []interface{}{}
+			}
+		}
 		overlay, _ := s.apiContactOverlay(c, viewer)
+		if projection.artifactSchema == retainedIdentitySchema && len(c.decisions) == 0 {
+			overlay["status"] = "none"
+			overlay["contact_blocked"] = true
+		}
 		referral := projection.referralByCase[caseID]
 		if referral == "" && baseLoop(caseID) != caseID {
 			referral = projection.referralByCase[baseLoop(caseID)]
@@ -732,6 +1025,13 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 				"contact_blocked": overlay["contact_blocked"] == true || c.Consent != "granted", "canonical_unchanged": true}}
 		if baseLoop(caseID) != caseID {
 			body["parent_case_id"] = baseLoop(caseID)
+		}
+		if projection.artifactSchema == retainedIdentitySchema {
+			body["lifecycle"] = "active"
+			body["history_availability"] = "reference_only"
+			if parent := projection.catalog[caseID].ParentCaseID; parent != "" {
+				body["parent_case_id"] = parent
+			}
 		}
 		caseBodies = append(caseBodies, body)
 		obligations = append(obligations, personObligations(c, seenSurveillance)...)
@@ -756,13 +1056,35 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		provider, _, _ := strings.Cut(registration, "|")
 		registrations = append(registrations, map[string]interface{}{"registration": registration, "providers": []string{provider}})
 	}
+	allCaseIDs := append([]string{}, cluster.caseIDs...)
+	references := s.personHistoryReferences(projection, cluster)
+	for _, ref := range references {
+		id := ref["case_id"].(string)
+		found := false
+		for _, current := range allCaseIDs {
+			found = found || current == id
+		}
+		if !found {
+			allCaseIDs = append(allCaseIDs, id)
+		}
+		if last := s.cases[id].last; last != nil && last.Now > asOf {
+			asOf = last.Now
+		}
+	}
+	if len(allCaseIDs) == 0 {
+		return nil, fmt.Errorf("person has no validated participation")
+	}
 	body := map[string]interface{}{"schema": personJourneySchema,
-		"person": map[string]interface{}{"id": personIDForRegistrations(cluster.registrations), "anchor_case_id": cluster.caseIDs[0],
-			"as_of_day": round4(asOf), "case_ids": append([]string(nil), cluster.caseIDs...), "programmes": programmes,
+		"person": map[string]interface{}{"id": personIDForRegistrations(cluster.registrations), "anchor_case_id": allCaseIDs[0],
+			"as_of_day": round4(asOf), "case_ids": allCaseIDs, "programmes": programmes,
 			"registrations": registrations,
-			"identity_provenance": map[string]interface{}{"source": "canonical_linker_clusters", "artifact_schema": identityClusterSchema,
+			"identity_provenance": map[string]interface{}{"source": "canonical_linker_clusters", "artifact_schema": projection.artifactSchema,
 				"artifact_sha256": projection.artifactSHA, "policy": projection.policy}},
 		"cases": caseBodies, "obligations": obligations, "outreach_flags": flags, "next_action": next}
+	if projection.artifactSchema == retainedIdentitySchema {
+		body["schema"] = "wasl-person-journey/2"
+		body["retained_references"] = references
+	}
 	generic, err := exportGeneric(body)
 	if err != nil {
 		return nil, err

@@ -26,7 +26,8 @@ func serveAgentConsent(t *testing.T, run string) (*apiServer, *httptest.Server) 
 
 func recordConsent(t *testing.T, s *apiServer, srv *httptest.Server, loop, event string) int {
 	t.Helper()
-	code, _ := doReq(t, "POST", srv.URL+"/api/cases/"+loop+"/consent", RoleCoordinator, "c1", consentBody(event, s.cases[loop].last.Sig, ""))
+	overlay, _ := s.apiContactOverlay(s.cases[loop])
+	code, _ := doReq(t, "POST", srv.URL+"/api/cases/"+loop+"/consent", RoleCoordinator, "c1", consentBody(event, overlay["revision"].(string), ""))
 	return code
 }
 

@@ -37,7 +37,8 @@ export const actionLabels: Record<NextAction["kind"], string> = {
 };
 
 export function personDisplay(journey: PersonJourney) {
-  const fixture = personForLoop(journey.person.anchor_case_id);
+  // /2 IDs are resolved by canonical provenance, never by a fixture's case-name cast.
+  const fixture = journey.schema === "wasl-person-journey/1" ? personForLoop(journey.person.anchor_case_id) : undefined;
   return {
     name: fixture?.display_name ?? `Person ${journey.person.id.slice(7, 15)}`,
     arabic: fixture?.display_name_ar,
