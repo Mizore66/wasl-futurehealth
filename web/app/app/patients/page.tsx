@@ -153,6 +153,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             {filters.state && <input type="hidden" name="state" value={filters.state} />}
             {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
             {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
+            {filters.closed !== undefined && <input type="hidden" name="closed" value={String(filters.closed)} />}
             <label className="flex min-w-0 flex-1 items-center gap-2 rounded-control border border-input px-2.5 md:flex-none">
               <span className="sr-only">Search case id</span>
               <input type="search" name="q" defaultValue={filters.q} placeholder="Case id" className="w-full min-w-0 h-11 border-0 bg-transparent text-body outline-none md:w-40" />

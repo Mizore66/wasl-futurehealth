@@ -81,11 +81,31 @@ export function closedHeadline(c: CaseSummary): string {
   return d <= due ? `Closed in ${d} days, ${due - d} inside the ${words}` : `Closed in ${d} days, ${d - due} past the ${words}`;
 }
 
+/**
+ * The absolute run day of the next routine screen as the API serves it for a no-action resolution, or undefined when
+ * the case does not carry one. The screening date is not the referral date, so it is never derived from `referral_day`.
+ */
+export function servedNextScreenDay(c: CaseSummary): number | undefined {
+  switch (c.programme) {
+    case "lung_ldct":
+      return c.ldct?.due_day;
+    case "diabetic_retinopathy":
+      return c.dr?.next_due?.due_day ?? c.dr?.deadline_day;
+    case "breast":
+      return c.breast?.deadline_day;
+    case "ifhas":
+      return c.ifhas?.deadline_day;
+    default:
+      return undefined;
+  }
+}
+
 /** The Patients due column: the procedure deadline, the next screen for a no-action resolution, or nothing due. */
 export function dueColumnWords(c: CaseSummary): string {
   if (!isNoAction(c)) return formatDay(c.referral_day + caseDeadlineDays(c));
-  const next = nextScreenDays(c);
-  return next ? `Next screen ${formatDay(c.referral_day + next)}` : "None due";
+  if (!nextScreenDays(c)) return "None due";
+  const due = servedNextScreenDay(c);
+  return due === undefined ? "Next screen date unavailable" : `Next screen ${formatDay(due)}`;
 }
 
 export function closedInDays(c: CaseSummary): number {
