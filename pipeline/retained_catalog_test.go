@@ -935,11 +935,32 @@ func TestRetainedCatalogPermitsHistoricalNotesAndRightsButNotNewCare(t *testing.
 	if len(s.reviews) != n {
 		t.Fatal("stale head or unauthorized note appended")
 	}
+	consentRevision := func() string {
+		t.Helper()
+		w := securityRequest(t, h, http.MethodGet, "/api/cases/"+c.ID+"/consent", "coordinator-token-1234567890", nil)
+		var body map[string]interface{}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &body) != nil {
+			t.Fatalf("current consent read: %d %s", w.Code, w.Body.String())
+		}
+		return body["overlay"].(map[string]interface{})["revision"].(string)
+	}
+	staleRevision := consentRevision()
 	for _, event := range []string{"consent_denied", "consent_opted_out"} {
-		post(c.ID, "/consent", "coordinator-token-1234567890", map[string]interface{}{"event": event, "expected_head": c.last.Sig, "note": "Synthetic rights update"}, 201)
+		post(c.ID, "/consent", "coordinator-token-1234567890", map[string]interface{}{"event": event, "expected_head": consentRevision(), "note": "Synthetic rights update"}, 201)
+		ledger := actRead(t, filepath.Join(s.run, "api_reviews.ndjson"))
+		n = len(s.reviews)
+		post(c.ID, "/consent", "coordinator-token-1234567890", map[string]interface{}{"event": "consent_granted", "expected_head": staleRevision, "note": "Stale consent must not append"}, 409)
+		if len(s.reviews) != n || !bytes.Equal(ledger, actRead(t, filepath.Join(s.run, "api_reviews.ndjson"))) {
+			t.Fatal("stale consent revision appended")
+		}
+		staleRevision = consentRevision()
 	}
 	n = len(s.reviews)
-	post(c.ID, "/consent", "coordinator-token-1234567890", map[string]interface{}{"event": "consent_granted", "expected_head": c.last.Sig, "note": "Must not undo sticky opt-out"}, 409)
+	ledger := actRead(t, filepath.Join(s.run, "api_reviews.ndjson"))
+	post(c.ID, "/consent", "coordinator-token-1234567890", map[string]interface{}{"event": "consent_granted", "expected_head": consentRevision(), "note": "Must not undo sticky opt-out"}, 409)
+	if !bytes.Equal(ledger, actRead(t, filepath.Join(s.run, "api_reviews.ndjson"))) {
+		t.Fatal("fresh consent revision bypassed terminal opt-out")
+	}
 	post(c.ID, "/actions", "coordinator-token-1234567890", map[string]interface{}{"action": "contact_outcome", "expected_head": headOf(s, c.ID), "outcome": "reached", "channel": "phone"}, 409)
 	post(c.ID, "/review/claim", "reviewer-token-1234567890", map[string]interface{}{"item": "not-current", "question": "link", "operation": "claim", "expected_claim_head": ""}, 404)
 	if len(s.reviews) != n || !bytes.Equal(before, canon(c.decisions)) || !c.last.Inactive {

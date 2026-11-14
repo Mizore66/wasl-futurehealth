@@ -9,7 +9,7 @@ Status: **wired in `runServe`**. Demo mode, synthetic data. Nothing here sends a
 Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 via `Authorize(role, ActRecordConsent)`) and `X-Wasl-Actor` (required, 400 if missing).
 
 ```json
-{"event": "consent_granted | consent_denied | consent_opted_out", "expected_head": "<case current head signature>", "note": "optional, max 500 characters"}
+{"event": "consent_granted | consent_denied | consent_opted_out", "expected_head": "<consent revision>", "note": "optional, max 500 characters"}
 ```
 
 | Status | Meaning |
@@ -18,7 +18,7 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 | 400 | Bad JSON, trailing data, unknown event, missing/overlong actor, missing `expected_head`, or note over 500 characters |
 | 403 | Role may not record consent |
 | 404 | Unknown case |
-| 409 | `expected_head` does not equal the case's current head signature (response carries `current_head`), or a grant after an opt-out |
+| 409 | `expected_head` does not equal the case's consent revision (response carries `current_revision` and `current_head`), or a grant after an opt-out |
 | 500 | The shared ledger is invalid, its state is indeterminate, or the durable append failed; nothing is recorded in memory |
 | 405 | Method other than GET or POST |
 
@@ -28,9 +28,13 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 
 - Each event uses the same fail-closed durable append path as `/review` and `/actions`, with `action: record_consent`, `decision: <event>`, and `head_signed` preserved as the case's current head signature. A stale head, invalid ledger or failed append never updates the in-memory overlay.
 - The `api_contact` overlay is **derived from that ledger** on each read, so a server restart rebuilds it exactly. The ledger is written first.
-- Overlay fields: `status` (`none|granted|denied|opted_out`), `demo_pending_consent` (`""|released|cancelled`; a demo-only view of what the hold would do, distinct from the canonical `case.consent`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash`.
+- Overlay fields: `status` (`none|granted|denied|opted_out`), `demo_pending_consent` (`""|released|cancelled`; a demo-only view of what the hold would do, distinct from the canonical `case.consent`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash` (latest effective consent event), `revision`.
 - Grant derives demo hold to `released`. Deny and opt-out derive `cancelled` and set `contact_blocked`. A later grant after a denial is allowed; after an opt-out it is refused (409).
+- The consent revision is the case's canonical head signature until its first consent event, then the hash of the latest consent-related ledger event (a consent event, or an undo, contest or resolution of one). Unrelated ledger events do not move it. Each consent event stores the revision it was written against as `consent_rev`; ledger replay checks that linkage and fails closed on a mismatch. Events written before `consent_rev` existed carry no field and stay valid.
+- The overlay uses the `/undo` fold. A compensated (undone or upheld-contest) consent event no longer counts, so the state falls back to the latest effective earlier event or `none`. While a consent event is contested, a grant is ignored (it does not release outreach) and a denial or opt-out still counts (it keeps blocking contact). A rejected contest restores the event. `history` still lists every raw event.
 - While `contact_blocked`, `POST /review` with `decision: confirm_contact` returns 409 and writes nothing.
+
+- While a first independent read awaits its second, `prev` is omitted from consent events chained on it (and `prev` and `action_head` from undo, contest and resolution responses) for non-authors, because the value would disclose the concealed hash. Clients treat those fields as optional and treat every 201 as committed.
 
 ## What does not change
 
