@@ -1237,7 +1237,14 @@ func (c *SubConsumer) readCanonicalOrdinary(ctx context.Context, seq uint64) (ca
 	}
 	payload, _ := json.Marshal(map[string]uint64{"seq": seq})
 	subject := canonicalAPIPrefix(c.js.Options()) + "STREAM.MSG.GET." + canonicalStream
+	var diagnosticStart time.Time
+	if c.phaseDiagnostics != nil {
+		diagnosticStart = c.phaseDiagnostics.begin(&c.phaseDiagnostics.operations[diagOrdinaryRead])
+	}
 	reply, err := c.js.Conn().RequestWithContext(ctx, subject, payload)
+	if c.phaseDiagnostics != nil {
+		c.phaseDiagnostics.end(&c.phaseDiagnostics.operations[diagOrdinaryRead], diagnosticStart, err, reply != nil)
+	}
 	if err != nil {
 		return canonicalRead{}, fmt.Errorf("%w: %v", errCanonicalUnavailable, err)
 	}

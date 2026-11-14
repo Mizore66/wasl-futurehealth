@@ -9,6 +9,7 @@ import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, ledgerWordsWithHistory } from "@/components/case/words";
+import { caseDeadlineDays, isNoAction, nextScreenDays } from "./days";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -63,6 +64,54 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
 /** Whole days since referral at run day `now`. */
 export function elapsedDays(c: CaseSummary, now: number): number {
   return Math.floor(now - c.referral_day);
+}
+
+const NO_ACTION_WORDS: Record<string, string> = {
+  no_followup_needed: "no routine follow-up needed",
+  no_referral_needed: "no referral needed",
+  no_recall_needed: "no recall needed",
+};
+
+/** What a no-action resolution says, with the next routine screen when the rule sets one. */
+export function noActionWords(c: CaseSummary): string {
+  const next = nextScreenDays(c);
+  return `${NO_ACTION_WORDS[c.state] ?? "no action needed"}${next ? `, next screen in ${next} days` : ""}`;
+}
+
+/** The detail header for a closed case: the deadline comparison for a procedure closure, the resolution for a no-action one. */
+export function closedHeadline(c: CaseSummary): string {
+  const d = closedInDays(c);
+  if (isNoAction(c)) return `Closed in ${d} days, ${noActionWords(c)}`;
+  const due = caseDeadlineDays(c);
+  const words = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
+  return d <= due ? `Closed in ${d} days, ${due - d} inside the ${words}` : `Closed in ${d} days, ${d - due} past the ${words}`;
+}
+
+/**
+ * The absolute run day of the next routine screen as the API serves it for a no-action resolution, or undefined when
+ * the case does not carry one. The screening date is not the referral date, so it is never derived from `referral_day`.
+ */
+export function servedNextScreenDay(c: CaseSummary): number | undefined {
+  switch (c.programme) {
+    case "lung_ldct":
+      return c.ldct?.due_day;
+    case "diabetic_retinopathy":
+      return c.dr?.next_due?.due_day ?? c.dr?.deadline_day;
+    case "breast":
+      return c.breast?.deadline_day;
+    case "ifhas":
+      return c.ifhas?.deadline_day;
+    default:
+      return undefined;
+  }
+}
+
+/** The Patients due column: the procedure deadline, the next screen for a no-action resolution, or nothing due. */
+export function dueColumnWords(c: CaseSummary): string {
+  if (!isNoAction(c)) return formatDay(c.referral_day + caseDeadlineDays(c));
+  if (!nextScreenDays(c)) return "None due";
+  const due = servedNextScreenDay(c);
+  return due === undefined ? "Next screen date unavailable" : `Next screen ${formatDay(due)}`;
 }
 
 export function closedInDays(c: CaseSummary): number {
@@ -376,7 +425,8 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
 
   if (c.case.closed) {
     const d = closedInDays(c.case);
-    out.push({ id: "closed", kind: "current", who: "Closed", what: `with evidence, dated to the ${PROCEDURE[c.case.programme]}`, when: `day ${d} · ${formatDay(c.case.closed_day)}`, hash: sealed("closure_decision") });
+    const what = isNoAction(c.case) ? noActionWords(c.case) : `with evidence, dated to the ${PROCEDURE[c.case.programme]}`;
+    out.push({ id: "closed", kind: "current", who: "Closed", what, when: `day ${d} · ${formatDay(c.case.closed_day)}`, hash: sealed("closure_decision") });
   } else {
     out.push({ id: "now", kind: "current", who: "Now", what: caseStage(c).label, when: statusWords(c.case).next });
   }

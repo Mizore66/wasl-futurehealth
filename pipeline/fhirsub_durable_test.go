@@ -2393,8 +2393,13 @@ type pendingProtocolWork struct {
 	key, bound, owner      string
 	legacyBinding          string
 	revision, gen, attempt uint64
-	pending, published     bool
-	checkpoint, enqueued   bool
+	pending, published     bool // actual logical return, separately gated by body/source proof
+	enqueued               bool
+	source                 canonicalSource
+	proof                  canonicalAttemptTurn
+	floor                  checkpointReceipt // discovery, NOT coverage of event.Num
+	saved                  subscriptionCheckpoint
+	savedRevision          uint64
 	conflict, done         bool
 	deletedRevision        uint64
 	phase                  string
@@ -2559,8 +2564,41 @@ func (p *pendingProtocolPrototype) tick() {
 	}
 }
 
+// A returned disposition and a discovery floor cannot substitute for exact
+// canonical bytes and the bound descriptor of THIS literal pending spelling.
+func pendingProtocolBodySourceProven(w *pendingProtocolWork) bool {
+	source := w.source
+	if source.EffectiveSub != w.bound || source.PendingKey != w.key || source.Num != w.event.Num || source.Provider != w.event.Provider || source.Focus != w.event.Focus || source.Occurred != w.event.Occurred || canonicalSubscriptionRef(w.event.Sub) != w.bound || canonicalMessageIdentity(canonicalEventMessage(&w.event), source.Identity) != nil {
+		return false
+	}
+	if !w.proof.Receipt.valid() || !w.proof.Binding.valid() || w.proof.Hole != "" {
+		return false
+	}
+	cell, err := parseCanonicalCell(w.proof.Receipt.Key, w.proof.Receipt.Value)
+	if err != nil || cell.Phase != canonicalPhaseReceipt || cell.Identity != source.Identity || cell.Receipt.Fingerprint != w.proof.Receipt.CoreFingerprint {
+		return false
+	}
+	bound, err := parseCanonicalSourceRecord(w.proof.Binding.Key, w.proof.Binding.Value)
+	return err == nil && bound.Phase == canonicalPhaseBound && bound.CellKey == w.proof.Receipt.Key && bound.CoreFingerprint == w.proof.Receipt.CoreFingerprint && bound.Incarnation.equal(cell.Receipt.Core.Incarnation) && canonicalCompatibleSource(bound.Source, source) == nil
+}
+
+func pendingProtocolImportReturn(t *testing.T, c *SubConsumer, w *pendingProtocolWork, actual *pendingWork) {
+	t.Helper()
+	if actual == nil || actual.canonical == nil || !actual.returnApplied || !actual.result.Result.Returned || actual.positionRef != w.bound || actual.state.positionRef != w.bound || actual.state.ref != w.bound || !samePendingPayload(&actual.event, &w.event) || actual.event.Key != w.key {
+		t.Fatal("prototype lacks actual source-associated returned work")
+	}
+	w.source, w.proof = actual.canonical.input.Source, actual.result
+	if !pendingProtocolBodySourceProven(w) {
+		t.Fatal("actual return lacks independent exact body/bound-source proof")
+	}
+	if _, _, err := c.canonicalDurableSourceProof(context.Background(), actual.canonical.input.Incarnation, w.source, w.proof.Receipt); err != nil {
+		t.Fatal(err)
+	}
+	w.published = true
+}
+
 func (p *pendingProtocolPrototype) step(w *pendingProtocolWork) {
-	if !w.pending || !w.published || !w.checkpoint || w.conflict {
+	if !w.pending || !w.published || !w.floor.validFor(w.bound) || !pendingProtocolBodySourceProven(w) || w.conflict {
 		return
 	}
 	gen := w.gen
@@ -2634,20 +2672,91 @@ func pendingProtocolPublished(t *testing.T, apply bool) (*SubConsumer, *pendingO
 	if !c.pending[1] || c.ackHWM != 1 || kv.calls["delete"] != 1 {
 		t.Fatal("ambiguous production Delete must retain the original local obligation")
 	}
-	w.published = true // actual return above, not a revision/count inference
+	pendingProtocolImportReturn(t, c, w, e.work)
 	p.enqueue(w)
 	return c, js, p, w, a
 }
 
-func pendingProtocolCheckpoint(t *testing.T, c *SubConsumer, w *pendingProtocolWork) {
+// Explicit model correction: cleanup needs positive exact-source discovery,
+// not the circular prerequisite that a cursor already cover its unresolved hole.
+// Record/assert the separate actual cursor rather than fabricating HWM >= N.
+func pendingProtocolSourceFloor(t *testing.T, c *SubConsumer, w *pendingProtocolWork) {
 	t.Helper()
 	c.saveCheckpoint()
 	entry, err := c.kv.Get(context.Background(), checkpointKey(w.bound))
-	var cp subscriptionCheckpoint
-	if err != nil || json.Unmarshal(entry.Value(), &cp) != nil || canonicalSubscriptionRef(cp.Sub) != w.bound || cp.HWM < w.event.Num {
-		t.Fatalf("actual source checkpoint missing: %v", err)
+	if err != nil {
+		t.Fatal(err)
 	}
-	w.checkpoint = true // evidence from actual saver AFTER real publisher ACK
+	cp, err := parseCheckpoint(checkpointKey(w.bound), entry)
+	if err != nil || canonicalSubscriptionRef(cp.Sub) != w.bound || cp.HWM != 0 || cp.Eof || c.checkpointCeilingLocked(&c.subscriptionState) != 0 || len(c.holes) == 0 {
+		t.Fatalf("unretired production hole must preserve truthful checkpoint0/false: %+v err=%v", cp, err)
+	}
+	floor, err := c.ensureSourceFloor(context.Background(), &c.subscriptionState)
+	if err != nil || !floor.validFor(w.bound) || floor.HWM != 0 || floor.Eof || floor.Revision > entry.Revision() {
+		t.Fatalf("no positive exact-subscription discovery floor: %+v err=%v", floor, err)
+	}
+	w.floor, w.saved, w.savedRevision = floor, cp, entry.Revision()
+}
+
+func TestPendingProtocolProductionHoleRequiresOwnDelete(t *testing.T) {
+	for _, applied := range []bool{false, true} {
+		t.Run(fmt.Sprintf("applied=%v", applied), func(t *testing.T) {
+			c, js, p, model, _ := pendingProtocolPublished(t, applied)
+			actual := c.work[1]
+			pendingProtocolSourceFloor(t, c, model)
+			if actual.completed || !c.holes[actual] || !c.pending[1] || c.ackHWM != 1 || model.saved.HWM != 0 || model.savedRevision == 0 {
+				t.Fatal("lost ambiguous-delete hole or cursor0")
+			}
+			p.tick() // This research owner's nil Delete is NOT c's own receipt.
+			if !model.done || actual.completed || !c.holes[actual] {
+				t.Fatal("prototype completion transferred to production work")
+			}
+			pendingProtocolSourceFloor(t, c, model) // real save still must be0
+			beforeDeletes := p.kv.calls["delete"]
+			if err := c.serviceKnownWork(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if !actual.completed || len(c.holes) != 0 || len(c.pending) != 0 || p.kv.calls["delete"] != beforeDeletes+1 || len(js.stored) != 1 || atomic.LoadInt64(&c.published) != 1 || c.ackHWM != 1 {
+				t.Fatal("own positive retirement did not complete once without republish/return")
+			}
+			c.saveCheckpoint()
+			entry, err := c.kv.Get(context.Background(), checkpointKey(model.bound))
+			if err != nil {
+				t.Fatal(err)
+			}
+			cp, err := parseCheckpoint(checkpointKey(model.bound), entry)
+			if err != nil || cp.HWM != 1 || cp.Eof || c.checkpointCeilingLocked(&c.subscriptionState) != 1 {
+				t.Fatalf("real owned Delete did not enable verified cursor1: %+v %v", cp, err)
+			}
+		})
+	}
+}
+
+func TestPendingProtocolProofDoesNotTransferAcrossSources(t *testing.T) {
+	c, _, _, w, _ := pendingProtocolPublished(t, false)
+	pendingProtocolSourceFloor(t, c, w)
+	for _, field := range []string{"body", "sub", "number", "provider", "focus", "occurred", "key"} {
+		other := *w
+		switch field {
+		case "body":
+			other.event.Body = append(bytes.Clone(other.event.Body), ' ')
+		case "sub":
+			other.bound, other.event.Sub = "Subscription/other", "Subscription/other"
+		case "number":
+			other.event.Num++
+		case "provider":
+			other.event.Provider = "p2"
+		case "focus":
+			other.event.Focus += "x"
+		case "occurred":
+			other.event.Occurred = "2026-01-02T00:00:00Z"
+		case "key":
+			other.key = pendingEventKey(other.event.Num)
+		}
+		if pendingProtocolBodySourceProven(&other) {
+			t.Fatalf("body/source proof transferred across %s", field)
+		}
+	}
 }
 
 func TestPendingProtocolAmbiguousDeleteObservationMatrix(t *testing.T) {
@@ -2655,7 +2764,7 @@ func TestPendingProtocolAmbiguousDeleteObservationMatrix(t *testing.T) {
 		for _, observation := range []string{"unavailable", "negative", "stale-A", "matching-B", "foreign-B", "payload-B"} {
 			t.Run(fmt.Sprintf("applied=%v/%s", apply, observation), func(t *testing.T) {
 				c, js, p, w, a := pendingProtocolPublished(t, apply)
-				pendingProtocolCheckpoint(t, c, w)
+				pendingProtocolSourceFloor(t, c, w)
 				kv := p.kv
 				if strings.HasSuffix(observation, "B") {
 					e := w.event
@@ -2716,7 +2825,7 @@ func TestPendingProtocolAmbiguousClaimAndCreateMatrix(t *testing.T) {
 		for _, apply := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/applied=%v", operation, apply), func(t *testing.T) {
 				c, js, p, w, a := pendingProtocolPublished(t, operation == "create")
-				pendingProtocolCheckpoint(t, c, w)
+				pendingProtocolSourceFloor(t, c, w)
 				kv := p.kv
 				kv.faults[operation] = []pendingProtocolFault{{apply: apply, err: context.DeadlineExceeded}}
 				p.tick()
@@ -2753,7 +2862,7 @@ func TestPendingProtocolLostWriteObservationMatrix(t *testing.T) {
 			for _, view := range []string{"unavailable", "negative", "stale-A", "foreign-B", "payload-B"} {
 				t.Run(fmt.Sprintf("%s/applied=%v/%s", op, apply, view), func(t *testing.T) {
 					c, js, p, w, a := pendingProtocolPublished(t, op == "create")
-					pendingProtocolCheckpoint(t, c, w)
+					pendingProtocolSourceFloor(t, c, w)
 					kv := p.kv
 					kv.faults[op] = []pendingProtocolFault{{apply: apply, err: context.DeadlineExceeded}}
 					p.tick()
@@ -2805,7 +2914,7 @@ func TestPendingProtocolCreateFencesInvisibleForeignAndStaleTombstone(t *testing
 	for _, staleTombstone := range []bool{false, true} {
 		t.Run(fmt.Sprintf("stale-tombstone=%v", staleTombstone), func(t *testing.T) {
 			c, js, p, w, _ := pendingProtocolPublished(t, true)
-			pendingProtocolCheckpoint(t, c, w)
+			pendingProtocolSourceFloor(t, c, w)
 			kv := p.kv
 			tombstone := kv.snapshot(w.key)
 			foreign := w.event
@@ -2839,7 +2948,7 @@ func TestPendingProtocolStalePositiveCannotReclaimForeign(t *testing.T) {
 	for _, view := range []string{"stale-A", "stale-owned-B"} {
 		t.Run(view, func(t *testing.T) {
 			c, js, p, w, a := pendingProtocolPublished(t, false)
-			pendingProtocolCheckpoint(t, c, w)
+			pendingProtocolSourceFloor(t, c, w)
 			kv := p.kv
 			if _, err := kv.pendingOwnerKV.Update(context.Background(), w.key, a.body, a.revision); err != nil {
 				t.Fatal(err)
@@ -2870,7 +2979,7 @@ func TestPendingProtocolStalePositiveCannotReclaimForeign(t *testing.T) {
 
 func TestPendingProtocolCompletedReceiptDoesNotHideNewerForeign(t *testing.T) {
 	c, _, p, w, a := pendingProtocolPublished(t, false)
-	pendingProtocolCheckpoint(t, c, w)
+	pendingProtocolSourceFloor(t, c, w)
 	epoch := p.beginScan()
 	p.tick()
 	foreign := w.event
@@ -2894,7 +3003,7 @@ func TestPendingProtocolCompletedReceiptDoesNotHideNewerForeign(t *testing.T) {
 
 func TestPendingProtocolScanErrorReleasesCompletedReceipts(t *testing.T) {
 	c, _, p, w, _ := pendingProtocolPublished(t, false)
-	pendingProtocolCheckpoint(t, c, w)
+	pendingProtocolSourceFloor(t, c, w)
 	func() {
 		epoch := p.beginScan()
 		defer p.endScan(epoch)
@@ -2913,7 +3022,7 @@ func TestPendingProtocolScanReceiptsAliasesAndLateGeneration(t *testing.T) {
 	for _, phase := range []string{"buffered", "queued", "publisher-inflight"} {
 		t.Run(phase, func(t *testing.T) {
 			c, _, p, w, a := pendingProtocolPublished(t, false)
-			pendingProtocolCheckpoint(t, c, w)
+			pendingProtocolSourceFloor(t, c, w)
 			w.phase, w.published = phase, false
 			beforeClaims := p.kv.calls["update"]
 			epoch := p.beginScan() // reservation precedes the held snapshot
@@ -2950,7 +3059,7 @@ func TestPendingProtocolScanReceiptsAliasesAndLateGeneration(t *testing.T) {
 	for _, operation := range []string{"update", "delete"} {
 		t.Run("late-"+operation, func(t *testing.T) {
 			c, _, p, w, _ := pendingProtocolPublished(t, false)
-			pendingProtocolCheckpoint(t, c, w)
+			pendingProtocolSourceFloor(t, c, w)
 			replace := func() {
 				w.gen++
 				current := p.kv.snapshot(w.key)
@@ -2981,7 +3090,7 @@ func TestPendingProtocolScanReceiptsAliasesAndLateGeneration(t *testing.T) {
 
 func TestPendingProtocolNonemptyBacklogFairBatchNoScan(t *testing.T) {
 	c, js, p, w, _ := pendingProtocolPublished(t, true)
-	pendingProtocolCheckpoint(t, c, w)
+	pendingProtocolSourceFloor(t, c, w)
 	// These are actual separately admitted buffered and provider-queued events,
 	// not empty-store placeholders. None is eligible for cleanup or a KV read.
 	for _, n := range []int64{2, 4} {
@@ -3040,7 +3149,7 @@ func TestPendingProtocolNonemptyBacklogFairBatchNoScan(t *testing.T) {
 
 func TestPendingProtocolExactBindingAndFullIdentity(t *testing.T) {
 	c, _, p, w, a := pendingProtocolPublished(t, false)
-	pendingProtocolCheckpoint(t, c, w)
+	pendingProtocolSourceFloor(t, c, w)
 	for _, field := range []string{"sub", "number", "provider", "focus", "occurred", "body"} {
 		e := w.event
 		switch field {
@@ -3088,22 +3197,39 @@ func TestPendingProtocolExactBindingAndFullIdentity(t *testing.T) {
 	if !w.conflict || !w.pending || p.kv.calls["create"] != beforeCreates || p.kv.snapshot(w.key).revision != a.revision {
 		t.Fatal("alias conflict was silently collapsed")
 	}
-	// A legacy-bound cleanup recreates ONLY that spelling after a tombstone.
+	// Obtain legacy B/S/F from the real descriptor-before-claim recovery path,
+	// NEVER transfer the scoped source binding onto a different pending spelling.
+	lc, _, ljs := newPendingOwnerConsumer(t)
+	t.Cleanup(lc.seen.Flush)
 	kv := newPendingProtocolKV()
+	lc.kv = kv
 	if _, err := kv.pendingOwnerKV.Create(context.Background(), legacyKey, legacyBody); err != nil {
 		t.Fatal(err)
 	}
-	old := kv.snapshot(legacyKey)
-	if err := kv.pendingOwnerKV.Delete(context.Background(), legacyKey, jetstream.LastRevision(old.revision)); err != nil {
+	if err := lc.recoverPending(); err != nil {
 		t.Fatal(err)
+	}
+	le := <-lc.provCh["p1"]
+	if le.work == nil || le.work.origin.Sub != "" || le.work.legacyBinding != w.bound {
+		t.Fatal("real legacy transition missing")
 	}
 	lp = newPendingProtocolPrototype(kv)
 	lp.legacyBinding = w.bound
-	lw = lp.attach(&legacy, w.bound, legacyKey, old.revision)
-	lw.published, lw.checkpoint = w.published, w.checkpoint
+	lw = lp.attach(le, le.Sub, legacyKey, le.Revision)
+	kv.faults["delete"] = []pendingProtocolFault{{apply: true, err: context.DeadlineExceeded}}
+	input := make(chan *subEvent, 1)
+	input <- le
+	close(input)
+	ljs.unblock()
+	lc.publisher("p1", input)
+	pendingProtocolImportReturn(t, lc, lw, le.work)
+	pendingProtocolSourceFloor(t, lc, lw)
+	if lw.source.PendingKey != legacyKey || lw.source.BindingRule != canonicalRuleLegacy {
+		t.Fatal("proof is not this legacy spelling")
+	}
 	lp.enqueue(lw)
 	lp.tick()
-	if lw.pending || kv.snapshot(legacyKey).op != jetstream.KeyValueDelete || kv.snapshot(w.key).revision != 0 {
+	if lw.pending || kv.snapshot(legacyKey).op != jetstream.KeyValueDelete || kv.snapshot(w.key).revision != 0 || len(ljs.stored) != 1 {
 		t.Fatal("cleanup moved the completed identity to another spelling")
 	}
 }
@@ -3180,7 +3306,11 @@ func TestPendingProtocolRestartProofIndistinguishabilityBeforeCleanup(t *testing
 		}
 		p := newPendingProtocolPrototype(kv)
 		w := p.attach(recovered, recovered.Sub, key, recovered.Revision)
-		w.checkpoint = true // real loaded checkpoint, NOT a body/publication proof
+		w.floor, err = r.ensureSourceFloor(context.Background(), &r.subscriptionState)
+		if err != nil || !w.floor.validFor(recovered.Sub) || w.floor.HWM != 0 || w.floor.Eof {
+			t.Fatal("lost real discovery floor0")
+		}
+		// A real loaded floor is still NOT a body/publication proof.
 		p.enqueue(w)
 		m := nats.NewMsg("fhir.p1.res")
 		m.Data = recovered.Body
@@ -3211,7 +3341,7 @@ func TestPendingProtocolRestartProofIndistinguishabilityBeforeCleanup(t *testing
 }
 
 func TestPendingProtocolRestartAndCheckpointOrdering(t *testing.T) {
-	for _, stage := range []string{"before-publication", "publication-before-checkpoint", "ambiguous-delete-applied", "ambiguous-delete-not-applied", "ambiguous-claim-applied", "ambiguous-claim-not-applied", "ambiguous-create-applied", "ambiguous-create-not-applied"} {
+	for _, stage := range []string{"before-publication", "publication-before-explicit-position-save", "ambiguous-delete-applied", "ambiguous-delete-not-applied", "ambiguous-claim-applied", "ambiguous-claim-not-applied", "ambiguous-create-applied", "ambiguous-create-not-applied"} {
 		t.Run(stage, func(t *testing.T) {
 			var c *SubConsumer
 			var js *pendingOwnerJS
@@ -3231,11 +3361,11 @@ func TestPendingProtocolRestartAndCheckpointOrdering(t *testing.T) {
 				w = p.attach(e, e.Sub, e.Key, e.Revision)
 			} else {
 				c, js, p, w, _ = pendingProtocolPublished(t, strings.HasSuffix(stage, "delete-applied") || strings.HasPrefix(stage, "ambiguous-create"))
-				// In the candidate protocol deletion is not attempted until a
-				// real checkpoint receipt preserves the source binding. The
-				// publication-before-checkpoint case leaves live pending intact.
-				if stage != "publication-before-checkpoint" {
-					pendingProtocolCheckpoint(t, c, w)
+				// Production already obtained floor0 before its ambiguous Delete.
+				// This stage precedes only the EXPLICIT verified-position save;
+				// the model deliberately has not imported the real floor yet.
+				if stage != "publication-before-explicit-position-save" {
+					pendingProtocolSourceFloor(t, c, w)
 				}
 				if strings.HasPrefix(stage, "ambiguous-claim") {
 					p.kv.faults["update"] = []pendingProtocolFault{{apply: strings.HasSuffix(stage, "claim-applied"), err: context.DeadlineExceeded}}
@@ -3246,9 +3376,9 @@ func TestPendingProtocolRestartAndCheckpointOrdering(t *testing.T) {
 					p.tick()
 				}
 			}
-			// Checkpoint gating forbids retirement before source identity/HWM
-			// is durably recoverable, even though publication already returned.
-			if !w.checkpoint {
+			// The model needs imported positive discovery evidence, not a
+			// covering HWM. Neither return nor body proof alone replaces it.
+			if !w.floor.validFor(w.bound) {
 				before := p.kv.snapshot(w.key)
 				p.tick()
 				if !w.pending || p.kv.snapshot(w.key).revision != before.revision {
@@ -3267,42 +3397,70 @@ func TestPendingProtocolRestartAndCheckpointOrdering(t *testing.T) {
 			r.instanceID, r.kv, r.js = "restart-instance", p.kv, js
 			r.provCh = map[string]chan *subEvent{"p1": make(chan *subEvent, 8)}
 			r.seen = openSeen(js)
+			r.canonicalIndex.transport = pendingOwnerHistory{js: js}
 			t.Cleanup(r.seen.Flush)
 			p.kv.observe = nil
 			if err := r.loadCheckpoints(); err != nil {
 				t.Fatal(err)
 			}
 			prior := r.ackHWM
-			// TEST-ONLY restart transition: startup may claim the exact positive
-			// record, but checkpoint coverage alone is NOT a publication proof.
-			// Route even below-HWM live pending through the original publisher /
-			// SeenLedger path rather than production's current stale-delete path.
-			entries, err := r.pendingEntries("pending.>")
-			if err != nil {
+			// Use the real whole-observation/claim/remember/dispatch recovery path.
+			if err := r.recoverPending(); err != nil {
 				t.Fatal(err)
 			}
-			for _, entry := range entries {
-				e, err := decodePendingEntry(entry.key, entry.entry)
-				if err != nil {
-					t.Fatal(err)
+			if len(r.provCh["p1"]) == 0 {
+				// Applied/lost Delete has no live Put. A floor preserves discovery,
+				// not ACK1: actual source replay must recover the original input.
+				if prior != 0 || r.ackHWM != 0 || r.next != 1 || r.eofSent || r.subscriptionState.ref != w.bound || len(r.holes) != 0 {
+					t.Fatal("empty pending restore invented input/coverage")
 				}
-				r.mu.Lock()
-				s := r.stateForLocked(e.Sub)
-				owned, claimErr := r.claimPendingLocked(s, e, entry)
-				if claimErr == nil && owned {
-					s.pending[e.Num], s.pendingProvider[e.Num] = true, e.Provider
-					if !r.dispatchLocked(s, e) {
-						t.Fatal("restart dispatch unavailable")
+				original := durableSubscriptionNotification(t, "pending-owner", "p1", 1)
+				phase, eventReads := 0, 0
+				srv := httptest.NewServer(http.HandlerFunc(func(out http.ResponseWriter, req *http.Request) {
+					out.Header().Set("Content-Type", "application/fhir+json")
+					switch req.URL.Path {
+					case "/Subscription/pending-owner/$status":
+						out.Write(original)
+					case "/Subscription/pending-owner/$events":
+						eventReads++
+						if req.URL.Query().Get("eventsSinceNumber") != "1" || req.URL.Query().Get("eventsUntilNumber") != "1" {
+							t.Error("gap request lost exact original lower bound")
+						}
+						if phase == 0 {
+							out.WriteHeader(503)
+						} else if phase == 1 {
+							out.Write(durableSubscriptionNotification(t, "wrong-sub", "p1", 1))
+						} else {
+							out.Write(original)
+						}
+					default:
+						t.Errorf("wrong source recovery request: %s", req.URL.String())
+						out.WriteHeader(404)
 					}
-					if s.next <= e.Num {
-						s.next = e.Num + 1
+				}))
+				defer srv.Close()
+				r.base, r.http = srv.URL, srv.Client()
+				r.pollStatusFor(&r.subscriptionState)
+				for phase = 0; phase < 3; phase++ {
+					r.subscriptionState.gapSince = time.Now().Add(-gapWait)
+					r.checkGapFor(&r.subscriptionState)
+					if phase < 2 && (r.ackHWM != 0 || r.next != 1 || r.eofSent || len(r.holes) != 0 || len(r.provCh["p1"]) != 0) {
+						t.Fatal("unavailable/wrong source fabricated recovery")
 					}
 				}
-				r.mu.Unlock()
-				if claimErr != nil || !owned {
-					t.Fatalf("restart claim: %v owned=%v", claimErr, owned)
+				if eventReads != 3 || atomic.LoadInt64(r.stats_("gap_identity_errors")) != 1 || atomic.LoadInt64(r.stats_("gap_events")) != 1 {
+					t.Fatalf("actual gap recovery controls not exercised: requests=%d identity-errors=%d recovered=%d", eventReads, atomic.LoadInt64(r.stats_("gap_identity_errors")), atomic.LoadInt64(r.stats_("gap_events")))
 				}
 			}
+			if len(r.provCh["p1"]) != 1 {
+				t.Fatal("restart did not recover exactly one real input")
+			}
+			recovered := <-r.provCh["p1"]
+			rw := recovered.work
+			if rw == nil || rw.state != &r.subscriptionState || r.work[1] != rw || !r.holes[rw] || !rw.local || rw.positionRef != w.bound || rw.event.Key != w.key || rw.event.Revision == 0 || !samePendingPayload(recovered, &w.event) {
+				t.Fatal("restart dispatch bypassed tracked production admission")
+			}
+			r.provCh["p1"] <- recovered
 			if r.ackHWM < prior || r.subscriptionState.ref != w.bound {
 				t.Fatal("restart lost source identity or moved checkpoint backwards")
 			}

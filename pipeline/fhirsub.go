@@ -140,6 +140,7 @@ type SubConsumer struct {
 	subscriptionState // default state retains the existing single-subscription test/status surface
 	subscriptions     map[string]*subscriptionState
 
+	phaseDiagnostics    *phaseDiagnostics // observational only; never serialized in protocol state
 	canonicalIndex      canonicalHistoryIndex
 	knownWork           []canonicalTask
 	knownTasks          map[canonicalTask]bool
@@ -288,6 +289,9 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 		}
 		return
 	})
+	if runDir != "" {
+		c.observePhases()
+	} // existing status/failure observation path, before workers
 	c.seen = openSeen(js)
 	c.seen.CatchUp(js, "FHIR", 4*seenQueue)
 	if err := c.loadCheckpoints(); err != nil {
@@ -582,6 +586,11 @@ func (c *SubConsumer) alreadyHave(ref string, n int64) bool {
 }
 
 func (c *SubConsumer) processInboxMessage(msg jetstream.Msg) error {
+	start := c.phaseDiagnostics.phaseStart(diagAdmission)
+	defer c.phaseDiagnostics.phaseEnd(diagAdmission, start)
+	if c.phaseDiagnostics != nil {
+		msg = phaseInboxMsg{Msg: msg, d: c.phaseDiagnostics}
+	}
 	if meta, err := msg.Metadata(); err == nil && meta.NumDelivered > 1 {
 		atomic.AddInt64(c.stats_("replayed_notifications"), 1)
 	}
@@ -709,6 +718,8 @@ func (c *SubConsumer) matchesPendingLocked(s *subscriptionState, w *pendingWork,
 
 // recoverPending restores every durable subscription reorder set and claims records with compare-and-swap ownership.
 func (c *SubConsumer) recoverPending() error {
+	start := c.phaseDiagnostics.phaseStart(diagRecovery)
+	defer c.phaseDiagnostics.phaseEnd(diagRecovery, start)
 	c.replayMu.Lock()
 	defer c.replayMu.Unlock()
 	epoch := c.beginPendingScan()
@@ -812,6 +823,8 @@ func decodePendingEntry(key string, entry jetstream.KeyValueEntry) (*subEvent, e
 }
 
 func (c *SubConsumer) recoverPendingFor(ref string) error {
+	start := c.phaseDiagnostics.phaseStart(diagRecovery)
+	defer c.phaseDiagnostics.phaseEnd(diagRecovery, start)
 	c.replayMu.Lock()
 	defer c.replayMu.Unlock()
 	epoch := c.beginPendingScan()
@@ -972,9 +985,12 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 				continue
 			}
 			if !w.local || (!matched && !c.bindInactiveDefaultLegacyLocked(s, w, e, observations[n])) {
-				// Retain the positively observed replacement independently of
-				// the old publisher. This path never claims or deletes it.
-				c.rememberPendingLocked(s, e, false)
+				// Retain a different positive replacement, but reuse an exact
+				// already-retained foreign generation. Observation is not ownership
+				// or completion; repeated scans must not clone its hole/body.
+				if w.local || !matched || e.origin == nil || w.origin.Sub != e.origin.Sub || w.origin.Revision != e.origin.Revision || !bytes.Equal(w.origin.Raw, e.origin.Raw) {
+					c.rememberPendingLocked(s, e, false)
+				}
 				c.mu.Unlock()
 				return fmt.Errorf("conflicting local pending generation for %s event %d", s.ref, n)
 			}
@@ -1830,6 +1846,7 @@ func (c *SubConsumer) statusLoop() {
 		c.mu.Unlock()
 		st["stats"], st["published"], st["nats_dup_suppressed"] = s, atomic.LoadInt64(&c.published), atomic.LoadInt64(&c.pubDup)
 		st["already_ingested_dropped"] = atomic.LoadInt64(&c.replays)
+		st["phase_diagnostics"] = c.phaseSnapshot()
 		writeStatus(c.runDir, "fhirsub", st)
 		writeStatus(c.runDir, "fhirsub-pid"+strconv.Itoa(os.Getpid()), st)
 		time.Sleep(300 * time.Millisecond)

@@ -317,6 +317,12 @@ func (c *SubConsumer) finishCanonicalAttempt(ctx context.Context, w *canonicalAt
 }
 
 func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork, allowWire bool) canonicalAttemptTurn {
+	var observer *phaseDiagnostics
+	if c != nil {
+		observer = c.phaseDiagnostics
+	}
+	start := observer.phaseStart(diagCanonical)
+	defer observer.phaseEnd(diagCanonical, start)
 	blocked := func(r canonicalResult, err error) canonicalAttemptTurn {
 		return canonicalAttemptTurn{Result: canonicalCloneResult(r), Hole: err.Error()}
 	}

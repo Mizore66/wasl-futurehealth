@@ -360,6 +360,8 @@ func (c *SubConsumer) queueHistoryTasks() {
 // Only the operation token owner touches canonical/message/result state outside
 // c.mu. Assistance and publishers use this exact same reservation.
 func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
+	start := c.phaseDiagnostics.phaseStart(diagLive)
+	defer c.phaseDiagnostics.phaseEnd(diagLive, start)
 	c.mu.Lock()
 	if w == nil || w.completed || w.inflight {
 		c.mu.Unlock()
@@ -368,6 +370,9 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	w.inflight = true
 	w.attempt++
 	token := w.attempt
+	if c.phaseDiagnostics != nil && token > 1 {
+		c.phaseDiagnostics.retries.Add(1)
+	}
 	allowWire := w.providerOwned && c.providerHeads[w.event.Provider] == w && !w.returnApplied
 	c.mu.Unlock()
 	defer func() {
@@ -427,6 +432,9 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	}
 	if w.result.Result.Returned && !w.returnApplied && !w.recovery && w.positionRef == w.state.positionRef && w.positionRef == w.state.ref {
 		w.returnApplied = true
+		if c.phaseDiagnostics != nil {
+			c.phaseDiagnostics.returned.Add(1)
+		}
 		w.published = w.result.Result.ReturnKind == canonicalReturnFresh
 		atomic.AddInt64(&c.published, 1)
 		if w.result.Result.ReturnKind == canonicalReturnDuplicate {
@@ -437,6 +445,14 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 		}
 		w.state.acked[w.event.Num] = true
 		c.advanceLocked(w.state)
+	}
+	if c.phaseDiagnostics != nil {
+		if w.completed {
+			c.phaseDiagnostics.retired.Add(1)
+		}
+		if err != nil || w.result.Hole != "" {
+			c.phaseDiagnostics.unknownTurns.Add(1)
+		}
 	}
 	c.mu.Unlock()
 }
@@ -564,6 +580,8 @@ func (c *SubConsumer) matchesPendingMutationLocked(s *subscriptionState, w *pend
 }
 
 func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) error {
+	start := c.phaseDiagnostics.phaseStart(diagRetirement)
+	defer c.phaseDiagnostics.phaseEnd(diagRetirement, start)
 	if !w.result.Receipt.valid() || !w.result.Binding.valid() || !w.floor.validFor(w.state.ref) {
 		return errCanonicalUnknown
 	}

@@ -1730,6 +1730,8 @@ func snapshotFailureReport(ctx context.Context, js jetstream.JetStream, run stri
 	report["consumers"] = consumers
 	report["sampled_reviewer"] = snapshotOperationalStatus(run, "reviewer", "last_out_seq", "answered", "wrong", "deduped_second_id", "deduped_link")
 	report["sampled_linker"] = snapshotOperationalStatus(run, "linker", "processed", "inflight", "pub_retries")
+	report["subscription_phase_diagnostics"] = snapshotPhaseDiagnostics(run)
+	report["subscription_phase_legend"] = map[string]any{"operations": phaseOperationNames, "phases": phaseNames, "outcomes": [diagOutcomeCount]string{"success", "missing", "conflict", "deadline", "canceled", "invalid", "unavailable", "unknown"}, "limits": "16 rolling samples plus first; 8 configured provider ordinals plus overflow; atomic totals are approximate concurrent observations; phases include nested work; list timing covers lister creation, not iteration; unlisted operations are unmeasured; phase outcomes count function returns, not semantic success; unresolved turns and repeat turns are separate counters"}
 	report["sampled_subscription"] = snapshotOperationalStatus(run, "fhirsub", "ack_hwm", "max_seen", "next", "buffered", "done", "feed_off", "eof_sent", "stats.durable_pending")
 	report["sampled_mock"] = snapshotOperationalStatus(run, "malaffi", "events", "released", "stats.posted_heartbeat")
 	if kv, err := js.KeyValue(ctx, "REVIEWER"); err == nil {

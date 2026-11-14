@@ -166,7 +166,7 @@ test.describe("Patients", () => {
     await noSeriousAxe(page);
 
     await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" }).click();
-    await expect(page).toHaveURL(/state=closed/);
+    await expect(page).toHaveURL(/closed=true/);
     await expect(page.getByTestId("showing")).toContainText("cases: closed");
     await expect(page.locator("tbody tr").first()).toContainText("Closed day");
   });

@@ -72,6 +72,9 @@ func crcNeedID(loop string, o crcObligation, outcome string) string {
 // evidence arrival/report lexical order is not.
 func crcChildIDForNeed(f *LoopFacts, disposition, needID string) string {
 	base := crcChildLoopID(f.LoopID, disposition)
+	if base == "" {
+		return "" // A no-child disposition stays absent at every cardinality.
+	}
 	for _, s := range f.Signoffs {
 		if s.Purpose != CRCDispositionPurpose || crcDispositionFromAnswer(s.Evidence) != disposition || CheckSignoff(&s, DualMerge) != nil {
 			continue
