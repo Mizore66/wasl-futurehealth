@@ -287,9 +287,29 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				lab, h := labelOf(r)
 				if lab == "" {
 					raise(r, "evidence")
-					holdRow = &notes[i]
-					state = "open"
+					if state != "not_assessable" {
+						holdRow = &notes[i]
+						state = "open"
+						// The unread barrier still forbids later automatic closure, but
+						// cannot hide a trusted no-view hold in the current facts (#150).
+						for j := i + 1; j < len(notes); j++ {
+							if !notes[j].trusted {
+								continue
+							}
+							if label, _ := labelOf(notes[j]); label == "not_assessable" {
+								state, holdRow = "not_assessable", &notes[j]
+								dd.Clinic, dd.Outcome = notes[j].d.ReportID, label
+								break
+							}
+						}
+					}
 					break // an unread earlier note blocks a decision on a later one
+				}
+				// A hold from a current trusted no-view fact survives any later outcome that is
+				// neither a no-view affirmation nor a qualifying exam (#150). Written as the
+				// complement of the two proceed classes so no other label can overwrite it.
+				if state == "not_assessable" && lab != "not_assessable" && !drClosingClinic(lab) {
+					continue
 				}
 				dd.Clinic, dd.Outcome = r.d.ReportID, lab
 				switch {
@@ -396,7 +416,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	switch rec.Action {
 	case DRRefer:
-		d.Overdue = (state == "open" || state == "no_show") && now > dd.DeadlineDay
+		d.Overdue = (state == "open" || state == "no_show" || state == "not_assessable") && now > dd.DeadlineDay
 	case DRRepeatPhoto:
 		d.Overdue = state == "open" && now > dd.DeadlineDay
 	}
