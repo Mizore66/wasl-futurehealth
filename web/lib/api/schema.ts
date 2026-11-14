@@ -243,7 +243,7 @@ export const BookingSummarySlot = z.looseObject({
 });
 
 /** Server-replayed simulated reservation state. No provider or patient system is involved. */
-export const BookingSummary = z.looseObject({
+const BookingSummaryObject = z.looseObject({
   status: z.enum(["unreserved", "reserved", "cancelled"]),
   mode: z.literal("simulated"),
   revision: z.number().int().nonnegative(),
@@ -253,6 +253,15 @@ export const BookingSummary = z.looseObject({
   updated_at: z.string().nullable(),
   updated_event: z.string().nullable(),
 });
+
+// Redacted exports omit nullable objects. Restore only an absent, explicitly unreserved slot.
+export const BookingSummary = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)
+      && "status" in value && value.status === "unreserved" && !("slot" in value)) {
+    return { ...value, slot: null };
+  }
+  return value;
+}, BookingSummaryObject);
 
 export const EligibleBookingSlot = z.looseObject({
   slot_id: z.string(),
