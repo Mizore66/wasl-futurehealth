@@ -95,7 +95,7 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
     id: `preview-${s.item}`,
     kind: "current",
     who: SIGNER.name,
-    what: `preview, not saved: ${signWords(s.decision)} (as ${roleFor(s.decision)})`,
+    what: `preview, not saved: ${signWords(s.decision, view.items.scoped)} (as ${roleFor(s.decision)})`,
     when: "not saved",
   }));
   return [...view.trail, ...preview, { id: "now", kind: "current", ...now, when: done ? "if saved" : "waiting" }];
@@ -148,6 +148,7 @@ function QuestionCard({
     return [label, display];
   });
   const title = link ? "Is it the same patient?" : view.evidenceQuestion;
+  const scoped = !link && Boolean(view.items.scoped);
   return (
     <section
       aria-labelledby={`${id}-h`}
@@ -204,7 +205,7 @@ function QuestionCard({
         <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 mt-2 list-none p-0 text-small">
           {reads.map((r) => (
             <li key={r.hash ?? r.read} className="py-0.5" data-read={r.read}>
-              {readLine(r, state.question)}
+              {readLine(r, state.question, scoped)}
               {r.hash && (
                 <>
                   {" "}
@@ -220,12 +221,12 @@ function QuestionCard({
 
       {state.state === "resolved_agreed" && state.final_decision && (
         <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Both reads agree: {answerWords(state.final_decision, state.question)}. No senior form is needed.
+          Both reads agree: {answerWords(state.final_decision, state.question, scoped)}. No senior form is needed.
         </p>
       )}
       {state.state === "resolved_senior" && state.final_decision && (
         <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Senior resolution: {answerWords(state.final_decision, state.question)}.
+          Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
         </p>
       )}
       {terminal && <p className="m-0 mt-1 text-small text-muted">Case data is unchanged: this is a demo overlay, not a canonical decision.</p>}
@@ -257,6 +258,7 @@ function QuestionCard({
                   ? "Answer independently. You cannot see the first answer until you submit."
                   : "Answer first. The second reader will not see your answer until they have submitted theirs."}
               {!link && view.disputed.length > 0 ? ` The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}.` : ""}
+              {scoped && view.disputed.length > 0 ? " Your answer settles only this question; the other checks stay open." : ""}
             </p>
             {link ? (
               <Chips
@@ -676,7 +678,14 @@ export function ReviewDesk({
               )}
               {progress && (
                 <p className="m-0 text-small text-muted" data-testid="progress">
-                  {progress}. {resolved ? "Every question is resolved." : "The item stays open until every question is resolved."}
+                  {progress}.{" "}
+                  {view.items.scoped
+                    ? resolved
+                      ? "This question is resolved. Histology and other checks still decide the case."
+                      : "The item stays open until this question is resolved."
+                    : resolved
+                      ? "Every question is resolved."
+                      : "The item stays open until every question is resolved."}
                 </p>
               )}
               {resolved && (
@@ -725,7 +734,7 @@ export function ReviewDesk({
                       </legend>
                       <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
                         {view.disputed.length > 0
-                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}. `
+                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question; the other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
                           : "Use the exact programme evidence label. "}
                         Preview as clinician: {SIGNER.name}
                         {hasLink ? ", the same person as question 1" : ""}.
@@ -814,7 +823,7 @@ export function ReviewDesk({
           <SealedChain
             nodes={
               live
-                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "Case data" : "Two independent reads", what: resolved ? "no downstream effect inferred" : "still being answered", when: resolved ? "resolved" : "waiting" }]
+                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "Case data" : "Two independent reads", what: resolved ? "no downstream effect inferred" : "still being answered", when: resolved ? (view.items.scoped ? "this question resolved" : "resolved") : "waiting" }]
                 : previewTrail(view, draft, done)
             }
             className="mt-3"

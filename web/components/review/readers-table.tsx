@@ -81,7 +81,7 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
             </span>
             <span className="flex items-center">
               <Label>Decision</Label>
-              <Decision check={c} signed={signed} />
+              <Decision check={c} signed={view.evidenceField && c.field !== view.evidenceField ? undefined : signed} />
             </span>
           </div>
         ))}

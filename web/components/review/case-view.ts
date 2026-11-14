@@ -9,10 +9,12 @@ import type { ReviewItems } from "./decision";
 /** CRC evidence items raised for one narrow decision; any other reason is the ordinary report-adequacy review. */
 export const CRC_PURPOSES = {
   prep_ungraded_day15: {
+    field: "Prep graded",
     question: "Was the bowel preparation adequate?",
     scope: "This answer settles only this question: the bowel preparation. Histology and other closure requirements can still keep the case open.",
   },
   completion_undocumented: {
+    field: "Caecum reached",
     question: "Was the caecum reached?",
     scope: "This answer settles only this question: whether the caecum was reached. Histology and other closure requirements can still keep the case open.",
   },
@@ -48,6 +50,8 @@ export type ReviewView = {
   evidenceQuestion: string;
   /** Set when the evidence item asks one narrow CRC question; the answer does not decide whole-case closure. */
   evidenceScope?: string;
+  /** The one check row a narrow answer settles; every other disputed row (histology included) stays open. */
+  evidenceField?: string;
   evidenceChoices: string[];
   /** The evidence item was raised on photographic evidence: photos are shown, or their absence is said. */
   imageBacked: boolean;
@@ -227,6 +231,7 @@ export function reviewView(c: CaseDetail): ReviewView {
     programme,
     evidenceQuestion,
     evidenceScope: purpose && CRC_PURPOSES[purpose].scope,
+    evidenceField: purpose && CRC_PURPOSES[purpose].field,
     evidenceChoices: [...evidenceChoices],
     imageBacked,
     photos: imageBacked && evidenceItem

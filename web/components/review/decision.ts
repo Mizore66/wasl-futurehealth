@@ -11,7 +11,7 @@ export type IdentityAnswer = "same" | "different";
 export type ReportAnswer = string;
 export type Draft = { identity?: IdentityAnswer; report?: ReportAnswer };
 
-export type OutcomeKey = "close" | "inadequate" | "evidence" | "linkSame" | "ask" | "notSame" | "scoped";
+export type OutcomeKey = "close" | "inadequate" | "evidence" | "linkSame" | "ask" | "notSame" | "scoped" | "scopedNo";
 
 /** The review items this case raised, by the question they answer. */
 export type ReviewItems = { link?: string; evidence?: string; /** The evidence item asks one narrow question, so "adequate" does not mean the case closes. */ scoped?: boolean };
@@ -31,7 +31,7 @@ export function outcomeOf(draft: Draft, items: ReviewItems = { link: "link", evi
   const linkAnswered = !items.link || draft.identity === "same";
   if (items.evidence && draft.report && draft.report !== "ask" && linkAnswered) {
     if (draft.report === "adequate") return items.scoped ? "scoped" : "close";
-    if (draft.report === "inadequate") return "inadequate";
+    if (draft.report === "inadequate") return items.scoped ? "scopedNo" : "inadequate";
     return "evidence";
   }
   if (items.link && draft.identity === "same") {
@@ -77,7 +77,9 @@ export const SIGNS: Record<string, string> = {
   inadequate: "report not adequate",
 };
 
-export const signWords = (decision: string) => SIGNS[decision] ?? `evidence ${decision}`;
+/** A narrow-purpose evidence answer settles its own question only, so it is never worded as a report verdict. */
+export const signWords = (decision: string, scoped = false) =>
+  scoped && (decision === "adequate" || decision === "inadequate") ? `${decision === "adequate" ? "adequate" : "not adequate"} for this question only` : (SIGNS[decision] ?? `evidence ${decision}`);
 
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   close: {
@@ -104,6 +106,17 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
     recordedText: "Adequate was appended to the demo review log for this question only. Histology and other requirements are still checked.",
     recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     answerCell: { word: "adequate, signed", tone: "positive" },
+  },
+  scopedNo: {
+    commit: "Sign: not adequate",
+    pill: "Demo answer appended",
+    preview: "Would record this answer only",
+    tone: "muted",
+    text: () => "Not adequate would be appended for this question only. Histology and other requirements are still checked, so no repeat booking or other effect is promised.",
+    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
+    recordedText: "Not adequate was appended to the demo review log for this question only. Histology and other requirements are still checked.",
+    recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
+    answerCell: { word: "not adequate, signed", tone: "negative" },
   },
   inadequate: {
     commit: "Sign: report not adequate",
@@ -312,7 +325,8 @@ export function stateHeadline(s: ReviewState): { text: string; tone: "positive" 
 }
 
 /** A decision as a sentence, keeping the programme's own evidence labels. CRC keeps its adequacy wording. */
-export function answerWords(decision: string, question: Question): string {
+export function answerWords(decision: string, question: Question, scoped = false): string {
+  if (scoped && question === "evidence" && (decision === "adequate" || decision === "inadequate")) return `${decision === "adequate" ? "Adequate" : "Not adequate"} for this question only`;
   if (decision === "same") return "Same patient";
   if (decision === "different") return "Not the same patient";
   if (decision === "adequate") return "Report adequate";
@@ -327,9 +341,9 @@ export function submittedReads(s: ReviewState): ReviewRead[] {
   return s.reads.filter((r) => r.submitted).sort((a, b) => (SLOT_ORDER[a.read] ?? 9) - (SLOT_ORDER[b.read] ?? 9));
 }
 
-export function readLine(r: ReviewRead, question: Question): string {
+export function readLine(r: ReviewRead, question: Question, scoped = false): string {
   const label = READ_LABEL[r.read];
-  return r.decision === undefined ? `${label}: submitted; the answer stays hidden until the second read` : `${label}: ${answerWords(r.decision, question)}`;
+  return r.decision === undefined ? `${label}: submitted; the answer stays hidden until the second read` : `${label}: ${answerWords(r.decision, question, scoped)}`;
 }
 
 /** The disputed-rows cell once the evidence question is final. Never set before a terminal state. */
