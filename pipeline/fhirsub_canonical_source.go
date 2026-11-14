@@ -95,14 +95,11 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, fmt.Errorf("%w: source read: %v", errCanonicalUnknown, err)
 	}
-	meta, err := canonicalPositiveRead(key, entry)
+	meta, value, err := canonicalPositiveValue(key, entry)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
-	record, err := parseCanonicalSourceRecord(key, meta.Value)
-	if err != nil {
-		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
-	}
+	record := value.source
 	if !record.Incarnation.equal(inc) {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("source incarnation changed")
 	}
@@ -121,11 +118,7 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 // converted to completion by another Get. At most one source->bound advance is
 // needed after losing an absent-key Create to a compatible source-only writer.
 func (c *SubConsumer) sourceRecordWrite(ctx context.Context, desired canonicalSourceRecord, expected uint64, allowAdvance bool) (canonicalMetadataReceipt, error) {
-	raw, err := marshalCanonicalSourceRecord(desired)
-	if err != nil {
-		return canonicalMetadataReceipt{}, err
-	}
-	result, err := c.ensureCanonicalValue(ctx, canonicalSourceKey(desired.Source), expected, raw)
+	result, err := c.ensureCanonicalSourceValue(ctx, expected, desired)
 	if err == nil || !errors.Is(err, errCanonicalConflict) {
 		return result, err
 	}
@@ -197,14 +190,11 @@ func (c *SubConsumer) canonicalDurableSourceProof(ctx context.Context, inc canon
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, fmt.Errorf("%w: durable canonical receipt read: %v", errCanonicalUnknown, err)
 	}
-	current, err := canonicalPositiveRead(proof.Key, entry)
+	current, value, err := canonicalPositiveValue(proof.Key, entry)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, err
 	}
-	stored, err := parseCanonicalCell(current.Key, current.Value)
-	if err != nil {
-		return canonicalMetadataReceipt{}, canonicalReceipt{}, err
-	}
+	stored := value.cell
 	if stored.Phase != canonicalPhaseReceipt || current.Revision < proof.Revision ||
 		(current.Revision == proof.Revision && !bytes.Equal(current.Value, proof.Value)) {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, canonicalConflictf("receipt authority is not a durable compatible revision")

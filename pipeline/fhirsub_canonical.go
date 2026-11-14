@@ -889,27 +889,41 @@ func parseCanonicalSourceRecord(key string, raw []byte) (canonicalSourceRecord, 
 	return r, nil
 }
 
+// A parsed value is local to ONE operation, never cached across a Get, turn,
+// revision or generation. Validate each complete byte value against its exact key
+// once, then use that same decoded value for fingerprint/transition decisions.
+// This retains every independent positive read and operation acknowledgement.
+type canonicalValue struct {
+	cell   canonicalCell
+	source canonicalSourceRecord
+}
+
+func parseCanonicalValue(key string, raw []byte) (canonicalValue, error) {
+	var value canonicalValue
+	var err error
+	switch {
+	case strings.HasPrefix(key, canonicalCellPrefix):
+		value.cell, err = parseCanonicalCell(key, raw)
+	case strings.HasPrefix(key, canonicalSourcePrefix):
+		value.source, err = parseCanonicalSourceRecord(key, raw)
+	default:
+		err = fmt.Errorf("%w: %q is not a canonical metadata key", errCanonicalInvalid, key)
+	}
+	return value, err
+}
+
+func (v canonicalValue) fingerprint() string {
+	if v.cell.Receipt != nil {
+		return v.cell.Receipt.Fingerprint
+	}
+	return v.source.CoreFingerprint
+}
+
 // canonicalValueFingerprint validates a stored value against its exact key and
 // returns the receipt fingerprint it carries, if its phase has one.
 func canonicalValueFingerprint(key string, raw []byte) (string, error) {
-	switch {
-	case strings.HasPrefix(key, canonicalCellPrefix):
-		c, err := parseCanonicalCell(key, raw)
-		if err != nil {
-			return "", err
-		}
-		if c.Receipt != nil {
-			return c.Receipt.Fingerprint, nil
-		}
-		return "", nil
-	case strings.HasPrefix(key, canonicalSourcePrefix):
-		r, err := parseCanonicalSourceRecord(key, raw)
-		if err != nil {
-			return "", err
-		}
-		return r.CoreFingerprint, nil
-	}
-	return "", fmt.Errorf("%w: %q is not a canonical metadata key", errCanonicalInvalid, key)
+	value, err := parseCanonicalValue(key, raw)
+	return value.fingerprint(), err
 }
 
 func (r canonicalMetadataReceipt) valid() bool {
@@ -924,14 +938,20 @@ func (r canonicalMetadataReceipt) valid() bool {
 // canonicalPositiveRead turns an exact positive KV entry into operation authority.
 // The revision is metadata authority only, never a stream sequence.
 func canonicalPositiveRead(key string, e jetstream.KeyValueEntry) (canonicalMetadataReceipt, error) {
+	meta, _, err := canonicalPositiveValue(key, e)
+	return meta, err
+}
+
+func canonicalPositiveValue(key string, e jetstream.KeyValueEntry) (canonicalMetadataReceipt, canonicalValue, error) {
 	if e == nil || e.Key() != key || e.Revision() == 0 || e.Operation() != jetstream.KeyValuePut {
-		return canonicalMetadataReceipt{}, fmt.Errorf("%w: entry is not a positive revision of %q", errCanonicalInvalid, key)
+		return canonicalMetadataReceipt{}, canonicalValue{}, fmt.Errorf("%w: entry is not a positive revision of %q", errCanonicalInvalid, key)
 	}
-	fp, err := canonicalValueFingerprint(key, e.Value())
+	raw := bytes.Clone(e.Value())
+	value, err := parseCanonicalValue(key, raw)
 	if err != nil {
-		return canonicalMetadataReceipt{}, err
+		return canonicalMetadataReceipt{}, canonicalValue{}, err
 	}
-	return canonicalMetadataReceipt{Key: key, Revision: e.Revision(), Value: bytes.Clone(e.Value()), CoreFingerprint: fp, Authority: canonicalAuthPositive}, nil
+	return canonicalMetadataReceipt{Key: key, Revision: e.Revision(), Value: raw, CoreFingerprint: value.fingerprint(), Authority: canonicalAuthPositive}, value, nil
 }
 
 // canonicalTransitionKind classifies a proposed replacement of a stored value.
@@ -952,20 +972,22 @@ func canonicalConflictf(format string, a ...any) error {
 // permits a write. Phases only advance (attempt->receipt, source->bound); a stored
 // stronger or conflicting record is never replaced.
 func canonicalClassifyTransition(key string, old, desired []byte) (canonicalTransitionKind, error) {
-	if _, err := canonicalValueFingerprint(key, old); err != nil {
+	o, err := parseCanonicalValue(key, old)
+	if err != nil {
 		return 0, canonicalConflictf("%q holds a value that is not a valid canonical record: %v", key, err)
 	}
-	identical := bytes.Equal(old, desired)
+	n, err := parseCanonicalValue(key, desired)
+	if err != nil {
+		return 0, err
+	}
+	return classifyCanonicalValues(key, o, n, bytes.Equal(old, desired))
+}
+
+// Inputs are the exact complete values already validated within this operation.
+func classifyCanonicalValues(key string, old, desired canonicalValue, identical bool) (canonicalTransitionKind, error) {
 	switch {
 	case strings.HasPrefix(key, canonicalCellPrefix):
-		o, err := parseCanonicalCell(key, old)
-		if err != nil {
-			return 0, err
-		}
-		n, err := parseCanonicalCell(key, desired)
-		if err != nil {
-			return 0, err
-		}
+		o, n := old.cell, desired.cell
 		switch {
 		case o.Phase == canonicalPhaseAttempt && n.Phase == canonicalPhaseAttempt:
 			if identical {
@@ -993,14 +1015,7 @@ func canonicalClassifyTransition(key string, old, desired []byte) (canonicalTran
 			return canonicalTransitionKeep, nil
 		}
 	case strings.HasPrefix(key, canonicalSourcePrefix):
-		o, err := parseCanonicalSourceRecord(key, old)
-		if err != nil {
-			return 0, err
-		}
-		n, err := parseCanonicalSourceRecord(key, desired)
-		if err != nil {
-			return 0, err
-		}
+		o, n := old.source, desired.source
 		if !o.Incarnation.equal(n.Incarnation) || o.Source != n.Source {
 			return 0, canonicalConflictf("source record incarnation or descriptor changed")
 		}
@@ -1025,10 +1040,47 @@ func (c *SubConsumer) ensureCanonicalValue(ctx context.Context, key string, expe
 	if c == nil || c.kv == nil {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: no metadata store", errCanonicalUnavailable)
 	}
-	fp, err := canonicalValueFingerprint(key, desired)
+	value, err := parseCanonicalValue(key, desired)
 	if err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
+	return c.ensureCanonicalParsedValue(ctx, key, expected, desired, value)
+}
+
+// Typed local builders validate the SAME complete schema and exact derived key
+// before serialization. No raw stored/input bytes enter this path without strict
+// parsing. Avoid serializing a validated local object just to decode it again;
+// current stored values are still independently read, parsed and CAS-checked.
+func (c *SubConsumer) ensureCanonicalCellValue(ctx context.Context, expected uint64, cell canonicalCell) (canonicalMetadataReceipt, error) {
+	key := canonicalCellKey(cell.Identity)
+	if err := cell.validate(key); err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	raw, err := json.Marshal(cell)
+	if err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	return c.ensureCanonicalParsedValue(ctx, key, expected, raw, canonicalValue{cell: cell})
+}
+
+func (c *SubConsumer) ensureCanonicalSourceValue(ctx context.Context, expected uint64, source canonicalSourceRecord) (canonicalMetadataReceipt, error) {
+	key := canonicalSourceKey(source.Source)
+	if err := source.validate(key); err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	raw, err := json.Marshal(source)
+	if err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	return c.ensureCanonicalParsedValue(ctx, key, expected, raw, canonicalValue{source: source})
+}
+
+func (c *SubConsumer) ensureCanonicalParsedValue(ctx context.Context, key string, expected uint64, desired []byte, value canonicalValue) (canonicalMetadataReceipt, error) {
+	if c == nil || c.kv == nil {
+		return canonicalMetadataReceipt{}, fmt.Errorf("%w: no metadata store", errCanonicalUnavailable)
+	}
+	var err error
+	fp := value.fingerprint()
 	if err := ctx.Err(); err != nil {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: %v", errCanonicalUnknown, err)
 	}
@@ -1041,15 +1093,19 @@ func (c *SubConsumer) ensureCanonicalValue(ctx context.Context, key string, expe
 		if err != nil {
 			return canonicalMetadataReceipt{}, fmt.Errorf("%w: positive read before update failed (%v)", errCanonicalUnknown, err)
 		}
-		if old == nil || old.Revision() == 0 || old.Operation() != jetstream.KeyValuePut {
-			return canonicalMetadataReceipt{}, fmt.Errorf("%w: no positive revision to update", errCanonicalUnknown)
+		if old == nil || old.Key() != key || old.Revision() == 0 || old.Operation() != jetstream.KeyValuePut {
+			return canonicalMetadataReceipt{}, fmt.Errorf("%w: no exact positive revision to update", errCanonicalUnknown)
 		}
-		kind, err := canonicalClassifyTransition(key, old.Value(), desired)
+		meta, stored, err := canonicalPositiveValue(key, old)
+		if err != nil {
+			return canonicalMetadataReceipt{}, canonicalConflictf("invalid stored canonical value: %v", err)
+		}
+		kind, err := classifyCanonicalValues(key, stored, value, bytes.Equal(meta.Value, desired))
 		if err != nil {
 			return canonicalMetadataReceipt{}, err
 		}
 		if kind == canonicalTransitionKeep {
-			return canonicalPositiveRead(key, old)
+			return meta, nil
 		}
 	}
 	var rev uint64
@@ -1071,19 +1127,24 @@ func (c *SubConsumer) ensureCanonicalValue(ctx context.Context, key string, expe
 	if err != nil {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: write failed (%v) and positive read failed (%v)", errCanonicalUnknown, writeErr, err)
 	}
-	if entry == nil || entry.Revision() == 0 || entry.Operation() != jetstream.KeyValuePut {
-		return canonicalMetadataReceipt{}, fmt.Errorf("%w: write failed (%v) and no positive revision exists", errCanonicalUnknown, writeErr)
+	if entry == nil || entry.Key() != key || entry.Revision() == 0 || entry.Operation() != jetstream.KeyValuePut {
+		return canonicalMetadataReceipt{}, fmt.Errorf("%w: write failed (%v) and no exact positive revision exists", errCanonicalUnknown, writeErr)
 	}
+	current, stored, readErr := canonicalPositiveValue(key, entry)
+	if readErr != nil {
+		return canonicalMetadataReceipt{}, canonicalConflictf("invalid stored canonical value: %v", readErr)
+	}
+	identical := bytes.Equal(current.Value, desired)
 	var keep bool
-	if !bytes.Equal(entry.Value(), desired) {
-		if kind, cerr := canonicalClassifyTransition(key, entry.Value(), desired); cerr == nil && kind == canonicalTransitionKeep {
+	if !identical {
+		if kind, cerr := classifyCanonicalValues(key, stored, value, false); cerr == nil && kind == canonicalTransitionKeep {
 			keep = true
 		}
 	}
 	switch {
 	case keep && (expected == 0 || entry.Revision() != expected):
-		return canonicalPositiveRead(key, entry)
-	case bytes.Equal(entry.Value(), desired):
+		return current, nil
+	case identical:
 		rev, err := c.kv.Update(ctx, key, desired, entry.Revision())
 		if err != nil || rev == 0 {
 			return canonicalMetadataReceipt{}, fmt.Errorf("%w: intended value is visible but not confirmed (%v)", errCanonicalUnknown, err)

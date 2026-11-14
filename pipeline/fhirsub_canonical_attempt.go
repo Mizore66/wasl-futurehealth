@@ -134,14 +134,11 @@ func (c *SubConsumer) readCanonicalAttemptCell(ctx context.Context, w *canonical
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalCell{}, false, fmt.Errorf("%w: cell read: %v", errCanonicalUnknown, err)
 	}
-	meta, err := canonicalPositiveRead(key, entry)
+	meta, value, err := canonicalPositiveValue(key, entry)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalCell{}, false, err
 	}
-	cell, err := parseCanonicalCell(key, meta.Value)
-	if err != nil {
-		return canonicalMetadataReceipt{}, canonicalCell{}, false, err
-	}
+	cell := value.cell
 	if cell.Identity != w.input.Source.Identity {
 		return canonicalMetadataReceipt{}, canonicalCell{}, false, canonicalConflictf("cell body/full identity differs")
 	}
@@ -160,14 +157,11 @@ func (c *SubConsumer) canonicalAttemptSource(ctx context.Context, w *canonicalAt
 	if err != nil {
 		return fmt.Errorf("%w: original attempt source unavailable: %v", errCanonicalUnknown, err)
 	}
-	meta, err := canonicalPositiveRead(a.SourceKey, entry)
+	_, value, err := canonicalPositiveValue(a.SourceKey, entry)
 	if err != nil {
 		return err
 	}
-	source, err := parseCanonicalSourceRecord(meta.Key, meta.Value)
-	if err != nil {
-		return err
-	}
+	source := value.source
 	if !source.Incarnation.equal(w.input.Incarnation) || source.Source.Identity != w.input.Source.Identity {
 		return canonicalConflictf("original attempt source identity/incarnation")
 	}
@@ -305,10 +299,8 @@ func (c *SubConsumer) finishCanonicalAttempt(ctx context.Context, w *canonicalAt
 		}
 		return out
 	}
-	raw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: w.input.Source.Identity, Receipt: w.result.Proof})
-	if err == nil {
-		out.Receipt, err = c.ensureCanonicalValue(ctx, canonicalCellKey(w.input.Source.Identity), meta.Revision, raw)
-	}
+	var err error
+	out.Receipt, err = c.ensureCanonicalCellValue(ctx, meta.Revision, canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: w.input.Source.Identity, Receipt: w.result.Proof})
 	if err == nil {
 		out.Binding, err = c.bindCanonicalSource(ctx, w.input.Incarnation, w.input.Source, out.Receipt, canonicalAttemptLink(w, out.Receipt))
 	}
@@ -475,15 +467,11 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 		return blocked(w.result, err)
 	}
 	// Strict nonzero operation ACK, including reconciling loaded/ambiguous bytes.
-	raw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: w.input.Source.Identity, Attempt: w.attempt})
-	if err != nil {
-		return blocked(w.result, err)
-	}
 	expected := meta.Revision
 	if w.attemptMeta.valid() {
 		expected = w.attemptMeta.Revision
 	}
-	acknowledged, err := c.ensureCanonicalValue(ctx, canonicalCellKey(w.input.Source.Identity), expected, raw)
+	acknowledged, err := c.ensureCanonicalCellValue(ctx, expected, canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: w.input.Source.Identity, Attempt: w.attempt})
 	if err != nil {
 		return blocked(w.result, err)
 	}

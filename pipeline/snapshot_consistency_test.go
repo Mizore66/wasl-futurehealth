@@ -147,25 +147,58 @@ func snapshotTestStream(name string, rows []LogMsg) *snapshotStream {
 // source reconstruction, model or cohort. Canonical workers remain independent.
 type snapshotLifecycleEntry struct {
 	jetstream.KeyValueEntry
-	body []byte
+	key      string
+	body     []byte
+	revision uint64
+	op       jetstream.KeyValueOp
 }
 
-func (e snapshotLifecycleEntry) Value() []byte { return e.body }
+func (e snapshotLifecycleEntry) Key() string                     { return e.key }
+func (e snapshotLifecycleEntry) Value() []byte                   { return bytes.Clone(e.body) }
+func (e snapshotLifecycleEntry) Revision() uint64                { return e.revision }
+func (e snapshotLifecycleEntry) Operation() jetstream.KeyValueOp { return e.op }
 
 type snapshotLifecycleKV struct {
 	jetstream.KeyValue
-	entries map[string][]byte
+	entries  map[string]snapshotLifecycleEntry
+	revision uint64
+}
+
+// Record actual acknowledged fixture writes. Get exposes that stored exact key,
+// operation and revision, not a guessed checkpoint key or invented read receipt.
+func (k *snapshotLifecycleKV) Put(ctx context.Context, key string, body []byte) (uint64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	if k.entries == nil {
+		k.entries = map[string]snapshotLifecycleEntry{}
+	}
+	k.revision++
+	k.entries[key] = snapshotLifecycleEntry{key: key, body: bytes.Clone(body), revision: k.revision, op: jetstream.KeyValuePut}
+	return k.revision, nil
+}
+
+func snapshotLifecycleStore(t *testing.T, entries map[string][]byte) *snapshotLifecycleKV {
+	t.Helper()
+	store := &snapshotLifecycleKV{}
+	for key, raw := range entries {
+		if _, err := store.Put(context.Background(), key, raw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return store
 }
 
 func (k *snapshotLifecycleKV) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	b, ok := k.entries[key]
+	entry, ok := k.entries[key]
 	if !ok {
 		return nil, jetstream.ErrKeyNotFound
 	}
-	return snapshotLifecycleEntry{body: b}, nil
+	entry.body = bytes.Clone(entry.body)
+	return entry, nil
 }
 
 type snapshotLifecycleKeys struct{ keys <-chan string }
@@ -214,7 +247,7 @@ func snapshotFiniteFixture(t *testing.T) (*snapshotLifecycleJS, string) {
 	t.Helper()
 	base, run := snapshotFixture(t)
 	js := &snapshotLifecycleJS{snapshotJS: base, stores: map[string]*snapshotLifecycleKV{
-		"FHIRSUB": {entries: map[string][]byte{checkpointKey("Subscription/finite"): canon(subscriptionCheckpoint{Sub: "finite", HWM: 1, Eof: true})}},
+		"FHIRSUB": snapshotLifecycleStore(t, map[string][]byte{checkpointKey("Subscription/finite"): canon(subscriptionCheckpoint{Sub: "finite", HWM: 1, Eof: true})}),
 	}}
 	writeStatus(run, "malaffi", map[string]any{"events": 1, "released": 1, "status": "off", "stats": map[string]int{"posted_heartbeat": 100}})
 	state := map[string]any{"ack_hwm": 1, "max_seen": 1, "next": 2, "buffered": 0, "feed_off": true, "eof_sent": true, "durable_pending": 0}
@@ -321,10 +354,14 @@ func TestSnapshotFiniteStopFailsClosed(t *testing.T) {
 			delete(j.stores["FHIRSUB"].entries, checkpointKey("Subscription/finite"))
 		},
 		"checkpoint_not_durable_through_source": func(j *snapshotLifecycleJS, _ string) {
-			j.stores["FHIRSUB"].entries[checkpointKey("Subscription/finite")] = canon(subscriptionCheckpoint{Sub: "finite", HWM: 0, Eof: true})
+			if _, err := j.stores["FHIRSUB"].Put(context.Background(), checkpointKey("Subscription/finite"), canon(subscriptionCheckpoint{Sub: "finite", HWM: 0, Eof: true})); err != nil {
+				t.Fatal(err)
+			}
 		},
 		"checkpoint_missing_EOF": func(j *snapshotLifecycleJS, _ string) {
-			j.stores["FHIRSUB"].entries[checkpointKey("Subscription/finite")] = canon(subscriptionCheckpoint{Sub: "finite", HWM: 1})
+			if _, err := j.stores["FHIRSUB"].Put(context.Background(), checkpointKey("Subscription/finite"), canon(subscriptionCheckpoint{Sub: "finite", HWM: 1})); err != nil {
+				t.Fatal(err)
+			}
 		},
 		"pending_notification": func(j *snapshotLifecycleJS, _ string) {
 			j.streams["FHIRIN"].state = jetstream.StreamState{Msgs: 1, FirstSeq: 101, LastSeq: 101}
@@ -545,7 +582,7 @@ func TestSnapshotFailureDiagnosticsPrivacyAndUnavailable(t *testing.T) {
 	evidence.observe(b, err)
 	secret := "PRIVATE_TOKEN_patient-note_resource-id_local-path"
 	writeStatus(run, "reviewer", map[string]any{"last_out_seq": 0, "answered": 7, "error": secret, "cfg": map[string]string{"token": secret}, "note": secret})
-	js.stores["REVIEWER"] = &snapshotLifecycleKV{entries: map[string][]byte{reviewerStatusKey: []byte(`{"last_out_seq":1,"note":"` + secret + `"}`)}}
+	js.stores["REVIEWER"] = snapshotLifecycleStore(t, map[string][]byte{reviewerStatusKey: []byte(`{"last_out_seq":1,"note":"` + secret + `"}`)})
 	report := snapshotFailureReport(context.Background(), js, run, &evidence)
 	raw := string(canon(report))
 	if strings.Contains(raw, secret) || strings.Contains(raw, run) || strings.Contains(raw, strings.Repeat("a", 64)) {
