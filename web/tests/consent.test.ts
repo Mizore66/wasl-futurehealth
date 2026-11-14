@@ -176,7 +176,7 @@ describe("recordConsent server action", () => {
     const result = await recordConsent(detail.case.id, detail.current.sig, "consent_denied", "Patient declined contact");
     expect(result).toMatchObject({
       ok: true,
-      expectedHead: detail.current.sig,
+      expectedHead: detail.api_contact.overlay.revision,
       contact: { overlay: { status: "denied", demo_pending_consent: "cancelled" }, history: [{ decision: "consent_granted" }, { decision: "consent_denied" }] },
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -254,7 +254,7 @@ describe("recordConsent server action", () => {
 
     await expect(recordConsent(detail.case.id, detail.current.sig, "consent_denied", "")).resolves.toMatchObject({
       ok: true,
-      expectedHead: detail.current.sig,
+      expectedHead: detail.api_contact.overlay.revision,
       contact: { overlay: { status: "denied" } },
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);

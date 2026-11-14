@@ -36,16 +36,24 @@ func readLog(path string) []LogMsg {
 	return out
 }
 
+type replayConsent struct {
+	InSeq     uint64
+	Contact   string
+	MsgOptOut bool
+}
 
 type replayOut struct {
-	svcL  []float64
-	svcC  []float64
-	ids   []string
-	outs  []OutMsg
-	final map[string]*Decision
-	L     *LinkerCore
-	facts int
-	items map[string]*ReviewItem
+	svcL     []float64
+	svcC     []float64
+	ids      []string
+	outs     []OutMsg
+	final    map[string]*Decision
+	L        *LinkerCore
+	facts    int
+	items    map[string]*ReviewItem
+	consent  map[string][]replayConsent
+	retained *retainedEvidence
+	contexts map[string]retainedDecisionContext
 }
 
 // ReplayTrace, when non-nil, receives the linker's candidate-funnel records from every replay. It is nil by default
@@ -61,16 +69,24 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 	for k := range cores {
 		cores[k] = NewClosureCore(k, iso)
 	}
-	r := &replayOut{final: map[string]*Decision{}, items: map[string]*ReviewItem{}, L: L}
+	r := &replayOut{final: map[string]*Decision{}, items: map[string]*ReviewItem{}, L: L, consent: map[string][]replayConsent{},
+		retained: newRetainedEvidence(), contexts: map[string]retainedDecisionContext{}}
+	factsContext := map[string]retainedDecisionContext{}
+	clinicalContext := map[string]retainedDecisionContext{}
 	for _, p := range preps {
 		if skipReview && p.Kind == "signoff" {
 			continue
 		}
 		t0 := time.Now()
 		fms := L.Apply(p)
+		r.retained.observe(L, p)
 		r.svcL = append(r.svcL, float64(time.Since(t0).Microseconds())/1000)
 		for _, fm := range fms {
 			r.facts++
+			if fm.Facts != nil {
+				factsContext[fm.Facts.LoopID] = retainedDecisionContext{FactsSeq: fm.Facts.InSeq, Association: r.retained.association(fm.Facts.LoopID)}
+				r.consent[fm.Facts.LoopID] = append(r.consent[fm.Facts.LoopID], replayConsent{InSeq: fm.InSeq, Contact: fm.Facts.Contact, MsgOptOut: fm.Facts.MsgOptOut})
+			}
 			fm := fm
 			t1 := time.Now()
 			outs := cores[fm.Part].Apply(&fm)
@@ -78,6 +94,25 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 				r.svcC = append(r.svcC, float64(time.Since(t1).Microseconds())/1000)
 			}
 			for _, o := range outs {
+				if o.Dec != nil {
+					context := factsContext[baseLoop(o.Dec.LoopID)]
+					context.DecisionID, context.DecisionSig = o.Dec.ID, o.Dec.Sig
+					context.Transition = context.Association
+					if baseLoop(o.Dec.LoopID) != o.Dec.LoopID {
+						// A retirement is caused by the current root revision, but it
+						// is not new clinical evidence that the stored child belonged
+						// to that revision's subject. Keep both facts, without editing OUT.
+						if o.Dec.Inactive {
+							origin := clinicalContext[o.Dec.LoopID]
+							context.Association = origin.Association
+							context.OriginDecisionID = origin.DecisionID
+						} else {
+							context.OriginDecisionID = o.Dec.ID
+							clinicalContext[o.Dec.LoopID] = context
+						}
+					}
+					r.contexts[o.Dec.ID] = context
+				}
 				r.ids = append(r.ids, o.ID)
 				r.outs = append(r.outs, o)
 				if o.Item != nil {
@@ -90,6 +125,10 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 		for k, v := range c.Final() {
 			r.final[k] = v
 		}
+	}
+	for loop, timeline := range r.consent {
+		sort.SliceStable(timeline, func(i, j int) bool { return timeline[i].InSeq < timeline[j].InSeq })
+		r.consent[loop] = timeline
 	}
 	return r
 }
@@ -370,4 +409,3 @@ func supp(n int) interface{} {
 	}
 	return n
 }
-

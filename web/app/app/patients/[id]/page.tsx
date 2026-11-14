@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
-import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySection, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
-import { caseDeadlineDays } from "@/components/worklist/days";
+import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
-import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
 import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
@@ -44,6 +44,7 @@ const SECTIONS = [
   ["people", "Records"],
   ["readers", "Readers"],
   ["consent", "Consent"],
+  ["patient-journey", "Patient self-service"],
   ["signoffs", "Sign-offs"],
   ["ledger", "Coordinator actions"],
   ["timeline", "Timeline"],
@@ -61,13 +62,21 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const [detail, audit, personJourney] = await Promise.all([getCase(id), getAudit(id), optionalPersonJourney]);
   if (!detail) notFound();
   const c = detail.case;
+  if (c.lifecycle === "retained") return <>
+    <h1 className="text-title font-semibold">Retired case {shortId(c.id)}</h1>
+    <p>This tracking request is inactive. Its original decisions, signed reviews and source history are retained, not current care or outreach work.</p>
+    <p>{c.programme_availability === "unavailable" ? "No current programme was selected." : "The recorded programme does not confer active eligibility."}</p>
+    <Link className={BUTTON} href={`${caseHref("/app/patients", c.id)}/audit`}>Authorized audit history</Link>
+    <Link className={BUTTON} href={`/app/people?case_id=${encodeURIComponent(c.id)}`}>Historical person association</Link>
+    <TimelineCard detail={detail} />
+    <LedgerCard detail={detail} />
+  </>;
   const person = personForLoop(c.id);
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
   const closedIn = c.closed ? closedInDays(c) : null;
   /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
   const due = caseDeadlineDays(c);
-  const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
   /* Independent review: only a terminal state on every question clears waiting, even while canonical review is still open. */
   const waiting = allQuestionsResolved(detail)
     ? false
@@ -96,12 +105,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             </div>
             <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
               {closedIn !== null ? (
-                <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+                <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
               ) : (
                 <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
+                {statusWords(c).status === "Closed" ? (isNoAction(c) ? "closed, no action needed" : "closed with evidence") : statusWords(c).status.toLowerCase()} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
               </span>
             </p>
           </div>
@@ -112,7 +121,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       {ledgerInvalid && <LedgerInvalidBanner what="this record" className="mt-4" />}
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
-        {personJourney && (
+        {personJourney && personJourney.schema !== "wasl-person-association-unavailable/2" && (
           <Link
             href={`/app/people?case_id=${encodeURIComponent(c.id)}`}
             className={cn(BUTTON, "border border-control bg-surface text-ink no-underline hover:bg-active hover:text-ink")}
@@ -171,11 +180,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               {first ? "Her case, step by step" : "The case, step by step"}
             </h2>
             <span className="text-small text-muted" data-testid="closed-in">
-              {closedIn !== null
-                ? closedIn <= due
-                  ? `Closed in ${closedIn} days, ${due - closedIn} inside the ${dueWords}`
-                  : `Closed in ${closedIn} days, ${closedIn - due} past the ${dueWords}`
-                : statusWords(c).next}
+              {closedIn !== null ? closedHeadline(c) : statusWords(c).next}
             </span>
           </div>
           <SealedChain nodes={nodes} className="mt-4" />
@@ -246,6 +251,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
           ))}
           <ConsentCard detail={detail} />
+          <PatientJourneySection detail={detail} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>

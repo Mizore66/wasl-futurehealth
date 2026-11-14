@@ -134,6 +134,7 @@ export type CaseQuery = Partial<{
   consent: CaseSummary["consent"];
   review: CaseSummary["review"];
   overdue: boolean;
+  closed: boolean;
   fixture: boolean;
   q: string;
   limit: number;
@@ -161,6 +162,7 @@ export function matches(c: CaseSummary, q: CaseQuery): boolean {
     (q.consent === undefined || c.consent === q.consent) &&
     (q.review === undefined || c.review === q.review) &&
     (q.overdue === undefined || c.overdue === q.overdue) &&
+    (q.closed === undefined || c.closed === q.closed) &&
     (!q.fixture || c.fixture !== "") &&
     (q.q === undefined || c.id.includes(q.q))
   );
@@ -270,7 +272,8 @@ export async function postConsent(id: string, body: ConsentRequestInput): Promis
 }
 
 export type GovernanceResult =
-  | { ok: true; status: 201; response: CompensationResponseBody }
+  /** `response` is null when the event was appended (201) but its body could not be read. */
+  | { ok: true; status: 201; response: CompensationResponseBody | null }
   | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500 | 503; error: string };
 
 /**
@@ -285,7 +288,10 @@ async function postGovernanceWithToken(id: string, body: unknown, token: string)
     bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, token),
   );
   const json = await res.json().catch(() => undefined);
-  if (res.status === 201) return { ok: true, status: 201, response: CompensationResponse.parse(json) };
+  if (res.status === 201) {
+    const saved = CompensationResponse.safeParse(json);
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
   if ([400, 401, 403, 404, 409, 500, 503].includes(res.status)) {
     const e = ApiError.safeParse(json);
     return { ok: false, status: res.status as 400 | 401 | 403 | 404 | 409 | 500 | 503, error: e.success ? e.data.error : `HTTP ${res.status}` };

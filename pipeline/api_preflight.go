@@ -15,10 +15,13 @@ const apiPreflightMaxNDJSONRecord = 1 << 24
 // validateAPIPreflight rejects incomplete materialized runs before the serve API
 // can turn read or scanner failures into apparently healthy empty projections.
 func validateAPIPreflight(run string) error {
+	objects := map[string]map[string]interface{}{}
 	for _, name := range []string{"dashboard.json", "report7.json", "anchors.json"} {
-		if err := validateRequiredAPIJSON(filepath.Join(run, name)); err != nil {
+		object, err := validateRequiredAPIJSON(filepath.Join(run, name))
+		if err != nil {
 			return err
 		}
+		objects[name] = object
 	}
 	for _, name := range []string{"out_log.ndjson", "fhir_log.ndjson"} {
 		if err := validateRequiredAPINDJSON(filepath.Join(run, name)); err != nil {
@@ -29,20 +32,197 @@ func validateAPIPreflight(run string) error {
 	if err := validateRequiredAPINDJSON(filepath.Join(run, "reviewer_decisions.ndjson")); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	return nil
+	loops := map[string]bool{}
+	outPath, fhirPath := filepath.Join(run, "out_log.ndjson"), filepath.Join(run, "fhir_log.ndjson")
+	latest := map[string]*Decision{}
+	if _, err := scanAPILog(outPath, func(m LogMsg) error {
+		if err := validateOutRecord(m, loops); err != nil {
+			return err
+		}
+		if d := decodeEnv(m).Dec; d != nil {
+			latest[d.LoopID] = d
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	fhirRecords, err := scanAPILog(fhirPath, validateFHIRRecord)
+	if err != nil {
+		return err
+	}
+	active := 0
+	for _, d := range latest {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], len(loops), fhirRecords, active)
 }
 
-func validateRequiredAPIJSON(path string) error {
+func validateRequiredAPIJSON(path string) (map[string]interface{}, error) {
 	contents, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("serve preflight: required JSON %s: %w", path, err)
+		return nil, fmt.Errorf("serve preflight: required JSON %s: %w", path, err)
 	}
 	var value interface{}
 	if err := json.Unmarshal(contents, &value); err != nil {
-		return fmt.Errorf("serve preflight: %s: %s JSON: %w", path, apiJSONErrorKind(err), err)
+		return nil, fmt.Errorf("serve preflight: %s: %s JSON: %w", path, apiJSONErrorKind(err), err)
 	}
-	if _, ok := value.(map[string]interface{}); !ok {
-		return fmt.Errorf("serve preflight: %s: invalid JSON: expected top-level object", path)
+	object, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("serve preflight: %s: invalid JSON: expected top-level object", path)
+	}
+	return object, nil
+}
+
+// scanAPILog decodes each already syntax-checked record as the canonical log envelope and hands it to check.
+// A log with no records is rejected because every required log carries at least one materialized message.
+func scanAPILog(path string, check func(LogMsg) error) (int, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, fmt.Errorf("serve preflight: required NDJSON %s: %w", path, err)
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 1<<20), apiPreflightMaxNDJSONRecord)
+	records := 0
+	for scanner.Scan() {
+		records++
+		var m LogMsg
+		if err := json.Unmarshal(scanner.Bytes(), &m); err != nil {
+			return 0, fmt.Errorf("serve preflight: %s:%d: invalid log envelope: %w", path, records, err)
+		}
+		if m.Seq == 0 || m.Subject == "" || len(m.Data) == 0 {
+			return 0, fmt.Errorf("serve preflight: %s:%d: invalid log envelope: seq, subj and data are required", path, records)
+		}
+		if err := check(m); err != nil {
+			return 0, fmt.Errorf("serve preflight: %s:%d: %w", path, records, err)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, fmt.Errorf("serve preflight: %s:%d: NDJSON scanner completion: %w", path, records+1, err)
+	}
+	if records == 0 {
+		return 0, fmt.Errorf("serve preflight: %s: log has no records", path)
+	}
+	return records, nil
+}
+
+func validateOutRecord(m LogMsg, loops map[string]bool) error {
+	var env OutEnvelope
+	if err := json.Unmarshal(m.Data, &env); err != nil {
+		return fmt.Errorf("invalid out envelope: %w", err)
+	}
+	switch {
+	case env.Dec != nil:
+		if env.Dec.ID == "" || env.Dec.LoopID == "" {
+			return fmt.Errorf("invalid out envelope: decision requires id and loop")
+		}
+		loops[env.Dec.LoopID] = true
+	case env.Item != nil:
+		if env.Item.ItemID == "" || env.Item.LoopID == "" {
+			return fmt.Errorf("invalid out envelope: review item requires item and loop")
+		}
+	default:
+		return fmt.Errorf("invalid out envelope: decision or review item payload is required")
+	}
+	return nil
+}
+
+func validateFHIRRecord(m LogMsg) error {
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(m.Data, &payload); err != nil || len(payload) == 0 {
+		return fmt.Errorf("invalid FHIR record: data must be a non-empty object")
+	}
+	if strings.HasSuffix(m.Subject, ".res") || m.Subject == "fhir.review" {
+		var resourceType string
+		if json.Unmarshal(payload["resourceType"], &resourceType) != nil || resourceType == "" {
+			return fmt.Errorf("invalid FHIR record: resourceType is required")
+		}
+	}
+	return nil
+}
+
+func materializedCatalogCounts(final map[string]*Decision) map[string]interface{} {
+	active := 0
+	for _, d := range final {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return map[string]interface{}{"schema": "wasl-materialized-catalog/1", "retained_cases": len(final), "active_cases": active, "retained_live_replay_mismatch": 0}
+}
+
+func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhirRecords int, activeCounts ...int) error {
+	check := func(artifact, field string, value interface{}, want int, source string) error {
+		n, ok := value.(float64)
+		if !ok || n != float64(int(n)) || n < 0 {
+			return fmt.Errorf("serve preflight: %s: invalid JSON: %s must be a non-negative integer", artifact, field)
+		}
+		if int(n) != want {
+			return fmt.Errorf("serve preflight: %s declares %s=%d but %s holds %d", artifact, field, int(n), source, want)
+		}
+		return nil
+	}
+	if v, ok := dashboard["cases"]; ok {
+		if err := check("dashboard.json", "cases", v, loops, "out_log.ndjson decisions"); err != nil {
+			return err
+		}
+	}
+	clinicalLoops := loops
+	if raw, present := report["materialized_catalog"]; present {
+		catalog, ok := raw.(map[string]interface{})
+		if !ok || catalog["schema"] != "wasl-materialized-catalog/1" || len(catalog) != 4 || len(activeCounts) != 1 {
+			return fmt.Errorf("serve preflight: invalid materialized catalog counts")
+		}
+		for field, want := range map[string]int{"retained_cases": loops, "active_cases": activeCounts[0], "retained_live_replay_mismatch": 0} {
+			if err := check("report7.json", "materialized_catalog."+field, catalog[field], want, "out_log.ndjson decisions"); err != nil {
+				return err
+			}
+		}
+		// New reports explicitly distinguish retained OUT completeness from their
+		// unchanged clinical truth denominator. Validate both, never substitute one
+		// for the other or silently drop an invalid old declaration.
+		if _, declared := report["loops"]; declared {
+			byProgramme, ok := report["loops_by_programme"].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("serve preflight: materialized catalog requires clinical loops_by_programme")
+			}
+			clinicalLoops = 0
+			for programme, value := range byProgramme {
+				n, ok := value.(float64)
+				if !ok || n < 0 || n != float64(int(n)) {
+					return fmt.Errorf("serve preflight: invalid clinical loop count for %s", programme)
+				}
+				clinicalLoops += int(n)
+			}
+		}
+	}
+	if v, ok := report["loops"]; ok {
+		if err := check("report7.json", "loops", v, clinicalLoops, "declared clinical cohort (legacy: out_log.ndjson decisions)"); err != nil {
+			return err
+		}
+	}
+	if v, ok := report["events"]; ok {
+		if err := check("report7.json", "events", v, fhirRecords, "fhir_log.ndjson records"); err != nil {
+			return err
+		}
+	}
+	if programmes, ok := report["programmes_live"].(map[string]interface{}); ok {
+		total, declared := 0.0, false
+		for _, p := range programmes {
+			programme, _ := p.(map[string]interface{})
+			if v, ok := programme["cases"]; ok {
+				n, isNum := v.(float64)
+				if !isNum {
+					return fmt.Errorf("serve preflight: report7.json: invalid JSON: programmes_live cases must be a non-negative integer")
+				}
+				total, declared = total+n, true
+			}
+		}
+		if declared {
+			return check("report7.json", "programmes_live cases", total, loops, "out_log.ndjson decisions")
+		}
 	}
 	return nil
 }

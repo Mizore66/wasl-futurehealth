@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistoryCard } from "@/components/case/audit-view";
 import { LedgerCard, SignoffsCard } from "@/components/case/sections";
+import { PatientJourneyCard } from "@/components/case/patient-journey-card";
 import { runClock } from "@/components/worklist/run-clock";
 import { workItem } from "@/components/worklist/model";
 import { Audit, AuditLedgerEvent, CaseDetail, CaseList, LedgerEvent } from "@/lib/api/schema";
@@ -310,6 +311,40 @@ describe("shared ledger contract (real Go handler output)", () => {
 function contestHashForFixture(): string {
   return rawAudit.history.find((event: { kind?: string }) => event.kind === "contest").target;
 }
+
+describe("patient journey ledger contract", () => {
+  it("keeps patient events separate and accepts actor-redacted audit history", () => {
+    const event = {
+      type: "patient_journey", kind: "contact_permission_changed", case: rawDetail.case.id, link_id: "a".repeat(32),
+      role: "patient_link", actor: `patient-link/${"a".repeat(32)}`, action: "record_consent", decision: "consent_opted_out",
+      at: "2026-11-13T10:00:00Z", mode: "demo", request_id: crypto.randomUUID(), head: "patient-head", head_signed: "canonical-head",
+      seq: 1, data: { permission: "opted_out" }, prev: "p", hash: "patient-event-hash",
+    };
+    const patient = {
+      schema: "wasl-patient-journey/1", head: "patient-event-hash", seq: 1, ledger_status: "ok",
+      teach_back: { question_id: "crc-next-step-v1", status: "completed", completed_at: event.at, event: "teach-event" },
+      contact_permission: { status: "opted_out", updated_at: event.at, event: event.hash },
+      slot_selection: { status: "unselected", offers_version: "offers", slot_id: "", selected_at: "", event: "" },
+      preparation: { items: [{ item_id: "escort_home", completed: false, updated_at: "", event: "" }], completed: 0, total: 2 },
+      last_action_at: event.at,
+    };
+    const detail = CaseDetail.parse({ ...rawDetail, api_patient: patient, api_reviews: [event] });
+    expect(detail.api_reviews[0]).toMatchObject({ ledger: "patient", kind: "contact_permission_changed" });
+    const withoutConcealedPrev: Record<string, unknown> = { ...event };
+    delete withoutConcealedPrev.prev;
+    expect(LedgerEvent.parse(withoutConcealedPrev)).toMatchObject({ ledger: "patient", hash: event.hash });
+    const html = renderToStaticMarkup(PatientJourneyCard({ detail }));
+    expect(html).toContain("Patient self-service timeline");
+    expect(html).toContain("Stopped text message permission");
+    expect(html).not.toContain(event.actor);
+
+    const redacted: Record<string, unknown> = { ...event };
+    delete redacted.actor;
+    const audit = Audit.parse({ ...rawAudit, history: [redacted] });
+    expect(audit.history[0]).toMatchObject({ ledger: "patient" });
+    expect(audit.history[0]).not.toHaveProperty("actor");
+  });
+});
 
 describe("unknown or malformed ledger events", () => {
   it("are kept as explicit unknown entries instead of failing the whole case", () => {

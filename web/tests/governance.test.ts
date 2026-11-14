@@ -144,8 +144,8 @@ describe("governance API clients", () => {
       { target: contestHash, resolution: "upheld", note: "Independent review agrees the contest is correct" },
       SIGNED_IN,
     );
-    expect(result.ok && result.response.event.hash).toBe(resolutionHash);
-    expect(result.ok && result.response.projection.events[0]).toMatchObject({ hash: originalHash, status: "compensated" });
+    expect(result.ok && result.response?.event.hash).toBe(resolutionHash);
+    expect(result.ok && result.response?.projection.events[0]).toMatchObject({ hash: originalHash, status: "compensated" });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       target: contestHash,
       resolution: "upheld",
