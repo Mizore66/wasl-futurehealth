@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Audit, AuditLedgerEvent, CaseDetail } from "@/lib/api/schema";
+import { ActiveCaseSummary, Audit, AuditLedgerEvent, CaseDetail } from "@/lib/api/schema";
 import { dayToDate, formatDay, formatDayYear } from "@/lib/domain/day";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
@@ -10,7 +10,8 @@ import { reviewWords, signoffWords } from "@/components/case/words";
 import { programmeDetail, type NewProgramme } from "./programme-cases";
 import { loadSample } from "./samples";
 
-const load = (fixture: string): CaseDetail => CaseDetail.parse(loadSample(`case_${fixture}.json`));
+const activeDetail = CaseDetail.extend({ case: ActiveCaseSummary });
+const load = (fixture: string) => activeDetail.parse(loadSample(`case_${fixture}.json`));
 
 describe("dayToDate", () => {
   it("day 0 is the cohort epoch, 1 May 2026", () => {
@@ -220,7 +221,7 @@ describe("programme-specific case evidence", () => {
   });
 
   it("uses neutral empty signoff copy for agreeing, disagreeing and missing evidence", () => {
-    const detail = programmeDetail("lung_ldct");
+    const detail = activeDetail.parse(programmeDetail("lung_ldct"));
     const disagreeing = { ...detail.evidence[0], agree: false };
     for (const evidence of [detail.evidence, [disagreeing], []]) {
       const unsigned = { ...detail, case: { ...detail.case, closed: false }, evidence };

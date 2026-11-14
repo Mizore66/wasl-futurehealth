@@ -24,13 +24,14 @@ const (
 )
 
 type loopState struct {
-	facts   *LoopFacts
-	last    *Decision
-	lastFU  *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
-	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
-	lastCRC map[string]*Decision // CRC treatment/surveillance/follow-up children keyed by stable child loop ID
-	raised  map[string]*ReviewItem
-	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
+	facts    *LoopFacts
+	last     *Decision
+	lastFU   *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
+	lastFU2  map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
+	lastCRC  map[string]*Decision // CRC treatment/surveillance/follow-up children keyed by stable child loop ID
+	raised   map[string]*ReviewItem
+	contact  map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
+	inactive bool              // current tracking request is retired/conflicted; history remains in the output ledger
 }
 
 type ClosureCore struct {
@@ -89,6 +90,9 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 			c.now = m.TickDay
 		}
 		for _, lp := range c.order {
+			if c.loops[lp].inactive {
+				continue
+			}
 			out = append(out, c.eval(c.loops[lp], m.InSeq, m.ID)...)
 		}
 		return out
@@ -104,6 +108,78 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 	if ls.facts != nil && f.InSeq < ls.facts.InSeq {
 		c.Stats["stale_facts_ignored"]++
 		return out
+	}
+	if f.Inactive {
+		ls.facts = f
+		ls.inactive = true
+		// Every emitted child has its own latest stored decision. Append a
+		// tombstone for each before dropping in-memory surveillance state;
+		// otherwise API/log replay retains the child's overdue outreach.
+		previous := []*Decision{ls.last}
+		if ls.lastFU != nil {
+			previous = append(previous, ls.lastFU)
+		}
+		childIDs := make([]string, 0, len(ls.lastFU2))
+		for id := range ls.lastFU2 {
+			childIDs = append(childIDs, id)
+		}
+		sort.Strings(childIDs)
+		for _, id := range childIDs {
+			previous = append(previous, ls.lastFU2[id])
+		}
+		childIDs = childIDs[:0]
+		for id := range ls.lastCRC {
+			childIDs = append(childIDs, id)
+		}
+		sort.Strings(childIDs)
+		for _, id := range childIDs {
+			previous = append(previous, ls.lastCRC[id])
+		}
+		for i, prev := range previous {
+			loop, srDay := f.LoopID, f.SRDay
+			if i > 0 {
+				loop, srDay = prev.LoopID, prev.SRDay
+			}
+			body := map[string]interface{}{"loop": loop, "status": f.ReqStatus, "version": f.ReqVersion, "conflict": f.ReqConflict,
+				"policy": "only the current active same-ID tracking ServiceRequest version sustains actionable care"}
+			if loop != f.LoopID {
+				body["request"] = f.LoopID
+			}
+			d := &Decision{LoopID: loop, Provider: f.Provider, SRDay: srDay, State: "inactive", Prog: f.Prog,
+				Inactive: true, RequestStatus: f.ReqStatus, RequestVersion: f.ReqVersion, RequestConflict: f.ReqConflict,
+				ProcDay: -1, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1,
+				Chain: appendBlock(nil, "tracking_request_retirement", body)}
+			if prev != nil && prev.CRC != nil && prev.CRC.Parent != "" {
+				cd := *prev.CRC
+				d.CRC = &cd
+				d.Prog = "crc"
+				d.Chain = appendCRCBlock(append([]Block{}, prev.Chain...), "tracking_request_retirement", body)
+			}
+			d.Policy = PolicyName
+			d.Sig = sha(canon(d))
+			if prev == nil || prev.Sig != d.Sig {
+				d.Now, d.InSeq = c.now, m.InSeq
+				d.ID = fmt.Sprintf("dec-%s@%s", loop, m.ID)
+				if i == 0 {
+					ls.last = d
+				}
+				out = append(out, OutMsg{ID: d.ID, Kind: "decision", Dec: d})
+			}
+		}
+		ls.lastFU, ls.lastFU2, ls.lastCRC = nil, nil, nil
+		// Raised reviews are append-only output history, not current work.
+		// Keep their IDs and signed heads while inactive so reactivation cannot
+		// re-emit an existing ID and break the deduplicated live output ledger.
+		ls.contact = nil
+		return out
+	}
+	if ls.inactive {
+		// A strictly newer active revision rebuilds live state from complete
+		// current facts. In particular, equal pre-retirement clinical content
+		// must still produce a fresh current decision. Preserve review history;
+		// current pending work is recomputed from facts and sign-offs by eval.
+		ls = &loopState{raised: ls.raised}
+		c.loops[f.LoopID] = ls
 	}
 	ls.facts = f
 	if HistClock && m.Arr != nil && *m.Arr < 0 && *m.Arr < c.now { // pre-day-0 look-back history only: never rewind a live-day decision
@@ -979,7 +1055,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		withdrawn.Escalations = []string{"crc_child_withdrawn_review"}
 		withdrawn.Chain = appendCRCBlock(append([]Block{}, previous.Chain...), "crc_child_withdrawn", map[string]interface{}{
 			"loop": id, "parent": f.LoopID, "reason": "source report corrected/withdrawn or disposition no longer current", "requires_review": true})
-		withdrawn.Sig = sha(canon(withdrawn))
+		withdrawn.Sig = decSig(&withdrawn)
 		withdrawn.Now, withdrawn.InSeq = now, inSeq
 		withdrawn.ID = fmt.Sprintf("dec-%s@%s", id, mid)
 		ls.lastCRC[id] = &withdrawn
@@ -991,6 +1067,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 func (c *ClosureCore) Final() map[string]*Decision {
 	m := map[string]*Decision{}
 	for k, v := range c.loops {
+		if v.inactive {
+			continue
+		}
 		m[k] = v.last
 		if v.lastFU != nil {
 			m[v.lastFU.LoopID] = v.lastFU

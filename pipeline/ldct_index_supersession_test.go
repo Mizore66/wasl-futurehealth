@@ -12,7 +12,7 @@ func TestLDCTReadableCorrectionSupersedesUnreadIndex(t *testing.T) {
 			t.Run(fmt.Sprintf("original=%q/%s", original, status), func(t *testing.T) {
 				root := normalizedLungRevision(t, "lcs-centre", "root", "", "ldct-screen", "final", original, 1, 10)
 				correction := normalizedLungRevision(t, "lcs-centre", "correction", "root", "ldct-screen", status, "LR4B", 2, 10)
-				sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
+				sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Status: "active", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
 				originalEvents := canon([]*Event{root, correction})
 				for i, events := range [][]*Event{{root, correction}, {correction, root}} {
 					t.Run(fmt.Sprint(i), func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestLDCTReadableCorrectionSupersedesUnreadIndex(t *testing.T) {
 func TestLDCTUnreadCompletionPreservesIncompleteIndexClock(t *testing.T) {
 	root := normalizedLungRevision(t, "lcs-centre", "root", "", "ldct-screen", "final", "LR0", 1, 10)
 	completion := normalizedLungRevision(t, "lcs-centre", "completion", "root", "ldct-screen", "final", "", 1, 60)
-	sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
+	sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Status: "active", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
 	for _, events := range [][]*Event{{root, completion}, {completion, root}} {
 		d, _ := replayLungRevisions(t, sr, events...)
 		if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != "root" || d.LDCT.ScanLabel != "LR0" || d.LDCT.ScanDay != 10 || d.LDCT.DeadlineDay != 101 ||
@@ -87,7 +87,7 @@ func TestLDCTUnreadIndexRejectsUnauthorizedOrUnreadReplacement(t *testing.T) {
 			root := normalizedLungRevision(t, "lcs-centre", "root", tc.rootParent, "ldct-screen", "final", "", 1, 10)
 			correction := normalizedLungRevision(t, "lcs-centre", "correction", tc.parent, "ldct-screen", tc.status, tc.label, 2, 10)
 			unrelated := normalizedLungRevision(t, "lcs-centre", "unrelated", "", "ldct-screen", "final", "LR2", 1, 20)
-			sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
+			sr := &Event{ID: "SYNTH-sr", RType: "ServiceRequest", Status: "active", Provider: root.Provider, PatientKey: root.PatientKey, Name: root.Name, Prog: "lung_ldct", Day: 10, LDCT: &LDCTSR{Scan: "root"}}
 			events := []*Event{correction, unrelated}
 			if !tc.omitRoot {
 				events = append([]*Event{root}, events...)

@@ -76,13 +76,14 @@ type Event struct {
 	RType         string      `json:"rtype"`
 	Status        string      `json:"status,omitempty"`
 	ConsentStatus string      `json:"consent_status,omitempty"` // Consent lifecycle; Status remains provision.type
-	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Communication and Consent revision/withdrawal ordering
+	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Communication, Consent and tracking ServiceRequest revision/withdrawal ordering (legacy requests: zero reads as one)
 	Day           float64     `json:"day"`
 	Name          string      `json:"name"`
 	Dob           string      `json:"dob,omitempty"`
 	Sex           string      `json:"sex,omitempty"`
 	Eid           string      `json:"eid,omitempty"`
-	Focus         string      `json:"focus,omitempty"` // Task.focus -> ServiceRequest id
+	Focus         string      `json:"focus,omitempty"`    // Task.focus -> ServiceRequest id | DiagnosticReport parent id
+	Relation      string      `json:"relation,omitempty"` // DiagnosticReport explicit episode relationship
 	Owner         string      `json:"owner,omitempty"`
 	ReportID      string      `json:"report,omitempty"`
 	ReportVersion int         `json:"report_version,omitempty"` // Communication prep thread -> DiagnosticReport version; zero/one share the legacy key
@@ -111,6 +112,7 @@ type Event struct {
 	XRef     string    `json:"xref,omitempty"`   // referral intake: the referral it answers (basedOn "external referral <loop>"; handoffref.go)
 	Breast   *BreastSR `json:"breast,omitempty"` // breast recall tracking ServiceRequest: first screening mammogram report (breast.go)
 	LDCT     *LDCTSR   `json:"ldct,omitempty"`   // lung cancer screening tracking ServiceRequest: the LDCT report (ldct.go)
+	IFHAS    *IFHASSR  `json:"ifhas,omitempty"`  // IFHAS tracking ServiceRequest: index results panel (ifhas.go)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
@@ -198,7 +200,8 @@ type DownFact struct {
 	ReportID string      `json:"report,omitempty"`
 	Version  int         `json:"ver,omitempty"` // current DiagnosticReport meta.versionId; zero preserves legacy materialized facts
 	Reason   string      `json:"reason,omitempty"`
-	Parent   string      `json:"parent,omitempty"` // pathology addendum -> colonoscopy report id
+	Parent   string      `json:"parent,omitempty"`   // explicitly linked parent DiagnosticReport id
+	Relation string      `json:"relation,omitempty"` // urn:wsi:addendum-to | urn:wsi:repeat-of
 	Prog     string      `json:"prog,omitempty"`
 	FollowUp string      `json:"follow_up,omitempty"` // typed CRC downstream referral/appointment category
 	Ev       *TwoVerdict `json:"evv,omitempty"`
@@ -314,28 +317,34 @@ func sameReportReviewVersion(itemVersion, currentVersion int) bool {
 
 // LoopFacts: everything the linker knows about one FIT+ loop, recomputed whenever its patient cluster changes.
 type LoopFacts struct {
-	LoopID    string            `json:"loop"`
-	InSeq     uint64            `json:"in_seq"`
-	Provider  string            `json:"prov"`
-	SRDay     float64           `json:"sr_day"`
-	SRRec     string            `json:"sr_rec"`
-	SRLang    string            `json:"sr_lang,omitempty"`
-	Prog      string            `json:"prog,omitempty"`
-	Priority  string            `json:"prio,omitempty"`
-	Cat       string            `json:"icat,omitempty"`
-	IndexDay  float64           `json:"iday,omitempty"`
-	Comms     []CommFact        `json:"comms,omitempty"`
-	Tasks     []TaskFact        `json:"tasks"`
-	Down      []DownFact        `json:"down"`
-	Signoffs  []Signoff         `json:"signoffs,omitempty"`
-	EvOver    map[string]string `json:"ev_over,omitempty"`     // reportID -> human evidence label
-	MsgOptOut bool              `json:"msg_opt_out,omitempty"` // v6: referral patient withheld consent to automated outreach
-	Contact   string            `json:"contact,omitempty"`     // stage 3: contact permission at fact time: unknown|granted|denied|opted_out
-	SRDob     string            `json:"sr_dob,omitempty"`      // v7: referral registration DOB (second-identifier guard)
-	Lung      *LungSR           `json:"lung,omitempty"`        // lung-nodule loop: scope and risk from the tracking ServiceRequest
-	DR        *DRSR             `json:"dr,omitempty"`          // diabetic retinopathy loop (dr.go)
-	Breast    *BreastSR         `json:"breast,omitempty"`      // breast recall loop (breast.go)
-	LDCT      *LDCTSR           `json:"ldct,omitempty"`        // lung cancer screening (LDCT) loop (ldct.go)
+	LoopID       string            `json:"loop"`
+	InSeq        uint64            `json:"in_seq"`
+	Provider     string            `json:"prov"`
+	SRDay        float64           `json:"sr_day"`
+	SRRec        string            `json:"sr_rec"`
+	SRLang       string            `json:"sr_lang,omitempty"`
+	Prog         string            `json:"prog,omitempty"`
+	Priority     string            `json:"prio,omitempty"`
+	Cat          string            `json:"icat,omitempty"`
+	IndexDay     float64           `json:"iday,omitempty"`
+	Comms        []CommFact        `json:"comms,omitempty"`
+	Tasks        []TaskFact        `json:"tasks"`
+	Down         []DownFact        `json:"down"`
+	Signoffs     []Signoff         `json:"signoffs,omitempty"`
+	EvOver       map[string]string `json:"ev_over,omitempty"`     // reportID -> human evidence label
+	MsgOptOut    bool              `json:"msg_opt_out,omitempty"` // v6: referral patient withheld consent to automated outreach
+	Contact      string            `json:"contact,omitempty"`     // stage 3: contact permission at fact time: unknown|granted|denied|opted_out
+	SRDob        string            `json:"sr_dob,omitempty"`      // v7: referral registration DOB (second-identifier guard)
+	Lung         *LungSR           `json:"lung,omitempty"`        // lung-nodule loop: scope and risk from the tracking ServiceRequest
+	DR           *DRSR             `json:"dr,omitempty"`          // diabetic retinopathy loop (dr.go)
+	Breast       *BreastSR         `json:"breast,omitempty"`      // breast recall loop (breast.go)
+	LDCT         *LDCTSR           `json:"ldct,omitempty"`        // lung cancer screening (LDCT) loop (ldct.go)
+	IFHAS        *IFHASSR          `json:"ifhas,omitempty"`       // IFHAS loop: index results-panel scope (ifhas.go)
+	Inactive     bool              `json:"inactive,omitempty"`    // current same-ID tracking request is non-active or conflicted
+	ReqStatus    string            `json:"request_status,omitempty"`
+	ReqVersion   int               `json:"request_version,omitempty"`
+	ReqConflict  bool              `json:"request_conflict,omitempty"`
+	EpisodeError string            `json:"episode_error,omitempty"` // missing/ambiguous/withdrawn index evidence; fail closed
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.
@@ -379,50 +388,54 @@ type ReviewItem struct {
 }
 
 type Decision struct {
-	ID             string              `json:"id"`
-	LoopID         string              `json:"loop"`
-	InSeq          uint64              `json:"in_seq"`
-	Provider       string              `json:"prov"`
-	SRDay          float64             `json:"sr_day"`
-	Now            float64             `json:"now"`
-	State          string              `json:"state"`
-	Overdue        bool                `json:"overdue"`
-	Unowned        bool                `json:"unowned"`
-	Owner          string              `json:"owner,omitempty"`
-	Escalations    []string            `json:"esc,omitempty"`
-	ReportedClosed bool                `json:"reported_closed"`
-	ClosedDay      float64             `json:"closed_day,omitempty"`
-	ClosingReport  string              `json:"closing_report,omitempty"`
-	Pending        []string            `json:"pending,omitempty"`
-	NotifDay       float64             `json:"notif_day"` // -1 = none
-	AckDay         float64             `json:"ack_day"`
-	RefStatus      string              `json:"ref_status"`
-	RefDay         float64             `json:"ref_day"`
-	CommFlags      []string            `json:"comm_flags,omitempty"`
-	Dropoff        string              `json:"dropoff"`
-	HumanAssisted  bool                `json:"human_assisted,omitempty"`
-	Prog           string              `json:"prog,omitempty"`
-	Priority       string              `json:"prio,omitempty"`
-	Deadline       float64             `json:"deadline,omitempty"`
-	ProcDay        float64             `json:"proc_day"`           // first trusted fulfilled procedure for this programme; -1 none
-	EcState        string              `json:"ec_state,omitempty"` // none|awaiting_reply|accept|conditional|needs_info|redirect|reject|unparsed
-	EcTurns        int                 `json:"ec_turns,omitempty"`
-	TBState        string              `json:"tb_state,omitempty"` // none|prompted|understood|partial|misunderstood|needs_human|unparsed
-	PrepQ          string              `json:"prep_q,omitempty"`   // ungraded prep: awaiting_unit|escalated|clinician_day15|unit_graded|cannot_determine
-	Chain          []Block             `json:"chain,omitempty"`
-	Policy         string              `json:"policy,omitempty"`      // gate policy that produced this decision (v6 | v7strict+...)
-	ConsentLog     []ConsentTransition `json:"consent_log,omitempty"` // stage 3: hold/release/cancel transitions at this decision
-	Contact        string              `json:"contact,omitempty"`     // contact permission of the referral patient at this decision
-	Sig            string              `json:"sig"`
-	Outreach       []Outreach          `json:"outreach,omitempty"`       // v6: patient-facing outreach intents (sent or suppressed)
-	Lung           *LungDecision       `json:"lung,omitempty"`           // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
-	DR             *DRDecision         `json:"dr,omitempty"`             // diabetic retinopathy loop: grade, rule, deadline, eye-clinic outcome (dr.go)
-	Breast         *BreastDecision     `json:"breast,omitempty"`         // breast recall loop: BI-RADS category, rule, deadline, assessment outcome (breast.go)
-	LDCT           *LDCTDecision       `json:"ldct,omitempty"`           // lung cancer screening loop: Lung-RADS category, rule, clocks, follow-up / work-up outcome (ldct.go)
-	Handoff        *HandoffPacket      `json:"handoff,omitempty"`        // finally rejected referral: hand-off packet to the referrer (handoff.go)
-	AuditReopened  bool                `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
-	Ifhas          *IfhasDecision      `json:"ifhas,omitempty"`          // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
-	CRC            *CRCDecision        `json:"crc,omitempty"`            // CRC post-procedure disposition and owned downstream tracking (crc.go)
+	ID              string              `json:"id"`
+	LoopID          string              `json:"loop"`
+	InSeq           uint64              `json:"in_seq"`
+	Provider        string              `json:"prov"`
+	SRDay           float64             `json:"sr_day"`
+	Now             float64             `json:"now"`
+	State           string              `json:"state"`
+	Overdue         bool                `json:"overdue"`
+	Unowned         bool                `json:"unowned"`
+	Owner           string              `json:"owner,omitempty"`
+	Escalations     []string            `json:"esc,omitempty"`
+	ReportedClosed  bool                `json:"reported_closed"`
+	ClosedDay       float64             `json:"closed_day,omitempty"`
+	ClosingReport   string              `json:"closing_report,omitempty"`
+	Pending         []string            `json:"pending,omitempty"`
+	NotifDay        float64             `json:"notif_day"` // -1 = none
+	AckDay          float64             `json:"ack_day"`
+	RefStatus       string              `json:"ref_status"`
+	RefDay          float64             `json:"ref_day"`
+	CommFlags       []string            `json:"comm_flags,omitempty"`
+	Dropoff         string              `json:"dropoff"`
+	HumanAssisted   bool                `json:"human_assisted,omitempty"`
+	Prog            string              `json:"prog,omitempty"`
+	Priority        string              `json:"prio,omitempty"`
+	Deadline        float64             `json:"deadline,omitempty"`
+	ProcDay         float64             `json:"proc_day"`           // first trusted fulfilled procedure for this programme; -1 none
+	EcState         string              `json:"ec_state,omitempty"` // none|awaiting_reply|accept|conditional|needs_info|redirect|reject|unparsed
+	EcTurns         int                 `json:"ec_turns,omitempty"`
+	TBState         string              `json:"tb_state,omitempty"` // none|prompted|understood|partial|misunderstood|needs_human|unparsed
+	PrepQ           string              `json:"prep_q,omitempty"`   // ungraded prep: awaiting_unit|escalated|clinician_day15|unit_graded|cannot_determine
+	Chain           []Block             `json:"chain,omitempty"`
+	Policy          string              `json:"policy,omitempty"`      // gate policy that produced this decision (v6 | v7strict+...)
+	ConsentLog      []ConsentTransition `json:"consent_log,omitempty"` // stage 3: hold/release/cancel transitions at this decision
+	Contact         string              `json:"contact,omitempty"`     // contact permission of the referral patient at this decision
+	Sig             string              `json:"sig"`
+	Outreach        []Outreach          `json:"outreach,omitempty"`       // v6: patient-facing outreach intents (sent or suppressed)
+	Lung            *LungDecision       `json:"lung,omitempty"`           // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
+	DR              *DRDecision         `json:"dr,omitempty"`             // diabetic retinopathy loop: grade, rule, deadline, eye-clinic outcome (dr.go)
+	Breast          *BreastDecision     `json:"breast,omitempty"`         // breast recall loop: BI-RADS category, rule, deadline, assessment outcome (breast.go)
+	LDCT            *LDCTDecision       `json:"ldct,omitempty"`           // lung cancer screening loop: Lung-RADS category, rule, clocks, follow-up / work-up outcome (ldct.go)
+	Handoff         *HandoffPacket      `json:"handoff,omitempty"`        // finally rejected referral: hand-off packet to the referrer (handoff.go)
+	AuditReopened   bool                `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
+	Ifhas           *IfhasDecision      `json:"ifhas,omitempty"`          // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
+	CRC             *CRCDecision        `json:"crc,omitempty"`            // CRC post-procedure disposition and owned downstream tracking (crc.go)
+	Inactive        bool                `json:"inactive,omitempty"`       // non-clinical retirement of the current tracking request
+	RequestStatus   string              `json:"request_status,omitempty"`
+	RequestVersion  int                 `json:"request_version,omitempty"`
+	RequestConflict bool                `json:"request_conflict,omitempty"`
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.

@@ -56,6 +56,9 @@ func materializedCaseKind(d *Decision) (string, error) {
 }
 
 func screeningComplete(d *Decision) bool {
+	if d.Inactive {
+		return false
+	}
 	if d.CRC != nil {
 		return d.CRC.ScreeningComplete
 	}
@@ -67,13 +70,16 @@ func screeningComplete(d *Decision) bool {
 }
 
 func ongoingCare(d *Decision) bool {
-	return d.CRC != nil && !d.CRC.Withdrawn && d.CRC.CareState != "" && d.CRC.CareState != "complete" && d.CRC.CareState != "accepted_or_first_appointment"
+	return !d.Inactive && d.CRC != nil && !d.CRC.Withdrawn && d.CRC.CareState != "" && d.CRC.CareState != "complete" && d.CRC.CareState != "accepted_or_first_appointment"
 }
 
 // CRC children inherit the explicitly declared parent. Other, older programmes
 // retain their existing baseLoop contract; CRC never falls back to ID guessing.
 func materializedParent(d *Decision) string {
-	if d != nil && d.CRC != nil && d.CRC.Parent != "" {
+	if d != nil && d.CRC != nil {
+		if d.CRC.Parent == "" {
+			return d.LoopID
+		}
 		return d.CRC.Parent
 	}
 	if d == nil {
@@ -267,7 +273,7 @@ func (p *materializedDecisions) validate() (materializationCounts, error) {
 		}
 	}
 	for _, d := range p.final {
-		if cd := d.CRC; cd != nil && cd.Parent != "" && !cd.Withdrawn && !crcChildMatchesPlan(d, p.final[cd.Parent]) {
+		if cd := d.CRC; cd != nil && cd.Parent != "" && !cd.Withdrawn && !d.Inactive && !crcChildMatchesPlan(d, p.final[cd.Parent]) {
 			return counts, fmt.Errorf("CRC child %s has no matching current source-bound parent plan", d.LoopID)
 		}
 		if d.CRC == nil || d.CRC.Parent != "" {

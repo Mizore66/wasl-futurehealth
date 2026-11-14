@@ -186,6 +186,9 @@ _FIXED_READ_TEXT = {
     "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
     "DoH CRC spec App. 2: referral after FIT+ -> colonoscopy conducted within 31 days; acceptable >90%, desirable >95%. Denominator: all FIT+ referrals with >=31 days of follow-up by day 120.",
     "counts 1-4 shown as <5",
+    "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+    "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2): Herder < 10% after PET/CT -> CT surveillance, first CT at about 3 months; window 60-120 days is Wasl policy",
+    "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
     "CT at 18-24 months",
     "LDCT in 6 months",
     "comparison with prior chest CT, additional imaging and/or LDCT in 1-3 months",
@@ -246,7 +249,7 @@ unowned until urgency urgent_dr_referral_open urgent_ifhas_result_open wasl_live
 wasl_no_review weight win_hi_days win_lo_days window_end_day window_start_day with_human_signoff
 within_31d within_31d_share within_31d_share_everyone_else
 within_31d_share_women_requiring_female_list within_deadline within_window workup_document
-""".split()) | {""}
+""".split()) | {"", "materialized_catalog", "retained_cases", "active_cases", "retained_live_replay_mismatch"}
 _OPERATIONAL_KEY = re.compile(r"^[A-Za-z0-9_./:-]{0,160}$")
 _OPERATIONAL_STRING = re.compile(r"^[A-Za-z0-9_.:/|@=+#%<>;\-]{0,512}$")
 _READ_DROPPED = SENSITIVE_KEYS | {"owner", "canonical_owner", "reason"}
@@ -310,6 +313,7 @@ _SUMMARY_FIELDS = {
     key: None for key in (
         "id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority",
         "consent", "review", "closed", "closed_day", "fixture", "decisions", "lung", "dr", "breast", "ldct", "ifhas", "api_overlay",
+        "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict",
     )
 }
 _GROUP_FIELDS = {
@@ -494,7 +498,8 @@ _PERSON_CONSENT_LOG = _strict_read({
 _PERSON_DECISION = _strict_read({
     "decision_id": None, "in_seq": None, "state": None, "dropoff": None, "owner": None, "overdue": None,
     "escalations": None, "consent_log": _read_list(_PERSON_CONSENT_LOG), "outreach": _read_list(_PERSON_OUTREACH), "policy": None, "sig": None,
-})
+    "lifecycle": None, "inactive": None, "request_status": None, "request_version": None, "request_conflict": None,
+}, optional=("lifecycle", "inactive", "request_status", "request_version", "request_conflict"))
 _PERSON_IDENTITY = _strict_read({"provider": None, "registration": _person_registration, "role": None})
 _PERSON_TIMELINE = _strict_read({key: None for key in (
     "seq", "type", "id", "provider", "status", "day", "arrival_day", "category", "raw_sha", "source",
@@ -529,16 +534,17 @@ _PERSON_DETAIL = _strict_read({
 })
 _PERSON_CASE = _strict_read({
     "case_id": None, "parent_case_id": None, "referral_registration": _person_registration, "detail": _PERSON_DETAIL,
+    "lifecycle": None, "history_availability": None,
     "contact": _strict_read({"canonical": None, "overlay_status": None, "contact_blocked": None, "canonical_unchanged": None}),
-}, optional=("parent_case_id",))
+}, optional=("parent_case_id", "lifecycle", "history_availability"))
 _PERSON_OBLIGATION = _strict_read({
     "case_id": None, "programme": None, "kind": None, "due_day": None, "window_start_day": None,
     "status": None, "source_field": None, "basis": _person_basis,
 }, optional=("window_start_day", "basis"))
 _PERSON_INTENT = _strict_read({
     "case_id": None, "programme": None, "first_decision_id": None, "latest_decision_id": None,
-    "latest_decision_sig": None, "lifecycle": None, "outreach": _PERSON_OUTREACH,
-})
+    "latest_decision_sig": None, "lifecycle": None, "outreach": _PERSON_OUTREACH, "participation": None,
+}, optional=("participation",))
 _PERSON_FLAG = _strict_read({"id": None, "match": None, "actionable": None, "intents": _read_list(_PERSON_INTENT)})
 _PERSON_NEXT = _strict_read({
     "kind": None, "case_id": None, "outreach_flag_id": None, "priority": None, "deadline_day": None,
@@ -558,11 +564,30 @@ _PERSON_SCHEMA = {
 }
 
 
+_PERSON_REFERENCE = _strict_read({
+    "case_id": None, "parent_case_id": None, "lifecycle": None, "availability": None,
+    "history_access": None, "actionable": None, "programmes": None,
+    "decisions": _read_list(_strict_read({"decision_id": None, "sig": None, "in_seq": None, "facts_seq": None, "inactive": None, "programme": None}, optional=("programme",))),
+    "outreach_intents": _read_list(_PERSON_INTENT),
+}, optional=("parent_case_id",))
+_PERSON_UNAVAILABLE = {
+    "schema": None, "case_id": None, "lifecycle": None, "actionable": None, "history_access": None,
+    "association": _strict_read({"status": None, "reason": None}),
+}
+
+
 def person_snapshot(payload):
-    """Default-deny public person journey; raw identity artifacts are not accepted."""
-    if not isinstance(payload, dict) or payload.get("schema") != "wasl-person-journey/1":
-        raise ValueError("person snapshot requires wasl-person-journey/1")
-    output = _read_fields(payload, _PERSON_SCHEMA, "person", required=_PERSON_SCHEMA)
+    """Default-deny public person read; raw identity artifacts are not accepted."""
+    schema = payload.get("schema") if isinstance(payload, dict) else None
+    if schema == "wasl-person-journey/1":
+        fields = _PERSON_SCHEMA
+    elif schema == "wasl-person-journey/2":
+        fields = _PERSON_SCHEMA | {"retained_references": _read_list(_PERSON_REFERENCE)}
+    elif schema == "wasl-person-association-unavailable/2":
+        fields = _PERSON_UNAVAILABLE
+    else:
+        raise ValueError("person snapshot requires a versioned person journey or case-local unavailable response")
+    output = _read_fields(payload, fields, "person", required=fields)
     output["meta"] = _public_meta(payload.get("meta", {}))
     _check_snapshot_canaries(output, "person")
     return output

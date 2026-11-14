@@ -52,7 +52,7 @@ func gRun(t *testing.T, o gOpts, regs []gReg) (*LinkerCore, *ClosureCore, []OutM
 		ev := &Event{ID: fmt.Sprintf("E%d", i), Provider: r.prov, PatientKey: r.pk, Name: r.name, Sex: r.sex, Dob: r.dob, Eid: r.eid, Day: 1, RType: "Encounter"}
 		switch r.role {
 		case "sr":
-			ev.RType, ev.ID, ev.Prog = "ServiceRequest", "SR1", prog
+			ev.RType, ev.ID, ev.Prog, ev.Status = "ServiceRequest", "SR1", prog, "active"
 		case "rep":
 			ev.RType, ev.Status, ev.Category, ev.Day = "DiagnosticReport", "final", "colonoscopy", 20
 			ev.Text = "Caecum reached. Good prep. No polyps."

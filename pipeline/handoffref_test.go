@@ -24,7 +24,7 @@ func xrSetup(t *testing.T) (*LinkerCore, *ClosureCore, []OutMsg) {
 			outs = append(outs, C.Apply(&fs[i])...)
 		}
 	}
-	feed(L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1})))
+	feed(L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1})))
 	feed(L.Apply(xrEvent(2, &Event{ID: "q1", Provider: "ahs-mushrif", RType: "Communication", Focus: "ServiceRequest/SR1", Day: 5, Category: "econsult-question", Reason: "rejected", Recipient: Providers[2].ID, Status: "completed"})))
 	feed(L.Apply(xrEvent(3, &Event{ID: "a1", Provider: "ahs-mushrif", RType: "Communication", Focus: "ServiceRequest/SR1", Day: 6, Category: "econsult-reply", Parse: "redirect", Status: "completed"})))
 	feed(L.Apply(xrEvent(4, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N1",
@@ -110,8 +110,8 @@ func TestXRefIgnoredWhenIdentityPointsElsewhere(t *testing.T) {
 	if !luhnOK(eid) {
 		t.Fatal("test EID must be Luhn-valid")
 	}
-	L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1}))
-	L.Apply(xrEvent(2, &Event{ID: "SR2", Provider: "medlab", RType: "ServiceRequest", Prog: "crc", PatientKey: "medlab|M2", Name: "Mona Saleh", Eid: eid, Day: 1}))
+	L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1}))
+	L.Apply(xrEvent(2, &Event{ID: "SR2", Provider: "medlab", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "medlab|M2", Name: "Mona Saleh", Eid: eid, Day: 1}))
 	L.Apply(xrEvent(3, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N2",
 		Name: "Mona Saleh", Eid: eid, Day: 9, Status: "revoked", Reason: "capacity", XRef: xrLoop}))
 	L.Apply(xrEvent(4, &Event{ID: "NOO-intake-2", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N3",

@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
 import { BOOKING_NEEDED, DECLINED_STATUS, noAnswerStatus, workItem } from "@/components/worklist/model";
-import { CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
 import { COORDINATOR_TOKEN_MISSING, COORDINATOR_TOKEN_REFUSED, postAction } from "@/lib/api/source";
 import { compareInstants } from "@/lib/domain/instant";
 import { loadSample } from "./samples";
@@ -75,7 +75,7 @@ describe("persisted trail from the case-detail overlay", () => {
 });
 
 describe("board position from persisted outcomes", () => {
-  const base = fullList.cases[0];
+  const base = ActiveCaseSummary.parse(fullList.cases[0]);
   const NOW = Date.parse("2026-11-20T12:00:00Z");
   const at = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
   const withOverlay = (ov: Partial<ApiOverlay>) =>
@@ -121,6 +121,33 @@ describe("board position from persisted outcomes", () => {
     expect(later.status).toBe("Call back Sat 21 Nov");
   });
 
+  it("a persisted Reached outcome is still waiting for its follow-up after a reload", () => {
+    const reached = withOverlay({ last_contact: { at: at(2), event: "e", outcome: "reached", channel: "phone" } });
+    expect(reached.awaitingNext).toBe(true);
+    expect(withOverlay({}).awaitingNext).toBe(false);
+  });
+
+  it("a later outcome, an active snooze or a booking projection leaves no Reached follow-up to restore", () => {
+    for (const outcome of ["appointment_agreed", "declined", "no_answer", "voicemail", "wrong_number"]) {
+      expect(withOverlay({ last_contact: { at: at(2), event: "e", outcome, channel: "phone" }, no_answer_streak: 1 }).awaitingNext).toBe(false);
+    }
+    const snoozed = withOverlay({
+      last_contact: { at: at(5), event: "e", outcome: "reached", channel: "phone" },
+      snooze: { until: new Date(NOW + 86_400_000).toISOString(), reason: "Call back Sat 21 Nov", at: at(1) },
+    });
+    expect(snoozed.awaitingNext).toBe(false);
+    const olderSnooze = withOverlay({
+      last_contact: { at: at(1), event: "e", outcome: "reached", channel: "phone" },
+      snooze: { until: new Date(NOW + 86_400_000).toISOString(), reason: "Call back Sat 21 Nov", at: at(5) },
+    });
+    expect(olderSnooze.awaitingNext).toBe(true);
+    const reserved = withOverlay({
+      last_contact: { at: at(2), event: "e", outcome: "reached", channel: "phone" },
+      booking: { status: "reserved", slot: { day: 44 } } as ApiOverlay["booking"],
+    });
+    expect([reserved.awaitingNext, reserved.view]).toEqual([false, "waiting"]);
+  });
+
   it("the served lists place the real fixtures: the last outcome was a decline", () => {
     const it = workItem(fullList.cases[0], 40, true, NOW);
     expect([it.view, it.status]).toEqual(["waiting", DECLINED_STATUS]);
@@ -144,7 +171,7 @@ describe("board position from persisted outcomes", () => {
 });
 
 describe("patient self-service projections", () => {
-  const base = fullList.cases[0];
+  const base = ActiveCaseSummary.parse(fullList.cases[0]);
   const NOW = Date.parse("2026-11-20T12:00:00Z");
   const projection = {
     schema: "wasl-patient-journey/1" as const,

@@ -1,0 +1,70 @@
+{
+  "cases": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "kind": "none",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "no_open_coordinator_action"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/a",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/a"
+    ],
+    "id": "person_fe13ee60e511f422ce36dfc436992e03c602ae53305e726ec8c4f5fdc8127ac1",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "36d0968281db56cc9b7efa3d34e5e9ec7682ecef35df23865963f2619477d779",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_56482a320ad981052f33606d5ee460093e10ba283eee7342d1666fb5e32ce7ec"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@7",
+          "facts_seq": 7,
+          "in_seq": 7,
+          "inactive": true,
+          "programme": "lung_nodule",
+          "sig": "08d360d023fceaf348afcdb21b6e86e65de80c7237998b3247f76d483775ab8d"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "retained",
+      "outreach_intents": [],
+      "programmes": [
+        "lung_nodule"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}

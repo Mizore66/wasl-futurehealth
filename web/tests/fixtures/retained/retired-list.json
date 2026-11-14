@@ -1,0 +1,93 @@
+{
+  "cases": [
+    {
+      "actionable": false,
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "5c707e7a8b4b56785e786032d959b20e4866e5447fbbdee8c92284c78f1203d2",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "unknown",
+      "deadline_day": 0,
+      "decisions": 2,
+      "dropoff": "",
+      "fixture": "",
+      "id": "ahs-mushrif/ServiceRequest/a",
+      "inactive": true,
+      "lifecycle": "retained",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "crc",
+      "programme_availability": "selected",
+      "provider": "ahs-mushrif",
+      "referral_day": 1,
+      "request_conflict": false,
+      "request_status": "revoked",
+      "request_version": 2,
+      "review": "none",
+      "state": "inactive"
+    },
+    {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "7f340314153317e13676528ecb9bf25ea917d38f734568e80d74cf5bcdec657c",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "unknown",
+      "deadline_day": 31,
+      "decisions": 1,
+      "dropoff": "never_notified",
+      "fixture": "",
+      "id": "ahs-mushrif/ServiceRequest/b",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "crc",
+      "provider": "ahs-mushrif",
+      "referral_day": 1,
+      "review": "none",
+      "state": "open"
+    }
+  ],
+  "limit": 100,
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "retained-synthetic-contract"
+  },
+  "offset": 0,
+  "total": 2
+}
