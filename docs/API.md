@@ -162,7 +162,7 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
   - `no_show`: did not attend the eye clinic (rebook outreach).
   - `not_assessable`: no fundal view (clinician decides).
 - **Drop-off:** `no_eye_exam`, `unlinked`, `ungradable_no_repeat`, `no_show`, `not_assessable`, or `""` when resolved.
-- `closed` is `true` for `closed` and `no_referral_needed`. `deadline_day` on the summary is the rule's deadline in days (28, 42, 91, or 365 for a rescreen); the absolute due day is `dr.deadline_day`. `overdue` is set when a referral is still `open` or `no_show`, or a repeat photo is still `open`, after `dr.deadline_day`. `referral_day` can be negative (look-back cohort).
+- `closed` is `true` for `closed` and `no_referral_needed`. `deadline_day` on the summary is the rule's deadline in days (28, 42, 91, or 365 for a rescreen); the absolute due day is `dr.deadline_day`. `overdue` is set when a referral is still `open`, `no_show` or `not_assessable` (no fundal view, clinician decision pending), or a repeat photo is still `open`, after `dr.deadline_day`. `referral_day` can be negative (look-back cohort).
 - The summary carries a `dr` object (also in `current.dr` on the case detail):
 
 ```json
