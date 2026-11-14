@@ -1382,6 +1382,25 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		var previousReport *Event
+		if e.RType == "Appointment" {
+			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
+				L.Stats["stale_appointment_version"]++
+				break
+			}
+			if current, seen := rec.evs[key]; seen && (e.Version > 0 || current.Version > 0) {
+				if e.Version == current.Version && string(canon(e)) != string(canon(current)) {
+					retireReport(rec, key, e.Version)
+					L.Stats["conflicting_appointment_version"]++
+					affRoots[L.Find(i)] = true
+				}
+				if e.Version <= current.Version {
+					if e.Version < current.Version {
+						L.Stats["stale_appointment_version"]++
+					}
+					break
+				}
+			}
+		}
 		if e.RType == "DiagnosticReport" {
 			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
 				L.Stats["stale_report_version"]++
