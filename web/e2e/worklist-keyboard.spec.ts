@@ -440,11 +440,9 @@ for (const [label, viewport] of [
       await page.keyboard.type("1011");
       await page.keyboard.press("Enter");
       await expect(page).toHaveURL(/\/app\/referrals\?q=1011$/);
-      if (viewport.width < 1024) await page.getByRole("button", { name: /All referrals/ }).click();
       await expect(page.getByRole("searchbox", { name: "Search case id" })).toHaveValue("1011");
-      // The page reloads for the query. On desktop the search field takes focus back; on a phone the list pane is
-      // closed after a reload (the open referral shows first), so there is nothing visible to focus.
-      if (viewport.width >= 1024) await focused(page, page.getByRole("searchbox", { name: "Search case id" }));
+      // The query is a client navigation, so the field keeps focus and the list pane stays open at every width.
+      await focused(page, page.getByRole("searchbox", { name: "Search case id" }));
     });
   });
 }

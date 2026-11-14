@@ -764,6 +764,16 @@ export const Booking = z.looseObject({
   reservation_explanation: z.string().optional(),
 });
 
+export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
+
+/** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
+export const Handoff = z.looseObject({
+  clinical_priority: z.string(),
+  decided_at: z.number(),
+  act_by: z.number(),
+  status: HandoffStatus,
+});
+
 export const ActiveCurrentDecision = z.looseObject({
   inactive: z.literal(false).optional(),
   id: z.string(),
@@ -776,6 +786,7 @@ export const ActiveCurrentDecision = z.looseObject({
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
+  handoff: Handoff.optional(),
 });
 
 export const RetainedCurrentDecision = ActiveCurrentDecision.omit({ inactive: true }).extend({
@@ -1266,6 +1277,8 @@ export type FixtureName = z.infer<typeof FixtureName>;
 export type Role = z.infer<typeof Role>;
 export type Meta = z.infer<typeof Meta>;
 export type CaseSummary = z.infer<typeof CaseSummary>;
+export type CurrentDecision = z.infer<typeof CurrentDecision>;
+export type HandoffStatus = z.infer<typeof HandoffStatus>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type Audit = z.infer<typeof Audit>;
