@@ -156,8 +156,21 @@ it("a refreshed real patient opt-out hides persisted Reached follow-ups without 
 
 it("a refreshed overlay regrant never borrows canonical permission from the stale page", async () => {
   const granted = CaseSummary.parse({ ...base, ...load("contact_staff_regrant_live.json"), review: base.review, owner: "someone", dropoff: "not_booked", consent: "denied" });
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok(response(granted))));
-  await mount();
+  // The page-load row is the stale, allowed baseline for the SAME case the fresh packet names, so the
+  // production id/head fence admits the packet; only the canonical denial may change the outcome.
+  const stale: CaseSummary = { ...initial, id: granted.id, programme: granted.programme };
+  expect(stale.consent).toBe("granted");
+  expect(stale.api_overlay?.head).toBe("page-head");
+  const pending = deferred();
+  const fetchMock = vi.fn().mockReturnValue(pending.promise);
+  vi.stubGlobal("fetch", fetchMock);
+  await mount([stale]);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls[0][0]).toBe(`/app/today/ledger?id=${encodeURIComponent(granted.id)}`);
+  expect(host.textContent).toContain("Allowed");
+  expect(host.textContent).not.toContain("Not allowed yet");
+  await act(async () => pending.resolve(ok(response(granted))));
+  expect(host.textContent).not.toContain("Could not read the case ledger");
   expect(host.textContent).toContain("Not allowed yet");
   expect(host.textContent).not.toContain("Allowed");
   expect(host.textContent).not.toContain("Stopped by patient");
