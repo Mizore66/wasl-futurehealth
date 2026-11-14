@@ -1001,6 +1001,7 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		if summary, ok := allowed["case"].(map[string]interface{}); ok {
 			delete(summary, "api_overlay")
 			delete(summary, "api_patient")
+			delete(summary, "contact_state")
 		}
 		if projection.artifactSchema == retainedIdentitySchema && len(c.decisions) == 0 {
 			for _, key := range []string{"links", "holds", "outreach", "decisions", "timeline", "identities"} {

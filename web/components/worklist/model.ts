@@ -120,6 +120,8 @@ export type WorkItem = {
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
+  /** A recorded consent denial or opt-out: no new contact outcome may be logged, whatever the canonical consent. */
+  contactBlocked: boolean;
   /** Patient denial/opt-out in the demo overlay makes simulated SMS unavailable immediately. */
   textsStopped?: boolean;
   patient?: CaseSummary["api_patient"];
@@ -191,13 +193,18 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.status = outcomeStatus(lc.outcome);
     }
   }
+  // The validated shared projection folds patient AND staff consent in ledger order. api_patient is activity,
+  // not current shared permission: a legitimate later staff grant can supersede a patient denial.
+  // Older snapshots have no shared projection; only there retain the conservative patient-only fallback.
+  const contactBlocked = c.contact_state ? c.contact_state.contact_blocked : patientBlocked;
+  const textsStopped = contactBlocked && patientBlocked;
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
   if (snoozeLater) {
     awaitingNext = false;
     words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
   }
-  const snoozed = snoozeRunning || sinks;
+  const snoozed = snoozeLater || sinks;
   // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
   // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
   const booking = ov?.booking;
@@ -236,8 +243,9 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted" && !patientBlocked,
-    textsStopped: patientBlocked,
+    textsAllowed: c.consent === "granted" && !contactBlocked,
+    contactBlocked,
+    textsStopped,
     patient: c.api_patient,
     owner: ownerLabel(owner),
     review: c.review,

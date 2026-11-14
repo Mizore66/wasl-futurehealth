@@ -22,6 +22,10 @@
       "closed": false,
       "closed_day": 0,
       "consent": "unknown",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
       "deadline_day": 0,
       "decisions": 2,
       "dropoff": "",
@@ -63,6 +67,10 @@
       "closed": false,
       "closed_day": 0,
       "consent": "unknown",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
       "deadline_day": 31,
       "decisions": 1,
       "dropoff": "never_notified",

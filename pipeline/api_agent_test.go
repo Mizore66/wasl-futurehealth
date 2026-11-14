@@ -58,7 +58,7 @@ func agentRun(t *testing.T, dir string, cases []agentCaseSpec) {
 		if ct == "" {
 			ct = "granted"
 		}
-		dec := &Decision{ID: "dec-" + c.item, LoopID: c.loop, State: st, Prog: "crc", Contact: ct, Provider: "ahs-mushrif"}
+		dec := &Decision{ID: "dec-" + c.item, LoopID: c.loop, State: st, Prog: "crc", Contact: ct, Provider: "ahs-mushrif", Sig: "sig-" + c.loop}
 		it := &ReviewItem{ItemID: c.item, LoopID: c.loop, Kinds: []string{"link"}, Pair: c.pair, P: 0.5}
 		for _, env := range []OutEnvelope{{Kind: "item", OSeq: uint64(2*i + 1), Item: it}, {Kind: "dec", OSeq: uint64(2*i + 2), Dec: dec}} {
 			b, _ := json.Marshal(env)
