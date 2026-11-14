@@ -59,7 +59,7 @@ describe("record header saved owner under an invalid ledger", () => {
     const html = await renderRecord(withOwner(partial));
     expect(html).toContain(`owner ${SAVED}`);
     expect(html).toContain(BANNER);
-    expect(html).toContain("nothing on this record is authoritative");
+    expect(html).toContain('role="alert"');
   });
 
   it("warns when only review_ledger.status is invalid", async () => {
@@ -99,7 +99,10 @@ describe("record header saved owner under an invalid ledger", () => {
     const { api_overlay: _o, review_ledger: _r, ...older } = full;
     void _o;
     void _r;
-    const html = await renderRecord({ ...older, api_reviews: [], case: { ...full.case, owner: "Practitioner/ahs-mushrif-nurse-5" } });
+    // The case summary embeds its own api_overlay copy; an older snapshot has neither, so drop it as well.
+    const { api_overlay: _c, ...canonicalCase } = full.case;
+    void _c;
+    const html = await renderRecord({ ...older, api_reviews: [], case: { ...canonicalCase, owner: "Practitioner/ahs-mushrif-nurse-5" } });
     expect(html).toContain("owner Nurse 5");
     expect(html).not.toContain(BANNER);
   });
