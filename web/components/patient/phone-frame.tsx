@@ -10,7 +10,7 @@ import { PHONE_FONT } from "./parts";
 const STEP_NAMES: Record<Step, string> = { notice: "Notice", check: "Check", book: "Book" };
 
 /** The phone column: a demo strip (English, honesty label, step links), then the patient's screen in her language. */
-export function PhoneFrame({ step, query, children }: { step: Step; query: PhoneQuery; children: React.ReactNode }) {
+export function PhoneFrame({ step, query, live = false, children }: { step: Step; query: PhoneQuery; live?: boolean; children: React.ReactNode }) {
   const t = DICTS[query.lang];
   const options = LANGS.map((lang) => ({
     lang,
@@ -22,9 +22,9 @@ export function PhoneFrame({ step, query, children }: { step: Step; query: Phone
   return (
     <div className="min-h-dvh bg-ground">
       <div className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-phone-ground min-[420px]:border-x min-[420px]:border-line">
-        <nav aria-label="Demo steps" lang="en" dir="ltr" className="flex items-center gap-3 px-5 pt-3 text-small">
-          <HonestyLabel kind="designed">Designed, not built · no API</HonestyLabel>
-          <ol className="m-0 ms-auto flex list-none gap-3 p-0">
+        <nav aria-label="Demo steps" lang="en" dir="ltr" className="flex flex-wrap items-center gap-3 px-5 pt-3 text-small">
+          {live ? <HonestyLabel kind="built">Synthetic · server saved</HonestyLabel> : <HonestyLabel kind="designed">Designed, not built · no API</HonestyLabel>}
+          <ol className="m-0 ms-auto flex flex-wrap list-none gap-3 p-0">
             {STEPS.map((s, i) => (
               <li key={s}>
                 <Link

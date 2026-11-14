@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import type { Referral, ReferralState } from "./referrals";
 import { rememberSearchFocus, SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
+import { Pager } from "./pager";
+import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
 
 /* Every action here is session state: the API has no referral-inbox endpoint. */
 
@@ -52,6 +54,7 @@ export function ReferralInbox({
   aside: React.ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>("needs");
+  const [page, setPage] = useState(1);
   const [sel, setSel] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
@@ -78,6 +81,7 @@ export function ReferralInbox({
 
   const selectTab = (id: Tab) => {
     setTab(id);
+    setPage(1);
     setSel(null);
     setMode(null);
     setPicked([]);
@@ -88,7 +92,18 @@ export function ReferralInbox({
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
   const test = TABS.find(([id]) => id === tab)![2];
   const list = sorted.filter(test);
-  const r = list.find((x) => x.id === sel) ?? (sel ? all.find((x) => x.id === sel) : undefined) ?? list[0];
+  const paging = paginate(list, pageWith(list, sel, page));
+  const r = list.find((x) => x.id === sel) ?? (sel ? all.find((x) => x.id === sel) : undefined) ?? paging.rows[0];
+  if (page !== paging.page) setPage(paging.page);
+  const goPage = (to: number, via: PagerControl) => {
+    const target = paginate(list, to);
+    const focus = pagerFocusAfter(via, target);
+    if (focus) setWant({ k: `pager-${focus}` });
+    setPage(target.page);
+    setSel(target.rows[0]?.id ?? null);
+    setMode(null);
+    setPicked([]);
+  };
   const needCount = all.filter(TABS[0][2]).length;
 
   const late = sorted.filter((x) => x.state === "new" && x.waiting > window);
@@ -187,7 +202,7 @@ export function ReferralInbox({
             <SearchField label="Search case id" name="q" defaultValue={q} placeholder="Case id, then Enter" restoreKey="referrals" />
           </form>
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
-            {list.map((x) => {
+            {paging.rows.map((x) => {
               const on = r?.id === x.id;
               const isLate = x.state === "new" && x.waiting > window;
               const inline = x.state === "new" && x.flags.length === 0;
@@ -236,6 +251,8 @@ export function ReferralInbox({
             })}
             {list.length === 0 && <p className="m-2 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">No referrals in this view.</p>}
           </div>
+          <Pager paging={paging} label="Referral list pages" testId="page-range" onPage={goPage} />
+          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
           <div className="border-t border-rule px-4 py-3 text-small text-muted">
             {list.length} {list.length === 1 ? "referral" : "referrals"} · {needCount} need you{q && ` · matching “${q}”`}
           </div>

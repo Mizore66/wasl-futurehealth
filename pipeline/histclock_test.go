@@ -120,7 +120,7 @@ func TestHistClockStampsStreamTimeOnlyWhenOn(t *testing.T) {
 	for _, on := range []bool{false, true} {
 		withHistClock(t, on)
 		L := NewLinkerCore(nil, 1)
-		out := L.Apply(&Prep{Seq: 1, Kind: "event", Tick: -150.5, Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc",
+		out := L.Apply(&Prep{Seq: 1, Kind: "event", Tick: -150.5, Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc",
 			PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: -151}})
 		var facts *FactsMsg
 		for i := range out {

@@ -68,11 +68,20 @@ func lungFindingFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" || !diagnosticReportEvidenceEligible(e.Status) {
+		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LungFinding", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
-			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_nodule", RecPk: rec.Pk}
+		eligible := diagnosticReportEvidenceEligible(e.Status)
+		if !eligible && e.Focus == "" {
+			continue
+		}
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LungFinding", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus,
+			Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_nodule", RecPk: rec.Pk}
+		// Retain ineligible intermediates solely for explicit lineage traversal. The evaluator filters their status;
+		// do not carry their reader verdicts as clinical evidence or alter the original event.
+		if eligible {
+			d.Ev = e.Ev
+		}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
@@ -126,20 +135,29 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	if sr == nil {
 		sr = &LungSR{Age: -1, Excl: "scope_data_missing"}
 	}
-	ld.Finding, ld.RiskRecorded = sr.Finding, sr.Risk != ""
+	ld.RiskRecorded = sr.Risk != ""
 	if sr.Risk == "low" {
 		ld.Risk = "low"
 	}
 	// ---- rows (same identity trust rule as the screening programmes)
+	findingParents := reportParentLineage(f.Down, "lung_nodule", "LungFinding")
 	var finding *row
-	var fus []row
+	var addenda, fus []row
 	for _, d := range f.Down {
 		if d.Prog != "lung_nodule" || d.Day < f.SRDay-1 {
 			continue
 		}
 		if d.RType == "LungFinding" {
-			if finding == nil || d.ReportID == sr.Finding {
-				finding = &row{d: d, pc: 1, trusted: true}
+			if d.Status != "" && !diagnosticReportEvidenceEligible(d.Status) {
+				continue
+			}
+			r := row{d: d, pc: 1, trusted: true}
+			switch {
+			case sr.Finding != "" && d.ReportID == sr.Finding:
+				rr := r
+				finding = &rr
+			case sr.Finding != "" && d.ReportID != sr.Finding && inExplicitReportLineage(sr.Finding, d.ReportID, findingParents):
+				addenda = append(addenda, r)
 			}
 			continue
 		}
@@ -153,6 +171,21 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			trusted = !d.NearMiss && d.EIDContra == "" && (pc >= TauClose || d.AllHuman)
 		}
 		fus = append(fus, row{d: d, pc: pc, trusted: trusted})
+	}
+	// Explicit descendants supersede their ancestors even when both retain the same exam day. Chronology only
+	// orders surviving branches in the authorized lineage; same-ID revision selection remains the linker's responsibility.
+	addenda = unsupersededReportRows(addenda, findingParents)
+	sort.SliceStable(addenda, func(i, j int) bool {
+		if addenda[i].d.Day != addenda[j].d.Day {
+			return addenda[i].d.Day < addenda[j].d.Day
+		}
+		return addenda[i].d.EventID < addenda[j].d.EventID
+	})
+	for i := range addenda {
+		finding = &addenda[i]
+	}
+	if finding != nil {
+		ld.Finding = finding.d.ReportID
 	}
 	sort.SliceStable(fus, func(i, j int) bool {
 		if fus[i].d.Day != fus[j].d.Day {

@@ -11,7 +11,7 @@ func TestContradictingSecondIDNeedsConfirmation(t *testing.T) {
 	V7Guard, ReuseIDConfirm, LinkContradictionConfirm = true, true, true
 	L, loop1 := newLoopLinker(t)
 	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
-	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
 	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	loop2 := "ahs-mushrif/ServiceRequest/SR2"
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}

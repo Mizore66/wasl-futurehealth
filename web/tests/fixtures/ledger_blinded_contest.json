@@ -1,0 +1,66 @@
+{
+  "auto_closure": false,
+  "canonical_reopened": false,
+  "canonical_state": "open",
+  "event": {
+    "action": "signoff_link",
+    "actor": "sr-one",
+    "at": "2026-11-13T08:32:44.9889445Z",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "hash": "333ee74f5282fa6c7204e1be4c5c87c7efffc08a9df53b872009116cb09eb74d",
+    "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "kind": "contest",
+    "mode": "demo",
+    "note": "synthetic",
+    "role": "senior_reviewer",
+    "target": "c97d2cfc83f381aae3cecfcd485a9781d02a2119a610d0eddee1a1ed44a18083",
+    "target_action": "signoff_link",
+    "target_actor": "Rev-A"
+  },
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-13T08:32:44Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "003"
+  },
+  "note": "contest recorded; the case is not closed or reopened. A different authorised reviewer must resolve it.",
+  "projection": {
+    "canonical_state": "open",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "case_status": "contested",
+    "events": [
+      {
+        "action": "signoff_link",
+        "actor": "Rev-A",
+        "at": "2026-11-13T08:32:44.9456695Z",
+        "hash": "c97d2cfc83f381aae3cecfcd485a9781d02a2119a610d0eddee1a1ed44a18083",
+        "kind": "review",
+        "status": "contested",
+        "target": ""
+      },
+      {
+        "action": "signoff_link",
+        "actor": "Rev-A",
+        "at": "2026-11-13T08:32:44.9520504Z",
+        "hash": "904918c8f40a39d210ecb9a0f4d42b7cfd289a645b2d26ccee6bc2397d211c31",
+        "kind": "claim",
+        "status": "",
+        "target": ""
+      },
+      {
+        "action": "signoff_link",
+        "actor": "sr-one",
+        "at": "2026-11-13T08:32:44.9889445Z",
+        "hash": "333ee74f5282fa6c7204e1be4c5c87c7efffc08a9df53b872009116cb09eb74d",
+        "kind": "contest",
+        "status": "open",
+        "target": "c97d2cfc83f381aae3cecfcd485a9781d02a2119a610d0eddee1a1ed44a18083"
+      }
+    ],
+    "note": "case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest"
+  },
+  "requires_resolution": true
+}
