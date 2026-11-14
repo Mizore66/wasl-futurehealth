@@ -295,13 +295,37 @@ test.describe("Referrals", () => {
     await expect(last).not.toContainText(/by d/);
   });
 
-  test("the incomplete report shows grade chips", async ({ page }) => {
-    await page.goto("/app/referrals");
-    const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
-    await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: /^2\s*Mostly seen$/ }).click();
-    await expect(pane.getByRole("status")).toContainText("Graded 2, mostly seen. The case stays held until the report is complete.");
-  });
+  for (const [grade, words] of [[0, "Not seen"], [1, "Partly seen"], [2, "Mostly seen"], [3, "All seen"]] as const) {
+    test(`prep grade ${grade} stays held, retains history across search, and undoes`, async ({ page }) => {
+      await page.goto("/app/referrals");
+      const pane = page.getByRole("region", { name: "Open referral" });
+      await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+      await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: new RegExp(`^${grade}\\s*${words}$`) }).click();
+      await expect(pane.getByRole("status")).toContainText(`Graded ${grade}, ${words.toLowerCase()}. The case stays held until the report is complete.`);
+      await expect(pane.getByRole("button", { name: "Undo" })).toBeFocused();
+      await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+      const chain = pane.getByRole("list", { name: "Sealed chain" });
+      await expect(chain).toContainText(`Graded the prep ${grade}`);
+      await expect(chain.getByRole("listitem").last()).toContainText("Complete the report");
+      await expect(chain).not.toContainText("Book and do the colonoscopy");
+      await search(page, "1011");
+      await expect(pane.getByRole("status")).toContainText(`Graded ${grade},`);
+      await search(page, "no-such-case");
+      await expect(pane.getByRole("heading", { name: "Nothing to open" })).toBeVisible();
+      await search(page, "");
+      await page.getByRole("button", { name: /^Aisha Al Mansoori/ }).click();
+      await expect(chain).toContainText(`Graded the prep ${grade}`);
+      await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+      await pane.getByRole("button", { name: "Undo" }).click();
+      await expect(pane.getByRole("heading", { level: 2 })).toBeFocused();
+      await expect(chain).not.toContainText("Graded the prep");
+      await expect(pane.getByRole("group", { name: "Boston grade" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+    });
+  }
 
   test("a referral's avatar opens the patient record", async ({ page }) => {
     await page.goto("/app/referrals");

@@ -181,7 +181,7 @@ func ldctSynoptic(label string, r *rand.Rand) string {
 	return t + fmt.Sprintf(" Final assessment: Lung-RADS %s (%s).", c, ldctWordOf[c])
 }
 
-func (g *ldctGen) report(prov string, x *reg, day, arr float64, code, text, uid, label, coded string) string {
+func (g *ldctGen) report(prov string, x *reg, day, arr float64, code, text, uid, label, coded, parent string) string {
 	id := g.nextID(prov, "ct")
 	disp := map[string]string{"ldct-screen": "Low-dose CT chest, lung cancer screening", "ldct-workup": "Thoracic work-up / lung MDT outcome"}[code]
 	res := map[string]interface{}{"resourceType": "DiagnosticReport", "id": id, "status": "final",
@@ -190,6 +190,9 @@ func (g *ldctGen) report(prov string, x *reg, day, arr float64, code, text, uid,
 		"presentedForm":     []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text)), "title": "ldct corpus " + uid}}}
 	if coded != "" {
 		res["conclusionCode"] = []interface{}{map[string]string{"system": "urn:wsi:lung-rads", "code": strings.TrimPrefix(label, "LR"), "text": coded}}
+	}
+	if parent != "" {
+		res["extension"] = []interface{}{map[string]string{"url": "urn:wsi:addendum-to", "valueString": "DiagnosticReport/" + parent}}
 	}
 	g.emit(prov, arr, res, x)
 	if arr <= TEnd {
@@ -201,13 +204,14 @@ func (g *ldctGen) report(prov string, x *reg, day, arr float64, code, text, uid,
 }
 
 // scan: one LDCT report at the screening centre (coded 60% of the time); styles pick the corpus wording.
-func (g *ldctGen) scan(x *reg, day float64, label string, styles ...string) (string, float64, bool) {
+// parent explicitly binds LR0 completions to their index, including interval scans, without linking independent follow-ups.
+func (g *ldctGen) scan(x *reg, day float64, label, parent string, styles ...string) (string, float64, bool) {
 	arr := day + g.lognorm(.8, .5)
 	if g.r.Float64() < .6 {
-		return g.report(g.src.ID, x, day, arr, "ldct-screen", ldctSynoptic(label, g.r), "coded-"+label, label, ldctCodeOf(label)), arr, true
+		return g.report(g.src.ID, x, day, arr, "ldct-screen", ldctSynoptic(label, g.r), "coded-"+label, label, ldctCodeOf(label), parent), arr, true
 	}
 	d := g.pick(g.scans, label, styles...)
-	return g.report(g.src.ID, x, day, arr, "ldct-screen", d.Text, d.ID, label, ""), arr, false
+	return g.report(g.src.ID, x, day, arr, "ldct-screen", d.Text, d.ID, label, "", parent), arr, false
 }
 
 // ldctOutcomeMix: P(treatment), P(benign) by work-up category (the rest is MDT surveillance).
@@ -253,7 +257,7 @@ func genLDCT(lcDir string, seed int64, nLDCT int, bg []*Person, tr *Truth, evs *
 		y := g.getReg(p, g.hosp)
 		d := g.pick(g.notes, label, "")
 		arr := t + g.lognorm(1, .7)
-		id := g.report(g.hosp.ID, y, t, arr, "ldct-workup", d.Text, d.ID, label, "")
+		id := g.report(g.hosp.ID, y, t, arr, "ldct-workup", d.Text, d.ID, label, "", "")
 		return id, arr <= TEnd
 	}
 	for k := 0; k < nLDCT; k++ {
@@ -261,7 +265,7 @@ func genLDCT(lcDir string, seed int64, nLDCT int, bg []*Person, tr *Truth, evs *
 		x := g.getReg(p, g.src)
 		S := -300 + 390*r.Float64()
 		label := g.drawCat(true)
-		sid, sArr, coded := g.scan(x, S, label)
+		sid, sArr, coded := g.scan(x, S, label, "")
 		g.loop(p, x, S, label, sid, sArr, coded, "", note)
 	}
 	// distractors: other persons' work-up documents at the hospital (a document for the wrong person must never close a loop)
@@ -303,7 +307,7 @@ func (g *ldctGen) loop(p *Person, x *reg, S float64, label, sid string, sArr flo
 		}
 		if style != "" {
 			l2 := g.drawCat(false)
-			sid2, a2, _ := g.scan(x, S2, l2, style)
+			sid2, a2, _ := g.scan(x, S2, l2, sid, style)
 			if a2 <= TEnd {
 				bt.Scans = append(bt.Scans, sid2)
 				bt.Label, bt.GradeDay = l2, S2
@@ -330,7 +334,7 @@ func (g *ldctGen) loop(p *Person, x *reg, S float64, label, sid string, sArr flo
 		}
 		if bt.Adherence != "never" {
 			fl := g.drawFollow(rec.Cell)
-			fid, farr, fcoded := g.scan(x, t, fl, "followup")
+			fid, farr, fcoded := g.scan(x, t, fl, "", "followup")
 			if farr <= TEnd {
 				bt.Scans = append(bt.Scans, fid)
 				bt.FollowLabel, bt.FollowReport, bt.Outcome = fl, fid, "followup_done"

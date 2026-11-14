@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CaseList, CurrentDecision } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseList, CurrentDecision } from "@/lib/api/schema";
 import { addBusinessDays, handoffActBy, handoffUrgent } from "@/lib/domain/handoff";
 import { formatDay } from "@/lib/domain/day";
 import { handoffOf, handoffWords, referralFrom } from "@/components/worklist/referrals";
 import { loadSample } from "./samples";
 
 const page = CaseList.parse(loadSample("cases_crc_page1.json"));
-const base = page.cases.find((c) => c.id.endsWith("sr-1011"))!;
+const base = ActiveCaseSummary.parse(page.cases.find((c) => c.id.endsWith("sr-1011"))!);
 const returned = (id: string) => ({ ...base, id: `ahs-mushrif/ServiceRequest/${id}`, state: "open" as const, closed: false, dropoff: "referral_rejected" as const });
 
 describe("referral hand-off clock (mirrors pipeline/handoff.go)", () => {

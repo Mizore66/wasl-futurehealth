@@ -32,6 +32,7 @@ export const STAGES = {
   waiting_for_reviewers: { step: 7, label: "Waiting for two reviewers" },
   message_held_for_consent: { step: 7, label: "Message held until consent" },
   recorded: { step: 8, label: "Recorded in the ledger" },
+  retained: { step: 8, label: "Retired: history only" },
 } as const satisfies Record<string, { step: Step; label: string }>;
 
 export type StageKey = keyof typeof STAGES;
@@ -114,6 +115,7 @@ export function openReviewItems(c: CaseDetail) {
 
 /** Where a case rests now. Steps 2 and 4 are transient and appear only in the replay. */
 export function caseStage(c: CaseDetail): CaseStage {
+  if (c.case.lifecycle === "retained") return stage("retained", "inactive");
   if (c.case.closed) {
     const via = c.signoffs.length > 0 ? "closed · human_signoff" : "closed · auto";
     return stage("recorded", via);

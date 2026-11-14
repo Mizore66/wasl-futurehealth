@@ -49,5 +49,5 @@ export async function recordConsent(
       warning: "Consent event saved, but the updated case could not be read. Reload before another action.",
     };
   }
-  return { ok: true, contact: detail.api_contact, expectedHead: detail.current.sig ?? "" };
+  return { ok: true, contact: detail.api_contact, expectedHead: detail.api_contact.overlay.revision };
 }

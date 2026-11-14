@@ -60,6 +60,15 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const [detail, audit, personJourney] = await Promise.all([getCase(id), getAudit(id), optionalPersonJourney]);
   if (!detail) notFound();
   const c = detail.case;
+  if (c.lifecycle === "retained") return <>
+    <h1 className="text-title font-semibold">Retired case {shortId(c.id)}</h1>
+    <p>This tracking request is inactive. Its original decisions, signed reviews and source history are retained, not current care or outreach work.</p>
+    <p>{c.programme_availability === "unavailable" ? "No current programme was selected." : "The recorded programme does not confer active eligibility."}</p>
+    <Link className={BUTTON} href={`${caseHref("/app/patients", c.id)}/audit`}>Authorized audit history</Link>
+    <Link className={BUTTON} href={`/app/people?case_id=${encodeURIComponent(c.id)}`}>Historical person association</Link>
+    <TimelineCard detail={detail} />
+    <LedgerCard detail={detail} />
+  </>;
   const person = personForLoop(c.id);
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
@@ -107,7 +116,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       </header>
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
-        {personJourney && (
+        {personJourney && personJourney.schema !== "wasl-person-association-unavailable/2" && (
           <Link
             href={`/app/people?case_id=${encodeURIComponent(c.id)}`}
             className={cn(BUTTON, "border border-control bg-surface text-ink no-underline hover:bg-active hover:text-ink")}

@@ -444,9 +444,6 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if c == nil {
 		return errors.New("patient event for unknown case")
 	}
-	if !patientCaseSupported(c) {
-		return errors.New("patient event for unsupported non-CRC case")
-	}
 	linkID := sstr(ev, "link_id")
 	if !patientIDRE.MatchString(linkID) || sstr(ev, "role") != patientRole || sstr(ev, "actor") != "patient-link/"+linkID || sstr(ev, "mode") != "demo" {
 		return errors.New("invalid patient event identity")
@@ -454,18 +451,29 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if _, err := time.Parse(time.RFC3339Nano, sstr(ev, "at")); err != nil {
 		return errors.New("bad patient event timestamp")
 	}
-	// Canonical decisions can legitimately advance after a patient action. Its
-	// signed evidence must belong to this case's retained history, not necessarily
-	// be the latest decision. The first mutation roots at that historical signature;
-	// subsequent mutations must still follow the patient-only head exactly.
+	// Canonical decisions can advance or retire the current programme after a
+	// patient action. Resolve its same-case signed programme as replayProtocol does:
+	// equivalent re-emissions are legal, but ambiguous contexts fail closed.
+	// This replay-only check must not restore today's programme or write eligibility.
 	signature := sstr(ev, "head_signed")
-	knownHead := false
+	var signed *Decision
 	for _, d := range c.decisions {
-		knownHead = knownHead || signature != "" && d.Sig == signature
+		if d.Sig != signature {
+			continue
+		}
+		if signed != nil && signed.Prog != d.Prog {
+			return errors.New("patient event signed against an ambiguous programme head")
+		}
+		signed = d
 	}
-	if !knownHead {
+	if signature == "" || signed == nil {
 		return errors.New("patient event signed against a head the case never had")
 	}
+	if !patientCaseSupported(&apiCase{Programme: signed.Prog}) {
+		return errors.New("patient event for unsupported non-CRC case")
+	}
+	// The first mutation roots at that historical signature; subsequent mutations
+	// must still follow the patient-only head exactly.
 	head := c.patient.Head
 	if head == "" {
 		head = signature

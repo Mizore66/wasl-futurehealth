@@ -3,7 +3,8 @@ import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { handoffOf, referralFrom } from "@/components/worklist/referrals";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { syntheticReferrals } from "@/components/worklist/synthetic-referrals";
-import { getCase, getCases, getDashboard } from "@/lib/api/source";
+import { getAllCases } from "@/lib/api/all-cases";
+import { getCase, getDashboard } from "@/lib/api/source";
 import { formatDay } from "@/lib/domain/day";
 
 export const metadata = { title: "Referrals" };
@@ -12,7 +13,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
   const [{ cases: listed }, extra, dashboard, now] = await Promise.all([
-    getCases({ provider: "ahs-mushrif", programme: "crc", limit: 500, ...(q && { q }) }),
+    getAllCases({ provider: "ahs-mushrif", programme: "crc", ...(q && { q }) }),
     syntheticReferrals(q),
     getDashboard(),
     runClock(),

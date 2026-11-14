@@ -553,8 +553,10 @@ func TestPatientOptOutBlocksOutreachAndSurvivesExpiry(t *testing.T) {
 func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 	recordConsent := func(t *testing.T, p *patientTestAPI, event string) {
 		t.Helper()
+		_, current, _ := p.request(t, http.MethodGet, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", nil)
+		revision := current["overlay"].(map[string]interface{})["revision"]
 		code, body, _ := p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{
-			"event": event, "expected_head": patientTestSignature(patientTestCaseA), "note": "synthetic coordinator consent update",
+			"event": event, "expected_head": revision, "note": "synthetic coordinator consent update",
 		})
 		if code != http.StatusCreated {
 			t.Fatalf("coordinator %s: %d %v", event, code, body)
@@ -951,6 +953,9 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(run, name), []byte("{}"), 0o600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), []byte(preflightFHIRLine+"\n"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
 	token, err := provisionPatientLink(run, exportLoop, 30*time.Minute, now)
