@@ -69,9 +69,9 @@ func agentRun(t *testing.T, dir string, cases []agentCaseSpec) {
 		}
 	}
 	writeAgentNDJSON(t, filepath.Join(dir, "out_log.ndjson"), out)
-	writeAgentNDJSON(t, filepath.Join(dir, "fhir_log.ndjson"), nil)
+	writeAgentNDJSON(t, filepath.Join(dir, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
 	writeAgentNDJSON(t, filepath.Join(dir, "reviewer_decisions.ndjson"), so)
-	writeRequiredAPIJSON(t, dir)
+	writeRequiredAPIJSONForCases(t, dir, len(cases))
 }
 
 func agentRecRow(item string, pair [2]string, label string) map[string]interface{} {

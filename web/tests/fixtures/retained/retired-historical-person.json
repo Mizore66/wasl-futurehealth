@@ -1,0 +1,78 @@
+{
+  "cases": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "kind": "none",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "no_open_coordinator_action"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/a",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/a"
+    ],
+    "id": "person_3c40d54b84f70f5850a016971409727a8e77a17b773893f5db423f9e252cb455",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "4e04378a66e73810238da33788012ccc9c4b9f566535b358152b1fc79c3a8a96",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@1",
+          "facts_seq": 1,
+          "in_seq": 1,
+          "inactive": false,
+          "programme": "crc",
+          "sig": "a3dd9a0421a42253d257c7c2072d604e8677baf1e7ac05c72ad3d054601b9782"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+          "facts_seq": 2,
+          "in_seq": 2,
+          "inactive": true,
+          "programme": "crc",
+          "sig": "5c707e7a8b4b56785e786032d959b20e4866e5447fbbdee8c92284c78f1203d2"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "retained",
+      "outreach_intents": [],
+      "programmes": [
+        "crc"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}

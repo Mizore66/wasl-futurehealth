@@ -207,21 +207,22 @@ const LDCT_WORKUP_WORDS: Record<string, string> = {
   wk_dna: "LDCT work-up: did not attend",
 };
 
-function evidenceDecisionWords(decision: string, programme: Programme): string {
+function evidenceDecisionWords(decision: string, programme: Programme | ""): string {
+  if (programme === "") return `Historical evidence: ${plain(decision || "no answer")} (programme unavailable)`;
   if (programme === "lung_ldct") return LDCT_WORKUP_WORDS[decision] ?? `Lung-RADS ${decision || "no answer"}`;
   const answer = decision === "inadequate" ? "not adequate" : plain(decision || "no answer").toLowerCase();
   return `${EVIDENCE_LABEL[programme]} ${answer}`;
 }
 
 /** A sign-off's decision, as the reviewer would say it. */
-export function signoffWords(s: CaseDetail["signoffs"][number], programme: Programme): string {
+export function signoffWords(s: CaseDetail["signoffs"][number], programme: Programme | ""): string {
   if (s.kinds.includes("link")) return s.link === "same" ? "Same patient" : s.link === "different" ? "Not the same patient" : plain(s.link || "no answer");
   if (s.kinds.includes("evidence")) return evidenceDecisionWords(s.evidence, programme);
   return plain(s.link || s.evidence || "signed");
 }
 
 /** Review actions appended through the API: the decision as a sentence. */
-export function reviewWords(decision: string, programme: Programme): string {
+export function reviewWords(decision: string, programme: Programme | ""): string {
   if (decision === "same") return "Same patient";
   if (decision === "different") return "Not the same patient";
   if (decision === "adequate" || decision === "inadequate" || programme !== "crc") {
@@ -284,6 +285,7 @@ type LedgerLike =
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
+  | { ledger: "patient"; kind: string }
   | { ledger: "unknown"; label: string };
 
 /** The system identifier of a ledger event as the API wrote it: `type/kind`, the compensation kind, or the review's action. */
@@ -291,6 +293,7 @@ export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
   if (e.ledger === "compensation") return e.kind;
   if (e.ledger === "claim") return `review_claim/${e.kind}`;
+  if (e.ledger === "patient") return `patient_journey/${e.kind}`;
   if (e.ledger === "unknown") return e.label || "unrecognised";
   return e.action ?? "review";
 }
@@ -333,6 +336,7 @@ export function ledgerWords(e: LedgerLike): string {
     const operation = { claim: "Claimed", renew: "Renewed", release: "Released", takeover: "Taken over" }[e.kind] ?? plain(e.kind);
     return `Review question ${operation.toLowerCase()}`;
   }
+  if (e.ledger === "patient") return `Patient self-service: ${plain(e.kind)}`;
   if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
   return e.decision ? plain(e.decision) : "Review";
 }

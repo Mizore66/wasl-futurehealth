@@ -69,6 +69,7 @@ type drGen struct {
 	*lungGen
 	screens, notes []lungDoc
 	noteText       map[string]string // clinic-note id -> text (-drnext reads the stated review interval)
+	repeatOf       string            // explicit same-episode repeat link for the next screening report
 }
 
 func (g *drGen) pick(docs []lungDoc, labels ...string) lungDoc {
@@ -137,6 +138,9 @@ func (g *drGen) report(prov string, x *reg, day, arr float64, code, text, uid, l
 		"presentedForm":     []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text)), "title": "dr corpus " + uid}}}
 	if coded != "" {
 		res["conclusionCode"] = []interface{}{map[string]string{"text": coded}}
+	}
+	if code == "dr-screen" && g.repeatOf != "" {
+		res["extension"] = []interface{}{map[string]string{"url": repeatRelation, "valueString": "DiagnosticReport/" + g.repeatOf}}
 	}
 	g.emit(prov, arr, res, x)
 	if arr <= TEnd {
@@ -213,7 +217,9 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 		if label == "U" && r.Float64() < .7 { // repeat photo; the new grade decides the loop from its own day
 			S2 := S + 7 + 21*r.Float64()
 			l2 := g.drawGrade(false)
+			g.repeatOf = sid
 			sid2, a2 := g.screen(src.ID, x, S2, l2, coded)
+			g.repeatOf = ""
 			if a2 <= TEnd {
 				dt.Screens = append(dt.Screens, sid2)
 				dt.Label, dt.GradeDay = l2, S2

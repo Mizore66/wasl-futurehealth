@@ -48,6 +48,7 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
+  if (c.lifecycle === "retained") return { status: "Retired", next: "Authorized history only; no current care action" };
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
@@ -91,7 +92,8 @@ export const PROGRAMME_NAMES: Record<Programme, string> = {
   ifhas: "IFHAS cardiometabolic follow-up",
 };
 
-export const PROCEDURE: Record<Programme, string> = {
+export const PROCEDURE: Record<Programme | "", string> = {
+  "": "procedure unavailable",
   crc: "colonoscopy",
   cervical: "colposcopy",
   lung_nodule: "follow-up CT",
@@ -118,6 +120,9 @@ export type WorkItem = {
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
+  /** Patient denial/opt-out in the demo overlay makes simulated SMS unavailable immediately. */
+  textsStopped?: boolean;
+  patient?: CaseSummary["api_patient"];
   owner: string;
   review: CaseSummary["review"];
   dropoff: Dropoff;
@@ -130,6 +135,8 @@ export type WorkItem = {
   snoozed?: boolean;
   /** Consecutive persisted no-answers ending the case's contact log (live API only). */
   noAnswer?: number;
+  /** The latest applicable contact outcome is Reached, so Appointment agreed, Call back and Declined are still to choose. */
+  awaitingNext?: boolean;
   /** `invalid`: ledger replay stopped part-way, so this row's overlay is only a prefix and not authoritative. */
   ledgerStatus?: "ok" | "invalid";
 };
@@ -140,7 +147,7 @@ export const DECLINED_STATUS = "Declined · GP to sign";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
-const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
+export const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
 
 /** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
 export const HANDOFF_OWNER = "Dr Al Kaabi";
@@ -157,6 +164,11 @@ export const HANDOFF_OWNER = "Dr Al Kaabi";
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
   const words = { ...statusWords(c) };
+  if (c.api_patient?.slot_selection.status === "selected") {
+    words.status = "Patient selected a simulated slot · coordinator review needed";
+    words.next = "Review the preferred time; no appointment is reserved";
+  }
+  const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
   const owner = ov?.owner || c.owner;
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
@@ -164,6 +176,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
   let sinks = false;
+  let awaitingNext = false;
   if (lc) {
     if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
       view = "waiting";
@@ -173,18 +186,23 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
     } else if (lc.outcome === "reached") {
       words.status = `Reached · ${words.next}`;
+      awaitingNext = true;
     } else {
       words.status = outcomeStatus(lc.outcome);
     }
   }
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
-  if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  if (snoozeLater) {
+    awaitingNext = false;
+    words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  }
   const snoozed = snoozeRunning || sinks;
   // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
   // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
   const booking = ov?.booking;
   if (booking?.status === "reserved") {
+    awaitingNext = false;
     view = "waiting";
     words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
     words.next = "Manage the simulated reservation";
@@ -192,12 +210,14 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
     if (afterAgreement) {
+      awaitingNext = false;
       view = "call";
       words.status = "Simulated reservation cancelled · rebook";
       words.next = "Choose another simulated slot";
     }
   }
   if (c.recovery?.backfill) {
+    awaitingNext = false;
     view = "waiting";
     words.status = "Simulated slot confirmed";
     words.next = "Wait for the simulated appointment day";
@@ -216,12 +236,14 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted",
+    textsAllowed: c.consent === "granted" && !patientBlocked,
+    textsStopped: patientBlocked,
+    patient: c.api_patient,
     owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
-    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status } : {}),
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status } : {}),
   };
 }
 

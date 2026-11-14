@@ -161,7 +161,7 @@ export function HistoryCard({
   governance,
 }: {
   audit: Audit;
-  programme: Programme;
+  programme: Programme | "";
   /**
    * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
    * `hostSignOut`: the host page already shows a sign-out for this session, so the history card does not repeat it.

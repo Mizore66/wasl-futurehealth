@@ -24,6 +24,7 @@ func TestIfhasServiceRequestRoutingUsesCategoryAndEnablement(t *testing.T) {
 			raw, err := json.Marshal(map[string]interface{}{
 				"resourceType": "ServiceRequest",
 				"id":           "sr-routing",
+				"status":       "active",
 				"authoredOn":   "2026-01-01T00:00:00Z",
 				"code":         map[string]string{"text": tc.text},
 				"category":     []interface{}{map[string]string{"text": tc.category}},

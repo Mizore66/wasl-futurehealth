@@ -14,6 +14,12 @@ func brScreen(id string, day float64, label string) DownFact {
 		Ev: ev, Strength: 1, Weak: Edge{A: brSRRec, B: brSRRec, P: 1, Basis: "self"}}
 }
 
+func brRepeat(id, parent string, day float64, label string) DownFact {
+	d := brScreen(id, day, label)
+	d.Parent, d.Relation = parent, repeatRelation
+	return d
+}
+
 // brNote: an assessment-unit document at the hospital. label "" = readers disagree; basis eid = trusted; wasl with
 // p < tau = untrusted.
 func brNote(id string, day float64, label, basis string, p float64, nearMiss bool) DownFact {
@@ -132,11 +138,11 @@ func TestBreastTechnicalRepeat(t *testing.T) {
 	if d.State != "open" || !d.Overdue || d.Dropoff != "technical_repeat_not_done" {
 		t.Fatalf("TR without repeat: want open overdue, got %s %v %q", d.State, d.Overdue, d.Dropoff)
 	}
-	d, _ = runLung(t, brFacts(brScreen("BSU-br-1", 10, "TR"), brScreen("BSU-br-2", 25, "B1")), 120)
+	d, _ = runLung(t, brFacts(brScreen("BSU-br-1", 10, "TR"), brRepeat("BSU-br-2", "BSU-br-1", 25, "B1")), 120)
 	if d.State != "no_recall_needed" || d.ClosingReport != "BSU-br-2" {
 		t.Fatalf("TR then B1: want no_recall_needed on the repeat, got %s %s", d.State, d.ClosingReport)
 	}
-	d, _ = runLung(t, brFacts(brScreen("BSU-br-1", 10, "TR"), brScreen("BSU-br-2", 30, "B4"), brNote("BAU-br-1", 25, "return_routine", "eid", 1, false)), 120)
+	d, _ = runLung(t, brFacts(brScreen("BSU-br-1", 10, "TR"), brRepeat("BSU-br-2", "BSU-br-1", 30, "B4"), brNote("BAU-br-1", 25, "return_routine", "eid", 1, false)), 120)
 	if d.State == "closed" || d.Breast.GradeDay != 30 {
 		t.Fatalf("an assessment before the deciding screen must not close it: %s grade day %v", d.State, d.Breast.GradeDay)
 	}

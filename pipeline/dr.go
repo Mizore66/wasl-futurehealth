@@ -7,8 +7,8 @@ package main
 //   grade     : both readers agree on the screening report (or the coded grade equals reader A's reading of the
 //               summary, or a clinician signs the evidence item) -> drRule(label).
 //                 R0/R1 without maculopathy -> closes as no_referral_needed (rescreen in 12 months recorded).
-//                 U (ungradable) -> open with a 28-day repeat-photo clock; a later graded screen on the same
-//                 registration decides the loop from its own day.
+//                 U (ungradable) -> open with a 28-day repeat-photo clock; an explicitly linked graded repeat
+//                 decides the loop from its own day.
 //   exam      : for a referable grade, an eye-clinic note on a TRUSTED identity link (calibrated p >= tau | EID |
 //               human) whose label both readers agree on (or a clinician signs): examined_* -> closed (within the
 //               deadline recorded); dna -> no_show (rebook); not_examined -> stays open; not_assessable -> clinician.
@@ -39,22 +39,27 @@ type DRDecision struct {
 	Next           *DRNext `json:"next_due,omitempty"` // -drnext: next due rescreen / clinic review of a resolved loop (drnext.go)
 }
 
-// drScreenFacts: screening reports on the tracking ServiceRequest's own registration (no identity link needed).
-func drScreenFacts(rec *Rec) []DownFact {
-	var out []DownFact
+// drScreenFacts: only the index episode on the tracking request's own registration.
+func drScreenFacts(rec *Rec, index string) ([]DownFact, string) {
+	var rows []row
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
 		if e.RType != "DiagnosticReport" || e.Category != "dr-screen" || !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "DRScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "DRScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus, Relation: e.Relation,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "diabetic_retinopathy", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
-		out = append(out, d)
+		rows = append(rows, row{d: d, pc: 1, trusted: true})
 	}
-	return out
+	rows, scopeErr := episodeRows(rows, index, "diabetic_retinopathy")
+	out := make([]DownFact, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.d)
+	}
+	return out, scopeErr
 }
 
 func drEvBlock(d DownFact, human string) map[string]interface{} {
@@ -93,14 +98,14 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row
 	for _, d := range f.Down {
-		if d.Prog != "diabetic_retinopathy" || d.Day < f.SRDay-1 {
+		if d.Prog != "diabetic_retinopathy" {
 			continue
 		}
 		if d.RType == "DRScreen" {
 			screens = append(screens, row{d: d, pc: 1, trusted: true})
 			continue
 		}
-		if d.RType != "DiagnosticReport" || d.Strength < LinkReview {
+		if d.Day < f.SRDay-1 || d.RType != "DiagnosticReport" || d.Strength < LinkReview || (d.Ev != nil && d.Ev.Kind == "dr-screen") {
 			continue
 		}
 		pc := c.pcal(d.Strength)
@@ -119,8 +124,17 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			return rs[i].d.EventID < rs[j].d.EventID
 		})
 	}
-	byDay(screens)
+	// episodeRows orders screens by clinical time and explicit lineage.
 	byDay(notes)
+	index := ""
+	if f.DR != nil {
+		index = f.DR.Screen
+	}
+	var scopeErr string
+	screens, scopeErr = episodeRows(screens, index, "diabetic_retinopathy")
+	if f.EpisodeError != "" {
+		scopeErr = f.EpisodeError
+	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
@@ -193,17 +207,33 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the grade: the last read screen; an unread screen blocks (a repeat photo after U replaces the U grade)
+	// ---- the grade: current index lineage; only an explicit repeat after U replaces it.
 	var grade *row
 	var gradeLab, gradeHuman string
 	var unread *row
+	authorized := map[string]bool{index: true}
 	for i := range screens {
+		d := screens[i].d
+		if d.Day < f.SRDay-1 {
+			continue
+		}
+		// The explicitly named index is authorised even when it is an addendum or repeat.
+		// Its ancestors are retained only to validate the complete graph.
+		if d.ReportID != index {
+			if (d.Relation != addendumRelation && d.Relation != repeatRelation) || !authorized[d.Parent] {
+				continue
+			}
+			if d.Relation == repeatRelation && (grade == nil || !episodeRepeatAllowed("diabetic_retinopathy", gradeLab)) {
+				continue
+			}
+		}
 		lab, h := labelOf(screens[i])
 		if lab == "" {
 			unread = &screens[i]
 			raise(screens[i], "evidence")
 			break
 		}
+		authorized[d.ReportID] = true
 		grade, gradeLab, gradeHuman = &screens[i], lab, h
 	}
 	var rec DRRec
@@ -212,6 +242,8 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		rec, recOK = drRule(gradeLab)
 	}
 	switch {
+	case scopeErr != "":
+		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "index_evidence_" + scopeErr})
 	case len(screens) == 0:
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "screening_report_not_received"})
 	case unread != nil:

@@ -39,6 +39,30 @@ func setClinicalDay(e *Event, res map[string]interface{}, path ...string) *Norma
 	return nil
 }
 
+var trackingRequestStatuses = map[string]bool{
+	"draft": true, "active": true, "on-hold": true, "revoked": true,
+	"completed": true, "entered-in-error": true, "unknown": true,
+}
+
+// screeningIndexReference returns only one explicit relative DiagnosticReport
+// reference. Missing, multiple, and malformed scopes stay empty so the loop
+// evaluator can fail closed instead of searching the whole registration.
+func screeningIndexReference(res map[string]interface{}) string {
+	si, ok := res["supportingInfo"].([]interface{})
+	if !ok || len(si) != 1 {
+		return ""
+	}
+	ref := gs(si[0].(map[string]interface{}), "reference")
+	if !strings.HasPrefix(ref, "DiagnosticReport/") {
+		return ""
+	}
+	id := strings.TrimPrefix(ref, "DiagnosticReport/")
+	if id == "" || strings.Contains(id, "/") {
+		return ""
+	}
+	return id
+}
+
 var diagnosticReportStatuses = map[string]bool{
 	"registered": true, "partial": true, "preliminary": true, "final": true,
 	"amended": true, "corrected": true, "appended": true, "cancelled": true,
@@ -142,16 +166,13 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			e.XRef = xrefOf(res)
 		}
 		if e.Category == "dr-screening" { // diabetic retinopathy screen (dr.go)
-			e.DR = &DRSR{}
-			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
-				e.DR.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
-			}
+			e.DR = &DRSR{Screen: screeningIndexReference(res)}
 		}
 		if e.Category == "breast-screening" { // breast screening mammogram (breast.go)
-			e.Breast = &BreastSR{}
-			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
-				e.Breast.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
-			}
+			e.Breast = &BreastSR{Screen: screeningIndexReference(res)}
+		}
+		if e.Category == "ifhas-screening" {
+			e.IFHAS = &IFHASSR{Screen: screeningIndexReference(res)}
 		}
 		if e.Category == "ldct-screening" { // lung cancer screening LDCT (ldct.go)
 			e.LDCT = &LDCTSR{}
@@ -166,6 +187,22 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		}
 		if e.Prog == "" {
 			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "code.text", "no explicit Wasl programme mapping")
+		}
+		if e.Category != "referral-intake" && !trackingRequestStatuses[e.Status] {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_status", "status", "missing or unsupported tracking ServiceRequest status")
+		}
+		// Category can change across same-ID revisions, so intake responses must
+		// retain their version too. Version zero is legacy version one.
+		e.Version = 1
+		if meta, ok := res["meta"].(map[string]interface{}); ok {
+			if supplied, present := meta["versionId"]; present {
+				rawVersion, ok := supplied.(string)
+				version, err := strconv.Atoi(rawVersion)
+				if !ok || rawVersion == "" || err != nil || version <= 0 {
+					return nil, nil, normalizationError(e.RType, e.ID, "invalid_tracking_request_version", "meta.versionId", "versionId must be a positive integer")
+				}
+				e.Version = version
+			}
 		}
 	case "Communication":
 		timestamp := "sent"
@@ -270,8 +307,21 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
-				if xm := x.(map[string]interface{}); gs(xm, "url") == "urn:wsi:addendum-to" {
-					e.Focus = strings.TrimPrefix(gs(xm, "valueString"), "DiagnosticReport/")
+				xm := x.(map[string]interface{})
+				switch gs(xm, "url") {
+				case "urn:wsi:addendum-to", "urn:wsi:repeat-of":
+					// One unambiguous parent is required when a relationship is present.
+					if e.Relation != "" {
+						e.Focus, e.Relation = "", "ambiguous"
+						continue
+					}
+					e.Relation = gs(xm, "url")
+					parent := gs(xm, "valueString")
+					if !strings.HasPrefix(parent, "DiagnosticReport/") || strings.Contains(strings.TrimPrefix(parent, "DiagnosticReport/"), "/") || parent == "DiagnosticReport/" {
+						e.Focus, e.Relation = "", "ambiguous"
+					} else {
+						e.Focus = strings.TrimPrefix(parent, "DiagnosticReport/")
+					}
 				}
 			}
 		}
@@ -300,11 +350,30 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if normErr := setClinicalDay(e, res, "period", "start"); normErr != nil {
 			return nil, nil, normErr
 		}
-	case "Consent": // v6: patient outreach consent (provision deny = opt out of automated messages)
+	case "Consent": // patient outreach consent (provision deny = opt out of automated messages)
+		e.ConsentStatus = e.Status
+		switch e.ConsentStatus {
+		case "active", "draft", "inactive", "entered-in-error", "unknown":
+		default:
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_status", "status", "missing or unsupported Consent status")
+		}
+		if meta, ok := res["meta"].(map[string]interface{}); ok {
+			if rawVersion, present := meta["versionId"]; present {
+				versionText, ok := rawVersion.(string)
+				version, err := strconv.Atoi(versionText)
+				if !ok || err != nil || version <= 0 {
+					return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_version", "meta.versionId", "versionId must be a positive integer")
+				}
+				e.Version = version
+			}
+		}
 		if normErr := setClinicalDay(e, res, "dateTime"); normErr != nil {
 			return nil, nil, normErr
 		}
 		e.Status = gs(res, "provision", "type")
+		if e.Status != "permit" && e.Status != "deny" {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_consent_provision", "provision.type", "missing or unsupported Consent provision type")
+		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
 				if xm := x.(map[string]interface{}); gs(xm, "url") == "urn:wsi:actor-role" {
