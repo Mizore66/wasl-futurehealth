@@ -39,7 +39,7 @@ let root: ReturnType<typeof createRoot> | null = null;
 let host: HTMLDivElement;
 afterEach(async () => { if (root) await act(async () => root!.unmount()); root = null; vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); document.body.innerHTML = ""; });
 const button = (text: string) => Array.from(host.querySelectorAll("button")).find((b) => b.textContent?.includes(text))!;
-const mount = async (items = [initial]) => {
+const mount = async (items: CaseSummary[] = [initial]) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   await act(async () => root!.render(createElement(TodayBoard, { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null })));
