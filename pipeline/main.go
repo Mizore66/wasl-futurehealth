@@ -15,11 +15,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -683,6 +685,7 @@ type proc struct {
 	crashes int
 	gen     int
 	exited  <-chan struct{} // closed only after exec.Cmd.Wait has reaped this generation
+	stopped bool            // staged finite producer shutdown also fences already-decided restarts
 }
 
 type Orch struct {
@@ -711,6 +714,10 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		os.MkdirAll(filepath.Join(o.run, "logs"), 0700)
 		p.log, _ = os.OpenFile(filepath.Join(o.run, "logs", name+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	}
+	if p.stopped {
+		o.mu.Unlock()
+		return
+	}
 	if bin != "" {
 		p.bin = bin
 	}
@@ -736,7 +743,7 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		close(exited)
 		time.Sleep(300 * time.Millisecond)
 		o.mu.Lock()
-		restart := !o.stopping && !o.writersStopped && p.gen == gen && !strings.HasPrefix(name, "producer-") && name != "hl7send" // one-shot jobs exit when done
+		restart := !o.stopping && !o.writersStopped && !p.stopped && p.gen == gen && !strings.HasPrefix(name, "producer-") && name != "hl7send" // one-shot jobs exit when done
 		if restart {
 			p.crashes++
 		}
@@ -1041,20 +1048,31 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		}
 	}
 	chaosDone := false // includes subDone even when ordinary chaos is disabled
+	var finite finiteMockShutdown
+	var evidence snapshotFailureEvidence
 	observe := func(ctx context.Context) (snapshotBoundary, error) {
 		select {
 		case <-done:
 			chaosDone = true
 		default:
 		}
+		var b snapshotBoundary
+		var err error
 		if !chaosDone {
-			return snapshotBoundary{}, errors.New("chaos/source restart schedule still running")
+			err = errors.New("chaos/source restart schedule still running")
+		} else if SrcCfg.Source == "fhir" {
+			err = finite.advance(ctx, js, run, chaosDone, o.stopFiniteMock)
 		}
-		return captureSnapshotBoundary(ctx, js, run, P, noReview, sources, SrcCfg.Source == "fhir")
+		if err == nil {
+			b, err = captureSnapshotBoundary(ctx, js, run, P, noReview, sources, SrcCfg.Source == "fhir")
+		}
+		evidence.observe(b, err)
+		return b, err
 	}
 	boundary, err := waitSnapshotBoundary(ctx, 500*time.Millisecond, 7, observe)
 	if err != nil {
 		writeStatus(run, "snapshot", map[string]any{"status": "incomplete", "error": err.Error()})
+		emitSnapshotFailure(js, run, &evidence)
 		panic(err)
 	}
 	tQuiet := time.Now()
@@ -1097,6 +1115,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		return nil
 	}
 	if err := exportSnapshot(exportCtx, js, run, boundary, stop, observe, res); err != nil {
+		emitSnapshotFailure(js, run, &evidence)
 		panic(err)
 	}
 	fmt.Printf("quiescent: %d FHIR msgs, %d outputs, %.1fs, %.0f ev/s\n", fi.Msgs, oi.Msgs, wall, throughput)
@@ -1545,6 +1564,355 @@ func waitSnapshotBoundary(ctx context.Context, interval time.Duration, samples i
 			}
 		case <-timer.C:
 		}
+	}
+}
+
+// Failure evidence is aggregate-only and bounded. Never serialize raw errors,
+// status maps, ledger heads, KV records, source bodies or worker configuration.
+// The container console survives volume cleanup; the same private artifact is
+// useful in modes which retain the run directory. Neither is a success export.
+type snapshotFailureEvidence struct {
+	LastGood    map[string]any   `json:"last_good"`
+	LastError   map[string]any   `json:"last_error"`
+	Differences []map[string]any `json:"first_differences"`
+	previous    map[string]any
+}
+
+func snapshotDiagnosticBoundary(b snapshotBoundary, err error) map[string]any {
+	v := map[string]any{}
+	for _, name := range []string{"FHIR", "PREP", "FACTS", "OUT", "FHIRIN"} {
+		if f, ok := b.Streams[name]; ok {
+			for key, value := range map[string]any{"msgs": f.Msgs, "first": f.First, "last": f.Last, "bytes": f.Bytes, "deleted": f.Deleted, "last_time": f.LastTime} {
+				v["streams."+name+"."+key] = value
+			}
+		}
+	}
+	for _, name := range []string{"FHIR/prep", "OUT/reviewer", "FHIRIN/notifications"} {
+		if a, ok := b.Consumers[name]; ok {
+			v["consumers."+name+".ack_floor"], v["consumers."+name+".pending"], v["consumers."+name+".inflight"] = a.Last, a.Pending, a.Inflight
+		}
+	}
+	if b.PSeq != nil {
+		v["processed"] = b.Processed
+		for i, n := range b.PSeq {
+			if i >= 16 {
+				break
+			}
+			v[fmt.Sprintf("pseq.%d", i)] = n
+		}
+	}
+	for i, c := range b.Closures {
+		if i >= 16 {
+			break
+		}
+		v[fmt.Sprintf("closures.%d.next_pseq", i)] = c.Next
+		v[fmt.Sprintf("closures.%d.ledger_oseq", i)] = c.OSeq
+	}
+	_, reviewed := b.Consumers["OUT/reviewer"]
+	if reviewed || (err != nil && err.Error() == "reviewer unfinished") {
+		v["reviewer_last"] = b.ReviewerLast
+	}
+	return v
+}
+
+func snapshotDiagnosticReason(err error) string {
+	if err == nil {
+		return "drained_observation"
+	}
+	// Exact allow-list only: wrapping or echoing arbitrary transport/status
+	// errors can disclose endpoints, credentials, resource identities or paths.
+	for _, safe := range []string{"reviewer unfinished", "notification inbox unfinished", "FHIR/PREP not drained", "linker unfinished/inflight", "FACTS/OUT publications not drained", "chaos/source restart schedule still running", "finite mock feed unfinished", "finite subscription unfinished", "finite subscription source coverage unfinished", "finite subscription durable pending unavailable/unfinished", "finite subscription durable completion unavailable", "finite notification inbox unfinished"} {
+		if err.Error() == safe {
+			return safe
+		}
+	}
+	return "observation_failed_details_not_published"
+}
+
+func (e *snapshotFailureEvidence) observe(b snapshotBoundary, err error) {
+	v := snapshotDiagnosticBoundary(b, err)
+	if e.previous != nil {
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		var diffs []map[string]any
+		for _, key := range keys {
+			if before, ok := e.previous[key]; ok && !bytes.Equal(canon(before), canon(v[key])) {
+				diffs = append(diffs, map[string]any{"field": key, "before": before, "after": v[key]})
+				if len(diffs) == 8 {
+					break
+				}
+			}
+		}
+		if len(diffs) > 0 {
+			e.Differences = diffs
+		}
+	}
+	e.previous = v
+	observation := map[string]any{"observed_at": time.Now().UTC(), "reason": snapshotDiagnosticReason(err), "captured_fields": v, "uncaptured_fields": "unavailable"}
+	if err == nil {
+		e.LastGood = observation
+	} else {
+		e.LastError = observation
+	}
+}
+
+func snapshotOperationalStatus(run, name string, fields ...string) map[string]any {
+	result := map[string]any{}
+	for _, key := range fields {
+		result[key] = "unavailable"
+	}
+	f, err := os.Open(filepath.Join(run, "status-"+name+".json"))
+	if err != nil {
+		return result
+	}
+	defer f.Close()
+	b, err := io.ReadAll(io.LimitReader(f, (1<<20)+1))
+	var st map[string]json.RawMessage
+	if err != nil || len(b) > 1<<20 || rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &st) != nil {
+		return result
+	}
+	for _, key := range fields {
+		selected, field := st, key
+		if parent, child, nested := strings.Cut(key, "."); nested {
+			field, selected = child, nil
+			if json.Unmarshal(st[parent], &selected) != nil {
+				continue
+			}
+		}
+		if n, err := snapshotUint(selected, field); err == nil {
+			result[key] = n
+		} else {
+			var flag bool
+			if snapshotField(selected, field, &flag) == nil {
+				result[key] = flag
+			}
+		}
+	}
+	return result
+}
+
+func snapshotFailureReport(ctx context.Context, js jetstream.JetStream, run string, evidence *snapshotFailureEvidence) map[string]any {
+	history := map[string]any{"last_good": "unavailable", "last_error": "unavailable", "first_differences": "unavailable_no_changed_samples"}
+	if evidence.LastGood != nil {
+		history["last_good"] = evidence.LastGood
+	}
+	if evidence.LastError != nil {
+		history["last_error"] = evidence.LastError
+	}
+	if len(evidence.Differences) > 0 {
+		history["first_differences"] = evidence.Differences
+	}
+	report := map[string]any{"event": "snapshot_incomplete_diagnostics", "evidence": history, "reviewer_outbox_counts": "unavailable_not_exposed", "durable_reviewer_cursor": "unavailable"}
+	streams := map[string]any{}
+	for _, name := range []string{"OUT", "FHIRIN"} {
+		streams[name] = "unavailable"
+		if f, err := captureStreamFence(ctx, js, name); err == nil {
+			streams[name] = f
+		}
+	}
+	report["streams"] = streams
+	consumers := map[string]any{}
+	for _, pair := range [][2]string{{"FHIR", "prep"}, {"OUT", "reviewer"}, {"FHIRIN", "notifications"}} {
+		key := pair[0] + "/" + pair[1]
+		consumers[key] = "unavailable"
+		c, err := js.Consumer(ctx, pair[0], pair[1])
+		if err != nil {
+			continue
+		}
+		i, err := c.Info(ctx)
+		if err == nil && i != nil && i.Stream == pair[0] && i.Name == pair[1] {
+			consumers[key] = map[string]any{"ack_floor_stream": i.AckFloor.Stream, "ack_floor_consumer": i.AckFloor.Consumer, "delivered_stream": i.Delivered.Stream, "delivered_consumer": i.Delivered.Consumer, "pending": i.NumPending, "ack_pending": i.NumAckPending, "redelivered": i.NumRedelivered}
+		}
+	}
+	report["consumers"] = consumers
+	report["sampled_reviewer"] = snapshotOperationalStatus(run, "reviewer", "last_out_seq", "answered", "wrong", "deduped_second_id", "deduped_link")
+	report["sampled_linker"] = snapshotOperationalStatus(run, "linker", "processed", "inflight", "pub_retries")
+	report["sampled_subscription"] = snapshotOperationalStatus(run, "fhirsub", "ack_hwm", "max_seen", "next", "buffered", "done", "feed_off", "eof_sent", "stats.durable_pending")
+	report["sampled_mock"] = snapshotOperationalStatus(run, "malaffi", "events", "released", "stats.posted_heartbeat")
+	if kv, err := js.KeyValue(ctx, "REVIEWER"); err == nil {
+		if entry, err := kv.Get(ctx, reviewerStatusKey); err == nil && entry != nil {
+			var st map[string]json.RawMessage
+			if len(entry.Value()) <= 4096 && rejectDuplicateKeys(entry.Value()) == nil && json.Unmarshal(entry.Value(), &st) == nil {
+				if n, err := snapshotUint(st, "last_out_seq"); err == nil {
+					report["durable_reviewer_cursor"] = n
+				}
+			}
+		}
+	}
+	return report
+}
+
+func emitSnapshotFailure(js jetstream.JetStream, run string, evidence *snapshotFailureEvidence) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	report := snapshotFailureReport(ctx, js, run, evidence)
+	// Emit before any panic/deferred process teardown, even if artifact I/O fails.
+	b, _ := json.Marshal(report)
+	fmt.Fprintln(os.Stderr, string(b))
+	writeStatus(run, "snapshot-failure", report)
+}
+
+// Off-feed heartbeats are still real FHIRIN publications. Stop only the finite
+// mock before the full equality window; the subscription and feedback graph stay
+// alive. A stop failure is sticky: it cannot be retried into a successful cut.
+type finiteMockShutdown struct {
+	stopped bool
+	stopErr error
+}
+
+func (s *finiteMockShutdown) advance(ctx context.Context, js jetstream.JetStream, run string, chaosDone bool, stop func(context.Context) error) error {
+	if !chaosDone {
+		return errors.New("chaos/source restart schedule still running")
+	}
+	if s.stopErr != nil {
+		return s.stopErr
+	}
+	if s.stopped {
+		return nil
+	}
+	if err := completedMockSource(ctx, js, run); err != nil {
+		return err
+	}
+	if s.stopErr = stop(ctx); s.stopErr != nil {
+		return s.stopErr
+	}
+	s.stopped = true
+	return nil
+}
+
+func completedMockSource(ctx context.Context, js jetstream.JetStream, run string) error {
+	m, err := snapshotStatus(run, "malaffi")
+	if err != nil {
+		return err
+	}
+	var status string
+	if err := snapshotField(m, "status", &status); err != nil {
+		return err
+	}
+	total, err := snapshotUint(m, "events")
+	if err != nil {
+		return err
+	}
+	released, err := snapshotUint(m, "released")
+	if err != nil {
+		return err
+	}
+	if status != "off" || total == 0 || total >= 1<<63-1 || released != total {
+		return errors.New("finite mock feed unfinished")
+	}
+	st, err := snapshotStatus(run, "fhirsub")
+	if err != nil {
+		return err
+	}
+	for _, key := range []string{"done", "feed_off", "eof_sent"} {
+		var complete bool
+		if err := snapshotField(st, key, &complete); err != nil {
+			return err
+		}
+		if !complete {
+			return errors.New("finite subscription unfinished")
+		}
+	}
+	var sub string
+	if err := snapshotField(st, "sub", &sub); err != nil || sub == "" {
+		return errors.New("finite subscription identity unavailable")
+	}
+	var subscriptions map[string]map[string]json.RawMessage
+	if err := snapshotField(st, "subscriptions", &subscriptions); err != nil {
+		return err
+	}
+	ref := canonicalSubscriptionRef(sub)
+	// The local mock owns exactly one finite subscription. Unknown additional
+	// sources are not authority to stop their resource server.
+	if len(subscriptions) != 1 || subscriptions[ref] == nil {
+		return errors.New("finite subscription coverage unavailable")
+	}
+	for _, state := range []map[string]json.RawMessage{st, subscriptions[ref]} {
+		for key, want := range map[string]uint64{"ack_hwm": total, "max_seen": total, "next": total + 1, "buffered": 0} {
+			got, err := snapshotUint(state, key)
+			if err != nil {
+				return err
+			}
+			if got != want {
+				return errors.New("finite subscription source coverage unfinished")
+			}
+		}
+		for _, key := range []string{"feed_off", "eof_sent"} {
+			var complete bool
+			if err := snapshotField(state, key, &complete); err != nil || !complete {
+				return errors.New("finite subscription EOF unavailable")
+			}
+		}
+	}
+	var stats map[string]json.RawMessage
+	if err := snapshotField(st, "stats", &stats); err != nil {
+		return err
+	}
+	for _, state := range []map[string]json.RawMessage{stats, subscriptions[ref]} {
+		pending, err := snapshotUint(state, "durable_pending")
+		if err != nil || pending != 0 {
+			return errors.New("finite subscription durable pending unavailable/unfinished")
+		}
+	}
+	// EOF in a sampled file alone is insufficient: a subscription restart must
+	// recover the same completed prefix without needing the mock's HTTP server.
+	kv, err := js.KeyValue(ctx, "FHIRSUB")
+	if err != nil {
+		return err
+	}
+	entry, err := kv.Get(ctx, checkpointKey(ref))
+	if err != nil {
+		return err
+	}
+	var cp subscriptionCheckpoint
+	if entry == nil || rejectDuplicateKeys(entry.Value()) != nil || json.Unmarshal(entry.Value(), &cp) != nil ||
+		canonicalSubscriptionRef(cp.Sub) != ref || cp.HWM != int64(total) || !cp.Eof {
+		return errors.New("finite subscription durable completion unavailable")
+	}
+	f, err := captureStreamFence(ctx, js, "FHIRIN")
+	if err != nil {
+		return err
+	}
+	if f.Msgs != 0 {
+		return errors.New("finite notification inbox unfinished")
+	}
+	if _, err := snapshotConsumerAck(ctx, js, "FHIRIN", "notifications", f.Last); err != nil {
+		return err
+	}
+	// An accepted id-only notification's decode/HTTP fetch precedes its ACK.
+	// The drained inbox excludes those active fetches. A notification accepted
+	// just after this observation can only contain off-feed heartbeats or events
+	// <= total: decodeContext skips their vreads because next == total+1, also
+	// after restart from the verified checkpoint. Its publication/ACK may still
+	// advance FHIRIN; the unchanged full window is deliberately AFTER mock exit.
+	return ctx.Err()
+}
+
+func (o *Orch) stopFiniteMock(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	o.mu.Lock()
+	p := o.procs["malaffi"]
+	if p == nil || p.cmd == nil || p.cmd.Process == nil || p.exited == nil {
+		o.mu.Unlock()
+		return errors.New("finite mock missing process/exit acknowledgement")
+	}
+	p.stopped = true
+	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		o.mu.Unlock()
+		return fmt.Errorf("finite mock stop: %w", err)
+	}
+	exited := p.exited
+	o.mu.Unlock()
+	select {
+	case <-exited:
+		return ctx.Err()
+	case <-ctx.Done():
+		return fmt.Errorf("finite mock exit not acknowledged: %w", ctx.Err())
 	}
 }
 
