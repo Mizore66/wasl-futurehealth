@@ -522,7 +522,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
           {f.rec && (
             <>
               <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
-              <FindingRow label="Deadline">{f.rec.deadline_days} days</FindingRow>
+              <FindingRow label={f.rec.action === "routine" ? "Next screen" : "Deadline"}>{f.rec.deadline_days} days</FindingRow>
             </>
           )}
           {domains.map(([domain, status]) => (

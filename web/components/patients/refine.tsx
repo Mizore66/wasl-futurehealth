@@ -31,6 +31,7 @@ export function Refine({ facets, filters, base = "/app/patients" }: { facets: Fa
           {filters.state && <input type="hidden" name="state" value={filters.state} />}
           {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
           {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
+          {filters.closed !== undefined && <input type="hidden" name="closed" value={String(filters.closed)} />}
           {filters.q && <input type="hidden" name="q" value={filters.q} />}
           {ORDER.map((k) => {
             const options = facets[k];
