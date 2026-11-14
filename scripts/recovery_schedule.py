@@ -459,8 +459,15 @@ class Scheduler:
         return self.state / "slots" / kind / f"{slot}.json"
 
     def _claim_slot(self, kind: str, slot: str, attempt_id: str) -> None:
-        write_exclusive(self._slot_path(kind, slot),
-                        {"schema": "wasl-recovery-slot-v1", "kind": kind, "slot": slot, "attempt_id": attempt_id})
+        claim = {"schema": "wasl-recovery-slot-v1", "kind": kind, "slot": slot, "attempt_id": attempt_id}
+        path = self._slot_path(kind, slot)
+        try:
+            write_exclusive(path, claim)
+        except FileExistsError:
+            # A claim that already names this exact attempt is the same durable fact (replay after a crash); any
+            # other claim is a conflict and is never overwritten.
+            if load_json(path) != claim:
+                raise SafetyError("conflicting schedule slot claim already exists") from None
 
     def reconcile(self) -> None:
         """Classify crash-interrupted attempts and restore persisted source-API intent before new work."""
@@ -537,10 +544,33 @@ class Scheduler:
                       "first_missed": last + 1, "last_missed": current - 1, "recorded_at": now_iso(),
                       "catch_up": False}
             self._record_missed(kind, missed)
+        if state.get(key) is not None and current > last and not self._slot_path(kind, str(last)).exists():
+            # The cursor for `last` was published but its attempt never durably claimed it (crash before the run
+            # directory or started.json). The cursor alone is not consumption evidence: record an explicit outcome,
+            # never an automatic catch-up of an expired slot.
+            self._record_abandoned(kind, last)
         state[key] = current
         atomic_json(path, state)
         due = current > last or not self._slot_path(kind, str(current)).exists()
         return (str(current) if due else None), interval
+
+    def _record_abandoned(self, kind: str, slot: int) -> None:
+        marker = self.state / "slots" / kind / f"abandoned-{slot}.json"
+        record = {"schema": "wasl-recovery-abandoned-slot-v1", "kind": kind, "slot": slot,
+                  "outcome": "published_without_attempt", "recorded_at": now_iso(), "catch_up": False}
+        try:
+            write_exclusive(marker, record)
+        except FileExistsError:
+            existing = load_json(marker)
+            if {k: v for k, v in existing.items() if k != "recorded_at"} != {k: v for k, v in record.items() if k != "recorded_at"}:
+                raise SafetyError("conflicting abandoned-slot marker already exists") from None
+        event = {"event": "slot_abandoned", "kind": kind, "slot": slot}
+        events = self.state / "events.jsonl"
+        if events.is_file():
+            for line in events.read_text(encoding="utf-8").splitlines():
+                if {k: v for k, v in json.loads(line).items() if k != "observed_at"} == event:
+                    return
+        self._event(event)
 
     def _record_missed(self, kind: str, missed: dict) -> None:
         first, last = missed["first_missed"], missed["last_missed"]

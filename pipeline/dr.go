@@ -287,8 +287,10 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				lab, h := labelOf(r)
 				if lab == "" {
 					raise(r, "evidence")
-					holdRow = &notes[i]
-					state = "open"
+					if state != "not_assessable" { // an unread later note never clears an established no-fundal-view hold (#150)
+						holdRow = &notes[i]
+						state = "open"
+					}
 					break // an unread earlier note blocks a decision on a later one
 				}
 				dd.Clinic, dd.Outcome = r.d.ReportID, lab
