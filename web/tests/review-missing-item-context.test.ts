@@ -55,6 +55,23 @@ const presentB = CaseDetail.parse({
   review_items: [{ ...linkItem("rv-ab", [A, B]), chain: [own] }, linkItem("rv-ac", [A, C])],
 });
 
+// Both A/B endpoints are listed, but A/B has no own link decision and no exact same-loop edge; another pair carries distinct numbers.
+const OTHER_LOOP = "ahs-mushrif/ServiceRequest/OTHER-LOOP";
+const distinct = { ...base.links[0], path_p_cal: 0.123, tau: 0.456 };
+const listedB = [...base.identities, { provider: "noor-endo", registration: B, role: "downstream" }];
+const noDetail = CaseDetail.parse({
+  ...base,
+  identities: listedB,
+  links: [{ ...distinct, weakest_edge: { ...base.links[0].weakest_edge, b: C } }],
+  review_items: [linkItem("rv-ab", [A, B]), linkItem("rv-ac", [A, C])],
+});
+const wrongLoop = CaseDetail.parse({
+  ...base,
+  identities: listedB,
+  links: [{ ...distinct, loop: OTHER_LOOP, weakest_edge: { a: A, b: B, basis: "p_cal", p: 0.7 } }],
+  review_items: [linkItem("rv-ab", [A, B]), linkItem("rv-ac", [A, C])],
+});
+
 const missingEvidence = CaseDetail.parse({
   ...base,
   review_items: [evidenceItem("rv-ev-own", base.evidence[0].report), evidenceItem("rv-ev-none", "skmc-endo/DiagnosticReport/NOT-IN-CASE")],
@@ -157,5 +174,33 @@ describe("an evidence item with no source of its own borrows none", () => {
     expect(ok.querySelector('input[type="radio"]')).not.toBeNull();
     expect(ok.textContent).toContain("SKM-dr-217");
     expect(context(c, "rv-ev-own")!.textContent).toContain(base.evidence[0].quote);
+  });
+});
+
+describe("an item whose endpoints are listed but whose own link detail is absent invents none", () => {
+  for (const [name, detail] of [["no own chain link and no exact edge", noDetail], ["an edge for the same pair on a different loop", wrongLoop]] as const) {
+    it(`withholds the form for ${name}`, async () => {
+      const views = reviewItemViews(detail);
+      expect(views["rv-ab"].context.link).toBe(false);
+      expect(views["rv-ab"].link).toMatchObject({ score: 0, line: 0, basis: "" });
+      const c = await mount(detail, [state("rv-ab", "link")]);
+      const ab = card(c, "rv-ab", "link");
+      expect(ab.querySelector('input[type="radio"]')).toBeNull();
+      expect(submitButtons(ab)).toHaveLength(0);
+      expect(ab.querySelector("form")).toBeNull();
+      expect(ab.textContent).toContain("not available");
+      const shown = `${ab.textContent}${context(c, "rv-ab")?.textContent ?? ""}`;
+      expect(shown).not.toMatch(/0\.123|0\.456|0\.7\b/);
+      expect(shown).not.toMatch(/Link score\s*0\.000/);
+    });
+  }
+
+  it("keeps the exact same-loop A/C edge usable", async () => {
+    const views = reviewItemViews(noDetail);
+    expect(views["rv-ac"].context.link).toBe(true);
+    expect(views["rv-ac"].link.score).toBe(0.123);
+    const c = await mount(noDetail, [state("rv-ab", "link"), state("rv-ac", "link")]);
+    expect(card(c, "rv-ac", "link").querySelector('input[type="radio"]')).not.toBeNull();
+    expect(card(c, "rv-ab", "link").querySelector('input[type="radio"]')).toBeNull();
   });
 });

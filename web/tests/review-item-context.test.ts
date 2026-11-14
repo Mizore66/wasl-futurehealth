@@ -26,7 +26,18 @@ const evidence = (id: string, quote: string, regex: string, reader: string) => (
   fields: { regex, reader },
 });
 const evidenceItem = (item: string, report: string) => ({ ...evidenceTemplate, item, report });
-const linkItem = (item: string, pair: [string, string]) => ({ ...linkTemplate, item, pair });
+// These synthetic pairs need their own producer-shaped link context; the base case's
+// unrelated link is deliberately not a substitute for either question.
+const linkItem = (item: string, pair: [string, string]) => ({
+  ...linkTemplate, item, pair,
+  chain: [{
+    type: "link_decision",
+    body: { ...base.links[0], loop: linkTemplate.loop, referral_patient: pair[0],
+      downstream_event: `${pair[1].slice(0, pair[1].indexOf("|"))}/DiagnosticReport/${item}`,
+      weakest_edge: { ...base.links[0].weakest_edge, a: pair[0], b: pair[1] } },
+    prev: "genesis", hash: "5".repeat(64),
+  }],
+});
 
 const state = (item: string, question: "link" | "evidence", slot: "r1" | "r2" | "r3" = "r1") =>
   ReviewState.parse({

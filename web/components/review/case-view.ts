@@ -172,13 +172,17 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   const exact = (registration: string | undefined) => (registration ? c.identities.find((i) => i.registration === registration) : undefined);
   const referral = strict ? exact(pair?.[0]) : (c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral"));
   const downstream = strict ? exact(pair?.[1]) : (c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream"));
-  const linkBound = !strict || (pair?.length === 2 && Boolean(referral) && Boolean(downstream));
   const a = referral && personFor(referral.registration);
   const b = downstream && personFor(downstream.registration);
   const ev = evidenceFor(c, evidenceItem, Boolean(only));
   const chainLink = strict && linkItem ? linkFromChain(linkItem) : undefined;
-  const edge = (l: CaseDetail["links"][number]) => Boolean(pair) && l.weakest_edge.a === pair?.[0] && l.weakest_edge.b === pair?.[1];
-  const link = strict ? (linkBound ? (chainLink ?? c.links.find(edge)) : undefined) : (c.links.find(edge) ?? c.links[0]);
+  /* An accepted case-link fallback must be the exact edge for this pair and this item's own loop; another loop's edge is not borrowed. */
+  const edge = (l: CaseDetail["links"][number]) =>
+    Boolean(pair) && l.weakest_edge.a === pair?.[0] && l.weakest_edge.b === pair?.[1] && (!strict || l.loop === linkItem?.loop);
+  const endpoints = pair?.length === 2 && Boolean(referral) && Boolean(downstream);
+  const link = strict ? (endpoints ? (chainLink ?? c.links.find(edge)) : undefined) : (c.links.find(edge) ?? c.links[0]);
+  /* Strict views need both exact endpoints and the item's own link detail; absent either, no score or line is invented. */
+  const linkBound = !strict || (endpoints && Boolean(link));
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
