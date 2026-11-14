@@ -6,6 +6,7 @@ import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
+import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
 import { effectiveOwner } from "@/lib/api/owner";
@@ -71,6 +72,8 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const waiting = allQuestionsResolved(detail)
     ? false
     : c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item) && !resolvedItems(detail).has(r.item));
+  /* An invalid replay keeps the valid prefix (so the saved owner still shows) but that owner is not authoritative. */
+  const ledgerInvalid = detail.review_ledger?.status === "invalid" || detail.api_overlay?.ledger_status === "invalid";
   const [latest, ...earlier] = [...detail.evidence].reverse();
 
   return (
@@ -105,6 +108,8 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </div>
         <HonestyLabel kind="simulated">Simulated names</HonestyLabel>
       </header>
+
+      {ledgerInvalid && <LedgerInvalidBanner what="this record" className="mt-4" />}
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
         {personJourney && (
