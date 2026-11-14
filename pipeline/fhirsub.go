@@ -105,6 +105,8 @@ type SubConsumer struct {
 	subscriptionState // default state retains the existing single-subscription test/status surface
 	subscriptions     map[string]*subscriptionState
 
+	canonicalIndex canonicalHistoryIndex // private, zero-initialized; not connected to the live publisher
+
 	mu        sync.Mutex
 	replayMu  sync.Mutex // serializes pending writes and durable pending scans in this instance
 	scan      *pendingScan
