@@ -143,6 +143,13 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
     # Match BookingEngine.build's bounded candidate window, counting sessions rather than occupied seats because
     # coordinator reservations occupy their own append-only ledger, not the engine's retrospective assignment state.
     sessions = sessions[: eng.K]
+    held = {}
+    if eng.protect is not None and prefs.female_endoscopist != "hard":
+        demand = list(eng._hard_arr)
+        try:
+            held = eng._held(day, sessions)
+        finally:
+            eng._hard_arr = demand
     out = []
     for s0 in sessions:
         s = int(s0)
@@ -152,7 +159,7 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
         nurse = pred > eng.nurse_thr
         if nurse:
             pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 1, region))
-        for seat in range(1, int(cal.cap[s]) + 1):
+        for seat in range(1, int(cal.cap[s]) - held.get(s, 0) + 1):
             out.append({
                 "slot_id": f"sim:{procedure}:{s}:{seat}", "session_id": s, "unit": str(cal.unit[s]),
                 "day": int(cal.day[s]), "region": region, "deadline": int(deadline),

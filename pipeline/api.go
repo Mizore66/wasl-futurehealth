@@ -1579,6 +1579,9 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if bookingActionName(kind) {
 			var failure *bookingFailure
 			booking, failure = s.prepareBookingLocked(c, kind, data)
+			if failure == nil {
+				failure = s.elapsedSlotFailure(c, booking)
+			}
 			if failure != nil {
 				return failure.code, failure.body
 			}

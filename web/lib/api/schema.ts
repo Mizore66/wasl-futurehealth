@@ -270,7 +270,7 @@ export const EligibleBookingSlot = z.looseObject({
   nurse_call: z.boolean(),
   cross_region: z.boolean(),
   version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
-  availability: z.enum(["available", "reserved"]).optional(),
+  availability: z.enum(["available", "reserved", "elapsed"]).optional(),
 });
 
 /**
@@ -1185,7 +1185,7 @@ export const ActionResponse = withMeta({
 export const ActionError = withMeta({
   error: z.string(), conflict: z.string().optional(), current_head: z.string().optional(),
   current_suggestion_version: z.string().optional(), current_reservation_version: z.string().nullable().optional(),
-  slot_id: z.string().optional(), current_slot_version: z.string().optional(), availability: z.enum(["available", "reserved"]).optional(),
+  slot_id: z.string().optional(), current_slot_version: z.string().optional(), availability: z.enum(["available", "reserved", "elapsed"]).optional(),
   booking: BookingSummary.optional(), consent: z.string().optional(),
 });
 export const ApiError = withMeta({ error: z.string() });

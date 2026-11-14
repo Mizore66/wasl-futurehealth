@@ -100,7 +100,7 @@ function detail() {
     consent: state.consent, closed: false, review: "none", api_overlay: overlay(false),
   };
   return {
-    ...base, case: caseSummary, current: { ...base.current, state: state.canonicalState, now: 40, sig: hex("0") },
+    ...base, case: caseSummary, current: { ...base.current, state: state.canonicalState, now: 10, sig: hex("0") },
     review_items: [], signoffs: [], api_reviews: state.events, api_review_states: [], review_ledger: { status: "ok", events_applied: state.events.length },
     api_overlay: overlay(true), booking: booking(),
   };

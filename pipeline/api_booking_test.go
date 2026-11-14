@@ -507,3 +507,81 @@ func TestBookingAppendFailureAndReplayFailClosed(t *testing.T) {
 		t.Fatal("changed booking source was not rejected")
 	}
 }
+
+func TestBookingElapsedSlotsAreRejectedAndHidden(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	id := agentLoop("1")
+	availability := func(slot string) interface{} {
+		for _, item := range s.bookingFor(id)["eligible_slots"].([]interface{}) {
+			if c := item.(map[string]interface{}); c["slot_id"] == slot {
+				return c["availability"]
+			}
+		}
+		return nil
+	}
+	rejected := func(kind, slot string) {
+		t.Helper()
+		events, versions := len(s.reviews), s.bookingSlots[slot].version
+		if code, body := coord(t, srv, id, bookingRequest(t, s, id, kind, slot, "Elapsed")); code != 409 || body["conflict"] != "slot_elapsed" {
+			t.Fatalf("%s %s: %d %v", kind, slot, code, body)
+		}
+		if len(s.reviews) != events || s.bookingSlots[slot].version != versions || s.bookingSlots[slot].reservationID != "" {
+			t.Fatalf("%s %s: rejected request changed history or slot state", kind, slot)
+		}
+	}
+
+	s.cases[id].last.Now = 13
+	if got := availability("sim:colonoscopy:202:1"); got != "elapsed" {
+		t.Fatalf("day-12 slot at run day 13: %v", got)
+	}
+	rejected("booking_accept", "sim:colonoscopy:201:1")
+	rejected("booking_choose_slot", "sim:colonoscopy:202:1")
+
+	s.cases[id].last.Now = 12
+	if got := availability("sim:colonoscopy:202:1"); got != "available" {
+		t.Fatalf("day-12 slot at run day 12: %v", got)
+	}
+	requireBooking(t, srv, s, id, "booking_choose_slot", "sim:colonoscopy:202:1", "Boundary day is still in the future")
+
+	s.cases[id].last.Now = 40
+	reservation := bookingSummary(s, id)["reservation_id"]
+	rejected("booking_reschedule", "sim:colonoscopy:201:1")
+	if got := bookingSummary(s, id); got["status"] != "reserved" || got["reservation_id"] != reservation {
+		t.Fatalf("rejected reschedule changed the reservation: %v", got)
+	}
+	if got := availability("sim:colonoscopy:202:1"); got != "reserved" {
+		t.Fatalf("historical reservation availability: %v", got)
+	}
+	requireBooking(t, srv, s, id, "booking_cancel", "", "Release elapsed seat")
+	if got := availability("sim:colonoscopy:202:1"); got != "elapsed" {
+		t.Fatalf("cancelled elapsed slot: %v", got)
+	}
+	rejected("booking_choose_slot", "sim:colonoscopy:202:1")
+}
+
+func TestBookingProtectedSeatOnlyReservableByCasesThatListIt(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	hard, ordinary := agentLoop("1"), agentLoop("2")
+	protected := "sim:colonoscopy:201:2"
+	before := s.bookingSlots[protected].version
+	reject := func(kind string) {
+		t.Helper()
+		if code, body := coord(t, srv, ordinary, bookingRequest(t, s, ordinary, kind, protected, "Protected seat")); code != 409 || body["conflict"] != "slot" {
+			t.Fatalf("%s into protected seat: %d %v", kind, code, body)
+		}
+	}
+	reject("booking_choose_slot")
+	requireBooking(t, srv, s, ordinary, "booking_accept", "", "")
+	events := len(s.reviews)
+	reject("booking_reschedule")
+	if len(s.reviews) != events || s.bookingSlots[protected].version != before || s.bookingSlots[protected].reservationID != "" {
+		t.Fatal("rejected protected-seat requests changed history or slot state")
+	}
+	requireBooking(t, srv, s, hard, "booking_choose_slot", protected, "Hard female-endoscopist requirement")
+	reloaded, err := loadAPIVerified(run, "")
+	if err != nil || reloaded.ledgerErr != "" || reloaded.bookingSlots[protected].caseID != hard {
+		t.Fatalf("replay: %v %q", err, reloaded.ledgerErr)
+	}
+}

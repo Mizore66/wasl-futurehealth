@@ -114,6 +114,13 @@ describe("booking server action read-back", () => {
     vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reader-secret-1234567890");
   });
 
+  it("keeps a server-elapsed candidate non-selectable instead of failing the projection", () => {
+    const [candidate] = booking.eligible_slots!;
+    const elapsed = Booking.parse({ ...booking, eligible_slots: [{ ...candidate, availability: "elapsed" }] });
+    expect(elapsed.eligible_slots?.[0].availability).toBe("elapsed");
+    expect(elapsed.eligible_slots?.filter((s) => s.availability === "available")).toHaveLength(0);
+  });
+
   it("a conflict re-reads and returns the latest server projection", async () => {
     const latest = CaseDetail.parse({ ...detail, api_overlay: { ...detail.api_overlay, head: h("f") } });
     const fetchMock = vi.fn()
