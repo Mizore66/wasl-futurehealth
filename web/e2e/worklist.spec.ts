@@ -386,6 +386,55 @@ test.describe("Referrals", () => {
     await expect(pane.getByRole("group", { name: "Boston grade" })).toBeVisible();
   });
 
+  test("an unconfirmed return reason stays with its referral when a search shows another", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: /^AHS-sr-9003/ }).click();
+    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await pane.getByRole("button", { name: "Wrong unit" }).click();
+    await search(page, "9002");
+    await expect(pane.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-9002");
+    await expect(pane.getByRole("heading", { name: "Why return this referral?" })).toHaveCount(0);
+    await expect(pane.getByRole("button", { name: "Accept referral" })).toBeVisible();
+    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await expect(pane.getByText("Choose a reason to return it.")).toBeVisible();
+    await expect(pane.getByRole("button", { name: "Wrong unit" })).toHaveAttribute("aria-pressed", "false");
+    await search(page, "");
+    await expect(pane.getByRole("button", { name: "Wrong unit", pressed: true })).toHaveCount(0);
+  });
+
+  test("unconfirmed conditions are not carried across a zero-result search to another referral", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: /^AHS-sr-9003/ }).click();
+    await pane.getByRole("button", { name: "Accept with conditions" }).click();
+    await pane.getByRole("button", { name: "Female endoscopist" }).click();
+    await search(page, "no-such-case");
+    await expect(page.getByRole("tab", { name: "All 0" })).toBeVisible();
+    await search(page, "9002");
+    await expect(pane.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-9002");
+    await expect(pane.getByRole("heading", { name: "Accept on these conditions" })).toHaveCount(0);
+    await pane.getByRole("button", { name: "Accept with conditions" }).click();
+    await expect(pane.getByRole("button", { name: "Accept with no conditions" })).toBeVisible();
+    await expect(pane.getByRole("button", { name: "Female endoscopist", pressed: true })).toHaveCount(0);
+  });
+
+  test("clearing a search drops an unconfirmed draft but keeps committed decisions", async ({ page }) => {
+    await page.goto("/app/referrals");
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
+    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await pane.getByRole("button", { name: "Wrong unit" }).click();
+    await search(page, "9003");
+    await search(page, "");
+    await expect(pane.getByRole("heading", { name: "Why return this referral?" })).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "Accepted 17" })).toBeVisible();
+    await page.getByRole("tab", { name: "All 21" }).click();
+    await page.getByRole("button", { name: /^AHS-sr-9001/ }).click();
+    await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
+  });
+
   test("search is wired to q", async ({ page }) => {
     await page.goto("/app/referrals");
     await page.getByRole("searchbox", { name: "Search case id" }).fill("1011");
