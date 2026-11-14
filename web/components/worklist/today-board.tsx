@@ -36,7 +36,7 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
+type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -193,6 +193,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           [id]: {
             ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
             snoozed: latest.snoozed, noAnswer: latest.noAnswer,
+            // Every action-driving flag comes from this same projection as next/head: no page-load flag may contradict it.
+            reserved: latest.reserved, cancelled: latest.cancelled,
           },
         },
       };
