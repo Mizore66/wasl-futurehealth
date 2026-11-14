@@ -9,7 +9,7 @@ import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/le
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
 import { Refine } from "@/components/patients/refine";
 import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
-import { closedInDays, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
+import { closedInDays, dueColumnWords, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { apiMode, getCases } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
@@ -26,7 +26,7 @@ const QUICK: { label: string; f: CaseFilters }[] = [
   { label: "Never notified", f: { dropoff: "never_notified" } },
   { label: "Not booked", f: { dropoff: "not_booked" } },
   { label: "No-show", f: { dropoff: "no_show" } },
-  { label: "Closed", f: { state: "closed" } },
+  { label: "Closed", f: { closed: true } },
 ];
 
 function describe(f: CaseFilters): string {
@@ -37,6 +37,8 @@ function describe(f: CaseFilters): string {
     f.review && facetValueLabel("review", f.review).toLowerCase(),
     f.owner && (f.owner === UNOWNED ? "no owner" : `owner ${facetValueLabel("owner", f.owner)}`),
     f.state && plain(f.state).toLowerCase(),
+    f.closed === true && "closed",
+    f.closed === false && "not closed",
     f.dropoff && DROPOFF_WORDS[f.dropoff].status.toLowerCase(),
     f.overdue === true && "overdue",
     f.overdue === false && "not overdue",
@@ -47,8 +49,8 @@ function describe(f: CaseFilters): string {
 
 const same = (a: CaseFilters, b: CaseFilters) => filtersHref("", a) === filtersHref("", b);
 
-/** The quick chips own state, dropoff and overdue. */
-const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, dropoff: f.dropoff, overdue: f.overdue });
+/** The quick chips own state, closed, dropoff and overdue. */
+const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, closed: f.closed, dropoff: f.dropoff, overdue: f.overdue });
 
 /** Chips change the view but keep every other filter: the refine selects and the search. */
 const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
@@ -151,6 +153,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             {filters.state && <input type="hidden" name="state" value={filters.state} />}
             {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
             {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
+            {filters.closed !== undefined && <input type="hidden" name="closed" value={String(filters.closed)} />}
             <label className="flex min-w-0 flex-1 items-center gap-2 rounded-control border border-input px-2.5 md:flex-none">
               <span className="sr-only">Search case id</span>
               <input type="search" name="q" defaultValue={filters.q} placeholder="Case id" className="w-full min-w-0 h-11 border-0 bg-transparent text-body outline-none md:w-40" />
@@ -207,7 +210,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                 </td>
                 <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
                   <span className="md:hidden">Due </span>
-                  {formatDay(c.referral_day + dueIn(c))}
+                  {dueColumnWords(c)}
                   {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}
                 </td>
                 <td className="px-4 py-2.5 text-muted max-md:block max-md:p-0">

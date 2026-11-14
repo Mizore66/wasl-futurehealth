@@ -68,6 +68,12 @@ func referralSourceHashes(t *testing.T) map[string]string {
 }
 
 func TestReferralInboxCanonicalControls(t *testing.T) {
+	if !*writeReferralControls {
+		// Verification must also work in a source export with no Git metadata.
+		// Keep this regression guard local to this non-parallel test; generation
+		// alone may inspect HEAD to record where new controls were produced.
+		t.Setenv("GIT_DIR", filepath.Join(t.TempDir(), "unavailable.git"))
+	}
 	oldHandoff, oldOutreach := Handoff, OutreachOn
 	Handoff, OutreachOn = false, false
 	defer func() { Handoff, OutreachOn = oldHandoff, oldOutreach }()
@@ -171,9 +177,12 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	head, err := exec.Command("git", "rev-parse", "HEAD").Output()
-	if err != nil {
-		t.Fatal(err)
+	var head []byte
+	if *writeReferralControls {
+		head, err = exec.Command("git", "rev-parse", "HEAD").Output()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	provenance := map[string]interface{}{
 		"kind":                      "explicitly synthetic facts-seam producer controls; not medical evidence",
@@ -208,9 +217,34 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 				t.Fatal(err)
 			}
 			if name == "referral-inbox-provenance.json" {
-				// HEAD advances after preparation; exact production/helper hashes must still match.
-				delete(actual.(map[string]interface{}), "source_head_at_generation")
-				delete(want.(map[string]interface{}), "source_head_at_generation")
+				// Preserve the approved generation record, without regenerating fixtures.
+				// Accepted PR183 changed only api.go's Closed query predicate. Pin
+				// that exact new source, while retaining its historical generation hash.
+				// Every other production hash and all recomputed outputs still compare.
+				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
+				sourceHashes := recomputed["production_source_sha256"].(map[string]interface{})
+				const generationAPI = "9314f93a56a1c8ba0004060e8229eaefba816734b22ac67e9fb148eee2e363c4"
+				const acceptedAPI = "77abf1430a4e19631d323bf5e5650e53e7635d8537d351249cf68938f2ac818c"
+				if sourceHashes["api.go"] != acceptedAPI || got["production_source_sha256"].(map[string]interface{})["api.go"] != generationAPI {
+					t.Fatal("unexpected API source change since approved referral generation")
+				}
+				sourceHashes["api.go"] = generationAPI
+				// This non-executable witness is the exact whole generation helper
+				// from 44f8911026dac7bbe18381144ea2596d512edab7, not a function
+				// extract or this current verification helper. Check its original
+				// recorded digest without needing historical Git objects at runtime.
+				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				const generationHelperSHA = "a35eb7de2c08d64683e7e84520795cc3ad0a913826a4d5d073df2fd5bacbce10"
+				if sha(generationHelper) != generationHelperSHA || got["helper_sha256"] != generationHelperSHA {
+					t.Fatal("approved referral generation helper identity changed")
+				}
+				recomputed["helper_sha256"] = sha(generationHelper)
+				// HEAD advances after preparation; original generation metadata stays saved.
+				delete(got, "source_head_at_generation")
+				delete(recomputed, "source_head_at_generation")
 			}
 			if !bytes.Equal(canon(actual), canon(want)) {
 				t.Fatalf("%s is stale; explicitly regenerate the synthetic controls", name)
