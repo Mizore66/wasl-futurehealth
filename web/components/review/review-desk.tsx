@@ -423,6 +423,11 @@ export function ReviewDesk({
   const current = useMemo(() => (live ? orderedStates(override ?? states ?? []) : []), [live, override, states]);
   const resolved = live && allQuestionsResolved({ api_review_states: current });
   const viewFor = (item: string): ReviewView | undefined => (itemViews ? itemViews[item] : view);
+  /** A question is bound only when its own item has a view and that view established the exact context this question needs. */
+  const boundFor = (s: ReviewState): boolean => {
+    const v = viewFor(s.item);
+    return Boolean(v) && (!itemViews || (s.question === "link" ? v!.context.link : v!.context.evidence));
+  };
   const contexts = [...new Set(current.map((s) => s.item))].flatMap((item) => {
     const itemView = viewFor(item);
     const own = { api_review_states: current.filter((s) => s.item === item) };
@@ -431,8 +436,8 @@ export function ReviewDesk({
       ? [{
           item,
           view: itemView,
-          link: own.api_review_states.some((s) => s.question === "link"),
-          evidence: own.api_review_states.some((s) => s.question === "evidence"),
+          link: own.api_review_states.some((s) => s.question === "link" && boundFor(s)),
+          evidence: own.api_review_states.some((s) => s.question === "evidence" && boundFor(s)),
           linkAnswer: finalDecisions(own, "link")[0] as IdentityAnswer | undefined,
           answerCell: evidenceFinal ? resolvedCell(evidenceFinal) : undefined,
         }]
@@ -669,7 +674,7 @@ export function ReviewDesk({
                     key={`${state.item}:${state.question}`}
                     state={state}
                     view={viewFor(state.item) ?? view}
-                    bound={Boolean(viewFor(state.item))}
+                    bound={boundFor(state)}
                     position={i}
                     total={current.length}
                     draft={drafts[key]}

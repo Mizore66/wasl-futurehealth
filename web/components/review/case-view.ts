@@ -1,4 +1,4 @@
-import { Evidence, GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { Evidence, GUIDED_EVIDENCE_LABELS, isGuided, Link as LinkFacts, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -56,6 +56,12 @@ export type ReviewView = {
   quote: string;
   readerModel: string;
   items: ReviewItems;
+  /**
+   * Whether the exact context each question needs is on screen. False when a raised item's own pair or own report cannot be
+   * established from the case; nothing is then borrowed from another item and the question is shown but cannot be answered.
+   * This is structural binding only: it does not say the context is current, original or guard-checked.
+   */
+  context: { link: boolean; evidence: boolean };
   trail: ChainNode[];
 };
 
@@ -145,18 +151,34 @@ function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean)
   return parsed?.success ? parsed.data : c.evidence.find((e) => shortId(e.report) === shortId(item.report));
 }
 
+/** The link decision in a raised item's own chain: the item's original link context, which may be a multi-hop path whose weakest edge is not the outreach pair. */
+function linkFromChain(item: RaisedItem): CaseDetail["links"][number] | undefined {
+  const block = item.chain.find((e) => e.type === "link_decision");
+  const parsed = block && LinkFacts.safeParse(block.body);
+  return parsed?.success && parsed.data.loop === item.loop ? parsed.data : undefined;
+}
+
 /** With `only`, everything shown is derived from that one raised item; without it, from the case's first link and evidence items. */
 export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   const raised = only ? [only] : c.review_items;
   const linkItem = raised.find((r) => r.kinds.includes("link"));
   const evidenceItem = raised.find((r) => r.kinds.includes("evidence"));
-  const pair = linkItem?.pair;
-  const referral = c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral");
-  const downstream = c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream");
+  /*
+   * A view of one raised item takes its endpoints only from that item's own pair, by exact registration, and its link details only
+   * from that item's own chain or the exact edge. Nothing is borrowed from the referral, the first downstream record or links[0].
+   */
+  const pair = linkItem?.pair ?? evidenceItem?.pair;
+  const strict = Boolean(only && linkItem);
+  const exact = (registration: string | undefined) => (registration ? c.identities.find((i) => i.registration === registration) : undefined);
+  const referral = strict ? exact(pair?.[0]) : (c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral"));
+  const downstream = strict ? exact(pair?.[1]) : (c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream"));
+  const linkBound = !strict || (pair?.length === 2 && Boolean(referral) && Boolean(downstream));
   const a = referral && personFor(referral.registration);
   const b = downstream && personFor(downstream.registration);
   const ev = evidenceFor(c, evidenceItem, Boolean(only));
-  const link = c.links.find((l) => pair && l.weakest_edge.a === pair[0] && l.weakest_edge.b === pair[1]) ?? c.links[0];
+  const chainLink = strict && linkItem ? linkFromChain(linkItem) : undefined;
+  const edge = (l: CaseDetail["links"][number]) => Boolean(pair) && l.weakest_edge.a === pair?.[0] && l.weakest_edge.b === pair?.[1];
+  const link = strict ? (linkBound ? (chainLink ?? c.links.find(edge)) : undefined) : (c.links.find(edge) ?? c.links[0]);
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
@@ -273,6 +295,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
     items: { link: linkItem?.item, evidence: evidenceItem?.item },
+    context: { link: linkBound, evidence: !only || !evidenceItem || Boolean(ev) },
     trail,
   };
 }
