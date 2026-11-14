@@ -3,9 +3,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { byUrgency } from "@/components/worklist/days";
 import { BOOKING_NEEDED, DECLINED_STATUS, workItem } from "@/components/worklist/model";
-import { CaseList, type ApiOverlay } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseList, type ApiOverlay } from "@/lib/api/schema";
 
-const base = CaseList.parse(JSON.parse(readFileSync(path.join(__dirname, "fixtures", "ledger_case_list.json"), "utf8"))).cases[0];
+const base = ActiveCaseSummary.parse(CaseList.parse(JSON.parse(readFileSync(path.join(__dirname, "fixtures", "ledger_case_list.json"), "utf8"))).cases[0]);
 const NOW = Date.parse("2026-11-20T12:00:00Z");
 const UNTIL = "2026-11-21T12:00:00Z";
 const outcome = (o: string, at: string) => ({ at, event: "e", outcome: o, channel: "phone" as const });

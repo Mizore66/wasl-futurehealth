@@ -6,9 +6,9 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { TodayBoard } from "@/components/worklist/today-board";
 import { workItem } from "@/components/worklist/model";
-import { CaseList } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseList } from "@/lib/api/schema";
 
-const base = CaseList.parse(JSON.parse(readFileSync(path.join(__dirname, "fixtures/ledger_case_list.json"), "utf8"))).cases[0];
+const base = ActiveCaseSummary.parse(CaseList.parse(JSON.parse(readFileSync(path.join(__dirname, "fixtures/ledger_case_list.json"), "utf8"))).cases[0]);
 let root: ReturnType<typeof createRoot> | null = null;
 afterEach(async () => {
   if (root) await act(async () => root!.unmount());

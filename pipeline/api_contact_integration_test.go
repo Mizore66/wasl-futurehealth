@@ -120,3 +120,30 @@ func TestContactIntegrationGovernanceFoldAndContactReplay(t *testing.T) {
 		t.Fatal("contact/governance changed the canonical decision")
 	}
 }
+
+// A decision-less case projection (c.last == nil) must still list safely: no panic, no contact permission, and no
+// invented signature or revision. Effective ledger consent still decides the blocked flag.
+func TestContactSummaryDecisionlessProjection(t *testing.T) {
+	s := &apiServer{meta: map[string]interface{}{"api": apiVersion}, cases: map[string]*apiCase{}, order: []string{"bare"}}
+	c := &apiCase{ID: "bare"}
+	s.cases["bare"] = c
+	if got := consentFromDecision(c.last); got != "unknown" {
+		t.Fatalf("decision-less canonical consent must stay unknown, got %q", got)
+	}
+	if got := s.contactSummary(c); got["status"] != "none" || got["contact_blocked"] != false {
+		t.Fatalf("no ledger events: want none/unblocked, got %v", got)
+	}
+	if got := s.summary0(c); got["contact_state"].(map[string]interface{})["status"] != "none" {
+		t.Fatalf("list summary must carry the safe contact state, got %v", got["contact_state"])
+	}
+	for _, tc := range []struct {
+		decision, status string
+		blocked          bool
+	}{{"consent_denied", "denied", true}, {"consent_opted_out", "opted_out", true}, {"consent_granted", "granted", false}} {
+		s.reviews = []map[string]interface{}{{"case": "bare", "action": ActRecordConsent, "decision": tc.decision, "hash": "h-" + tc.status}}
+		got := s.contactSummary(c)
+		if got["status"] != tc.status || got["contact_blocked"] != tc.blocked {
+			t.Fatalf("%s: want %s/blocked=%v, got %v", tc.decision, tc.status, tc.blocked, got)
+		}
+	}
+}

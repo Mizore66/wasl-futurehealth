@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { TodayBoard } from "@/components/worklist/today-board";
 import { workItem } from "@/components/worklist/model";
-import { CaseList, CaseSummary } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseList, CaseSummary } from "@/lib/api/schema";
 
 const { recordAction } = vi.hoisted(() => ({ recordAction: vi.fn() }));
 vi.mock("@/app/app/today/actions", () => ({ recordAction }));
@@ -23,7 +23,7 @@ vi.mock("motion/react", async () => {
   };
 });
 const load = (file: string) => JSON.parse(readFileSync(path.join(__dirname, "fixtures", file), "utf8"));
-const base = CaseList.parse(load("ledger_case_list.json")).cases[0];
+const base = ActiveCaseSummary.parse(CaseList.parse(load("ledger_case_list.json")).cases[0]);
 const NOW = Date.parse("2026-11-20T12:00:00Z");
 const initial: CaseSummary = { ...base, owner: "someone", dropoff: "not_booked", consent: "granted", api_patient: undefined,
   contact_state: { status: "none", contact_blocked: false },

@@ -5,11 +5,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { TodayBoard } from "@/components/worklist/today-board";
 import { workItem } from "@/components/worklist/model";
-import { CaseList, CaseSummary } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseList, CaseSummary } from "@/lib/api/schema";
 
 const fullList = CaseList.parse(JSON.parse(readFileSync(path.join(__dirname, "fixtures", "ledger_case_list.json"), "utf8")));
 const NOW = Date.parse("2026-11-20T12:00:00Z");
-const granted: CaseSummary = { ...fullList.cases[0], consent: "granted", owner: "someone", dropoff: "not_booked", api_overlay: undefined };
+const granted: CaseSummary = { ...ActiveCaseSummary.parse(fullList.cases[0]), consent: "granted", owner: "someone", dropoff: "not_booked", api_overlay: undefined };
 const withContact = (status: "none" | "granted" | "denied" | "opted_out", contact_blocked: boolean): CaseSummary => ({
   ...granted,
   contact_state: { status, contact_blocked },
