@@ -160,11 +160,28 @@ type canonicalRead struct {
 	Provenance        canonicalReadProvenance
 }
 
+// Wire is the actual observed transport disposition, not proof availability.
+// Returned duplicate/fresh with nil Proof is permanently no-resend work for the
+// future engine. Proof is only an in-memory observation, NOT durable metadata,
+// source binding, source ownership, checkpoint authority or a cleanup receipt.
+type canonicalWireDisposition string
+type canonicalReturnKind string
+
+const (
+	canonicalWireUnknown     canonicalWireDisposition = "unknown"
+	canonicalWireFresh       canonicalWireDisposition = "fresh"
+	canonicalWireDuplicate   canonicalWireDisposition = "duplicate"
+	canonicalWireNotSent     canonicalWireDisposition = "not-sent"
+	canonicalReturnFresh     canonicalReturnKind      = "fresh"
+	canonicalReturnDuplicate canonicalReturnKind      = "duplicate"
+	canonicalReturnReplay    canonicalReturnKind      = "replay"
+)
+
 type canonicalResult struct {
-	Wire        string
+	Wire        canonicalWireDisposition
 	Returned    bool
-	ReturnKind  string
-	ObservedAck *jetstream.PubAck
+	ReturnKind  canonicalReturnKind
+	ObservedAck *jetstream.PubAck // copy of the actual response only, never synthesized
 	Proof       *canonicalReceipt
 	Blocked     string
 }
