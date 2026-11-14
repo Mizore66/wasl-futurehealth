@@ -15,6 +15,7 @@
       "last_event_hash": "",
       "mode": "demo",
       "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+      "revision": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "status": "none"
     }
   },
@@ -34,33 +35,33 @@
     "contact_outcomes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.366327Z",
+        "at": "2026-11-13T08:26:41.6091595Z",
         "channel": "phone",
-        "event": "975083d15d8b7658efad87ed6ce29d3eb6cdd3a309a6638bfec7da5672c23014",
+        "event": "8a7a9faae61694bc7111b2ad5a68b030cf98762abb839d525867ccaf034ba5d7",
         "outcome": "no_answer"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.369665Z",
+        "at": "2026-11-13T08:26:41.6160758Z",
         "channel": "phone",
-        "event": "9bedf78b58b844bff864a6b54073f3572603127b35a06a5240b55f8fd9466fa5",
+        "event": "6105c3ebcf0206eb11951c99ba7bc2b8b68adb2ab0094e6e3344c8889532cdcf",
         "note": "synthetic call note",
         "outcome": "reached"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.375084Z",
+        "at": "2026-11-13T08:26:41.6511429Z",
         "channel": "phone",
-        "event": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
+        "event": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
         "outcome": "declined"
       }
     ],
-    "head": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
-    "last_action_at": "2026-11-13T03:26:25.375084Z",
+    "head": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
+    "last_action_at": "2026-11-13T08:26:41.6511429Z",
     "last_contact": {
-      "at": "2026-11-13T03:26:25.375084Z",
+      "at": "2026-11-13T08:26:41.6511429Z",
       "channel": "phone",
-      "event": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
+      "event": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
       "outcome": "declined"
     },
     "ledger_status": "invalid",
@@ -68,8 +69,8 @@
     "notes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.372731Z",
-        "event": "5faab3f069a20bf4f68cad69fabd1abb2cb7748b541e77156fdd03ad06a1f39d",
+        "at": "2026-11-13T08:26:41.636154Z",
+        "event": "0e253d6cb093bbe44c8d3755aaf32d4d2f58a4094f2ed6adf47dffec468368bb",
         "text": "synthetic coordinator note"
       }
     ],
@@ -80,13 +81,13 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.366327Z",
+      "at": "2026-11-13T08:26:41.6091595Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "no_answer"
       },
-      "hash": "975083d15d8b7658efad87ed6ce29d3eb6cdd3a309a6638bfec7da5672c23014",
+      "hash": "8a7a9faae61694bc7111b2ad5a68b030cf98762abb839d525867ccaf034ba5d7",
       "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "contact_outcome",
       "mode": "demo",
@@ -98,18 +99,18 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.369665Z",
+      "at": "2026-11-13T08:26:41.6160758Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "note": "synthetic call note",
         "outcome": "reached"
       },
-      "hash": "9bedf78b58b844bff864a6b54073f3572603127b35a06a5240b55f8fd9466fa5",
-      "head": "975083d15d8b7658efad87ed6ce29d3eb6cdd3a309a6638bfec7da5672c23014",
+      "hash": "6105c3ebcf0206eb11951c99ba7bc2b8b68adb2ab0094e6e3344c8889532cdcf",
+      "head": "8a7a9faae61694bc7111b2ad5a68b030cf98762abb839d525867ccaf034ba5d7",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "975083d15d8b7658efad87ed6ce29d3eb6cdd3a309a6638bfec7da5672c23014",
+      "prev": "8a7a9faae61694bc7111b2ad5a68b030cf98762abb839d525867ccaf034ba5d7",
       "role": "coordinator",
       "seq": 2,
       "type": "coordinator_action"
@@ -117,16 +118,16 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.372731Z",
+      "at": "2026-11-13T08:26:41.636154Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "text": "synthetic coordinator note"
       },
-      "hash": "5faab3f069a20bf4f68cad69fabd1abb2cb7748b541e77156fdd03ad06a1f39d",
-      "head": "9bedf78b58b844bff864a6b54073f3572603127b35a06a5240b55f8fd9466fa5",
+      "hash": "0e253d6cb093bbe44c8d3755aaf32d4d2f58a4094f2ed6adf47dffec468368bb",
+      "head": "6105c3ebcf0206eb11951c99ba7bc2b8b68adb2ab0094e6e3344c8889532cdcf",
       "kind": "note",
       "mode": "demo",
-      "prev": "9bedf78b58b844bff864a6b54073f3572603127b35a06a5240b55f8fd9466fa5",
+      "prev": "6105c3ebcf0206eb11951c99ba7bc2b8b68adb2ab0094e6e3344c8889532cdcf",
       "role": "coordinator",
       "seq": 3,
       "type": "coordinator_action"
@@ -134,17 +135,17 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.375084Z",
+      "at": "2026-11-13T08:26:41.6511429Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "declined"
       },
-      "hash": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
-      "head": "5faab3f069a20bf4f68cad69fabd1abb2cb7748b541e77156fdd03ad06a1f39d",
+      "hash": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
+      "head": "0e253d6cb093bbe44c8d3755aaf32d4d2f58a4094f2ed6adf47dffec468368bb",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "5faab3f069a20bf4f68cad69fabd1abb2cb7748b541e77156fdd03ad06a1f39d",
+      "prev": "0e253d6cb093bbe44c8d3755aaf32d4d2f58a4094f2ed6adf47dffec468368bb",
       "role": "coordinator",
       "seq": 4,
       "type": "coordinator_action"
@@ -166,12 +167,12 @@
         "updated_at": null,
         "updated_event": null
       },
-      "head": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
-      "last_action_at": "2026-11-13T03:26:25.375084Z",
+      "head": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
+      "last_action_at": "2026-11-13T08:26:41.6511429Z",
       "last_contact": {
-        "at": "2026-11-13T03:26:25.375084Z",
+        "at": "2026-11-13T08:26:41.6511429Z",
         "channel": "phone",
-        "event": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
+        "event": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
         "outcome": "declined"
       },
       "ledger_status": "invalid",
@@ -312,7 +313,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-13T03:26:25Z",
+    "loaded_at": "2026-11-13T08:26:41Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",

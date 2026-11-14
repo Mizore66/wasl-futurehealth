@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -16,13 +16,15 @@ import { byUrgency, STANDARD_DAYS } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, workItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
+import { outcomeWords } from "@/components/case/words";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
-import type { CaseAction } from "@/lib/api/schema";
+import { ApiOverlay, Booking, CasePatient, CaseSummary, type CaseAction } from "@/lib/api/schema";
+import { z } from "zod";
 
 /*
  * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
@@ -36,7 +38,8 @@ import type { CaseAction } from "@/lib/api/schema";
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type Patch = { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
+type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -53,11 +56,21 @@ type State = {
   over: Record<string, Patch>;
 };
 
-type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; log: Contact[] };
+type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; log: Contact[] };
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
-type LedgerRead = (PersistedLedger & { bookingPanel?: BookingProjection | null }) | { error: string };
-const isLedger = (l: LedgerRead | undefined): l is PersistedLedger => !!l && !("error" in l);
+const LedgerResponse = z.object({
+  status: z.enum(["ok", "invalid"]), detail: z.string(), applied: z.number().nullable(),
+  entries: z.array(z.object({ what: z.string(), when: z.string(), who: z.string(), hash: z.string().optional() })),
+  patient: CasePatient.optional(),
+  bookingPanel: z.object({ booking: Booking, overlay: ApiOverlay, case: CaseSummary }).nullable().optional(),
+});
+type LedgerSnapshot = z.infer<typeof LedgerResponse>;
+type LedgerRead = LedgerSnapshot | { error: string };
+const isLedger = (l: LedgerRead | undefined): l is LedgerSnapshot => !!l && !("error" in l);
+const contactProjection = (item: WorkItem): ContactProjection => ({
+  contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped,
+});
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
   delete next[id];
@@ -72,10 +85,14 @@ const TABS: [View, string][] = [
   ["none", "No owner"],
 ];
 
+const OUTCOME_CHIP = { voicemail: "Voicemail", wrong_number: "Wrong number" } as const;
+
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 /** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
 const SESSION_WHO = "This browser";
+/** Fixtures mode only: the demo persona. A live save shows the owner the API recorded, the verified coordinator. */
+const SESSION_OWNER = "Hessa Al Ali";
 
 const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
@@ -84,6 +101,14 @@ const REFUSED: Record<number, string> = {
   500: "the case ledger failed validation, so the API refuses new actions",
   503: "no live API",
 };
+
+// Revision access is confined to effects and event handlers; render only constructs the chip callbacks.
+function useReadFence() {
+  const revisions = useRef<Record<string, number>>({});
+  const revisionFor = useCallback((id: string) => revisions.current[id] ?? 0, []);
+  const supersede = useCallback((id: string) => { revisions.current[id] = (revisions.current[id] ?? 0) + 1; }, []);
+  return { revisionFor, supersede };
+}
 
 export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
@@ -97,6 +122,12 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [persisted, setPersisted] = useState<Record<string, LedgerRead>>({});
   /** Bumped by Retry so the same selected case is read again. */
   const [attempt, setAttempt] = useState(0);
+  // A completed local write supersedes any read begun before it, even if fetch ignores abort.
+  const { revisionFor, supersede } = useReadFence();
+  const supersedeRead = (id: string) => {
+    supersede(id);
+    setAttempt((n) => n + 1);
+  };
   /** The case the current read is for: when the selection moves, a read starts for the new one. */
   const [readFor, setReadFor] = useState<string | undefined>(undefined);
   /**
@@ -156,23 +187,44 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   useEffect(() => {
     if (!selId) return;
     const ac = new AbortController();
+    const revision = revisionFor(selId);
+    const stale = () => ac.signal.aborted || revision !== revisionFor(selId);
     fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
       .then(async (r) => {
-        if (r.ok) return (await r.json()) as PersistedLedger;
+        if (r.ok) {
+          const parsed = LedgerResponse.safeParse(await r.json());
+          if (!parsed.success) throw new ReadError("the web server returned an unrecognised ledger");
+          const panel = parsed.data.bookingPanel;
+          if (panel && (panel.case.id !== selId || panel.case.api_overlay?.head !== panel.overlay.head)) {
+            throw new ReadError("the web server returned a ledger for a different case or head");
+          }
+          return parsed.data;
+        }
         const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
         throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
       })
       .then((ledger) => {
+        if (stale()) return;
         setPersisted((prev) => ({ ...prev, [selId]: ledger }));
         setLastStatus(ledger.status);
+        const panel = ledger.bookingPanel;
+        // An invalid replay is only a prefix, never permission to resume contact. Keep patient activity/history
+        // separate; only the validated current shared case projection may change these affordances and their head.
+        if (ledger.status === "ok" && panel?.overlay.ledger_status === "ok") {
+          const latest = workItem(panel.case, now, true);
+          setS((prev) => ({
+            ...prev,
+            over: { ...prev.over, [selId]: { ...(prev.over[selId] ?? { log: [] }), ...contactProjection(latest), head: panel.overlay.head } },
+          }));
+        }
       })
       .catch((e: unknown) => {
-        if (ac.signal.aborted) return;
+        if (stale()) return;
         const error = e instanceof ReadError ? e.message : "the web server did not answer";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
-  }, [selId, attempt]);
+  }, [selId, attempt, now, revisionFor]);
   /** Forget a failed read of `id` and read it again; a successful read is kept (selecting the case reads it again). */
   const retryLedger = (id: string) => {
     if (!persisted[id] || isLedger(persisted[id])) return;
@@ -182,6 +234,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const ledger = selId ? persisted[selId] : undefined;
   const ledgerRead = isLedger(ledger) ? ledger : null;
   const bookingProjection = (id: string, projection: BookingProjection) => {
+    if (projection.case.id !== id || projection.case.api_overlay?.head !== projection.overlay.head) return;
+    supersedeRead(id);
     const original = items.find((item) => item.id === id);
     const latest = workItem(projection.case, now, original?.hasRecord ?? true, Date.now());
     setS((prev) => {
@@ -192,7 +246,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           ...prev.over,
           [id]: {
             ...before, view: latest.view, status: latest.status, next: latest.next, head: latest.head,
-            snoozed: latest.snoozed, noAnswer: latest.noAnswer,
+            ...(projection.overlay.ledger_status === "ok" ? contactProjection(latest) : {}),
+            snoozed: latest.snoozed, noAnswer: latest.noAnswer, awaitingNext: latest.awaitingNext,
             // Every action-driving flag comes from this same projection as next/head: no page-load flag may contradict it.
             reserved: latest.reserved, cancelled: latest.cancelled,
           },
@@ -203,7 +258,6 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       const existing = prev[id];
       return isLedger(existing) ? { ...prev, [id]: { ...existing, bookingPanel: projection } } : prev;
     });
-    setAttempt((n) => n + 1); // refresh the human trail and list evidence from the API as well
   };
   const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
   /*
@@ -259,8 +313,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
-        else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
+        if (res.ok) {
+          supersedeRead(row.id);
+          apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
+        } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -292,15 +348,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       </span>
     </div>
   );
-  const stage = last ? s.stage : null;
+  /* A persisted Reached outcome keeps its follow-up choices until a later outcome, snooze or booking replaces it. */
+  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" ? "callback" : null) : p?.awaitingNext ? "reached" : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
 
   type Chip = [string, () => void];
   let chipsTitle = "";
   let chips: Chip[] = [];
-  if (p) {
-    if (!last) {
+  if (p && !p.contactBlocked) {
+    if (!last && !stage) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
         [
@@ -309,7 +366,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Reached on the phone",
-              { status: `Reached · ${p.next}`, snoozed: false },
+              { status: `Reached · ${p.next}`, snoozed: false, awaitingNext: true },
               "Logged: Reached",
               "Next: appointment agreed or a call back",
               { action: "contact_outcome", outcome: "reached", channel: "phone" },
@@ -320,13 +377,25 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true }, "Logged: No answer", toEnd, {
+            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true, awaitingNext: false }, "Logged: No answer", toEnd, {
               action: "contact_outcome",
               outcome: "no_answer",
               channel: "phone",
             });
           },
         ],
+        ...(["voicemail", "wrong_number"] as const).map((outcome): Chip => [
+          OUTCOME_CHIP[outcome],
+          () =>
+            log(
+              p,
+              outcomeWords(outcome, "phone"),
+              { noAnswer: 0, status: outcomeStatus(outcome), snoozed: false, awaitingNext: false },
+              `Logged: ${OUTCOME_CHIP[outcome]}`,
+              outcomeStatus(outcome),
+              { action: "contact_outcome", outcome, channel: "phone" },
+            ),
+        ]),
       ];
     } else if (stage === "reached") {
       chipsTitle = "What next?";
@@ -338,7 +407,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Appointment agreed",
-              { view: "waiting", status: BOOKING_NEEDED, snoozed: false },
+              { view: "waiting", status: BOOKING_NEEDED, snoozed: false, awaitingNext: false },
               "Logged: Appointment agreed",
               `${first} moved to Waiting`,
               { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
@@ -348,7 +417,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "Call back on…",
           () => {
             setWant({ k: "chips" });
-            setS((prev) => ({ ...prev, stage: "callback", callbackFrom: Date.now() }));
+            setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "callback", callbackFrom: Date.now() }));
           },
         ],
         [
@@ -357,7 +426,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: DECLINED_STATUS, snoozed: false, ...(p.reserved ? { next: DECLINED_RESERVED_NEXT } : p.cancelled ? { next: DECLINED_CANCELLED_NEXT } : {}) },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false, ...(p.reserved ? { next: DECLINED_RESERVED_NEXT } : p.cancelled ? { next: DECLINED_CANCELLED_NEXT } : {}) },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },
@@ -369,7 +438,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       // One wall-clock `until` per choice drives both the label and the saved snooze (issue #37); never the run day.
       chips = [1, 2, 3].map((k) => {
         const { label: d, action } = callbackChoice(k, s.callbackFrom);
-        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
+        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true, awaitingNext: false }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
       });
     }
   }
@@ -544,6 +613,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               <Button
                 variant="cta"
                 size="touch"
+                disabled={p.contactBlocked || ledgerInvalid}
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
                 className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
@@ -566,7 +636,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 className="max-sm:flex-1"
                 disabled={busy || ledgerInvalid}
                 onClick={() =>
-                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
+                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
                     action: "snooze",
                     until: fromNow(1),
                     reason: "Snoozed to tomorrow",
@@ -582,9 +652,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   className="max-sm:flex-1"
                   disabled={busy || ledgerInvalid}
                   onClick={() =>
-                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
+                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
                       action: "assign_owner",
-                      owner: "Hessa Al Ali",
                     })
                   }
                 >
@@ -700,10 +769,22 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             <Track days={p.days} referralDay={p.referralDay} />
 
             <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
-              <Field label="Texts" value={p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
+              <Field label="Texts" value={p.textsStopped ? "Stopped by patient" : p.contactBlocked ? "Contact blocked · denial or opt-out recorded" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
               <Field label="Owner" value={p.owner} />
               <Field label="Next" value={p.next} />
             </dl>
+
+            {ledgerRead?.patient && (
+              <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
+                <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
+                <p className="m-0 mt-1 text-muted">
+                  Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
+                </p>
+                {ledgerRead.patient.slot_selection.status === "selected" && (
+                  <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
+                )}
+              </section>
+            )}
 
             {live && ledgerRead?.bookingPanel && (
               <div className="mt-6" aria-label="Simulated booking">

@@ -30,5 +30,14 @@ export default defineConfig({
   ],
   webServer: external
     ? undefined
-    : { command: `pnpm exec next start -p ${port}`, url: `http://localhost:${port}/app`, reuseExistingServer: false, timeout: 120_000 },
+    : [
+        { command: "corepack pnpm exec tsx e2e/patient-mock-api.ts", url: "http://127.0.0.1:31987/__health", reuseExistingServer: false, timeout: 30_000 },
+        {
+          command: `corepack pnpm exec next start -p ${port}`,
+          url: `http://localhost:${port}/app`,
+          reuseExistingServer: false,
+          timeout: 120_000,
+          env: { WASL_PATIENT_API_URL: "http://127.0.0.1:31987" },
+        },
+      ],
 });

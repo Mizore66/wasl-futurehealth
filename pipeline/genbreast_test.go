@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,6 +61,7 @@ func TestGenBreastLeavesOtherProgrammesUnchanged(t *testing.T) {
 		persons[p.Qid] = p
 	}
 	n, progs := 0, map[string]map[string]bool{}
+	repeatParents := map[string]string{}
 	states := map[string]int{}
 	for _, lt := range tr.Loops {
 		if progs[lt.Qid] == nil {
@@ -74,6 +76,9 @@ func TestGenBreastLeavesOtherProgrammesUnchanged(t *testing.T) {
 		if lt.Breast == nil || lt.Breast.Screen == "" {
 			t.Fatalf("breast loop %s without screening truth", lt.Loop)
 		}
+		if len(lt.Breast.Screens) > 1 {
+			repeatParents[lt.Breast.Screens[1]] = lt.Breast.Screen
+		}
 		if lt.State == "closed" && !breastClosingAssess(lt.Breast.Outcome) {
 			t.Errorf("breast loop %s closed with outcome %q", lt.Loop, lt.Breast.Outcome)
 		}
@@ -86,6 +91,28 @@ func TestGenBreastLeavesOtherProgrammesUnchanged(t *testing.T) {
 		if pr["breast"] && len(pr) > 1 {
 			t.Errorf("person %s has a breast loop and another loop %v", q, pr)
 		}
+	}
+	if len(repeatParents) == 0 {
+		t.Fatal("synthetic breast cohort did not exercise a TR repeat")
+	}
+	feed, _ := os.ReadFile(filepath.Join(b, "fhir_bsu-screen.ndjson"))
+	for _, line := range bytes.Split(feed, []byte("\n")) {
+		var ge GenEvent
+		if json.Unmarshal(line, &ge) != nil {
+			continue
+		}
+		parent, ok := repeatParents[fmt.Sprint(ge.Res["id"])]
+		if !ok {
+			continue
+		}
+		xs, _ := ge.Res["extension"].([]interface{})
+		if len(xs) != 1 || gs(xs[0].(map[string]interface{}), "url") != repeatRelation || gs(xs[0].(map[string]interface{}), "valueString") != "DiagnosticReport/"+parent {
+			t.Errorf("repeat %v lacks explicit parent %s: %v", ge.Res["id"], parent, ge.Res["extension"])
+		}
+		delete(repeatParents, fmt.Sprint(ge.Res["id"]))
+	}
+	if len(repeatParents) != 0 {
+		t.Errorf("repeat reports missing from feed: %v", repeatParents)
 	}
 	if n != 80 {
 		t.Errorf("want 80 breast loops, got %d", n)

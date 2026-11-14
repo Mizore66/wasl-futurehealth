@@ -377,6 +377,20 @@ func (s *apiServer) queueItem(caseID, item string) *ReviewItem {
 	return nil
 }
 
+// raisedReviewItem is for historical replay only. A retired item can validate
+// an earlier claim/read without becoming eligible for any current review write.
+func (s *apiServer) raisedReviewItem(caseID, item string) *ReviewItem {
+	if it := s.queueItem(caseID, item); it != nil {
+		return it
+	}
+	for _, it := range s.retiredQueue[caseID] {
+		if it.ItemID == item {
+			return it
+		}
+	}
+	return nil
+}
+
 func (s *apiServer) itemSigned(caseID, item string) bool {
 	for _, r := range s.signoffs[caseID] {
 		if fmt.Sprint(r["item"]) == item {
@@ -534,20 +548,29 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	if c == nil {
 		return fmt.Errorf("protocol read for unknown case")
 	}
-	it := s.queueItem(id, sstr(ev, "item"))
+	it := s.raisedReviewItem(id, sstr(ev, "item"))
 	if it == nil {
 		return fmt.Errorf("protocol read for an item not raised for this case")
 	}
 	// A canonical sign-off that arrived later freezes the item; it does not invalidate legal earlier reads.
-	// head_signed is the case head at write time: any decision the case has had, not only the latest.
-	knownHead := false
+	// head_signed identifies the programme at write time, not today's programme (which a tracking conflict clears).
+	// Identical heads can be re-emitted, but conflicting programme contexts must never depend on output order.
+	head := sstr(ev, "head_signed")
+	var signed *Decision
 	for _, d := range c.decisions {
-		knownHead = knownHead || d.Sig == sstr(ev, "head_signed")
+		if d.Sig != head {
+			continue
+		}
+		if signed != nil && signed.Prog != d.Prog {
+			return fmt.Errorf("protocol read signed against an ambiguous programme head")
+		}
+		signed = d
 	}
-	if !knownHead {
+	if head == "" || signed == nil {
 		return fmt.Errorf("protocol read signed against a head the case never had")
 	}
-	act := reviewActFor(c, sstr(ev, "decision"))
+	// Replay-only context: never restore the current programme or retired write eligibility.
+	act := reviewActFor(&apiCase{Programme: signed.Prog}, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
 	}

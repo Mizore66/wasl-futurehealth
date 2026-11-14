@@ -969,3 +969,41 @@ func recoveryTestServerNoAssert(t *testing.T, s *apiServer) *httptest.Server {
 	t.Cleanup(srv.Close)
 	return srv
 }
+
+func TestRecoveryReplayHonoursCompensatedDenial(t *testing.T) {
+	run, ids := recoveryTestRun(t, 1)
+	recoveryCanonicalOutreach(t, run, ids[2])
+	s, srv := recoveryTestServer(t, run)
+	c := s.cases[ids[2]]
+	as := func(method, path, role, actor string, body interface{}) (int, map[string]interface{}) {
+		raw, _ := json.Marshal(body)
+		req, _ := http.NewRequest(method, srv.URL+path, bytes.NewReader(raw))
+		req.Header.Set("X-Wasl-Role", role)
+		req.Header.Set("X-Wasl-Actor", actor)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var out map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		return resp.StatusCode, out
+	}
+	code, body := as("POST", "/api/cases/"+ids[2]+"/consent", RoleCoordinator, "nurse",
+		map[string]interface{}{"event": "consent_denied", "expected_head": c.last.Sig})
+	if code != 201 {
+		t.Fatalf("denial: %d %v", code, body)
+	}
+	hash := body["review"].(map[string]interface{})["hash"].(string)
+	if code, body = as("POST", "/api/cases/"+ids[2]+"/undo", RoleClinician, "other", map[string]interface{}{"target": hash}); code != 201 {
+		t.Fatalf("undo: %d %v", code, body)
+	}
+	slot := recoveryTestSlot(s, 1)
+	req := recoveryRequest(ids[2], s.recoverySlotHeadLocked(slot), s.caseHead(c), "compensated-denial-01", true)
+	if code, body = recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, req); code != 201 {
+		t.Fatalf("outreach after compensated denial: %d %v", code, body)
+	}
+	if reloaded := loadAPI(run, ""); reloaded.ledgerErr != "" || reloaded.recovery.ByCase[ids[2]] == nil {
+		t.Fatalf("replay rejected a confirmation written under an effective grant: %q", reloaded.ledgerErr)
+	}
+}

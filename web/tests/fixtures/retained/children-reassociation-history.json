@@ -1,0 +1,252 @@
+{
+  "cases": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "kind": "none",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "no_open_coordinator_action"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/a",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/a",
+      "ahs-mushrif/ServiceRequest/a#surv",
+      "ahs-mushrif/ServiceRequest/a#surv2",
+      "ahs-mushrif/ServiceRequest/a#surv3"
+    ],
+    "id": "person_2c3e8b61ed5d766851403589bd99bb1a4c2db4e9c45c77eb5b75324396e53354",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "d83b43042da866b79011baf4ce19bdd9781ca5c931579bfacdc62f27206113dc",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+      },
+      {
+        "providers": [
+          "skmc-endo"
+        ],
+        "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+          "facts_seq": 2,
+          "in_seq": 2,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "2d3390ef2187c07c1e18f926cab890d35def168b4f70d42cb1618f95e17ddc23"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@3",
+          "facts_seq": 3,
+          "in_seq": 3,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "20ebef7b57845bf59a7b7ca2de0889aff9bb081821bef6bb7d52fb00e310069a"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@4",
+          "facts_seq": 4,
+          "in_seq": 4,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "76edeb999f559c37afec7ed53be2209ebb53b0f8ab3aa5a43ae918e31bc7f197"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "72405da29a91e436491b27e29bf5c84afdff5be4efd6aba20c136fa51624a53e"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e824197bd19526391875343aab69bb3a21f664b31908cb36daa11f68d1cea899"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@3",
+          "latest_decision_sig": "20ebef7b57845bf59a7b7ca2de0889aff9bb081821bef6bb7d52fb00e310069a",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_overdue_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "facts_seq": 4,
+          "in_seq": 4,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "f310d3e9505972727ed9965b98f4b922f289e80016ffa8840336440c66d526be"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "009648284d55a7a404189beb3ec0727da04efce4679d1c619751d84ef56812a9"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "df509639359a43cd35e3e1c459d6a7660aff4dbadbaf9e9bc5541a2e8f5c2ffc"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "latest_decision_sig": "f310d3e9505972727ed9965b98f4b922f289e80016ffa8840336440c66d526be",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_surveillance_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a",
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e624bed58ee51c7e785ac74a29fa95f8fa480699044581e3d5cfe07e784e1c7a"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e7037cd780e4378b9263a766fb7543a7710c2c2bf70144175aff827261facaca"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "latest_decision_sig": "e624bed58ee51c7e785ac74a29fa95f8fa480699044581e3d5cfe07e784e1c7a",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_surveillance_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv3",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv3@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "cdbbd306090dde59de36ed30b935422003d0a461d700c17877a6706420338401"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "programmes": [
+        "lung_nodule"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}

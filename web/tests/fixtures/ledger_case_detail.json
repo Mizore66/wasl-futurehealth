@@ -9,10 +9,11 @@
       {
         "action": "record_consent",
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.289605Z",
+        "at": "2026-11-13T08:26:41.3955612Z",
         "case": "exp-prov/ServiceRequest/EXP-sr-1",
+        "consent_rev": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
         "decision": "consent_granted",
-        "hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
+        "hash": "0f29140b0b9b7bd9c678d259e3337f3064f78509b0955206bbc0654cd0577c5a",
         "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
         "item": "",
         "mode": "demo",
@@ -27,9 +28,10 @@
       "contact_blocked": false,
       "demo_pending_consent": "released",
       "events": 1,
-      "last_event_hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
+      "last_event_hash": "0f29140b0b9b7bd9c678d259e3337f3064f78509b0955206bbc0654cd0577c5a",
       "mode": "demo",
       "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+      "revision": "0f29140b0b9b7bd9c678d259e3337f3064f78509b0955206bbc0654cd0577c5a",
       "status": "granted"
     }
   },
@@ -49,37 +51,37 @@
     "contact_outcomes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.303659Z",
+        "at": "2026-11-13T08:26:41.4348083Z",
         "channel": "phone",
-        "event": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
+        "event": "a9563c58e7fd0aefc3ef882a8f12cf1b15cf34a5ef7376091c90b50a4999e27e",
         "note": "synthetic call note",
         "outcome": "reached"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.308685Z",
+        "at": "2026-11-13T08:26:41.4512435Z",
         "channel": "phone",
-        "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
+        "event": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de",
         "outcome": "appointment_agreed"
       },
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.358745Z",
+        "at": "2026-11-13T08:26:41.5812902Z",
         "channel": "phone",
-        "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+        "event": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
         "outcome": "declined"
       }
     ],
-    "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
-    "last_action_at": "2026-11-13T03:26:25.358745Z",
+    "head": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
+    "last_action_at": "2026-11-13T08:26:41.5812902Z",
     "last_appointment_agreement": {
-      "at": "2026-11-13T03:26:25.308685Z",
-      "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+      "at": "2026-11-13T08:26:41.4512435Z",
+      "event": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de"
     },
     "last_contact": {
-      "at": "2026-11-13T03:26:25.358745Z",
+      "at": "2026-11-13T08:26:41.5812902Z",
       "channel": "phone",
-      "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+      "event": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
       "outcome": "declined"
     },
     "ledger_status": "ok",
@@ -87,18 +89,18 @@
     "notes": [
       {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.317693Z",
-        "event": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
+        "at": "2026-11-13T08:26:41.5052187Z",
+        "event": "5449ae116179fbbdd152cf9fd4df1b3781818c6422b6d3689bcea3138884436e",
         "text": "synthetic coordinator note"
       }
     ],
     "owner": "coordinator-bound",
     "snooze": {
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.315807Z",
-      "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+      "at": "2026-11-13T08:26:41.4856756Z",
+      "event": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
       "reason": "Call back Mon 16 Nov",
-      "until": "2026-11-16T03:26:25Z"
+      "until": "2026-11-16T08:26:41Z"
     }
   },
   "api_review_states": [],
@@ -106,10 +108,11 @@
     {
       "action": "record_consent",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.289605Z",
+      "at": "2026-11-13T08:26:41.3955612Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "consent_rev": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "decision": "consent_granted",
-      "hash": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
+      "hash": "0f29140b0b9b7bd9c678d259e3337f3064f78509b0955206bbc0654cd0577c5a",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
@@ -120,16 +123,16 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.296372Z",
+      "at": "2026-11-13T08:26:41.4019543Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "owner": "coordinator-bound"
       },
-      "hash": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
+      "hash": "d5cc1dd24c67f3996f79395b3cf414f88e1c2edd7c9ea4b85baa67876f6d27cf",
       "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "assign_owner",
       "mode": "demo",
-      "prev": "981f380d09875e9df7177daf1ee56cc5024e0b79da5ed537750e278905322521",
+      "prev": "0f29140b0b9b7bd9c678d259e3337f3064f78509b0955206bbc0654cd0577c5a",
       "role": "coordinator",
       "seq": 1,
       "type": "coordinator_action"
@@ -137,32 +140,32 @@
     {
       "action": "signoff_link",
       "actor": "reviewer-one",
-      "at": "2026-11-13T03:26:25.299823Z",
+      "at": "2026-11-13T08:26:41.419742Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "decision": "same",
-      "hash": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
+      "hash": "764699f9336acab2421a1d8175d8069cf9d2b9c6833e95a176e2bc02d40dbd90",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
       "note": "synthetic review one",
-      "prev": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
+      "prev": "d5cc1dd24c67f3996f79395b3cf414f88e1c2edd7c9ea4b85baa67876f6d27cf",
       "role": "reviewer"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.303659Z",
+      "at": "2026-11-13T08:26:41.4348083Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "note": "synthetic call note",
         "outcome": "reached"
       },
-      "hash": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
-      "head": "182abcfb879c7ecec2702355696b397895d4f8c4e6cf41d5000234e65092de1e",
+      "hash": "a9563c58e7fd0aefc3ef882a8f12cf1b15cf34a5ef7376091c90b50a4999e27e",
+      "head": "d5cc1dd24c67f3996f79395b3cf414f88e1c2edd7c9ea4b85baa67876f6d27cf",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
+      "prev": "764699f9336acab2421a1d8175d8069cf9d2b9c6833e95a176e2bc02d40dbd90",
       "role": "coordinator",
       "seq": 2,
       "type": "coordinator_action"
@@ -170,17 +173,17 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.308685Z",
+      "at": "2026-11-13T08:26:41.4512435Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "appointment_agreed"
       },
-      "hash": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
-      "head": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
+      "hash": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de",
+      "head": "a9563c58e7fd0aefc3ef882a8f12cf1b15cf34a5ef7376091c90b50a4999e27e",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "4c9a0efd7b6fd9f4913d139ed1db22c19a56aff64e25ce00a3bc891a35adafa8",
+      "prev": "a9563c58e7fd0aefc3ef882a8f12cf1b15cf34a5ef7376091c90b50a4999e27e",
       "role": "coordinator",
       "seq": 3,
       "type": "coordinator_action"
@@ -188,31 +191,31 @@
     {
       "action": "signoff_link",
       "actor": "reviewer-one",
-      "at": "2026-11-13T03:26:25.31165Z",
+      "at": "2026-11-13T08:26:41.4652816Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "decision": "different",
-      "hash": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
+      "hash": "28ecdaf86d1e8c7c119e9c54e6374a4ac89ac144ca7fb947d2fae4605d5d4746",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "item": "",
       "mode": "demo",
       "note": "synthetic review two",
-      "prev": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
+      "prev": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de",
       "role": "reviewer"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.315807Z",
+      "at": "2026-11-13T08:26:41.4856756Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "reason": "Call back Mon 16 Nov",
-        "until": "2026-11-16T03:26:25Z"
+        "until": "2026-11-16T08:26:41Z"
       },
-      "hash": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
-      "head": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6",
+      "hash": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
+      "head": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de",
       "kind": "snooze",
       "mode": "demo",
-      "prev": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
+      "prev": "28ecdaf86d1e8c7c119e9c54e6374a4ac89ac144ca7fb947d2fae4605d5d4746",
       "role": "coordinator",
       "seq": 4,
       "type": "coordinator_action"
@@ -220,86 +223,86 @@
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.317693Z",
+      "at": "2026-11-13T08:26:41.5052187Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "text": "synthetic coordinator note"
       },
-      "hash": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
-      "head": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+      "hash": "5449ae116179fbbdd152cf9fd4df1b3781818c6422b6d3689bcea3138884436e",
+      "head": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
       "kind": "note",
       "mode": "demo",
-      "prev": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+      "prev": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
       "role": "coordinator",
       "seq": 5,
       "type": "coordinator_action"
     },
     {
       "action": "signoff_link",
-      "action_head": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
+      "action_head": "5449ae116179fbbdd152cf9fd4df1b3781818c6422b6d3689bcea3138884436e",
       "actor": "reviewer-two",
-      "at": "2026-11-13T03:26:25.345148Z",
+      "at": "2026-11-13T08:26:41.5388209Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
+      "hash": "f03e0e22f9c66453c3073066b52e4e68b00d736b72640ab7f32b5ef7527d178f",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "undo",
       "mode": "demo",
       "note": "synthetic undo note",
-      "prev": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
+      "prev": "5449ae116179fbbdd152cf9fd4df1b3781818c6422b6d3689bcea3138884436e",
       "role": "reviewer",
-      "target": "24b07a53569c679406159220aa15fd6b9358ab7eebbb07d1cd58320ef12d5a1a",
+      "target": "764699f9336acab2421a1d8175d8069cf9d2b9c6833e95a176e2bc02d40dbd90",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "signoff_link",
-      "action_head": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
+      "action_head": "f03e0e22f9c66453c3073066b52e4e68b00d736b72640ab7f32b5ef7527d178f",
       "actor": "reviewer-two",
-      "at": "2026-11-13T03:26:25.351943Z",
+      "at": "2026-11-13T08:26:41.5611797Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
+      "hash": "469f878cf46080e21d609c1e3f501ed20f3e5a3f686cd7e519273a1408869e3d",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "contest",
       "mode": "demo",
       "note": "synthetic contest note",
-      "prev": "827edf6e1b9a4b352eea58e2f5efc35ed5e184057e2935a1ff4173ab4353fa0f",
+      "prev": "f03e0e22f9c66453c3073066b52e4e68b00d736b72640ab7f32b5ef7527d178f",
       "role": "reviewer",
-      "target": "9368560f56570bfd1baf3fd52c435479eb9ebbdbce7b8652a6d5facbc1ec4d4e",
+      "target": "28ecdaf86d1e8c7c119e9c54e6374a4ac89ac144ca7fb947d2fae4605d5d4746",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "signoff_link",
-      "action_head": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
+      "action_head": "469f878cf46080e21d609c1e3f501ed20f3e5a3f686cd7e519273a1408869e3d",
       "actor": "reviewer-three",
-      "at": "2026-11-13T03:26:25.356116Z",
+      "at": "2026-11-13T08:26:41.5780355Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
-      "hash": "405c9788fe7df7a193ab0ce7611131bb0f45db7c6a57c76513ad7dd5d09eb6e7",
+      "hash": "75b01e558728c05ec577afc7be17992dcad94a72c72a9b434b71c9eb949aeea1",
       "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
       "kind": "contest_resolution",
       "mode": "demo",
       "note": "",
-      "prev": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
+      "prev": "469f878cf46080e21d609c1e3f501ed20f3e5a3f686cd7e519273a1408869e3d",
       "resolution": "rejected",
       "role": "reviewer",
-      "target": "85bdaedee59dc4c8cea46d05f6bb614d8cf167a13e7f928a3fe344b6c4377864",
+      "target": "469f878cf46080e21d609c1e3f501ed20f3e5a3f686cd7e519273a1408869e3d",
       "target_action": "signoff_link",
       "target_actor": "reviewer-one"
     },
     {
       "action": "coordinate_case",
       "actor": "coordinator-bound",
-      "at": "2026-11-13T03:26:25.358745Z",
+      "at": "2026-11-13T08:26:41.5812902Z",
       "case": "exp-prov/ServiceRequest/EXP-sr-1",
       "data": {
         "channel": "phone",
         "outcome": "declined"
       },
-      "hash": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
-      "head": "ae7f8796067bef34915ae1c7138d4e320611796f226deb3690b8e9fcfbf31cad",
+      "hash": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
+      "head": "5449ae116179fbbdd152cf9fd4df1b3781818c6422b6d3689bcea3138884436e",
       "kind": "contact_outcome",
       "mode": "demo",
-      "prev": "405c9788fe7df7a193ab0ce7611131bb0f45db7c6a57c76513ad7dd5d09eb6e7",
+      "prev": "75b01e558728c05ec577afc7be17992dcad94a72c72a9b434b71c9eb949aeea1",
       "role": "coordinator",
       "seq": 6,
       "type": "coordinator_action"
@@ -321,16 +324,16 @@
         "updated_at": null,
         "updated_event": null
       },
-      "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
-      "last_action_at": "2026-11-13T03:26:25.358745Z",
+      "head": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
+      "last_action_at": "2026-11-13T08:26:41.5812902Z",
       "last_appointment_agreement": {
-        "at": "2026-11-13T03:26:25.308685Z",
-        "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+        "at": "2026-11-13T08:26:41.4512435Z",
+        "event": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de"
       },
       "last_contact": {
-        "at": "2026-11-13T03:26:25.358745Z",
+        "at": "2026-11-13T08:26:41.5812902Z",
         "channel": "phone",
-        "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+        "event": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
         "outcome": "declined"
       },
       "ledger_status": "ok",
@@ -338,10 +341,10 @@
       "owner": "coordinator-bound",
       "snooze": {
         "actor": "coordinator-bound",
-        "at": "2026-11-13T03:26:25.315807Z",
-        "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+        "at": "2026-11-13T08:26:41.4856756Z",
+        "event": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
         "reason": "Call back Mon 16 Nov",
-        "until": "2026-11-16T03:26:25Z"
+        "until": "2026-11-16T08:26:41Z"
       }
     },
     "closed": false,
@@ -478,7 +481,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-13T03:26:25Z",
+    "loaded_at": "2026-11-13T08:26:41Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",

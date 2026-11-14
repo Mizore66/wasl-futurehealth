@@ -1,0 +1,944 @@
+{
+  "cases": [
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "contact": {
+        "canonical": "unknown",
+        "canonical_unchanged": true,
+        "contact_blocked": true,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": false,
+          "closed_day": 0,
+          "consent": "unknown",
+          "deadline_day": 0,
+          "decisions": 1,
+          "dropoff": "no_followup_ct",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/a",
+          "lung": {
+            "risk": "high",
+            "risk_recorded": true,
+            "scope": "in_scope"
+          },
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "lung_nodule",
+          "provider": "ahs-mushrif",
+          "referral_day": -719.9999,
+          "review": "none",
+          "state": "open"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@7",
+            "dropoff": "no_followup_ct",
+            "escalations": [],
+            "in_seq": 7,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "ff696b63d72da5eaef5bc2ce42fa4ea3763b26ece8a5f6e6101262bb73b7308d",
+            "state": "open"
+          }
+        ],
+        "holds": [
+          {
+            "loop": "ahs-mushrif/ServiceRequest/a",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "lung_nodule",
+            "reason": "index_ct_report_not_received",
+            "rule": "fleischner2017",
+            "state": "review_hold"
+          }
+        ],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5",
+            "role": "referral"
+          },
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "downstream"
+          },
+          {
+            "provider": "skmc-endo",
+            "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+            "role": "downstream"
+          }
+        ],
+        "links": [],
+        "outreach": [],
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "lung-finding",
+            "day": -719.9999,
+            "id": "ahs-mushrif/DiagnosticReport/index",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f7860cf008d18055",
+            "seq": 1,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f9606e00c826964d",
+            "seq": 2,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": 1,
+            "id": "ahs-mushrif/Consent/synthetic-consent",
+            "provider": "ahs-mushrif",
+            "raw_sha": "4db1c9cd267df0e0",
+            "seq": 3,
+            "source": "fhir",
+            "status": "permit",
+            "type": "Consent"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-pet",
+            "day": -699.9999,
+            "id": "skmc-endo/DiagnosticReport/pet",
+            "provider": "skmc-endo",
+            "raw_sha": "7268c0423fdf81dd",
+            "seq": 4,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -619.9999,
+            "id": "skmc-endo/DiagnosticReport/ct1",
+            "provider": "skmc-endo",
+            "raw_sha": "54d6f58615e7e417",
+            "seq": 5,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -369.9999,
+            "id": "skmc-endo/DiagnosticReport/ct2",
+            "provider": "skmc-endo",
+            "raw_sha": "ed980281d18346a9",
+            "seq": 6,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "6216ad9f52a6731c",
+            "seq": 7,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          }
+        ]
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "referral_registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5"
+    },
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "contact": {
+        "canonical": "granted",
+        "canonical_unchanged": true,
+        "contact_blocked": false,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": true,
+          "closed_day": -619.9999,
+          "consent": "granted",
+          "deadline_day": 120,
+          "decisions": 1,
+          "dropoff": "",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/a#surv",
+          "lung": {
+            "closer": "ct",
+            "followup_ct_seen": true,
+            "followup_report": "ct1",
+            "outcome": "stable",
+            "rec": {
+              "action": "ct_or_pet_or_tissue",
+              "cell": "solid/single/high/\u003e8",
+              "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+              "win_hi_days": 91,
+              "win_lo_days": 0
+            },
+            "risk": "high",
+            "risk_recorded": true,
+            "scope": "in_scope",
+            "surveillance": {
+              "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2): Herder \u003c 10% after PET/CT -\u003e CT surveillance, first CT at about 3 months; window 60-120 days is Wasl policy",
+              "ct_day": -620,
+              "ct_report": "ct1",
+              "due_day": -580,
+              "from_day": -700,
+              "from_report": "pet",
+              "loop": "ahs-mushrif/ServiceRequest/a#surv",
+              "next": {
+                "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+                "ct_day": -370,
+                "ct_report": "ct2",
+                "due_day": -280,
+                "from_day": -700,
+                "from_report": "ct1",
+                "loop": "ahs-mushrif/ServiceRequest/a#surv2",
+                "next": {
+                  "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+                  "due_day": 90,
+                  "from_day": -700,
+                  "from_report": "ct2",
+                  "loop": "ahs-mushrif/ServiceRequest/a#surv3",
+                  "reason": "pet_low",
+                  "round": 3,
+                  "state": "due",
+                  "window_start_day": -30
+                },
+                "reason": "pet_low",
+                "round": 2,
+                "state": "done",
+                "window_start_day": -400
+              },
+              "reason": "pet_low",
+              "state": "done",
+              "window_start_day": -640
+            },
+            "window_end_day": -580,
+            "window_start_day": -640,
+            "within_window": true
+          },
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "lung_nodule",
+          "provider": "ahs-mushrif",
+          "referral_day": -699.9999,
+          "review": "none",
+          "state": "closed"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@6",
+            "dropoff": "",
+            "escalations": [],
+            "in_seq": 6,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "df509639359a43cd35e3e1c459d6a7660aff4dbadbaf9e9bc5541a2e8f5c2ffc",
+            "state": "closed"
+          }
+        ],
+        "holds": [],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "downstream"
+          },
+          {
+            "provider": "skmc-endo",
+            "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+            "role": "downstream"
+          }
+        ],
+        "links": [
+          {
+            "downstream_event": "skmc-endo/DiagnosticReport/ct1",
+            "hops": 1,
+            "linker": "wasl-v3-retrained+iso+eid",
+            "loop": "ahs-mushrif/ServiceRequest/a",
+            "near_miss": false,
+            "path_p_cal": 1,
+            "path_strength": 1,
+            "referral_patient": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "tau": 0.99,
+            "weakest_edge": {
+              "a": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+              "b": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+              "basis": "eid",
+              "p": 1
+            }
+          }
+        ],
+        "outreach": [],
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "lung-finding",
+            "day": -719.9999,
+            "id": "ahs-mushrif/DiagnosticReport/index",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f7860cf008d18055",
+            "seq": 1,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f9606e00c826964d",
+            "seq": 2,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": 1,
+            "id": "ahs-mushrif/Consent/synthetic-consent",
+            "provider": "ahs-mushrif",
+            "raw_sha": "4db1c9cd267df0e0",
+            "seq": 3,
+            "source": "fhir",
+            "status": "permit",
+            "type": "Consent"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-pet",
+            "day": -699.9999,
+            "id": "skmc-endo/DiagnosticReport/pet",
+            "provider": "skmc-endo",
+            "raw_sha": "7268c0423fdf81dd",
+            "seq": 4,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -619.9999,
+            "id": "skmc-endo/DiagnosticReport/ct1",
+            "provider": "skmc-endo",
+            "raw_sha": "54d6f58615e7e417",
+            "seq": 5,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -369.9999,
+            "id": "skmc-endo/DiagnosticReport/ct2",
+            "provider": "skmc-endo",
+            "raw_sha": "ed980281d18346a9",
+            "seq": 6,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          }
+        ]
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a",
+      "referral_registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+    },
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "contact": {
+        "canonical": "granted",
+        "canonical_unchanged": true,
+        "contact_blocked": false,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": true,
+          "closed_day": -369.9999,
+          "consent": "granted",
+          "deadline_day": 420,
+          "decisions": 1,
+          "dropoff": "",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/a#surv2",
+          "lung": {
+            "closer": "ct",
+            "followup_ct_seen": true,
+            "followup_report": "ct2",
+            "outcome": "stable",
+            "rec": {
+              "action": "ct_or_pet_or_tissue",
+              "cell": "solid/single/high/\u003e8",
+              "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+              "win_hi_days": 91,
+              "win_lo_days": 0
+            },
+            "risk": "high",
+            "risk_recorded": true,
+            "scope": "in_scope",
+            "surveillance": {
+              "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+              "ct_day": -370,
+              "ct_report": "ct2",
+              "due_day": -280,
+              "from_day": -700,
+              "from_report": "ct1",
+              "loop": "ahs-mushrif/ServiceRequest/a#surv2",
+              "next": {
+                "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+                "due_day": 90,
+                "from_day": -700,
+                "from_report": "ct2",
+                "loop": "ahs-mushrif/ServiceRequest/a#surv3",
+                "reason": "pet_low",
+                "round": 3,
+                "state": "due",
+                "window_start_day": -30
+              },
+              "reason": "pet_low",
+              "round": 2,
+              "state": "done",
+              "window_start_day": -400
+            },
+            "window_end_day": -280,
+            "window_start_day": -400,
+            "within_window": true
+          },
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "lung_nodule",
+          "provider": "ahs-mushrif",
+          "referral_day": -699.9999,
+          "review": "none",
+          "state": "closed"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@6",
+            "dropoff": "",
+            "escalations": [],
+            "in_seq": 6,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "e7037cd780e4378b9263a766fb7543a7710c2c2bf70144175aff827261facaca",
+            "state": "closed"
+          }
+        ],
+        "holds": [],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "downstream"
+          },
+          {
+            "provider": "skmc-endo",
+            "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+            "role": "downstream"
+          }
+        ],
+        "links": [
+          {
+            "downstream_event": "skmc-endo/DiagnosticReport/ct2",
+            "hops": 1,
+            "linker": "wasl-v3-retrained+iso+eid",
+            "loop": "ahs-mushrif/ServiceRequest/a",
+            "near_miss": false,
+            "path_p_cal": 1,
+            "path_strength": 1,
+            "referral_patient": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "tau": 0.99,
+            "weakest_edge": {
+              "a": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+              "b": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+              "basis": "eid",
+              "p": 1
+            }
+          }
+        ],
+        "outreach": [],
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "lung-finding",
+            "day": -719.9999,
+            "id": "ahs-mushrif/DiagnosticReport/index",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f7860cf008d18055",
+            "seq": 1,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f9606e00c826964d",
+            "seq": 2,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": 1,
+            "id": "ahs-mushrif/Consent/synthetic-consent",
+            "provider": "ahs-mushrif",
+            "raw_sha": "4db1c9cd267df0e0",
+            "seq": 3,
+            "source": "fhir",
+            "status": "permit",
+            "type": "Consent"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-pet",
+            "day": -699.9999,
+            "id": "skmc-endo/DiagnosticReport/pet",
+            "provider": "skmc-endo",
+            "raw_sha": "7268c0423fdf81dd",
+            "seq": 4,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -619.9999,
+            "id": "skmc-endo/DiagnosticReport/ct1",
+            "provider": "skmc-endo",
+            "raw_sha": "54d6f58615e7e417",
+            "seq": 5,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -369.9999,
+            "id": "skmc-endo/DiagnosticReport/ct2",
+            "provider": "skmc-endo",
+            "raw_sha": "ed980281d18346a9",
+            "seq": 6,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          }
+        ]
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "referral_registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+    },
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv3",
+      "contact": {
+        "canonical": "granted",
+        "canonical_unchanged": true,
+        "contact_blocked": false,
+        "overlay_status": "none"
+      },
+      "detail": {
+        "case": {
+          "closed": false,
+          "closed_day": 0,
+          "consent": "granted",
+          "deadline_day": 790,
+          "decisions": 1,
+          "dropoff": "no_followup_ct",
+          "fixture": "",
+          "id": "ahs-mushrif/ServiceRequest/a#surv3",
+          "lung": {
+            "rec": {
+              "action": "ct_or_pet_or_tissue",
+              "cell": "solid/single/high/\u003e8",
+              "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+              "win_hi_days": 91,
+              "win_lo_days": 0
+            },
+            "risk": "high",
+            "risk_recorded": true,
+            "scope": "in_scope",
+            "surveillance": {
+              "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+              "due_day": 90,
+              "from_day": -700,
+              "from_report": "ct2",
+              "loop": "ahs-mushrif/ServiceRequest/a#surv3",
+              "reason": "pet_low",
+              "round": 3,
+              "state": "due",
+              "window_start_day": -30
+            },
+            "window_end_day": 90,
+            "window_start_day": -30
+          },
+          "overdue": false,
+          "owner": "",
+          "priority": "",
+          "programme": "lung_nodule",
+          "provider": "ahs-mushrif",
+          "referral_day": -699.9999,
+          "review": "none",
+          "state": "open"
+        },
+        "decisions": [
+          {
+            "consent_log": [],
+            "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv3@ahs-mushrif/ServiceRequest/a@6",
+            "dropoff": "no_followup_ct",
+            "escalations": [],
+            "in_seq": 6,
+            "outreach": [],
+            "overdue": false,
+            "owner": "",
+            "policy": "v6",
+            "sig": "cdbbd306090dde59de36ed30b935422003d0a461d700c17877a6706420338401",
+            "state": "open"
+          }
+        ],
+        "holds": [],
+        "identities": [],
+        "links": [],
+        "outreach": [],
+        "timeline": []
+      },
+      "history_availability": "reference_only",
+      "lifecycle": "active",
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "referral_registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+    "run": "retained-synthetic-contract"
+  },
+  "next_action": {
+    "case_id": "ahs-mushrif/ServiceRequest/a#surv3",
+    "deadline_day": 90,
+    "kind": "programme_follow_up",
+    "overdue": false,
+    "priority": "routine",
+    "reason_codes": [
+      "dropoff_no_followup_ct"
+    ],
+    "rule": "wasl-person-next-action/1"
+  },
+  "obligations": [
+    {
+      "basis": "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "due_day": 90,
+      "kind": "programme_deadline",
+      "programme": "lung_nodule",
+      "source_field": "lung.surveillance.due_day",
+      "status": "scheduled",
+      "window_start_day": -29.9999
+    },
+    {
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv3",
+      "due_day": 90,
+      "kind": "programme_deadline",
+      "programme": "lung_nodule",
+      "source_field": "lung.window_end_day",
+      "status": "open",
+      "window_start_day": -29.9999
+    }
+  ],
+  "outreach_flags": [],
+  "person": {
+    "anchor_case_id": "ahs-mushrif/ServiceRequest/a",
+    "as_of_day": 0,
+    "case_ids": [
+      "ahs-mushrif/ServiceRequest/a",
+      "ahs-mushrif/ServiceRequest/a#surv",
+      "ahs-mushrif/ServiceRequest/a#surv2",
+      "ahs-mushrif/ServiceRequest/a#surv3"
+    ],
+    "id": "person_a581eb39f95d370636b293ca20ae798a0e5393508d0b03a532fee78738dc5b79",
+    "identity_provenance": {
+      "artifact_schema": "wasl-identity-clusters/2",
+      "artifact_sha256": "ecee559e822e693791458f82b29884b3ed7987a9088eb84f6d561d77b151ad15",
+      "policy": "v6",
+      "source": "canonical_linker_clusters"
+    },
+    "programmes": [
+      "lung_nodule"
+    ],
+    "registrations": [
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5"
+      },
+      {
+        "providers": [
+          "ahs-mushrif"
+        ],
+        "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed"
+      },
+      {
+        "providers": [
+          "skmc-endo"
+        ],
+        "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8"
+      }
+    ]
+  },
+  "retained_references": [
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+          "facts_seq": 2,
+          "in_seq": 2,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "2d3390ef2187c07c1e18f926cab890d35def168b4f70d42cb1618f95e17ddc23"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@3",
+          "facts_seq": 3,
+          "in_seq": 3,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "20ebef7b57845bf59a7b7ca2de0889aff9bb081821bef6bb7d52fb00e310069a"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@4",
+          "facts_seq": 4,
+          "in_seq": 4,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "76edeb999f559c37afec7ed53be2209ebb53b0f8ab3aa5a43ae918e31bc7f197"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "72405da29a91e436491b27e29bf5c84afdff5be4efd6aba20c136fa51624a53e"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e824197bd19526391875343aab69bb3a21f664b31908cb36daa11f68d1cea899"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@7",
+          "facts_seq": 7,
+          "in_seq": 7,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "ff696b63d72da5eaef5bc2ce42fa4ea3763b26ece8a5f6e6101262bb73b7308d"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@2",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a@ahs-mushrif/ServiceRequest/a@3",
+          "latest_decision_sig": "20ebef7b57845bf59a7b7ca2de0889aff9bb081821bef6bb7d52fb00e310069a",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_overdue_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "facts_seq": 4,
+          "in_seq": 4,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "f310d3e9505972727ed9965b98f4b922f289e80016ffa8840336440c66d526be"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "009648284d55a7a404189beb3ec0727da04efce4679d1c619751d84ef56812a9"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "df509639359a43cd35e3e1c459d6a7660aff4dbadbaf9e9bc5541a2e8f5c2ffc"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a#surv",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv@ahs-mushrif/ServiceRequest/a@4",
+          "latest_decision_sig": "f310d3e9505972727ed9965b98f4b922f289e80016ffa8840336440c66d526be",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_surveillance_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a",
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "facts_seq": 5,
+          "in_seq": 5,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e624bed58ee51c7e785ac74a29fa95f8fa480699044581e3d5cfe07e784e1c7a"
+        },
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "e7037cd780e4378b9263a766fb7543a7710c2c2bf70144175aff827261facaca"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [
+        {
+          "case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+          "first_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "latest_decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv2@ahs-mushrif/ServiceRequest/a@5",
+          "latest_decision_sig": "e624bed58ee51c7e785ac74a29fa95f8fa480699044581e3d5cfe07e784e1c7a",
+          "lifecycle": "released",
+          "outreach": {
+            "basis": "self",
+            "ev": "ahs-mushrif/ServiceRequest/a",
+            "kind": "lung_surveillance_recall",
+            "p_cal": 1,
+            "released": true
+          },
+          "participation": "historical",
+          "programme": "lung_nodule"
+        }
+      ],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv",
+      "programmes": [
+        "lung_nodule"
+      ]
+    },
+    {
+      "actionable": false,
+      "availability": "reference_only",
+      "case_id": "ahs-mushrif/ServiceRequest/a#surv3",
+      "decisions": [
+        {
+          "decision_id": "dec-ahs-mushrif/ServiceRequest/a#surv3@ahs-mushrif/ServiceRequest/a@6",
+          "facts_seq": 6,
+          "in_seq": 6,
+          "inactive": false,
+          "programme": "lung_nodule",
+          "sig": "cdbbd306090dde59de36ed30b935422003d0a461d700c17877a6706420338401"
+        }
+      ],
+      "history_access": "authorized_case_audit",
+      "lifecycle": "active",
+      "outreach_intents": [],
+      "parent_case_id": "ahs-mushrif/ServiceRequest/a#surv2",
+      "programmes": [
+        "lung_nodule"
+      ]
+    }
+  ],
+  "schema": "wasl-person-journey/2"
+}
