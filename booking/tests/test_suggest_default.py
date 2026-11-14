@@ -1,7 +1,7 @@
 """The lookahead and stress-test flags are off by default. The golden pins deterministic numerics: probabilities are
 rounded to 12 decimal places and two equal-cost bookings swap slots while retaining constraints and deadlines.
 Also checks that the lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
-Run: python tests/test_suggest_default.py"""
+Run: python tests/test_suggest_default.py (also executes test_catalogue_protection.py by name)"""
 import hashlib, json, os, sys, tempfile, contextlib, io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -76,5 +76,6 @@ def test_lookahead_labelled():
 
 
 if __name__ == "__main__":
-    for f in (test_default_unchanged, test_lookahead_labelled):
+    import test_catalogue_protection  # noqa: E402
+    for f in (test_default_unchanged, test_lookahead_labelled, test_catalogue_protection.run_named):
         print(f.__name__, "->", f())
