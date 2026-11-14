@@ -71,7 +71,7 @@ export async function appendGovernanceAction(input: unknown): Promise<Governance
       : operation === "contest"
         ? "Contest appended as your signed-in credential. A different actor, signed in separately, must resolve it; the canonical decision is unchanged."
         : "Contest resolution appended as your signed-in credential. The canonical decision is unchanged.";
-  return { ok: true, hash: result.response.event.hash, message };
+  return { ok: true, hash: result.response?.event.hash ?? "", message };
 }
 
 /*

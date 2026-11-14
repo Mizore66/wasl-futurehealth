@@ -675,9 +675,10 @@ func (s *apiServer) recoveryListLocked(programme, status string, viewer apiPrinc
 // replay position, before appending the recovery event itself.
 func (s *apiServer) recoveryConsentBeforeLocked(c *apiCase, decision *Decision) string {
 	status := consentFromDecision(decision)
+	undo, _ := foldUndo(s.caseEvents(c.ID))
 	for _, prior := range s.reviews {
 		if prior["case"] == c.ID && prior["action"] == ActRecordConsent {
-			if next, ok := consentEvents[fmt.Sprint(prior["decision"])]; ok {
+			if next, ok := consentEvents[fmt.Sprint(prior["decision"])]; ok && consentEventCounts(undo[fmt.Sprint(prior["hash"])], next) {
 				status = next
 			}
 		}

@@ -553,8 +553,10 @@ func TestPatientOptOutBlocksOutreachAndSurvivesExpiry(t *testing.T) {
 func TestPatientPermissionNoOpRequiresOwnChoiceAndSharedOverlay(t *testing.T) {
 	recordConsent := func(t *testing.T, p *patientTestAPI, event string) {
 		t.Helper()
+		_, current, _ := p.request(t, http.MethodGet, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", nil)
+		revision := current["overlay"].(map[string]interface{})["revision"]
 		code, body, _ := p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{
-			"event": event, "expected_head": patientTestSignature(patientTestCaseA), "note": "synthetic coordinator consent update",
+			"event": event, "expected_head": revision, "note": "synthetic coordinator consent update",
 		})
 		if code != http.StatusCreated {
 			t.Fatalf("coordinator %s: %d %v", event, code, body)
