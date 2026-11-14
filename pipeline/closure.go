@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 var LinkReview = 0.20 // below: ignored; -linkfloor may lower review routing only
@@ -27,6 +28,7 @@ type loopState struct {
 	last     *Decision
 	lastFU   *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
 	lastFU2  map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
+	lastCRC  map[string]*Decision // CRC treatment/surveillance/follow-up children keyed by stable child loop ID
 	raised   map[string]*ReviewItem
 	contact  map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 	inactive bool              // current tracking request is retired/conflicted; history remains in the output ledger
@@ -125,6 +127,14 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 		for _, id := range childIDs {
 			previous = append(previous, ls.lastFU2[id])
 		}
+		childIDs = childIDs[:0]
+		for id := range ls.lastCRC {
+			childIDs = append(childIDs, id)
+		}
+		sort.Strings(childIDs)
+		for _, id := range childIDs {
+			previous = append(previous, ls.lastCRC[id])
+		}
 		for i, prev := range previous {
 			loop, srDay := f.LoopID, f.SRDay
 			if i > 0 {
@@ -139,6 +149,12 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 				Inactive: true, RequestStatus: f.ReqStatus, RequestVersion: f.ReqVersion, RequestConflict: f.ReqConflict,
 				ProcDay: -1, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1,
 				Chain: appendBlock(nil, "tracking_request_retirement", body)}
+			if prev != nil && prev.CRC != nil && prev.CRC.Parent != "" {
+				cd := *prev.CRC
+				d.CRC = &cd
+				d.Prog = "crc"
+				d.Chain = appendCRCBlock(append([]Block{}, prev.Chain...), "tracking_request_retirement", body)
+			}
 			d.Policy = PolicyName
 			d.Sig = sha(canon(d))
 			if prev == nil || prev.Sig != d.Sig {
@@ -150,7 +166,7 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 				out = append(out, OutMsg{ID: d.ID, Kind: "decision", Dec: d})
 			}
 		}
-		ls.lastFU, ls.lastFU2 = nil, nil
+		ls.lastFU, ls.lastFU2, ls.lastCRC = nil, nil, nil
 		// Raised reviews are append-only output history, not current work.
 		// Keep their IDs and signed heads while inactive so reactivation cannot
 		// re-emit an existing ID and break the deduplicated live output ledger.
@@ -215,8 +231,16 @@ func evBlock(d DownFact, human string) map[string]interface{} {
 				"landmark_p": d.Ev.Image.LandmarkP, "prep": d.Ev.Image.Prep, "prep_p": d.Ev.Image.PrepP, "unavailable": d.Ev.Image.Unavailable,
 				"photo_shas": d.Ev.Image.Shas, "label_before_image": d.Ev.PreImage, "hint": d.Ev.ReviewHint}
 		}
+		if d.Ev.CRC != nil {
+			b["crc_proposal"] = d.Ev.CRC // deterministic source quotes, never independent reader agreement
+		}
 		b["fields"] = map[string]string{"regex": d.Ev.Regex.Caecum + "/" + d.Ev.Regex.Prep + "/" + d.Ev.Regex.Polyps + "/" + d.Ev.Regex.Histology,
 			"reader": d.Ev.Gemma.Caecum + "/" + d.Ev.Gemma.Prep + "/" + d.Ev.Gemma.Polyps + "/" + d.Ev.Gemma.Histology}
+		if d.Ev.CRC != nil {
+			// Ordinary/held CRC evidence and non-disposition reviews also embed
+			// proposals. Freeze at their producer, before any caller's first hash.
+			return crcProvenanceBody(b)
+		}
 	}
 	return b
 }
@@ -287,8 +311,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	for _, cm := range f.Comms {
-		if cm.Day > now+1e-9 {
-			continue
+		if cm.Day > now+1e-9 || cm.Status != "completed" {
+			continue // only the current completed Communication revision is clinical evidence
 		}
 		switch cm.Category {
 		case "acknowledgement":
@@ -328,9 +352,6 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			continue
 		}
-		if cm.Status != "completed" {
-			continue // undeliverable
-		}
 		v := VerifyComm(cm.Template, f.Provider, cm.Text)
 		if v == "ok" && cm.Lang != expLang {
 			v = "wrong_language"
@@ -359,6 +380,18 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	refStatus, refDay, refLast := "none", -1.0, -1.0
 	var srs []srFact
 	rows, paths := []row{}, map[string][]row{}
+	pathKey := func(provider, report string) string {
+		if prog != "crc" {
+			return report
+		}
+		// A local parent ID lives in the pathology provider's namespace. Never
+		// resolve it by guessing a same-ID procedure at another provider. This
+		// is CRC-specific; other programmes retain their existing association.
+		if strings.Contains(report, "/") {
+			return report // only an exact provider-qualified reference can match
+		}
+		return provider + "/DiagnosticReport/" + report
+	}
 	procDay := -1.0
 	for _, d := range f.Down {
 		if d.Day < f.SRDay-1 {
@@ -401,12 +434,19 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				rows = append(rows, r)
 			}
 		case "Pathology":
-			paths[d.Parent] = append(paths[d.Parent], r)
+			key := pathKey(d.Provider, d.Parent)
+			paths[key] = append(paths[key], r)
 			if !trusted {
 				rows = append(rows, r)
 			}
 		default:
 			rows = append(rows, r)
+		}
+	}
+	if prog == "crc" {
+		for parent := range paths {
+			ps := paths[parent]
+			sort.SliceStable(ps, func(i, j int) bool { return crcPathologyLess(ps[i], ps[j]) })
 		}
 	}
 	sort.SliceStable(rows, func(i, j int) bool {
@@ -424,6 +464,40 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var holdRow *row                                       // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{}                   // pilot: a post-closure audit that disagreed with the automatic verdict
+	var crcDecision *CRCDecision
+	var crcObligations []crcObligation
+	holdCRCQuality := func(r row) {
+		if prog != "crc" {
+			return
+		}
+		source := r
+		var proposal, pathology *CRCProposal
+		has, unresolved := crcEmbeddedHistology(r), false
+		if r.trusted && r.d.Ev != nil {
+			proposal = mergeCRCProposal(r.d.Ev.CRC, nil)
+		}
+		for _, p := range paths[pathKey(r.d.Provider, r.d.ReportID)] {
+			label := ""
+			if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
+				label = h
+			} else if p.d.Ev != nil && p.d.Ev.Agree {
+				label = p.d.Ev.Label
+			}
+			if !p.trusted || label != "histology" {
+				unresolved = true
+				continue
+			}
+			has = true
+			if r.trusted && p.d.Ev != nil {
+				pathology = reconcileCRCPathology(pathology, p.d.Ev.CRC)
+				source = p
+			}
+		}
+		if r.trusted {
+			proposal = mergeCRCProposal(proposal, pathology)
+		}
+		crcObligations = append(crcObligations, crcObligation{source: source, procedure: r, pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], proposal: proposal, preHistology: !has, specimenPending: unresolved, qualityHold: true})
+	}
 	pending := []string{}
 	pendSet := map[string]bool{}
 	unlinked := false
@@ -438,6 +512,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		if purpose == OverrideConfirm {
 			key += "#confirm"
+
 		} else if k := pilotKey(purpose); k != "" { // shadow / audit items are distinct from the report's own review
 			key += k
 		}
@@ -503,6 +578,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	for _, r := range rows {
 		if !r.trusted {
 			unlinked = true
+			if r.d.RType == "DiagnosticReport" {
+				holdCRCQuality(r)
+			}
 			raise(r, "link")
 			continue
 		}
@@ -532,6 +610,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				} else {
 					raiseFor(r, "evidence", OverrideConfirm)
 					inadequate = true
+					holdCRCQuality(r)
 					if holdRow == nil {
 						rr := r
 						holdRow = &rr
@@ -546,6 +625,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					label, human = s, "shadow:"+s // the signed answer decides, whether or not it confirms the readers
 				} else if label == "adequate" && state != "closed" {
 					raiseFor(r, "evidence", ShadowConfirm)
+					holdCRCQuality(r) // coordination cannot wait for shadow completeness approval
 					continue
 				}
 			} else if s, ok := evidenceOverride(f.EvOver, r.d, pilotKey(AutoAudit)); ok && AutoAuditP > 0 && s != label {
@@ -567,16 +647,19 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				ps == nil && now >= r.d.Day+PrepDecideDays+2: // no query thread ever seen: same day-15 decision
 				prepQ = "clinician_day15"
 				raiseFor(r, "evidence", PrepDay15Purpose)
+				holdCRCQuality(r) // urgent coordination is independent of the prep/quality decision
 				continue
 			default:
 				prepQ = "awaiting_unit"
 				if ps != nil && ps.escalated {
 					prepQ = "escalated"
 				}
+				holdCRCQuality(r)
 				continue
 			}
 		}
 		if label == "" {
+			holdCRCQuality(r)
 			if R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review { // completion not documented: clinician review (r1review.go)
 				raiseFor(r, "evidence", CompletionPurpose)
 				if !completionPending {
@@ -589,9 +672,21 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			raise(r, "evidence")
 			continue
 		}
-		if label == "awaiting_histology" {
-			has := false
-			for _, p := range paths[r.d.ReportID] {
+		var procedureCRC, pathologyCRC *CRCProposal
+		var pathologyRow *row
+		crcSpecimenPending := false
+		if prog == "crc" && r.d.Ev != nil {
+			procedureCRC = r.d.Ev.CRC
+		}
+		if prog == "crc" && label == "inadequate" {
+			holdCRCQuality(r)
+		}
+		// Completeness agreement (including "no polyps") cannot dispose of a
+		// suspicious finding before subsequent histology resolves its outcome.
+		suspiciousCRC := procedureCRC != nil && procedureCRC.Suspected
+		if label == "awaiting_histology" || prog == "crc" && label == "adequate" && (len(paths[pathKey(r.d.Provider, r.d.ReportID)]) > 0 || suspiciousCRC) {
+			has, pathologyPending := prog == "crc" && crcEmbeddedHistology(r), false
+			for _, p := range paths[pathKey(r.d.Provider, r.d.ReportID)] {
 				pl := ""
 				if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 					pl = h
@@ -603,12 +698,31 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				}
 				if pl == "histology" && p.trusted {
 					has = true
+					if pathologyRow == nil {
+						pp := p
+						pathologyRow = &pp
+					}
+					if p.d.Ev != nil {
+						pathologyCRC = reconcileCRCPathology(pathologyCRC, p.d.Ev.CRC)
+					}
 					if _, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 						human = "histology"
 					}
+				} else {
+					pathologyPending = true
 				}
 			}
+			if prog == "crc" && has && pathologyPending {
+				crcSpecimenPending = true
+				// One satisfactory specimen cannot clear another current unresolved
+				// report (including a report still behind identity/evidence review).
+				pathologyCRC = reconcileCRCPathology(pathologyCRC, &CRCProposal{Outcome: CRCOutcomeReview})
+			}
 			if !has {
+				if prog == "crc" {
+					crcObligations = append(crcObligations, crcObligation{source: r, procedure: r,
+						pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], proposal: mergeCRCProposal(procedureCRC, nil), preHistology: true})
+				}
 				awaiting = true
 				if holdRow == nil {
 					rr := r
@@ -618,9 +732,22 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			if ShadowMode && human == "" && state != "closed" { // both reports read automatically: the closure is a suggestion (shadow item on the procedure report)
 				raiseFor(r, "evidence", ShadowConfirm)
+				holdCRCQuality(r) // collect trusted current outcomes without certifying completeness
 				continue
 			}
 			label = "adequate"
+		}
+		if prog == "crc" && label == "adequate" {
+			proposal := mergeCRCProposal(procedureCRC, pathologyCRC)
+			source := r
+			if pathologyRow != nil {
+				source = *pathologyRow
+			}
+			crcObligations = append(crcObligations, crcObligation{source: source, procedure: r,
+				proposal: proposal, pathologies: paths[pathKey(r.d.Provider, r.d.ReportID)], specimenPending: crcSpecimenPending})
+			if crcProposalNeedsDisposition(proposal) {
+				continue // outcome disposition is separate from procedure completeness
+			}
 		}
 		switch label {
 		case "adequate":
@@ -653,7 +780,27 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
-	if state == "closed" {
+	crcKids := map[string]*Decision{}
+	planNeeded := false
+	for _, o := range crcObligations {
+		if crcProposalNeedsDisposition(o.proposal) || o.preHistology && !o.qualityHold || o.proposal != nil && o.proposal.Suspected {
+			planNeeded = true
+		}
+	}
+	if prog == "crc" && planNeeded {
+		var items []*ReviewItem
+		var planPending []string
+		crcDecision, crcKids, chain, items, planPending, state = c.reconcileCRCPlan(f, ls, crcObligations, signed, now, inSeq)
+		newItems = append(newItems, items...)
+		pending = uniqueSorted(append(pending, planPending...))
+		closing, closedDay = "", 0
+		if crcDecision.ScreeningComplete && len(crcDecision.Obligations) > 0 {
+			closing = crcDecision.SourceReport
+			closedDay = crcObligations[0].source.d.Day
+		}
+		humanAssisted = crcDecision.CareState != "awaiting_confirmation"
+	}
+	if state == "closed" && crcDecision == nil {
 		if auditNote != nil {
 			auditNote["result"] = "closed_after_audit"
 			chain = appendBlock(chain, "auto_audit", auditNote)
@@ -663,7 +810,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			"policy": "p_cal>=0.99|eid|human AND two-reader agreement|human", "rule": "doh:" + prog})
 		pending = nil
 		unlinked = false
-	} else {
+	} else if crcDecision == nil {
 		if (awaiting || inadequate) && holdRow != nil { // record WHY the loop was not closed (false-closure trap)
 			why := "awaiting_histology"
 			if inadequate && !awaiting {
@@ -708,6 +855,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState, PrepQ: prepQ,
 		ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: notif, AckDay: ack, RefStatus: refStatus, RefDay: refDay,
 		CommFlags: commFlags, HumanAssisted: humanAssisted && state == "closed"}
+	d.CRC = crcDecision
+	if d.CRC != nil && d.Owner == "" {
+		d.Owner = d.CRC.Owner
+	}
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}
@@ -782,6 +933,17 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
+	if crcDecision != nil {
+		if crcDecision.MDT != nil && crcDecision.MDT.Status == "open" {
+			esc = append(esc, crcDecision.MDT.Escalation)
+		}
+		switch state {
+		case "awaiting_gastro":
+			esc = append(esc, "crc_gastro_followup_open")
+		case "awaiting_specialist":
+			esc = append(esc, "crc_specialist_followup_open")
+		}
+	}
 	if len(commFlags) > 0 {
 		esc = append(esc, "noncompliant_message")
 	}
@@ -852,6 +1014,53 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	for _, it := range newItems {
 		out = append(out, OutMsg{ID: it.ItemID, Kind: "review", Item: it})
 	}
+	if ls.lastCRC == nil {
+		ls.lastCRC = map[string]*Decision{}
+	}
+	childIDs := make([]string, 0, len(crcKids))
+	for id := range crcKids {
+		childIDs = append(childIDs, id)
+	}
+	sort.Strings(childIDs)
+	for _, id := range childIDs {
+		child := crcKids[id]
+		if previous := ls.lastCRC[id]; previous == nil || previous.Sig != child.Sig {
+			child.Now, child.InSeq = now, inSeq
+			child.ID = fmt.Sprintf("dec-%s@%s", child.LoopID, mid)
+			ls.lastCRC[id] = child
+			out = append(out, OutMsg{ID: child.ID, Kind: "decision", Dec: child})
+		}
+	}
+	oldChildIDs := make([]string, 0, len(ls.lastCRC))
+	for id := range ls.lastCRC {
+		oldChildIDs = append(oldChildIDs, id)
+	}
+	sort.Strings(oldChildIDs)
+	for _, id := range oldChildIDs {
+		if _, active := crcKids[id]; active {
+			continue
+		}
+		previous := ls.lastCRC[id]
+		if previous.CRC != nil && previous.CRC.Withdrawn {
+			continue
+		}
+		withdrawn := *previous
+		if previous.CRC != nil {
+			cd := *previous.CRC
+			cd.Withdrawn = true
+			withdrawn.CRC = &cd
+		}
+		withdrawn.State, withdrawn.Overdue, withdrawn.ClosedDay = "review", false, 0
+		withdrawn.Pending = []string{id}
+		withdrawn.Escalations = []string{"crc_child_withdrawn_review"}
+		withdrawn.Chain = appendCRCBlock(append([]Block{}, previous.Chain...), "crc_child_withdrawn", map[string]interface{}{
+			"loop": id, "parent": f.LoopID, "reason": "source report corrected/withdrawn or disposition no longer current", "requires_review": true})
+		withdrawn.Sig = decSig(&withdrawn)
+		withdrawn.Now, withdrawn.InSeq = now, inSeq
+		withdrawn.ID = fmt.Sprintf("dec-%s@%s", id, mid)
+		ls.lastCRC[id] = &withdrawn
+		out = append(out, OutMsg{ID: withdrawn.ID, Kind: "decision", Dec: &withdrawn})
+	}
 	return out
 }
 
@@ -866,6 +1075,9 @@ func (c *ClosureCore) Final() map[string]*Decision {
 			m[v.lastFU.LoopID] = v.lastFU
 		}
 		for id, d := range v.lastFU2 {
+			m[id] = d
+		}
+		for id, d := range v.lastCRC {
 			m[id] = d
 		}
 	}

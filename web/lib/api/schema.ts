@@ -14,6 +14,11 @@ export const CaseState = z.enum([
   "booked",
   "procedure_done",
   "awaiting_histology",
+  "awaiting_crc_disposition",
+  "suspected_malignancy",
+  "awaiting_gastro",
+  "awaiting_specialist",
+  "review",
   "inadequate",
   "no_show",
   "referral_rejected",
@@ -341,6 +346,26 @@ export const RecoveryCase = z.looseObject({
   source_releases: z.array(z.looseObject({ slot_id: z.string(), status: z.string(), day: z.number() })).default([]),
 });
 
+export const CRCPlan = z.looseObject({
+  schema: z.literal("wasl-crc-plan/2").optional(),
+  kind: z.string(),
+  obligation_id: z.string().optional(),
+  source_report: z.string().optional(), source_version: z.number().optional(),
+  clock_start: z.number().optional(), due_day: z.number().optional(),
+  follow_up_state: z.string().optional(), parent: z.string().optional(),
+  screening_complete: z.boolean(),
+  care_state: z.string(),
+  obligations: z.array(z.looseObject({
+    id: z.string(), outcome: z.string(), state: z.string(),
+    source_report: z.string(), source_version: z.number(),
+    procedure_report: z.string(), procedure_version: z.number(), clock_start: z.number(),
+    interval_days: z.number().optional(), due_day: z.number().optional(),
+    review_item: z.string(), expected_head: z.string(), owner: z.string(),
+    confirmation: z.string().optional(), reviewer: z.string().optional(),
+    child_loop: z.string().optional(), blockers: z.array(z.string()),
+  })).default([]),
+});
+
 export const ActiveCaseSummary = z.looseObject({
   lifecycle: z.literal("active").optional(),
   inactive: z.literal(false).optional(),
@@ -365,6 +390,7 @@ export const ActiveCaseSummary = z.looseObject({
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
+  crc: CRCPlan.optional(),
   api_overlay: ApiOverlay.optional(),
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
@@ -768,6 +794,7 @@ export const ActiveCurrentDecision = z.looseObject({
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
+  crc: CRCPlan.optional(),
 });
 
 export const RetainedCurrentDecision = ActiveCurrentDecision.omit({ inactive: true }).extend({
@@ -1115,6 +1142,8 @@ export const isGuided = (programme: string): programme is keyof typeof GUIDED_EV
 
 export const ReviewDecision = z.union([
   z.enum(CRC_DECISIONS),
+  z.enum(["mdt", "gastroenterology", "specialist", "normal_after_suspicion"]),
+  z.string().regex(/^surveillance:[1-9][0-9]*$/),
   z.enum(LUNG_OUTCOMES),
   z.string().regex(LUNG_INDEX_LABEL),
   z.enum(DR_OUTCOMES),

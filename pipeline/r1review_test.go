@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -60,10 +59,10 @@ func TestR1ReviewExplicitCaecumUnchanged(t *testing.T) {
 	g := gemmaEntry{Caecum: "yes", Prep: "adequate", Polyps: "no", Histology: "no", Quote: "advanced to the caecum, identified by the appendiceal orifice",
 		Quotes: map[string]string{"caecum": "advanced to the caecum, identified by the appendiceal orifice"}}
 	r1Set(t, false)
-	off := fmt.Sprintf("%+v", *r1Judge(r1Explicit, g))
+	off := string(canon(r1Judge(r1Explicit, g)))
 	R1ReviewOn = true
 	on := r1Judge(r1Explicit, g)
-	if fmt.Sprintf("%+v", *on) != off || on.Label != "adequate" || !on.Agree {
+	if string(canon(on)) != off || on.Label != "adequate" || !on.Agree {
 		t.Fatalf("explicit caecum changed by -r1review:\noff %s\non  %+v", off, *on)
 	}
 }
@@ -166,7 +165,7 @@ func TestR1ReviewExplicitInadequacyStaysAuto(t *testing.T) {
 	}
 	R1ReviewOn = true
 	on := r1Judge(text, g)
-	if fmt.Sprintf("%+v", *on) != fmt.Sprintf("%+v", *off) {
+	if string(canon(on)) != string(canon(off)) {
 		t.Fatalf("explicit inadequacy changed by -r1review:\noff %+v\non  %+v", *off, *on)
 	}
 }
@@ -321,7 +320,7 @@ func TestR1ReviewReaderBPrepInadequateStaysAuto(t *testing.T) {
 		t.Fatalf("fixture: want flag-off agreed inadequate with reader-B prep inadequate, got %+v", off)
 	}
 	R1ReviewOn = true
-	if on := r1Judge(r1ValveText, g); fmt.Sprintf("%+v", *on) != fmt.Sprintf("%+v", *off) {
+	if on := r1Judge(r1ValveText, g); string(canon(on)) != string(canon(off)) {
 		t.Fatalf("reader-B explicit inadequacy changed by -r1review:\noff %+v\non  %+v", *off, *on)
 	}
 }

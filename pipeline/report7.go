@@ -298,15 +298,11 @@ func report7(data, wasl, run string, P int) {
 	preps := prepAll(fhir, enc)
 
 	// live final decision per loop (highest OSeq) straight from the OUT stream
-	liveFinal := map[string]*Decision{}
-	liveO := map[string]uint64{}
-	for _, m := range outLog {
-		var oe OutEnvelope
-		json.Unmarshal(m.Data, &oe)
-		if oe.Dec != nil && oe.OSeq >= liveO[oe.Dec.LoopID] {
-			liveFinal[oe.Dec.LoopID], liveO[oe.Dec.LoopID] = oe.Dec, oe.OSeq
-		}
+	projection, counts, err := readMaterializedOUT(run)
+	if err != nil {
+		panic(err)
 	}
+	liveFinal := projection.final
 	restoreAgentPolicy(outLog)
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	noRev := replay(fhir, preps, gbm, iso, P, true)
@@ -515,8 +511,10 @@ func report7(data, wasl, run string, P int) {
 	}
 	imgOut := imageReport(preps, fhir, &tr, liveFinal)
 	res := map[string]interface{}{
-		"image_reader": imgOut,
-		"run":          run, "loops": total, "loops_by_programme": nLoops,
+		"image_reader":         imgOut,
+		"identity_quarantines": rp.L.identityQuarantineSnapshot(),
+		// Native loops and programme metrics retain the screening/index cohort denominator.
+		"run": run, "loops": total, "loops_by_programme": nLoops, "materialization": counts,
 		"closure": closure, "programmes_live": analyze6(liveFinal, &tr), "programmes_no_review": analyze6(noRev.final, &tr),
 		"reviewer": review, "outreach_live": gov, "outreach_no_review": govNoRev, "forged": forgedOut, "consent_timing": consentTiming, "dropoff": drop,
 		"crc_kpi_31d": crcKPI(&tr, liveFinal, noRev.final, rules), "patient_side": patientSide(outLog, &tr, liveFinal),

@@ -354,6 +354,14 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 		}
 		r.link = map[bool]string{true: "same", false: "different"}[same]
 	} else {
+		if it.Reason == CRCDispositionPurpose {
+			r.ev = it.Verdict
+			if wrong {
+				r.ev = "crc_disposition_not_confirmed" // a mismatch cannot activate a disposition
+			}
+			r.secs = lognormSecs(med, c.Sigma, u01(c.Seed, it.ItemID, reader, "t1"), u01(c.Seed, it.ItemID, reader, "t2"))
+			return r
+		}
 		t := tr.Reports[it.ReportID]
 		if t == "" {
 			t = "inadequate"
@@ -386,7 +394,7 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 }
 
 func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
-	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev) || ifhasClosingAnswer(r.ev)) { // all programme closing answers get the same double read
+	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev) || ifhasClosingAnswer(r.ev) || crcReviewDecisionLabel(r.ev)) { // all programme closing answers get the same double read
 		return true
 	}
 	switch c.Double {
@@ -424,6 +432,11 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 		return nil
 	}
 	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, ReportVersion: it.ReportVersion, SignedHead: it.Head, Purpose: it.Reason}
+	if it.Reason == CRCDispositionPurpose {
+		day := it.Day
+		so.ClinicalDay = &day
+		so.ObligationID = it.ObligationID
+	}
 	so.Role = RoleReviewer
 	if it.Kinds[0] == "evidence" {
 		so.Role = RoleClinician

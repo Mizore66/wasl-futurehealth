@@ -535,6 +535,9 @@ func reviewActFor(c *apiCase, decision string) string {
 	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(decision) != nil {
 		act = ActSignEvidence
 	}
+	if act == "" && c.Programme == "crc" && crcReviewDecisionLabel(decision) {
+		act = ActSignEvidence
+	}
 	return act
 }
 

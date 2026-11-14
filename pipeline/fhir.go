@@ -151,6 +151,8 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 					e.Reason = gs(xm, "valueString")
 				case "urn:wsi:index-category":
 					e.Cat = gs(xm, "valueString")
+				case "urn:wsi:crc-follow-up":
+					e.FollowUp = gs(xm, "valueString")
 				case "urn:wsi:specimen-date":
 					day, err := tsToDay(gs(xm, "valueString"))
 					if err != nil {
@@ -205,6 +207,13 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			}
 		}
 	case "Communication":
+		if rawVersion := gs(res, "meta", "versionId"); rawVersion != "" {
+			version, err := strconv.Atoi(rawVersion)
+			if err != nil || version <= 0 {
+				return nil, nil, normalizationError(e.RType, e.ID, "invalid_communication_version", "meta.versionId", "versionId must be a positive integer")
+			}
+			e.Version = version
+		}
 		timestamp := "sent"
 		if _, present := res["received"]; present {
 			timestamp = "received"
@@ -261,6 +270,14 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		}
 		if e.Prog == "" {
 			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "serviceType.text", "no explicit Wasl programme mapping")
+		}
+		if xs, ok := res["extension"].([]interface{}); ok {
+			for _, x := range xs {
+				xm := x.(map[string]interface{})
+				if gs(xm, "url") == "urn:wsi:crc-follow-up" {
+					e.FollowUp = gs(xm, "valueString")
+				}
+			}
 		}
 	case "DiagnosticReport":
 		if !diagnosticReportStatuses[e.Status] {

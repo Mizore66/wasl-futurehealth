@@ -13,8 +13,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/nats-io/nats.go"
 )
@@ -131,7 +131,9 @@ func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]strin
 
 var reNorm = regexp.MustCompile(`[^\p{L}]+`)
 
-func normName(s string) string { return strings.TrimSpace(reNorm.ReplaceAllString(strings.ToLower(s), " ")) }
+func normName(s string) string {
+	return strings.TrimSpace(reNorm.ReplaceAllString(strings.ToLower(s), " "))
+}
 
 // baselines: rule trackers computed from the same FHIR log, no model, no review.
 func baselines(preps []*Prep, tr *Truth) map[string]interface{} {
@@ -139,7 +141,7 @@ func baselines(preps []*Prep, tr *Truth) map[string]interface{} {
 	regs := map[string]*regInfo{}
 	type ev struct {
 		pk, rtype, status, prov string
-		day                    float64
+		day                     float64
 	}
 	srOf := map[string]string{}
 	var colo []ev
@@ -198,12 +200,18 @@ func baselines(preps []*Prep, tr *Truth) map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{
-		"eid_only_closure":   map[string]interface{}{"rule": "Luhn-valid Emirates ID exact match + any colonoscopy DiagnosticReport after referral; no report reading", "stats": closureStats(eidOnly, tr)},
+		"eid_only_closure":    map[string]interface{}{"rule": "Luhn-valid Emirates ID exact match + any colonoscopy DiagnosticReport after referral; no report reading", "stats": closureStats(eidOnly, tr)},
 		"naive_any_colo_120d": map[string]interface{}{"rule": "valid EID OR exact normalised name+DOB match; any colonoscopy Appointment (any status) or report at any provider within 120 d", "stats": closureStats(naive, tr)},
 	}
 }
 
-func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P int, tr *Truth, run string) map[string]interface{} {
+func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P int, tr *Truth, run string, source analysisSource) map[string]interface{} {
+	// Resolve ownership before writing any artifacts. A nonempty preview output
+	// directory does not imply that a completed live OUT exists.
+	dash, err := analysisDashboard(rp.final, tr, run, source)
+	if err != nil {
+		panic(err)
+	}
 	repPK := map[string]string{}
 	nEvents := 0
 	type repInfo struct {
@@ -421,10 +429,11 @@ func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P 
 		for _, it := range rp.items {
 			q = append(q, it)
 		}
-		sort.Slice(q, func(i, j int) bool { return q[i].InSeq < q[j].InSeq || (q[i].InSeq == q[j].InSeq && q[i].ItemID < q[j].ItemID) })
+		sort.Slice(q, func(i, j int) bool {
+			return q[i].InSeq < q[j].InSeq || (q[i].InSeq == q[j].InSeq && q[i].ItemID < q[j].ItemID)
+		})
 		qb, _ := json.MarshalIndent(q, "", " ")
 		os.WriteFile(filepath.Join(run, "review_queue.json"), qb, 0600)
-		dash := dashboard(rp.final, tr)
 		db, _ := json.MarshalIndent(dash, "", " ")
 		os.WriteFile(filepath.Join(run, "dashboard.json"), db, 0600)
 		writeHTML(filepath.Join(run, "dashboard.html"), dash)
@@ -433,14 +442,14 @@ func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P 
 	return map[string]interface{}{
 		"operating_point": map[string]interface{}{"scorer": "wasl v3 retrained (mixed-origin encoder3 + lgb_stream3, Urdu fix)", "union_thr": LinkThr,
 			"calibrator": "isotonic (iso_retrained.json, fit on v3 cal split)", "tau_high": TauHigh, "evidence": "regex/DoH AND cached Gemma must agree; else review"},
-		"events": nEvents,
+		"events":   nEvents,
 		"accuracy": acc, "accuracy_no_review": accNoRev, "accuracy_eid_linker_same_gate_no_review": accEidL,
 		"linkage": linkMetrics(rp.L, tr),
 		"review_queue": map[string]interface{}{"items": len(rp.items), "by_kind": kinds, "per_1k_events": r3(1000 * float64(len(rp.items)) / float64(nEvents)),
 			"evidence_items_by_reader_label": evItemsByLabel, "per_origin": perO, "signoffs_in_log": answered},
 		"two_reader": tw, "communication": comms, "dropoff": drops,
-		"baselines": baselines(preps, tr),
-		"provenance": map[string]interface{}{"closed_chains": chainsN, "hash_verified": chainsOK, "with_human_signoff": withSignoff, "tamper_detected": tamper},
+		"baselines":     baselines(preps, tr),
+		"provenance":    map[string]interface{}{"closed_chains": chainsN, "hash_verified": chainsOK, "with_human_signoff": withSignoff, "tamper_detected": tamper},
 		"v6_programmes": analyze6(rp.final, tr), "v6_programmes_no_review": analyze6(noRev.final, tr),
 	}
 }
@@ -523,7 +532,7 @@ func dashboard(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		}
 		return out
 	}
-	return map[string]interface{}{"as_of_day": TEnd, "sla": map[string]float64{"colonoscopy_days": SLADays, "notification_days": NotifSLA, "ack_days": AckSLA, "referral_response_days": RefRespSLA},
+	return map[string]interface{}{"as_of_day": TEnd, "cases": len(final), "materialization": materializationMetadata(final), "sla": map[string]float64{"colonoscopy_days": SLADays, "notification_days": NotifSLA, "ack_days": AckSLA, "referral_response_days": RefRespSLA},
 		"small_cell_rule": "counts 1-4 shown as <5", "providers": rows(byP, "provider"), "origins": rows(byO, "origin")}
 }
 
@@ -636,7 +645,7 @@ func simOffline(data, wasl string, P int, withReview bool, run string) {
 	if run != "" {
 		os.MkdirAll(run, 0700)
 	}
-	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
+	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run, analysisOfflineReplay) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
 	rb := marshalReport(res)
 	fmt.Println(string(rb))
 }

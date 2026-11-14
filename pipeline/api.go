@@ -214,9 +214,16 @@ func loadAPI(run, data string) *apiServer {
 		dec.UseNumber()
 		_ = dec.Decode(&s.booking)
 	}
-	// decisions (OUT stream log): every decision kept; the last per loop is the current state
-	for _, m := range readLog(filepath.Join(run, "out_log.ndjson")) {
+	// Preserve timeline order even if dump lines were reordered. Current state
+	// uses the same highest-output-sequence reducer as report7 and preflight.
+	outLog := readLog(filepath.Join(run, "out_log.ndjson"))
+	sort.SliceStable(outLog, func(i, j int) bool { return outLog[i].Seq < outLog[j].Seq })
+	projection := newMaterializedDecisions()
+	for _, m := range outLog {
 		oe := decodeEnv(m)
+		if err := projection.add(m, oe); err != nil {
+			panic(err)
+		}
 		if oe.Dec != nil {
 			d := oe.Dec
 			c := s.cases[d.LoopID]
@@ -233,9 +240,13 @@ func loadAPI(run, data string) *apiServer {
 		}
 	}
 	for _, c := range s.cases {
-		d := c.last
+		d := projection.final[c.ID]
+		c.last = d
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
 		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
+		if ongoingCare(d) {
+			c.Closed = false
+		}
 		c.Consent = consentFromDecision(d)
 		if d.Inactive {
 			// The case and every earlier decision remain available through the
@@ -598,7 +609,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 		rep["exactly_once"] = map[string]interface{}{"duplicate_outputs": cr["duplicate_outputs"], "lost_outputs": cr["lost_outputs"], "ingest_lost": cr["ingest_lost"], "ingest_duplicates": cr["ingest_duplicates"]}
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"cases": activeCases, "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
+		"cases": activeCases, "materialization": s.materializationCounts(), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
 		"by_programme": byProg, "sla": s.dashboard["sla"], "providers": s.dashboard["providers"], "origins": s.dashboard["origins"],
 		"small_cell_rule": s.dashboard["small_cell_rule"], "metrics": rep, "fixtures": s.fixtures,
 		"capacity": s.capacity(),
@@ -637,14 +648,34 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
 		m["ifhas"] = c.last.Ifhas
 	}
+	if c.last != nil && c.last.CRC != nil {
+		m["crc"] = c.last.CRC
+	}
 	return m
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
+	closed := c.Closed
+	if c.last != nil && ongoingCare(c.last) {
+		closed = false
+	}
 	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
-		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
+		"consent": c.Consent, "review": c.Review, "closed": closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+	if c.last != nil && (c.last.CRC != nil || s.dashboard["materialization"] != nil || s.report["materialization"] != nil) {
+		// Root-only legacy retained artifacts predate this additive contract.
+		// Keep their exported payloads/digests unchanged; new materializations
+		// and every typed CRC care projection expose the care metadata.
+		kind, _ := materializedCaseKind(c.last)
+		m["case_kind"] = kind
+		m["screening_complete"] = screeningComplete(c.last)
+		m["ongoing_care"] = ongoingCare(c.last)
+		if c.last.CRC != nil && c.last.CRC.Parent != "" {
+			m["parent_case_id"] = c.last.CRC.Parent
+			m["withdrawn"] = c.last.CRC.Withdrawn
+		}
+	}
 	if c.last != nil && c.last.Inactive {
 		m["inactive"] = true
 		m["lifecycle"] = "retained"
@@ -797,7 +828,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	act := reviewActFor(c, req.Decision)
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label (including a signed CRC disposition on CRC cases; docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {
@@ -812,6 +843,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "actor or note exceeds its character limit"}))
 		return
 	}
+	if crcReviewDecisionLabel(req.Decision) && req.Item == "" {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "CRC confirmation requires one current obligation review item"}))
+		return
+	}
 	if req.Item != "" {
 		found := false
 		for _, it := range s.queue[c.ID] {
@@ -819,6 +854,27 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if !found {
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
+			return
+		}
+		it := s.queueItem(c.ID, req.Item)
+		if it.Reason == CRCDispositionPurpose {
+			active := false
+			if c.last != nil && c.last.CRC != nil {
+				for _, p := range c.last.CRC.Obligations {
+					active = active || p.ReviewItem == it.ItemID && p.ExpectedHead == it.Head && p.Confirmation == "" && len(p.Blockers) == 0
+				}
+			}
+			if !active {
+				writeJSONResp(w, 409, s.envelope(map[string]interface{}{"error": "CRC obligation is blocked, signed or no longer current"}))
+				return
+			}
+			if req.Decision != it.Verdict {
+				writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "confirmation must match this obligation's documented proposal"}))
+				return
+			}
+		}
+		if it.Reason == CRCDispositionPurpose && !crcReviewDecisionLabel(req.Decision) || crcReviewDecisionLabel(req.Decision) && it.Reason != CRCDispositionPurpose {
+			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "CRC disposition labels are valid only on the crc_disposition item and must use its closed vocabulary"}))
 			return
 		}
 	}

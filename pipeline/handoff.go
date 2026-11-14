@@ -231,6 +231,9 @@ func fillHandoff(f *LoopFacts, prog string, rej *srFact, decided float64, decisi
 	}
 	p.Recommendation = handoffRecommendation[prog]
 	for _, cm := range f.Comms {
+		if cm.Status != "completed" {
+			continue
+		}
 		if cm.Category == "econsult-reply" && cm.Day <= now+1e-9 && cm.Day <= decided+1e-9 {
 			p.AdviceRef = cm.ID
 		}

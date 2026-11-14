@@ -358,6 +358,11 @@ test.describe("independent double review, live mock", () => {
     });
     expect([403, 409]).toContain(staleWrite.status());
     await card(b.page, "link").getByRole("button", { name: "Release claim" }).click();
+    await expect(card(b.page, "link").getByTestId("claim-status-link")).toContainText("Unclaimed");
+    await expect(card(b.page, "link").getByRole("button", { name: "Claim first read", exact: true })).toBeEnabled();
+    // The release refresh must restore the real declared title before scanning;
+    // a persistent missing/wrong title still fails, without changing axe rules.
+    await expect(b.page).toHaveTitle("Review · Wasl");
     await noSeriousAxe(b.page);
     await a.context.close();
     await b.context.close();

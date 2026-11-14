@@ -267,6 +267,23 @@ func retainedOutDecisions(run string) (map[string][]*Decision, error) {
 // future decision or an arbitrary same-root signature. The head may be a signed
 // prefix: the clinical producer appends further blocks after opening a child.
 func retainedSignedParent(d *Decision, cases map[string][]*Decision) (*Decision, error) {
+	// CRC care uses its typed, source-bound signed plan through this same
+	// resolver; no ID spelling, candidate matching or second identity inference.
+	if d.CRC != nil && d.CRC.Parent != "" {
+		if !crcChildSourceIdentity(d) {
+			return nil, fmt.Errorf("invalid CRC child source identity")
+		}
+		var parent *Decision
+		for _, pd := range cases[d.CRC.Parent] {
+			if !pd.Inactive && pd.InSeq <= d.InSeq && crcChildMatchesPlan(d, pd) && (parent == nil || pd.InSeq >= parent.InSeq) {
+				parent = pd
+			}
+		}
+		if parent == nil {
+			return nil, fmt.Errorf("missing source-bound CRC parent")
+		}
+		return parent, nil
+	}
 	var parent *Decision
 	opened := 0
 	for _, b := range d.Chain {
@@ -296,8 +313,29 @@ func retainedSignedParent(d *Decision, cases map[string][]*Decision) (*Decision,
 	return parent, nil
 }
 
+func retainedRoot(id string, cases map[string][]*Decision) string {
+	seen := map[string]bool{}
+	for !seen[id] {
+		seen[id] = true
+		history := cases[id]
+		if len(history) == 0 {
+			return ""
+		}
+		parent := materializedParent(history[len(history)-1])
+		if parent == id {
+			return id
+		}
+		id = parent
+	}
+	return ""
+}
+
 func retainedParent(id string, cases map[string][]*Decision) (string, error) {
-	if baseLoop(id) == id {
+	history := cases[id]
+	if len(history) == 0 {
+		return "", fmt.Errorf("missing case history")
+	}
+	if materializedParent(history[len(history)-1]) == id {
 		return "", nil
 	}
 	parent := ""
@@ -343,7 +381,7 @@ func retainedParticipation(row retainedIdentityCase, rows map[string]retainedIde
 		if ctx.Association.Status != "resolved" || canonical[ctx.Association.Registration] != rootCluster || rootCluster == "" {
 			continuous = false
 		}
-		if baseLoop(id) == id {
+		if row, ok := rows[id]; ok && row.ParentCaseID == "" {
 			break
 		}
 		if seen[id] || ctx.ParentDecisionID == "" {
@@ -385,7 +423,7 @@ func buildRetainedCatalog(run string, rp *replayOut, canonical map[string]string
 	matched := 0
 	for id, history := range actual {
 		last := history[len(history)-1]
-		row := retainedIdentityCase{CaseID: id, Lifecycle: "active", Current: rp.retained.association(baseLoop(id)), History: []retainedDecisionContext{}}
+		row := retainedIdentityCase{CaseID: id, Lifecycle: "active", Current: rp.retained.association(retainedRoot(id, actual)), History: []retainedDecisionContext{}}
 		parent, err := retainedParent(id, actual)
 		if err != nil {
 			return nil, err
@@ -445,7 +483,7 @@ func buildRetainedCatalog(run string, rp *replayOut, canonical map[string]string
 	}
 	for i := range catalog {
 		row := &catalog[i]
-		row.Participation, row.Current, err = retainedParticipation(*row, rows, contexts, canonical, rp.retained.association(baseLoop(row.CaseID)))
+		row.Participation, row.Current, err = retainedParticipation(*row, rows, contexts, canonical, rp.retained.association(retainedRoot(row.CaseID, actual)))
 		if err != nil {
 			return nil, err
 		}
@@ -475,12 +513,11 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 			if wanted[ctx.FactsSeq] == nil {
 				wanted[ctx.FactsSeq] = map[string]retainedAssociation{}
 			}
-			wanted[ctx.FactsSeq][baseLoop(row.CaseID)] = retainedAssociation{}
+			wanted[ctx.FactsSeq][retainedRoot(row.CaseID, actual)] = retainedAssociation{}
 		}
 	}
-	L := &LinkerCore{requests: map[string]*trackingRevision{}, loops: map[string]*LoopFacts{}, loopRec: map[string]int{}, Stats: map[string]int{}}
+	L := &LinkerCore{requests: map[string]*trackingRevision{}, loops: map[string]*LoopFacts{}, loopRec: map[string]int{}, byPk: map[string]int{}, Stats: map[string]int{}}
 	evidence := newRetainedEvidence()
-	registrations := map[string]int{}
 	lastSeq := uint64(0)
 	_, err := scanAPILog(filepath.Join(run, "fhir_log.ndjson"), func(m LogMsg) error {
 		if m.Seq <= lastSeq {
@@ -497,22 +534,31 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 				arr = 0
 			}
 			ev, _, normErr := normaliseChecked(parts[1], arr, m.Data)
-			if normErr == nil && ev != nil && ev.RType == "ServiceRequest" {
-				loop := ev.Provider + "/ServiceRequest/" + ev.ID
+			if normErr == nil && ev != nil && len(L.sourceIdentityConflicts(ev)) == 0 {
+				// Establish exactly the canonical first identity, including an
+				// Encounter before an order. Never select a quarantined raw revision.
 				rec := -1
-				if ev.PatientKey != "" {
+				if establishesRegistration(ev) {
 					var ok bool
-					rec, ok = registrations[ev.PatientKey]
+					rec, ok = L.byPk[ev.PatientKey]
 					if !ok {
 						rec = len(L.recs)
-						registrations[ev.PatientKey] = rec
-						L.recs = append(L.recs, &Rec{Pk: ev.PatientKey, evs: map[string]*Event{}})
+						L.byPk[ev.PatientKey] = rec
+						r := registrationIdentity(ev)
+						r.evs = map[string]*Event{}
+						L.recs = append(L.recs, r)
 					}
-				} else if prior := L.requests[loop]; prior != nil {
-					rec = prior.rec
 				}
-				L.foldTrackingRequest(ev, rec)
-				evidence.observe(L, &Prep{Seq: m.Seq, Ev: ev})
+				if ev.RType == "ServiceRequest" {
+					loop := ev.Provider + "/ServiceRequest/" + ev.ID
+					if ev.PatientKey == "" {
+						if prior := L.requests[loop]; prior != nil {
+							rec = prior.rec
+						}
+					}
+					L.foldTrackingRequest(ev, rec)
+					evidence.observe(L, &Prep{Seq: m.Seq, Ev: ev})
+				}
 			}
 		}
 		for loop := range wanted[m.Seq] {
@@ -543,7 +589,7 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 		}
 	}
 	for _, row := range catalog {
-		root := baseLoop(row.CaseID)
+		root := retainedRoot(row.CaseID, actual)
 		if row.Lifecycle == "active" && L.loops[root] == nil {
 			return fmt.Errorf("active catalog lacks an active source request")
 		}
@@ -564,7 +610,7 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 					return fmt.Errorf("root cannot borrow child provenance")
 				}
 			} else {
-				if !d.Inactive {
+				if !d.Inactive && !(d.CRC != nil && d.CRC.Withdrawn) {
 					origin = d
 				}
 				if origin == nil || ctx.OriginDecisionID != origin.ID {
@@ -584,7 +630,7 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 				return fmt.Errorf("invalid clinical-origin association: %q", ctx.DecisionID)
 			}
 			state := states[ctx.FactsSeq][root]
-			if state.version == 0 || d.Inactive != state.inactive || d.Prog != state.programme || (d.Inactive && (d.RequestStatus != state.status || d.RequestVersion != state.version || d.RequestConflict != state.conflict)) {
+			if state.version == 0 || d.Inactive != state.inactive || (d.Prog != state.programme && !(d.Inactive && row.ParentCaseID != "" && d.CRC != nil && d.Prog == "crc")) || (d.Inactive && (d.RequestStatus != state.status || d.RequestVersion != state.version || d.RequestConflict != state.conflict)) {
 				return fmt.Errorf("decision lifecycle contradicts source context")
 			}
 			if strings.Contains(d.ID, "@"+root+"@") && !strings.HasSuffix(d.ID, "@"+utoa(ctx.FactsSeq)) {
@@ -594,7 +640,7 @@ func validateRetainedSources(run string, catalog []retainedIdentityCase, actual 
 	}
 	// Only positively source- and signed-lineage-validated rows reach this step.
 	for _, row := range catalog {
-		participation, current, err := retainedParticipation(row, rows, contexts, canonical, evidence.association(baseLoop(row.CaseID)))
+		participation, current, err := retainedParticipation(row, rows, contexts, canonical, evidence.association(retainedRoot(row.CaseID, actual)))
 		if err != nil || row.Current != current || row.Participation != participation {
 			return fmt.Errorf("invalid current participation/provenance: %q", row.CaseID)
 		}

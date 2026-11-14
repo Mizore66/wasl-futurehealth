@@ -197,16 +197,17 @@ func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 	}
 	// Surveillance children inherit only their canonical parent loop's referral
 	// membership. Every materialised case must resolve; singleton guesses are not allowed.
-	for caseID := range s.cases {
-		if s.cases[caseID].last != nil && s.cases[caseID].last.Inactive {
+	for caseID, c := range s.cases {
+		if c.last != nil && c.last.Inactive {
 			return nil, fmt.Errorf("legacy identity artifact cannot represent retained cases")
 		}
 		cluster := projection.byCase[caseID]
-		if cluster == nil && baseLoop(caseID) != caseID {
-			cluster = projection.byCase[baseLoop(caseID)]
+		parent := materializedParent(c.last)
+		if cluster == nil && parent != caseID {
+			cluster = projection.byCase[parent]
 			if cluster != nil {
 				projection.byCase[caseID] = cluster
-				projection.referralByCase[caseID] = projection.referralByCase[baseLoop(caseID)]
+				projection.referralByCase[caseID] = projection.referralByCase[parent]
 			}
 		}
 		if cluster == nil {
@@ -447,6 +448,28 @@ func personObligations(c *apiCase, sharedSurveillance ...map[string]bool) []map[
 	d := c.last
 	switch c.Programme {
 	case "crc", "cervical":
+		if c.Programme == "crc" && d.CRC != nil {
+			cd := d.CRC
+			if cd.Parent != "" {
+				switch {
+				case cd.Withdrawn:
+					out = append(out, obligation(c.ID, c.Programme, "crc.due_day", cd.DueDay, 0, "withdrawn_review", "tracking_without_deadline"))
+				case cd.FollowUpState == "awaiting_acceptance_or_first_appointment":
+					out = append(out, obligation(c.ID, c.Programme, "crc.disposition_day", cd.DispositionDay, 0, cd.FollowUpState, "tracking_without_deadline"))
+				case !c.Closed:
+					out = append(out, obligation(c.ID, c.Programme, "crc.due_day", cd.DueDay, 0, openStatus(c, cd.DueDay), ""))
+				}
+				break
+			}
+			for _, work := range cd.Coordination {
+				if work.Status == "open" {
+					out = append(out, obligation(c.ID, c.Programme, "crc.coordination.due_day", work.DueDay, 0, openStatus(c, work.DueDay), work.ID))
+				}
+			}
+			if cd.ScreeningComplete {
+				break // downstream care does not reopen the screening referral clock
+			}
+		}
 		if !c.Closed && c.Deadline != 0 {
 			out = append(out, obligation(c.ID, c.Programme, "sr_day+deadline", c.SRDay+c.Deadline, 0, openStatus(c, c.SRDay+c.Deadline), ""))
 		}
@@ -714,7 +737,7 @@ type personActionCandidate struct {
 func candidateDeadline(obligations []map[string]interface{}, caseID string) (float64, bool) {
 	earliest, found := 0.0, false
 	for _, obligation := range obligations {
-		if obligation["case_id"] != caseID || obligation["status"] == "informational" ||
+		if obligation["case_id"] != caseID || obligation["status"] == "informational" || obligation["basis"] == "tracking_without_deadline" ||
 			(obligation["source_field"] == "ldct.due_day" && obligation["status"] == "scheduled") {
 			continue
 		}
@@ -1013,8 +1036,9 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 			overlay["contact_blocked"] = true
 		}
 		referral := projection.referralByCase[caseID]
-		if referral == "" && baseLoop(caseID) != caseID {
-			referral = projection.referralByCase[baseLoop(caseID)]
+		parent := materializedParent(c.last)
+		if referral == "" && parent != caseID {
+			referral = projection.referralByCase[parent]
 		}
 		if referral == "" {
 			return nil, fmt.Errorf("case has no validated referral registration")
@@ -1022,8 +1046,8 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		body := map[string]interface{}{"case_id": caseID, "referral_registration": pseudonymizeRegistration(referral), "detail": allowed,
 			"contact": map[string]interface{}{"canonical": c.Consent, "overlay_status": overlay["status"],
 				"contact_blocked": overlay["contact_blocked"] == true || c.Consent != "granted", "canonical_unchanged": true}}
-		if baseLoop(caseID) != caseID {
-			body["parent_case_id"] = baseLoop(caseID)
+		if parent != caseID {
+			body["parent_case_id"] = parent
 		}
 		if projection.artifactSchema == retainedIdentitySchema {
 			body["lifecycle"] = "active"
@@ -1073,7 +1097,11 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 	if len(allCaseIDs) == 0 {
 		return nil, fmt.Errorf("person has no validated participation")
 	}
-	body := map[string]interface{}{"schema": personJourneySchema,
+	current := map[string]*Decision{}
+	for _, c := range cases {
+		current[c.ID] = c.last
+	}
+	body := map[string]interface{}{"schema": personJourneySchema, "materialization": materializationMetadata(current),
 		"person": map[string]interface{}{"id": personIDForRegistrations(cluster.registrations), "anchor_case_id": allCaseIDs[0],
 			"as_of_day": round4(asOf), "case_ids": allCaseIDs, "programmes": programmes,
 			"registrations": registrations,
@@ -1083,6 +1111,11 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 	if projection.artifactSchema == retainedIdentitySchema {
 		body["schema"] = "wasl-person-journey/2"
 		body["retained_references"] = references
+		if s.dashboard["materialization"] == nil && s.report["materialization"] == nil {
+			// Legacy root-only retained exports did not declare CRC materialization.
+			// Preserve their exact payloads; never rewrite frozen export digests.
+			delete(body, "materialization")
+		}
 	}
 	generic, err := exportGeneric(body)
 	if err != nil {

@@ -44,48 +44,51 @@ type trackingRevision struct {
 }
 
 type LinkerCore struct {
-	P              int
-	K, Cap         int
-	Thr, Lo        float64
-	GuardThr       float64
-	gbm            *GBM
-	recs           []*Rec
-	byPk           map[string]int
-	keyIdx         map[string][]int
-	eidIdx         map[string][]int
-	parent         []int
-	members        map[int][]int
-	adj            map[int]map[int]float64
-	basis          map[[2]int]string
-	idConfirmed    map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
-	cannot         map[int]map[int]bool
-	pscore         map[[2]int]float64
-	near           map[int]map[int]float64      // lo <= p < thr
-	demoMissing    map[[2]string]bool           // demoguard: pairs emitted as near/demographic_missing
-	loops          map[string]*LoopFacts        // active tracking requests only: static part (sr info)
-	requests       map[string]*trackingRevision // current ServiceRequest revisions, including category changes
-	loopRec        map[string]int
-	tasks          map[string][]TaskFact // loop -> tasks
-	comms          map[string][]CommFact // loop -> communications
-	signoffs       map[string][]Signoff
-	evOver         map[string]map[string]string
-	lastHash       map[string]string
-	Stats          map[string]int
-	provLast       map[string]float64
-	provDone       map[string]bool
-	lastTick       int
-	streamT        float64 // HistClock: latest input arrival day seen
-	streamSeen     bool
-	PSeq           []uint64
-	optOut         map[string]bool     // pk -> registration-local denied/opted-out projection
-	contact        map[string]string   // pk -> granted|denied|opted_out (absent = unknown)
-	consentJournal map[string][]*Event // pk -> authorised active Consent journal, in ingest order only for storage
-	consentSeen    map[string]struct{} // stable normalized payload -> already journalled
-	pcal7          map[[2]int]float64  // v7: calibrated probability of each model edge
-	xref           map[string][]int    // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
-	ann            ANNIndex
-	trace          func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
-	traceSeq       uint64
+	P                   int
+	K, Cap              int
+	Thr, Lo             float64
+	GuardThr            float64
+	gbm                 *GBM
+	recs                []*Rec
+	byPk                map[string]int
+	keyIdx              map[string][]int
+	eidIdx              map[string][]int
+	parent              []int
+	members             map[int][]int
+	adj                 map[int]map[int]float64
+	basis               map[[2]int]string
+	idConfirmed         map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
+	cannot              map[int]map[int]bool
+	pscore              map[[2]int]float64
+	near                map[int]map[int]float64      // lo <= p < thr
+	demoMissing         map[[2]string]bool           // demoguard: pairs emitted as near/demographic_missing
+	loops               map[string]*LoopFacts        // active tracking requests only: static part (sr info)
+	requests            map[string]*trackingRevision // current ServiceRequest revisions, including category changes
+	loopRec             map[string]int
+	tasks               map[string][]TaskFact              // loop -> tasks
+	comms               map[string][]CommFact              // loop -> current Communication revisions only
+	commCurrent         map[string]communicationRevision   // provider|resource ID -> logical current revision, including reassociations
+	commHistory         map[string][]communicationRevision // provider|resource ID -> append-only normalized inputs and their basedOn loop
+	signoffs            map[string][]Signoff
+	evOver              map[string]map[string]string
+	lastHash            map[string]string
+	Stats               map[string]int
+	provLast            map[string]float64
+	provDone            map[string]bool
+	lastTick            int
+	streamT             float64 // HistClock: latest input arrival day seen
+	streamSeen          bool
+	PSeq                []uint64
+	optOut              map[string]bool     // pk -> registration-local denied/opted-out projection
+	contact             map[string]string   // pk -> granted|denied|opted_out (absent = unknown)
+	consentJournal      map[string][]*Event // pk -> authorised active Consent journal, in ingest order only for storage
+	consentSeen         map[string]struct{} // stable normalized payload -> already journalled
+	pcal7               map[[2]int]float64  // v7: calibrated probability of each model edge
+	xref                map[string][]int    // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
+	ann                 ANNIndex
+	trace               func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq            uint64
+	IdentityQuarantines []identitySourceDisposition // ordered source dispositions; raw inputs stay in FHIR/PREP
 }
 
 var annMode = new(string)
@@ -120,7 +123,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{}, requests: map[string]*trackingRevision{},
-		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
+		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, commCurrent: map[string]communicationRevision{}, commHistory: map[string][]communicationRevision{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{},
 		consentJournal: map[string][]*Event{}, consentSeen: map[string]struct{}{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
@@ -517,12 +520,8 @@ func (L *LinkerCore) clusterOf(i int) []int { return L.members[L.Find(i)] }
 
 // newRecord indexes a registration and links it. Returns affected roots.
 func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
-	r := &Rec{Pk: e.PatientKey, Prov: e.Provider, Kind: provKind(e.Provider), Name: e.Name, Dob: e.Dob, Sex: e.Sex, Eid: e.Eid, evs: map[string]*Event{}}
-	r.eidOK = luhnOK(r.Eid)
-	r.lat = latinForm(r.Name)
-	r.tok = tokensOf(r.lat)
-	r.skel = skeleton(r.tok)
-	r.isAr = isAr(r.Name)
+	r := registrationIdentity(e)
+	r.evs = map[string]*Event{}
 	r.keys = ruleKeys(r)
 	r.emb = emb
 	cs := L.candidates(r)
@@ -804,7 +803,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			continue
 		}
 		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
-			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog})
+			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog, FollowUp: e.FollowUp})
 		if e.RType == "DiagnosticReport" {
 			out[len(out)-1].Parent, out[len(out)-1].Relation = e.Focus, e.Relation
 		}
@@ -1169,6 +1168,84 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	return f
 }
 
+type communicationRevision struct {
+	Loop string
+	Fact CommFact
+}
+
+// Fold at provider/resource identity, never at basedOn membership. A newer
+// reassociation or withdrawal retracts the old loop's effective revision too.
+// Missing versions and v1 are equivalent. Conflicting same-version payloads
+// remain inert until a greater version; every original input stays append-only.
+func (L *LinkerCore) foldCommunication(loop string, cf CommFact) []string {
+	provider, _, _ := strings.Cut(loop, "/")
+	key := provider + "|" + cf.ID
+	next := communicationRevision{Loop: loop, Fact: cf}
+	L.commHistory[key] = append(L.commHistory[key], next)
+	version := func(v int) int {
+		if v <= 1 {
+			return 1
+		}
+		return v
+	}
+	next.Fact.Version = version(cf.Version)
+	current, exists := L.commCurrent[key]
+	if exists {
+		cv, nv := version(current.Fact.Version), version(cf.Version)
+		if nv < cv {
+			L.Stats["stale_communication_version"]++
+			return nil
+		}
+		if nv == cv {
+			a, b := current, next
+			a.Fact.Version, b.Fact.Version = 0, 0
+			if string(canon(a)) == string(canon(b)) {
+				L.Stats["duplicate_communication_version"]++
+				return nil
+			}
+			// The tombstone's loop is the lexically first conflicting membership,
+			// so reverse arrival and repeated conflicts yield the same projection.
+			if current.Loop < next.Loop {
+				next.Loop = current.Loop
+			}
+			next.Fact = CommFact{ID: cf.ID, Version: nv, Status: "conflicting_revision"}
+			L.Stats["conflicting_communication_version"]++
+		}
+	}
+	// Copy slices rather than editing previously emitted LoopFacts in place.
+	if exists {
+		remaining := []CommFact{}
+		for _, old := range L.comms[current.Loop] {
+			if old.ID != cf.ID {
+				remaining = append(remaining, old)
+			}
+		}
+		if len(remaining) == 0 {
+			delete(L.comms, current.Loop)
+		} else {
+			L.comms[current.Loop] = remaining
+		}
+	}
+	updated := append([]CommFact{}, L.comms[next.Loop]...)
+	updated = append(updated, next.Fact)
+	sort.Slice(updated, func(i, j int) bool {
+		a, b := updated[i], updated[j]
+		if a.Day != b.Day {
+			return a.Day < b.Day
+		}
+		if a.Category != b.Category {
+			return a.Category < b.Category // opening questions/prompts precede same-day replies
+		}
+		return a.ID < b.ID
+	})
+	L.comms[next.Loop], L.commCurrent[key] = updated, next
+	affected := []string{loop, next.Loop}
+	if exists {
+		affected = append(affected, current.Loop)
+	}
+	return uniqueSorted(affected)
+}
+
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
 func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	out := []FactsMsg{}
@@ -1246,20 +1323,28 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		if so.Evidence != "" && so.ReportID != "" {
-			if so.ReportVersion >= 2 && so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) {
-				L.Stats["mismatched_evidence_signoff"]++
-				break
+			if so.Purpose == CRCDispositionPurpose {
+				// CRC dispositions never become generic EvOver adequacy labels.
+				if so.ItemID != crcDispositionItemID(so.LoopID, so.ReportID, so.ReportVersion, so.SignedHead) || !crcReviewDecisionLabel(so.Evidence) {
+					L.Stats["mismatched_crc_disposition_signoff"]++
+					break
+				}
+			} else {
+				if so.ReportVersion >= 2 && so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) {
+					L.Stats["mismatched_evidence_signoff"]++
+					break
+				}
+				if L.evOver[so.LoopID] == nil {
+					L.evOver[so.LoopID] = map[string]string{}
+				}
+				key := reportVersionKey(so.ReportID, so.ReportVersion)
+				if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
+					key += "#confirm"
+				} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
+					key += k
+				}
+				L.evOver[so.LoopID][key] = so.Evidence
 			}
-			if L.evOver[so.LoopID] == nil {
-				L.evOver[so.LoopID] = map[string]string{}
-			}
-			key := reportVersionKey(so.ReportID, so.ReportVersion)
-			if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
-				key += "#confirm"
-			} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
-				key += k
-			}
-			L.evOver[so.LoopID][key] = so.Evidence
 		}
 		L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
 		affLoops[so.LoopID] = true
@@ -1271,6 +1356,11 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if !L.streamSeen || p.Tick > L.streamT {
 			L.streamT, L.streamSeen = p.Tick, true
 		}
+		// Check the incoming resource, not cached first demographics, before
+		// Task/Communication/request/report folds or any other clinical effects.
+		if L.quarantineIdentity(p) {
+			break
+		}
 		if e.RType == "Task" {
 			loop := e.Provider + "/" + strings.Replace(e.Focus, "ServiceRequest/", "ServiceRequest/", 1)
 			L.tasks[loop] = append(L.tasks[loop], TaskFact{Day: e.Day, Status: e.Status, Owner: e.Owner})
@@ -1281,7 +1371,10 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		if e.RType == "Communication" {
 			loop := e.Provider + "/" + e.Focus
-			cf := CommFact{ID: e.ID, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
+			cf := CommFact{ID: e.ID, Version: e.Version, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
+			revision := *e
+			revision.Version = 0 // legacy missing version and explicit v1 share a revision identity
+			cf.RevisionSha = sha(canon(&revision))
 			if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
 				cf.Report = e.ReportID
 				if e.Category == "prep-reply" {
@@ -1297,9 +1390,10 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
 				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
 			}
-			L.comms[loop] = append(L.comms[loop], cf)
-			if _, ok := L.loops[loop]; ok {
-				affLoops[loop] = true
+			for _, affected := range L.foldCommunication(loop, cf) {
+				if _, ok := L.loops[affected]; ok {
+					affLoops[affected] = true
+				}
 			}
 			break
 		}

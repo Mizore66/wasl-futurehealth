@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,29 +35,28 @@ func validateAPIPreflight(run string) error {
 	}
 	loops := map[string]bool{}
 	outPath, fhirPath := filepath.Join(run, "out_log.ndjson"), filepath.Join(run, "fhir_log.ndjson")
-	latest := map[string]*Decision{}
+	projection := newMaterializedDecisions()
 	if _, err := scanAPILog(outPath, func(m LogMsg) error {
 		if err := validateOutRecord(m, loops); err != nil {
 			return err
 		}
-		if d := decodeEnv(m).Dec; d != nil {
-			latest[d.LoopID] = d
+		var env OutEnvelope
+		if err := json.Unmarshal(m.Data, &env); err != nil {
+			return err
 		}
-		return nil
+		return projection.add(m, env)
 	}); err != nil {
 		return err
+	}
+	counts, err := projection.validate()
+	if err != nil {
+		return fmt.Errorf("serve preflight: out_log.ndjson: %w", err)
 	}
 	fhirRecords, err := scanAPILog(fhirPath, validateFHIRRecord)
 	if err != nil {
 		return err
 	}
-	active := 0
-	for _, d := range latest {
-		if !d.Inactive {
-			active++
-		}
-	}
-	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], len(loops), fhirRecords, active)
+	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], counts, projection.final, fhirRecords)
 }
 
 func validateRequiredAPIJSON(path string) (map[string]interface{}, error) {
@@ -153,29 +153,52 @@ func materializedCatalogCounts(final map[string]*Decision) map[string]interface{
 	return map[string]interface{}{"schema": "wasl-materialized-catalog/1", "retained_cases": len(final), "active_cases": active, "retained_live_replay_mismatch": 0}
 }
 
-func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhirRecords int, activeCounts ...int) error {
+func validateDeclaredCounts(dashboard, report map[string]interface{}, counts materializationCounts, final map[string]*Decision, fhirRecords int) error {
 	check := func(artifact, field string, value interface{}, want int, source string) error {
 		n, ok := value.(float64)
-		if !ok || n != float64(int(n)) || n < 0 {
+		if !ok || math.IsInf(n, 0) || math.IsNaN(n) || n != math.Trunc(n) || n < 0 {
 			return fmt.Errorf("serve preflight: %s: invalid JSON: %s must be a non-negative integer", artifact, field)
 		}
-		if int(n) != want {
-			return fmt.Errorf("serve preflight: %s declares %s=%d but %s holds %d", artifact, field, int(n), source, want)
+		if n != float64(want) {
+			return fmt.Errorf("serve preflight: %s declares %s=%g but %s holds %d", artifact, field, n, source, want)
 		}
 		return nil
 	}
+	// Metadata is additive for legacy root-only artifacts, mandatory for runs
+	// with independent CRC care. Every field is checked against actual OUT.
+	var expected map[string]interface{}
+	_ = json.Unmarshal(canon(counts), &expected)
+	for name, artifact := range map[string]map[string]interface{}{"dashboard.json": dashboard, "report7.json": report} {
+		value, present := artifact["materialization"]
+		if !present && counts.DerivedCare == 0 {
+			continue
+		}
+		declared, ok := value.(map[string]interface{})
+		if !ok || declared["schema"] != materializationSchema {
+			return fmt.Errorf("serve preflight: %s: missing or invalid materialization metadata", name)
+		}
+		for field, want := range expected {
+			if field == "schema" {
+				continue
+			}
+			if err := check(name, "materialization."+field, declared[field], int(want.(float64)), "out_log.ndjson decisions"); err != nil {
+				return err
+			}
+		}
+	}
 	if v, ok := dashboard["cases"]; ok {
-		if err := check("dashboard.json", "cases", v, loops, "out_log.ndjson decisions"); err != nil {
+		if err := check("dashboard.json", "cases", v, counts.TotalCurrentMaterialized, "out_log.ndjson decisions"); err != nil {
 			return err
 		}
 	}
-	clinicalLoops := loops
+	clinicalLoops := counts.RootScreening
+	catalogCounts := materializedCatalogCounts(final)
 	if raw, present := report["materialized_catalog"]; present {
 		catalog, ok := raw.(map[string]interface{})
-		if !ok || catalog["schema"] != "wasl-materialized-catalog/1" || len(catalog) != 4 || len(activeCounts) != 1 {
+		if !ok || catalog["schema"] != "wasl-materialized-catalog/1" || len(catalog) != 4 {
 			return fmt.Errorf("serve preflight: invalid materialized catalog counts")
 		}
-		for field, want := range map[string]int{"retained_cases": loops, "active_cases": activeCounts[0], "retained_live_replay_mismatch": 0} {
+		for field, want := range map[string]int{"retained_cases": len(final), "active_cases": catalogCounts["active_cases"].(int), "retained_live_replay_mismatch": 0} {
 			if err := check("report7.json", "materialized_catalog."+field, catalog[field], want, "out_log.ndjson decisions"); err != nil {
 				return err
 			}
@@ -199,7 +222,7 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhi
 		}
 	}
 	if v, ok := report["loops"]; ok {
-		if err := check("report7.json", "loops", v, clinicalLoops, "declared clinical cohort (legacy: out_log.ndjson decisions)"); err != nil {
+		if err := check("report7.json", "loops", v, clinicalLoops, "declared clinical cohort (legacy: out_log.ndjson root screening decisions)"); err != nil {
 			return err
 		}
 	}
@@ -208,20 +231,73 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhi
 			return err
 		}
 	}
-	if programmes, ok := report["programmes_live"].(map[string]interface{}); ok {
-		total, declared := 0.0, false
-		for _, p := range programmes {
-			programme, _ := p.(map[string]interface{})
-			if v, ok := programme["cases"]; ok {
-				n, isNum := v.(float64)
-				if !isNum {
-					return fmt.Errorf("serve preflight: report7.json: invalid JSON: programmes_live cases must be a non-negative integer")
+	byProgramme := map[string]int{}
+	for _, d := range final {
+		kind, _ := materializedCaseKind(d)
+		if kind == "derived_care" {
+			continue
+		}
+		pg := d.Prog
+		if pg == "" {
+			pg = "crc"
+		}
+		byProgramme[pg]++
+	}
+	if _, catalog := report["materialized_catalog"]; catalog {
+		// The native clinical denominator is independently declared by the cohort;
+		// materialization and catalog metadata above prove actual retained OUT.
+		byProgramme = map[string]int{}
+		if declared, ok := report["loops_by_programme"].(map[string]interface{}); ok {
+			for pg, value := range declared {
+				n, ok := value.(float64)
+				if !ok || math.IsNaN(n) || math.IsInf(n, 0) || n < 0 || n != float64(int(n)) {
+					return fmt.Errorf("serve preflight: invalid clinical loop count for %s", pg)
 				}
-				total, declared = total+n, true
+				byProgramme[pg] = int(n)
 			}
 		}
-		if declared {
-			return check("report7.json", "programmes_live cases", total, loops, "out_log.ndjson decisions")
+	}
+	if raw, present := report["loops_by_programme"]; present {
+		declared, ok := raw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("serve preflight: report7.json: invalid loops_by_programme object")
+		}
+		for pg, value := range declared {
+			if err := check("report7.json", "loops_by_programme."+pg, value, byProgramme[pg], "out_log.ndjson root screening decisions"); err != nil {
+				return err
+			}
+		}
+		for pg := range byProgramme {
+			if _, present := declared[pg]; !present {
+				return fmt.Errorf("serve preflight: report7.json: loops_by_programme.%s missing root count for out_log.ndjson", pg)
+			}
+		}
+	}
+	if raw, present := report["programmes_live"]; present {
+		programmes, ok := raw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("serve preflight: report7.json: invalid programmes_live object")
+		}
+		for pg, raw := range programmes {
+			programme, ok := raw.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("serve preflight: report7.json: invalid programmes_live.%s", pg)
+			}
+			for _, field := range []string{"loops", "cases"} {
+				if value, present := programme[field]; present {
+					if err := check("report7.json", "programmes_live."+pg+"."+field, value, byProgramme[pg], "out_log.ndjson root screening decisions"); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		for pg := range byProgramme {
+			programme, _ := programmes[pg].(map[string]interface{})
+			_, loops := programme["loops"]
+			_, cases := programme["cases"]
+			if !loops && !cases {
+				return fmt.Errorf("serve preflight: report7.json: programmes_live.%s missing root count for out_log.ndjson", pg)
+			}
 		}
 	}
 	return nil

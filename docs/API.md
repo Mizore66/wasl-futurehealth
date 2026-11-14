@@ -62,6 +62,33 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
+### Screening/index denominators and materialized care cases
+
+New `report7.json` and `dashboard.json` outputs declare `materialization` with schema `wasl-materialization/1`. The API dashboard and person journey expose the same counts over their respective current case sets:
+
+- `root_screening`: screening/index cohort cases, excluding independently derived CRC care children. Existing programme follow-up rows already included in the cohort remain index rows for this contract.
+- `derived_care`: independently materialized CRC treatment, surveillance, gastroenterology and specialist cases, including withdrawn projections retained for review.
+- `total_current_materialized`: all current case projections, equal to `root_screening + derived_care`; not the number of OUT records or completed screenings.
+- `withdrawn_derived_care`: the retained withdrawn subset, never active care or completed treatment.
+- `screening_complete`: root cases whose screening/procedure-completeness requirement is met; this does not certify that downstream care is complete or even confirmed.
+- `ongoing_care_cases`: current root or child projections with unresolved/ongoing CRC care. This counts cases, not unique clinical obligations; a parent and its child can both carry pending work.
+
+Native `report7.loops`, `loops_by_programme`, programme `loops`/legacy `cases`, closure metrics and clinical KPI denominators retain their screening/index meanings. Native dashboard-file `cases` counts all selected materialized cases, including retained latest projections; API dashboard `cases` and ordinary case lists count active cases only. `report7.materialized_catalog` independently declares retained and active case totals, without replacing clinical cohort denominators. Inactive cases contribute neither screening completion nor ongoing-care counts. Existing provider/origin evaluation rows retain their replay-based meanings; additive materialization metadata is computed from the actual live OUT decisions served by the API, not the offline replay. Frozen runs are not rewritten: root-only legacy artifacts may omit the new metadata. Runs with CRC children must declare complete, consistent metadata in both artifacts.
+
+Case summaries add `case_kind: root_screening | derived_care`, `screening_complete`, `ongoing_care`, and, for CRC children, `parent_case_id` and `withdrawn`. A screening parent can have a closed screening state while `closed: false` and `ongoing_care: true`; independently tracked children remain in case lists and person journeys. Person obligations use the children's existing care clocks and explicit parent relationship, not guessed ID substrings. Awaiting gastroenterology/specialist acceptance has no invented deadline, and withdrawn children remain visible for review without an active treatment clock.
+
+Serve preflight folds unique cases by highest OUT output sequence, tolerates identical duplicate/reordered records, and rejects conflicting duplicates, unknown CRC child types, orphaned or source-inconsistent children, missing child decisions and invalid/mismatched counts. Active children must match their current parent's signed source-bound plan; withdrawn children retain their historical signed-plan provenance. This validates the materialization contract, not treatment delivery or a new clinical policy.
+
+### Existing-registration identity conflicts
+
+Every incoming identity-bearing FHIR resource (including converted HL7) is checked against the trusted first registration at its provider-scoped MRN before clinical folding. Different valid EIDs retain the existing unconditional cannot-link rule; `-demoguard` reuses the real-DOB/known-sex classifier and `-eidguard` reuses its existing equal-ID contradiction helper. Missing fields, placeholder dates and name spelling alone do not create a new hard-conflict policy. Trusted demographics are not replaced, quarantined resources are not automatically relinked, and ordinary evidence/link reviews cannot admit their clinical payloads.
+
+`identity_quarantines` in linker status, `audit.json` and `report7.json` records `disposition: quarantined`, stable `reason: identity_conflict`, conflict codes, source stream sequence, provider/resource identity, revision and the normalized prepared-source SHA-256. It contains no patient name, EID, DOB or MRN. Original raw FHIR/HL7-converted and PREP events remain append-only; the sequence binds the disposition to that source. This digest identifies the prepared resource, not a rewritten raw-source digest.
+
+Quarantine precedes report/request/Communication revision selection and deduplication: a rejected higher version or same-version collision cannot replace an accepted source, withdraw its evidence or become retained identity context. Accepted revisions, withdrawals and transport duplicates continue through their existing folds. Retained-source verification uses this same identity boundary and canonical request fold, including registrations established by earlier Encounters. Authorized contact-permission withdrawal remains allowed; historical/coordinator actions and reservation cancellation are not globally frozen.
+
+CRC care children use the existing retained catalogue resolver with their explicit signed source-bound parent, producing context, clinical origin and transition cause. Root retirement retains non-actionable child history; source withdrawal retains its independent care-review projection. These are synthetic source contracts, not a live-safety or treatment-delivery claim. Pathology-lineage work reserved in #194/#195 is not implemented by this identity boundary.
+
 ### No-show recovery and waitlist backfill
 
 `scripts/demo.sh booking` runs `booking/recovery.py` immediately after the existing booking generator and writes `<run>/recovery.json` (`wasl-recovery-input/1`). The generator considers only canonical CRC/cervical no-show cases with a latest trusted Appointment status of `noshow`. A released slot is a **simulated released-capacity projection** over a future synthetic calendar, never the missed provider Appointment or a real cancellation. Existing suggestions remain unheld; no overbooking headroom is consumed.
@@ -98,10 +125,26 @@ The default-deny snapshot projector accepts this same contract for `docs/api-sam
  "fixture": "evidence_closure", "decisions": 11}
 ```
 
-- **States:** `open`, `booked`, `procedure_done`, `awaiting_histology`, `inadequate`, `no_show`, `referral_rejected`, `closed`.
+- **States:** `open`, `booked`, `procedure_done`, `awaiting_histology`, `inadequate`, `no_show`, `referral_rejected`, `closed`. CRC outcomes can additionally be `suspected_malignancy`, `awaiting_crc_disposition`, `awaiting_gastro`, or `awaiting_specialist`.
 - **Drop-off:** `never_notified`, `no_acknowledgement`, `not_booked`, `referral_rejected`, `referral_unanswered`, `no_show`, `inadequate`, `awaiting_histology`, `in_progress`, or `""` when closed.
 - **Consent:** `unknown`, `granted`, `denied`, `opted_out`.
 - **Days:** fractional days since 1 May 2026, the cohort epoch.
+
+### CRC post-procedure dispositions
+
+**Built contract `wasl-crc-plan/2`; synthetic tracking, not clinical validation.** `Decision.crc` and `case.crc` distinguish `screening_complete` from `care_state` (`blocked`, `awaiting_confirmation`, `ongoing`, `complete`). `proposed_outcome` is a presentation primary, not authority to discharge another pathway. `obligations[]` retains every current treatment, surveillance, gastroenterology and specialist need. Ordinary benign/no-other-obligation cases retain generic closure without a CRC plan.
+
+Each obligation carries a deterministic source-procedure/outcome ID, `state`, source report/version, procedure report/version, `clock_start`, `owner`, `review_item`, `expected_head`, `blockers`, and (after its own confirmation) reviewer, confirmation, disposition/day and child reference. `evidence[]` separately reports current trust, tissue completeness, quality completeness, suspicion and source-bound blockers. Final embedded histology can satisfy tissue completeness only when both actual reader fields say `histology=yes` on trusted current evidence; an adequate label alone cannot. Other unresolved current specimens still block activation.
+
+Every `crc_disposition` review is an immutable snapshot of that obligation's current evidence, contributing specimens and procedure clock. Accepted answers are `mdt`, `surveillance:<positive-days>`, `gastroenterology`, `specialist`, and `normal_after_suspicion`, exactly matching that item's documented proposal. A clinician actor signs one item/head/report/version, never all pathways. Corrections invalidate the affected procedure/specimen bundle only; independent procedures keep their signatures. API writes require a current, unblocked, unsigned item and reject cross-pathway answers. Independent-read API overlays retain actor-bound claims and blinding and do not become canonical care confirmation merely by returning 201.
+
+Suspicious/malignant evidence alone warrants same-day coordination; missing histology or non-suspicious follow-up never creates cancer urgency. `coordination[]` retains separate source-bound coordinator records; `mdt` remains a compatibility primary. Quality/prep and specimen holds stay visible during coordination. Treatment/surveillance children require their own obligation confirmation. The first authorized need in each pathway keeps the historical singleton child name (`<parent>#crc-treatment`, `#crc-surveillance`, `#crc-gastroenterology`, `#crc-specialist`). Additional same-category needs use deterministic obligation-ID suffixes and need-specific follow-up categories. The append-only signature order, including persisted `obligation_id`, preserves that allocation after other needs are withdrawn and on restart; evidence arrival or report lexical order does not allocate child names. A legacy broad follow-up category applies only to its compatibility child, never every same-kind need. Replays do not duplicate active children; corrections append `review`/`withdrawn` child projections, not deletion.
+
+Both treatment and surveillance clocks start at their source colonoscopy day. Treatment retains the existing 31-working-day UAE business-day rule; surveillance uses only the documented interval, including existing day conversions (year=365, month=30). No new clinical thresholds or deadlines are introduced. Gastroenterology/specialist tracking ends at trusted acceptance/first appointment after that obligation's confirmation, not treatment completion. New CRC signatures persist `clinical_day` for restart-safe follow-up gating; legacy signatures without it retain the conservative first-observation fallback.
+
+Parent `state:"closed"` remains a screening compatibility projection for confirmed MDT/surveillance, but API `case.closed` is false while care is ongoing, blocked or unsigned. Singleton disposition/signature fields remain available; multiple obligations must be consumed as a collection. The UI names ongoing care explicitly and offers separate item-specific confirmation choices, never generic adequacy as a substitute.
+
+These are **simulated care-tracking records only**. The MDT item does not dispatch a referral, and no child claims appointment scheduling, treatment delivery, a live feed, or clinical effectiveness. Communication evidence likewise uses only the current `completed` FHIR revision; newer withdrawals remove earlier effects while raw history remains append-only.
 
 ### Synthetic patient self-service
 
@@ -285,6 +328,7 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
   - a clinic outcome: `examined_treated`, `examined_followup`, `examined_discharged`, `not_examined`, `dna`, `not_assessable`.
   Anything else (for example `R9M0`, `R2M2`, or a lung label) is rejected with 400.
 - On `lung_ldct` cases the evidence decision can be an LDCT label (same clinician role): `LR0`–`LR4X` or a work-up label `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`. A label of another programme (for example `B4`) is rejected with 400.
+- On a CRC `crc_disposition` item, the evidence decision must be the exact signed proposal: `mdt`, `surveillance:<days>`, `gastroenterology`, `specialist`, or `normal_after_suspicion`. These labels are rejected on other items; generic `adequate` cannot activate a CRC disposition.
 - `confirm_contact` needs one allowed to record consent (coordinator, clinician).
 
 **Response codes:**

@@ -76,7 +76,7 @@ type Event struct {
 	RType         string      `json:"rtype"`
 	Status        string      `json:"status,omitempty"`
 	ConsentStatus string      `json:"consent_status,omitempty"` // Consent lifecycle; Status remains provision.type
-	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Consent and tracking ServiceRequest revision ordering (legacy requests: zero reads as one)
+	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Communication, Consent and tracking ServiceRequest revision/withdrawal ordering (legacy requests: zero reads as one)
 	Day           float64     `json:"day"`
 	Name          string      `json:"name"`
 	Dob           string      `json:"dob,omitempty"`
@@ -88,10 +88,11 @@ type Event struct {
 	ReportID      string      `json:"report,omitempty"`
 	ReportVersion int         `json:"report_version,omitempty"` // Communication prep thread -> DiagnosticReport version; zero/one share the legacy key
 	Text          string      `json:"text,omitempty"`
-	PrefLang      string      `json:"lang,omitempty"`  // Patient.communication preferred language at this provider
-	Category      string      `json:"cat,omitempty"`   // Communication.category | DiagnosticReport kind (colonoscopy|pathology)
-	Template      string      `json:"tpl,omitempty"`   // Communication template id (extension)
-	CommLang      string      `json:"clang,omitempty"` // Communication.language
+	PrefLang      string      `json:"lang,omitempty"`      // Patient.communication preferred language at this provider
+	Category      string      `json:"cat,omitempty"`       // Communication.category | DiagnosticReport kind (colonoscopy|pathology)
+	FollowUp      string      `json:"follow_up,omitempty"` // typed CRC downstream care, independent of referral-intake classification
+	Template      string      `json:"tpl,omitempty"`       // Communication template id (extension)
+	CommLang      string      `json:"clang,omitempty"`     // Communication.language
 	Channel       string      `json:"chan,omitempty"`
 	Reason        string      `json:"reason,omitempty"` // Task.statusReason (referral response)
 	Recipient     string      `json:"rcpt,omitempty"`   // Communication recipient unit (e-consult question: the unit asked)
@@ -117,6 +118,7 @@ type Event struct {
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
 type CommFact struct {
 	ID            string  `json:"id"`
+	Version       int     `json:"ver,omitempty"` // current Communication.meta.versionId; zero/one are legacy-compatible
 	Day           float64 `json:"day"`
 	Category      string  `json:"cat"`
 	Template      string  `json:"tpl,omitempty"`
@@ -126,7 +128,8 @@ type CommFact struct {
 	Status        string  `json:"status"`
 	Parse         string  `json:"parse,omitempty"`
 	Sha           string  `json:"tsha,omitempty"`
-	Report        string  `json:"rep,omitempty"` // prep-query thread: the colonoscopy report the query is about
+	RevisionSha   string  `json:"revision_sha,omitempty"` // normalized same-version conflict detection, including unprojected payload
+	Report        string  `json:"rep,omitempty"`          // prep-query thread: the colonoscopy report the query is about
 	ReportVersion int     `json:"report_version,omitempty"`
 	Grade         string  `json:"grade,omitempty"`  // prep-reply: adequate|inadequate|cannot_determine (structured, not free text)
 	Action        string  `json:"action,omitempty"` // handoff-reply: what the referrer did (re_referred)
@@ -146,6 +149,8 @@ type Signoff struct {
 	Evidence      string    `json:"evidence,omitempty"`       // adequate|inadequate
 	Reviewer      string    `json:"reviewer"`
 	SignedHead    string    `json:"signed_head"`
+	ClinicalDay   *float64  `json:"clinical_day,omitempty"`  // CRC confirmation's event clock, persisted for restart-safe follow-up gating
+	ObligationID  string    `json:"obligation_id,omitempty"` // persistent CRC need identity, including after source withdrawal
 	Run           string    `json:"run"`
 	// v6 governance fields (omitempty keeps v5 sign-offs byte-identical)
 	Role      string   `json:"role,omitempty"`    // RBAC role of the signing actor
@@ -198,6 +203,7 @@ type DownFact struct {
 	Parent   string      `json:"parent,omitempty"`   // explicitly linked parent DiagnosticReport id
 	Relation string      `json:"relation,omitempty"` // urn:wsi:addendum-to | urn:wsi:repeat-of
 	Prog     string      `json:"prog,omitempty"`
+	FollowUp string      `json:"follow_up,omitempty"` // typed CRC downstream referral/appointment category
 	Ev       *TwoVerdict `json:"evv,omitempty"`
 	Strength float64     `json:"strength"`
 	Weak     Edge        `json:"weak"`
@@ -279,6 +285,8 @@ func evidenceReviewItemID(loopID, reportID string, version int, purpose string) 
 	key := reportVersionKey(reportID, version)
 	if purpose == OverrideConfirm {
 		key += "#confirm"
+	} else if purpose == CRCDispositionPurpose {
+		key += "#crc-disposition"
 	} else if suffix := pilotKey(purpose); suffix != "" {
 		key += suffix
 	}
@@ -374,8 +382,9 @@ type ReviewItem struct {
 	Head           string    `json:"head"`
 	InSeq          uint64    `json:"in_seq"`
 	OverdueAtRaise bool      `json:"overdue"`
-	Reason         string    `json:"reason,omitempty"` // v7: second_identifier (outreach guard confirmation)
-	Day            float64   `json:"day,omitempty"`    // pilot items (shadow_confirm, auto_audit): simulated day raised
+	ObligationID   string    `json:"obligation_id,omitempty"` // CRC: exactly one source-bound care need
+	Reason         string    `json:"reason,omitempty"`        // v7: second_identifier (outreach guard confirmation)
+	Day            float64   `json:"day,omitempty"`           // pilot items (shadow_confirm, auto_audit): simulated day raised
 }
 
 type Decision struct {
@@ -422,6 +431,7 @@ type Decision struct {
 	Handoff         *HandoffPacket      `json:"handoff,omitempty"`        // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened   bool                `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
 	Ifhas           *IfhasDecision      `json:"ifhas,omitempty"`          // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
+	CRC             *CRCDecision        `json:"crc,omitempty"`            // CRC post-procedure disposition and owned downstream tracking (crc.go)
 	Inactive        bool                `json:"inactive,omitempty"`       // non-clinical retirement of the current tracking request
 	RequestStatus   string              `json:"request_status,omitempty"`
 	RequestVersion  int                 `json:"request_version,omitempty"`
