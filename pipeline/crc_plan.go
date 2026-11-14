@@ -85,7 +85,7 @@ func crcChildIDForNeed(f *LoopFacts, disposition, needID string) string {
 					procedure := d
 					if d.Parent != "" {
 						for _, parent := range f.Down {
-							if parent.ReportID == d.Parent {
+							if parent.RType == "DiagnosticReport" && (d.Parent == parent.Provider+"/DiagnosticReport/"+parent.ReportID || d.Parent == parent.ReportID && d.Provider == parent.Provider) {
 								procedure = parent
 								break
 							}

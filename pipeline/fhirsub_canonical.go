@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -712,57 +713,125 @@ func (r canonicalSourceRecord) validate(key string) error {
 
 // Header-like maps keep case-distinct keys; every other object rejects names that
 // the typed decoder would fold together.
-func canonicalWalkJSON(dec *json.Decoder, exact bool) error {
-	tok, err := dec.Token()
-	if err != nil {
-		return err
+// Fixed schema vocabulary only: never cache input records, bodies or arbitrary
+// user-supplied names. Unknown/case-variant keys retain full Unicode folding.
+var canonicalJSONFieldFolds = func() map[string]string {
+	names := strings.Fields("Subject FullID BodySHA256 BodyLength Stream Created Incarnation End Covered IndexDigest EffectiveSub Num Provider Focus Occurred PendingKey Identity OriginSub OriginPendingSHA256 OriginRevision BindingRule OriginKnown ID Number ExpectedLast Prefix FrozenApplicationHeaders WireHeaders SourceKey Version ProjectionVersion Sequence HeaderSHA256 OriginalWsi TimeStamp Kind AttemptID ObservedAck RequestedSequence ReadTransport DirectEnvelope Core Fingerprint Evidence Phase Attempt Receipt Source CellKey CoreFingerprint Relation Duplicate Domain Value sub hwm eof")
+	out := make(map[string]string, len(names))
+	for _, name := range names {
+		out[name] = foldJSONName(name)
 	}
-	d, ok := tok.(json.Delim)
-	if !ok {
-		return nil
+	return out
+}()
+
+func canonicalJSONFold(name string) string {
+	if folded, ok := canonicalJSONFieldFolds[name]; ok {
+		return folded
 	}
-	if d == '[' {
-		for dec.More() {
-			if err := canonicalWalkJSON(dec, exact); err != nil {
-				return err
+	return foldJSONName(name)
+}
+
+var canonicalExactJSONMaps = map[string]bool{
+	foldJSONName("FrozenApplicationHeaders"): true,
+	foldJSONName("WireHeaders"):              true,
+	foldJSONName("OriginalWsi"):              true,
+}
+
+// Syntax is checked once by encoding/json. Walk only structural bytes here:
+// Decoder.Token allocates a token/interface for every scalar on every repeated
+// metadata validation, dominating the protected synchronous overflow path.
+// Object keys still use the exact same Unicode folding and decoded-string
+// semantics; raw resource/header values are never normalized or reconstructed.
+func canonicalUniqueJSON(raw []byte) error {
+	if !json.Valid(raw) {
+		return fmt.Errorf("invalid JSON")
+	}
+	i := 0
+	space := func() {
+		for i < len(raw) && (raw[i] == ' ' || raw[i] == '\n' || raw[i] == '\r' || raw[i] == '\t') {
+			i++
+		}
+	}
+	quoted := func() []byte {
+		start := i
+		i++
+		for raw[i] != '"' {
+			if raw[i] == '\\' {
+				i++
+			}
+			i++
+		}
+		i++
+		return raw[start:i]
+	}
+	var walk func(bool) error
+	walk = func(exact bool) error {
+		space()
+		switch raw[i] {
+		case '{':
+			i++
+			space()
+			seen := map[string]bool{}
+			for raw[i] != '}' {
+				keyRaw := quoted()
+				key := string(keyRaw[1 : len(keyRaw)-1])
+				if bytes.IndexByte(keyRaw, '\\') >= 0 || !utf8.Valid(keyRaw) {
+					if err := json.Unmarshal(keyRaw, &key); err != nil {
+						return err
+					}
+				}
+				folded := canonicalJSONFold(key)
+				name := key
+				if !exact {
+					name = folded
+				}
+				if seen[name] {
+					return fmt.Errorf("%w: duplicate JSON key %q", errCanonicalInvalid, key)
+				}
+				seen[name] = true
+				space()
+				i++ // colon, already syntax-validated
+				if err := walk(exact || canonicalExactJSONMaps[folded]); err != nil {
+					return err
+				}
+				space()
+				if raw[i] == ',' {
+					i++
+					space()
+				}
+			}
+			i++
+		case '[':
+			i++
+			space()
+			for raw[i] != ']' {
+				if err := walk(exact); err != nil {
+					return err
+				}
+				space()
+				if raw[i] == ',' {
+					i++
+					space()
+				}
+			}
+			i++
+		case '"':
+			quoted()
+		default:
+			for i < len(raw) && raw[i] != ',' && raw[i] != ']' && raw[i] != '}' && raw[i] != ' ' && raw[i] != '\n' && raw[i] != '\r' && raw[i] != '\t' {
+				i++
 			}
 		}
-		_, err = dec.Token()
-		return err
+		return nil
 	}
-	seen := map[string]bool{}
-	for dec.More() {
-		kt, err := dec.Token()
-		if err != nil {
-			return err
-		}
-		k, _ := kt.(string)
-		name := k
-		if !exact {
-			name = foldJSONName(k)
-		}
-		if seen[name] {
-			return fmt.Errorf("%w: duplicate JSON key %q", errCanonicalInvalid, k)
-		}
-		seen[name] = true
-		child := exact
-		switch foldJSONName(k) {
-		case foldJSONName("FrozenApplicationHeaders"), foldJSONName("WireHeaders"), foldJSONName("OriginalWsi"):
-			child = true
-		}
-		if err := canonicalWalkJSON(dec, child); err != nil {
-			return err
-		}
-	}
-	_, err = dec.Token()
-	return err
+	return walk(false)
 }
 
 func canonicalStrictDecode(raw []byte, v any, rejectUnknown bool) error {
 	if len(bytes.TrimSpace(raw)) == 0 {
 		return fmt.Errorf("%w: empty value", errCanonicalInvalid)
 	}
-	if err := canonicalWalkJSON(json.NewDecoder(bytes.NewReader(raw)), false); err != nil {
+	if err := canonicalUniqueJSON(raw); err != nil {
 		return fmt.Errorf("%w: %v", errCanonicalInvalid, err)
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))

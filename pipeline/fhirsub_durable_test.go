@@ -402,7 +402,7 @@ func TestDurablePendingRecoveryRestartsReorderAndOverflow(t *testing.T) {
 		for n := int64(2); n <= maxSubscriptionReorder+1; n++ {
 			first.buf[n] = &subEvent{Num: n}
 		}
-		overflow := &subEvent{Num: maxSubscriptionReorder + 2, Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
+		overflow := &subEvent{Num: maxSubscriptionReorder + 2, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
 		if err := first.absorb(StatusInfo{Type: "event-notification", EventsSince: overflow.Num}, []*subEvent{overflow}, "test"); err != nil {
 			t.Fatal(err)
 		}
@@ -478,7 +478,7 @@ func TestSubscriptionReorderOverflowRemainsDurablePending(t *testing.T) {
 	for n := int64(2); n <= maxSubscriptionReorder+1; n++ {
 		c.buf[n] = &subEvent{Num: n}
 	}
-	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
+	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
 	c.absorb(StatusInfo{Type: "event-notification", EventsSince: overflow.Num}, []*subEvent{overflow}, "test")
 
 	entry, err := c.kv.Get(env.ctx, "pending.00000000000000004098")
@@ -547,7 +547,7 @@ func TestGapFillReplaysDurableOverflowWithoutInbox(t *testing.T) {
 	for n := int64(2); n <= maxSubscriptionReorder+1; n++ {
 		c.buf[n] = &subEvent{Num: n, Body: []byte(fmt.Sprintf(`{"resourceType":"DiagnosticReport","id":"r%d","meta":{"source":"urn:ae:provider:p1"}}`, n))}
 	}
-	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
+	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/durable-r4098/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r4098","meta":{"source":"urn:ae:provider:p1"}}`)}
 	if err := c.absorb(StatusInfo{Type: "event-notification", EventsSince: overflow.Num}, []*subEvent{overflow}, "test"); err != nil {
 		t.Fatal(err)
 	}
@@ -1246,7 +1246,7 @@ func TestLegacyPendingUsesLegacyCheckpointSubscription(t *testing.T) {
 	}
 	putDurableTestCheckpoint(t, c.kv, checkpointKey("sub-a"), "sub-a", 5, false)
 	putDurableTestCheckpoint(t, c.kv, "checkpoint", "sub-b", 2, false)
-	body, _ := json.Marshal(&subEvent{Num: 3, Focus: "DiagnosticReport/legacy-r3/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"legacy-r3","meta":{"source":"urn:ae:provider:p2"}}`)})
+	body, _ := json.Marshal(&subEvent{Num: 3, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/legacy-r3/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"legacy-r3","meta":{"source":"urn:ae:provider:p2"}}`)})
 	if _, err := c.kv.Put(env.ctx, pendingEventKey(3), body); err != nil {
 		t.Fatal(err)
 	}
@@ -1580,7 +1580,7 @@ func TestRecoverPendingClearsAlreadyAcknowledgedRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.subID = "cleanup"
-	body, err := json.Marshal(&subEvent{Num: 1, Focus: "DiagnosticReport/durable-r1/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r1","meta":{"source":"urn:ae:provider:p1"}}`)})
+	body, err := json.Marshal(&subEvent{Num: 1, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/durable-r1/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r1","meta":{"source":"urn:ae:provider:p1"}}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1779,8 +1779,8 @@ func (k *pendingOwnerKV) liveAndScans() (int, int) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	var live int
-	for _, e := range k.entries {
-		if e.op != jetstream.KeyValueDelete {
+	for key, e := range k.entries {
+		if strings.HasPrefix(key, "pending.") && e.op != jetstream.KeyValueDelete {
 			live++
 		}
 	}
@@ -1792,6 +1792,7 @@ type pendingOwnerJS struct {
 	seenKV  *pendingOwnerKV
 	mu      sync.Mutex
 	stored  []*nats.Msg
+	ids     map[string]uint64
 	entered chan struct{}
 	release chan struct{}
 	once    sync.Once
@@ -1801,12 +1802,97 @@ func (j *pendingOwnerJS) CreateOrUpdateKeyValue(context.Context, jetstream.KeyVa
 	return j.seenKV, nil
 }
 
-func (j *pendingOwnerJS) PublishMsg(ctx context.Context, msg *nats.Msg, _ ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
+// These transport adapters expose positive stored history and the actual option
+// semantics. They do not supply canonical receipts or source/checkpoint proofs.
+type pendingOwnerStream struct {
+	jetstream.Stream
+	js *pendingOwnerJS
+}
+type pendingOwnerHistory struct{ js *pendingOwnerJS }
+
+func (j *pendingOwnerJS) Conn() *nats.Conn { return nil }
+func (j *pendingOwnerJS) Stream(ctx context.Context, name string) (jetstream.Stream, error) {
+	if name != "FHIR" {
+		return nil, jetstream.ErrStreamNotFound
+	}
+	return &pendingOwnerStream{js: j}, ctx.Err()
+}
+func (s *pendingOwnerStream) Info(ctx context.Context, _ ...jetstream.StreamInfoOpt) (*jetstream.StreamInfo, error) {
+	return (pendingOwnerHistory{js: s.js}).Info(ctx)
+}
+func (h pendingOwnerHistory) Info(ctx context.Context) (*jetstream.StreamInfo, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	h.js.mu.Lock()
+	defer h.js.mu.Unlock()
+	n := uint64(len(h.js.stored))
+	first := uint64(0)
+	if n > 0 {
+		first = 1
+	}
+	return &jetstream.StreamInfo{Config: jetstream.StreamConfig{Name: "FHIR"}, Created: cfkCreated, State: jetstream.StreamState{FirstSeq: first, LastSeq: n, Msgs: n}}, nil
+}
+func (h pendingOwnerHistory) Read(ctx context.Context, q uint64) (*jetstream.RawStreamMsg, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	h.js.mu.Lock()
+	defer h.js.mu.Unlock()
+	if q == 0 || q > uint64(len(h.js.stored)) {
+		return nil, jetstream.ErrMsgNotFound
+	}
+	m := h.js.stored[q-1]
+	return &jetstream.RawStreamMsg{Subject: m.Subject, Sequence: q, Header: canonicalCopyHeader(m.Header), Data: bytes.Clone(m.Data), Time: cfkCreated.Add(time.Duration(q))}, nil
+}
+func (j *pendingOwnerJS) PublishMsg(ctx context.Context, msg *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	// Use the pinned client's actual option setters, including expected zero.
+	var expected *uint64
+	for _, opt := range opts {
+		fn := reflect.ValueOf(opt)
+		arg := reflect.New(fn.Type().In(0).Elem())
+		out := fn.Call([]reflect.Value{arg})
+		if len(out) != 1 || !out[0].IsNil() {
+			return nil, fmt.Errorf("invalid publication option")
+		}
+		fields := arg.Elem()
+		stream := fields.FieldByName("stream")
+		if stream.IsValid() && stream.String() != "" {
+			if stream.String() != "FHIR" {
+				return nil, fmt.Errorf("wrong expected stream")
+			}
+			msg.Header.Set("Nats-Expected-Stream", stream.String())
+		}
+		seq := fields.FieldByName("lastSeq")
+		if seq.IsValid() && !seq.IsNil() {
+			n := seq.Elem().Uint()
+			expected = &n
+			msg.Header.Set("Nats-Expected-Last-Sequence", strconv.FormatUint(n, 10))
+		}
+	}
 	header := make(nats.Header, len(msg.Header))
 	for key, values := range msg.Header {
 		header[key] = append([]string(nil), values...)
 	}
 	j.mu.Lock()
+	if expected != nil && *expected != uint64(len(j.stored)) {
+		j.mu.Unlock()
+		return nil, &jetstream.APIError{Code: 400, ErrorCode: 10071, Description: "wrong last sequence"}
+	}
+	if j.ids == nil {
+		j.ids = map[string]uint64{}
+	}
+	id := msg.Header.Get(jetstream.MsgIDHeader)
+	if old := j.ids[id]; id != "" && old > 0 {
+		j.mu.Unlock()
+		return &jetstream.PubAck{Stream: "FHIR", Sequence: old, Duplicate: true}, nil
+	}
+	if id != "" {
+		j.ids[id] = uint64(len(j.stored) + 1)
+	}
 	j.stored = append(j.stored, &nats.Msg{Subject: msg.Subject, Header: header, Data: bytes.Clone(msg.Data)})
 	sequence := uint64(len(j.stored))
 	j.mu.Unlock()
@@ -1873,6 +1959,7 @@ func newPendingOwnerConsumer(t *testing.T) (*SubConsumer, *pendingOwnerKV, *pend
 	// sized for this bounded max-reorder-plus-two synthetic schedule.
 	c.provCh = map[string]chan *subEvent{"p1": make(chan *subEvent, maxSubscriptionReorder+2)}
 	c.seen = openSeen(js)
+	c.canonicalIndex.transport = pendingOwnerHistory{js: js}
 	return c, kv, js
 }
 
@@ -1884,6 +1971,14 @@ func pendingOwnerStartPublisher(t *testing.T, c *SubConsumer, js *pendingOwnerJS
 		c.publisher("p1", c.provCh["p1"])
 	}()
 	t.Cleanup(func() {
+		if t.Failed() {
+			c.mu.Lock()
+			for p, w := range c.providerHeads {
+				t.Logf("held provider=%s event=%d blocker=%s inflight=%v returned=%v", p, w.event.Num, w.blocker, w.inflight, w.returnApplied)
+			}
+			t.Logf("next=%d hwm=%d queue=%d", c.next, c.ackHWM, len(c.knownWork))
+			c.mu.Unlock()
+		}
 		js.unblock()
 		close(c.provCh["p1"])
 		pendingOwnerBarrier(t, "publisher exit", done)
@@ -3381,15 +3476,12 @@ func (k *pendingRepairKV) Delete(ctx context.Context, key string, opts ...jetstr
 
 type pendingRepairJS struct {
 	*pendingOwnerJS
-	duplicate bool
 }
 
 func (j *pendingRepairJS) PublishMsg(ctx context.Context, m *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
-	ack, err := j.pendingOwnerJS.PublishMsg(ctx, m, opts...)
-	if err == nil {
-		ack.Duplicate = j.duplicate
-	}
-	return ack, err
+	// Duplicate disposition must come from actual prior stored transport state,
+	// never append a fresh message and relabel its ACK as duplicate.
+	return j.pendingOwnerJS.PublishMsg(ctx, m, opts...)
 }
 
 func pendingRepairAdmit(t *testing.T, c *SubConsumer, sub string, n int64) {
@@ -3652,7 +3744,10 @@ func TestPendingRepairScanReceiptLifetime(t *testing.T) {
 					}
 				}
 			}
-			kv.getResult = func(_ string, entry jetstream.KeyValueEntry, err error) (jetstream.KeyValueEntry, error) {
+			kv.getResult = func(key string, entry jetstream.KeyValueEntry, err error) (jetstream.KeyValueEntry, error) {
+				if !strings.HasPrefix(key, "pending.") {
+					return entry, err
+				}
 				if mode == "get-error" {
 					return nil, sentinel
 				}
@@ -3837,7 +3932,16 @@ func TestPendingRepairFreshDuplicateAndReplayProof(t *testing.T) {
 	for _, mode := range []string{"fresh", "duplicate", "seen-replay"} {
 		t.Run(mode, func(t *testing.T) {
 			c, kv, js := newPendingOwnerConsumer(t)
-			c.js = &pendingRepairJS{pendingOwnerJS: js, duplicate: mode == "duplicate"}
+			c.js = &pendingRepairJS{pendingOwnerJS: js}
+			if mode == "duplicate" {
+				js.unblock()
+				prior := nats.NewMsg("fhir.p1.res")
+				prior.Data = []byte(`{"different":"original"}`)
+				prior.Header.Set(jetstream.MsgIDHeader, "p1/DiagnosticReport/pending-owner-p1-r1/v1")
+				if _, err := js.PublishMsg(context.Background(), prior); err != nil {
+					t.Fatal(err)
+				}
+			}
 			if mode == "seen-replay" {
 				id := "p1/DiagnosticReport/pending-owner-p1-r1/v1"
 				if _, err := js.seenKV.Put(context.Background(), seenKey(id), []byte("done")); err != nil {
@@ -3876,6 +3980,9 @@ func TestPendingRepairFreshDuplicateAndReplayProof(t *testing.T) {
 				t.Fatal("below-HWM recovery did not retain unknown tracked publication proof")
 			}
 			after := kv.snapshot(w.event.Key)
+			if atomic.LoadInt64(&c.pubDup) != 0 || atomic.LoadInt64(&c.replays) != 1 {
+				t.Fatal("history-first suppression was mislabeled as an actual duplicate ACK")
+			}
 			c.mu.Lock()
 			defer c.mu.Unlock()
 			if w.published || w.completed || w.active || c.work[1] != w || !c.pending[1] || c.ackHWM != 1 || after.revision != before.revision || !bytes.Equal(after.body, before.body) {

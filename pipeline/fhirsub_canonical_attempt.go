@@ -192,6 +192,12 @@ func (c *SubConsumer) canonicalAttemptSource(ctx context.Context, w *canonicalAt
 // Known exact-q retries each get at most one turn before a current captured head.
 // New failed q work is deferred, never silently rescanned or counted complete.
 func (c *SubConsumer) canonicalAttemptHistory(ctx context.Context, id canonicalIdentity) (canonicalHistoryResult, error) {
+	c.mu.Lock()
+	owned := c.knownTasks != nil
+	c.mu.Unlock()
+	if owned {
+		return c.canonicalHistory(ctx, id, 0)
+	}
 	for _, task := range c.canonicalHistoryTasks() {
 		if task.Kind == "sequence-retry" && task.Token == 0 {
 			_ = c.retryCanonicalSequence(ctx, task.CaptureGeneration, task.Sequence)
@@ -358,6 +364,9 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 			if err := compareCanonicalReceipts(*cell.Receipt, *w.result.Proof); err != nil {
 				return blocked(w.result, err)
 			}
+		}
+		if ack := w.result.ObservedAck; ack != nil && w.result.Returned && (ack.Stream != cell.Receipt.Core.Incarnation.Stream || ack.Sequence != cell.Receipt.Core.Sequence) {
+			return blocked(w.result, canonicalConflictf("receipt differs from the retained actual publication ACK"))
 		}
 		if !w.result.Returned {
 			w.result = canonicalResult{Wire: canonicalWireNotSent, Returned: true, ReturnKind: canonicalReturnReplay, Proof: cell.Receipt}

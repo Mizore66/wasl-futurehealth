@@ -50,6 +50,7 @@ type subEvent struct {
 	Key      string `json:"-"`
 	Revision uint64 `json:"-"`
 	work     *pendingWork
+	origin   *pendingOrigin // exact positive source observation, never serialized
 }
 
 // A generation is attached only after acknowledged durable admission/claim.
@@ -64,6 +65,21 @@ type pendingWork struct {
 	published     bool // this generation's fresh, nonduplicate canonical return
 	completed     bool // nil LastRevision Delete, not a negative observation
 	attempt       uint64
+	state         *subscriptionState
+	origin        pendingOrigin
+	canonical     *canonicalAttemptWork
+	message       *nats.Msg // frozen once by the actual retained provider head
+	result        canonicalAttemptTurn
+	floor         checkpointReceipt
+	returnApplied bool
+	providerOwned bool
+	inflight      bool
+	queued        bool
+	cleanupRetry  bool
+	cleanupRev    uint64 // reacquired authority; event.Revision stays immutable
+	claimIntent   []byte // retained exact recovery-claim intent across an unknown Update
+	recovery      bool   // explicit validated below-HWM recovery, not a cleanup claim
+	blocker       string
 }
 
 // replayMu permits one scan. Reserve its lifetime before any List/Get so that
@@ -87,6 +103,10 @@ type subscriptionState struct {
 	filling         bool
 	acked           map[int64]bool
 	ackHWM          int64
+	floor           checkpointReceipt
+	holes           map[*pendingWork]bool
+	holeCounts      map[int64]int
+	holePositions   pendingPositions
 }
 
 type SubConsumer struct {
@@ -105,7 +125,16 @@ type SubConsumer struct {
 	subscriptionState // default state retains the existing single-subscription test/status surface
 	subscriptions     map[string]*subscriptionState
 
-	canonicalIndex canonicalHistoryIndex // private, zero-initialized; not connected to the live publisher
+	canonicalIndex      canonicalHistoryIndex
+	knownWork           []canonicalTask
+	knownTasks          map[canonicalTask]bool
+	serviceActive       bool
+	providerHeads       map[string]*pendingWork
+	pendingOperations   map[pendingPosition]uint64
+	operation           uint64
+	discoveryComplete   bool
+	eofBusy             bool
+	eofControlsReturned bool
 
 	mu        sync.Mutex
 	replayMu  sync.Mutex // serializes pending writes and durable pending scans in this instance
@@ -577,10 +606,11 @@ func (c *SubConsumer) endPendingScan(epoch *pendingScan) {
 	defer c.mu.Unlock()
 	for _, works := range epoch.completed {
 		for _, w := range works {
-			s := c.existingStateLocked(w.event.Sub)
+			s := w.state
 			if s != nil && s.work[w.event.Num] == w {
 				delete(s.work, w.event.Num)
 			}
+			releasePendingBodyLocked(w)
 		}
 	}
 	if c.scan == epoch {
@@ -599,7 +629,15 @@ func (c *SubConsumer) rememberPendingLocked(s *subscriptionState, e *subEvent, l
 	identity := *e
 	identity.Body = bytes.Clone(e.Body)
 	identity.work = nil
-	w := &pendingWork{event: identity, local: local, legacyBinding: c.pendingLegacyBindingLocked(s, e.Key, e.Num)}
+	origin := pendingOrigin{Sub: e.Sub, Revision: e.Revision}
+	origin.Raw, _ = json.Marshal(e)
+	if e.origin != nil {
+		origin = *e.origin
+		origin.Raw = bytes.Clone(origin.Raw)
+	}
+	w := &pendingWork{event: identity, state: s, origin: origin, local: local, legacyBinding: c.pendingLegacyBindingLocked(s, e.Key, e.Num)}
+	w.event.origin = nil
+	c.addPendingHoleLocked(s, w)
 	if s.work == nil {
 		s.work = map[int64]*pendingWork{}
 	}
@@ -653,6 +691,9 @@ func (c *SubConsumer) recoverPending() error {
 			return err
 		}
 	}
+	c.mu.Lock()
+	c.discoveryComplete = true
+	c.mu.Unlock()
 	return nil
 }
 
@@ -704,7 +745,10 @@ func (c *SubConsumer) pendingEntries(filter string) ([]pendingEntry, error) {
 
 func decodePendingEntry(key string, entry jetstream.KeyValueEntry) (*subEvent, error) {
 	var e subEvent
-	if err := json.Unmarshal(entry.Value(), &e); err != nil || e.Num <= 0 || len(e.Body) == 0 {
+	if entry == nil || entry.Key() != key || entry.Revision() == 0 || entry.Operation() != jetstream.KeyValuePut {
+		return nil, fmt.Errorf("invalid positive pending operation %q", key)
+	}
+	if err := canonicalStrictDecode(entry.Value(), &e, true); err != nil || e.Num <= 0 || len(e.Body) == 0 {
 		return nil, fmt.Errorf("invalid durable pending record %q", key)
 	}
 	if e.Sub == "" && pendingEventKey(e.Num) != key {
@@ -713,6 +757,7 @@ func decodePendingEntry(key string, entry jetstream.KeyValueEntry) (*subEvent, e
 	if e.Sub != "" && (e.Provider == "" || pendingEventKeyFor(e.Sub, e.Num) != key && pendingEventKey(e.Num) != key) {
 		return nil, fmt.Errorf("durable pending identity does not match key %q", key)
 	}
+	e.origin = &pendingOrigin{Sub: e.Sub, Raw: bytes.Clone(entry.Value()), Revision: entry.Revision()}
 	return &e, nil
 }
 
@@ -747,16 +792,29 @@ func (c *SubConsumer) recoverPendingFor(ref string) error {
 }
 
 func (c *SubConsumer) claimPendingLocked(s *subscriptionState, e *subEvent, entry pendingEntry) (bool, error) {
-	e.Sub = s.ref
-	e.Owner = c.ensureInstanceIDLocked()
-	e.Key = entry.key
+	e.Sub, e.Owner, e.Key = s.ref, c.ensureInstanceIDLocked(), entry.key
+	var owned bool
+	err := c.pendingIOLocked(s, e.Num, func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if e.origin != nil && e.origin.Sub == "" && s.ref != "" {
+			if err := c.persistLegacyDescriptor(ctx, s, e, *e.origin); err != nil {
+				return err
+			}
+		}
+		var err error
+		owned, err = c.claimPendingIO(ctx, e, entry)
+		return err
+	})
+	return owned, err
+}
+
+func (c *SubConsumer) claimPendingIO(ctx context.Context, e *subEvent, entry pendingEntry) (bool, error) {
 	body, err := json.Marshal(e)
 	if err != nil {
 		return false, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	revision, err := c.kv.Update(ctx, entry.key, body, entry.entry.Revision())
-	cancel()
 	if errors.Is(err, jetstream.ErrKeyRevisionMismatch) || errors.Is(err, jetstream.ErrKeyNotFound) {
 		return false, nil
 	}
@@ -828,7 +886,7 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 			continue // exact old receipt, never clear a replacement's marker
 		}
 		if w := s.work[n]; w != nil {
-			if !w.local || !c.matchesPendingLocked(s, w, e) {
+			if !w.local || (!c.matchesPendingLocked(s, w, e) && !c.bindInactiveDefaultLegacyLocked(s, w, e, observations[n])) {
 				// Retain the positively observed replacement independently of
 				// the old publisher. This path never claims or deletes it.
 				c.rememberPendingLocked(s, e, false)
@@ -839,10 +897,22 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 				continue // exact acknowledged revision with a scheduling owner
 			}
 			if n < s.next {
+				// A known returned/unknown generation is serviced by its original
+				// operation owner, never reclaimed by a stale scan.
+				c.queueCanonicalLocked(canonicalTask{Kind: "work", Work: w})
 				c.mu.Unlock()
 				return fmt.Errorf("unresolved tracked publication for %s event %d", s.ref, n)
 			}
 		}
+		if n < s.next {
+			w := c.rememberPendingLocked(s, e, false)
+			w.recovery = true
+			e.work = w
+			c.queueCanonicalLocked(canonicalTask{Kind: "work", Work: w})
+			events[n], keys[n] = e, e.Key
+			continue // prove first; do not rewrite the only pending bytes
+		}
+		previous := s.work[n]
 		claimed, err := c.claimPendingLocked(s, e, observations[n])
 		if err != nil {
 			c.mu.Unlock()
@@ -855,6 +925,11 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 			continue
 		}
 		if n >= s.next {
+			// An acknowledged reserved admission claim replaces only the
+			// inactive, never-attempted scheduling generation it reserved.
+			if previous != nil && !previous.active && previous.canonical == nil {
+				c.completePendingHoleLocked(previous)
+			}
 			c.rememberPendingLocked(s, e, true)
 		}
 		events[n], keys[n] = e, e.Key
@@ -909,77 +984,34 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 	}
 	c.mu.Unlock()
 	for _, n := range stale {
-		if err := c.deletePending(s, events[n], keys[n]); err != nil {
-			return err
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		c.liveCanonicalTurn(ctx, events[n].work)
+		cancel()
 	}
 	return nil
 }
 
-// Only the original publisher owns this one Delete attempt. Unknown replay,
-// duplicate and ambiguous results remain pending; there is no retry service or
-// inference from HWM/SEEN/not-found. Recovery below HWM cannot mint this receipt.
+// All deletion goes through independent body/source/floor proof and exact owned
+// authority. No HWM, SEEN hint, owner equality or negative read is completion.
 func (c *SubConsumer) deleteTrackedPending(s *subscriptionState, e *subEvent) error {
-	c.mu.Lock()
-	w := e.work
-	if !w.published || w.completed {
-		c.mu.Unlock()
-		return nil
+	if e.work == nil {
+		return errCanonicalInvalid
 	}
-	w.attempt++
-	attempt, key, revision := w.attempt, w.event.Key, w.event.Revision
-	c.mu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	err := c.kv.Delete(ctx, key, jetstream.LastRevision(revision))
-	cancel()
+	defer cancel()
+	c.liveCanonicalTurn(ctx, e.work)
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if errors.Is(err, jetstream.ErrKeyRevisionMismatch) {
-		c.stats["pending_ownership_conflicts"]++
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if e.work != w || w.attempt != attempt {
-		return nil
-	}
-	w.completed, w.active = true, false
-	if s.work[w.event.Num] == w {
-		delete(s.pending, w.event.Num)
-		delete(s.pendingProvider, w.event.Num)
-	}
-	if c.scan != nil {
-		c.scan.completed[key] = append(c.scan.completed[key], w)
-	} else if s.work[w.event.Num] == w {
-		delete(s.work, w.event.Num)
+	if !e.work.completed {
+		return fmt.Errorf("pending retirement unresolved: %s", e.work.blocker)
 	}
 	return nil
 }
-
 func (c *SubConsumer) deletePending(s *subscriptionState, e *subEvent, key string) error {
-	if e.work != nil {
-		return c.deleteTrackedPending(s, e)
+	if e.work == nil || e.work.state != s || e.work.event.Key != key {
+		return errCanonicalInvalid
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	err := c.kv.Delete(ctx, key, jetstream.LastRevision(e.Revision))
-	cancel()
-	if errors.Is(err, jetstream.ErrKeyRevisionMismatch) {
-		c.mu.Lock()
-		c.stats["pending_ownership_conflicts"]++
-		c.mu.Unlock()
-		return nil
-	}
-	if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
-		return err
-	}
-	c.mu.Lock()
-	if e.Num < s.next || e.Num <= s.ackHWM {
-		delete(s.pending, e.Num)
-		delete(s.pendingProvider, e.Num)
-	}
-	c.mu.Unlock()
-	return nil
+	return c.deleteTrackedPending(s, e)
 }
 
 // absorb persists every event before inserting it into its subscription's reorder buffer and dispatching the contiguous prefix.
@@ -1114,91 +1146,97 @@ func samePendingPayload(a, b *subEvent) bool {
 }
 
 func (c *SubConsumer) validatePendingPayloadLocked(s *subscriptionState, e *subEvent) error {
-	key := pendingEventKeyFor(s.ref, e.Num)
-	for _, candidate := range []string{key, pendingEventKey(e.Num)} {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		entry, err := c.kv.Get(ctx, candidate)
-		cancel()
-		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		stored, err := decodePendingEntry(candidate, entry)
-		if err != nil {
-			return err
-		}
-		if !samePendingPayload(e, stored) {
-			return fmt.Errorf("conflicting dispatched event for %s event %d", s.ref, e.Num)
+	ref := s.ref
+	return c.pendingIOLocked(s, e.Num, func() error {
+		for _, key := range []string{pendingEventKeyFor(ref, e.Num), pendingEventKey(e.Num)} {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			entry, err := c.kv.Get(ctx, key)
+			cancel()
+			if errors.Is(err, jetstream.ErrKeyNotFound) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			stored, err := decodePendingEntry(key, entry)
+			if err != nil {
+				return err
+			}
+			if !samePendingPayload(e, stored) {
+				return fmt.Errorf("conflicting dispatched event for %s event %d", ref, e.Num)
+			}
+			return nil
 		}
 		return nil
-	}
-	return nil
+	})
 }
 
 func (c *SubConsumer) persistPendingLocked(s *subscriptionState, e *subEvent) (bool, error) {
 	if c.kv == nil {
 		return false, fmt.Errorf("durable pending store is unavailable")
 	}
-	e.Sub = s.ref
-	e.Owner = c.ensureInstanceIDLocked()
-	key := pendingEventKeyFor(s.ref, e.Num)
-	legacyKey := pendingEventKey(e.Num)
+	e.Sub, e.Owner = s.ref, c.ensureInstanceIDLocked()
+	key, legacyKey := pendingEventKeyFor(s.ref, e.Num), pendingEventKey(e.Num)
 	legacyBound := c.legacySubID == "" && s == &c.subscriptionState || c.legacySubID != "" && canonicalSubscriptionRef(c.legacySubID) == s.ref
-	if s.pending[e.Num] && key != legacyKey && legacyBound {
-		getCtx, getCancel := context.WithTimeout(context.Background(), 2*time.Second)
-		existing, err := c.kv.Get(getCtx, legacyKey)
-		getCancel()
-		if err == nil {
-			stored, err := decodePendingEntry(legacyKey, existing)
-			if err != nil {
-				return false, err
-			}
-			if stored.Sub == "" || canonicalSubscriptionRef(stored.Sub) == s.ref {
-				if !samePendingPayload(e, stored) {
-					return false, fmt.Errorf("conflicting legacy durable event for %s event %d", s.ref, e.Num)
+	inspectLegacy := s.pending[e.Num] && key != legacyKey && legacyBound
+	owned := false
+	err := c.pendingIOLocked(s, e.Num, func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if inspectLegacy {
+			existing, err := c.kv.Get(ctx, legacyKey)
+			if err == nil {
+				stored, err := decodePendingEntry(legacyKey, existing)
+				if err != nil {
+					return err
 				}
-				return c.claimPendingLocked(s, e, pendingEntry{key: legacyKey, entry: existing})
+				if stored.Sub == "" || canonicalSubscriptionRef(stored.Sub) == s.ref {
+					if !samePendingPayload(e, stored) {
+						return fmt.Errorf("conflicting legacy durable event for %s event %d", s.ref, e.Num)
+					}
+					e.Key, e.origin = legacyKey, stored.origin
+					var claimErr error
+					owned, claimErr = c.claimPendingIO(ctx, e, pendingEntry{key: legacyKey, entry: existing})
+					return claimErr
+				}
+			} else if !errors.Is(err, jetstream.ErrKeyNotFound) {
+				return err
 			}
 		}
-		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
-			return false, err
+		e.Key = key
+		raw, err := json.Marshal(e)
+		if err != nil {
+			return err
 		}
-	}
-	e.Key = key
-	body, err := json.Marshal(e)
-	if err != nil {
-		return false, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	revision, err := c.kv.Create(ctx, key, body)
-	cancel()
-	if err == nil {
-		if revision == 0 {
-			return false, fmt.Errorf("pending admission returned no revision")
+		revision, err := c.kv.Create(ctx, key, raw)
+		if err == nil {
+			if revision == 0 {
+				return fmt.Errorf("pending admission returned no revision")
+			}
+			e.Revision = revision
+			e.origin = &pendingOrigin{Sub: e.Sub, Raw: bytes.Clone(raw), Revision: revision}
+			owned = true
+			return nil
 		}
-		e.Revision = revision
-		return true, nil
-	}
-	if !errors.Is(err, jetstream.ErrKeyExists) {
-		return false, fmt.Errorf("persist %s event %d: %w", s.ref, e.Num, err)
-	}
-	getCtx, getCancel := context.WithTimeout(context.Background(), 2*time.Second)
-	existing, err := c.kv.Get(getCtx, key)
-	getCancel()
-	if err != nil {
-		return false, err
-	}
-	entry := pendingEntry{key: key, entry: existing}
-	stored, err := decodePendingEntry(key, existing)
-	if err != nil {
-		return false, err
-	}
-	if !samePendingPayload(e, stored) {
-		return false, fmt.Errorf("conflicting durable event for %s event %d", s.ref, e.Num)
-	}
-	return c.claimPendingLocked(s, e, entry)
+		if !errors.Is(err, jetstream.ErrKeyExists) {
+			return fmt.Errorf("persist %s event %d: %w", s.ref, e.Num, err)
+		}
+		existing, err := c.kv.Get(ctx, key)
+		if err != nil {
+			return err
+		}
+		stored, err := decodePendingEntry(key, existing)
+		if err != nil {
+			return err
+		}
+		if !samePendingPayload(e, stored) {
+			return fmt.Errorf("conflicting durable event for %s event %d", s.ref, e.Num)
+		}
+		e.origin = stored.origin
+		owned, err = c.claimPendingIO(ctx, e, pendingEntry{key: key, entry: existing})
+		return err
+	})
+	return owned, err
 }
 
 func pendingEventKey(n int64) string { return fmt.Sprintf("pending.%020d", n) }
@@ -1269,46 +1307,55 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 		for e.Num > s.ackHWM+PaceWindow {
 			c.paced.Wait()
 		}
-		c.mu.Unlock()
-		t, id, vid := splitFocus(e.Focus)
-		occ, _ := time.Parse(time.RFC3339Nano, e.Occurred)
-		arr := occ.Sub(baseTime).Seconds() / 86400
-		m := nats.NewMsg("fhir." + prov + ".res")
-		m.Data = e.Body
-		m.Header.Set(jetstream.MsgIDHeader, prov+"/"+t+"/"+id+"/v"+vid)
-		m.Header.Set("Wsi-Ots", strconv.FormatInt(time.Now().UnixNano(), 10))
-		m.Header.Set("Wsi-Arr", strconv.FormatFloat(arr, 'f', 6, 64))
-		m.Header.Set("Wsi-Evn", strconv.FormatInt(e.Num, 10))
-		dup, replay := c.seen.Publish(c.js, m)
-		if dup {
-			atomic.AddInt64(&c.pubDup, 1)
-		}
-		if replay {
-			atomic.AddInt64(&c.replays, 1)
-		}
-		atomic.AddInt64(&c.published, 1)
-		c.mu.Lock()
-		if e.work != nil {
-			e.work.published = !dup && !replay && c.matchesPendingLocked(s, e.work, e)
-		}
-		c.mu.Unlock()
-		if c.kv != nil {
-			key := e.Key
-			if key == "" {
-				key = pendingEventKeyFor(e.Sub, e.Num)
+		// Preserve the existing generic producer only for an untracked nil-store
+		// fixture/legacy producer. Tracked durable work can never bypass the engine.
+		if c.kv == nil && e.work == nil {
+			c.mu.Unlock()
+			e.Provider = prov
+			m := canonicalEventMessage(e)
+			dup, replay := c.seen.Publish(c.js, m)
+			if dup {
+				atomic.AddInt64(&c.pubDup, 1)
 			}
-			if err := c.deletePending(s, e, key); err != nil {
-				c.mu.Lock()
-				c.stats["pending_delete_errors"]++
-				c.mu.Unlock()
+			if replay {
+				atomic.AddInt64(&c.replays, 1)
 			}
+			atomic.AddInt64(&c.published, 1)
+			c.mu.Lock()
+			s.acked[e.Num] = true
+			c.advanceLocked(s)
+			c.mu.Unlock()
+			continue
 		}
+		w := e.work
+		if w == nil || w.state != s || !c.matchesPendingLocked(s, w, e) {
+			c.stats["pending_generation_errors"]++
+			c.mu.Unlock()
+			continue
+		}
+		if c.providerHeads == nil {
+			c.providerHeads = map[string]*pendingWork{}
+		}
+		c.providerHeads[prov] = w
+		w.providerOwned = true
+		if c.knownTasks == nil {
+			c.knownTasks = map[canonicalTask]bool{}
+		}
+		c.mu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		c.liveCanonicalTurn(ctx, w)
+		cancel()
 		c.mu.Lock()
-		if e.work != nil {
-			e.work.active = false
+		// Assistance owns progress while the exact head is held; a spurious wake
+		// cannot retry wire or dequeue a later provider event.
+		for !w.returnApplied {
+			c.paced.Wait()
 		}
-		s.acked[e.Num] = true
-		c.advanceLocked(s)
+		if c.providerHeads[prov] == w {
+			delete(c.providerHeads, prov)
+		}
+		w.providerOwned = false
+		w.active = false
 		c.mu.Unlock()
 	}
 }
@@ -1349,9 +1396,9 @@ func (c *SubConsumer) loadCheckpoints() error {
 		if err != nil {
 			return err
 		}
-		var cp subscriptionCheckpoint
-		if err := json.Unmarshal(entry.Value(), &cp); err != nil || cp.Sub == "" || cp.HWM < 0 {
-			return fmt.Errorf("invalid durable checkpoint %q", key)
+		cp, err := parseCheckpoint(key, entry)
+		if err != nil {
+			return fmt.Errorf("invalid durable checkpoint %q: %w", key, err)
 		}
 		c.mu.Lock()
 		s := c.stateForLocked(cp.Sub)
@@ -1387,47 +1434,21 @@ func (c *SubConsumer) saveCheckpoint() {
 func (c *SubConsumer) saveCheckpointFor(s *subscriptionState) {
 	c.mu.Lock()
 	ref := s.ref
-	cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(ref, "Subscription/"), HWM: s.ackHWM, Eof: s.eofSent}
+	ceiling := c.checkpointCeilingLocked(s)
+	cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(ref, "Subscription/"), HWM: ceiling, Eof: s.eofSent && len(s.holes) == 0 && c.discoveryComplete}
 	c.mu.Unlock()
-	if cp.Sub == "" || c.kv == nil {
+	if ref == "" || c.kv == nil {
 		return
 	}
-	b, _ := json.Marshal(cp)
-	key := checkpointKey(ref)
-	for attempt := 0; attempt < 5; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		existing, err := c.kv.Get(ctx, key)
-		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			_, err = c.kv.Create(ctx, key, b)
-			cancel()
-			if err == nil || errors.Is(err, jetstream.ErrKeyExists) {
-				continue
-			}
-			return
-		}
-		if err != nil {
-			cancel()
-			return
-		}
-		var stored subscriptionCheckpoint
-		if json.Unmarshal(existing.Value(), &stored) == nil && (stored.HWM > cp.HWM || stored.HWM == cp.HWM && stored.Eof && !cp.Eof) {
-			cancel()
-			return
-		}
-		_, err = c.kv.Update(ctx, key, b, existing.Revision())
-		cancel()
-		if err == nil {
-			return
-		}
-		if !errors.Is(err, jetstream.ErrKeyRevisionMismatch) {
-			return
-		}
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, _ = c.saveCheckpointReceipt(ctx, s, cp, "verified-position")
 }
 
 func (c *SubConsumer) checkpointLoop() {
 	for {
 		time.Sleep(200 * time.Millisecond)
+		_ = c.serviceKnownWork(context.Background())
 		c.saveCheckpoint()
 		c.maybeEOF()
 	}
@@ -1438,35 +1459,79 @@ func (c *SubConsumer) checkpointLoop() {
 func (c *SubConsumer) maybeEOF() {
 	c.mu.Lock()
 	states := c.statesLocked()
-	ready := len(states) > 0
-	var maxSeen int64
+	ready := c.discoveryComplete && !c.eofBusy && len(states) > 0
 	for _, s := range states {
-		if s.ref == "" || !s.feedOff || s.eofSent || s.maxSeen == 0 || s.ackHWM < s.maxSeen {
+		if s.ref == "" || !s.feedOff || s.maxSeen == 0 || s.ackHWM < s.maxSeen || len(s.holes) > 0 || len(s.pending) > 0 || s.filling {
 			ready = false
-			break
-		}
-		if s.maxSeen > maxSeen {
-			maxSeen = s.maxSeen
 		}
 	}
-	c.mu.Unlock()
-	if !ready {
+	allDone := true
+	for _, s := range states {
+		allDone = allDone && s.eofSent
+	}
+	if !ready || allDone {
+		c.mu.Unlock()
 		return
 	}
-	for _, pc := range Providers {
-		m := nats.NewMsg("fhir." + pc.ID + ".ctl")
-		m.Data = []byte(`{"eof":true}`)
-		m.Header.Set(jetstream.MsgIDHeader, pc.ID+"/eof")
-		m.Header.Set("Wsi-Arr", strconv.FormatFloat(TEnd, 'f', 6, 64))
-		pubSync(c.js, m)
-	}
-	c.mu.Lock()
-	for _, s := range states {
-		s.eofSent = true
-	}
+	c.eofBusy = true
+	c.operation++
+	token := c.operation
+	controlsReturned := c.eofControlsReturned
 	c.mu.Unlock()
-	c.saveCheckpoint()
-	fmt.Fprintf(os.Stderr, "fhirsub: all feeds complete through event %d, EOF published (%.1fs)\n", maxSeen, time.Since(c.start).Seconds())
+	defer func() {
+		c.mu.Lock()
+		c.eofBusy = false
+		if c.paced != nil {
+			c.paced.Broadcast()
+		}
+		c.mu.Unlock()
+	}()
+	if !controlsReturned {
+		for _, s := range states {
+			c.mu.Lock()
+			cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(s.ref, "Subscription/"), HWM: c.checkpointCeilingLocked(s)}
+			c.mu.Unlock()
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			r, err := c.saveCheckpointReceipt(ctx, s, cp, "verified-position")
+			cancel()
+			if err != nil || r.Coverage != "verified-position" || r.HWM < cp.HWM {
+				return
+			}
+		}
+	}
+	if !controlsReturned {
+		for _, pc := range Providers {
+			m := nats.NewMsg("fhir." + pc.ID + ".ctl")
+			m.Data = []byte(`{"eof":true}`)
+			m.Header.Set(jetstream.MsgIDHeader, pc.ID+"/eof")
+			m.Header.Set("Wsi-Arr", strconv.FormatFloat(TEnd, 'f', 6, 64))
+			pubSync(c.js, m) // unchanged control operation; only its real return qualifies
+		}
+		c.mu.Lock()
+		c.eofControlsReturned = true
+		c.mu.Unlock()
+	}
+	_ = token // eofBusy is the nonblocking operation reservation, released on all paths
+	for _, s := range states {
+		c.mu.Lock()
+		valid := len(s.holes) == 0 && len(s.pending) == 0 && s.ackHWM >= s.maxSeen
+		cp := subscriptionCheckpoint{Sub: strings.TrimPrefix(s.ref, "Subscription/"), HWM: c.checkpointCeilingLocked(s), Eof: true}
+		c.mu.Unlock()
+		if !valid {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		r, err := c.saveCheckpointReceipt(ctx, s, cp, "verified-position")
+		cancel()
+		if err != nil || r.Coverage != "verified-position" || !r.Eof || r.HWM < cp.HWM {
+			return
+		}
+		c.mu.Lock()
+		if len(s.holes) == 0 && len(s.pending) == 0 {
+			s.eofSent = true
+		}
+		c.mu.Unlock()
+	}
 }
 
 func (c *SubConsumer) pollStatus() {
@@ -1521,6 +1586,7 @@ func (c *SubConsumer) pollStatusFor(s *subscriptionState) {
 }
 
 func (c *SubConsumer) checkGap() {
+	_ = c.serviceKnownWork(context.Background())
 	c.mu.Lock()
 	if c.subscriptionState.ref == "" && c.subID != "" {
 		c.stateForLocked(c.subID)
@@ -1618,7 +1684,7 @@ func (c *SubConsumer) statusLoop() {
 			if state.ref == "" {
 				continue
 			}
-			done = done && state.eofSent
+			done = done && state.eofSent && c.discoveryComplete && len(state.holes) == 0 && len(state.pending) == 0
 			durablePending += int64(len(state.pending))
 			subscriptions[state.ref] = map[string]interface{}{"next": state.next, "ack_hwm": state.ackHWM, "max_seen": state.maxSeen,
 				"buffered": len(state.buf), "feed_off": state.feedOff, "eof_sent": state.eofSent, "durable_pending": len(state.pending)}

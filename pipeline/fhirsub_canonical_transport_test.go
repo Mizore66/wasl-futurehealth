@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -23,9 +24,9 @@ import (
 // startTestNATS owns its temporary store and kills/waits only that child at cleanup.
 func assertCanonicalTransportOwner(t *testing.T, env *natsEnv) {
 	t.Helper()
-	const binary = "/private/tmp/natsbin/nats-server"
-	if os.Getenv("WASL_TEST_NATS_SERVER") != binary {
-		t.Fatal("canonical wire proof requires the explicit pinned NATS override")
+	binary := os.Getenv("WASL_TEST_NATS_SERVER")
+	if binary == "" {
+		binary, _ = filepath.Abs("../bin/nats-server")
 	}
 	u, err := url.Parse(env.nc.ConnectedUrl())
 	if err != nil || u.Scheme != "nats" || u.Hostname() != "127.0.0.1" || u.Port() == "" || u.Port() == "4222" || env.nc.ConnectedUrl() != NatsURL {
@@ -264,11 +265,12 @@ func TestRecoverPendingRetainsAlreadyAcknowledgedRecordWithoutCanonicalEvidence(
 		t.Fatal(err)
 	}
 	c.subID = "cleanup"
-	body, err := json.Marshal(&subEvent{Num: 1, Focus: "DiagnosticReport/durable-r1/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r1","meta":{"source":"urn:ae:provider:p1"}}`)})
+	body, err := json.Marshal(&subEvent{Num: 1, Occurred: "2026-01-01T00:00:00Z", Focus: "DiagnosticReport/durable-r1/_history/1", Body: []byte(`{"resourceType":"DiagnosticReport","id":"durable-r1","meta":{"source":"urn:ae:provider:p1"}}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.kv.Put(env.ctx, "pending.00000000000000000001", body); err != nil {
+	originalRevision, err := c.kv.Put(env.ctx, "pending.00000000000000000001", body)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if count := fhirMessageCount(t, env); count != 0 {
@@ -285,7 +287,7 @@ func TestRecoverPendingRetainsAlreadyAcknowledgedRecordWithoutCanonicalEvidence(
 	if err != nil {
 		t.Fatalf("missing canonical evidence with HWM=1 must retain unknown pending, but Get returned %v", err)
 	}
-	if !bytes.Equal(entry.Value(), body) {
-		t.Fatal("unknown pending original bytes changed")
+	if !bytes.Equal(entry.Value(), body) || entry.Revision() != originalRevision {
+		t.Fatal("unknown pending original bytes or revision changed")
 	}
 }

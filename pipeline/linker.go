@@ -806,6 +806,16 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog, FollowUp: e.FollowUp})
 		if e.RType == "DiagnosticReport" {
 			out[len(out)-1].Parent, out[len(out)-1].Relation = e.Focus, e.Relation
+			if prog == "crc" && rt == "Pathology" && e.Focus != "" {
+				parent := e.Focus
+				// Legacy normalized events retained only the local ID plus
+				// their source provider. Qualify it here without changing the
+				// historical source event or inferring an external association.
+				if !strings.Contains(parent, "/") {
+					parent = "DiagnosticReport/" + parent
+				}
+				out[len(out)-1].Parent = crcReportReference(e.Provider, parent)
+			}
 		}
 	}
 	return out

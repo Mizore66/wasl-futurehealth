@@ -205,7 +205,7 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
   - `no_show`: did not attend the eye clinic (rebook outreach).
   - `not_assessable`: no fundal view (clinician decides).
 - **Drop-off:** `no_eye_exam`, `unlinked`, `ungradable_no_repeat`, `no_show`, `not_assessable`, or `""` when resolved.
-- `closed` is `true` for `closed` and `no_referral_needed`. `deadline_day` on the summary is the rule's deadline in days (28, 42, 91, or 365 for a rescreen); the absolute due day is `dr.deadline_day`. `overdue` is set when a referral is still `open` or `no_show`, or a repeat photo is still `open`, after `dr.deadline_day`. `referral_day` can be negative (look-back cohort).
+- `closed` is `true` for `closed` and `no_referral_needed`. `deadline_day` on the summary is the rule's deadline in days (28, 42, 91, or 365 for a rescreen); the absolute due day is `dr.deadline_day`. `overdue` is set when a referral is still `open`, `no_show` or `not_assessable` (no fundal view, clinician decision pending), or a repeat photo is still `open`, after `dr.deadline_day`. `referral_day` can be negative (look-back cohort).
 - The summary carries a `dr` object (also in `current.dr` on the case detail):
 
 ```json
@@ -424,7 +424,7 @@ Workflow A coordinator actions. Overlay metadata only: they never change a decis
 |---|---|---|
 | `assign_owner` | `owner` (optional) | 1 to 64 characters. Omitted, the owner is the verified actor bound to the token, so a client cannot name someone else as itself |
 | `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
-| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted`. Records what happened; it does not send anything |
+| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted` and no recorded consent denial or opt-out (`contact_state.contact_blocked`); either failure returns 409 `consent` and appends nothing, and replay applies the same rule in ledger order. Records what happened; it does not send anything |
 | `note` | `text` | 1 to 1000 characters, newlines allowed |
 | `booking_accept` | `expected_suggestion_version`, `slot_id`, `expected_slot_version` | Accept the current non-overbooked `suggested_slot_id` |
 | `booking_choose_slot` | accept fields plus `reason` | Choose a currently eligible slot; reason required, up to 200 characters |
@@ -445,6 +445,8 @@ Text must be valid UTF-8, without surrounding whitespace or control characters.
 - 500 when the ledger cannot be appended (nothing is recorded) or the ledger failed validation at start-up (all ledger writes are refused until it is repaired).
 
 **Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases proceed independently unless they compete for the same simulated slot, which one coordinator reserves and the other receives `conflict: "slot"`. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
+
+**`contact_state`** (on the case summary): `status` (`none|granted|denied|opted_out`) and `contact_blocked`, the effective contact state derived from the consent ledger. The detail carries the full overlay and history.
 
 **`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `last_contact` (the latest contact outcome: `at`, `event`, `outcome`, `channel`; no actor or note; absent before the first one), `last_appointment_agreement`, `no_answer_streak` (consecutive `no_answer` outcomes ending the contact log), `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
 

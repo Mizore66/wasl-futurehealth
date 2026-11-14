@@ -287,6 +287,12 @@ export const EligibleBookingSlot = z.looseObject({
   availability: z.enum(["available", "reserved"]).optional(),
 });
 
+/** Effective contact state on the case list: a recorded denial or opt-out blocks contact whatever `consent` says. */
+export const ContactState = z.looseObject({
+  status: z.enum(["none", "granted", "denied", "opted_out"]),
+  contact_blocked: z.boolean(),
+});
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -392,6 +398,7 @@ export const ActiveCaseSummary = z.looseObject({
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
   api_overlay: ApiOverlay.optional(),
+  contact_state: ContactState.optional(),
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
 });
@@ -564,6 +571,7 @@ export const ApiReview = z.looseObject({
 
 /** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
 export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
+/** `prev` is absent when it would repeat the hash of a first independent read still concealed from the viewer. */
 export const ConsentEvent = ApiReview.extend({
   /** Patient consent overlays share this history but use patient_journey events without review item/note fields. */
   item: z.string().optional(),
@@ -585,6 +593,7 @@ export const ConsentOverlay = z.looseObject({
   canonical_consent: Consent,
   canonical_unchanged: z.literal(true),
   last_event_hash: z.string(),
+  revision: z.string().min(1),
   note: z.string(),
 });
 export const ConsentHistoryEvent = z.union([ConsentEvent, z.lazy(() => PatientJourneyEvent)]);
@@ -1217,8 +1226,17 @@ export const ContestResolutionRequest = z.object({
   resolution: z.enum(["upheld", "rejected"]),
   note: governanceReason,
 });
+/** The compensation event as a viewer receives it: `prev` and `action_head` are omitted when they would repeat a concealed first-read hash. */
+export const ViewerCompensationEvent = z.looseObject({
+  ...compensationShape,
+  prev: z.string().optional(),
+  action_head: z.string().optional(),
+  actor: z.string(),
+  target_actor: z.string(),
+  note: z.string(),
+});
 export const CompensationResponse = withMeta({
-  event: CompensationEvent,
+  event: ViewerCompensationEvent,
   canonical_reopened: z.literal(false),
   auto_closure: z.literal(false),
   canonical_state: z.union([CaseState, z.literal("inactive")]),

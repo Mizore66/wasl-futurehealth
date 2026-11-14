@@ -334,7 +334,12 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 					}
 					e.Relation = gs(xm, "url")
 					parent := gs(xm, "valueString")
-					if !strings.HasPrefix(parent, "DiagnosticReport/") || strings.Contains(strings.TrimPrefix(parent, "DiagnosticReport/"), "/") || parent == "DiagnosticReport/" {
+					if e.Category == "pathology" && e.Coded == "" && e.Relation == "urn:wsi:addendum-to" {
+						e.Focus = crcReportReference(prov, parent)
+						if e.Focus == "" {
+							e.Relation = "ambiguous"
+						}
+					} else if !strings.HasPrefix(parent, "DiagnosticReport/") || strings.Contains(strings.TrimPrefix(parent, "DiagnosticReport/"), "/") || parent == "DiagnosticReport/" {
 						e.Focus, e.Relation = "", "ambiguous"
 					} else {
 						e.Focus = strings.TrimPrefix(parent, "DiagnosticReport/")
@@ -437,4 +442,24 @@ func signoffResource(so *Signoff) []byte {
 		"extension": []interface{}{map[string]string{"url": "urn:wsi:signoff", "valueString": string(b)}}}
 	out, _ := json.Marshal(res)
 	return out
+}
+
+// CRC procedure lineage is an explicit provider-qualified resource identity.
+// Relative addenda resolve only in the source namespace; the supported explicit
+// extension spelling provider/DiagnosticReport/id can identify another configured
+// provider, never a guessed same-patient/local-ID association.
+func crcReportReference(provider, reference string) string {
+	parts := strings.Split(reference, "/")
+	if len(parts) == 2 && parts[0] == "DiagnosticReport" {
+		parts = []string{provider, parts[0], parts[1]}
+	}
+	if len(parts) != 3 || parts[1] != "DiagnosticReport" || parts[2] == "" || strings.TrimSpace(parts[2]) != parts[2] || strings.ContainsAny(parts[2], "?#") {
+		return ""
+	}
+	for _, p := range Providers {
+		if p.ID == parts[0] {
+			return strings.Join(parts, "/")
+		}
+	}
+	return ""
 }
