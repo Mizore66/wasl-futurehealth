@@ -567,7 +567,7 @@ func TestSnapshotCompletedOriginalProducerExportsAnchors(t *testing.T) {
 	for i, m := range got {
 		env := decodeEnv(m)
 		if env.Dec != nil {
-			env.Dec.Reason += "|synthetic-tamper"
+			env.Dec.State += "|synthetic-tamper"
 			encodeEnv(&got[i], env)
 			break
 		}
@@ -637,7 +637,7 @@ func TestSnapshotActualProducerCoherentAndMixedCuts(t *testing.T) {
 				for i, m := range rows {
 					env := decodeEnv(m)
 					if env.Dec != nil {
-						env.Dec.Reason += "|synthetic-tamper"
+						env.Dec.State += "|synthetic-tamper"
 						encodeEnv(&rows[i], env)
 						break
 					}
