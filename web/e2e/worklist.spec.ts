@@ -395,7 +395,7 @@ test.describe("Referrals", () => {
     await search(page, "9002");
     await expect(pane.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-9002");
     await expect(pane.getByRole("heading", { name: "Why return this referral?" })).toHaveCount(0);
-    await expect(pane.getByRole("button", { name: "Accept referral" })).toBeVisible();
+    await expect(pane.getByRole("button", { name: "Accept referral", exact: true })).toBeVisible();
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByText("Choose a reason to return it.")).toBeVisible();
     await expect(pane.getByRole("button", { name: "Wrong unit" })).toHaveAttribute("aria-pressed", "false");
