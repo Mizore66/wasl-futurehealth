@@ -316,7 +316,7 @@ func (s *apiServer) readerModel() string {
 }
 
 func consentFromDecision(d *Decision) string {
-	if d.Contact != "" {
+	if d != nil && d.Contact != "" {
 		return d.Contact
 	}
 	return "unknown"
@@ -644,7 +644,7 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
-		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false), "contact_state": s.contactSummary(c)}
 	if c.last != nil && c.last.Inactive {
 		m["inactive"] = true
 		m["lifecycle"] = "retained"
@@ -1712,6 +1712,19 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if _, isCoord := ev["type"]; !isCoord {
 		if err := validateConsentRevision(ev, s.caseEvents(sstr(ev, "case"))); err != nil {
 			return err
+		}
+		// Legacy confirm_contact is still a contact action. Check the same guard as
+		// HTTP against this valid ledger prefix, before appending the event. A later
+		// denial must not retroactively invalidate an earlier authorized contact.
+		if ev["decision"] == "confirm_contact" {
+			id, _ := ev["case"].(string)
+			c := s.cases[id]
+			if c == nil {
+				return errors.New("confirm_contact for unknown case")
+			}
+			if s.contactGuardLocked(c).Blocked {
+				return errors.New("confirm_contact after demo consent denial/opt-out")
+			}
 		}
 		if hasProtocolFields(ev) {
 			if err := s.replayProtocol(ev); err != nil {

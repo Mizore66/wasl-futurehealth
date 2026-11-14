@@ -111,9 +111,12 @@ func consentEventCounts(undoState, status string) bool {
 	return true
 }
 
-func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
-	hist := []map[string]interface{}{}
-	status, pending, last := "none", "", ""
+// consentFoldLocked folds the review ledger into the overlay status, the pending demo consent, the hash of the last
+// effective event and the consent history. It never reads the case's decision, so it is safe for a decision-less
+// projection. The caller holds s.mu.
+func (s *apiServer) consentFoldLocked(c *apiCase) (status, pending, last string, hist []map[string]interface{}) {
+	hist = []map[string]interface{}{}
+	status = "none"
 	undo, _ := foldUndo(s.caseEvents(c.ID))
 	for _, r := range s.reviews {
 		if r["case"] != c.ID || !isConsentMutation(r) {
@@ -132,6 +135,11 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	case "denied", "opted_out":
 		pending = "cancelled"
 	}
+	return status, pending, last, hist
+}
+
+func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
+	status, pending, last, hist := s.consentFoldLocked(c)
 	canon := consentFromDecision(c.last)
 	o := map[string]interface{}{
 		"status": status, "demo_pending_consent": pending, "events": len(hist),
@@ -144,6 +152,16 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 		o["demo_pending_consent"] = "" // no overlay event yet
 	}
 	return o, hist
+}
+
+// contactSummary is the list-form effective contact state: the consent overlay status and whether contact is blocked.
+func (s *apiServer) contactSummary(c *apiCase) map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// The list summary needs only the ledger fold; the full overlay also derives a revision from the decision
+	// signature, which a decision-less projection does not have and must not be given.
+	status, _, _, _ := s.consentFoldLocked(c)
+	return map[string]interface{}{"status": status, "contact_blocked": status == "denied" || status == "opted_out"}
 }
 
 type demoContactGuard struct {
