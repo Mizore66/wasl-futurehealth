@@ -34,14 +34,29 @@ func validateAPIPreflight(run string) error {
 	}
 	loops := map[string]bool{}
 	outPath, fhirPath := filepath.Join(run, "out_log.ndjson"), filepath.Join(run, "fhir_log.ndjson")
-	if _, err := scanAPILog(outPath, func(m LogMsg) error { return validateOutRecord(m, loops) }); err != nil {
+	latest := map[string]*Decision{}
+	if _, err := scanAPILog(outPath, func(m LogMsg) error {
+		if err := validateOutRecord(m, loops); err != nil {
+			return err
+		}
+		if d := decodeEnv(m).Dec; d != nil {
+			latest[d.LoopID] = d
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	fhirRecords, err := scanAPILog(fhirPath, validateFHIRRecord)
 	if err != nil {
 		return err
 	}
-	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], len(loops), fhirRecords)
+	active := 0
+	for _, d := range latest {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], len(loops), fhirRecords, active)
 }
 
 func validateRequiredAPIJSON(path string) (map[string]interface{}, error) {
@@ -128,7 +143,17 @@ func validateFHIRRecord(m LogMsg) error {
 	return nil
 }
 
-func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhirRecords int) error {
+func materializedCatalogCounts(final map[string]*Decision) map[string]interface{} {
+	active := 0
+	for _, d := range final {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return map[string]interface{}{"schema": "wasl-materialized-catalog/1", "retained_cases": len(final), "active_cases": active, "retained_live_replay_mismatch": 0}
+}
+
+func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhirRecords int, activeCounts ...int) error {
 	check := func(artifact, field string, value interface{}, want int, source string) error {
 		n, ok := value.(float64)
 		if !ok || n != float64(int(n)) || n < 0 {
@@ -144,8 +169,37 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops, fhi
 			return err
 		}
 	}
+	clinicalLoops := loops
+	if raw, present := report["materialized_catalog"]; present {
+		catalog, ok := raw.(map[string]interface{})
+		if !ok || catalog["schema"] != "wasl-materialized-catalog/1" || len(catalog) != 4 || len(activeCounts) != 1 {
+			return fmt.Errorf("serve preflight: invalid materialized catalog counts")
+		}
+		for field, want := range map[string]int{"retained_cases": loops, "active_cases": activeCounts[0], "retained_live_replay_mismatch": 0} {
+			if err := check("report7.json", "materialized_catalog."+field, catalog[field], want, "out_log.ndjson decisions"); err != nil {
+				return err
+			}
+		}
+		// New reports explicitly distinguish retained OUT completeness from their
+		// unchanged clinical truth denominator. Validate both, never substitute one
+		// for the other or silently drop an invalid old declaration.
+		if _, declared := report["loops"]; declared {
+			byProgramme, ok := report["loops_by_programme"].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("serve preflight: materialized catalog requires clinical loops_by_programme")
+			}
+			clinicalLoops = 0
+			for programme, value := range byProgramme {
+				n, ok := value.(float64)
+				if !ok || n < 0 || n != float64(int(n)) {
+					return fmt.Errorf("serve preflight: invalid clinical loop count for %s", programme)
+				}
+				clinicalLoops += int(n)
+			}
+		}
+	}
 	if v, ok := report["loops"]; ok {
-		if err := check("report7.json", "loops", v, loops, "out_log.ndjson decisions"); err != nil {
+		if err := check("report7.json", "loops", v, clinicalLoops, "declared clinical cohort (legacy: out_log.ndjson decisions)"); err != nil {
 			return err
 		}
 	}

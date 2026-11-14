@@ -48,6 +48,7 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
+  if (c.lifecycle === "retained") return { status: "Retired", next: "Authorized history only; no current care action" };
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
@@ -91,7 +92,8 @@ export const PROGRAMME_NAMES: Record<Programme, string> = {
   ifhas: "IFHAS cardiometabolic follow-up",
 };
 
-export const PROCEDURE: Record<Programme, string> = {
+export const PROCEDURE: Record<Programme | "", string> = {
+  "": "procedure unavailable",
   crc: "colonoscopy",
   cervical: "colposcopy",
   lung_nodule: "follow-up CT",

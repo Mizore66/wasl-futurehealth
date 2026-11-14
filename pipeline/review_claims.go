@@ -316,7 +316,7 @@ func (s *apiServer) replayClaim(ev map[string]interface{}) error {
 	if s.cases[id] == nil {
 		return fmt.Errorf("claim for unknown case")
 	}
-	it := s.queueItem(id, sstr(ev, "item"))
+	it := s.raisedReviewItem(id, sstr(ev, "item"))
 	if it == nil || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("claim for a question not raised for this case")
 	}

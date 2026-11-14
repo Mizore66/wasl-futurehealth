@@ -1,4 +1,4 @@
-import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -24,7 +24,7 @@ export type ReviewView = {
   closed: boolean;
   /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
-  programme: CaseDetail["case"]["programme"];
+  programme: Programme;
   evidenceQuestion: string;
   evidenceChoices: string[];
   shortId: string;
@@ -63,7 +63,7 @@ const PROVIDERS: Record<string, string> = {
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
 
-const PROGRAMME_COPY: Record<CaseDetail["case"]["programme"], { procedure: string; referral: string; report: string }> = {
+const PROGRAMME_COPY: Record<Programme, { procedure: string; referral: string; report: string }> = {
   crc: { procedure: "colonoscopy", referral: "stool test referral", report: "colonoscopy report" },
   cervical: { procedure: "colposcopy", referral: "cervical screening referral", report: "colposcopy report" },
   lung_nodule: { procedure: "follow-up CT", referral: "lung nodule referral", report: "CT report" },
@@ -119,6 +119,7 @@ const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
 };
 
 export function reviewView(c: CaseDetail): ReviewView {
+  if (c.case.lifecycle === "retained") throw new Error("Retained cases have no current review work");
   const referral = c.identities.find((i) => i.role === "referral");
   const downstream = c.identities.find((i) => i.role === "downstream");
   const a = referral && personFor(referral.registration);
