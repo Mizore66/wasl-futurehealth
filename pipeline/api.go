@@ -640,7 +640,7 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	return m
 }
 
-// GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
+// GET /api/cases?programme=crc&state=closed&closed=true&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
 func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	match := func(c *apiCase) bool {
@@ -648,6 +648,7 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", c.Owner) && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
+			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&
 			(q.Get("fixture") == "" || c.Fixture != "") && (q.Get("q") == "" || strings.Contains(c.ID, q.Get("q")))
 	}
 	ids := append([]string{}, s.order...)

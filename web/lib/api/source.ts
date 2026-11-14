@@ -133,6 +133,7 @@ export type CaseQuery = Partial<{
   consent: CaseSummary["consent"];
   review: CaseSummary["review"];
   overdue: boolean;
+  closed: boolean;
   fixture: boolean;
   q: string;
   limit: number;
@@ -160,6 +161,7 @@ export function matches(c: CaseSummary, q: CaseQuery): boolean {
     (q.consent === undefined || c.consent === q.consent) &&
     (q.review === undefined || c.review === q.review) &&
     (q.overdue === undefined || c.overdue === q.overdue) &&
+    (q.closed === undefined || c.closed === q.closed) &&
     (!q.fixture || c.fixture !== "") &&
     (q.q === undefined || c.id.includes(q.q))
   );
