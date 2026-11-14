@@ -134,12 +134,16 @@ export type WorkItem = {
   ledgerStatus?: "ok" | "invalid";
   /** An active simulated reservation (live API only). */
   reserved?: boolean;
+  /** The simulated reservation was cancelled (live API only). */
+  cancelled?: boolean;
 };
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
 export const DECLINED_RESERVED_NEXT = "GP to sign the decline · cancel the simulated reservation to release the slot";
+/** A decline recorded after the reservation was cancelled needs the GP's sign-off, not another booking. */
+export const DECLINED_CANCELLED_NEXT = "GP to sign the decline";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
@@ -196,7 +200,9 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
       words.next = "Manage the simulated reservation";
     }
-  } else if (booking?.status === "cancelled" && !declinedAfterBooking) {
+  } else if (booking?.status === "cancelled" && declinedAfterBooking) {
+    words.next = DECLINED_CANCELLED_NEXT;
+  } else if (booking?.status === "cancelled") {
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
     if (afterAgreement) {
@@ -229,7 +235,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
-    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved" } : {}),
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
   };
 }
 
