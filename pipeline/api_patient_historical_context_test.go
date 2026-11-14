@@ -159,7 +159,13 @@ func TestPatientHistoricalContextCanonicalRetirement(t *testing.T) {
 					} else if transition == "later CRC" {
 						status = "active"
 					}
-					advancePatientHistoricalFixture(t, s.run, retainedRequest("a", "alice", status, version))
+					revision := retainedRequest("a", "alice", status, version)
+					if transition == "later CRC" {
+						// A version-only resend can be a semantic no-op. Revise the actual
+						// referral date so this control produces a different CRC decision.
+						revision["authoredOn"] = "2026-05-03T00:00:00Z"
+					}
+					advancePatientHistoricalFixture(t, s.run, revision)
 					s = loadPatientHistoricalFixture(t, s.run)
 					c := s.cases[retainedCaseA]
 					if c.last.Sig == original.Sig || len(c.decisions) < 2 || c.decisions[0].Sig != original.Sig {
