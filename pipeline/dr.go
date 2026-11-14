@@ -305,6 +305,12 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					}
 					break // an unread earlier note blocks a decision on a later one
 				}
+				// A hold from a current trusted no-view fact survives any later outcome that is
+				// neither a no-view affirmation nor a qualifying exam (#150). Written as the
+				// complement of the two proceed classes so no other label can overwrite it.
+				if state == "not_assessable" && lab != "not_assessable" && !drClosingClinic(lab) {
+					continue
+				}
 				dd.Clinic, dd.Outcome = r.d.ReportID, lab
 				switch {
 				case lab == "dna":
