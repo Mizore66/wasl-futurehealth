@@ -189,3 +189,41 @@ func TestDRNoViewOverdueClearsOnTrustedExam(t *testing.T) {
 		}
 	}
 }
+
+// #150: an established no-fundal-view state and its clinician hold survive a later unread or untrusted note, and the
+// overdue projection never releases outreach. Only a trusted, agreed examined_* note (or a clinician) resolves it.
+func TestDRNoViewHoldSurvivesLaterUnreadOrUntrustedNote(t *testing.T) {
+	defer func(o bool, h bool) { OutreachOn, ConsentHold = o, h }(OutreachOn, ConsentHold)
+	OutreachOn, ConsentHold = true, true
+	view := drNote("EYE-dr-1", 40, "not_assessable", "eid", 1, false)
+	for _, grade := range []string{"R2M0", "R3AM0"} {
+		now := float64(120)
+		for name, later := range map[string]DownFact{
+			"trusted unread":   drNote("EYE-dr-2", 110, "", "eid", 1, false),
+			"untrusted exam":   drNote("EYE-dr-2", 110, "examined_followup", "wasl", 0.80, false),
+			"untrusted unread": drNote("EYE-dr-2", 110, "", "wasl", 0.80, false),
+		} {
+			f := drFacts(drScreen("PHC-dr-1", 10, grade), view, later)
+			f.Contact = "granted"
+			d, _ := runLung(t, f, now)
+			if d.State == "closed" {
+				t.Fatalf("%s %s: must not close", grade, name)
+			}
+			if d.State != "not_assessable" || !hasEsc(d, "clinician_decision_no_fundal_view") ||
+				!hasEsc(d, "overdue_dr_referral") || !strings.Contains(string(canon(d.Chain)), "no_fundal_view_clinician_decides") {
+				t.Fatalf("%s %s: no-view hold lost: state %s esc %v", grade, name, d.State, d.Escalations)
+			}
+			for _, o := range d.Outreach {
+				if o.Kind == "dr_overdue_recall" && o.Suppress == "" {
+					t.Fatalf("%s %s: overdue recall released by an unread/untrusted later note: %+v", grade, name, o)
+				}
+			}
+		}
+	}
+	// control: a trusted agreed examined note still resolves the hold
+	f := drFacts(drScreen("PHC-dr-1", 10, "R2M0"), view, drNote("EYE-dr-2", 110, "examined_followup", "eid", 1, false))
+	f.Contact = "granted"
+	if d, _ := runLung(t, f, 120); d.State != "closed" || hasEsc(d, "clinician_decision_no_fundal_view") {
+		t.Fatalf("control: trusted examined note must close, got %s %v", d.State, d.Escalations)
+	}
+}

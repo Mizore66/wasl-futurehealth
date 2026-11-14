@@ -529,6 +529,99 @@ class SchedulerTests(unittest.TestCase):
                 self.assertEqual(self.tree(), settled)
 
 
+    # --- #152 state-invariant regressions: sealing a durable claim, and a published-but-unstarted slot ---
+
+    def seed_claimed_attempt(self, kind, slot, claim_attempt=None, with_claim=True):
+        attempt = f"{kind}-{slot}-cccccccccccc"
+        run = self.state / "runs" / attempt
+        run.mkdir()
+        write_exclusive(run / "started.json", {
+            "attempt_id": attempt, "kind": kind, "automatic": True, "slot": slot,
+            "generation": None, "target_project": None})
+        if with_claim:
+            write_exclusive(self.state / "slots" / kind / f"{slot}.json", {
+                "schema": "wasl-recovery-slot-v1", "kind": kind, "slot": slot,
+                "attempt_id": claim_attempt or attempt})
+        return run
+
+    def test_reconcile_seals_an_exactly_matching_durable_claim_once_and_repeatably(self):
+        for kind in ("backup", "verify"):
+            with self.subTest(kind):
+                self.setUp()
+                run = self.seed_claimed_attempt(kind, "7")
+                claim = self.state / "slots" / kind / "7.json"
+                before = claim.read_bytes()
+                self.scheduler.reconcile()
+                self.assertEqual(load_json(run / "result.json")["status"], "interrupted")
+                self.assertEqual(claim.read_bytes(), before)
+                settled = self.tree()
+                self.scheduler.reconcile()
+                self.assertEqual(self.tree(), settled)
+                events = [json.loads(x) for x in (self.state / "events.jsonl").read_text().splitlines()]
+                self.assertEqual([e.get("attempt_id") for e in events if e["event"] == "attempt_interrupted"
+                                  ].count(run.name), 1)
+                for name in self.names():
+                    self.assertNotIn(name, ("encrypted-generation-backup", "restore-into-empty-target"))
+
+    def test_reconcile_rejects_a_conflicting_claim_without_overwrite_or_result(self):
+        for kind in ("backup", "verify"):
+            with self.subTest(kind):
+                self.setUp()
+                run = self.seed_claimed_attempt(kind, "7", claim_attempt="someone-else")
+                claim = self.state / "slots" / kind / "7.json"
+                before = claim.read_bytes()
+                with self.assertRaises(SafetyError):
+                    self.scheduler.reconcile()
+                self.assertEqual(claim.read_bytes(), before)
+                self.assertFalse((run / "result.json").exists())
+
+    def test_crash_between_claim_and_seal_converges_on_restart(self):
+        for kind in ("backup", "verify"):
+            with self.subTest(kind):
+                self.setUp()
+                run = self.seed_claimed_attempt(kind, "7", with_claim=False)
+                with self.crash_once(self.scheduler, "_finish", lambda _dir, attempt, *a: attempt == run.name), \
+                        self.assertRaises(Crash):
+                    self.scheduler.reconcile()
+                self.assertTrue((self.state / "slots" / kind / "7.json").is_file())
+                self.assertFalse((run / "result.json").exists())
+                self.scheduler.reconcile()
+                self.assertEqual(load_json(run / "result.json")["status"], "interrupted")
+                settled = self.tree()
+                self.scheduler.reconcile()
+                self.assertEqual(self.tree(), settled)
+
+    def test_published_but_unstarted_slot_gets_one_durable_outcome_on_later_restart(self):
+        for kind, days in (("backup", 5), ("verify", 35)):
+            for empty_run_dir in (False, True):
+                with self.subTest(kind=kind, empty_run_dir=empty_run_dir):
+                    self.setUp()
+                    self.clock = datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(days=days)
+                    current = {"backup": days, "verify": days // 7}
+                    cursor = dict(current)
+                    cursor[kind] = 3  # published for slot 3; no claim, run or marker exists for it
+                    atomic_json(self.state / "schedule.json",
+                                {"last_backup_slot": cursor["backup"], "last_verify_slot": cursor["verify"]})
+                    for name in ("backup", "verify"):  # current slots are already consumed so nothing else runs
+                        write_exclusive(self.state / "slots" / name / f"{current[name]}.json", {"attempt_id": "preexisting"})
+                    if empty_run_dir:
+                        (self.state / "runs" / f"{kind}-3").mkdir()
+                    self.scheduler.reconcile()
+                    self.assertEqual(self.scheduler.run_due(), [])
+                    marker = self.state / "slots" / kind / "abandoned-3.json"
+                    self.assertTrue(marker.is_file(), "published slot 3 left no durable outcome")
+                    document = load_json(marker)
+                    self.assertEqual((document["kind"], document["slot"], document["catch_up"]), (kind, 3, False))
+                    self.assertFalse((self.state / "slots" / kind / "3.json").exists())
+                    self.assertEqual(self.names().count("encrypted-generation-backup"), 0)
+                    settled = self.tree()
+                    self.scheduler.reconcile()
+                    self.assertEqual(self.scheduler.run_due(), [])
+                    self.assertEqual(self.tree(), settled)
+                    events = [json.loads(x) for x in (self.state / "events.jsonl").read_text().splitlines()]
+                    self.assertEqual(sum(e["event"] == "slot_abandoned" for e in events), 1)
+
+
 class CommandEvidenceTests(unittest.TestCase):
     def test_structured_secret_material_is_redacted_before_evidence_write(self):
         with tempfile.TemporaryDirectory() as tmp:
