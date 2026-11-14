@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { PagerLinks } from "@/components/worklist/pager";
+import { paginate } from "@/components/worklist/paging";
+import { filtersHref, parsePage } from "@/components/worklist/filters";
 import { Avatar } from "@/components/avatar/avatar";
 import { PURPOSE_LABEL, reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
@@ -9,7 +13,10 @@ import { claimActionLabel, claimSummary, questionAnchor } from "@/components/rev
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
 
-export const metadata = { title: "Review" };
+export async function generateMetadata({ searchParams }: PageProps<"/app/review">) {
+  const page = parsePage(await searchParams);
+  return { title: page > 1 ? `Review, page ${page}` : "Review" };
+}
 
 const FAILURE_COPY = {
   401: "Your reviewer sign-in was not accepted or has ended. Open a case on the review desk and sign in again.",
@@ -23,6 +30,10 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
   const token = live ? await reviewerToken() : undefined;
   const queue = await reviewQueue(token);
   const rows = queue.cases.map((c) => ({ detail: c, view: reviewView(c) }));
+  const paging = paginate(rows, parsePage(query));
+  const hrefFor = (page: number) => filtersHref("/app/review", {}, page);
+  if (parsePage(query) > paging.pages) redirect(hrefFor(paging.pages));
+  const complete = queue.source !== "incomplete";
   /** The API's fallback for review_hold: outreach stopped by the guard, and no consent log entry anywhere in the case. */
   const guardOnly =
     rows.length === 1 &&
@@ -88,8 +99,9 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
         </div>
       )}
 
+      <PagerLinks paging={paging} label="Pages above the list" testId="range-top" hrefFor={hrefFor} complete={complete} />
       <ol className="m-0 mt-6 flex list-none flex-col gap-2 p-0">
-        {rows.map(({ detail, view }) => (
+        {paging.rows.map(({ detail, view }) => (
           <li key={view.caseId} className="relative">
             <Link
               href={caseHref("/app/review", view.caseId)}
@@ -132,6 +144,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
           </li>
         ))}
       </ol>
+      <PagerLinks paging={paging} label="Pages below the list" testId="range-bottom" hrefFor={hrefFor} complete={complete} />
     </>
   );
 }
