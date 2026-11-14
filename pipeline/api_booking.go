@@ -447,6 +447,54 @@ func bookingReadiness(c *apiCase) string {
 	return ""
 }
 
+const bookingPolicyReadiness1 = "readiness/1"
+
+func bookingAcquisition(kind string) bool {
+	return kind == "booking_accept" || kind == "booking_choose_slot" || kind == "booking_reschedule"
+}
+
+// coordinatorBookingPolicy validates ONLY coordinator_action envelopes. Other
+// protocols and untyped legacy review history retain their existing schemas.
+func coordinatorBookingPolicy(ev map[string]interface{}) (bool, error) {
+	policy, stamped := ev["booking_policy"]
+	want := 13
+	if stamped {
+		want++
+	}
+	if len(ev) != want {
+		return false, errors.New("invalid coordinator envelope key set")
+	}
+	for _, key := range [...]string{"type", "kind", "case", "data", "role", "actor", "action", "at", "head", "seq", "mode", "prev", "hash"} {
+		if _, present := ev[key]; !present {
+			return false, fmt.Errorf("missing coordinator envelope key %s", key)
+		}
+	}
+	if stamped {
+		kind, _ := ev["kind"].(string)
+		if !bookingAcquisition(kind) {
+			return false, errors.New("booking_policy on a non-acquisition event")
+		}
+		if value, ok := policy.(string); !ok || value != bookingPolicyReadiness1 {
+			return false, errors.New("unknown or non-string booking_policy")
+		}
+	}
+	return stamped, nil
+}
+
+// Admission policy, not historical occupancy validation. Call under s.mu after
+// ledger/head checks, immediately before preparing every LIVE booking transition;
+// replay calls it only for a validated stamped acquisition.
+func (s *apiServer) bookingReadinessGateLocked(c *apiCase, kind string) *bookingFailure {
+	if bookingAcquisition(kind) {
+		if reason := bookingReadiness(c); reason != "" {
+			return bookingFail(409, "not clinically ready for a simulated reservation: "+reason, "readiness", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
+		}
+	}
+	return nil
+}
+
+// Shared live/replay transition guards. Legacy replay waives ONLY readiness;
+// consent, source/version, state, reservation and slot-chain checks remain here.
 func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[string]interface{}) (*bookingTransition, *bookingFailure) {
 	state := &c.ov.booking
 	status := state.status
@@ -454,10 +502,7 @@ func (s *apiServer) prepareBookingLocked(c *apiCase, kind string, data map[strin
 		status = "unreserved"
 	}
 	transition := &bookingTransition{kind: kind}
-	if kind == "booking_accept" || kind == "booking_choose_slot" || kind == "booking_reschedule" {
-		if reason := bookingReadiness(c); reason != "" {
-			return nil, bookingFail(409, "not clinically ready for a simulated reservation: "+reason, "readiness", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
-		}
+	if bookingAcquisition(kind) {
 		raw := s.bookingCase(c.ID)
 		suggestion, _ := raw["suggestion_version"].(string)
 		if suggestion == "" || data["expected_suggestion_version"] != suggestion {

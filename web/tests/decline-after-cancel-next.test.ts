@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TodayBoard } from "@/components/worklist/today-board";
 import { DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, workItem } from "@/components/worklist/model";
 import { recordBooking, type BookingProjection } from "@/app/app/patients/[id]/booking-actions";
-import { Booking, BookingSummary, CaseDetail, type ApiOverlay } from "@/lib/api/schema";
+import { ActiveCaseSummary, Booking, BookingSummary, CaseDetail, type ApiOverlay } from "@/lib/api/schema";
 
 /*
  * A genuine canonical no_show case can agree, reserve, cancel and then record a NEWER decline. The immediate Today
@@ -35,7 +35,7 @@ const AGREED = "2026-11-13T09:00:00Z";
 const RESERVED = "2026-11-13T09:30:00Z";
 const CANCELLED = "2026-11-13T10:00:00.000000005Z";
 const DECLINED_LATER = "2026-11-13T10:30:00Z";
-const workCase = { ...baseDetail.case, owner: "someone", state: "no_show" as const, dropoff: "no_show" as const, closed: false };
+const workCase = { ...ActiveCaseSummary.parse(baseDetail.case), owner: "someone", state: "no_show" as const, dropoff: "no_show" as const, closed: false };
 
 const booking = (status: "reserved" | "cancelled", updatedAt: string) =>
   BookingSummary.parse({
