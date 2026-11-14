@@ -55,13 +55,13 @@ for (const closed of [true, false]) {
 
     const refine = page.getByTestId("refine");
     await refine.locator("summary").click();
-    await refine.getByLabel("Programme", { exact: true }).selectOption("lung_nodule");
-    await refine.getByLabel("Provider", { exact: true }).selectOption("rad-imaging");
+    await refine.getByRole("combobox", { name: "Programme", exact: true }).selectOption("lung_nodule");
+    await refine.getByRole("combobox", { name: "Provider", exact: true }).selectOption("rad-imaging");
     await refine.getByRole("button", { name: "Apply filters", exact: true }).click();
     await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("q") === "sr-1" && url.searchParams.get("programme") === "lung_nodule" && url.searchParams.get("provider") === "rad-imaging" && !url.searchParams.has("page"));
     await view(page, rows.filter((c) => c.id.includes("sr-1") && c.programme === "lung_nodule" && c.provider === "rad-imaging"), closed);
-    await expect(refine.getByLabel("Programme", { exact: true })).toHaveValue("lung_nodule");
-    await expect(refine.getByLabel("Provider", { exact: true })).toHaveValue("rad-imaging");
+    await expect(refine.getByRole("combobox", { name: "Programme", exact: true })).toHaveValue("lung_nodule");
+    await expect(refine.getByRole("combobox", { name: "Provider", exact: true })).toHaveValue("rad-imaging");
     if (closed) await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed", exact: true })).toHaveAttribute("aria-current", "true");
   });
 }
