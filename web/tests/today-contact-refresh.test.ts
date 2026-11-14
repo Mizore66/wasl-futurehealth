@@ -155,7 +155,7 @@ it("a refreshed real patient opt-out hides persisted Reached follow-ups without 
 });
 
 it("a refreshed overlay regrant never borrows canonical permission from the stale page", async () => {
-  const granted = CaseSummary.parse({ ...base, ...load("contact_staff_regrant_live.json"), review: base.review, owner: "someone", dropoff: "not_booked", consent: "denied" });
+  const granted = ActiveCaseSummary.parse({ ...base, ...load("contact_staff_regrant_live.json"), review: base.review, owner: "someone", dropoff: "not_booked", consent: "denied" });
   // The page-load row is the stale, allowed baseline for the SAME case the fresh packet names, so the
   // production id/head fence admits the packet; only the canonical denial may change the outcome.
   const stale: CaseSummary = { ...initial, id: granted.id, programme: granted.programme };
