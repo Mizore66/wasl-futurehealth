@@ -647,6 +647,12 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
 	if c.last != nil && c.last.Inactive {
 		m["inactive"] = true
+		m["lifecycle"] = "retained"
+		m["actionable"] = false
+		m["programme_availability"] = "selected"
+		if c.Programme == "" {
+			m["programme_availability"] = "unavailable"
+		}
 		m["request_status"] = c.last.RequestStatus
 		m["request_version"] = c.last.RequestVersion
 		m["request_conflict"] = c.last.RequestConflict

@@ -130,6 +130,7 @@ export function reviewView(c: CaseDetail): ReviewView {
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
+  if (c.case.lifecycle === "retained" || c.case.programme === "") throw new Error("Retained cases have no current review work");
   const programme = c.case.programme;
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PersonCase, PersonJourney } from "@/lib/api/person-schema";
+import type { PersonAssociationUnavailable, PersonCase, PersonJourney } from "@/lib/api/person-schema";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { actionLabels, lifecycleLabel, obligationsFor, personDisplay, programmeLabels, reasonLabel } from "./journey-model";
@@ -13,6 +13,22 @@ function Day({ value, label = "Day" }: { value: number; label?: string }) {
 
 function CaseLink({ caseID, children }: { caseID: string; children?: React.ReactNode }) {
   return <Link className={linkClass} href={caseHref("/app/patients", caseID)}>{children ?? `Open ${shortId(caseID)} case`}</Link>;
+}
+
+export function PersonAssociationUnavailableView({ result }: { result: PersonAssociationUnavailable }) {
+  const reasons = {
+    conflicting_request: "Conflicting versions do not establish a selected subject.",
+    unbound_request: "No accepted patient registration was bound to this request.",
+    unknown_programme: "The source request did not establish a supported programme context.",
+    unproven_binding: "The retained source does not prove a unique subject binding.",
+    multiple_historical_subjects: "This case has more than one proven historical subject, so it has no single person destination.",
+  };
+  return <section aria-labelledby="association-unavailable">
+    <h1 id="association-unavailable" className="text-title font-semibold">Historical association unavailable</h1>
+    <p>{reasons[result.association.reason]}</p>
+    <p>The retained case remains available for authorized case and audit reads. It creates no current care or outreach action.</p>
+    <CaseLink caseID={result.case_id}>Open retained case history</CaseLink>
+  </section>;
 }
 
 function Obligations({ journey, caseID }: { journey: PersonJourney; caseID: string }) {
@@ -229,6 +245,21 @@ export function Journey({ journey }: { journey: PersonJourney }) {
           </ol>
         ) : <p>No open or scheduled obligations are recorded.</p>}
       </section>
+
+      {journey.schema === "wasl-person-journey/2" && <section aria-labelledby="retained-references" className={`${sectionClass} mt-gap`}>
+        <h2 id="retained-references" className="text-section font-semibold">Non-actionable history references</h2>
+        <p>Only proven as-of associations appear here. References are not current care participation; full original history remains in the authorized case and audit views.</p>
+        {journey.retained_references.map((reference) => <article key={reference.case_id} className="border-t border-rule pt-3">
+          <h3 className="text-body font-semibold"><CaseLink caseID={reference.case_id}>{shortId(reference.case_id)}</CaseLink> · {reference.lifecycle === "retained" ? "Retired case" : "Historical association"}</h3>
+          <p>{reference.programmes.map((programme) => programmeLabels[programme]).join(", ") || "Historical programme unavailable"}. History reference only; no current action.</p>
+          <details><summary className="cursor-pointer py-3">Source decisions and recorded outreach</summary>
+            <ul>{reference.decisions.map((decision) => <li key={decision.decision_id}>{decision.decision_id} · <code>{decision.sig}</code></li>)}</ul>
+            <ul>{reference.outreach_intents.map((intent) => <li key={`${intent.case_id}-${intent.outreach.ev}-${intent.outreach.kind}`}>
+              {intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)} · historical, not actionable
+            </li>)}</ul>
+          </details>
+        </article>)}
+      </section>}
 
       <div className="mt-6 space-y-gap">
         {sections.map((section) => (
