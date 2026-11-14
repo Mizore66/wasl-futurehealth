@@ -393,7 +393,7 @@ func drFinish(lt *LoopTruth, state string, closed float64) {
 	}
 	switch {
 	case rec.Action == DRRefer:
-		lt.Overdue = (state == "open" || state == "no_show") && TEnd-dt.GradeDay > float64(rec.Deadline)
+		lt.Overdue = (state == "open" || state == "no_show" || state == "not_assessable") && TEnd-dt.GradeDay > float64(rec.Deadline)
 	case rec.Action == DRRepeatPhoto:
 		lt.Overdue = TEnd-dt.GradeDay > float64(rec.Deadline)
 	}
