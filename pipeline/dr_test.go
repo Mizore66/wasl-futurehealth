@@ -341,3 +341,261 @@ func TestDRNoViewHoldSurvivesLaterUnreadOrUntrustedNote(t *testing.T) {
 		t.Fatalf("control: trusted examined note must close, got %s %v", d.State, d.Escalations)
 	}
 }
+
+// #150 residual: a hold supported by current trusted agreed no-view facts must survive any
+// later non-qualifying outcome (dna, not_examined, or any other label). Only a trusted agreed
+// examined_* note (or an authorized examined_* override) may clear it. The walk is a pure
+// function of current facts, so sequential, cold and permuted input agree.
+func TestDRNonQualifyingOutcomesCannotReplaceNoViewHold(t *testing.T) {
+	defer func(o, h bool, cal *Cal7) { OutreachOn, ConsentHold, V7Cal = o, h, cal }(OutreachOn, ConsentHold, V7Cal)
+	OutreachOn, ConsentHold, V7Cal = true, true, nil
+	const now = 120.0
+	grades := []struct {
+		grade    string
+		deadline float64
+	}{{"R2M0", 101}, {"R3AM0", 52}}
+	type later struct {
+		name   string
+		label  string // agreed reader label ("" = unread)
+		over   string // authorized human override label, if any
+		alone  string // expected state when the no-view note is absent from current facts
+		hasOvr bool
+	}
+	laters := []later{
+		{"dna", "dna", "", "no_show", false},
+		{"not_examined", "not_examined", "", "open", false},
+		{"adequate", "adequate", "", "open", false},
+		{"grade-label", "R2M0", "", "open", false},
+		{"ungradable", "U", "", "open", false},
+		{"indeterminate", "indeterminate", "", "open", false},
+		{"override-on-unread", "", "adequate", "open", true},
+		{"override-to-dna", "", "dna", "no_show", true},
+	}
+	positions := []struct {
+		name string
+		id   string
+		day  float64
+	}{
+		{"day110", "EYE-later", 110},
+		{"day41", "EYE-later", 41},
+		{"same-day-after-by-id", "EYE-zlater", 40},
+	}
+	mk := func(grade string, l later, pos struct {
+		name string
+		id   string
+		day  float64
+	}) (DownFact, DownFact, DownFact, map[string]string) {
+		screen := drScreen("PHC-dr-1", 10, grade)
+		view := drNote("EYE-mview", 40, "not_assessable", "eid", 1, false)
+		n := drNote(pos.id, pos.day, l.label, "eid", 1, false)
+		var over map[string]string
+		if l.hasOvr {
+			over = map[string]string{pos.id: l.over}
+		}
+		return screen, view, n, over
+	}
+	build := func(over map[string]string, down ...DownFact) *LoopFacts {
+		f := drFacts(down...)
+		f.Contact, f.EvOver = "granted", over
+		return f
+	}
+	assertHold := func(t *testing.T, d *Decision, deadline float64, view, laterID string) {
+		t.Helper()
+		if d == nil || d.State != "not_assessable" || d.Dropoff != "not_assessable" || !d.Overdue {
+			t.Fatalf("no-view hold replaced: %+v", d)
+		}
+		if !hasEsc(d, "overdue_dr_referral") || !hasEsc(d, "clinician_decision_no_fundal_view") ||
+			hasEsc(d, "rebook_after_dna") || hasEsc(d, "urgent_dr_referral_open") {
+			t.Fatalf("escalations wrong: %v", d.Escalations)
+		}
+		if d.DR.Clinic != view || d.DR.Outcome != "not_assessable" || d.DR.Examined || d.ClosingReport != "" ||
+			d.DR.DeadlineDay != deadline || !verifyChain(d.Chain) {
+			t.Fatalf("no-view authority/provenance lost: clinic %q outcome %q examined %v closing %q deadline %v",
+				d.DR.Clinic, d.DR.Outcome, d.DR.Examined, d.ClosingReport, d.DR.DeadlineDay)
+		}
+		c := string(canon(d.Chain))
+		if !strings.Contains(c, "no_fundal_view_clinician_decides") || !strings.Contains(c, "eye-hosp/DiagnosticReport/"+view) ||
+			strings.Contains(c, "eye-hosp/DiagnosticReport/"+laterID) {
+			t.Fatalf("hold evidence must name the no-view report only")
+		}
+		if len(d.Outreach) != 0 {
+			t.Fatalf("hold must release no ordinary recall/rebook under granted consent: %+v", d.Outreach)
+		}
+	}
+	perms := func(a []DownFact) [][]DownFact {
+		idx := [][3]int{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}
+		var out [][]DownFact
+		for _, p := range idx {
+			out = append(out, []DownFact{a[p[0]], a[p[1]], a[p[2]]})
+		}
+		return out
+	}
+	for _, g := range grades {
+		for _, l := range laters {
+			for _, pos := range positions {
+				t.Run(g.grade+"/"+l.name+"/"+pos.name, func(t *testing.T) {
+					screen, view, n, over := mk(g.grade, l, pos)
+					var sig string
+					for i, order := range perms([]DownFact{screen, view, n}) {
+						d, _ := runLung(t, build(over, order...), now)
+						assertHold(t, d, g.deadline, "EYE-mview", pos.id)
+						if i == 0 {
+							sig = d.Sig
+						} else if d.Sig != sig {
+							t.Fatalf("permutation %d changed the decision signature", i)
+						}
+					}
+					// sequential: establish the hold, then add the later outcome.
+					c := NewClosureCore(0, nil)
+					c.Apply(&FactsMsg{ID: "tick", InSeq: 1, IsTick: true, TickDay: now})
+					f1 := build(nil, screen, view)
+					f1.InSeq = 2
+					c.Apply(&FactsMsg{ID: "view", InSeq: 2, Facts: f1})
+					assertHold(t, c.Final()[f1.LoopID], g.deadline, "EYE-mview", pos.id)
+					f2 := build(over, screen, view, n)
+					f2.InSeq = 3
+					c.Apply(&FactsMsg{ID: "later", InSeq: 3, Facts: f2})
+					assertHold(t, c.Final()[f2.LoopID], g.deadline, "EYE-mview", pos.id)
+					// removal: with the no-view absent no hold may linger and the result equals a cold rebuild.
+					f3 := build(over, screen, n)
+					f3.InSeq = 4
+					c.Apply(&FactsMsg{ID: "withdrawn", InSeq: 4, Facts: f3})
+					cold, _ := runLung(t, build(over, screen, n), now)
+					got := c.Final()[f3.LoopID]
+					if got.State != l.alone || cold.State != l.alone || got.Sig != cold.Sig || hasEsc(got, "clinician_decision_no_fundal_view") {
+						t.Fatalf("withdrawn no-view: want %s on both, got sequential %s cold %s", l.alone, got.State, cold.State)
+					}
+					// arrival order: the later outcome first, the no-view arrives afterwards.
+					c2 := NewClosureCore(0, nil)
+					c2.Apply(&FactsMsg{ID: "tick", InSeq: 1, IsTick: true, TickDay: now})
+					a1 := build(over, screen, n)
+					a1.InSeq = 2
+					c2.Apply(&FactsMsg{ID: "later-first", InSeq: 2, Facts: a1})
+					a2 := build(over, n, screen, view)
+					a2.InSeq = 3
+					c2.Apply(&FactsMsg{ID: "view-last", InSeq: 3, Facts: a2})
+					assertHold(t, c2.Final()[a2.LoopID], g.deadline, "EYE-mview", pos.id)
+				})
+			}
+		}
+		t.Run(g.grade+"/later-nonqualifying-after-second-no-view", func(t *testing.T) {
+			f := build(nil, drScreen("PHC-dr-1", 10, g.grade),
+				drNote("EYE-na1", 40, "not_assessable", "eid", 1, false), drNote("EYE-x1", 50, "dna", "eid", 1, false),
+				drNote("EYE-na2", 80, "not_assessable", "eid", 1, false), drNote("EYE-x2", 100, "not_examined", "eid", 1, false))
+			assertHold(t, mustRun(t, f, now), g.deadline, "EYE-na2", "EYE-x2")
+		})
+		t.Run(g.grade+"/deadline-boundary", func(t *testing.T) {
+			f := build(nil, drScreen("PHC-dr-1", 10, g.grade), drNote("EYE-mview", 40, "not_assessable", "eid", 1, false),
+				drNote("EYE-later", 41, "dna", "eid", 1, false))
+			if d, _ := runLung(t, f, g.deadline); d.State != "not_assessable" || d.Overdue || hasEsc(d, "overdue_dr_referral") ||
+				!hasEsc(d, "clinician_decision_no_fundal_view") {
+				t.Fatalf("at deadline: want not overdue hold, got %s %v %v", d.State, d.Overdue, d.Escalations)
+			}
+			assertHold(t, mustRun(t, f, g.deadline+1), g.deadline, "EYE-mview", "EYE-later")
+		})
+		// Existing authority selection is preserved: the last reached no-view wins; the unread
+		// barrier look-ahead picks the first later trusted no-view because the walk stops there.
+		t.Run(g.grade+"/selection-preserved", func(t *testing.T) {
+			screen := drScreen("PHC-dr-1", 10, g.grade)
+			na40 := drNote("EYE-na40", 40, "not_assessable", "eid", 1, false)
+			na60 := drNote("EYE-na60", 60, "not_assessable", "eid", 1, false)
+			dna50 := drNote("EYE-dna50", 50, "dna", "eid", 1, false)
+			na80 := drNote("EYE-na80", 80, "not_assessable", "eid", 1, false)
+			unread := drNote("EYE-unread", 30, "", "eid", 1, false)
+			for _, order := range perms([]DownFact{screen, na40, na60}) {
+				if d := mustRun(t, build(nil, order...), now); d.State != "not_assessable" || d.DR.Clinic != "EYE-na60" {
+					t.Fatalf("last reached no-view must stay the authority, got %s %q", d.State, d.DR.Clinic)
+				}
+			}
+			for _, order := range [][]DownFact{{screen, na40, dna50, na80}, {na80, dna50, na40, screen}, {dna50, screen, na80, na40}} {
+				if d := mustRun(t, build(nil, order...), now); d.State != "not_assessable" || d.DR.Clinic != "EYE-na80" {
+					t.Fatalf("no-view, nonqualifying, no-view: want EYE-na80, got %s %q", d.State, d.DR.Clinic)
+				}
+			}
+			for _, order := range [][]DownFact{{screen, unread, na40, na60}, {na60, na40, unread, screen}, {na40, screen, na60, unread}} {
+				d, out := runLung(t, build(nil, order...), now)
+				if d.State != "not_assessable" || d.DR.Clinic != "EYE-na40" || !hasReview(out, "evidence") || len(d.Pending) != 1 {
+					t.Fatalf("unread barrier look-ahead: want EYE-na40 hold with one review, got %s %q %v", d.State, d.DR.Clinic, d.Pending)
+				}
+			}
+		})
+		// A later nonqualifying outcome behind an unread barrier still leaves the hold.
+		t.Run(g.grade+"/barrier-with-later-dna", func(t *testing.T) {
+			screen := drScreen("PHC-dr-1", 10, g.grade)
+			view := drNote("EYE-mview", 40, "not_assessable", "eid", 1, false)
+			dna := drNote("EYE-later", 110, "dna", "eid", 1, false)
+			for name, unread := range map[string]DownFact{
+				"unread-before":  drNote("EYE-unread", 30, "", "eid", 1, false),
+				"unread-between": drNote("EYE-unread", 50, "", "eid", 1, false),
+			} {
+				d, out := runLung(t, build(nil, screen, unread, view, dna), now)
+				if d.State != "not_assessable" || d.DR.Clinic != "EYE-mview" || !hasReview(out, "evidence") || len(d.Pending) != 1 || len(d.Outreach) != 0 {
+					t.Fatalf("%s: want hold with evidence review, got %s %q %v", name, d.State, d.DR.Clinic, d.Pending)
+				}
+			}
+		})
+		// Controls: qualifying evidence still resolves; nothing is manufactured without a valid no-view.
+		t.Run(g.grade+"/controls", func(t *testing.T) {
+			screen := drScreen("PHC-dr-1", 10, g.grade)
+			view := drNote("EYE-mview", 40, "not_assessable", "eid", 1, false)
+			exam := drNote("EYE-exam", 110, "examined_followup", "eid", 1, false)
+			dna := drNote("EYE-dna", 60, "dna", "eid", 1, false)
+			for name, f := range map[string]*LoopFacts{
+				"view-exam":     build(nil, screen, view, exam),
+				"view-dna-exam": build(nil, screen, view, dna, exam),
+				"dna-exam":      build(nil, screen, dna, exam),
+				"override-exam": build(map[string]string{"EYE-dna2": "examined_followup"}, screen, view, drNote("EYE-dna2", 110, "dna", "eid", 1, false)),
+			} {
+				d := mustRun(t, f, now)
+				if d.State != "closed" || !d.DR.Examined || d.Overdue || hasEsc(d, "clinician_decision_no_fundal_view") || !verifyChain(d.Chain) ||
+					!strings.HasPrefix(d.ClosingReport, "EYE-") {
+					t.Fatalf("%s: qualifying exam must close, got %s %+v", name, d.State, d.DR)
+				}
+			}
+			if d := mustRun(t, build(nil, screen, view, dna, exam), now); d.ClosingReport != "EYE-exam" {
+				t.Fatalf("closure must keep the original exam evidence, got %q", d.ClosingReport)
+			}
+			// barrier: an exam behind an unread note never closes.
+			if d := mustRun(t, build(nil, screen, view, drNote("EYE-unread", 60, "", "eid", 1, false), exam), now); d.State == "closed" {
+				t.Fatal("exam behind an unread barrier must not close")
+			}
+			// no hold is manufactured from ineligible no-view facts.
+			wrong := map[string]DownFact{
+				"untrusted":     drNote("EYE-mview", 40, "not_assessable", "wasl", 0.80, false),
+				"near-miss":     drNote("EYE-mview", 40, "not_assessable", "wasl-subthreshold", 0.60, true),
+				"pre-grade":     drNote("EYE-mview", 5, "not_assessable", "eid", 1, false),
+				"readers-split": drNote("EYE-mview", 40, "", "eid", 1, false),
+			}
+			for name, v := range wrong {
+				d := mustRun(t, build(nil, screen, v, drNote("EYE-later", 110, "dna", "eid", 1, false)), now)
+				if d.State == "not_assessable" || hasEsc(d, "clinician_decision_no_fundal_view") {
+					t.Fatalf("%s: manufactured a no-view hold: %s %v", name, d.State, d.Escalations)
+				}
+			}
+			// a withdrawn-by-override no-view leaves no hold.
+			f := build(map[string]string{"EYE-mview": "adequate"}, screen, view, drNote("EYE-later", 110, "dna", "eid", 1, false))
+			if d := mustRun(t, f, now); d.State == "not_assessable" || d.State == "closed" {
+				t.Fatalf("overridden-away no-view must not hold, got %s", d.State)
+			}
+			// plain nonqualifying outcomes without a no-view keep today's behaviour.
+			if d := mustRun(t, build(nil, screen, dna), now); d.State != "no_show" || !hasEsc(d, "rebook_after_dna") {
+				t.Fatalf("dna alone: want no_show rebook, got %s %v", d.State, d.Escalations)
+			}
+			if d := mustRun(t, build(nil, screen, drNote("EYE-ne", 60, "not_examined", "eid", 1, false)), now); d.State != "open" {
+				t.Fatalf("not_examined alone: want open, got %s", d.State)
+			}
+			if d := mustRun(t, build(nil, screen, drNote("EYE-dna30", 30, "dna", "eid", 1, false), view), now); d.State != "not_assessable" || d.DR.Clinic != "EYE-mview" {
+				t.Fatalf("dna before view: want hold, got %s %q", d.State, d.DR.Clinic)
+			}
+		})
+	}
+}
+
+func mustRun(t *testing.T, f *LoopFacts, now float64) *Decision {
+	t.Helper()
+	d, _ := runLung(t, f, now)
+	if d == nil {
+		t.Fatal("no decision")
+	}
+	return d
+}
