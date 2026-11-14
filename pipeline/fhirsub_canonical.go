@@ -848,6 +848,89 @@ func canonicalPositiveRead(key string, e jetstream.KeyValueEntry) (canonicalMeta
 	return canonicalMetadataReceipt{Key: key, Revision: e.Revision(), Value: bytes.Clone(e.Value()), CoreFingerprint: fp, Authority: canonicalAuthPositive}, nil
 }
 
+// canonicalTransitionKind classifies a proposed replacement of a stored value.
+type canonicalTransitionKind int
+
+const (
+	canonicalTransitionAdvance   canonicalTransitionKind = iota + 1 // legal strictly stronger phase
+	canonicalTransitionIdentical                                    // byte-identical record
+	canonicalTransitionKeep                                         // compatible record already stored; first writer wins
+)
+
+func canonicalConflictf(format string, a ...any) error {
+	return fmt.Errorf("%w: "+format, append([]any{errCanonicalConflict}, a...)...)
+}
+
+// canonicalClassifyTransition is the pure monotonic rule for exact-key metadata. It
+// validates BOTH complete values against the key, so a matching revision alone never
+// permits a write. Phases only advance (attempt->receipt, source->bound); a stored
+// stronger or conflicting record is never replaced.
+func canonicalClassifyTransition(key string, old, desired []byte) (canonicalTransitionKind, error) {
+	if _, err := canonicalValueFingerprint(key, old); err != nil {
+		return 0, canonicalConflictf("%q holds a value that is not a valid canonical record: %v", key, err)
+	}
+	identical := bytes.Equal(old, desired)
+	switch {
+	case strings.HasPrefix(key, canonicalCellPrefix):
+		o, err := parseCanonicalCell(key, old)
+		if err != nil {
+			return 0, err
+		}
+		n, err := parseCanonicalCell(key, desired)
+		if err != nil {
+			return 0, err
+		}
+		switch {
+		case o.Phase == canonicalPhaseAttempt && n.Phase == canonicalPhaseAttempt:
+			if identical {
+				return canonicalTransitionIdentical, nil
+			}
+			return 0, canonicalConflictf("a different attempt cannot replace the stored attempt")
+		case o.Phase == canonicalPhaseAttempt && n.Phase == canonicalPhaseReceipt:
+			a, r := o.Attempt, n.Receipt
+			if !a.Incarnation.equal(r.Core.Incarnation) {
+				return 0, canonicalConflictf("receipt incarnation differs from the stored attempt")
+			}
+			if r.Evidence.Kind == canonicalEvidenceFresh && (r.Evidence.AttemptID != a.ID || r.Core.Sequence != a.ExpectedLast+1) {
+				return 0, canonicalConflictf("fresh receipt does not belong to the stored attempt")
+			}
+			return canonicalTransitionAdvance, nil
+		case o.Phase == canonicalPhaseReceipt && n.Phase == canonicalPhaseAttempt:
+			return 0, canonicalConflictf("a receipt cannot be downgraded to an attempt")
+		default: // receipt -> receipt
+			if err := compareCanonicalReceipts(*o.Receipt, *n.Receipt); err != nil {
+				return 0, err
+			}
+			if identical {
+				return canonicalTransitionIdentical, nil
+			}
+			return canonicalTransitionKeep, nil
+		}
+	case strings.HasPrefix(key, canonicalSourcePrefix):
+		o, err := parseCanonicalSourceRecord(key, old)
+		if err != nil {
+			return 0, err
+		}
+		n, err := parseCanonicalSourceRecord(key, desired)
+		if err != nil {
+			return 0, err
+		}
+		if !o.Incarnation.equal(n.Incarnation) || o.Source != n.Source {
+			return 0, canonicalConflictf("source record incarnation or descriptor changed")
+		}
+		switch {
+		case o.Phase == canonicalPhaseSource && n.Phase == canonicalPhaseBound:
+			return canonicalTransitionAdvance, nil
+		case o.Phase == canonicalPhaseBound && n.Phase == canonicalPhaseSource:
+			return 0, canonicalConflictf("a bound record cannot be downgraded to a source record")
+		case identical:
+			return canonicalTransitionIdentical, nil
+		}
+		return 0, canonicalConflictf("a different %s record cannot replace the stored one", o.Phase)
+	}
+	return 0, fmt.Errorf("%w: %q is not a canonical metadata key", errCanonicalInvalid, key)
+}
+
 // ensureCanonicalValue writes desired at the exact key with Create (expected==0)
 // or Update against the exact observed revision. Never Put. An error reply is
 // unknown until an exact positive Get shows the intended bytes, which an
@@ -865,6 +948,23 @@ func (c *SubConsumer) ensureCanonicalValue(ctx context.Context, key string, expe
 	}
 	done := func(rev uint64, authority string) canonicalMetadataReceipt {
 		return canonicalMetadataReceipt{Key: key, Revision: rev, Value: bytes.Clone(desired), CoreFingerprint: fp, Authority: authority}
+	}
+	if expected != 0 {
+		// The exact old value is validated against the proposed one BEFORE any write.
+		old, err := c.kv.Get(ctx, key)
+		if err != nil {
+			return canonicalMetadataReceipt{}, fmt.Errorf("%w: positive read before update failed (%v)", errCanonicalUnknown, err)
+		}
+		if old == nil || old.Revision() == 0 || old.Operation() != jetstream.KeyValuePut {
+			return canonicalMetadataReceipt{}, fmt.Errorf("%w: no positive revision to update", errCanonicalUnknown)
+		}
+		kind, err := canonicalClassifyTransition(key, old.Value(), desired)
+		if err != nil {
+			return canonicalMetadataReceipt{}, err
+		}
+		if kind == canonicalTransitionKeep {
+			return canonicalPositiveRead(key, old)
+		}
 	}
 	var rev uint64
 	authority := canonicalAuthCreate
@@ -888,7 +988,15 @@ func (c *SubConsumer) ensureCanonicalValue(ctx context.Context, key string, expe
 	if entry == nil || entry.Revision() == 0 || entry.Operation() != jetstream.KeyValuePut {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: write failed (%v) and no positive revision exists", errCanonicalUnknown, writeErr)
 	}
+	var keep bool
+	if !bytes.Equal(entry.Value(), desired) {
+		if kind, cerr := canonicalClassifyTransition(key, entry.Value(), desired); cerr == nil && kind == canonicalTransitionKeep {
+			keep = true
+		}
+	}
 	switch {
+	case keep && (expected == 0 || entry.Revision() != expected):
+		return canonicalPositiveRead(key, entry)
 	case bytes.Equal(entry.Value(), desired):
 		rev, err := c.kv.Update(ctx, key, desired, entry.Revision())
 		if err != nil || rev == 0 {

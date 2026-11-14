@@ -959,3 +959,349 @@ func TestDecodeCanonicalOrdinaryResponse(t *testing.T) {
 // Not executed in this foundation (later matrix gates, deliberately not silently fulfilled):
 // readCanonicalOrdinary against a real broker with default/domain/custom API prefixes, and
 // all four reserved-name collisions through a live ordinary API read.
+
+// ---- monotonic metadata transitions and header-map key distinction -----------------
+
+func cfkReceiptCellRaw(t *testing.T, id canonicalIdentity, seq uint64, kind string) []byte {
+	t.Helper()
+	rc := cfkReceipt(t, id, seq, kind)
+	raw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: id, Receipt: &rc})
+	if err != nil {
+		t.Fatalf("marshal receipt cell: %v", err)
+	}
+	return raw
+}
+
+func cfkSourceRaw(t *testing.T, mutate func(*canonicalSourceRecord)) (string, []byte) {
+	t.Helper()
+	id := cfkIdentity("body")
+	rec := canonicalSourceRecord{Version: 1, Phase: canonicalPhaseSource, Incarnation: cfkInc(), Source: cfkSource(id)}
+	if mutate != nil {
+		mutate(&rec)
+	}
+	raw, err := marshalCanonicalSourceRecord(rec)
+	if err != nil {
+		t.Fatalf("marshal source record: %v", err)
+	}
+	return canonicalSourceKey(rec.Source), raw
+}
+
+func cfkBoundRaw(t *testing.T, mutate func(*canonicalSourceRecord)) (string, []byte) {
+	t.Helper()
+	id := cfkIdentity("body")
+	rc := cfkReceipt(t, id, 5, canonicalEvidenceFresh)
+	return cfkSourceRaw(t, func(r *canonicalSourceRecord) {
+		r.Phase = canonicalPhaseBound
+		r.CellKey = canonicalCellKey(id)
+		r.CoreFingerprint = rc.Fingerprint
+		r.Relation = canonicalRelOriginal
+		if mutate != nil {
+			mutate(r)
+		}
+	})
+}
+
+// cfkRefused asserts a refusal that reached no storage write and left the stored bytes alone.
+func cfkRefused(t *testing.T, name string, kv *cfkKV, key string, before []byte, r canonicalMetadataReceipt, err error) {
+	t.Helper()
+	if err == nil || r.valid() || r.Revision != 0 {
+		t.Errorf("%s: transition was not refused: %+v %v", name, r, err)
+	}
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	if kv.updates != 0 || kv.creates != 0 || kv.puts != 0 || !bytes.Equal(kv.data[key].value, before) {
+		t.Errorf("%s: refused transition reached storage (updates=%d creates=%d puts=%d)", name, kv.updates, kv.creates, kv.puts)
+	}
+}
+
+func TestEnsureCanonicalValueRefusesIllegalTransitionsBeforeAnyWrite(t *testing.T) {
+	ctx := context.Background()
+	id := cfkIdentity("body")
+	key, attempt := cfkCellBytes(t, id)
+	receipt := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceFresh)
+
+	type tc struct {
+		name   string
+		key    string
+		stored []byte
+		desire []byte
+	}
+	var cases []tc
+	a3 := cfkAttempt(t, id)
+	a3.ID, a3.Number = "attempt-9", 9
+	raw3, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: id, Attempt: a3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases = append(cases, tc{"receipt to unrelated attempt", key, receipt, raw3})
+
+	wrongAttempt := cfkReceipt(t, id, 5, canonicalEvidenceFresh)
+	wrongAttempt.Evidence.AttemptID = "some-other-attempt"
+	raw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: id, Receipt: &wrongAttempt})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases = append(cases, tc{"attempt to receipt of another attempt", key, attempt, raw})
+
+	wrongSeq := cfkReceiptCellRaw(t, id, 9, canonicalEvidenceFresh)
+	cases = append(cases, tc{"attempt to fresh receipt at unexpected sequence", key, attempt, wrongSeq})
+
+	otherInc := cfkReceipt(t, id, 5, canonicalEvidenceRead)
+	otherInc.Core.Incarnation.Created = cfkCreated.Add(time.Hour)
+	otherInc.Fingerprint, _ = canonicalCoreFingerprint(otherInc.Core)
+	raw, err = marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: id, Receipt: &otherInc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases = append(cases, tc{"attempt to receipt of another incarnation", key, attempt, raw})
+
+	a2 := cfkAttempt(t, id)
+	a2.ID, a2.Number = "attempt-2", 2
+	raw, err = marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: id, Attempt: a2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases = append(cases, tc{"attempt replaced by a different attempt", key, attempt, raw})
+
+	cases = append(cases, tc{"receipt to receipt of another core", key, receipt, cfkReceiptCellRaw(t, id, 6, canonicalEvidenceRead)})
+
+	skey, srcRec := cfkSourceRaw(t, nil)
+	_, boundRec := cfkBoundRaw(t, nil)
+	cases = append(cases, tc{"bound to source", skey, boundRec, srcRec})
+	_, srcOrigin := cfkSourceRaw(t, func(r *canonicalSourceRecord) { r.Source.OriginRevision = 4 })
+	cases = append(cases, tc{"source with changed origin", skey, srcRec, srcOrigin})
+	_, boundOrigin := cfkBoundRaw(t, func(r *canonicalSourceRecord) { r.Source.OriginPendingSHA256 = cfkHex("other-pending") })
+	cases = append(cases, tc{"source to bound with changed origin", skey, srcRec, boundOrigin})
+	_, boundInc := cfkBoundRaw(t, func(r *canonicalSourceRecord) { r.Incarnation.Created = cfkCreated.Add(time.Hour) })
+	cases = append(cases, tc{"source to bound in another incarnation", skey, srcRec, boundInc})
+	_, boundFP := cfkBoundRaw(t, func(r *canonicalSourceRecord) { r.CoreFingerprint = cfkHex("other-core") })
+	cases = append(cases, tc{"bound to bound with another core", skey, boundRec, boundFP})
+	_, srcLegacy := cfkSourceRaw(t, func(r *canonicalSourceRecord) { r.Source.OriginSub, r.Source.BindingRule = "", canonicalRuleLegacy })
+	cases = append(cases, tc{"bound to source with changed binding rule", skey, boundRec, srcLegacy})
+
+	for _, c := range cases {
+		kv := newCfkKV()
+		rev := kv.write(c.key, c.stored)
+		r, err := cfkConsumer(kv).ensureCanonicalValue(ctx, c.key, rev, c.desire)
+		cfkRefused(t, c.name, kv, c.key, c.stored, r, err)
+		if err != nil && !errors.Is(err, errCanonicalConflict) && !errors.Is(err, errCanonicalInvalid) {
+			t.Errorf("%s: err = %v, want conflict or invalid", c.name, err)
+		}
+	}
+}
+
+func TestEnsureCanonicalValueAllowsOnlyLegalAdvancesAndExactIdempotence(t *testing.T) {
+	ctx := context.Background()
+	id := cfkIdentity("body")
+	key, attempt := cfkCellBytes(t, id)
+	fresh := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceFresh)
+	read := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceRead)
+	skey, srcRec := cfkSourceRaw(t, nil)
+	_, boundRec := cfkBoundRaw(t, nil)
+	for _, c := range []struct {
+		name          string
+		key           string
+		stored, wants []byte
+	}{
+		{"attempt to fresh receipt", key, attempt, fresh},
+		{"attempt to read receipt", key, attempt, read},
+		{"exact attempt", key, attempt, attempt},
+		{"exact receipt", key, fresh, fresh},
+		{"source to bound", skey, srcRec, boundRec},
+		{"exact source", skey, srcRec, srcRec},
+		{"exact bound", skey, boundRec, boundRec},
+	} {
+		kv := newCfkKV()
+		rev := kv.write(c.key, c.stored)
+		r, err := cfkConsumer(kv).ensureCanonicalValue(ctx, c.key, rev, c.wants)
+		if err != nil || !r.valid() || r.Authority != canonicalAuthUpdate || r.Revision <= rev || !bytes.Equal(r.Value, c.wants) || !bytes.Equal(kv.data[c.key].value, c.wants) || kv.puts != 0 {
+			t.Errorf("%s: %+v %v", c.name, r, err)
+		}
+	}
+}
+
+func TestEnsureCanonicalValueRetainsStrongerCompatibleRecordOnDowngrade(t *testing.T) {
+	ctx := context.Background()
+	id := cfkIdentity("body")
+	key, attempt := cfkCellBytes(t, id)
+	fresh := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceFresh)
+	skey, srcRec := cfkSourceRaw(t, nil)
+	_, boundRec := cfkBoundRaw(t, nil)
+	for _, c := range []struct {
+		name          string
+		key           string
+		stored, wants []byte
+	}{
+		{"receipt over its own attempt", key, fresh, attempt},
+		{"bound over its own source", skey, boundRec, srcRec},
+	} {
+		// exact-revision Update
+		kv := newCfkKV()
+		rev := kv.write(c.key, c.stored)
+		r, err := cfkConsumer(kv).ensureCanonicalValue(ctx, c.key, rev, c.wants)
+		cfkRefused(t, c.name+" (update)", kv, c.key, c.stored, r, err)
+		if !errors.Is(err, errCanonicalConflict) {
+			t.Errorf("%s (update): err = %v, want conflict", c.name, err)
+		}
+		// stale expected revision
+		kv = newCfkKV()
+		kv.write(c.key, c.wants)
+		rev2 := kv.write(c.key, c.stored)
+		r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, c.key, rev2-1, c.wants)
+		if err == nil || r.valid() || !bytes.Equal(kv.data[c.key].value, c.stored) || kv.puts != 0 {
+			t.Errorf("%s (stale): %+v %v", c.name, r, err)
+		}
+		// Create over existing
+		kv = newCfkKV()
+		kv.write(c.key, c.stored)
+		r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, c.key, 0, c.wants)
+		if !errors.Is(err, errCanonicalConflict) || r.valid() || !bytes.Equal(kv.data[c.key].value, c.stored) || kv.updates != 0 {
+			t.Errorf("%s (create): %+v %v updates=%d", c.name, r, err, kv.updates)
+		}
+	}
+}
+
+func TestEnsureCanonicalValueSameCoreDifferentEvidenceFirstWriterWins(t *testing.T) {
+	ctx := context.Background()
+	id := cfkIdentity("body")
+	key, attempt := cfkCellBytes(t, id)
+	fresh := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceFresh)
+	read := cfkReceiptCellRaw(t, id, 5, canonicalEvidenceRead)
+	if bytes.Equal(fresh, read) {
+		t.Fatal("fixture evidence must differ")
+	}
+	check := func(name string, kv *cfkKV, stored []byte, r canonicalMetadataReceipt, err error) {
+		t.Helper()
+		if err != nil || !r.valid() || r.Authority != canonicalAuthPositive || r.Revision == 0 || !bytes.Equal(r.Value, stored) || r.Key != key {
+			t.Errorf("%s: must return the stored compatible record: %+v %v", name, r, err)
+		}
+		if !bytes.Equal(kv.data[key].value, stored) || kv.puts != 0 || kv.updates != 0 {
+			t.Errorf("%s: stored evidence rewritten (updates=%d puts=%d)", name, kv.updates, kv.puts)
+		}
+	}
+	// exact-revision Update over a first-written receipt
+	kv := newCfkKV()
+	rev := kv.write(key, fresh)
+	r, err := cfkConsumer(kv).ensureCanonicalValue(ctx, key, rev, read)
+	check("update at expected revision", kv, fresh, r, err)
+	// same with an unapplied-error mode armed: no write may be attempted at all
+	kv = newCfkKV()
+	rev = kv.write(key, fresh)
+	kv.mode = "unapplied-error"
+	r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, key, rev, read)
+	check("update with armed write fault", kv, fresh, r, err)
+	// stale expected revision: another caller already wrote the compatible receipt
+	kv = newCfkKV()
+	base := kv.write(key, attempt)
+	kv.write(key, fresh)
+	r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, key, base, read)
+	check("stale expected revision", kv, fresh, r, err)
+	// Create loses to a first writer
+	kv = newCfkKV()
+	kv.write(key, read)
+	r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, key, 0, fresh)
+	check("create over existing", kv, read, r, err)
+	// ambiguous own write must not be completed by a plausible value: with the key
+	// still at the expected attempt revision an unapplied error stays unknown
+	kv = newCfkKV()
+	rev = kv.write(key, attempt)
+	kv.mode = "unapplied-error"
+	r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, key, rev, fresh)
+	if !errors.Is(err, errCanonicalUnknown) || r.valid() || !bytes.Equal(kv.data[key].value, attempt) {
+		t.Errorf("unapplied update over attempt: %+v %v", r, err)
+	}
+	// an unreadable store refuses before any Update
+	kv = newCfkKV()
+	rev = kv.write(key, attempt)
+	kv.getErr = errors.New("unavailable")
+	r, err = cfkConsumer(kv).ensureCanonicalValue(ctx, key, rev, fresh)
+	if err == nil || r.valid() || kv.updates != 0 {
+		t.Errorf("update without a positive read: %+v %v updates=%d", r, err, kv.updates)
+	}
+}
+
+func TestCanonicalHeaderMapKeysAreCaseSensitiveWhileMetadataFieldsAreNot(t *testing.T) {
+	id := cfkIdentity("body")
+	frozen := cfkFrozen(id)
+	frozen["Nats-X"] = []string{"upper", "upper2"}
+	frozen["nats-x"] = []string{"lower"}
+	frozen["Wsi-A"] = []string{"1", "1"}
+	frozen["Wsi-a"] = []string{"2"}
+	att := cfkAttempt(t, id)
+	att.FrozenApplicationHeaders = frozen
+	att.WireHeaders = cfkWire(frozen, 4)
+	raw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: id, Attempt: att})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	cell, err := parseCanonicalCell(canonicalCellKey(id), raw)
+	if err != nil {
+		t.Fatalf("case-distinct header names must parse: %v", err)
+	}
+	for _, h := range []nats.Header{cell.Attempt.FrozenApplicationHeaders, cell.Attempt.WireHeaders} {
+		if !reflect.DeepEqual(h["Nats-X"], []string{"upper", "upper2"}) || !reflect.DeepEqual(h["nats-x"], []string{"lower"}) ||
+			!reflect.DeepEqual(h["Wsi-A"], []string{"1", "1"}) || !reflect.DeepEqual(h["Wsi-a"], []string{"2"}) ||
+			!reflect.DeepEqual(h["X-Crc-Provenance"], []string{"first", "second", "second"}) {
+			t.Fatalf("header map keys, order or multiplicity changed: %v", h)
+		}
+	}
+	// exact duplicate keys inside each header map are rejected
+	dup := strings.Replace(string(raw), `"Nats-X":["upper","upper2"]`, `"Nats-X":["upper","upper2"],"Nats-X":["again"]`, 2)
+	if dup == string(raw) {
+		t.Fatal("fixture did not contain the header to duplicate")
+	}
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(dup)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("exact duplicate header key accepted: %v", err)
+	}
+	// but each map alone, once, is a duplicate too
+	one := strings.Replace(string(raw), `"Nats-X":["upper","upper2"]`, `"Nats-X":["upper","upper2"],"Nats-X":["again"]`, 1)
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(one)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("exact duplicate key in one header map accepted: %v", err)
+	}
+	// metadata field aliases remain refused, even next to case-distinct header names
+	alias := strings.Replace(string(raw), `"Version":1,`, `"Version":1,"version":1,`, 1)
+	if alias == string(raw) {
+		t.Fatal("alias fixture unchanged")
+	}
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(alias)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("case-folded metadata alias accepted: %v", err)
+	}
+	attAlias := strings.Replace(string(raw), `"Attempt":{`, `"Attempt":{"id":"x",`, 1)
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(attAlias)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("case-folded nested metadata alias accepted: %v", err)
+	}
+
+	// OriginalWsi: case-distinct Wsi names stay distinct through the receipt
+	orig := cfkWire(frozen, 4)
+	core, err := newCanonicalCore(cfkInc(), 5, id, orig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc, err := newCanonicalReceipt(core, canonicalEvidence{Kind: canonicalEvidenceFresh, AttemptID: "attempt-1", ObservedAck: &jetstream.PubAck{Stream: "FHIR", Sequence: 5}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rraw, err := marshalCanonicalCell(canonicalCell{Version: 1, Phase: canonicalPhaseReceipt, Identity: id, Receipt: &rc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pc, err := parseCanonicalCell(canonicalCellKey(id), rraw)
+	if err != nil {
+		t.Fatalf("receipt with case-distinct Wsi names: %v", err)
+	}
+	if !reflect.DeepEqual(pc.Receipt.Core.OriginalWsi["Wsi-A"], []string{"1", "1"}) || !reflect.DeepEqual(pc.Receipt.Core.OriginalWsi["Wsi-a"], []string{"2"}) {
+		t.Fatalf("OriginalWsi keys folded: %v", pc.Receipt.Core.OriginalWsi)
+	}
+	dupWsi := strings.Replace(string(rraw), `"Wsi-A":["1","1"]`, `"Wsi-A":["1","1"],"Wsi-A":["3"]`, 1)
+	if dupWsi == string(rraw) {
+		t.Fatal("Wsi fixture unchanged")
+	}
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(dupWsi)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("exact duplicate OriginalWsi key accepted: %v", err)
+	}
+	// an OriginalWsi key outside its domain (wrong-case prefix) is still refused
+	badWsi := strings.Replace(string(rraw), `"Wsi-a":["2"]`, `"wsi-a":["2"]`, 1)
+	if _, err := parseCanonicalCell(canonicalCellKey(id), []byte(badWsi)); !errors.Is(err, errCanonicalInvalid) {
+		t.Errorf("OriginalWsi key outside the Wsi- domain accepted: %v", err)
+	}
+}
