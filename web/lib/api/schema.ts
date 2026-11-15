@@ -243,7 +243,7 @@ export const BookingSummarySlot = z.looseObject({
 });
 
 /** Server-replayed simulated reservation state. No provider or patient system is involved. */
-export const BookingSummary = z.looseObject({
+const BookingSummaryObject = z.looseObject({
   status: z.enum(["unreserved", "reserved", "cancelled"]),
   mode: z.literal("simulated"),
   revision: z.number().int().nonnegative(),
@@ -253,6 +253,15 @@ export const BookingSummary = z.looseObject({
   updated_at: z.string().nullable(),
   updated_event: z.string().nullable(),
 });
+
+// Redacted exports omit nullable objects. Restore only an absent, explicitly unreserved slot.
+export const BookingSummary = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)
+      && "status" in value && value.status === "unreserved" && !("slot" in value)) {
+    return { ...value, slot: null };
+  }
+  return value;
+}, BookingSummaryObject);
 
 export const EligibleBookingSlot = z.looseObject({
   slot_id: z.string(),
@@ -271,6 +280,12 @@ export const EligibleBookingSlot = z.looseObject({
   cross_region: z.boolean(),
   version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   availability: z.enum(["available", "reserved"]).optional(),
+});
+
+/** Effective contact state on the case list: a recorded denial or opt-out blocks contact whatever `consent` says. */
+export const ContactState = z.looseObject({
+  status: z.enum(["none", "granted", "denied", "opted_out"]),
+  contact_blocked: z.boolean(),
 });
 
 /**
@@ -302,6 +317,24 @@ export const ReviewLedger = z.looseObject({
   note: z.string().optional(),
 });
 
+/** Patient-link self-service projection. Summary rows omit timestamps/event ids; detail includes the full projection. */
+export const CasePatient = z.looseObject({
+  schema: z.literal("wasl-patient-journey/1"),
+  head: z.string(),
+  seq: z.number().int().nonnegative(),
+  ledger_status: z.enum(["ok", "invalid"]),
+  teach_back: z.looseObject({ status: z.enum(["pending", "completed"]), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
+  contact_permission: z.looseObject({ status: Consent, updated_at: z.string().optional(), event: z.string().optional() }),
+  slot_selection: z.looseObject({
+    status: z.enum(["unselected", "selected"]), slot_id: z.string(), offers_version: z.string().optional(), selected_at: z.string().optional(), event: z.string().optional(),
+  }),
+  preparation: z.looseObject({
+    items: z.array(z.looseObject({ item_id: z.string(), completed: z.boolean(), updated_at: z.string().optional(), event: z.string().optional() })),
+    completed: z.number().int(), total: z.number().int(),
+  }),
+  last_action_at: z.string(),
+});
+
 export const RecoveryCase = z.looseObject({
   backfill: z.looseObject({
     slot_id: z.string(),
@@ -314,7 +347,9 @@ export const RecoveryCase = z.looseObject({
   source_releases: z.array(z.looseObject({ slot_id: z.string(), status: z.string(), day: z.number() })).default([]),
 });
 
-export const CaseSummary = z.looseObject({
+export const ActiveCaseSummary = z.looseObject({
+  lifecycle: z.literal("active").optional(),
+  inactive: z.literal(false).optional(),
   id: z.string(),
   programme: Programme,
   state: CaseState,
@@ -337,8 +372,32 @@ export const CaseSummary = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
   api_overlay: ApiOverlay.optional(),
+  contact_state: ContactState.optional(),
+  api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
 });
+
+const RetainedRequest = {
+  lifecycle: z.literal("retained"),
+  inactive: z.literal(true),
+  request_status: z.enum(["", "draft", "on-hold", "revoked", "completed", "entered-in-error", "unknown", "active", "conflict"]),
+  request_version: z.number().int().positive(),
+  request_conflict: z.boolean(),
+};
+
+/** Empty programme exists only in a verified, non-actionable tombstone. */
+export const RetainedCaseSummary = ActiveCaseSummary.omit({ lifecycle: true, inactive: true }).extend({
+  ...RetainedRequest,
+  state: z.literal("inactive"),
+  dropoff: z.literal("").default(""),
+  programme: z.union([Programme, z.literal("")]),
+  programme_availability: z.enum(["selected", "unavailable"]),
+  actionable: z.literal(false),
+  overdue: z.literal(false),
+  closed: z.literal(false),
+}).refine((row) => (row.programme === "") === (row.programme_availability === "unavailable"));
+
+export const CaseSummary = z.union([ActiveCaseSummary, RetainedCaseSummary]);
 
 export const ChainEntry = z.looseObject({
   type: z.string(),
@@ -416,7 +475,9 @@ export const ConsentLogEntry = z.looseObject({
   contact: z.string().optional(),
 });
 
-export const Decision = z.looseObject({
+export const ActiveDecision = z.looseObject({
+  lifecycle: z.literal("active").optional(),
+  inactive: z.literal(false).optional(),
   decision_id: z.string(),
   state: CaseState,
   dropoff: Dropoff,
@@ -428,6 +489,11 @@ export const Decision = z.looseObject({
   escalations: z.array(z.string()),
   consent_log: z.array(ConsentLogEntry),
 });
+
+export const RetainedDecision = ActiveDecision.omit({ lifecycle: true, inactive: true }).extend({
+  ...RetainedRequest, state: z.literal("inactive"), overdue: z.literal(false), dropoff: z.literal("").default(""),
+});
+export const Decision = z.union([ActiveDecision, RetainedDecision]);
 
 export const ReviewItem = z.looseObject({
   item: z.string(),
@@ -479,7 +545,15 @@ export const ApiReview = z.looseObject({
 
 /** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
 export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
+/** `prev` is absent when it would repeat the hash of a first independent read still concealed from the viewer. */
 export const ConsentEvent = ApiReview.extend({
+  /** Patient consent overlays share this history but use patient_journey events without review item/note fields. */
+  item: z.string().optional(),
+  note: z.string().optional(),
+  type: z.literal("patient_journey").optional(),
+  kind: z.literal("contact_permission_changed").optional(),
+  /** viewerEvent removes prev when it would disclose a concealed independent first read. */
+  prev: z.string().optional(),
   decision: ConsentEventName,
   action: z.literal("record_consent"),
   head_signed: z.string(),
@@ -493,15 +567,17 @@ export const ConsentOverlay = z.looseObject({
   canonical_consent: Consent,
   canonical_unchanged: z.literal(true),
   last_event_hash: z.string(),
+  revision: z.string().min(1),
   note: z.string(),
 });
-export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentHistoryEvent = z.union([ConsentEvent, z.lazy(() => PatientJourneyEvent)]);
+export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
 export const ConsentRequest = z.object({
   event: ConsentEventName,
   expected_head: z.string().min(1),
   note: z.string().max(500).default(""),
 });
-export const ConsentResponse = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentResponse = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
 export const ConsentAppendResponse = withMeta({ review: ConsentEvent, overlay: ConsentOverlay, note: z.string() });
 export const ConsentError = withMeta({ error: z.string(), current_head: z.string().optional(), api_contact: ConsentOverlay.optional() });
 
@@ -591,6 +667,28 @@ const claimShape = {
   expected_claim_head: z.string(),
 };
 
+const patientShape = {
+  ...ledgerCore,
+  /** viewerEvent omits prev when it chains onto a concealed independent read. */
+  prev: z.string().optional(),
+  type: z.literal("patient_journey"),
+  kind: z.enum(["teach_back_completed", "contact_permission_changed", "slot_selected", "preparation_changed"]),
+  link_id: z.string(),
+  request_id: z.string(),
+  head: z.string(),
+  head_signed: z.string(),
+  seq: z.number().int().positive(),
+  decision: z.string().optional(),
+  data: z.looseObject({
+    question_id: z.string().optional(), answer_id: z.string().optional(), permission: Consent.optional(),
+    slot_id: z.string().optional(), offers_version: z.string().optional(), item_id: z.string().optional(), completed: z.boolean().optional(),
+  }),
+};
+
+/** Patient self-service events stay distinct from coordinator actions and canonical FHIR source events. */
+export const PatientJourneyEvent = z.looseObject({ ...patientShape, actor: z.string() });
+export const AuditPatientJourneyEvent = z.looseObject({ ...patientShape, actor: z.string().optional() });
+
 /** A coordinator action as case detail serves it (actor and free text included). */
 export const CoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string() });
 /** An undo, contest or contest resolution as case detail serves it. */
@@ -637,6 +735,7 @@ const reviewOnly = { type: z.never().optional(), kind: z.literal("").optional() 
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
   CoordinatorEvent.transform(tag("coordinator")),
+  PatientJourneyEvent.transform(tag("patient")),
   CompensationEvent.transform(tag("compensation")),
   ReviewClaimEvent.transform(tag("claim")),
   ApiReview.extend(reviewOnly).transform(tag("review")),
@@ -645,6 +744,7 @@ export const LedgerEvent = z.union([
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
   AuditCoordinatorEvent.transform(tag("coordinator")),
+  AuditPatientJourneyEvent.transform(tag("patient")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReviewClaimEvent.transform(tag("claim")),
   AuditReview.extend(reviewOnly).transform(tag("review")),
@@ -660,10 +760,22 @@ export const Booking = z.looseObject({
   calendar_version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   eligible_slots: z.array(EligibleBookingSlot).optional(),
   reservable: z.boolean().optional(),
+  readiness: z.object({ ready: z.boolean(), reason: z.string().optional() }).optional(),
   reservation_explanation: z.string().optional(),
 });
 
-export const CurrentDecision = z.looseObject({
+export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
+
+/** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
+export const Handoff = z.looseObject({
+  clinical_priority: z.string(),
+  decided_at: z.number(),
+  act_by: z.number(),
+  status: HandoffStatus,
+});
+
+export const ActiveCurrentDecision = z.looseObject({
+  inactive: z.literal(false).optional(),
   id: z.string(),
   loop: z.string(),
   state: CaseState,
@@ -674,7 +786,17 @@ export const CurrentDecision = z.looseObject({
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
+  handoff: Handoff.optional(),
 });
+
+export const RetainedCurrentDecision = ActiveCurrentDecision.omit({ inactive: true }).extend({
+  inactive: z.literal(true), state: z.literal("inactive"),
+  request_status: RetainedRequest.request_status.default(""),
+  request_version: RetainedRequest.request_version,
+  request_conflict: RetainedRequest.request_conflict.default(false),
+  prog: z.union([Programme, z.literal("")]).optional(),
+});
+export const CurrentDecision = z.union([ActiveCurrentDecision, RetainedCurrentDecision]);
 
 export const ReviewSlot = z.enum(["r1", "r2", "r3"]);
 
@@ -730,7 +852,15 @@ export const CaseDetail = withMeta({
   identities: z.array(Identity),
   timeline: z.array(TimelineEvent),
   links: z.array(Link),
+  /** Only evidence supporting the current decision and current trusted registrations. */
   evidence: z.array(Evidence),
+  /** Preserved canonical reports, never the primary current readers' checklist. */
+  evidence_history: z.array(Evidence.extend({
+    history: z.enum(["rejected_registration", "superseded"]),
+    block_hash: z.string(),
+    decision_id: z.string(),
+    decision_sig: z.string(),
+  })).optional(),
   holds: z.array(Hold),
   outreach: z.array(z.looseObject({})),
   decisions: z.array(Decision),
@@ -742,6 +872,8 @@ export const CaseDetail = withMeta({
   api_contact: ApiContact.optional(),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
+  /** Separate patient-link projection; never merged into canonical timeline or booking. */
+  api_patient: CasePatient.optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
@@ -1069,7 +1201,7 @@ export const UndoEventProjection = z.looseObject({
 const undoProjectionShape = {
   case: z.string(),
   case_status: z.enum(["none", "active", "contested", "compensated"]),
-  canonical_state: CaseState,
+  canonical_state: z.union([CaseState, z.literal("inactive")]),
   note: z.string(),
   events: z.array(UndoEventProjection),
 };
@@ -1085,11 +1217,20 @@ export const ContestResolutionRequest = z.object({
   resolution: z.enum(["upheld", "rejected"]),
   note: governanceReason,
 });
+/** The compensation event as a viewer receives it: `prev` and `action_head` are omitted when they would repeat a concealed first-read hash. */
+export const ViewerCompensationEvent = z.looseObject({
+  ...compensationShape,
+  prev: z.string().optional(),
+  action_head: z.string().optional(),
+  actor: z.string(),
+  target_actor: z.string(),
+  note: z.string(),
+});
 export const CompensationResponse = withMeta({
-  event: CompensationEvent,
+  event: ViewerCompensationEvent,
   canonical_reopened: z.literal(false),
   auto_closure: z.literal(false),
-  canonical_state: CaseState,
+  canonical_state: z.union([CaseState, z.literal("inactive")]),
   requires_resolution: z.literal(true).optional(),
   projection: UndoProjectionData,
   note: z.string(),
@@ -1111,7 +1252,8 @@ export const BookingAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("booking_cancel"), reservation_id: hash, expected_reservation_version: hash, reason: bookingReason }),
 ]);
 export const CaseAction = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
+  /** Without `owner` the API assigns the case to the actor bound to the coordinator token. */
+  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64).optional() }),
   z.object({ action: z.literal("snooze"), until: z.string(), reason: z.string().max(200).optional() }),
   z.object({
     action: z.literal("contact_outcome"),
@@ -1143,6 +1285,8 @@ export type FixtureName = z.infer<typeof FixtureName>;
 export type Role = z.infer<typeof Role>;
 export type Meta = z.infer<typeof Meta>;
 export type CaseSummary = z.infer<typeof CaseSummary>;
+export type CurrentDecision = z.infer<typeof CurrentDecision>;
+export type HandoffStatus = z.infer<typeof HandoffStatus>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type Audit = z.infer<typeof Audit>;
@@ -1178,6 +1322,7 @@ export type ConsentResponse = z.infer<typeof ConsentResponse>;
 export type ConsentAppendResponse = z.infer<typeof ConsentAppendResponse>;
 export type AuditReview = z.infer<typeof AuditReview>;
 export type LedgerEvent = z.infer<typeof LedgerEvent>;
+export type PatientJourneyEvent = z.infer<typeof PatientJourneyEvent>;
 export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;

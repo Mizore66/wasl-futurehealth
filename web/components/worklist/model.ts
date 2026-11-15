@@ -9,6 +9,7 @@ import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, ledgerWordsWithHistory } from "@/components/case/words";
+import { caseDeadlineDays, isNoAction, nextScreenDays } from "./days";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -48,6 +49,7 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
+  if (c.lifecycle === "retained") return { status: "Retired", next: "Authorized history only; no current care action" };
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
@@ -57,6 +59,54 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
 /** Whole days since referral at run day `now`. */
 export function elapsedDays(c: CaseSummary, now: number): number {
   return Math.floor(now - c.referral_day);
+}
+
+const NO_ACTION_WORDS: Record<string, string> = {
+  no_followup_needed: "no routine follow-up needed",
+  no_referral_needed: "no referral needed",
+  no_recall_needed: "no recall needed",
+};
+
+/** What a no-action resolution says, with the next routine screen when the rule sets one. */
+export function noActionWords(c: CaseSummary): string {
+  const next = nextScreenDays(c);
+  return `${NO_ACTION_WORDS[c.state] ?? "no action needed"}${next ? `, next screen in ${next} days` : ""}`;
+}
+
+/** The detail header for a closed case: the deadline comparison for a procedure closure, the resolution for a no-action one. */
+export function closedHeadline(c: CaseSummary): string {
+  const d = closedInDays(c);
+  if (isNoAction(c)) return `Closed in ${d} days, ${noActionWords(c)}`;
+  const due = caseDeadlineDays(c);
+  const words = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
+  return d <= due ? `Closed in ${d} days, ${due - d} inside the ${words}` : `Closed in ${d} days, ${d - due} past the ${words}`;
+}
+
+/**
+ * The absolute run day of the next routine screen as the API serves it for a no-action resolution, or undefined when
+ * the case does not carry one. The screening date is not the referral date, so it is never derived from `referral_day`.
+ */
+export function servedNextScreenDay(c: CaseSummary): number | undefined {
+  switch (c.programme) {
+    case "lung_ldct":
+      return c.ldct?.due_day;
+    case "diabetic_retinopathy":
+      return c.dr?.next_due?.due_day ?? c.dr?.deadline_day;
+    case "breast":
+      return c.breast?.deadline_day;
+    case "ifhas":
+      return c.ifhas?.deadline_day;
+    default:
+      return undefined;
+  }
+}
+
+/** The Patients due column: the procedure deadline, the next screen for a no-action resolution, or nothing due. */
+export function dueColumnWords(c: CaseSummary): string {
+  if (!isNoAction(c)) return formatDay(c.referral_day + caseDeadlineDays(c));
+  if (!nextScreenDays(c)) return "None due";
+  const due = servedNextScreenDay(c);
+  return due === undefined ? "Next screen date unavailable" : `Next screen ${formatDay(due)}`;
 }
 
 export function closedInDays(c: CaseSummary): number {
@@ -91,7 +141,8 @@ export const PROGRAMME_NAMES: Record<Programme, string> = {
   ifhas: "IFHAS cardiometabolic follow-up",
 };
 
-export const PROCEDURE: Record<Programme, string> = {
+export const PROCEDURE: Record<Programme | "", string> = {
+  "": "procedure unavailable",
   crc: "colonoscopy",
   cervical: "colposcopy",
   lung_nodule: "follow-up CT",
@@ -118,6 +169,11 @@ export type WorkItem = {
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
+  /** A recorded consent denial or opt-out: no new contact outcome may be logged, whatever the canonical consent. */
+  contactBlocked: boolean;
+  /** Patient denial/opt-out in the demo overlay makes simulated SMS unavailable immediately. */
+  textsStopped?: boolean;
+  patient?: CaseSummary["api_patient"];
   owner: string;
   review: CaseSummary["review"];
   dropoff: Dropoff;
@@ -130,17 +186,26 @@ export type WorkItem = {
   snoozed?: boolean;
   /** Consecutive persisted no-answers ending the case's contact log (live API only). */
   noAnswer?: number;
+  /** The latest applicable contact outcome is Reached, so Appointment agreed, Call back and Declined are still to choose. */
+  awaitingNext?: boolean;
   /** `invalid`: ledger replay stopped part-way, so this row's overlay is only a prefix and not authoritative. */
   ledgerStatus?: "ok" | "invalid";
+  /** An active simulated reservation (live API only). */
+  reserved?: boolean;
+  /** The simulated reservation was cancelled (live API only). */
+  cancelled?: boolean;
 };
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
+export const DECLINED_RESERVED_NEXT = "GP to sign the decline · cancel the simulated reservation to release the slot";
+/** A decline recorded after the reservation was cancelled needs the GP's sign-off, not another booking. */
+export const DECLINED_CANCELLED_NEXT = "GP to sign the decline";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
-const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
+export const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
 
 /** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
 export const HANDOFF_OWNER = "Dr Al Kaabi";
@@ -157,6 +222,11 @@ export const HANDOFF_OWNER = "Dr Al Kaabi";
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
   const words = { ...statusWords(c) };
+  if (c.api_patient?.slot_selection.status === "selected") {
+    words.status = "Patient selected a simulated slot · coordinator review needed";
+    words.next = "Review the preferred time; no appointment is reserved";
+  }
+  const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
   const owner = ov?.owner || c.owner;
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
@@ -164,6 +234,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
   let sinks = false;
+  let awaitingNext = false;
   if (lc) {
     if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
       view = "waiting";
@@ -173,31 +244,51 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
     } else if (lc.outcome === "reached") {
       words.status = `Reached · ${words.next}`;
+      awaitingNext = true;
     } else {
       words.status = outcomeStatus(lc.outcome);
     }
   }
+  // The validated shared projection folds patient AND staff consent in ledger order. api_patient is activity,
+  // not current shared permission: a legitimate later staff grant can supersede a patient denial.
+  // Older snapshots have no shared projection; only there retain the conservative patient-only fallback.
+  const contactBlocked = c.contact_state ? c.contact_state.contact_blocked : patientBlocked;
+  const textsStopped = contactBlocked && patientBlocked;
   const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
   const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || compareInstants(ov!.snooze!.at, lc.at) > 0);
-  if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
-  const snoozed = snoozeRunning || sinks;
+  if (snoozeLater) {
+    awaitingNext = false;
+    words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  }
+  const snoozed = snoozeLater || sinks;
   // Reservation state has explicit precedence over contact outcomes and canonical no-show. A snooze may still sink
   // the row, but it never disguises an active synthetic reservation as an ordinary snoozed call.
   const booking = ov?.booking;
+  const declinedAfterBooking = lc?.outcome === "declined" && !!booking?.updated_at && compareInstants(lc.at, booking.updated_at) > 0;
   if (booking?.status === "reserved") {
-    view = "waiting";
-    words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
-    words.next = "Manage the simulated reservation";
+    awaitingNext = false;
+    if (declinedAfterBooking) {
+      words.next = DECLINED_RESERVED_NEXT;
+    } else {
+      view = "waiting";
+      words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
+      words.next = "Manage the simulated reservation";
+    }
+  } else if (booking?.status === "cancelled" && declinedAfterBooking) {
+    awaitingNext = false;
+    words.next = DECLINED_CANCELLED_NEXT;
   } else if (booking?.status === "cancelled") {
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
     if (afterAgreement) {
+      awaitingNext = false;
       view = "call";
       words.status = "Simulated reservation cancelled · rebook";
       words.next = "Choose another simulated slot";
     }
   }
   if (c.recovery?.backfill) {
+    awaitingNext = false;
     view = "waiting";
     words.status = "Simulated slot confirmed";
     words.next = "Wait for the simulated appointment day";
@@ -216,12 +307,15 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     days: elapsedDays(c, now),
     overdue: c.overdue,
     referralDay: c.referral_day,
-    textsAllowed: c.consent === "granted",
+    textsAllowed: c.consent === "granted" && !contactBlocked,
+    contactBlocked,
+    textsStopped,
+    patient: c.api_patient,
     owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
-    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status } : {}),
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
   };
 }
 
@@ -326,7 +420,8 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
 
   if (c.case.closed) {
     const d = closedInDays(c.case);
-    out.push({ id: "closed", kind: "current", who: "Closed", what: `with evidence, dated to the ${PROCEDURE[c.case.programme]}`, when: `day ${d} · ${formatDay(c.case.closed_day)}`, hash: sealed("closure_decision") });
+    const what = isNoAction(c.case) ? noActionWords(c.case) : `with evidence, dated to the ${PROCEDURE[c.case.programme]}`;
+    out.push({ id: "closed", kind: "current", who: "Closed", what, when: `day ${d} · ${formatDay(c.case.closed_day)}`, hash: sealed("closure_decision") });
   } else {
     out.push({ id: "now", kind: "current", who: "Now", what: caseStage(c).label, when: statusWords(c.case).next });
   }
