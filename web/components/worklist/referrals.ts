@@ -42,21 +42,88 @@ export function handoffOf(current: CurrentDecision): Handoff | null {
   return current.handoff ? { status: current.handoff.status, actBy: current.handoff.act_by } : null;
 }
 
-const HANDOFF_WORDS: Record<HandoffStatus, string> = {
-  awaiting_referrer: "Act on the return",
-  referrer_acted: "The GP has acted",
-  coordinator: "Escalated to the care coordinator",
-  medical_director: "Escalated to the medical director",
+const HANDOFF_WORDS: Record<HandoffStatus, (referrer: string) => string> = {
+  awaiting_referrer: () => "Act on the return",
+  referrer_acted: (referrer) => `The ${referrer} has acted`,
+  coordinator: () => "Escalated to the care coordinator",
+  medical_director: () => "Escalated to the medical director",
 };
 
 /** A past-due packet keeps its original deadline; only one still awaiting the referrer is phrased as upcoming. */
-export function handoffWords(h: Handoff | null): { what: string; when: string } {
-  if (!h) return { what: HANDOFF_WORDS.awaiting_referrer, when: "deadline unavailable" };
-  return { what: HANDOFF_WORDS[h.status], when: `${h.status === "awaiting_referrer" ? "by" : "was due"} ${formatDay(h.actBy)}` };
+export function handoffWords(h: Handoff | null, referrer = "GP"): { what: string; when: string } {
+  if (!h) return { what: HANDOFF_WORDS.awaiting_referrer(referrer), when: "deadline unavailable" };
+  return { what: HANDOFF_WORDS[h.status](referrer), when: `${h.status === "awaiting_referrer" ? "by" : "was due"} ${formatDay(h.actBy)}` };
+}
+
+/** Who holds a returned referral at each packet status: the responsible referrer until escalation moves it on. */
+export function handoffOwner(h: Handoff | null, referrer: string): string {
+  return h?.status === "coordinator" ? "Care coordinator" : h?.status === "medical_director" ? "Medical director" : referrer;
+}
+
+/**
+ * A referral journey the inbox can show, addressed by programme and referring provider. CRC is the receiving endoscopy
+ * unit's journey; lung work-up and DR show the canonical returned-referral packets of their single receiving unit.
+ */
+export type ReferralView = { programme: "crc" | "lung_nodule" | "diabetic_retinopathy"; provider: string; label: string; unit: string; referrer: string };
+export const REFERRAL_VIEWS: readonly ReferralView[] = [
+  { programme: "crc", provider: "ahs-mushrif", label: "Colorectal, Al Mushrif", unit: "SKMC endoscopy", referrer: "GP" },
+  { programme: "lung_nodule", provider: "rad-imaging", label: "Lung nodule work-up", unit: "Radiology department, regional hospital", referrer: "referrer" },
+  { programme: "diabetic_retinopathy", provider: "phc-retina", label: "Diabetic eye", unit: "Eye clinic, regional hospital", referrer: "referrer" },
+];
+
+/** The view a URL names: no programme and no provider is the CRC default, and an unknown pair is null. */
+export function referralView(programme?: string, provider?: string): ReferralView | null {
+  if (!programme && !provider) return REFERRAL_VIEWS[0];
+  return REFERRAL_VIEWS.find((v) => v.programme === programme && v.provider === provider) ?? null;
+}
+
+/** The query string that keeps a selection across search and reload; the CRC default needs none. */
+export function viewScope(programme = "", provider = ""): string {
+  return programme || provider ? new URLSearchParams({ programme, provider }).toString() : "";
+}
+
+const UNIT_NAMES: Record<string, string> = {
+  "rad-imaging": "Outpatient imaging centre",
+  "mafraq-rad": "Radiology department, regional hospital",
+  "phc-retina": "Primary care eye screening",
+  "eye-hosp": "Eye clinic, regional hospital",
+};
+const PACKET_REASONS: Record<string, string> = {
+  needs_more_info: "Needs more information",
+  wrong_provider: "Not the patient's network",
+  service_not_available: "No capacity for the procedure",
+  duplicate: "Duplicate referral",
+  other: "Other",
+};
+const INFO_WORDS: Record<string, string> = {
+  reason_for_referral: "Reason for referral",
+  relevant_clinical_information: "Relevant clinical information",
+  expected_outcome: "Expected outcome",
+};
+const PACKET_STATUS: Record<HandoffStatus, string> = {
+  awaiting_referrer: "Awaiting the referrer",
+  referrer_acted: "The referrer has acted",
+  coordinator: "Escalated to the care coordinator",
+  medical_director: "Escalated to the medical director",
+};
+const UNAVAILABLE = "Not in the packet";
+const unitName = (id: string) => UNIT_NAMES[id] ?? id;
+
+/** The packet's "referring PCP, phc-retina" in words; a missing clinician stays explicitly unavailable. */
+function responsibleWords(who: string | undefined): string {
+  if (!who) return UNAVAILABLE;
+  const [role, unit] = who.split(", ");
+  return unit ? `${role === "referring PCP" ? "Referring clinician" : role}, ${unitName(unit)}` : who;
 }
 
 export type Referral = {
   id: string;
+  /** "crc": the endoscopy unit answers it. "packet": a canonical returned-referral packet, read-only bar a session re-referral. */
+  kind: "crc" | "packet";
+  /** Who a return goes back to, in words. */
+  referrer: string;
+  /** The receiving unit, in words. */
+  unit: string;
   short: string;
   name: string;
   nameAr?: string;
@@ -79,6 +146,8 @@ export type Referral = {
   head: string | null;
   /** The receiving unit's persisted answer, in words, or null when the unit has not answered through the API. */
   answer: string | null;
+  /** Where `answer` comes from, in words. */
+  answerWhen: string;
 };
 
 const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
@@ -102,6 +171,10 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
   ].filter((f): f is string => !!f);
   return {
     id: c.id,
+    kind: "crc",
+    referrer: `${providerLabel(c.provider)} GP`,
+    unit: "SKMC endoscopy",
+    answerWhen: "Saved to the case ledger",
     short: shortId(c.id),
     name: person?.display_name ?? shortId(c.id),
     nameAr: person?.display_name_ar,
@@ -132,4 +205,51 @@ function answerWords(a: NonNullable<NonNullable<CaseSummary["api_overlay"]>["ref
   if (a.response === "return") return `Returned to the GP: ${a.reason ? REASON_LABELS[a.reason].toLowerCase() : "no reason recorded"}`;
   if (a.response === "accept_with_conditions") return `Accepted with conditions: ${a.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}`;
   return "Accepted the referral";
+}
+
+/** A lung work-up or DR referral the receiving unit returned, read from its canonical packet; no packet, no row. */
+export function packetReferral(c: CaseSummary, current: CurrentDecision | null, now: number, hasRecord: boolean): Referral | null {
+  const p = current?.handoff;
+  if (c.closed || !p) return null;
+  const person = personForLoop(c.id);
+  const unit = p.decided_by ? unitName(p.decided_by) : UNAVAILABLE;
+  const referrer = responsibleWords(p.responsible_clinician);
+  const reason = p.reason_code ? (PACKET_REASONS[p.reason_code] ?? p.reason_code) : UNAVAILABLE;
+  return {
+    id: c.id,
+    kind: "packet",
+    referrer,
+    unit,
+    short: shortId(c.id),
+    name: person?.display_name ?? shortId(c.id),
+    nameAr: person?.display_name_ar,
+    age: person?.age,
+    seed: referralSeed(c.id),
+    clinic: unitName(c.provider),
+    state: "returned",
+    waiting: Math.floor(now - c.referral_day),
+    sent: formatDay(c.referral_day),
+    flags: [],
+    hasRecord,
+    urgent: p.clinical_priority === "urgent",
+    handoff: { status: p.status, actBy: p.act_by },
+    head: null,
+    answer: `Returned the referral: ${reason.toLowerCase()}`,
+    answerWhen: `Canonical packet, ${formatDay(p.decided_at)}`,
+    details: [
+      ["Recommendation", p.recommendation ?? UNAVAILABLE],
+      ["Returned by", unit],
+      ["Reason", reason],
+      ["Advice to the referrer", p.advice_to_referrer ?? UNAVAILABLE],
+      ["Information requested", p.info_requested.length ? p.info_requested.map((i) => INFO_WORDS[i] ?? i).join("; ") : "None"],
+      ["Other unit", p.suggested_alternative === undefined ? UNAVAILABLE : p.suggested_alternative ? unitName(p.suggested_alternative) : "None in the simulated network"],
+      ["Priority", p.clinical_priority === "urgent" ? "Urgent" : p.clinical_priority === "routine" ? "Routine" : UNAVAILABLE],
+      ["Responsible clinician", referrer],
+      ["Status", PACKET_STATUS[p.status]],
+      ["Act by", formatDay(p.act_by)],
+      ["Medical director step", p.medical_director_day === undefined ? UNAVAILABLE : formatDay(p.medical_director_day)],
+      ["Referred", formatDay(c.referral_day)],
+      ["Case", shortId(c.id)],
+    ],
+  };
 }

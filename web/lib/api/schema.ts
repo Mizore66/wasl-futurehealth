@@ -811,6 +811,14 @@ export const Handoff = z.looseObject({
   decided_at: z.number(),
   act_by: z.number(),
   status: HandoffStatus,
+  recommendation: z.string().optional(),
+  reason_code: z.string().optional(),
+  advice_to_referrer: z.string().optional(),
+  info_requested: z.array(z.string()).default([]),
+  responsible_clinician: z.string().optional(),
+  decided_by: z.string().optional(),
+  suggested_alternative: z.string().optional(),
+  medical_director_day: z.number().optional(),
 });
 
 export const ActiveCurrentDecision = z.looseObject({

@@ -1,41 +1,74 @@
+import Link from "next/link";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
-import { handoffOf, referralFrom } from "@/components/worklist/referrals";
+import { REFERRAL_VIEWS, handoffOf, packetReferral, referralFrom, referralView, viewScope, type Referral, type ReferralView } from "@/components/worklist/referrals";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { syntheticReferrals } from "@/components/worklist/synthetic-referrals";
+import { syntheticHandoffs, syntheticReferrals } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
 import { apiMode, getCase, getDashboard } from "@/lib/api/source";
+import { cn } from "@/lib/utils";
 import { respondToReferral } from "./actions";
 import { formatDay } from "@/lib/domain/day";
 
 export const metadata = { title: "Referrals" };
 
-export default async function Page({ searchParams }: PageProps<"/app/referrals">) {
-  const raw = (await searchParams).q;
-  const q = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
-  const [{ cases: listed }, extra, dashboard, now] = await Promise.all([
-    getAllCases({ provider: "ahs-mushrif", programme: "crc", ...(q && { q }) }),
-    syntheticReferrals(q),
-    getDashboard(),
-    runClock(),
-  ]);
-  const live = apiMode() === "live";
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
+
+async function crcReferrals(view: ReferralView, q: string, now: number): Promise<Referral[]> {
+  const [{ cases: listed }, extra] = await Promise.all([getAllCases({ provider: view.provider, programme: view.programme, ...(q && { q }) }), syntheticReferrals(q)]);
   const cases = [...listed, ...extra];
   const currents = await Promise.all(cases.map(async (c) => (!c.closed && c.dropoff === "referral_rejected" ? ((await getCase(c.id))?.current ?? null) : null)));
-  const referrals = cases.map((c, i) => referralFrom(c, now, hasRecord(c), currents[i] && handoffOf(currents[i]))).filter((r) => r !== null);
+  return cases.map((c, i) => referralFrom(c, now, hasRecord(c), currents[i] && handoffOf(currents[i]))).filter((r) => r !== null);
+}
+
+/* A returned lung or DR referral carries no list-level marker, so live mode reads each open case's canonical packet. */
+async function packetReferrals(view: ReferralView, q: string, now: number): Promise<Referral[]> {
+  const [{ cases: listed }, extra] = await Promise.all([getAllCases({ provider: view.provider, programme: view.programme, ...(q && { q }) }), syntheticHandoffs(view.programme, view.provider, q)]);
+  const live = apiMode() === "live" ? await Promise.all(listed.filter((c) => !c.closed).map(async (c) => ({ case: c, current: (await getCase(c.id))?.current ?? null }))) : [];
+  return [...live, ...extra].map((x) => packetReferral(x.case, x.current, now, hasRecord(x.case))).filter((r) => r !== null);
+}
+
+export default async function Page({ searchParams }: PageProps<"/app/referrals">) {
+  const params = await searchParams;
+  const q = first(params.q);
+  const programme = first(params.programme);
+  const provider = first(params.provider);
+  const view = referralView(programme, provider);
+  const [dashboard, now] = await Promise.all([getDashboard(), runClock()]);
+  const referrals = !view ? [] : view.programme === "crc" ? await crcReferrals(view, q, now) : await packetReferrals(view, q, now);
+  const live = apiMode() === "live";
   return (
     <ReferralInbox
       referrals={referrals}
       window={dashboard.sla.referral_response_days}
       now={now}
       q={q}
-      respond={live ? respondToReferral : undefined}
+      scope={viewScope(programme, provider)}
+      referrer={view?.referrer ?? "referrer"}
+      respond={live && view?.programme === "crc" ? respondToReferral : undefined}
       aside={
         <div className="flex flex-col items-end gap-1.5">
+          <nav aria-label="Referral programme" className="flex flex-wrap justify-end gap-2">
+            {REFERRAL_VIEWS.map((v) => {
+              const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
+              return (
+                <Link
+                  key={v.programme}
+                  href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
+                  aria-current={v === view ? "page" : undefined}
+                  className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small", v === view ? "border-ink bg-active text-ink" : "border-control text-muted hover:bg-ground")}
+                >
+                  {v.label}
+                </Link>
+              );
+            })}
+          </nav>
           <span className="text-small text-muted">
-            SKMC endoscopy · run day {Math.floor(now)}, {formatDay(now)}
+            {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
           </span>
-          {live ? (
+          {view?.programme !== "crc" ? (
+            <HonestyLabel kind="designed">Returned packets: canonical, synthetic. Re-referral: designed, session only</HonestyLabel>
+          ) : live ? (
             <HonestyLabel kind="built">Referral answers: built, saved to the synthetic case ledger</HonestyLabel>
           ) : (
             <HonestyLabel kind="designed">Referral inbox: designed, not built</HonestyLabel>
