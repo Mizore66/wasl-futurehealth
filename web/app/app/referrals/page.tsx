@@ -48,26 +48,29 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
       respond={live && view?.programme === "crc" ? respondToReferral : undefined}
       aside={
         <div className="flex flex-col items-end gap-1.5">
-          <nav aria-label="Referral programme" className="flex flex-wrap justify-end gap-2">
-            {REFERRAL_VIEWS.map((v) => {
-              const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
-              return (
-                <Link
-                  key={v.programme}
-                  href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
-                  aria-current={v === view ? "page" : undefined}
-                  className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small", v === view ? "border-ink bg-active text-ink" : "border-control text-muted hover:bg-ground")}
-                >
-                  {v.label}
-                </Link>
-              );
-            })}
-          </nav>
-          {view?.programme === "crc" && (
-            <Link href="/app/referrals/returned" className="inline-flex min-h-11 items-center text-small underline">
-              Returned referrals, referring GP view
-            </Link>
-          )}
+          {/* Below lg an open referral fills the screen, so the views give way to its controls; the list shows them. */}
+          <div className="flex flex-col items-end gap-1.5 max-lg:group-data-[open=true]/inbox:hidden">
+            <nav aria-label="Referral programme" className="flex flex-wrap justify-end gap-2">
+              {REFERRAL_VIEWS.map((v) => {
+                const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
+                return (
+                  <Link
+                    key={v.programme}
+                    href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
+                    aria-current={v === view ? "page" : undefined}
+                    className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small", v === view ? "border-ink bg-active text-ink" : "border-control text-muted hover:bg-ground")}
+                  >
+                    {v.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            {view?.programme === "crc" && (
+              <Link href="/app/referrals/returned" className="inline-flex min-h-11 items-center text-small underline">
+                Returned referrals, referring GP view
+              </Link>
+            )}
+          </div>
           <span className="text-small text-muted">
             {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
           </span>

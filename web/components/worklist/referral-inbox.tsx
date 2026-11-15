@@ -252,7 +252,7 @@ export function ReferralInbox({
 
   return (
     <div ref={root}>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      <header data-open={pane === "detail" && !!r} className="group/inbox mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Referrals</h1>
           <p className="m-0 mt-1 text-muted" data-testid="finding">
