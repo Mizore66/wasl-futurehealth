@@ -18,6 +18,21 @@ export type ReaderValue = "yes" | "no" | "not_stated" | "adequate" | "inadequate
 export type CheckDecision = "agreed" | "agreed_none" | "not_needed" | "disputed";
 export type Check = { field: string; rules: ReaderValue; second: ReaderValue; decision: CheckDecision; disputed: boolean };
 
+export type AutomatedReaderFields = string | { quote?: string; [key: string]: string | number | boolean | undefined };
+/** Only automated facts from this item's selected evidence block cross the client boundary. */
+export type AutomatedReaderEvidence = {
+  report: string;
+  agree: boolean;
+  label: string;
+  quote: string;
+  reader_model?: string;
+  reader_a_regex?: string;
+  reader_a?: string;
+  reader_b?: string;
+  reader_a_fields?: AutomatedReaderFields;
+  reader_b_fields?: AutomatedReaderFields;
+};
+
 export type ReviewView = {
   caseId: string;
   /** Canonical case state from the latest server render, never inferred from a 201. */
@@ -55,6 +70,8 @@ export type ReviewView = {
   checks: Check[];
   quote: string;
   readerModel: string;
+  /** No human override, independent-human answers or loose unknown evidence fields. */
+  automatedEvidence?: AutomatedReaderEvidence;
   items: ReviewItems;
   /**
    * Whether the exact context each question needs is on screen. False when a raised item's own pair or own report cannot be
@@ -92,6 +109,7 @@ const GUARD_WORDS: Record<string, string> = {
   eid_placeholder: "An Emirates ID is a default or placeholder number.",
   eid_invalid: "An Emirates ID fails its check digit.",
   eid_differ: "The Emirates IDs differ.",
+  eid_second_disabled: "EID second-identifier check is disabled for this run.",
   sex_unknown: "Sex is unknown on one or both records, so a matching Emirates ID does not confirm the match.",
   sex_differ: "The recorded sexes differ.",
   name_or_shared_id_check: "The recorded fields pass the visible checks, but the linker's name-agreement or shared-ID check did not.",
@@ -143,6 +161,46 @@ function checksFrom(fields: Record<string, unknown> | undefined): Check[] {
 
 type RaisedItem = CaseDetail["review_items"][number];
 
+// Canonical reader wire fields (lungread/drread/breastread/ldctread.go), not a
+// classifier. IFHAS's existing reader fields are automated provenance notes.
+const AUTOMATED_FIELDS: Partial<Record<CaseDetail["case"]["programme"], readonly string[]>> = {
+  lung_nodule: ["type", "long_mm", "short_mm", "count", "solid_mm", "prior_long_mm", "prior_short_mm", "resolved", "not_assessable", "stated", "mean_mm"],
+  diabetic_retinopathy: ["r_right", "r_left", "m_right", "m_left", "urgent", "attended", "fundus", "outcome", "review_days"],
+  breast: ["birads_right", "birads_left", "birads_overall", "attended", "assessment", "biopsy", "outcome"],
+  lung_ldct: ["lungrads_overall", "lungrads_worst", "attended", "workup", "mdt", "tissue", "outcome"],
+};
+
+function automatedFields(value: unknown, programme: CaseDetail["case"]["programme"]): AutomatedReaderFields | undefined {
+  if (programme === "ifhas" && typeof value === "string") return value;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const fields: Exclude<AutomatedReaderFields, string> = {};
+  for (const key of [...(AUTOMATED_FIELDS[programme] ?? []), "label", "quote"]) {
+    const field = source[key];
+    if (typeof field === "string" || (key !== "quote" && key !== "label" && (typeof field === "boolean" || (typeof field === "number" && Number.isFinite(field))))) {
+      fields[key] = field;
+    }
+  }
+  return fields;
+}
+
+function automatedSnapshot(ev: CaseDetail["evidence"][number] | undefined, programme: CaseDetail["case"]["programme"]): AutomatedReaderEvidence | undefined {
+  if (!ev) return undefined;
+  // Deliberately no spreads from a loose API object or its chain/history.
+  return {
+    report: ev.report,
+    agree: ev.agree,
+    label: ev.label,
+    quote: ev.quote,
+    reader_model: ev.reader_model,
+    reader_a_regex: ev.reader_a_regex,
+    reader_a: ev.reader_a,
+    reader_b: ev.reader_b,
+    reader_a_fields: automatedFields(ev.reader_a_fields, programme),
+    reader_b_fields: automatedFields(ev.reader_b_fields, programme),
+  };
+}
+
 /** The evidence one raised item judges: its own chain's block first, so a revised report keeps its own version's readers and quote. */
 function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean) {
   if (!item) return only ? undefined : c.evidence[0];
@@ -171,7 +229,8 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   const strict = Boolean(only && linkItem);
   const exact = (registration: string | undefined) => (registration ? c.identities.find((i) => i.registration === registration) : undefined);
   const referral = strict ? exact(pair?.[0]) : (c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral"));
-  const downstream = strict ? exact(pair?.[1]) : (c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream"));
+  // An evidence-only item's absent registration is not the case's first downstream record either.
+  const downstream = only ? exact(pair?.[1]) : (c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream"));
   const a = referral && personFor(referral.registration);
   const b = downstream && personFor(downstream.registration);
   const ev = evidenceFor(c, evidenceItem, Boolean(only));
@@ -184,8 +243,18 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   /* Strict views need both exact endpoints and the item's own link detail; absent either, no score or line is invented. */
   const linkBound = !strict || (endpoints && Boolean(link));
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
-  const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
-  const unit = providerName(downstream?.provider ?? "");
+  const reportEvents = c.timeline.filter((e) => ev && e.id === ev.report);
+  // Timeline rows have no report-version association. A versioned item's date
+  // cannot come from an unversioned historical row, even when it is the only one.
+  const reportEvent = only && evidenceItem
+    ? (evidenceItem.report_version === undefined && reportEvents.length === 1 ? reportEvents[0] : undefined)
+    : reportEvents[0];
+  // The canonical evidence block carries its own provider-qualified report ID;
+  // missing qualification stays unavailable rather than borrowing another pair.
+  const evidenceProvider = /^([^/]+)\/DiagnosticReport\/[^/]+$/.exec(ev?.report ?? "")?.[1];
+  const unit = only && evidenceItem
+    ? (evidenceProvider ? providerName(evidenceProvider) : "Source unavailable")
+    : providerName(downstream?.provider ?? "");
   const programme = c.case.programme;
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);
@@ -298,6 +367,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     checks,
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
+    automatedEvidence: only && evidenceItem && programme !== "crc" ? automatedSnapshot(ev, programme) : undefined,
     items: { link: linkItem?.item, evidence: evidenceItem?.item },
     context: { link: linkBound, evidence: !only || !evidenceItem || Boolean(ev) },
     trail,

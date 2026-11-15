@@ -856,7 +856,7 @@ export function ReviewDesk({
               {contexts.map((ctx) => (
                 <div key={ctx.item} data-context-item={ctx.item} className="flex min-w-0 flex-col gap-3">
                   {ctx.link && <IdentityBridge view={ctx.view} answer={ctx.linkAnswer} />}
-                  {ctx.evidence && ctx.view.programme === "crc" && <ReadersTable view={ctx.view} signed={ctx.answerCell} />}
+                  {ctx.evidence && <ReadersTable view={ctx.view} signed={ctx.answerCell} />}
                 </div>
               ))}
               {view.programme !== "crc" && sharedEvidence}

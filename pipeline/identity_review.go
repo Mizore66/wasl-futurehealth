@@ -109,12 +109,14 @@ func verdictEID(a, b regDemo) string {
 // identityGuard restates the v7 second-identifier rule over the two records' own facts. The name-agreement and
 // shared-ID checks of the Emirates-ID path are the linker's and are not recomputed here.
 func identityGuard(dob, sex, eid string, a, b regDemo) map[string]interface{} {
-	eidPath := eid == "match" && sex == "match" && dobsCompatible(a.Dob, b.Dob)
+	eidPath := EIDSecondID && eid == "match" && sex == "match" && dobsCompatible(a.Dob, b.Dob)
 	failures := []string{}
 	if dob != "match" {
 		failures = append(failures, "dob_"+dob)
 	}
 	switch {
+	case !EIDSecondID:
+		failures = append(failures, "eid_second_disabled")
 	case eid != "match":
 		failures = append(failures, "eid_"+eid)
 	case sex != "match":
