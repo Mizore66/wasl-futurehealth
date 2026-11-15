@@ -11,6 +11,7 @@ import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
 import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
+import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
 import { BookingControls } from "./booking-controls";
@@ -642,7 +643,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               {r.ledger === "review" ? (
                 <p className="m-0 font-medium">
                   {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                  {reviewWords(r.decision, detail.case.programme)}
+                  {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : reviewWords(r.decision, detail.case.programme)}
                 </p>
               ) : (
                 <div className="font-medium">
@@ -653,6 +654,9 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
                 {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
+              {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
+                <p className="m-0 mt-1 text-small text-muted">Original recorded label: {reviewWords(r.decision, detail.case.programme)}; this history does not resolve a review item.</p>
+              )}
               {r.ledger === "compensation" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>
           ))}

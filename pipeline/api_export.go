@@ -531,7 +531,7 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "expected_suggestion_version", "slot_id", "expected_slot_version",
 	"reservation_id", "expected_reservation_version"))
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
+	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind", "source_binding",
 		"head", "seq", "target", "target_action", "resolution", "action_head",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
 		"slot", "expected_slot_head", "expected_case_head", "request_id", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")

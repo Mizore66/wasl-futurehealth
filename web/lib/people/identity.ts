@@ -1,6 +1,7 @@
 import type { CaseDetail } from "@/lib/api/schema";
 import { people } from ".";
-import { finalDecisions, protocolRead } from "@/lib/domain/stage";
+import { finalDecisions } from "@/lib/domain/stage";
+import { legacyReviewMayAnswer } from "@/lib/domain/review-authority";
 import type { PersonSeed } from "./types";
 
 /*
@@ -39,7 +40,7 @@ export function linkTrust(c: LinkFacts, link: Link): Trust {
   const said = [
     ...c.signoffs.filter((s) => s.loop === link.loop && s.kinds.includes("link")).map((s) => s.link),
     // Legacy events keep their meaning. A first, second or own read is not an answer: only a terminal protocol state is.
-    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && !protocolRead(r) && items.includes(r.item) ? [r.decision] : [])),
+    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && legacyReviewMayAnswer(r) && items.includes(r.item) ? [r.decision] : [])),
     ...finalDecisions({ api_review_states: (c.api_review_states ?? []).filter((s) => items.includes(s.item)) }, "link"),
   ];
   if (said.includes("different")) return "rejected";

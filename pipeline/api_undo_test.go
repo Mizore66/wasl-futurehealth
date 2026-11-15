@@ -172,10 +172,12 @@ func TestUndoRejectsBadTargets(t *testing.T) {
 }
 
 func TestUndoSameActorAndUnauthorized(t *testing.T) {
-	r := newUndoRig(t)
+	r, evidenceItem := newSourceBoundUndoRig202(t)
 	link := r.review(undoCaseA, RoleReviewer, "r1", "same")
-	ev := r.review(undoCaseA, RoleClinician, "c1", "adequate")
-	code, m := r.undo(undoCaseA, RoleReviewer, "r1", `{"target":"`+link+`"}`)
+	code, m := r.do("POST", "/api/cases/"+undoCaseA+"/review", RoleClinician, "c1", legacyBody(evidenceItem, "adequate"))
+	r.wantCode(code, 201, m, "source-bound evidence seed")
+	ev := m["review"].(map[string]interface{})["hash"].(string)
+	code, m = r.undo(undoCaseA, RoleReviewer, "r1", `{"target":"`+link+`"}`)
 	r.wantCode(code, 403, m, "same actor")
 	code, m = r.undo(undoCaseA, RoleReviewer, " R1 ", `{"target":"`+link+`"}`)
 	r.wantCode(code, 403, m, "same actor, case/space variant")

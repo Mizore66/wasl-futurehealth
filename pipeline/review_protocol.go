@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -497,7 +496,7 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 			continue
 		}
 		if v, ok := viewerEvent(r, conc); ok {
-			out = append(out, v)
+			out = append(out, s.reviewHistoryProjection(v))
 		}
 	}
 	return out
@@ -532,19 +531,10 @@ func isCRCPathologyLabel(decision string) bool {
 	return decision == "histology" || decision == "no_histology"
 }
 
-// itemReportCategory is the category (colonoscopy, pathology, ...) of the DiagnosticReport an evidence item asks about.
+// itemReportCategory uses this raised item's original provider/version source,
+// not a current presentation row that can change after another link or revision.
 func (s *apiServer) itemReportCategory(caseID string, it *ReviewItem) string {
-	if it == nil || it.ReportID == "" {
-		return ""
-	}
-	suffix := "/DiagnosticReport/" + it.ReportID
-	for _, f := range s.facts[caseID] {
-		if id, _ := f["id"].(string); strings.HasSuffix(id, suffix) {
-			cat, _ := f["category"].(string)
-			return cat
-		}
-	}
-	return ""
+	return s.raisedReportCategory(caseID, it)
 }
 
 // crcDecisionFitsItem keeps a CRC pathology item to histology/no_histology and every other CRC evidence item to
@@ -553,7 +543,14 @@ func (s *apiServer) crcDecisionFitsItem(c *apiCase, it *ReviewItem, decision str
 	if c.Programme != "crc" || !(isCRCPathologyLabel(decision) || decision == "adequate" || decision == "inadequate") {
 		return true
 	}
-	return (s.itemReportCategory(c.ID, it) == "pathology") == isCRCPathologyLabel(decision)
+	switch s.itemReportCategory(c.ID, it) {
+	case "pathology":
+		return isCRCPathologyLabel(decision)
+	case "colonoscopy":
+		return decision == "adequate" || decision == "inadequate"
+	default:
+		return false // missing or ambiguous source is not implicit colonoscopy
+	}
 }
 
 // replayProtocol validates a protocol event found in the ledger at startup with the same rules as a live write.
@@ -677,7 +674,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 // read's hash is removed from every field that repeats it (prev, action_head, target, ...). The stored bytes are untouched.
 func (s *apiServer) shownEventLocked(stored map[string]interface{}, viewer apiPrincipal) map[string]interface{} {
 	if v, ok := viewerEvent(stored, s.concealedHashesLocked(viewer)); ok {
-		return v
+		return s.reviewHistoryProjection(v)
 	}
 	return map[string]interface{}{}
 }

@@ -1,4 +1,5 @@
 import type { CaseDetail, ReviewState } from "@/lib/api/schema";
+import { legacyReviewMayAnswer } from "@/lib/domain/review-authority";
 
 /*
  * The 8-step pipeline vocabulary (pipeline-brief "The state vocabulary").
@@ -106,7 +107,7 @@ export function openReviewItems(c: CaseDetail) {
   // Protocol reads answer nothing until the server reports a terminal state for every question of the item.
   const signed = new Set([
     ...c.signoffs.map((s) => s.item),
-    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && !protocolRead(r) ? [r.item] : [])),
+    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && legacyReviewMayAnswer(r) ? [r.item] : [])),
     ...resolvedItems(c),
   ]);
   return c.review_items.filter((r) => !signed.has(r.item));

@@ -30,6 +30,11 @@ func TestAPIReviewCoverageAndHistory(t *testing.T) {
 			c := &apiCase{ID: id, Programme: tt.programme, State: "open", Review: "open", last: d, decisions: []*Decision{d}}
 			s := &apiServer{meta: map[string]interface{}{}, run: t.TempDir(), cases: map[string]*apiCase{id: c}, order: []string{id},
 				queue: map[string][]*ReviewItem{id: {{ItemID: item, LoopID: id, Kinds: []string{tt.kind}}}}}
+			if tt.programme == "crc" && tt.kind == "evidence" {
+				run, ids := sourceBoundIRRun202(t, ledgerLoop, false)
+				s = loadAPI(run, "")
+				id, item = ledgerLoop, ids.Evidence
+			}
 			srv := httptest.NewServer(apiHandler(s))
 			defer srv.Close()
 			get := func(suffix string) (int, map[string]interface{}) {

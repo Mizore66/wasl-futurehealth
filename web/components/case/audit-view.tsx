@@ -8,6 +8,7 @@ import { Card } from "./sections";
 import { GovernanceControls, GovernanceIdentity, GovernanceSignIn } from "./governance-controls";
 import { cn } from "@/lib/utils";
 import { protocolRead, READ_LABEL } from "@/lib/domain/stage";
+import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
 
 /** Full hash on a disclosure; the short form is for comparing by eye. */
@@ -218,13 +219,16 @@ export function HistoryCard({
                 {r.ledger === "review" ? (
                   <p className="m-0 font-medium">
                     {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                    {r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
+                    {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
                   </p>
                 ) : (
                   /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
                   <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
                     <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
                   </div>
+                )}
+                {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
+                  <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}; this history does not resolve a review item.</p>
                 )}
                 {/* The auditor's redacted history never names the actor or quotes the note. */}
                 <p className="m-0 text-muted">

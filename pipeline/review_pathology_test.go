@@ -9,8 +9,13 @@ import (
 )
 
 const (
-	pathItem, coloItem   = "rv-path", "rv-colo"
 	pathReport, coloRept = "PATH-1", "COLO-1"
+	pathProcedure        = "COLO-PATH-1"
+)
+
+var (
+	pathItem = evidenceReviewItemID(ledgerLoop, pathReport, 0, "")
+	coloItem = evidenceReviewItemID(ledgerLoop, coloRept, 0, "")
 )
 
 func pathologyFHIR(prov, id, code string) []byte {
@@ -25,24 +30,85 @@ func pathologyFHIR(prov, id, code string) []byte {
 
 func pathologyRun(t *testing.T) string {
 	t.Helper()
-	run := irRun(t)
-	out, err := os.OpenFile(filepath.Join(run, "out_log.ndjson"), os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer out.Close()
-	for i, it := range []*ReviewItem{
-		{ItemID: pathItem, LoopID: ledgerLoop, Kinds: []string{"evidence"}, ReportID: pathReport},
-		{ItemID: coloItem, LoopID: ledgerLoop, Kinds: []string{"evidence"}, ReportID: coloRept},
+	pilotSet(t, false, 0)
+	run := t.TempDir()
+	var fhir []byte
+	var down []DownFact
+	// Reader verdicts are explicit software/mock inputs. FHIR normalization and
+	// ClosureCore produce the source metadata, raised items and signed outputs;
+	// this factory is not clinical validation or a model/evaluation run.
+	for i, spec := range []struct{ id, code, label string }{
+		{coloRept, "18746-8", "disagree"},
+		{pathProcedure, "18746-8", "awaiting_histology"},
+		{pathReport, "11526-1", "disagree"},
 	} {
-		m := LogMsg{Seq: uint64(20 + i), Subject: "out.p0", Hdr: map[string]string{}}
-		encodeEnv(&m, OutEnvelope{Kind: "review", Item: it})
-		b, _ := json.Marshal(m)
-		out.Write(append(b, '\n'))
+		var message LogMsg
+		if err := json.Unmarshal(pathologyFHIR("p", spec.id, spec.code), &message); err != nil {
+			t.Fatal(err)
+		}
+		message.Seq = uint64(i + 1)
+		if spec.id == pathReport {
+			var resource map[string]interface{}
+			if err := json.Unmarshal(message.Data, &resource); err != nil {
+				t.Fatal(err)
+			}
+			resource["extension"] = []interface{}{map[string]interface{}{
+				"url": "urn:wsi:addendum-to", "valueString": "DiagnosticReport/" + pathProcedure,
+			}}
+			message.Data = canon(resource)
+		}
+		event, signoff, rejected := normaliseChecked("p", 1, message.Data)
+		if rejected != nil || signoff != nil || event == nil || event.ReportID != spec.id || event.Version != 0 {
+			t.Fatalf("synthetic unversioned report was not normalized: event=%+v rejection=%v", event, rejected)
+		}
+		fact := df("DiagnosticReport", event.Status, 1, "eid", false)
+		fact.Provider, fact.EventID, fact.ReportID = event.Provider, event.ID, event.ReportID
+		fact.Version, fact.Day, fact.RecPk = event.Version, event.Day, event.PatientKey
+		fact.Weak.A, fact.Weak.B = "exp-prov|1", event.PatientKey
+		fact.Ev = &TwoVerdict{Kind: "colonoscopy", Agree: spec.label != "disagree", Label: spec.label,
+			Regex: ReaderVerdict{State: "closed"},
+			Gemma: ReaderVerdict{State: "inadequate", Quote: "Explicitly synthetic colonoscopy reader input."}}
+		if fact.Ev.Agree {
+			fact.Ev.Regex.State, fact.Ev.Gemma.State = spec.label, spec.label
+		}
+		if event.Category == "pathology" {
+			fact.RType, fact.Parent = "Pathology", event.Focus
+			fact.Ev = &TwoVerdict{Kind: "pathology", Agree: false, Label: "disagree",
+				Regex: ReaderVerdict{State: "histology"},
+				Gemma: ReaderVerdict{State: "no_histology", Quote: "Explicitly synthetic pathology reader input."}}
+		}
+		down = append(down, fact)
+		fhir = append(fhir, append(canon(message), '\n')...)
 	}
-	fhir := append(pathologyFHIR("p", pathReport, "11526-1"), pathologyFHIR("p", coloRept, "18746-8")...)
-	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), fhir, 0o644); err != nil {
-		t.Fatal(err)
+	core := NewClosureCore(0, nil)
+	facts := &LoopFacts{LoopID: ledgerLoop, Provider: "exp-prov", Prog: "crc", SRRec: "exp-prov|1",
+		SRDay: down[0].Day - 1, Contact: "granted", Down: down}
+	outputs := core.Apply(&FactsMsg{ID: "synthetic-pathology-facts", Facts: facts, InSeq: 1})
+	outputs = append(outputs, core.Apply(&FactsMsg{ID: "synthetic-pathology-clock", IsTick: true, TickDay: down[0].Day + 1, InSeq: 2})...)
+	found := map[string]bool{}
+	var out []byte
+	for _, output := range outputs {
+		if item := output.Item; item != nil {
+			if item.ItemID == pathItem || item.ItemID == coloItem {
+				if item.ReportVersion != 0 || raisedReviewReport(item) == "" {
+					t.Fatalf("producer did not bind the unversioned review source: %+v", item)
+				}
+				found[item.ItemID] = true
+			}
+		}
+		message := LogMsg{Seq: output.OSeq, Subject: "out.p0", Data: canon(OutEnvelope{
+			Kind: output.Kind, OSeq: output.OSeq, Dec: output.Dec, Item: output.Item,
+			Prev: output.Prev, Hash: output.Hash, Proc: "closure-0",
+		})}
+		out = append(out, append(canon(message), '\n')...)
+	}
+	if !found[pathItem] || !found[coloItem] {
+		t.Fatalf("canonical producer did not raise both report questions: %v", found)
+	}
+	for name, body := range map[string][]byte{"out_log.ndjson": out, "fhir_log.ndjson": fhir} {
+		if err := os.WriteFile(filepath.Join(run, name), body, 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return run
 }
@@ -105,6 +171,16 @@ func TestCRCReplayRejectsAnswerForTheWrongReportKind(t *testing.T) {
 	for _, tc := range []struct{ item, decision string }{{coloItem, "histology"}, {pathItem, "adequate"}} {
 		run := pathologyRun(t)
 		s := loadAPI(run, "")
+		if s.ledgerErr != "" {
+			t.Fatalf("valid canonical baseline rejected before the wrong-kind mutation: %s", s.ledgerErr)
+		}
+		valid := "adequate"
+		if tc.item == pathItem {
+			valid = "histology"
+		}
+		if item := s.queueItem(ledgerLoop, tc.item); item == nil || !s.crcDecisionFitsItem(s.cases[ledgerLoop], item, valid) {
+			t.Fatal("wrong-kind negative has no valid, originally bound report context")
+		}
 		ev := map[string]interface{}{"case": ledgerLoop, "item": tc.item, "decision": tc.decision, "note": "", "role": "clinician", "actor": "a",
 			"action": ActSignEvidence, "at": "2026-11-12T00:00:00Z", "head_signed": s.cases[ledgerLoop].last.Sig, "mode": "demo", "prev": "genesis"}
 		ev["hash"] = apiEventHash(ev)

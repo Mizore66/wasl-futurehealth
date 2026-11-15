@@ -465,6 +465,7 @@ export const Signoff = z.looseObject({
 
 /** One appended demo review action (POST /review response and case detail api_reviews). */
 export const ApiReview = z.looseObject({
+  source_binding: z.literal("legacy_unbound_nonbinding").optional(),
   case: z.string(),
   item: z.string(),
   decision: z.string(),
@@ -512,6 +513,7 @@ export const ConsentError = withMeta({ error: z.string(), current_head: z.string
  * item of a review not tied to a queue item. Pinned by tests/fixtures/audit_signed_reviews.json.
  */
 export const AuditReview = z.looseObject({
+  source_binding: z.literal("legacy_unbound_nonbinding").optional(),
   case: z.string(),
   item: z.string().optional(),
   decision: z.string().optional(),

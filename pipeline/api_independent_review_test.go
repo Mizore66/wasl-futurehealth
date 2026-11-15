@@ -166,7 +166,8 @@ func TestReviewProtocolTransitions(t *testing.T) {
 }
 
 func TestIndependentReviewRefusals(t *testing.T) {
-	e := newIR(t)
+	e, ids := newSourceBoundIR202(t, false)
+	irLinkItem, irEvItem := ids.Link, ids.Evidence
 	// premature r3
 	e.must(t, irSR, irBody(irLinkItem, "same", "r3", ""), 409)
 	r1 := stateOf(e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201))
@@ -185,8 +186,8 @@ func TestIndependentReviewRefusals(t *testing.T) {
 	e.must(t, irSR, irBody(irLinkItem, "same", "r2", head), 403) // seniors do not take r1/r2
 	e.must(t, irAud, irBody(irLinkItem, "same", "r2", head), 403)
 	// shape errors
-	e.must(t, irRevB, `{"item":"rv-link","decision":"same","read":"r2"}`, 400)        // expected_head missing
-	e.must(t, irRevB, `{"item":"rv-link","decision":"same","expected_head":""}`, 400) // read missing
+	e.must(t, irRevB, fmt.Sprintf(`{"item":%q,"decision":"same","read":"r2"}`, irLinkItem), 400)        // expected_head missing
+	e.must(t, irRevB, fmt.Sprintf(`{"item":%q,"decision":"same","expected_head":""}`, irLinkItem), 400) // read missing
 	e.must(t, irRevB, irBody(irLinkItem, "same", "r4", head), 400)
 	e.must(t, irRevB, irBody(irLinkItem, "same", "r2", "not-a-head"), 400)
 	e.must(t, irRevB, irBody("", "same", "r2", head), 400)
@@ -221,7 +222,8 @@ func TestIndependentReviewRefusals(t *testing.T) {
 }
 
 func TestIndependentReviewCombinedItemHasTwoMachines(t *testing.T) {
-	e := newIR(t)
+	e, ids := newSourceBoundIR202(t, true)
+	irBoth, irLinkItem := ids.Combined, ids.Link
 	e.must(t, irRevA, irBody(irBoth, "same", "r1", ""), 201)
 	e.must(t, irClinA, irBody(irBoth, "adequate", "r1", ""), 201)
 	st := e.states(t, irCoord)

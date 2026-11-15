@@ -64,31 +64,33 @@ type apiCase struct {
 }
 
 type apiServer struct {
-	run, data       string
-	meta            map[string]interface{}
-	cases           map[string]*apiCase
-	order           []string
-	queue           map[string][]*ReviewItem // loop -> raised items
-	signoffs        map[string][]map[string]interface{}
-	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids             map[string][]map[string]string      // loop -> linked registrations
-	dashboard       map[string]interface{}
-	report          map[string]interface{}
-	anchors         map[string]string
-	booking         map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	bookingCalendar string
-	bookingSlots    map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
-	recovery        recoveryProjection
-	fixtures        map[string]string
-	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu              sync.Mutex
-	reviews         []map[string]interface{}
-	rstates         map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
-	claims          map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
-	now             func() time.Time                           // UTC clock; replaceable in lease tests
-	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
-	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
+	run, data               string
+	meta                    map[string]interface{}
+	cases                   map[string]*apiCase
+	order                   []string
+	queue                   map[string][]*ReviewItem // loop -> raised items
+	signoffs                map[string][]map[string]interface{}
+	facts                   map[string][]map[string]interface{}          // loop -> FHIR timeline entries (no free text)
+	reviewReportSources     map[reviewReportSourceKey]reviewReportSource // original report revisions, independent of current presentation
+	ids                     map[string][]map[string]string               // loop -> linked registrations
+	dashboard               map[string]interface{}
+	report                  map[string]interface{}
+	anchors                 map[string]string
+	booking                 map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	bookingCalendar         string
+	bookingSlots            map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
+	recovery                recoveryProjection
+	fixtures                map[string]string
+	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv               map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu                      sync.Mutex
+	reviews                 []map[string]interface{}
+	nonbindingLegacyReviews map[string]bool                            // replay-recognized hashes only; never inserted into stored ledger events
+	rstates                 map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	claims                  map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
+	now                     func() time.Time                           // UTC clock; replaceable in lease tests
+	ledgerErr               string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine              func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -319,6 +321,7 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
 		if !strings.HasSuffix(m.Subject, ".res") {
 			continue
@@ -326,7 +329,11 @@ func (s *apiServer) loadTimelines() {
 		prov := strings.Split(m.Subject, ".")[1]
 		arr, _ := strconv.ParseFloat(m.Hdr["Wsi-Arr"], 64)
 		e, so := normalise(prov, arr, m.Data)
-		if e == nil || so != nil || e.PatientKey == "" {
+		if e == nil || so != nil {
+			continue
+		}
+		s.rememberReviewReportSource(e, m.Data)
+		if e.PatientKey == "" {
 			continue
 		}
 		h := sha256.Sum256(m.Data)
@@ -735,7 +742,7 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 	out := []map[string]interface{}{}
 	for _, r := range s.reviews {
 		if r["case"] == id {
-			out = append(out, r)
+			out = append(out, s.reviewHistoryProjection(r))
 		}
 	}
 	return out
@@ -1648,6 +1655,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
 		return errors.New("hash mismatch")
 	}
+	if _, projected := ev["source_binding"]; projected {
+		return errors.New("source_binding is projection-only, not stored event provenance")
+	}
 	if ev["type"] == reviewClaimEventType {
 		if err := s.replayClaim(ev); err != nil {
 			return fmt.Errorf("review claim: %v", err)
@@ -1667,10 +1677,27 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 				return fmt.Errorf("independent review: %v", err)
 			}
 		}
-		if c := s.cases[sstr(ev, "case")]; c != nil && !s.crcDecisionFitsItem(c, s.queueItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
-			return errors.New("review decision does not fit the item's report")
+		c := s.cases[sstr(ev, "case")]
+		if evKind(ev) == "review" {
+			if c != nil && c.Programme == "crc" && ev["action"] == ActSignEvidence {
+				if err := validateBaseReviewEvent(ev); err != nil {
+					return err
+				}
+				if reviewActFor(c, sstr(ev, "decision")) != ActSignEvidence {
+					return errors.New("unsupported CRC evidence history label")
+				}
+			}
 		}
-		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
+		if c != nil && !s.crcDecisionFitsItem(c, s.queueItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
+			if !s.legacyUnboundCRCReview(c, ev) {
+				return errors.New("review decision does not fit the item's report")
+			}
+			if s.nonbindingLegacyReviews == nil {
+				s.nonbindingLegacyReviews = map[string]bool{}
+			}
+			s.nonbindingLegacyReviews[sstr(ev, "hash")] = true
+		}
+		s.reviews = append(s.reviews, ev) // retain original hash/body; nonbinding metadata lives separately
 		return nil
 	}
 	if ev["type"] != coordEventType {
