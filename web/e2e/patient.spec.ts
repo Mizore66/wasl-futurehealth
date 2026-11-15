@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
+import { DICTS } from "@/components/patient/i18n";
 
 const MOCK = "http://127.0.0.1:31987";
 let token = "";
@@ -130,6 +131,68 @@ test("notice: switch language, read rights, say who calls whom", async ({ page }
   await expect(page.getByRole("dialog", { name: "Your rights" }).getByRole("listitem")).toHaveCount(3);
   await expectNoSeriousAxe(page);
 });
+
+const SHORT_VIEWPORTS = [
+  { name: "short landscape", width: 844, height: 390, closeBy: "keyboard" },
+  { name: "high zoom", width: 390, height: 280, closeBy: "pointer" },
+] as const;
+
+async function expectSheetReachable(page: Page, dialog: Locator, parts: Locator[], width: number, height: number) {
+  await dialog.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  const box = await dialog.boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(height + 0.5);
+  for (const part of parts) {
+    await part.scrollIntoViewIfNeeded();
+    const partBox = await part.boundingBox();
+    expect(partBox!.y).toBeGreaterThanOrEqual(box!.y - 0.5);
+    expect(partBox!.y + partBox!.height).toBeLessThanOrEqual(box!.y + box!.height + 0.5);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  expect(await dialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+}
+
+for (const viewport of SHORT_VIEWPORTS) {
+  for (const { lang } of LANGS) {
+    test(`rights and language sheets stay reachable at ${viewport.name}, ${lang}`, async ({ page }) => {
+      const t = DICTS[lang];
+      await open(page, "notice", lang);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const phoneWidth = await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width);
+
+      const trigger = page.getByRole("button", { name: t.notice.rights });
+      await trigger.click();
+      const rights = page.getByRole("dialog", { name: t.notice.rights });
+      const close = rights.getByRole("button", { name: t.close });
+      await expectSheetReachable(
+        page,
+        rights,
+        [rights.getByRole("heading", { name: t.notice.rights }), ...(await rights.getByRole("listitem").all()), rights.getByText(t.notice.rightsNote), close],
+        viewport.width,
+        viewport.height,
+      );
+      await expect(rights.getByRole("listitem")).toHaveCount(3);
+      await page.keyboard.press("Tab");
+      expect(await rights.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+      if (viewport.closeBy === "keyboard") {
+        await close.focus();
+        await page.keyboard.press("Enter");
+      } else {
+        await close.click();
+      }
+      await expect(rights).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+
+      await page.getByRole("button", { name: `${t.langTitle}: ${t.langName}` }).click();
+      const sheet = page.getByRole("dialog", { name: t.langTitle });
+      await expectSheetReachable(page, sheet, [...(await sheet.getByRole("link").all()), sheet.getByRole("button", { name: t.close })], viewport.width, viewport.height);
+      await expect(sheet.getByRole("link")).toHaveCount(LANGS.length);
+      await sheet.getByRole("button", { name: t.close }).click();
+      await expect(sheet).toHaveCount(0);
+      expect(await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width)).toBe(phoneWidth);
+    });
+  }
+}
 
 test("teach-back and grant persist exact events; opt-out survives reload", async ({ page }) => {
   await open(page, "check");
