@@ -12,7 +12,7 @@ import hold from "@/data/api/case_review_hold.json";
  * Partial structural-binding checks only. They do not show that any context is current, original or guard-checked.
  * The synthetic cases are built from the accepted hold fixture using existing wire fields only.
  */
-const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn() }));
+const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn(), readReviewSource: vi.fn((..._a: unknown[]): Promise<unknown> => new Promise(() => {})) }));
 vi.mock("@/app/app/review/[id]/actions", () => actions);
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

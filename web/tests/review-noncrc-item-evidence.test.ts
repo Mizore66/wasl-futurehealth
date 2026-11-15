@@ -10,7 +10,7 @@ import { reviewItemViews, reviewView } from "@/components/review/case-view";
 import { CaseDetail, ReviewState } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 
-vi.mock("@/app/app/review/[id]/actions", () => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn() }));
+vi.mock("@/app/app/review/[id]/actions", () => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn(), readReviewSource: vi.fn((..._a: unknown[]): Promise<unknown> => new Promise(() => {})) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

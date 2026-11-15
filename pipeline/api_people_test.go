@@ -500,11 +500,14 @@ func TestPersonOutreachFoldFlagsAndWithheld(t *testing.T) {
 }
 
 func testNextCandidate(cases []*apiCase) personActionCandidate {
+	return testNextCandidateFor(&apiServer{}, cases)
+}
+
+func testNextCandidateFor(s *apiServer, cases []*apiCase) personActionCandidate {
 	obligations := []map[string]interface{}{}
 	for _, c := range cases {
 		obligations = append(obligations, personObligations(c)...)
 	}
-	s := &apiServer{}
 	sortObligations(s, obligations)
 	candidates := personActionCandidates(s, cases, obligations, personOutreachFlags(s, cases))
 	if len(candidates) == 0 {
@@ -762,5 +765,181 @@ func TestPersonOverlapRequiresActionableIntentsAcrossProgrammes(t *testing.T) {
 		if flag["match"] == "overlap" {
 			t.Fatalf("withheld second-programme intent created an actionable overlap: %+v", flag)
 		}
+	}
+}
+
+func TestPersonFixtureSelectsActionableCrossProgrammePerson(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	s.fixtures = map[string]string{}
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok {
+		t.Fatalf("person without an actionable outreach group was published: %s", id)
+	}
+	for _, id := range []string{"provider/ServiceRequest/case-1", "provider/ServiceRequest/case-4"} {
+		s.cases[id].last.Outreach = []Outreach{{Kind: "appointment_reminder", Event: "two-programme-event", Released: true}}
+	}
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok {
+		t.Fatalf("two-programme person was published: %s", id)
+	}
+	for _, id := range []string{"provider/ServiceRequest/case-0", "provider/ServiceRequest/case-3"} {
+		s.cases[id].last.Outreach = []Outreach{{Kind: "appointment_reminder", Event: "shared-event", Released: true}}
+	}
+	s.pickPersonFixture()
+	anchor := "provider/ServiceRequest/case-0"
+	if s.fixtures["person_journey"] != anchor || s.cases[anchor].Fixture != "person_journey" {
+		t.Fatalf("three-programme actionable person not selected: fixtures=%v", s.fixtures)
+	}
+	w := personRequest(t, secureTestHandler(t, s, ""), http.MethodGet, "/api/people?case_id=provider%2FServiceRequest%2Fcase-0", "reviewer-token-1234567890")
+	var journey struct {
+		Person struct {
+			Programmes []string `json:"programmes"`
+		} `json:"person"`
+		NextAction struct {
+			Kind   string `json:"kind"`
+			CaseID string `json:"case_id"`
+		} `json:"next_action"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &journey); err != nil || len(journey.Person.Programmes) < 3 || journey.NextAction.Kind == "none" {
+		t.Fatalf("selected journey is not an actionable cross-programme person: %s", w.Body.String())
+	}
+
+	s.fixtures = map[string]string{"evidence_closure": anchor}
+	s.cases[anchor].Fixture = "evidence_closure"
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok || s.cases[anchor].Fixture != "evidence_closure" {
+		t.Fatalf("person fixture overwrote an existing tag: %s %q", id, s.cases[anchor].Fixture)
+	}
+}
+
+func TestPersonOutreachRetiresIntentsOmittedByLatestDecision(t *testing.T) {
+	reminder := Outreach{Kind: "appointment_reminder", Event: "shared-event", Released: true}
+	mk := func(id, programme string, latest []Outreach) *apiCase {
+		booked := testPersonDecision(id, programme)
+		booked.ID, booked.Dropoff, booked.Outreach = "d-booked-"+id, "", []Outreach{reminder}
+		fulfilled := testPersonDecision(id, programme)
+		fulfilled.ID, fulfilled.Dropoff, fulfilled.Outreach = "d-fulfilled-"+id, "", latest
+		return &apiCase{ID: id, Programme: programme, State: "open", last: fulfilled, decisions: []*Decision{booked, fulfilled}}
+	}
+	intentsOf := func(flag map[string]interface{}) map[string]map[string]interface{} {
+		out := map[string]map[string]interface{}{}
+		for _, intent := range flag["intents"].([]map[string]interface{}) {
+			out[intent["case_id"].(string)] = intent
+		}
+		return out
+	}
+	flagsByMatch := func(cases []*apiCase) map[string]map[string]interface{} {
+		out := map[string]map[string]interface{}{}
+		for _, flag := range personOutreachFlags(&apiServer{}, cases) {
+			out[flag["match"].(string)] = flag
+		}
+		return out
+	}
+
+	a, b := mk("a", "crc", nil), mk("b", "cervical", nil)
+	flags := flagsByMatch([]*apiCase{a, b})
+	duplicate := flags["duplicate"]
+	if duplicate == nil || duplicate["actionable"] != false {
+		t.Fatalf("disappeared intents stayed actionable: %+v", flags)
+	}
+	if overlap := flags["overlap"]; overlap != nil && overlap["actionable"] != false {
+		t.Fatalf("disappeared intents made an actionable overlap: %+v", overlap)
+	}
+	for id, intent := range intentsOf(duplicate) {
+		if intent["participation"] != "resolved" || intent["lifecycle"] != "released" || intent["first_decision_id"] != "d-booked-"+id || intent["latest_decision_id"] != "d-booked-"+id {
+			t.Fatalf("resolved intent lost its history or was not marked resolved: %+v", intent)
+		}
+	}
+	if len(a.decisions[0].Outreach) != 1 || !a.decisions[0].Outreach[0].Released || len(a.last.Outreach) != 0 {
+		t.Fatalf("canonical decisions were rewritten: %+v %+v", a.decisions[0].Outreach, a.last.Outreach)
+	}
+	if got := testNextCandidate([]*apiCase{a, b}); got.kind != "none" {
+		t.Fatalf("disappeared outreach drove the next action: %+v", got)
+	}
+	a.Closed, b.Closed, a.State, b.State = true, true, "closed", "closed"
+	a.last.State, b.last.State = "closed", "closed"
+	if got := testNextCandidate([]*apiCase{a, b}); got.kind != "none" {
+		t.Fatalf("closed cases with disappeared outreach drove the next action: %+v", got)
+	}
+
+	mixed := []*apiCase{mk("a", "crc", nil), mk("b", "cervical", []Outreach{reminder})}
+	flags = flagsByMatch(mixed)
+	if flags["duplicate"]["actionable"] != false {
+		t.Fatalf("one current and one disappeared intent was actionable: %+v", flags["duplicate"])
+	}
+	if got := intentsOf(flags["duplicate"])["b"]["participation"]; got != nil {
+		t.Fatalf("current intent was marked %v", got)
+	}
+	if got := testNextCandidate(mixed); got.kind != "none" {
+		t.Fatalf("mixed group drove the next action: %+v", got)
+	}
+
+	current := []*apiCase{mk("b", "cervical", []Outreach{reminder}), mk("a", "crc", []Outreach{reminder})}
+	flags = flagsByMatch(current)
+	if flags["duplicate"]["actionable"] != true || flags["overlap"]["actionable"] != true {
+		t.Fatalf("two current intents lost actionability: %+v", flags)
+	}
+	ordered := flags["duplicate"]["intents"].([]map[string]interface{})
+	if ordered[0]["case_id"] != "a" || ordered[1]["case_id"] != "b" || ordered[0]["first_decision_id"] != "d-booked-a" || ordered[0]["latest_decision_id"] != "d-fulfilled-a" {
+		t.Fatalf("current intents lost ordering or provenance: %+v", ordered)
+	}
+	if got := testNextCandidate(current); got.kind != "review_duplicate_outreach" || got.caseID != "a" {
+		t.Fatalf("current duplicate did not drive review: %+v", got)
+	}
+}
+
+func TestPersonNextActionWaitsForCurrentEvidenceReview(t *testing.T) {
+	mk := func(id, programme, drop, contact string, pending ...string) *apiCase {
+		d := testPersonDecision(id, programme)
+		d.Dropoff, d.Contact, d.Pending = drop, contact, pending
+		d.Chain = appendBlock(nil, "hold_decision", map[string]interface{}{"loop": id, "state": "review_hold", "reason": "followup_readers_disagree"})
+		return &apiCase{ID: id, Programme: programme, State: "open", Dropoff: drop, Consent: contact, Review: "open", last: d, decisions: []*Decision{d}}
+	}
+	evidence := func(cases ...*apiCase) *apiServer {
+		s := &apiServer{queue: map[string][]*ReviewItem{}}
+		for _, c := range cases {
+			for _, id := range c.last.Pending {
+				s.queue[c.ID] = append(s.queue[c.ID], &ReviewItem{ItemID: id, LoopID: c.ID, Kinds: []string{"evidence"}})
+			}
+		}
+		return s
+	}
+	for _, tc := range []struct{ programme, drop string }{{"lung_ldct", "followup_ldct_not_done"}, {"diabetic_retinopathy", "no_eye_exam"}} {
+		for _, contact := range []string{"granted", "unknown"} {
+			held := mk("held-"+tc.programme, tc.programme, tc.drop, contact, "rv-unread")
+			if got := testNextCandidateFor(evidence(held), []*apiCase{held}); got.kind != "none" {
+				t.Fatalf("%s with %s consent and an unread report became %+v", tc.programme, contact, got)
+			}
+		}
+		earlier := mk("resolved-"+tc.programme, tc.programme, tc.drop, "unknown", "rv-unread")
+		s := evidence(earlier)
+		resolved := testPersonDecision(earlier.ID, tc.programme)
+		resolved.ID, resolved.Dropoff, resolved.Contact = "d-resolved", tc.drop, "unknown"
+		earlier.decisions, earlier.last = append(earlier.decisions, resolved), resolved
+		if got := testNextCandidateFor(s, []*apiCase{earlier}); got.kind != "review_contact_permission" || !containsString(got.reasons, "dropoff_"+tc.drop) {
+			t.Fatalf("%s resolved evidence did not resume coordinator action: %+v", tc.programme, got)
+		}
+		earlier.Consent, resolved.Contact = "granted", "granted"
+		if got := testNextCandidateFor(s, []*apiCase{earlier}); got.kind != "programme_follow_up" {
+			t.Fatalf("%s resolved evidence with granted consent: %+v", tc.programme, got)
+		}
+	}
+
+	link := mk("link-only", "lung_ldct", "followup_ldct_not_done", "granted", "rv-link")
+	s := &apiServer{queue: map[string][]*ReviewItem{link.ID: {{ItemID: "rv-link", LoopID: link.ID, Kinds: []string{"link"}}}}}
+	if got := testNextCandidateFor(s, []*apiCase{link}); got.kind != "programme_follow_up" {
+		t.Fatalf("a pending identity-link review suppressed the follow-up: %+v", got)
+	}
+
+	provider := mk("provider", "crc", "referral_rejected", "denied", "rv-provider")
+	if got := testNextCandidateFor(evidence(provider), []*apiCase{provider}); got.kind != "programme_follow_up" || got.caseID != provider.ID {
+		t.Fatalf("provider-only referral follow-up was suppressed: %+v", got)
+	}
+
+	recall := mk("recall", "diabetic_retinopathy", "", "granted", "rv-recall")
+	recall.Closed, recall.State, recall.last.State = true, "closed", "closed"
+	recall.last.DR = &DRDecision{Next: &DRNext{DueDay: 10, Overdue: true}}
+	if got := testNextCandidateFor(evidence(recall), []*apiCase{recall}); got.kind != "programme_follow_up" || !containsString(got.reasons, "dr_next_recall_overdue") {
+		t.Fatalf("overdue post-closure recall was suppressed: %+v", got)
 	}
 }

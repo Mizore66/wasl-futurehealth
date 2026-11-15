@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -159,8 +160,34 @@ func attachSourceBoundEvidence202(t *testing.T, s *apiServer, loop string) strin
 	if s.reviewReportSources == nil {
 		s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
 	}
-	for key, report := range source.reviewReportSources {
-		s.reviewReportSources[key] = report
+	if s.sources == nil {
+		s.sources = map[string][]sourcePointer{}
+	}
+	var lastSeq uint64
+	fhirPath := filepath.Join(s.run, "fhir_log.ndjson")
+	if _, err := os.Stat(fhirPath); err == nil {
+		for _, msg := range readLog(fhirPath) {
+			if msg.Seq > lastSeq {
+				lastSeq = msg.Seq
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	for _, msg := range readLog(filepath.Join(run, "fhir_log.ndjson")) {
+		provider, _, _ := strings.Cut(strings.TrimPrefix(msg.Subject, "fhir."), ".")
+		event, _ := normalise(provider, 0, msg.Data)
+		if event == nil {
+			t.Fatal("source-bound fixture report cannot be normalized")
+		}
+		if provider+"/DiagnosticReport/"+event.ReportID != raisedReviewReport(item) || reviewSourceVersion(event.Version) != reviewSourceVersion(item.ReportVersion) {
+			continue
+		}
+		lastSeq++
+		msg.Seq = lastSeq
+		appendLogMsgs(t, s.run, "fhir_log.ndjson", msg)
+		s.rememberReviewReportSource(event, msg.Data)
+		s.indexSource(provider, event, msg)
 	}
 	return ids.Evidence
 }

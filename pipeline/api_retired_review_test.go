@@ -89,6 +89,8 @@ func TestAPIRetiredReviewHistoryReplaysWithoutBlockingOtherCases(t *testing.T) {
 			appendRetirementOutput(t, e.run,
 				OutEnvelope{Kind: "decision", Dec: &other},
 				OutEnvelope{Kind: "review", Item: &ReviewItem{ItemID: "other-link", LoopID: other.LoopID, Kinds: []string{"link"}}},
+				OutEnvelope{Kind: "review", Item: &ReviewItem{ItemID: "other-ev", LoopID: other.LoopID, Kinds: []string{"evidence"},
+					ReportID: irSourceReport, ReportVersion: 1, Chain: sourceChain("exp-prov", irSourceReport)}},
 				OutEnvelope{Kind: "decision", Dec: retiredReviewDecision(e.s)})
 			s := loadAPI(e.run, "")
 			if s.ledgerErr != "" {

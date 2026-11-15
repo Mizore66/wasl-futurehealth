@@ -34,6 +34,11 @@ func newUndoRig(t *testing.T) *undoRig {
 		d := &Decision{ID: "dec-" + id, LoopID: id, Prog: "crc", State: "open", Sig: "head-" + id}
 		s.cases[id] = &apiCase{ID: id, Programme: "crc", State: "open", last: d, decisions: []*Decision{d}}
 		s.order = append(s.order, id)
+		seedEvidenceSource(t, s, id)
+	}
+	// Each case's evidence source is one more FHIR record; the run's report must still declare them all.
+	if err := os.WriteFile(filepath.Join(run, "report7.json"), []byte(`{"events":3,"programmes_live":{"crc":{"cases":1}}}`), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/cases/", s.undoRoutes(s.caseRoutes))

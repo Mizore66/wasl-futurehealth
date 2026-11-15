@@ -20,8 +20,9 @@ var (
 
 func pathologyFHIR(prov, id, code string) []byte {
 	res := map[string]interface{}{"resourceType": "DiagnosticReport", "id": id, "status": "final", "effectiveDateTime": "2026-01-10T00:00:00Z",
-		"code":      map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": code}}},
-		"contained": []interface{}{map[string]interface{}{"identifier": []interface{}{map[string]interface{}{"system": "urn:test:mrn", "value": "2"}}}}}
+		"conclusion": "Explicitly synthetic report text for review protocol software tests.",
+		"code":       map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": code}}},
+		"contained":  []interface{}{map[string]interface{}{"identifier": []interface{}{map[string]interface{}{"system": "urn:test:mrn", "value": "2"}}}}}
 	raw, _ := json.Marshal(res)
 	m := LogMsg{Seq: 1, Subject: "fhir." + prov + ".res", Hdr: map[string]string{"Wsi-Arr": "1.000000"}, Data: raw}
 	b, _ := json.Marshal(m)

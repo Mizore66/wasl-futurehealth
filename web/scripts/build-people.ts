@@ -1,5 +1,5 @@
 // Builds data/people.json: display names for the registrations of the three CRC demo fixtures (plan gap G1).
-// The cast has no one for dr_exam_closure, so that fixture keeps its registration ids.
+// The cast has no one for dr_exam_closure or person_journey, so those fixtures keep their registration ids.
 // The API returns registrations, not names. persons3.json is used if it maps registrations to people;
 // otherwise names come from the design's canonical cast and are marked source "canonical-cast".
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -24,11 +24,12 @@ if (mappingKeys.size > 0) {
   throw new Error(`${PERSONS} now carries ${[...mappingKeys].join(", ")}: map registrations from it instead of the canonical cast`);
 }
 
+const isCrcFixture = (f: string): f is (typeof CRC_FIXTURES)[number] => (CRC_FIXTURES as readonly string[]).includes(f);
 const people: Record<string, Person> = {};
 for (const file of readdirSync(samples).filter((f) => /^case_[a-z_]+\.json$/.test(f) && !f.endsWith("_audit.json"))) {
   const detail = CaseDetail.parse(JSON.parse(readFileSync(path.join(samples, file), "utf8")));
   const fixture = detail.case.fixture;
-  if (!fixture || fixture === "dr_exam_closure") continue;
+  if (!isCrcFixture(fixture)) continue;
   const cast = CAST[fixture];
   for (const identity of detail.identities) {
     const referral = identity.role === "referral";

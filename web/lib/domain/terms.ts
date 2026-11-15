@@ -18,6 +18,7 @@ export const TERMS = {
   false_closure_trap: "Held: incomplete evidence",
   review_hold: "Held for human review",
   dr_exam_closure: "Eye exam closed the loop",
+  person_journey: "Open across programmes",
   // LDCT reader fields (docs/API.md).
   lungrads_overall: "Lung-RADS overall",
   lungrads_worst: "Lung-RADS worst",

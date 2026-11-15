@@ -432,6 +432,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	pqs, prepQ := prepStates(f.Comms, now), "" // ungraded-prep query threads per report (prepquery.go)
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
+	inadequateDay, hasInadequateDay := 0.0, false
 	var holdRow *row                                       // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{}                   // pilot: a post-closure audit that disagreed with the automatic verdict
@@ -658,6 +659,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		case "inadequate":
 			inadequate = true
+			if !hasInadequateDay || r.d.Day > inadequateDay {
+				inadequateDay, hasInadequateDay = r.d.Day, true
+			}
 			if holdRow == nil || holdRow.d.Ev == nil || holdRow.d.Ev.Label != "inadequate" {
 				rr := r
 				holdRow = &rr
@@ -712,6 +716,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState, PrepQ: prepQ,
 		ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: notif, AckDay: ack, RefStatus: refStatus, RefDay: refDay,
 		CommFlags: commFlags, HumanAssisted: humanAssisted && state == "closed"}
+	if state == "inadequate" && hasInadequateDay {
+		d.InadequateDay = &inadequateDay
+	}
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}

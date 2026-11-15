@@ -1,5 +1,6 @@
 import type { CaseDetail, ReviewState } from "@/lib/api/schema";
 import { legacyReviewMayAnswer } from "@/lib/domain/review-authority";
+import { caseHolds } from "@/lib/domain/holds";
 
 /*
  * The 8-step pipeline vocabulary (pipeline-brief "The state vocabulary").
@@ -135,7 +136,7 @@ export function caseStage(c: CaseDetail): CaseStage {
     return stage("recorded", via);
   }
 
-  const hold = c.holds[0];
+  const hold = caseHolds(c).current[0];
   if (hold) return stage("gate_held", `${hold.state} · ${hold.rule}`);
 
   const open = openReviewItems(c);

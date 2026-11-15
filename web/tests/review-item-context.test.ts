@@ -8,7 +8,7 @@ import { reviewItemViews, reviewView } from "@/components/review/case-view";
 import { CaseDetail, ReviewState } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 
-const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn() }));
+const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn(), readReviewSource: vi.fn((..._a: unknown[]): Promise<unknown> => new Promise(() => {})) }));
 vi.mock("@/app/app/review/[id]/actions", () => actions);
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -111,6 +111,10 @@ describe("review cards are bound to the item being judged", () => {
 
   it("shows each evidence card its own report id, quote and reader values, and submits against that item", async () => {
     actions.submitReviewRead.mockResolvedValue({ ok: false, failure: { status: 400, error: "stub" } });
+    actions.readReviewSource.mockImplementation(async (...args: unknown[]) => ({
+      ok: true,
+      source: { report: `unit/DiagnosticReport/${args[1] === "rv-a" ? "CRC-dr-A" : "CRC-dr-B"}`, report_version: 1, day: 1, text: `source for ${String(args[1])}` },
+    }));
     const c = await mount(twoReports, [state("rv-a", "evidence"), state("rv-b", "evidence")]);
     expect(card(c, "rv-a", "evidence").textContent).toContain("CRC-dr-A");
     expect(card(c, "rv-b", "evidence").textContent).toContain("CRC-dr-B");

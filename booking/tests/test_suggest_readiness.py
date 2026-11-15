@@ -22,7 +22,7 @@ def booking(d):
     with open(os.path.join(d, "out_log.ndjson"), "w") as o, open(os.path.join(d, "fhir_log.ndjson"), "w") as f:
         for name, (prog, state, pending) in CASES.items():
             loop = f"ahs-mushrif/ServiceRequest/{name}"
-            dec = {"loop": loop, "prog": prog, "state": state, "prov": "ahs-mushrif", "deadline": 56}
+            dec = {"loop": loop, "prog": prog, "state": state, "prov": "ahs-mushrif", "deadline": 56, "sr_day": 0}
             if pending:
                 dec["pending"] = pending
             o.write(json.dumps({"data": {"dec": dec}}) + "\n")

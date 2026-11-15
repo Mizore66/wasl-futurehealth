@@ -141,7 +141,7 @@ func (s *apiServer) identityReview(c *apiCase, viewer apiPrincipal) []map[string
 	defer s.mu.Unlock()
 	var out []map[string]interface{}
 	for _, it := range s.queue[c.ID] {
-		if !itemHasKind(it, "link") || s.itemSigned(c.ID, it.ItemID) {
+		if !itemHasKind(it, "link") || s.questionSigned(c.ID, it, "link") {
 			continue
 		}
 		entry := map[string]interface{}{"item": it.ItemID, "pair": []string{it.Pair[0], it.Pair[1]}}

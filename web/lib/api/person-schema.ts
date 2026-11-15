@@ -40,7 +40,7 @@ export const OutreachIntent = z.looseObject({
   latest_decision_id: z.string(),
   latest_decision_sig: z.string(),
   lifecycle: z.enum(["released", "held", "withheld", "recorded"]),
-  participation: z.enum(["current", "historical"]).optional(),
+  participation: z.enum(["current", "historical", "resolved"]).optional(),
   outreach: PersonOutreach,
 });
 
