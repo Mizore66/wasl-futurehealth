@@ -9,6 +9,13 @@ import (
 	"testing"
 )
 
+func unboundCRCWriteStatus202(item string) int {
+	if item == "" {
+		return http.StatusConflict // accepted main's missing-source/item refusal
+	}
+	return http.StatusBadRequest // source exists, but original item binding is absent
+}
+
 // An explicit prior-format software input, not a claimed current clinical POST
 // or a real historical patient record. irRun intentionally retains its old
 // unbound item shape here. Source-bound clinical-write tests use a different rig.
@@ -24,7 +31,7 @@ func legacyCRCArchivedInput202(t *testing.T, item string) (string, []byte, strin
 		t.Fatal(err)
 	}
 	e := &irEnv{s: baseline, h: h, run: run, path: "/api/cases/" + ledgerLoop}
-	if code, _ := e.post(t, irClinA, legacyBody(item, "adequate")); code != http.StatusBadRequest || len(baseline.reviewsFor(ledgerLoop)) != 0 {
+	if code, _ := e.post(t, irClinA, legacyBody(item, "adequate")); code != unboundCRCWriteStatus202(item) || len(baseline.reviewsFor(ledgerLoop)) != 0 {
 		t.Fatal("new unbound clinical-write refusal was lost before the historical input")
 	}
 	head := baseline.cases[ledgerLoop].last.Sig
@@ -71,7 +78,7 @@ func TestCRCLegacyUnboundHistoryRemainsNonbindingAndBytePreserved(t *testing.T) 
 				t.Fatal(err)
 			}
 			e := &irEnv{s: s, h: h, run: run, path: "/api/cases/" + ledgerLoop}
-			if code, _ := e.post(t, irClinB, legacyBody(tc.item, "adequate")); code != http.StatusBadRequest {
+			if code, _ := e.post(t, irClinB, legacyBody(tc.item, "adequate")); code != unboundCRCWriteStatus202(tc.item) {
 				t.Fatalf("legacy retention became a new clinical-write fallback: %d", code)
 			}
 			if !bytes.Equal([]byte(readFile(t, filepath.Join(run, "api_reviews.ndjson"))), originalBytes) {

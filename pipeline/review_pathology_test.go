@@ -140,7 +140,7 @@ func TestCRCReviewAnswersAreScopedToTheRaisedReport(t *testing.T) {
 		{pathItem, "adequate", 400}, {pathItem, "inadequate", 400},
 		{coloItem, "adequate", 201}, {coloItem, "inadequate", 201},
 		{coloItem, "histology", 400}, {coloItem, "no_histology", 400},
-		{"", "histology", 400},
+		{"", "histology", 409}, // no raised item/source: preserve main's availability refusal
 	} {
 		m := e.must(t, irClinA, legacyBody(tc.item, tc.decision), tc.want)
 		if tc.want == 201 && m["review"].(map[string]interface{})["decision"] != tc.decision {
