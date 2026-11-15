@@ -274,6 +274,7 @@ func loadAPI(run, data string) *apiServer {
 	if s.ledgerErr == "" {
 		s.loadReviews()
 	}
+	s.pickPersonFixture()
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
 		"policy": PolicyName, "reader_model": safeReaderModel(s.readerModel()), "loaded_at": time.Now().UTC().Format(time.RFC3339),
 		"note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."}

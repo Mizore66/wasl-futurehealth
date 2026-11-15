@@ -1,5 +1,6 @@
 import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
+import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
@@ -118,7 +119,7 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
       body: `${parts.join(", ")}.${str(closure.rule) ? ` Rule: ${str(closure.rule)}.` : ""}`.replace(/^./, (m) => m.toUpperCase()),
     };
   }
-  const hold = d.holds[0];
+  const hold = caseHolds(d).current[0];
   if (hold) return { title: "Held, not closed", body: `${holdWords(hold)}${hold.rule ? ` Rule: ${hold.rule}.` : ""}` };
   return { title: "Open", body: statusWords(c).next + "." };
 }
