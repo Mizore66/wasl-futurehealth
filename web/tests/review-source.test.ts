@@ -87,4 +87,13 @@ describe("evidence source report", () => {
     await answerAndSubmit();
     expect(actions.submitReviewRead).not.toHaveBeenCalled();
   });
+
+  it("offers only server-accepted evidence reads on a live CRC case with link and evidence questions", async () => {
+    actions.readReviewSource.mockResolvedValue({ ok: true, source: { report: "skmc-endo/DiagnosticReport/SKM-dr-217", report_version: 2, day: 40, text: report } });
+    expect(detail.review_items.map((r) => r.kinds)).toEqual([["link"], ["evidence"]]);
+    await mount();
+    const choices = [...container.querySelectorAll<HTMLInputElement>("input[type=radio]")].map((r) => r.value);
+    expect(choices).toEqual(["adequate", "inadequate"]);
+    expect(container.textContent).not.toContain("Ask the unit");
+  });
 });

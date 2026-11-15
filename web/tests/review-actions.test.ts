@@ -141,6 +141,14 @@ describe("submitReviewRead", async () => {
     expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
   });
 
+  it("refuses the fixture-only ask action as a malformed read before any request", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question: "evidence", decision: "ask" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("posts the exact rationale for an initial read", async () => {
     const submit = await load();
     const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([state()]))).mockResolvedValueOnce(json(201, reviewBody));

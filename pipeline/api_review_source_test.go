@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -54,6 +55,35 @@ func appendReviewItems(t *testing.T, run string, items ...*ReviewItem) {
 		msgs = append(msgs, m)
 	}
 	appendLogMsgs(t, run, "out_log.ndjson", msgs...)
+}
+
+// seedReportSource receives version 1 of a provider-qualified DiagnosticReport into a loaded or hand-built server.
+func seedReportSource(t *testing.T, s *apiServer, ref string) {
+	t.Helper()
+	prov, report, _ := strings.Cut(ref, "/DiagnosticReport/")
+	m := sourceReportMsg(uint64(1_000_000+len(s.sources)), prov, report, 1, "Synthetic source report "+ref+".")
+	appendLogMsgs(t, s.run, "fhir_log.ndjson", m)
+	if s.sources == nil {
+		s.sources = map[string][]sourcePointer{}
+	}
+	key := sourceKey(ref, 1)
+	s.sources[key] = append(s.sources[key], sourcePointer{seq: m.Seq, sha: sha256.Sum256(m.Data)})
+}
+
+// seedEvidenceSource raises one source-backed evidence item on a case, as the pipeline would, so an evidence write
+// passes the source gate. It returns the item id to name in the write.
+func seedEvidenceSource(t *testing.T, s *apiServer, caseID string) string {
+	t.Helper()
+	prov, _, _ := strings.Cut(caseID, "/")
+	report := "SRC-" + strconv.Itoa(len(s.sources)+1)
+	seedReportSource(t, s, prov+"/DiagnosticReport/"+report)
+	if s.queue == nil {
+		s.queue = map[string][]*ReviewItem{}
+	}
+	item := "rv-src-" + strconv.Itoa(len(s.queue[caseID]))
+	s.queue[caseID] = append(s.queue[caseID], &ReviewItem{ItemID: item, LoopID: caseID, Kinds: []string{"evidence"},
+		ReportID: report, ReportVersion: 1, Chain: sourceChain(prov, report)})
+	return item
 }
 
 func sourceEnv(t *testing.T, items []*ReviewItem, reports ...LogMsg) *irEnv {
