@@ -2,6 +2,7 @@ import type { PatientJourneyResponse } from "@/lib/api/patient-schema";
 
 export const patientOffers = {
   version: "offer-version-1",
+  procedure: "colonoscopy" as const,
   slots: [
     { slot_id: "skmc-endo:2026-10-09:09:30", unit: "skmc-endo", starts_at: "2026-10-09T09:30:00+04:00" },
     { slot_id: "skmc-endo:2026-10-08:11:00", unit: "skmc-endo", starts_at: "2026-10-08T11:00:00+04:00" },
@@ -17,7 +18,12 @@ export function patientFixture(): PatientJourneyResponse {
       head: "canonical-signature",
       seq: 0,
       ledger_status: "ok",
-      teach_back: { question_id: "crc-next-step-v1", status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0 },
+      programme: "crc",
+      next_step: "colonoscopy",
+      teach_back: {
+        question_id: "crc-next-step-v1", status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
+        answers: ["blood_test", "colonoscopy", "not_sure"],
+      },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
       slot_selection: { status: "unselected", offers_version: patientOffers.version, slot_id: "", selected_at: "", event: "" },
       preparation: {

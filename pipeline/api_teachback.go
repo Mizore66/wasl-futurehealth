@@ -108,8 +108,7 @@ func (c *apiCase) latestPatientCallback() *teachBackCallback {
 
 // recordTeachBackAttempt applies one answered attempt. A callback state opens a
 // task only when the patient has none open, so retries never duplicate work.
-func (c *apiCase) recordTeachBackAttempt(answerID, at, hash string) {
-	state := teachBackAnswers[answerID]
+func (c *apiCase) recordTeachBackAttempt(answerID, state, at, hash string) {
 	effect := teachBackEffects[state]
 	p := &c.patient
 	p.Attempts = append(p.Attempts, teachBackAttempt{AnswerID: answerID, State: state, At: at, Event: hash})

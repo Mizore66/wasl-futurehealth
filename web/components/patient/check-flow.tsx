@@ -7,6 +7,8 @@ import { DICTS, type Lang, type PatientDict } from "./i18n";
 import type { PhoneQuery } from "./journey";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
+import { GatedNote, scriptLang } from "./programme-copy";
+import { patientScript, type PatientScript } from "./programme";
 import { usePatientJourney } from "./use-patient-journey";
 
 type CheckStep = "question" | "explain" | "consent" | "done";
@@ -24,7 +26,7 @@ function dueDate(iso: string, lang: Lang): string {
 }
 
 /** The durable receipt for a failed teach-back: who calls, by when, and whether that call is recorded. */
-function CallbackReceipt({ callback, c, lang }: { callback: PatientTeachBackCallback; c: PatientDict["check"]; lang: Lang }) {
+function CallbackReceipt({ callback, c, lang, script }: { callback: PatientTeachBackCallback; c: PatientDict["check"]; lang: Lang; script: PatientScript }) {
   const type = phoneType(lang);
   return (
     <div role="status" className="mt-4 flex flex-col gap-2 rounded-card border border-line bg-surface p-5">
@@ -32,7 +34,7 @@ function CallbackReceipt({ callback, c, lang }: { callback: PatientTeachBackCall
         <p className={type.body}>{c.callbackResolved}</p>
       ) : (
         <>
-          <p className={type.body}>{c.callbackOpen.replace("{date}", dueDate(callback.due_at, lang))}</p>
+          <p className={type.body} {...scriptLang(script)}>{script.check.callbackOpen.replace("{date}", dueDate(callback.due_at, script.lang))}</p>
           {callback.overdue && <p className={type.body}>{c.callbackLate} <PhoneNumber /></p>}
         </>
       )}
@@ -47,6 +49,9 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
   const c = t.check;
   const type = phoneType(query.lang);
   const { journey, busy, status, save, retry, canRetry } = usePatientJourney(initial);
+  const script = patientScript(journey, query.lang);
+  const s = script.check;
+  const copy = scriptLang(script);
   const [step, setStep] = useState<CheckStep>(() => initialStep(initial));
   const heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
@@ -61,15 +66,11 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
     if (current) setStep(initialStep(current));
   }
 
-  async function teachBack() {
-    const saved = await save({ kind: "teach_back_completed", data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } });
-    if (saved) setStep("consent");
-  }
-
-  async function choose(answer: "colonoscopy" | "blood_test" | "not_sure") {
-    if (answer === "colonoscopy") return teachBack();
-    const saved = await save({ kind: "teach_back_answered", data: { question_id: "crc-next-step-v1", answer_id: answer } });
-    if (saved) setStep("explain");
+  async function choose(answer_id: string) {
+    const data = { question_id: journey.teach_back.question_id, answer_id };
+    const right = answer_id === journey.next_step;
+    const saved = await save(right ? { kind: "teach_back_completed", data } : { kind: "teach_back_answered", data });
+    if (saved) setStep(right ? "consent" : "explain");
   }
 
   async function answer(permission: "granted" | "denied") {
@@ -94,25 +95,22 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
           ))}
         </div>
 
+        <GatedNote script={script} />
         {step === "question" && (
           <div>
             <p className="m-0 mb-1.5 text-[16px] text-muted">{c.intro}</p>
-            <h1 ref={heading} tabIndex={-1} className={h1}>{c.question}</h1>
+            <h1 ref={heading} tabIndex={-1} className={h1} {...copy}>{s.question}</h1>
             <div role="group" aria-label={c.groupLabel} className="mt-3 flex flex-col gap-3">
-              {([
-                { text: c.wrong, answer: "blood_test" },
-                { text: c.right, answer: "colonoscopy" },
-                { text: c.notSure, answer: "not_sure" },
-              ] as const).map((o, i) => (
+              {s.answers.map((o, i) => (
                 <button
-                  key={o.text}
+                  key={o.id}
                   type="button"
                   disabled={busy}
-                  onClick={() => void choose(o.answer)}
+                  onClick={() => void choose(o.id)}
                   className="flex min-h-[76px] w-full cursor-pointer items-center gap-3.5 rounded-card border border-control bg-surface px-4 py-3 text-start text-ink disabled:cursor-wait disabled:opacity-60"
                 >
                   <span aria-hidden="true" className="flex size-9 flex-none items-center justify-center rounded-full bg-raised text-[17px] font-semibold text-ink-soft">{c.letters[i]}</span>
-                  <span className={type.body}>{o.text}</span>
+                  <span className={type.body} {...copy}>{o.text}</span>
                 </button>
               ))}
             </div>
@@ -123,10 +121,10 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
         {step === "explain" && (
           <div>
             <h1 ref={heading} tabIndex={-1} className={h1}>{c.explainTitle}</h1>
-            <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5">
-              {c.explain.map((line, i) => <p key={line} className={cn(type.body, i === 0 && "font-medium")}>{line}</p>)}
+            <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5" {...copy}>
+              {s.explain.map((line, i) => <p key={line} className={cn(type.body, i === 0 && "font-medium")}>{line}</p>)}
             </div>
-            {journey.teach_back.callback && <CallbackReceipt callback={journey.teach_back.callback} c={c} lang={query.lang} />}
+            {journey.teach_back.callback && <CallbackReceipt callback={journey.teach_back.callback} c={c} lang={query.lang} script={script} />}
             <button type="button" onClick={() => setStep("question")} className={cn(SECONDARY, "mt-4")}>{c.retry}</button>
           </div>
         )}
@@ -151,9 +149,9 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
             <span aria-hidden="true" className="mb-4 flex size-14 items-center justify-center rounded-full bg-pill-positive-bg text-pill-positive-ink">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-10" /></svg>
             </span>
-            <h1 ref={heading} tabIndex={-1} className={h1}>{c.thanks}</h1>
+            <h1 ref={heading} tabIndex={-1} className={h1} {...copy}>{s.thanks}</h1>
             <div className="flex flex-col gap-3">
-              <p className={type.body}>{c.willCall} {c.alsoCall} <PhoneNumber /></p>
+              <p className={type.body} {...copy}>{s.willCall} <PhoneNumber /></p>
               <p className={cn(type.body, "text-muted")}>{contact === "granted" ? c.smsYes : contact === "opted_out" ? t.common.stopped : c.smsNo}</p>
               {contact === "granted" && (
                 <button type="button" disabled={busy} onClick={() => void stopMessages()} className={SECONDARY}>{t.common.stopMessages}</button>

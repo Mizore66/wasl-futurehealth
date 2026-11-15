@@ -41,7 +41,7 @@ export default async function Page({ params, searchParams }: PageProps<"/patient
 
   return (
     <PhoneFrame step={step} query={query} live>
-      {step === "notice" && <NoticeScreen lang={query.lang} />}
+      {step === "notice" && <NoticeScreen lang={query.lang} journey={initial.journey} />}
       {step === "check" && <CheckFlow query={query} initial={initial.journey} />}
       {step === "book" && <BookFlow query={query} initial={initial.journey} offers={initial.offers} />}
     </PhoneFrame>

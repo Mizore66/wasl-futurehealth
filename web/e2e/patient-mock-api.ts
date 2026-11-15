@@ -2,7 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
 const port = Number(process.env.PATIENT_MOCK_PORT ?? 31987);
-const offers = {
+const crcOffers = {
+  procedure: "colonoscopy",
   version: createHash("sha256").update(["skmc-endo:2026-10-08:11:00", "skmc-endo:2026-10-09:09:30", "skmc-endo:2026-10-12:13:00"].join("\n")).digest("hex"),
   slots: [
     { slot_id: "skmc-endo:2026-10-09:09:30", unit: "skmc-endo", starts_at: "2026-10-09T09:30:00+04:00" },
@@ -11,13 +12,25 @@ const offers = {
   ],
 };
 
+const noOffers = { procedure: "", version: "", slots: [] as typeof crcOffers.slots };
+/** The served next step and wrong answer per programme, as pipeline/api_patient.go patientPlanFor projects them. */
+const PLANS: Record<string, { next: string; distractor: string }> = {
+  crc: { next: "colonoscopy", distractor: "blood_test" },
+  cervical: { next: "colposcopy", distractor: "wait_for_symptoms" },
+  breast: { next: "recall", distractor: "wait_for_symptoms" },
+  lung_ldct: { next: "annual", distractor: "urgent_visit" },
+};
+
 type Journey = {
   schema: "wasl-patient-journey/1";
   head: string;
   seq: number;
   ledger_status: "ok";
+  programme: string;
+  next_step: string;
   teach_back: {
-    question_id: "crc-next-step-v1";
+    question_id: string;
+    answers: string[];
     status: string;
     completed_at: string;
     event: string;
@@ -27,7 +40,7 @@ type Journey = {
   };
   contact_permission: { status: string; updated_at: string; event: string };
   slot_selection: { status: string; offers_version: string; slot_id: string; selected_at: string; event: string };
-  preparation: { items: { item_id: string; completed: boolean; updated_at: string; event: string }[]; completed: number; total: 2 };
+  preparation: { items: { item_id: string; completed: boolean; updated_at: string; event: string }[]; completed: number; total: 0 | 2 };
   last_action_at: string;
 };
 type RightsRow = { receipt: string; kind: string; decision: string; submitted_at: string; reason: string; status: string; owner?: string; due_at?: string; overdue?: boolean; closure_held?: boolean };
@@ -44,7 +57,9 @@ type Link = {
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
-function fresh(token: string, expires: number): Link {
+function fresh(token: string, expires: number, programme = "crc"): Link {
+  const plan = PLANS[programme];
+  const crc = programme === "crc";
   return {
     token,
     expires,
@@ -56,17 +71,25 @@ function fresh(token: string, expires: number): Link {
       head: hash(`canonical:${token}`),
       seq: 0,
       ledger_status: "ok",
-      teach_back: { question_id: "crc-next-step-v1", status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0 },
-      contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: offers.version, slot_id: "", selected_at: "", event: "" },
-      preparation: {
-        items: [
-          { item_id: "clear_fluids_and_prep", completed: false, updated_at: "", event: "" },
-          { item_id: "escort_home", completed: false, updated_at: "", event: "" },
-        ],
-        completed: 0,
-        total: 2,
+      programme,
+      next_step: plan.next,
+      teach_back: {
+        question_id: crc ? "crc-next-step-v1" : `${programme}-next-step-v1`,
+        answers: [plan.distractor, plan.next, "not_sure"],
+        status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
       },
+      contact_permission: { status: "unknown", updated_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : "", slot_id: "", selected_at: "", event: "" },
+      preparation: crc
+        ? {
+            items: [
+              { item_id: "clear_fluids_and_prep", completed: false, updated_at: "", event: "" },
+              { item_id: "escort_home", completed: false, updated_at: "", event: "" },
+            ],
+            completed: 0,
+            total: 2,
+          }
+        : { items: [], completed: 0, total: 0 },
       last_action_at: "",
     },
   };
@@ -76,7 +99,8 @@ function send(res: ServerResponse, status: number, body?: unknown) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", "referrer-policy": "no-referrer" });
   res.end(body === undefined ? undefined : JSON.stringify(body));
 }
-const payload = (link: Link) => ({ meta: { api: "wasl-api/1", data_mode: "simulated" }, journey: link.journey, offers, expires_at: new Date(link.expires).toISOString() });
+const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : noOffers);
+const payload = (link: Link) => ({ meta: { api: "wasl-api/1", data_mode: "simulated" }, journey: link.journey, offers: offersFor(link), expires_at: new Date(link.expires).toISOString() });
 const conflict = (link: Link, kind: string, error: string) => ({ error, conflict: kind, current_head: link.journey.head, journey: link.journey });
 
 function authorized(req: IncomingMessage): Link | null {
@@ -142,9 +166,10 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
   if (url.pathname === "/__health") return send(res, 200, { ok: true });
   if (url.pathname === "/__mock/links" && req.method === "POST") {
-    const input = JSON.parse(await body(req)) as { token: string; expired?: boolean };
+    const input = JSON.parse(await body(req)) as { token: string; expired?: boolean; programme?: string };
+    if (input.programme && !PLANS[input.programme]) return send(res, 400, { error: "unknown programme" });
     const expires = Math.floor((Date.now() + (input.expired ? -60_000 : 30 * 60_000)) / 1000) * 1000;
-    links.set(input.token, fresh(input.token, expires));
+    links.set(input.token, fresh(input.token, expires, input.programme));
     return send(res, 201, { expires_at: new Date(expires).toISOString() });
   }
   if (url.pathname === "/__mock/fail-next" && req.method === "POST") {
@@ -200,8 +225,11 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     return send(res, 200, { event: null, journey: link.journey, replayed: true });
   }
   if (input.expected_head !== link.journey.head) return send(res, 409, conflict(link, "head", "stale head"));
-  if (input.kind === "teach_back_completed" && (input.data.question_id !== "crc-next-step-v1" || input.data.answer_id !== "colonoscopy")) return send(res, 400, { error: "wrong answer" });
-  if (input.kind === "teach_back_answered" && (input.data.question_id !== "crc-next-step-v1" || !["blood_test", "not_sure"].includes(String(input.data.answer_id)))) return send(res, 400, { error: "unoffered answer" });
+  const tb = link.journey.teach_back;
+  if (input.kind === "teach_back_completed" && (input.data.question_id !== tb.question_id || input.data.answer_id !== link.journey.next_step)) return send(res, 400, { error: "wrong answer" });
+  if (input.kind === "teach_back_answered" && (input.data.question_id !== tb.question_id || input.data.answer_id === link.journey.next_step || !tb.answers.includes(String(input.data.answer_id)))) return send(res, 400, { error: "unoffered answer" });
+  const offers = offersFor(link);
+  if ((input.kind === "slot_selected" || input.kind === "preparation_changed") && offers.slots.length === 0) return send(res, 400, { error: "no patient offers" });
   if (input.kind === "slot_selected") {
     if (input.data.offers_version !== offers.version) return send(res, 409, conflict(link, "offers", "stale offers"));
     if (!offers.slots.some((slot) => slot.slot_id === input.data.slot_id)) return send(res, 400, { error: "unoffered slot" });

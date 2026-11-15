@@ -20,7 +20,7 @@ const open: TeachBackCallback = {
 };
 
 describe("failed teach-back callback", () => {
-  it("parses the patient receipt and refuses an unoffered or right answer as a failed attempt", () => {
+  it("parses the patient receipt and refuses a malformed answer id; the API owns which answers are offered", () => {
     const journey = patientFixture().journey;
     const receipt = { id: open.id, source: "patient_link", state: "misunderstood", owner: "coordinator", status: "open", opened_at: open.opened_at, due_at: open.due_at };
     const failed = PatientJourney.parse({
@@ -30,7 +30,7 @@ describe("failed teach-back callback", () => {
     expect(failed.teach_back.callback?.due_at).toBe("2026-10-05T08:00:00Z");
     const base = { kind: "teach_back_answered", expected_head: "h", request_id: crypto.randomUUID() } as const;
     expect(PatientMutation.safeParse({ ...base, data: { question_id: "crc-next-step-v1", answer_id: "blood_test" } }).success).toBe(true);
-    expect(PatientMutation.safeParse({ ...base, data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } }).success).toBe(false);
+    expect(PatientMutation.safeParse({ ...base, data: { question_id: "crc-next-step-v1", answer_id: "../colonoscopy" } }).success).toBe(false);
     expect(PatientMutation.safeParse({ ...base, data: { question_id: "crc-next-step-v1", answer_id: "blood_test" }, case: "LOOP-1" }).success).toBe(false);
   });
 

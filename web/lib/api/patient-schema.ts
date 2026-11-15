@@ -12,13 +12,17 @@ export const PatientTeachBackCallback = z.strictObject({
   overdue: z.boolean().optional(),
   resolved_at: z.string().optional(),
 });
+export const PatientProgramme = z.enum(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
+const AnswerID = z.string().regex(/^[a-z_]{1,40}$/);
 export const PatientTeachBack = z.strictObject({
-  question_id: z.literal("crc-next-step-v1"),
+  question_id: z.string().regex(/^[a-z_]+-next-step-v1$/),
   status: z.enum(["pending", "completed", "clarify", "callback"]),
   completed_at: z.string(),
   event: z.string(),
   understanding: z.enum(["not_answered", "understood", "partial", "misunderstood", "needs_human", "unparsed"]),
   attempts: z.number().int().nonnegative(),
+  /** Offered answer ids in display order; the served `next_step` is the understood one. */
+  answers: z.array(AnswerID).length(3),
   callback: PatientTeachBackCallback.optional(),
 });
 export const PatientContactPermission = z.strictObject({
@@ -42,13 +46,16 @@ export const PatientPreparationItem = z.strictObject({
 export const PatientPreparation = z.strictObject({
   items: z.array(PatientPreparationItem),
   completed: z.number().int().min(0).max(2),
-  total: z.literal(2),
+  total: z.union([z.literal(0), z.literal(2)]),
 });
 export const PatientJourney = z.strictObject({
   schema: z.literal("wasl-patient-journey/1"),
   head: z.string().min(1),
   seq: z.number().int().nonnegative(),
   ledger_status: z.enum(["ok", "invalid"]),
+  /** The case's programme and its served recommendation as a patient-safe key (pipeline/api_patient.go patientNextStep). */
+  programme: PatientProgramme,
+  next_step: AnswerID,
   teach_back: PatientTeachBack,
   contact_permission: PatientContactPermission,
   slot_selection: PatientSlotSelection,
@@ -56,7 +63,8 @@ export const PatientJourney = z.strictObject({
   last_action_at: z.string(),
 });
 export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), starts_at: z.string() });
-export const PatientOffers = z.strictObject({ version: z.string(), slots: z.array(PatientOffer) });
+/** Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback. */
+export const PatientOffers = z.strictObject({ version: z.string(), procedure: z.enum(["", "colonoscopy"]), slots: z.array(PatientOffer) });
 export const PatientJourneyResponse = z.looseObject({
   meta: z.looseObject({ api: z.string(), data_mode: z.string() }),
   journey: PatientJourney,
@@ -87,12 +95,12 @@ export const PatientMutation = z.discriminatedUnion("kind", [
   z.strictObject({
     ...mutationBase,
     kind: z.literal("teach_back_completed"),
-    data: z.strictObject({ question_id: z.literal("crc-next-step-v1"), answer_id: z.literal("colonoscopy") }),
+    data: z.strictObject({ question_id: PatientTeachBack.shape.question_id, answer_id: AnswerID }),
   }),
   z.strictObject({
     ...mutationBase,
     kind: z.literal("teach_back_answered"),
-    data: z.strictObject({ question_id: z.literal("crc-next-step-v1"), answer_id: z.enum(["blood_test", "not_sure"]) }),
+    data: z.strictObject({ question_id: PatientTeachBack.shape.question_id, answer_id: AnswerID }),
   }),
   z.strictObject({
     ...mutationBase,
@@ -112,6 +120,7 @@ export const PatientMutation = z.discriminatedUnion("kind", [
 ]);
 
 export type PatientJourney = z.infer<typeof PatientJourney>;
+export type PatientProgramme = z.infer<typeof PatientProgramme>;
 export type PatientTeachBackCallback = z.infer<typeof PatientTeachBackCallback>;
 export type PatientOffers = z.infer<typeof PatientOffers>;
 export type PatientOffer = z.infer<typeof PatientOffer>;

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -34,10 +35,100 @@ var (
 	patientPermissions = map[string]bool{"granted": true, "denied": true, "opted_out": true}
 )
 
-// This contract contains only CRC teach-back, colonoscopy offers and preparation.
-// Other programmes must not acquire links or replay CRC-specific patient events.
+var patientProgrammes = map[string]bool{
+	"crc": true, "cervical": true, "lung_nodule": true, "diabetic_retinopathy": true, "breast": true, "lung_ldct": true, "ifhas": true,
+}
+
 func patientCaseSupported(c *apiCase) bool {
-	return c != nil && c.Programme == "crc"
+	return c != nil && patientProgrammes[c.Programme]
+}
+
+// patientRoutineSteps need no new appointment now, so the wrong teach-back answer is an urgent visit.
+var patientRoutineSteps = map[string]bool{
+	"lung_nodule:none": true, "diabetic_retinopathy:rescreen": true, "breast:routine": true, "lung_ldct:annual": true, "ifhas:routine": true,
+}
+
+// patientDistractors are the non-CRC wrong answers; the served next step itself is the understood answer.
+var patientDistractors = map[string]string{"wait_for_symptoms": "misunderstood", "urgent_visit": "misunderstood", "not_sure": "needs_human"}
+
+// patientPlan is what one canonical decision lets the patient phone show and record.
+// Only CRC has simulated patient appointment offers and their preparation checklist.
+type patientPlan struct {
+	Programme string
+	NextStep  string
+	Question  string
+	Choices   []string // teach-back answer ids in the order the phone shows them
+	Offers    bool
+}
+
+// patientNextStep is the served recommendation as a patient-safe key. It never infers one the decision lacks.
+func patientNextStep(d *Decision) string {
+	action := ""
+	switch d.Prog {
+	case "crc":
+		return "colonoscopy"
+	case "cervical":
+		return "colposcopy"
+	case "lung_nodule":
+		if d.Lung != nil && d.Lung.Rec != nil {
+			action = d.Lung.Rec.Action
+		}
+	case "diabetic_retinopathy":
+		if d.DR != nil && d.DR.Rec != nil {
+			action = d.DR.Rec.Action
+		}
+	case "breast":
+		if d.Breast != nil && d.Breast.Rec != nil {
+			action = d.Breast.Rec.Action
+		}
+	case "lung_ldct":
+		if d.LDCT != nil && d.LDCT.Rec != nil {
+			action = d.LDCT.Rec.Action
+		}
+	case "ifhas":
+		if d.Ifhas != nil && d.Ifhas.Rec != nil {
+			action = d.Ifhas.Rec.Action
+		}
+	}
+	return patientOr(action, "care_team")
+}
+
+func patientPlanFor(d *Decision) (patientPlan, bool) {
+	if d == nil || !patientProgrammes[d.Prog] {
+		return patientPlan{}, false
+	}
+	if d.Prog == "crc" {
+		return patientPlan{Programme: "crc", NextStep: "colonoscopy", Question: teachBackQuestionID, Choices: []string{"blood_test", "colonoscopy", "not_sure"}, Offers: true}, true
+	}
+	step := patientNextStep(d)
+	distractor := "wait_for_symptoms"
+	if patientRoutineSteps[d.Prog+":"+step] {
+		distractor = "urgent_visit"
+	}
+	return patientPlan{
+		Programme: d.Prog, NextStep: step, Question: d.Prog + "-next-step-v1",
+		Choices: []string{distractor, step, "not_sure"},
+	}, true
+}
+
+func casePatientPlan(c *apiCase) patientPlan {
+	d := c.last
+	if d == nil {
+		d = &Decision{Prog: c.Programme}
+	}
+	plan, _ := patientPlanFor(d)
+	return plan
+}
+
+// patientAnswerState reads a validated answer's parser state from its question alone, so replay needs no plan.
+func patientAnswerState(questionID, answerID string) string {
+	if questionID == teachBackQuestionID {
+		return teachBackAnswers[answerID]
+	}
+	if state, ok := patientDistractors[answerID]; ok {
+		return state
+	}
+	return "understood"
 }
 
 type patientFieldState struct {
@@ -138,14 +229,18 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 	if p.Prep == nil {
 		p.Prep = initialPatientPrep()
 	}
-	version := patientOffersVersion()
+	plan := casePatientPlan(c)
+	version, prepIDs := "", []string{}
+	if plan.Offers {
+		version, prepIDs = patientOffersVersion(), []string{prepClearFluidsAndPrep, prepEscortHome}
+	}
 	ledger := "ok"
 	if s.ledgerErr != "" {
 		ledger = "invalid"
 	}
 	out := map[string]interface{}{
 		"schema": patientJourneySchema, "head": patientHead(c), "seq": p.Seq, "ledger_status": ledger,
-		"last_action_at": p.LastAt,
+		"last_action_at": p.LastAt, "programme": plan.Programme, "next_step": plan.NextStep,
 	}
 	if !full {
 		out["teach_back"] = map[string]interface{}{"status": patientOr(p.Teach.Status, "pending"), "attempts": len(p.Attempts)}
@@ -153,9 +248,9 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 		out["slot_selection"] = map[string]interface{}{"status": patientOr(p.Slot.Status, "unselected"), "slot_id": p.Slot.SlotID}
 	} else {
 		out["teach_back"] = map[string]interface{}{
-			"question_id": patientOr(p.Teach.QuestionID, teachBackQuestionID), "status": patientOr(p.Teach.Status, "pending"),
+			"question_id": patientOr(p.Teach.QuestionID, plan.Question), "status": patientOr(p.Teach.Status, "pending"),
 			"completed_at": p.Teach.CompletedAt, "event": p.Teach.Event,
-			"understanding": patientOr(p.Teach.Understanding, "not_answered"), "attempts": len(p.Attempts),
+			"understanding": patientOr(p.Teach.Understanding, "not_answered"), "attempts": len(p.Attempts), "answers": plan.Choices,
 		}
 		if cb := c.latestPatientCallback(); cb != nil {
 			out["teach_back"].(map[string]interface{})["callback"] = s.callbackRowLocked(cb, false)
@@ -170,7 +265,7 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 	}
 	items := []map[string]interface{}{}
 	completed := 0
-	for _, id := range []string{prepClearFluidsAndPrep, prepEscortHome} {
+	for _, id := range prepIDs {
 		item := p.Prep[id]
 		if item.Completed {
 			completed++
@@ -181,7 +276,7 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 		}
 		items = append(items, row)
 	}
-	out["preparation"] = map[string]interface{}{"items": items, "completed": completed, "total": 2}
+	out["preparation"] = map[string]interface{}{"items": items, "completed": completed, "total": len(prepIDs)}
 	return out
 }
 
@@ -192,8 +287,11 @@ func patientOr(value, fallback string) string {
 	return value
 }
 
-func patientOffersView() map[string]interface{} {
-	return map[string]interface{}{"version": patientOffersVersion(), "slots": patientSlotOffers}
+func patientOffersView(plan patientPlan) map[string]interface{} {
+	if !plan.Offers {
+		return map[string]interface{}{"version": "", "procedure": "", "slots": []patientOffer{}}
+	}
+	return map[string]interface{}{"version": patientOffersVersion(), "procedure": "colonoscopy", "slots": patientSlotOffers}
 }
 
 func patientPublicEvent(ev map[string]interface{}) map[string]interface{} {
@@ -207,9 +305,12 @@ func patientRequestFingerprint(link patientLink, kind, head string, data map[str
 	return string(canon(map[string]interface{}{"case": link.Case, "link_id": link.LinkID, "kind": kind, "expected_head": head, "data": data}))
 }
 
-func validatePatientData(kind string, in map[string]interface{}) (map[string]interface{}, error) {
+func validatePatientData(plan patientPlan, kind string, in map[string]interface{}) (map[string]interface{}, error) {
 	if in == nil || !patientKinds[kind] {
 		return nil, errors.New("unknown patient action or missing data")
+	}
+	if !plan.Offers && (kind == "slot_selected" || kind == "preparation_changed") {
+		return nil, errors.New("this programme has no patient appointment offers or preparation")
 	}
 	exact := func(keys ...string) error {
 		if len(in) != len(keys) {
@@ -237,7 +338,7 @@ func validatePatientData(kind string, in map[string]interface{}) (map[string]int
 		}
 		q, qerr := str("question_id")
 		a, aerr := str("answer_id")
-		if qerr != nil || aerr != nil || q != teachBackQuestionID || a != "colonoscopy" {
+		if qerr != nil || aerr != nil || q != plan.Question || !slices.Contains(plan.Choices, a) || patientAnswerState(q, a) != "understood" {
 			return nil, errors.New("teach-back question or answer is not correct")
 		}
 		out["question_id"], out["answer_id"] = q, a
@@ -247,8 +348,7 @@ func validatePatientData(kind string, in map[string]interface{}) (map[string]int
 		}
 		q, qerr := str("question_id")
 		a, aerr := str("answer_id")
-		state, offered := teachBackAnswers[a]
-		if qerr != nil || aerr != nil || q != teachBackQuestionID || !offered || state == "understood" {
+		if qerr != nil || aerr != nil || q != plan.Question || !slices.Contains(plan.Choices, a) || patientAnswerState(q, a) == "understood" {
 			return nil, errors.New("teach-back answer is not an offered answer that needs another explanation")
 		}
 		out["question_id"], out["answer_id"] = q, a
@@ -310,11 +410,11 @@ func (c *apiCase) applyPatientEvent(ev map[string]interface{}) {
 	}
 	switch kind {
 	case "teach_back_completed":
-		p.Teach = patientFieldState{QuestionID: teachBackQuestionID, Status: "completed", CompletedAt: at, Event: hash}
-		c.recordTeachBackAttempt("colonoscopy", at, hash)
+		p.Teach = patientFieldState{QuestionID: sstr(data, "question_id"), Status: "completed", CompletedAt: at, Event: hash}
+		c.recordTeachBackAttempt(sstr(data, "answer_id"), "understood", at, hash)
 	case "teach_back_answered":
-		p.Teach.QuestionID, p.Teach.Event = teachBackQuestionID, hash
-		c.recordTeachBackAttempt(sstr(data, "answer_id"), at, hash)
+		p.Teach.QuestionID, p.Teach.Event = sstr(data, "question_id"), hash
+		c.recordTeachBackAttempt(sstr(data, "answer_id"), patientAnswerState(sstr(data, "question_id"), sstr(data, "answer_id")), at, hash)
 	case "contact_permission_changed":
 		p.Contact = patientFieldState{Status: sstr(data, "permission"), UpdatedAt: at, Event: hash}
 	case "slot_selected":
@@ -358,7 +458,7 @@ func (s *apiServer) patientJourney(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Wasl-Actor", "patient-link/"+link.LinkID)
 	if r.Method == http.MethodGet {
 		s.mu.Lock()
-		body := s.envelope(map[string]interface{}{"journey": s.patientViewLocked(s.cases[link.Case], true), "offers": patientOffersView(), "expires_at": link.ExpiresAt})
+		body := s.envelope(map[string]interface{}{"journey": s.patientViewLocked(s.cases[link.Case], true), "offers": patientOffersView(casePatientPlan(s.cases[link.Case])), "expires_at": link.ExpiresAt})
 		s.mu.Unlock()
 		writeJSONResp(w, http.StatusOK, body)
 		return
@@ -377,12 +477,15 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 		writeJSONResp(w, http.StatusBadRequest, s.envelope(map[string]interface{}{"error": "body must be one strict patient action with kind, expected_head, a UUID request_id and exact data"}))
 		return
 	}
-	data, err := validatePatientData(req.Kind, req.Data)
+	c := s.cases[link.Case]
+	s.mu.Lock()
+	plan := casePatientPlan(c)
+	s.mu.Unlock()
+	data, err := validatePatientData(plan, req.Kind, req.Data)
 	if err != nil {
 		writeJSONResp(w, http.StatusBadRequest, s.envelope(map[string]interface{}{"error": err.Error()}))
 		return
 	}
-	c := s.cases[link.Case]
 	code, body := func() (int, map[string]interface{}) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
@@ -491,8 +594,9 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if signature == "" || signed == nil {
 		return errors.New("patient event signed against a head the case never had")
 	}
-	if !patientCaseSupported(&apiCase{Programme: signed.Prog}) {
-		return errors.New("patient event for unsupported non-CRC case")
+	plan, supported := patientPlanFor(signed)
+	if !supported {
+		return errors.New("patient event for unsupported programme")
 	}
 	// The first mutation roots at that historical signature; subsequent mutations
 	// must still follow the patient-only head exactly.
@@ -525,7 +629,7 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if !ok {
 		return errors.New("patient event data must be an object")
 	}
-	norm, err := validatePatientData(kind, data)
+	norm, err := validatePatientData(plan, kind, data)
 	if err != nil || !reflect.DeepEqual(norm, data) {
 		return errors.New("invalid or non-canonical patient event data")
 	}

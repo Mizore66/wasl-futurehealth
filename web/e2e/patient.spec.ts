@@ -409,3 +409,31 @@ test("rights: an explanation request returns this case's provenance; a wrong cod
   await expect(explanation).toContainText("ahs/DiagnosticReport/COLO-1");
   await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
 });
+
+test("a breast case keeps its own programme through steps, languages and forged parameters", async ({ page }) => {
+  token = randomUUID();
+  await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "breast" }) });
+  await enter(page);
+  const crcWords = /colonoscopy|bowel|SKMC|Endoscopy|Fatima|Hessa|October/i;
+  for (const lang of ["en", "ar"] as const) {
+    for (const step of STEPS) {
+      await page.goto(`/patient/${step}?lang=${lang}&programme=crc&case=ahs/ServiceRequest/OTHER&next_step=colonoscopy`);
+      await expect(page.locator("main")).toContainText(/breast clinic|What is the next step after your result\?/);
+      await expect(page.locator("main")).not.toContainText(crcWords);
+      const nav = page.getByRole("navigation", { name: "Demo steps" });
+      await expect(nav.locator("a").first()).toHaveAttribute("href", `/patient/notice?lang=${lang}`);
+    }
+  }
+  await expect(page.getByText("until a reviewed translation is ready")).toBeVisible();
+  await page.goto("/patient/book?lang=en");
+  await expect(page.getByTestId("no-offer")).toContainText("The care coordinator will contact you");
+  await expect(page.getByTestId("slot-date")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save this preferred time" })).toHaveCount(0);
+  await expect(page.getByText("Before your appointment")).toHaveCount(0);
+
+  await page.goto("/patient/check?lang=en");
+  await page.getByRole("button", { name: /assessment appointment at the breast clinic/ }).click();
+  await expect(page.locator("h1")).toHaveText("May we send you reminders by SMS?");
+  expect(await bodies()).toEqual([expect.objectContaining({ kind: "teach_back_completed", data: { question_id: "breast-next-step-v1", answer_id: "recall" } })]);
+  await expectNoSeriousAxe(page);
+});
