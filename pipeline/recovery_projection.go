@@ -25,6 +25,7 @@ const (
 	recoverySchema      = "wasl-recovery/1"
 	recoveryEventType   = "waitlist_recovery"
 	recoveryConfirmKind = "confirm_backfill"
+	recoveryCancelKind  = "cancel_backfill"
 )
 
 type recoverySlot struct {
@@ -103,11 +104,15 @@ type recoveryProjection struct {
 	Fills    map[string]*recoveryFill
 	ByCase   map[string]*recoveryFill
 	Requests map[string]recoveryFill
+	// Released maps a slot to the event hash of its latest cancelled fill, so a
+	// reopened slot never repeats a head that authorized an earlier allocation.
+	Released map[string]string
 }
 
 func recoveryUnavailable(status, detail string) recoveryProjection {
 	return recoveryProjection{Status: status, Err: detail, Slots: map[string]*recoverySlot{}, Waitlist: map[string]*recoveryWaitlistCase{},
-		Fills: map[string]*recoveryFill{}, ByCase: map[string]*recoveryFill{}, Requests: map[string]recoveryFill{}}
+		Fills: map[string]*recoveryFill{}, ByCase: map[string]*recoveryFill{}, Requests: map[string]recoveryFill{},
+		Released: map[string]string{}}
 }
 
 func recoveryDigest(v interface{}) string {
@@ -288,13 +293,13 @@ func (s *apiServer) recoverySessionCapacityAvailableLocked(slot *recoverySlot) b
 	return remaining > 0
 }
 
-func recoveryOpenSlotHead(slot *recoverySlot) string {
-	return recoveryDigest(map[string]interface{}{"base_head": slot.BaseHead, "status": "open", "filled_case": "", "event": ""})
+func recoveryOpenSlotHead(slot *recoverySlot, released string) string {
+	return recoveryDigest(map[string]interface{}{"base_head": slot.BaseHead, "status": "open", "filled_case": "", "event": released})
 }
 
 func (s *apiServer) recoverySlotHeadLocked(slot *recoverySlot) string {
 	status := "open"
-	filled, event := "", ""
+	filled, event := "", s.recovery.Released[slot.SlotID]
 	if fill := s.recovery.Fills[slot.SlotID]; fill != nil {
 		status, filled, event = "filled", fill.CaseID, fill.EventHash
 	} else if stale := s.recoverySlotStaleLocked(slot); len(stale) > 0 {
@@ -701,6 +706,9 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if s.recovery.Status != "ready" {
 		return fmt.Errorf("recovery event with %s recovery input", s.recovery.Status)
 	}
+	if ev["kind"] == recoveryCancelKind {
+		return s.replayRecoveryCancel(ev)
+	}
 	if ev["type"] != recoveryEventType || ev["kind"] != recoveryConfirmKind || ev["action"] != ActCoordinateCase || ev["mode"] != "demo" {
 		return errors.New("invalid recovery event metadata")
 	}
@@ -762,7 +770,7 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if c.ov.head == "" {
 		expectedCaseHead = guardDecision.Sig
 	}
-	if ev["expected_slot_head"] != recoveryOpenSlotHead(slot) || ev["expected_case_head"] != expectedCaseHead {
+	if ev["expected_slot_head"] != recoveryOpenSlotHead(slot, s.recovery.Released[slot.SlotID]) || ev["expected_case_head"] != expectedCaseHead {
 		return errors.New("recovery heads do not follow event-time evidence")
 	}
 	seq, ok := ev["seq"].(float64)
@@ -814,5 +822,66 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	s.recovery.Fills[slot.SlotID], s.recovery.ByCase[c.ID], s.recovery.Requests[requestID] = fill, fill, *fill
 	c.ov.head, c.ov.lastAt = fmt.Sprint(ev["hash"]), fmt.Sprint(ev["at"])
 	c.ov.n++
+	return nil
+}
+
+// releaseRecoveryLocked applies an appended cancellation: the confirmation stays
+// in the ledger, while active occupancy and the case's backfill are cleared.
+func (s *apiServer) releaseRecoveryLocked(fill *recoveryFill, c *apiCase, ev map[string]interface{}, requestID, payloadSHA string) {
+	hash, at := fmt.Sprint(ev["hash"]), fmt.Sprint(ev["at"])
+	delete(s.recovery.Fills, fill.SlotID)
+	delete(s.recovery.ByCase, fill.CaseID)
+	s.recovery.Released[fill.SlotID] = hash
+	s.recovery.Requests[requestID] = recoveryFill{SlotID: fill.SlotID, CaseID: fill.CaseID, EventHash: hash, RequestID: requestID, PayloadSHA: payloadSHA, At: at}
+	c.ov.head, c.ov.lastAt = hash, at
+	c.ov.n++
+}
+
+func (s *apiServer) replayRecoveryCancel(ev map[string]interface{}) error {
+	if ev["type"] != recoveryEventType || ev["action"] != ActCoordinateCase || ev["mode"] != "demo" {
+		return errors.New("invalid recovery cancellation metadata")
+	}
+	if !rbac[fmt.Sprint(ev["role"])][ActCoordinateCase] {
+		return errors.New("recovery cancellation actor lacks coordinate_case")
+	}
+	if _, err := cleanText(fmt.Sprint(ev["actor"]), maxActorRunes, true, false); err != nil {
+		return errors.New("invalid recovery cancellation actor")
+	}
+	if at, ok := ev["at"].(string); !ok {
+		return errors.New("invalid recovery cancellation timestamp")
+	} else if _, err := time.Parse(time.RFC3339Nano, at); err != nil {
+		return errors.New("invalid recovery cancellation timestamp")
+	}
+	slot := s.recovery.Slots[fmt.Sprint(ev["slot"])]
+	c := s.cases[fmt.Sprint(ev["case"])]
+	if slot == nil || c == nil {
+		return errors.New("recovery cancellation for unknown slot or case")
+	}
+	if ev["input_fingerprint"] != s.recovery.Input.InputFingerprint {
+		return errors.New("recovery input fingerprint changed")
+	}
+	fill := s.recovery.Fills[slot.SlotID]
+	if fill == nil || fill.CaseID != c.ID || ev["confirmation"] != fill.EventHash {
+		return errors.New("recovery cancellation does not reference the active fill")
+	}
+	if ev["expected_slot_head"] != s.recoverySlotHeadLocked(slot) || ev["expected_case_head"] != s.caseHead(c) {
+		return errors.New("recovery cancellation heads do not follow event-time evidence")
+	}
+	if seq, ok := ev["seq"].(float64); !ok || seq != float64(c.ov.n+1) {
+		return errors.New("bad recovery cancellation per-case sequence")
+	}
+	req := recoveryCancelRequest{CaseID: c.ID, ExpectedSlotHead: fmt.Sprint(ev["expected_slot_head"]),
+		ExpectedCaseHead: fmt.Sprint(ev["expected_case_head"]), RequestID: fmt.Sprint(ev["request_id"]), Reason: fmt.Sprint(ev["reason"])}
+	if !validRecoveryRequestID(req.RequestID) || recoveryDigest(req) != ev["payload_fingerprint"] {
+		return errors.New("invalid recovery cancellation idempotency data")
+	}
+	if _, err := cleanText(req.Reason, maxRecoveryReasonRunes, true, false); err != nil {
+		return errors.New("invalid recovery cancellation reason")
+	}
+	if _, exists := s.recovery.Requests[req.RequestID]; exists {
+		return fmt.Errorf("duplicate recovery request %s", req.RequestID)
+	}
+	s.reviews = append(s.reviews, ev)
+	s.releaseRecoveryLocked(fill, c, ev, req.RequestID, fmt.Sprint(ev["payload_fingerprint"]))
 	return nil
 }

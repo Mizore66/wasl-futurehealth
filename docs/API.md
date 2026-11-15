@@ -58,6 +58,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/recovery/slots` | `wasl-recovery/1` synthetic released-capacity summaries; optional `programme=crc\|cervical` and `status=open\|filled\|stale` filters |
 | GET | `/api/recovery/slots/{slot_id}` | No-show release provenance, future synthetic-session capabilities, ranked eligible and excluded candidates with checks, outreach gates and viewer-filtered history |
 | POST | `/api/recovery/slots/{slot_id}/confirm` | Coordinator-only atomic simulated backfill with slot/case heads and a 16–80 character idempotency key; never books a provider slot or dispatches a message |
+| POST | `/api/recovery/slots/{slot_id}/cancel` | Built. Coordinator-only release of the active simulated backfill with `case_id`, current slot/case heads, a 16–80 character idempotency key and a required reason (1–200 characters). Appends a `cancel_backfill` event that references the confirmation; the confirmation stays in the ledger and the case can be rebooked. Never touches a provider slot or dispatches a message |
 | GET | `/api/people`, `/api/people/{person_id}` | Read-only trusted-cluster person journey, canonical obligations, outreach review flags and deterministic next coordinator action ([contract](API-PEOPLE.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.

@@ -39,6 +39,16 @@ type recoveryConfirmRequest struct {
 	Note             string `json:"note"`
 }
 
+const maxRecoveryReasonRunes = 200
+
+type recoveryCancelRequest struct {
+	CaseID           string `json:"case_id"`
+	ExpectedSlotHead string `json:"expected_slot_head"`
+	ExpectedCaseHead string `json:"expected_case_head"`
+	RequestID        string `json:"request_id"`
+	Reason           string `json:"reason"`
+}
+
 func validRecoveryRequestID(requestID string) bool {
 	n := utf8.RuneCountInString(requestID)
 	return n >= 16 && n <= 80 && strings.TrimSpace(requestID) == requestID && !strings.ContainsAny(requestID, "\r\n\t")
@@ -91,6 +101,15 @@ func (s *apiServer) recoveryRoutes(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.confirmRecovery(w, r, slotID)
+		return
+	}
+	if len(parts) == 2 && parts[1] == "cancel" {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", "POST")
+			writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
+			return
+		}
+		s.cancelRecovery(w, r, slotID)
 		return
 	}
 	if len(parts) == 1 {
@@ -257,4 +276,98 @@ func (s *apiServer) recoveryEventByHashLocked(hash string) map[string]interface{
 		}
 	}
 	return map[string]interface{}{}
+}
+
+func (s *apiServer) cancelRecovery(w http.ResponseWriter, r *http.Request, slotID string) {
+	viewer := requestViewer(r)
+	if err := Authorize(viewer.role, ActCoordinateCase); err != nil {
+		writeJSONResp(w, 403, s.envelope(map[string]interface{}{"error": err.Error(), "role": viewer.role, "action": ActCoordinateCase}))
+		return
+	}
+	if _, err := cleanText(viewer.actor, maxActorRunes, true, false); err != nil {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "verified actor identity invalid"}))
+		return
+	}
+	var req recoveryCancelRequest
+	if err := decodeAPIBody(w, r, maxRecoveryBodyBytes, &req); err != nil {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with case_id, expected heads, request_id and reason; unknown/duplicate/trailing fields and bodies over 8 KiB are rejected"}))
+		return
+	}
+	if req.CaseID == "" || req.ExpectedSlotHead == "" || req.ExpectedCaseHead == "" || len(req.ExpectedSlotHead) > 128 || len(req.ExpectedCaseHead) > 128 {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "case_id and both expected heads are required"}))
+		return
+	}
+	if !validRecoveryRequestID(req.RequestID) {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "request_id must be a 16-80 character idempotency key"}))
+		return
+	}
+	if _, err := cleanText(req.Reason, maxRecoveryReasonRunes, true, false); err != nil {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "reason " + err.Error()}))
+		return
+	}
+	payloadSHA := recoveryDigest(req)
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.recovery.Status != "ready" || !s.recoveryInputCurrentLocked() {
+			return 503, map[string]interface{}{"error": "recovery input unavailable, invalid or changed", "status": s.recovery.Status, "dispatched": false}
+		}
+		slot := s.recovery.Slots[slotID]
+		if slot == nil {
+			return 404, map[string]interface{}{"error": "unknown slot", "slot_id": slotID}
+		}
+		c := s.cases[req.CaseID]
+		if c == nil {
+			return 404, map[string]interface{}{"error": "unknown case", "case_id": req.CaseID}
+		}
+		currentSlotHead, currentCaseHead := s.recoverySlotHeadLocked(slot), s.caseHead(c)
+		if old, exists := s.recovery.Requests[req.RequestID]; exists {
+			if old.PayloadSHA != payloadSHA {
+				return s.recoveryConflict(viewer, "request_id_reused", "request_id was already used for another payload", slot, nil, currentSlotHead, currentCaseHead)
+			}
+			return 200, map[string]interface{}{"duplicate": true, "event": s.shownEventLocked(s.recoveryEventByHashLocked(old.EventHash), viewer),
+				"slot": s.recoverySlotDetailLocked(slot, viewer), "case_recovery": s.recoveryForCaseLocked(c, &viewer),
+				"case_head": currentCaseHead, "canonical_unchanged": true, "dispatched": false}
+		}
+		fill := s.recovery.Fills[slotID]
+		if fill == nil || fill.CaseID != req.CaseID {
+			return s.recoveryConflict(viewer, "not_backfilled", "this case does not hold the active simulated backfill for this slot", slot, nil, currentSlotHead, currentCaseHead)
+		}
+		if req.ExpectedSlotHead != currentSlotHead {
+			return s.recoveryConflict(viewer, "slot_head", "stale expected_slot_head; reload the slot projection", slot, nil, currentSlotHead, currentCaseHead)
+		}
+		if req.ExpectedCaseHead != currentCaseHead {
+			return s.recoveryConflict(viewer, "case_head", "stale expected_case_head; reload the case projection", slot, nil, currentSlotHead, currentCaseHead)
+		}
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		now := time.Now
+		if s.now != nil {
+			now = s.now
+		}
+		ev := map[string]interface{}{"type": recoveryEventType, "kind": recoveryCancelKind, "case": req.CaseID, "slot": slotID,
+			"confirmation": fill.EventHash, "expected_slot_head": req.ExpectedSlotHead, "expected_case_head": req.ExpectedCaseHead,
+			"seq": c.ov.n + 1, "request_id": req.RequestID, "payload_fingerprint": payloadSHA, "input_fingerprint": s.recovery.Input.InputFingerprint,
+			"reason": req.Reason, "role": viewer.role, "actor": viewer.actor, "action": ActCoordinateCase,
+			"at": now().UTC().Format(time.RFC3339Nano), "mode": "demo", "prev": s.lastHashLocked()}
+		canonicalEvent, marshalErr := json.Marshal(ev)
+		if marshalErr != nil {
+			return 500, map[string]interface{}{"error": "could not encode recovery cancellation; nothing was recorded"}
+		}
+		ev = nil
+		if unmarshalErr := json.Unmarshal(canonicalEvent, &ev); unmarshalErr != nil {
+			return 500, map[string]interface{}{"error": "could not canonicalize recovery cancellation; nothing was recorded"}
+		}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded", "dispatched": false}
+		}
+		s.releaseRecoveryLocked(fill, c, stored, req.RequestID, payloadSHA)
+		return 201, map[string]interface{}{"duplicate": false, "event": s.shownEventLocked(stored, viewer),
+			"slot": s.recoverySlotDetailLocked(slot, viewer), "case_recovery": s.recoveryForCaseLocked(c, &viewer),
+			"case_head": s.caseHead(c), "canonical_unchanged": true, "dispatched": false,
+			"message": "Simulated backfill cancelled; the synthetic seat is released. No provider booking or message was made."}
+	}()
+	writeJSONResp(w, code, s.envelope(body))
 }
