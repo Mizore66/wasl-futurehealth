@@ -609,6 +609,23 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 		}
 		return blocked(headOlderPrefix, w.result, errCanonicalUnknown)
 	} else if h.Prefix.End > w.attempt.ExpectedLast {
+		// A local proposal can survive a failed source check or an unresolved
+		// first metadata write without ever reaching PublishMsg. Reaffirm those
+		// EXACT bytes before asking the old-fence path for its operation receipt;
+		// absence alone never grants a send or permission to replace the proposal.
+		if !found && !w.attemptMeta.valid() && !w.wireUnknown && !w.result.Returned {
+			if err := c.canonicalAttemptSource(ctx, w, w.attempt, sourceDiagnostic); err != nil {
+				return blocked(headFinalSource, w.result, err)
+			}
+			acknowledged, err := c.ensureCanonicalCellValue(ctx, 0, canonicalCell{Version: 1, Phase: canonicalPhaseAttempt, Identity: w.input.Source.Identity, Attempt: w.attempt})
+			if err != nil {
+				return blocked(headAttemptWrite, w.result, err)
+			}
+			if acknowledged.Authority != canonicalAuthCreate && acknowledged.Authority != canonicalAuthUpdate {
+				return blocked(headAttemptAuthority, w.result, errCanonicalUnknown)
+			}
+			w.attemptMeta = acknowledged
+		}
 		next, err := canonicalNewAttempt(w, *h.Prefix)
 		if err != nil {
 			if observer != nil {

@@ -13,7 +13,7 @@ import (
 func reviewAppendOUT(logs *[]LogMsg, outs []OutMsg) {
 	for _, out := range outs {
 		seq := uint64(len(*logs) + 1)
-		*logs = append(*logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{OSeq: seq, Dec: out.Dec, Item: out.Item})})
+		*logs = append(*logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{Kind: out.Kind, OSeq: seq, Dec: out.Dec, Item: out.Item})})
 	}
 }
 
