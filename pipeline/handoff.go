@@ -156,6 +156,9 @@ type srFact struct {
 	reason, ev   string
 }
 
+// referralIntakeStates: the referral-intake statuses that answer a referral. Any other status is kept for audit only.
+var referralIntakeStates = map[string]string{"active": "accepted", "revoked": "rejected"}
+
 // ecThread: the latest e-consult on the loop (closure.go): state, day, why it was asked, and the unit asked.
 type ecThread struct {
 	state string

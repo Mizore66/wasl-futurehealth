@@ -397,7 +397,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		case "ServiceRequest":
 			if trusted {
-				st := map[string]string{"active": "accepted", "revoked": "rejected"}[d.Status]
+				st := referralIntakeStates[d.Status]
+				if st == "" {
+					continue
+				}
 				srs = append(srs, srFact{day: d.Day, status: st, prov: d.Provider, reason: d.Reason, ev: d.EventID})
 				if refDay < 0 || d.Day < refDay {
 					refDay = d.Day
