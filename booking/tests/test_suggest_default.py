@@ -1,13 +1,13 @@
 """The lookahead and stress-test flags are off by default. The golden pins deterministic numerics: probabilities are
 rounded to 12 decimal places and two equal-cost bookings swap slots while retaining constraints and deadlines.
 Also checks that the lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
-Run: python tests/test_suggest_default.py"""
+Run: python tests/test_suggest_default.py (also executes test_catalogue_protection.py by name)"""
 import hashlib, json, os, sys, tempfile, contextlib, io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "b0e4f515352c2615acec1b4f11a768b5e300cf6cee4c3d402ccf9c3e9d4ee04b"
+GOLDEN = "a7e6bb9353f96826c0c1e9ea908372afe183a9c5a048750c84bb5e4b1549e838"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -46,8 +46,10 @@ def test_default_unchanged():
         res = json.loads(raw)
         assert len(res["calendar_version"]) == 64
         suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
-        assert suggested and all(c["reservable"] and c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in suggested)
-        assert len({c["suggested_slot_id"] for c in suggested}) == len(suggested)
+        reservable = [c for c in suggested if c["reservable"]]
+        assert reservable and all(c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in reservable)
+        assert all(c["reservation_explanation"] == "suggested_session_has_no_regular_seat" and "suggested_slot_id" not in c for c in suggested if not c["reservable"])
+        assert len({c["suggested_slot_id"] for c in reservable}) == len(reservable)
         assert all(c["suggestion_version"] == suggest._sha({k: v for k, v in c.items() if k != "suggestion_version"}) for c in res["cases"].values())
         assert res["calendar_version"] == suggest._sha({k: v for k, v in res.items() if k != "calendar_version"})
         assert all(slot["slot_id"].startswith(f"sim:{case['procedure']}:{slot['session_id']}:") for case in res["cases"].values() for slot in case["eligible_slots"])
@@ -74,5 +76,6 @@ def test_lookahead_labelled():
 
 
 if __name__ == "__main__":
-    for f in (test_default_unchanged, test_lookahead_labelled):
+    import test_catalogue_protection  # noqa: E402
+    for f in (test_default_unchanged, test_lookahead_labelled, test_catalogue_protection.run_named):
         print(f.__name__, "->", f())
