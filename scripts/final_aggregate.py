@@ -1,5 +1,6 @@
 """Aggregate pipeline/results/final/<noise>-s<seed>/ into summary.json + SUMMARY.md (means, 95% t-intervals, Clopper-Pearson UBs)."""
 import json, os, sys, glob, math, collections, random
+import closure_loss
 from statistics import mean, stdev
 try:
     from scipy.stats import beta, t as tdist
@@ -38,12 +39,14 @@ for noise in ["v1", "v2"]:
     T = [json.load(open(p.replace('report7.json', 'tamper.json'))) for p in runs]
     m = collections.defaultdict(list)
     pool = collections.Counter()
+    closure_rows = collections.defaultdict(list)
     for r, t in zip(R, T):
         for prog in ("crc", "cervical"):
             c = r['closure'][prog]['wasl_live_with_review']
             m[f"{prog}_precision"].append(c['precision']); m[f"{prog}_recall"].append(c['recall'])
             m[f"{prog}_recall_no_review"].append(r['closure'][prog]['wasl_no_review']['recall'])
             pool[f"{prog}_false_closures"] += c['false_closures']; pool[f"{prog}_closed"] += c['closed_pred']
+            closure_rows[prog].append(c)
         k = r['crc_kpi_31d']
         m["kpi_wasl"].append(k['wasl_live']['kpi_all_referrals']); m["kpi_truth"].append(k['truth']['kpi_all_referrals']); m["kpi_eid_only"].append(k['eid_only']['kpi_all_referrals'])
         m["kpi_abs_error_wasl"].append(abs(k['wasl_live']['kpi_all_referrals'] - k['truth']['kpi_all_referrals']))
@@ -188,6 +191,11 @@ for noise in ["v1", "v2"]:
         "tamper_detected": [pool["tamper_detected"], pool["tamper_attacks"], None],
         "tamper_false_alarms": [pool["tamper_false_alarm"], len(T), None],
     }
+    loss = closure_loss.pooled(closure_rows["crc"] + closure_rows["cervical"])[1]
+    if loss == closure_loss.V2:
+        for prog in ("crc", "cervical"):
+            k = closure_loss.pooled(closure_rows[prog])[0]
+            safety[f"{prog}_unsafe_closures"] = [k, pool[f"{prog}_closed"], cp_ub(k, pool[f"{prog}_closed"])]
     if pool["lung_closed"]:
         safety["lung_false_closures"] = [pool["lung_false_closures"], pool["lung_closed"], cp_ub(pool["lung_false_closures"], pool["lung_closed"])]
     if pool["lung_surv_obligations"]:
@@ -305,7 +313,7 @@ for noise in ["v1", "v2"]:
                            "pooled_no_bias_p95": round(null[950], 4), "pooled_p_value": round(sum(v >= obs for v in null) / 1000, 4),
                            "crc_recall": {g: round(tot[g]["crc_closed_by_wasl"] / max(1, tot[g]["crc_truly_closed"]), 3) for g in G},
                            "crc_false_closures": {g: tot[g]["crc_false_closures"] for g in G}}
-    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra, "review_load_by_origin": origin_ratio,
+    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "closure_loss": loss, "pooled_counts": extra, "review_load_by_origin": origin_ratio,
                               "crc_by_age_band_and_sex": subgroups}
     md.append(f"\n## Noise {noise}: {man['noise_models'][noise]} ({len(R)} seeds)\n")
     md.append("| Metric | Mean | 95% interval |\n|---|---|---|")
@@ -326,6 +334,7 @@ for noise in ["v1", "v2"]:
     for k in sorted(x for x in agg if x.startswith("ifhas_")):  # IFHAS rows (pipeline/ifhas.go), same table
         a = agg[k]
         md.append(f"| {k} | {a[0]} | {'–' if a[1] is None else f'{a[1]} – {a[2]}'} |")
+    md.append(f"\nClosure-safety loss: `{loss}`.\n")
     md.append("\n| Safety (pooled over seeds) | Events | Denominator | 95% upper bound |\n|---|---|---|---|")
     for k, (e, n, ub) in safety.items():
         md.append(f"| {k} | {e} | {'–' if n is None else n} | {'–' if ub is None else f'{ub:.4%}'} |")

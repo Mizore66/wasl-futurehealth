@@ -1,5 +1,6 @@
 import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
+import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
@@ -118,7 +119,7 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
       body: `${parts.join(", ")}.${str(closure.rule) ? ` Rule: ${str(closure.rule)}.` : ""}`.replace(/^./, (m) => m.toUpperCase()),
     };
   }
-  const hold = d.holds[0];
+  const hold = caseHolds(d).current[0];
   if (hold) return { title: "Held, not closed", body: `${holdWords(hold)}${hold.rule ? ` Rule: ${hold.rule}.` : ""}` };
   return { title: "Open", body: statusWords(c).next + "." };
 }
@@ -285,7 +286,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string } }
+  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; review_date?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -328,6 +329,9 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "snooze") return d.until ? `Snoozed until ${atWords(d.until)}` : "Snoozed";
     if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
     if (e.kind === "note") return "Note added";
+    if (e.kind === "clinician_disposition") {
+      return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${d.review_date ?? "date not recorded"}`;
+    }
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {

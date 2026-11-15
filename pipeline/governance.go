@@ -53,18 +53,21 @@ const (
 	ActViewOutcomeHandoff        = "view_outcome_handoff"
 	ActApproveOutcomeHandoff     = "approve_outcome_handoff"
 	ActAcknowledgeOutcomeHandoff = "acknowledge_outcome_handoff"
+	// ActRecordDisposition: a clinician's plan for a programme hold that names a clinician as the decider. It records a
+	// plan, owner and review date; it never completes a procedure, closes a loop or signs evidence.
+	ActRecordDisposition = "record_clinician_disposition"
 )
 
 var rbac = map[string]map[string]bool{
 	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActRecordDisposition: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true},
 	RoleReferrer:    {ActViewOutcomeHandoff: true, ActAcknowledgeOutcomeHandoff: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},
 
 	RoleSeniorReviewer:  {ActSignLink: true, ActReadQueue: true},
-	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true, ActResolvePatientContest: true},
+	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true, ActRecordDisposition: true, ActResolvePatientContest: true},
 }
 
 // RBACEnforce can be switched off only by the counterfactual audit replay ("what would forged events have done").

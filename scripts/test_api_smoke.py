@@ -18,6 +18,9 @@ import unittest
 from urllib.parse import urlparse, parse_qs
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from person_showcase_testdata import showcase_person  # noqa: E402
+
 SAMPLES = ROOT / "docs" / "api-samples"
 SMOKE = ROOT / "scripts" / "api_smoke.py"
 DEMO = ROOT / "scripts" / "demo.sh"
@@ -822,6 +825,9 @@ class SnapshotTests(unittest.TestCase):
     PROGS = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]
 
     def snap(self, fake, target, programmes=None):
+        fake.person = showcase_person()
+        anchor = fake.person["person"]["anchor_case_id"]
+        fake.fix["fixtures"]["person_journey"] = dict(fake.fix["fixtures"]["evidence_closure"], id=anchor, fixture="person_journey")
         srv = HTTPServer(("127.0.0.1", 0), make_handler(fake))
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:

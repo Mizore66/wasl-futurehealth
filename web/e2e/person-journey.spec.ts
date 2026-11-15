@@ -24,6 +24,7 @@ test("case navigation resolves an opaque person and renders the read-only journe
   await expect(page.getByText("Decision history and signatures", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open full case and evidence" })).toHaveAttribute("href", caseURL);
   await expect(page.getByRole("button", { name: /send|suppress|dismiss/i })).toHaveCount(0);
+  await expect(page).toHaveTitle("Person journey · Wasl");
   await axeClean(page);
 });
 

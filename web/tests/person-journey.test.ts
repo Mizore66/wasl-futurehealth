@@ -132,4 +132,27 @@ describe("person journey presentation", () => {
     expect(reasonLabel("consent_not_granted")).toContain("not granted");
     expect(lifecycleLabel("withheld")).toContain("not actionable");
   });
+
+  it("labels an intent omitted by the latest decision as resolved history", async () => {
+    const journey = await sample();
+    journey.outreach_flags = [{
+      id: `outreach_${"3".repeat(64)}`,
+      match: "duplicate",
+      actionable: false,
+      intents: ["crc", "cervical"].map((programme, index) => ({
+        case_id: `provider/ServiceRequest/${index}`,
+        programme: programme as "crc" | "cervical",
+        first_decision_id: `booked-${index}`,
+        latest_decision_id: `booked-${index}`,
+        latest_decision_sig: "4".repeat(64),
+        lifecycle: "released",
+        participation: "resolved",
+        outreach: { kind: "appointment_reminder", ev: "event", basis: "human", p_cal: 1, released: true, suppress: "", guard: "" },
+      })),
+    }];
+    const parsed = PersonJourney.parse(journey);
+    const html = renderToStaticMarkup(React.createElement(Journey, { journey: parsed }));
+    expect(html).toContain("not actionable");
+    expect(html).toContain("Not in the latest decision");
+  });
 });

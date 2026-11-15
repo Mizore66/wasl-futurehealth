@@ -18,7 +18,7 @@ package main
 //               whose label both readers agree on (or a clinician signs): wk_treatment | wk_benign | wk_surveillance ->
 //               closed; benign annual closure needs benign tissue or MDT; wk_dna -> no_show (rebook); wk_incomplete
 //               (tissue / PET awaited, MDT pending) -> stays open.
-//   overdue   : the clock is the deciding scan's day + the rule deadline (0: 91; 3: 213; 4A: 121; 4B/4X: 30).
+//   overdue   : the proven examination clock + the unchanged rule deadline (0: 91; 3: 213; 4A: 121; 4B/4X: 30).
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable, a label the rule does not know) raises a
 // review item and holds.
 import (
@@ -33,19 +33,20 @@ type LDCTSR struct {
 
 // LDCTDecision: the LDCT-specific part of a decision (also served by the API as the case summary's "ldct" object).
 type LDCTDecision struct {
-	Scan           string   `json:"scan_report,omitempty"`    // the LDCT report whose category decides the loop
-	ScanLabel      string   `json:"scan_label,omitempty"`     // LR0..LR4X
-	Coded          bool     `json:"coded_lungrads,omitempty"` // the category came from a coded value that agreed with the text
-	Rec            *LDCTRec `json:"rec,omitempty"`
-	ScanDay        float64  `json:"scan_day"`
-	DueDay         float64  `json:"due_day,omitempty"`      // scan day + rule due days (annual: next screening LDCT)
-	DeadlineDay    float64  `json:"deadline_day,omitempty"` // overdue after this day (action loops)
-	FollowReport   string   `json:"followup_report,omitempty"`
-	FollowLabel    string   `json:"followup_label,omitempty"`     // 3/4A: the follow-up LDCT's category
-	FollowNext     string   `json:"followup_next_step,omitempty"` // that category's next step (stepped management)
-	Workup         string   `json:"workup_document,omitempty"`
-	Outcome        string   `json:"outcome,omitempty"` // followup_done | last read work-up label (wk_*)
-	WithinDeadline bool     `json:"within_deadline,omitempty"`
+	Scan           string           `json:"scan_report,omitempty"`    // the LDCT report whose category decides the loop
+	ScanLabel      string           `json:"scan_label,omitempty"`     // LR0..LR4X
+	Coded          bool             `json:"coded_lungrads,omitempty"` // the category came from a coded value that agreed with the text
+	Rec            *LDCTRec         `json:"rec,omitempty"`
+	ScanDay        float64          `json:"scan_day"` // clinical day of Scan, never another report's clock
+	ClockAnchor    *LDCTClockAnchor `json:"clock_anchor,omitempty"`
+	DueDay         float64          `json:"due_day,omitempty"`      // proven clock + rule due days (legacy own exam: scan day)
+	DeadlineDay    float64          `json:"deadline_day,omitempty"` // same clock + rule deadline; no target on an unproven clock
+	FollowReport   string           `json:"followup_report,omitempty"`
+	FollowLabel    string           `json:"followup_label,omitempty"`     // 3/4A: the follow-up LDCT's category
+	FollowNext     string           `json:"followup_next_step,omitempty"` // that category's next step (stepped management)
+	Workup         string           `json:"workup_document,omitempty"`
+	Outcome        string           `json:"outcome,omitempty"` // followup_done | last read work-up label (wk_*)
+	WithinDeadline bool             `json:"within_deadline,omitempty"`
 }
 
 // LDCTMinFollowupDays: a same-day reread is not the recommended interval LDCT. This is a Wasl safety assumption (A8),
@@ -64,7 +65,7 @@ func ldctScanFacts(rec *Rec) []DownFact {
 		if !eligible && e.Focus == "" {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus, Relation: e.Relation,
 			Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
 		// Retain ineligible intermediates solely for explicit lineage traversal. The evaluator filters their status;
 		// do not carry their reader verdicts as clinical evidence or alter the original event.
@@ -340,16 +341,41 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": reason, "label": decLab})
 	default:
-		ld.Scan, ld.ScanLabel, ld.Rec, ld.ScanDay = dec.d.ReportID, decLab, &rec, dec.d.Day
+		// The current report/date pair is independent of its proven clinical clock.
+		ld.Scan, ld.ScanLabel, ld.ScanDay = dec.d.ReportID, decLab, dec.d.Day
 		ld.Coded = dec.d.Ev != nil && dec.d.Ev.Model == "coded_lungrads" && decHuman == ""
-		ld.DueDay = ld.ScanDay + float64(rec.Due)
-		if rec.Deadline > 0 {
-			ld.DeadlineDay = ld.ScanDay + float64(rec.Deadline)
+		clock, clockError := ldctClockFor(f, *dec, indexScan, labelOf)
+		if clockError != "" {
+			// No actionable target or interval is supplied by an unproven clock.
+			chain = hold(appendBlock(nil, "evidence", ldctEvBlock(dec.d, decHuman)), "review_hold", map[string]interface{}{"reason": clockError})
+			recOK, rec = false, LDCTRec{}
+			break
 		}
+		ld.Rec, ld.ClockAnchor = &rec, clock
+		clockDay := dec.d.Day
+		if clock != nil {
+			clockDay = clock.Day
+		}
+		ld.DueDay = clockDay + float64(rec.Due)
+		if rec.Deadline > 0 {
+			ld.DeadlineDay = clockDay + float64(rec.Deadline)
+		}
+		// Current evidence stays first; the distinct source and clock descriptor
+		// are signed by the normal append-only decision/audit path.
 		gchain := appendBlock(nil, "evidence", ldctEvBlock(dec.d, decHuman))
-		gchain = appendBlock(gchain, "recommendation", map[string]interface{}{"rule": "acr2022lungrads", "cell": rec.Cell, "action": rec.Action,
+		if clock != nil && clock.Kind == "reclassified_index_exam" {
+			gchain = appendBlock(gchain, "evidence", ldctEvBlock(indexScan.d, ""))
+		}
+		recBody := map[string]interface{}{"rule": "acr2022lungrads", "cell": rec.Cell, "action": rec.Action,
 			"due_days": rec.Due, "deadline_days": rec.Deadline, "urgency": rec.Urgency, "next_step": rec.Next, "scan_day": round4(ld.ScanDay),
-			"source": ldctSource})
+			"source": ldctSource}
+		if clock != nil {
+			recBody["clock_anchor"] = clock
+			if clock.Kind == "reclassified_index_exam" {
+				recBody["reclassified_by"] = dec.d.ReportID
+			}
+		}
+		gchain = appendBlock(gchain, "recommendation", recBody)
 		if decHuman != "" {
 			gchain, _ = withSignoff(gchain, dec.d.ReportID)
 			human = true
@@ -405,7 +431,9 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			workupWrongKind := false
 			for i := range notes {
 				r := notes[i]
-				if r.d.Day < ld.ScanDay {
+				// Anchoring the deadline to the parent must not admit work-up
+				// evidence earlier than the current classification (main's guard).
+				if r.d.Day < dec.d.Day {
 					continue
 				}
 				if !r.trusted {

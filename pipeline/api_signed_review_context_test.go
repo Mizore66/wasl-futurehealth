@@ -43,6 +43,7 @@ func TestAPIBreastReadSurvivesConflictingTrackingRetirement(t *testing.T) {
 	}
 	e := &irEnv{s: s, h: h, run: s.run, path: "/api/cases/" + url.PathEscape(c.ID)}
 	item := s.queue[c.ID][0].ItemID
+	seedReportSource(t, s, "ahs-mushrif/DiagnosticReport/signed-screen")
 	read := e.must(t, irClinA, irBody(item, "B4", "r1", ""), 201)
 	rd := read["review"].(map[string]interface{})
 	signed, hash := rd["head_signed"].(string), rd["hash"].(string)

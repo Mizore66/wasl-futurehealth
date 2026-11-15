@@ -60,7 +60,7 @@ export const RecoverySlot = RecoverySlotSummary.extend({
     label: z.string(),
   }),
   candidates: z.array(RecoveryCandidate),
-  history: z.array(z.looseObject({ hash: z.string(), at: z.string() })),
+  history: z.array(z.looseObject({ hash: z.string(), at: z.string(), kind: z.string().optional(), case: z.string().optional(), reason: z.string().optional() })),
   backfill: z.looseObject({ case_id: z.string(), event: z.string(), status: z.string() }).nullable(),
   outreach: z.looseObject({ status: z.string(), dispatched: z.literal(false) }),
 });
@@ -95,6 +95,14 @@ export const RecoveryConfirmRequest = z.object({
   note: z.string().max(500).default(""),
 });
 
+export const RecoveryCancelRequest = z.object({
+  case_id: z.string().min(1),
+  expected_slot_head: z.string().min(1).max(128),
+  expected_case_head: z.string().min(1).max(128),
+  request_id: z.string().min(16).max(80),
+  reason: z.string().max(200).refine((value) => value.trim() === value && value.length > 0, "reason is required"),
+});
+
 export const RecoveryEvent = z.looseObject({ hash: z.string(), at: z.string(), type: z.literal("waitlist_recovery") });
 export const RecoveryConfirmResponse = z.looseObject({
   event: RecoveryEvent,
@@ -111,4 +119,5 @@ export type RecoveryDetail = z.infer<typeof RecoveryDetail>;
 export type RecoverySlot = z.infer<typeof RecoverySlot>;
 export type RecoveryCandidate = z.infer<typeof RecoveryCandidate>;
 export type RecoveryConfirmRequest = z.infer<typeof RecoveryConfirmRequest>;
+export type RecoveryCancelRequest = z.infer<typeof RecoveryCancelRequest>;
 export type RecoveryConfirmResponse = z.infer<typeof RecoveryConfirmResponse>;

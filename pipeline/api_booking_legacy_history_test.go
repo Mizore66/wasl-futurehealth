@@ -146,6 +146,13 @@ func TestPR205AuthenticParentHistory(t *testing.T) {
 	run, m := pr205Run(t, true)
 	before := pr205Snapshot(t, run, m)
 	s, srv := serveAgent(t, run)
+	item := seedEvidenceSource(t, s, "pr205-unrelated")
+	// The seeded synthetic source report is appended; the parent bytes before it must stay intact.
+	fhir := actRead(t, filepath.Join(run, "fhir_log.ndjson"))
+	if !bytes.HasPrefix(fhir, before["fhir_log.ndjson"]) {
+		t.Fatal("parent FHIR log prefix rewritten")
+	}
+	before["fhir_log.ndjson"] = fhir
 	if s.ledgerErr != "" {
 		t.Fatalf("authentic parent history must replay, not fail readiness: %s", s.ledgerErr)
 	}
@@ -231,7 +238,7 @@ func TestPR205AuthenticParentHistory(t *testing.T) {
 			t.Fatalf("non-acquisition after stamp: %d %v", code, v)
 		}
 	}
-	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"decision":"adequate","note":"Synthetic legacy review unaffected"}`); code != 201 {
+	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"item":"`+item+`","decision":"adequate","note":"Synthetic legacy review unaffected"}`); code != 201 {
 		t.Fatalf("review after stamp: %d %v", code, v)
 	}
 	// Unstamped cancel after a stamp neither requires nor resets the global barrier.

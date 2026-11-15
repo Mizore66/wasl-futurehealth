@@ -571,9 +571,14 @@ var exportBreastDecisionAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
+// Clock references share the existing report-reference and registration alias
+// boundaries. Unknown nested fields remain default-deny, including in audit.
+var exportLDCTClockAllow = exportObject(exportKeys("kind", "provider", "registration", "report", "version", "day"))
+
 var exportLDCTDecisionAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("scan_report", "scan_label", "coded_lungrads", "scan_day", "due_day", "deadline_day", "followup_report",
 		"followup_label", "followup_next_step", "workup_document", "outcome", "within_deadline")
+	m["clock_anchor"] = exportLDCTClockAllow
 	m["rec"] = exportObject(exportKeys("action", "due_days", "deadline_days", "urgency", "cell", "next_step"))
 	return m
 }())
@@ -611,12 +616,13 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	m["snooze"] = exportSnoozeAllow
 	m["last_contact"] = exportContactOutcomeAllow
 	m["last_appointment_agreement"] = exportAgreementAllow
+	m["clinician_disposition"] = exportObject(exportKeys("at", "event", "hold", "plan", "review_date"))
 	m["booking"] = exportBookingSummaryAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "plan", "review_date", "hold", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
 	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
 var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
 var exportPatientAllow = exportObject(func() map[string]*exportAllow {
@@ -635,7 +641,7 @@ var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
-		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
+		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent", "confirmation")
 	m["data"] = exportCoordinatorDataAllow
 	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m
@@ -806,7 +812,11 @@ var exportClosureAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
-var exportRecommendationAllow = exportObject(exportKeys("rule", "cell", "action", "deadline_days", "due_days", "urgency", "window", "next_step", "optional"))
+var exportRecommendationAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("rule", "cell", "action", "deadline_days", "due_days", "urgency", "window", "next_step", "optional", "scan_day")
+	m["clock_anchor"] = exportLDCTClockAllow
+	return m
+}())
 var exportAutoAuditAllow = exportObject(exportKeys("loop", "report", "item", "p", "status", "auto_verdict", "audit_answer", "result"))
 var exportEscalationAllow = exportObject(exportKeys("loop", "state", "programme", "rule", "outcome", "to", "day", "basis"))
 var exportSurveillanceOpenedAllow = exportObject(func() map[string]*exportAllow {

@@ -97,8 +97,9 @@ func TestAPIReviewDRLabels(t *testing.T) {
 	id := "phc-retina/ServiceRequest/PHC-sr-1"
 	s, srv := drAPIServer(t, drAPICase(id, false, "", 1))
 	defer srv.Close()
+	item := seedEvidenceSource(t, s, id)
 	post := func(role, decision string) (int, map[string]interface{}) {
-		rq, _ := http.NewRequest("POST", srv.URL+"/api/cases/"+id+"/review", bytes.NewBufferString(`{"decision":"`+decision+`","note":"demo"}`))
+		rq, _ := http.NewRequest("POST", srv.URL+"/api/cases/"+id+"/review", bytes.NewBufferString(`{"item":"`+item+`","decision":"`+decision+`","note":"demo"}`))
 		rq.Header.Set("X-Wasl-Role", role)
 		rq.Header.Set("X-Wasl-Actor", "dr-1")
 		resp, err := http.DefaultClient.Do(rq)

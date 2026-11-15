@@ -60,8 +60,11 @@ export const Dropoff = z.enum([
 
 export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
 export const ReviewStatus = z.enum(["none", "open", "signed"]);
-export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure"]);
-/** The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops. */
+export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure", "person_journey"]);
+/**
+ * The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops, and `person_journey` (the anchor
+ * case of an actionable cross-programme person, pipeline/api_people.go pickPersonFixture) only in runs that contain one.
+ */
 export const CRC_FIXTURES = ["evidence_closure", "false_closure_trap", "review_hold"] as const;
 export const Role = z.enum(["coordinator", "clinician", "reviewer", "auditor"]);
 
@@ -307,6 +310,18 @@ export const ApiOverlay = z.looseObject({
   contact_outcomes: z.array(OverlayContact).optional(),
   notes: z.array(OverlayNote).optional(),
   canonical_owner: z.string().optional(),
+  /** A clinician's recorded plan for the hold the case is still in. A plan, not completed care: the loop stays open. */
+  clinician_disposition: z.looseObject({
+    at: z.string(),
+    event: z.string(),
+    hold: z.enum(["clinician_decision_no_fundal_view", "clinician_decision_outside_fleischner"]),
+    plan: z.enum(["repeat_diagnostic", "alternative_diagnostic", "specialist_pathway", "primary_care_pathway"]),
+    owner: z.string(),
+    review_date: z.string(),
+    actor: z.string().optional(),
+    reason: z.string().optional(),
+    details: z.string().optional(),
+  }).optional(),
 });
 
 /** Case detail `review_ledger`: whether the shared ledger replayed completely. */
@@ -657,7 +672,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -684,6 +699,10 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  plan: z.string().optional(),
+  details: z.string().optional(),
+  review_date: z.string().optional(),
+  hold: z.string().optional(),
 });
 
 const coordinatorShape = {
@@ -855,6 +874,7 @@ export const ReviewRead = z.looseObject({
   submitted: z.boolean(),
   decision: z.string().optional(),
   hash: z.string().optional(),
+  note: z.string().optional(),
 });
 
 /** A server-owned five-minute lease for one independent-review question. */
@@ -963,6 +983,7 @@ export const Fixtures = withMeta({
     false_closure_trap: CaseSummary,
     review_hold: CaseSummary,
     dr_exam_closure: CaseSummary.optional(),
+    person_journey: CaseSummary.optional(),
   }),
 });
 
@@ -993,6 +1014,7 @@ export const Dashboard = withMeta({
     false_closure_trap: z.string(),
     review_hold: z.string(),
     dr_exam_closure: z.string().optional(),
+    person_journey: z.string().optional(),
   }),
   // --- Provider/origin breakdowns (issue #45) ---
   // The API copies these from the run's dashboard.json and serves null when the run has none (pipeline/api.go getDashboard),
@@ -1233,6 +1255,15 @@ export const ReviewClaimResponse = withMeta({
 });
 
 /** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
+/** GET /api/cases/{id}/review/source: the complete report revision one raised evidence item judges. */
+export const ReviewSourceResponse = withMeta({
+  item: z.string(),
+  source: z.object({ report: z.string(), report_version: z.number().int(), day: z.number(), category: z.string().optional(), text: z.string() }),
+});
+export type ReviewSource = z.infer<typeof ReviewSourceResponse>["source"];
+export const SourceStatus = z.enum(["missing", "ambiguous", "unreadable"]);
+export type SourceStatus = z.infer<typeof SourceStatus>;
+
 export const ReviewError = withMeta({
   error: z.string(),
   conflict: z.enum(["claim_active", "claim_required", "claim_expired", "claim_head", "review_state", "head"]).optional(),
@@ -1356,7 +1387,8 @@ export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ReviewRead = z.infer<typeof ReviewRead>;
 export type ReviewState = z.infer<typeof ReviewState>;
 export type ReviewSlot = z.infer<typeof ReviewSlot>;
-export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string };
+/** `note` is the reviewer's rationale; a senior resolution (r3) requires a non-blank one. */
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string; note?: string };
 export type ReviewClaimInput = { item: string; question: "link" | "evidence"; operation: "claim" | "renew" | "release" | "takeover"; expectedClaimHead: string };
 export type ReviewClaim = z.infer<typeof ReviewClaim>;
 export type ReviewClaimActions = z.infer<typeof ReviewClaimActions>;
