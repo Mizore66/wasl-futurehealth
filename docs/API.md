@@ -120,7 +120,7 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
 
 **Status:** built; served only from runs generated with `WASL_LUNG=N` (synthetic cohort, simulated adherence). Rule, states and metrics: [`pipeline/RESULTS.md`](../pipeline/RESULTS.md), "Second loop type".
 
-- **States:** `open`, `no_followup_needed` (index CT in a Fleischner cell with no routine follow-up), `closed` (trusted follow-up CT, both readers agree stable/resolved), `escalated` (growing or solid component ≥ 6 mm → specialist/MDT; end state), `not_assessable` (repeat CT needed), `out_of_scope` (age < 35, known primary cancer or immunosuppressed; clinician decides).
+- **States:** `open`, `no_followup_needed` (index CT in a Fleischner cell with no routine follow-up), `closed` (trusted follow-up CT, both readers agree stable/resolved; a stable CT dated before the Fleischner window start neither closes nor blocks the obligation, and `within_window` checks both window bounds), `escalated` (growing or solid component ≥ 6 mm → specialist/MDT; end state), `not_assessable` (repeat CT needed), `out_of_scope` (age < 35, known primary cancer or immunosuppressed; clinician decides).
 - **Drop-off:** `no_followup_ct`, `unlinked`, `escalated`, `not_assessable`, `out_of_scope`, or `""` when resolved.
 - `closed` is `true` for `closed` and `no_followup_needed`. `deadline_day` is the end of the Fleischner window in days after `referral_day` (the index CT date). `referral_day` can be negative: lung index CTs predate the observation window (look-back cohort).
 - The summary carries a `lung` object (also in `current.lung` on the case detail):
