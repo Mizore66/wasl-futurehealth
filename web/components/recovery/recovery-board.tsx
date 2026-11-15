@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { confirmBackfill } from "@/app/app/recovery/actions";
+import { cancelBackfill, confirmBackfill } from "@/app/app/recovery/actions";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RecoveryCandidate, RecoveryDetail, RecoveryList } from "@/lib/api/recovery-schema";
 import { caseHref } from "@/lib/domain/ids";
@@ -19,8 +19,51 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [ledgerHash, setLedgerHash] = useState("");
+  const [releasing, setReleasing] = useState(false);
+  const [reason, setReason] = useState("");
   const submitting = useRef(false);
   const slot = detail?.slot;
+  const filledHead = slot?.backfill ? slot.candidates.find((candidate) => candidate.case_id === slot.backfill?.case_id)?.case_head : undefined;
+
+  const openRelease = () => {
+    setReleasing(true);
+    setReason("");
+    setRequestID(crypto.randomUUID());
+    setMessage("");
+    setLedgerHash("");
+  };
+
+  const release = async () => {
+    const trimmed = reason.trim();
+    if (!slot?.backfill || !filledHead || !trimmed || submitting.current || readOnly) return;
+    submitting.current = true;
+    setPending(true);
+    setMessage("");
+    try {
+      const result = await cancelBackfill(slot.slot_id, {
+        case_id: slot.backfill.case_id,
+        expected_slot_head: slot.head,
+        expected_case_head: filledHead,
+        request_id: requestID,
+        reason: trimmed,
+      });
+      setReleasing(false);
+      if (result.ok) {
+        setLedgerHash(result.response.event.hash);
+        setMessage("Simulated backfill cancelled; the synthetic seat is released. The confirmation remains in the ledger.");
+      } else {
+        setMessage(`Cancellation refused: ${result.error}`);
+      }
+      router.refresh();
+    } catch {
+      setReleasing(false);
+      setMessage("Cancellation could not be completed. Reload the projection before retrying; no release was recorded in this browser.");
+      router.refresh();
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
+  };
 
   const openConfirmation = (candidate: RecoveryCandidate) => {
     setSelected(candidate);
@@ -111,6 +154,28 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
                 Source no-show <Link className="underline underline-offset-2" href={caseHref("/app/patients", slot.source_case)}>{shortId(slot.source_case)}</Link> · {slot.release.source_appointment}. This is a future synthetic session, not the missed provider slot.
               </p>
             </div>
+            {slot.backfill && (
+              <div data-testid="recovery-slot-backfill" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
+                <p className="m-0 text-small">
+                  Simulated backfill confirmed for <Link className="underline underline-offset-2" href={caseHref("/app/patients", slot.backfill.case_id)}>{shortId(slot.backfill.case_id)}</Link>. No provider booking or message was made.
+                </p>
+                {!readOnly && filledHead && (
+                  <button type="button" onClick={openRelease} className="min-h-11 rounded-control border border-control px-4 font-medium">Cancel backfill</button>
+                )}
+              </div>
+            )}
+            {slot.history.length > 0 && (
+              <details className="mt-3">
+                <summary className="min-h-11 cursor-pointer">Ledger history ({slot.history.length})</summary>
+                <ol className="m-0 mt-2 list-decimal pl-5 text-small" data-testid="recovery-slot-history">
+                  {slot.history.map((event) => (
+                    <li key={event.hash} className="break-all">
+                      {event.kind ? words(event.kind) : "recovery event"}{event.case ? ` · ${shortId(event.case)}` : ""} · {event.at}{event.reason ? ` · reason: ${event.reason}` : ""}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
             <p className="text-small text-muted">Ordering: urgent priority, earliest absolute deadline, requested day, then case ID. Consent gates messaging only; it does not change slot eligibility.</p>
             {slot.candidates.length === 0 ? <p role="status">No waitlist candidates were generated.</p> : (
               <ol className="m-0 flex list-none flex-col gap-3 p-0">
@@ -168,6 +233,25 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             <button type="button" disabled={pending} onClick={() => setSelected(null)} className="min-h-11 rounded-control border border-control px-4">Cancel</button>
             <button type="button" disabled={pending || !selected} onClick={confirm} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white disabled:opacity-60">
               {pending ? "Confirming…" : "Confirm simulated backfill"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={releasing} onOpenChange={(open) => { if (!open && !pending) setReleasing(false); }}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto bg-surface text-ink" showCloseButton={!pending}>
+          <DialogHeader>
+            <DialogTitle>Cancel simulated backfill</DialogTitle>
+            <DialogDescription>Releases the synthetic seat so the case can be rebooked. A compensating ledger event references the confirmation; nothing is deleted.</DialogDescription>
+          </DialogHeader>
+          <label className="flex flex-col gap-1 text-small">
+            <span>Reason (required)</span>
+            <textarea value={reason} maxLength={200} disabled={pending} onChange={(event) => setReason(event.target.value)} className="min-h-20 rounded-control border border-control p-2" />
+          </label>
+          <DialogFooter>
+            <button type="button" disabled={pending} onClick={() => setReleasing(false)} className="min-h-11 rounded-control border border-control px-4">Keep backfill</button>
+            <button type="button" disabled={pending || reason.trim() === ""} onClick={release} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white disabled:opacity-60">
+              {pending ? "Cancelling…" : "Cancel simulated backfill"}
             </button>
           </DialogFooter>
         </DialogContent>

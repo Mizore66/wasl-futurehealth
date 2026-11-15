@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { confirmRecovery, getRecoverySlot, getRecoverySlots } from "@/lib/api/recovery-source";
+import { cancelRecovery, confirmRecovery, getRecoverySlot, getRecoverySlots } from "@/lib/api/recovery-source";
 import { CaseList } from "@/lib/api/schema";
 import { workItem } from "@/components/worklist/model";
 import { loadSample } from "./samples";
@@ -53,6 +53,47 @@ describe("recovery API contracts", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(409, { meta, error: "stale expected_slot_head", conflict: "slot_head" })));
     const result = await confirmRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", input);
     expect(result).toEqual({ ok: false, status: 409, error: "stale expected_slot_head", conflict: "slot_head" });
+  });
+});
+
+describe("recovery backfill cancellation", () => {
+  const cancel = { case_id: input.case_id, expected_slot_head: "slot-head", expected_case_head: "case-head", request_id: "browser-cancel-0001", reason: "Patient cannot attend that day" };
+
+  it("refuses in fixture mode without calling the API", async () => {
+    vi.stubEnv("WASL_API_URL", "");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel)).toMatchObject({ ok: false, status: 503 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blank reason before any request", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", { ...cancel, reason: "   " })).toMatchObject({ ok: false, status: 400 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("posts the cancellation with the coordinator token and returns the compensating event", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
+    const event = { hash: "cancel-hash", at: "2026-11-14T00:00:00Z", type: "waitlist_recovery", kind: "cancel_backfill" };
+    const fetchMock = vi.fn().mockResolvedValue(response(201, { meta, event, case_head: "cancel-hash", canonical_unchanged: true, dispatched: false, duplicate: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel);
+    expect(result).toMatchObject({ ok: true, status: 201, response: { event: { hash: "cancel-hash" }, dispatched: false } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.test/api/recovery/slots/rel_aaaaaaaaaaaaaaaaaaaaaaaa/cancel");
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer coordinator-secret-1234567890");
+    expect(JSON.parse(init.body)).toEqual(cancel);
+  });
+
+  it("returns a stale-head conflict as a refusal", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(409, { meta, error: "stale expected_case_head", conflict: "case_head" })));
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel)).toEqual({ ok: false, status: 409, error: "stale expected_case_head", conflict: "case_head" });
   });
 });
 
