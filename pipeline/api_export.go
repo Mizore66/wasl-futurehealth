@@ -155,6 +155,9 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	if len(c.requests) > 0 {
 		body["patient_requests"] = s.patientRequestsViewLocked(c, true)
 	}
+	if callbacks := s.callbacksViewLocked(c); len(callbacks) > 0 {
+		body["teach_back_callbacks"] = callbacks
+	}
 	s.mu.Unlock()
 	return body
 }

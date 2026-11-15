@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { PatientJourney } from "@/lib/api/patient-schema";
+import type { PatientJourney, PatientTeachBackCallback } from "@/lib/api/patient-schema";
 import { cn } from "@/lib/utils";
-import { DICTS } from "./i18n";
+import { DICTS, type Lang, type PatientDict } from "./i18n";
 import type { PhoneQuery } from "./journey";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
@@ -14,8 +14,31 @@ const PROGRESS: Record<CheckStep, 0 | 1 | 2> = { question: 0, explain: 0, consen
 const SECONDARY = "h-[52px] w-full cursor-pointer rounded-control border-0 bg-active text-[17px] font-medium text-ink disabled:cursor-wait disabled:opacity-60";
 
 function initialStep(journey: PatientJourney): CheckStep {
-  if (journey.teach_back.status !== "completed") return "question";
+  if (journey.teach_back.status === "pending") return "question";
+  if (journey.teach_back.status !== "completed") return "explain";
   return journey.contact_permission.status === "unknown" ? "consent" : "done";
+}
+
+function dueDate(iso: string, lang: Lang): string {
+  return new Intl.DateTimeFormat(lang, { timeZone: "Asia/Dubai", weekday: "long", day: "numeric", month: "long" }).format(new Date(iso));
+}
+
+/** The durable receipt for a failed teach-back: who calls, by when, and whether that call is recorded. */
+function CallbackReceipt({ callback, c, lang }: { callback: PatientTeachBackCallback; c: PatientDict["check"]; lang: Lang }) {
+  const type = phoneType(lang);
+  return (
+    <div role="status" className="mt-4 flex flex-col gap-2 rounded-card border border-line bg-surface p-5">
+      {callback.status === "resolved" ? (
+        <p className={type.body}>{c.callbackResolved}</p>
+      ) : (
+        <>
+          <p className={type.body}>{c.callbackOpen.replace("{date}", dueDate(callback.due_at, lang))}</p>
+          {callback.overdue && <p className={type.body}>{c.callbackLate} <PhoneNumber /></p>}
+        </>
+      )}
+      <p className="m-0 text-[15px] text-muted">{c.callbackRef} <span dir="ltr">{callback.id.slice(0, 8)}</span></p>
+    </div>
+  );
 }
 
 /** Teach-back and contact permission advance only after their durable patient events are confirmed. */
@@ -41,6 +64,12 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
   async function teachBack() {
     const saved = await save({ kind: "teach_back_completed", data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } });
     if (saved) setStep("consent");
+  }
+
+  async function choose(answer: "colonoscopy" | "blood_test" | "not_sure") {
+    if (answer === "colonoscopy") return teachBack();
+    const saved = await save({ kind: "teach_back_answered", data: { question_id: "crc-next-step-v1", answer_id: answer } });
+    if (saved) setStep("explain");
   }
 
   async function answer(permission: "granted" | "denied") {
@@ -70,15 +99,16 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
             <p className="m-0 mb-1.5 text-[16px] text-muted">{c.intro}</p>
             <h1 ref={heading} tabIndex={-1} className={h1}>{c.question}</h1>
             <div role="group" aria-label={c.groupLabel} className="mt-3 flex flex-col gap-3">
-              {[
-                { text: c.wrong, right: false },
-                { text: c.right, right: true },
-              ].map((o, i) => (
+              {([
+                { text: c.wrong, answer: "blood_test" },
+                { text: c.right, answer: "colonoscopy" },
+                { text: c.notSure, answer: "not_sure" },
+              ] as const).map((o, i) => (
                 <button
                   key={o.text}
                   type="button"
                   disabled={busy}
-                  onClick={() => (o.right ? void teachBack() : setStep("explain"))}
+                  onClick={() => void choose(o.answer)}
                   className="flex min-h-[76px] w-full cursor-pointer items-center gap-3.5 rounded-card border border-control bg-surface px-4 py-3 text-start text-ink disabled:cursor-wait disabled:opacity-60"
                 >
                   <span aria-hidden="true" className="flex size-9 flex-none items-center justify-center rounded-full bg-raised text-[17px] font-semibold text-ink-soft">{c.letters[i]}</span>
@@ -96,6 +126,7 @@ export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: Pati
             <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5">
               {c.explain.map((line, i) => <p key={line} className={cn(type.body, i === 0 && "font-medium")}>{line}</p>)}
             </div>
+            {journey.teach_back.callback && <CallbackReceipt callback={journey.teach_back.callback} c={c} lang={query.lang} />}
             <button type="button" onClick={() => setStep("question")} className={cn(SECONDARY, "mt-4")}>{c.retry}</button>
           </div>
         )}

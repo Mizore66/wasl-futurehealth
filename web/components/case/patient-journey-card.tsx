@@ -4,15 +4,25 @@ import { atWords } from "./words";
 
 const KIND: Record<PatientJourneyEvent["kind"], string> = {
   teach_back_completed: "Teach-back completed",
+  teach_back_answered: "Teach-back not yet understood",
   contact_permission_changed: "Contact permission changed",
   slot_selected: "Preferred simulated slot selected",
   preparation_changed: "Preparation progress changed",
+};
+
+const TEACH_BACK: Record<NonNullable<CaseDetail["api_patient"]>["teach_back"]["status"], string> = {
+  pending: "Pending",
+  completed: "Completed",
+  clarify: "Clarification needed",
+  callback: "Nurse callback needed",
 };
 
 function eventDetail(event: PatientJourneyEvent): string {
   switch (event.kind) {
     case "teach_back_completed":
       return "Understood the colonoscopy next step";
+    case "teach_back_answered":
+      return event.data.answer_id === "not_sure" ? "Answered: not sure" : "Answered: another blood test";
     case "contact_permission_changed":
       return event.data.permission === "opted_out" ? "Stopped text message permission" : event.data.permission === "granted" ? "Granted text message permission" : "Declined text message permission";
     case "slot_selected":
@@ -35,7 +45,7 @@ export function PatientJourneyCard({ detail }: { detail: CaseDetail }) {
       </div>
       <p className="m-0 mt-1 text-small text-muted">Server-confirmed patient activity. No message was sent and no appointment is reserved.</p>
       <dl className="m-0 mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
-        <dt className="text-muted">Teach-back</dt><dd className="m-0">{patient.teach_back.status === "completed" ? "Completed" : "Pending"}</dd>
+        <dt className="text-muted">Teach-back</dt><dd className="m-0">{TEACH_BACK[patient.teach_back.status]}{patient.teach_back.attempts ? ` · ${patient.teach_back.attempts} attempt${patient.teach_back.attempts === 1 ? "" : "s"}` : ""}</dd>
         <dt className="text-muted">Text permission</dt><dd className="m-0">{patient.contact_permission.status === "opted_out" ? "Stopped" : patient.contact_permission.status}</dd>
         <dt className="text-muted">Preferred time</dt><dd className="m-0 [overflow-wrap:anywhere]">{patient.slot_selection.status === "selected" ? `${patient.slot_selection.slot_id} · coordinator review needed` : "Not selected"}</dd>
         <dt className="text-muted">Preparation</dt><dd className="m-0">{patient.preparation.completed} of {patient.preparation.total} complete</dd>

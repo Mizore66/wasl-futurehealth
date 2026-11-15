@@ -45,13 +45,19 @@ export interface PatientDict {
     intro: string;
     question: string;
     groupLabel: string;
-    letters: readonly [string, string];
+    letters: readonly [string, string, string];
     wrong: string;
     right: string;
+    notSure: string;
     notTest: string;
     explainTitle: string;
     explain: Three;
     retry: string;
+    /** `{date}` is replaced with the callback due date. */
+    callbackOpen: string;
+    callbackLate: string;
+    callbackResolved: string;
+    callbackRef: string;
     correct: string;
     consentTitle: string;
     consentBody: string;

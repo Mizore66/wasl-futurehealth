@@ -30,7 +30,7 @@ const (
 
 var (
 	patientRequestIDRE = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
-	patientKinds       = map[string]bool{"teach_back_completed": true, "contact_permission_changed": true, "slot_selected": true, "preparation_changed": true}
+	patientKinds       = map[string]bool{"teach_back_completed": true, "teach_back_answered": true, "contact_permission_changed": true, "slot_selected": true, "preparation_changed": true}
 	patientPermissions = map[string]bool{"granted": true, "denied": true, "opted_out": true}
 )
 
@@ -42,6 +42,7 @@ func patientCaseSupported(c *apiCase) bool {
 
 type patientFieldState struct {
 	Status        string
+	Understanding string
 	CompletedAt   string
 	UpdatedAt     string
 	SelectedAt    string
@@ -58,13 +59,14 @@ type patientPrepState struct {
 }
 
 type patientCaseState struct {
-	Head    string
-	Seq     int
-	Teach   patientFieldState
-	Contact patientFieldState
-	Slot    patientFieldState
-	Prep    map[string]patientPrepState
-	LastAt  string
+	Head     string
+	Seq      int
+	Teach    patientFieldState
+	Contact  patientFieldState
+	Slot     patientFieldState
+	Prep     map[string]patientPrepState
+	LastAt   string
+	Attempts []teachBackAttempt
 }
 
 type patientRequestRecord struct {
@@ -146,13 +148,17 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 		"last_action_at": p.LastAt,
 	}
 	if !full {
-		out["teach_back"] = map[string]interface{}{"status": patientOr(p.Teach.Status, "pending")}
+		out["teach_back"] = map[string]interface{}{"status": patientOr(p.Teach.Status, "pending"), "attempts": len(p.Attempts)}
 		out["contact_permission"] = map[string]interface{}{"status": patientOr(p.Contact.Status, "unknown")}
 		out["slot_selection"] = map[string]interface{}{"status": patientOr(p.Slot.Status, "unselected"), "slot_id": p.Slot.SlotID}
 	} else {
 		out["teach_back"] = map[string]interface{}{
 			"question_id": patientOr(p.Teach.QuestionID, teachBackQuestionID), "status": patientOr(p.Teach.Status, "pending"),
 			"completed_at": p.Teach.CompletedAt, "event": p.Teach.Event,
+			"understanding": patientOr(p.Teach.Understanding, "not_answered"), "attempts": len(p.Attempts),
+		}
+		if cb := c.latestPatientCallback(); cb != nil {
+			out["teach_back"].(map[string]interface{})["callback"] = s.callbackRowLocked(cb, false)
 		}
 		out["contact_permission"] = map[string]interface{}{
 			"status": patientOr(p.Contact.Status, "unknown"), "updated_at": p.Contact.UpdatedAt, "event": p.Contact.Event,
@@ -235,6 +241,17 @@ func validatePatientData(kind string, in map[string]interface{}) (map[string]int
 			return nil, errors.New("teach-back question or answer is not correct")
 		}
 		out["question_id"], out["answer_id"] = q, a
+	case "teach_back_answered":
+		if err := exact("question_id", "answer_id"); err != nil {
+			return nil, err
+		}
+		q, qerr := str("question_id")
+		a, aerr := str("answer_id")
+		state, offered := teachBackAnswers[a]
+		if qerr != nil || aerr != nil || q != teachBackQuestionID || !offered || state == "understood" {
+			return nil, errors.New("teach-back answer is not an offered answer that needs another explanation")
+		}
+		out["question_id"], out["answer_id"] = q, a
 	case "contact_permission_changed":
 		if err := exact("permission"); err != nil {
 			return nil, err
@@ -270,7 +287,7 @@ func validatePatientData(kind string, in map[string]interface{}) (map[string]int
 
 func (s *apiServer) patientSemanticNoOpLocked(c *apiCase, kind string, data map[string]interface{}) bool {
 	switch kind {
-	case "teach_back_completed":
+	case "teach_back_completed", "teach_back_answered":
 		return c.patient.Teach.Status == "completed"
 	case "contact_permission_changed":
 		overlay, _ := s.overlayLocked(c)
@@ -294,6 +311,10 @@ func (c *apiCase) applyPatientEvent(ev map[string]interface{}) {
 	switch kind {
 	case "teach_back_completed":
 		p.Teach = patientFieldState{QuestionID: teachBackQuestionID, Status: "completed", CompletedAt: at, Event: hash}
+		c.recordTeachBackAttempt("colonoscopy", at, hash)
+	case "teach_back_answered":
+		p.Teach.QuestionID, p.Teach.Event = teachBackQuestionID, hash
+		c.recordTeachBackAttempt(sstr(data, "answer_id"), at, hash)
 	case "contact_permission_changed":
 		p.Contact = patientFieldState{Status: sstr(data, "permission"), UpdatedAt: at, Event: hash}
 	case "slot_selected":

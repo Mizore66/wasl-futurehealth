@@ -31,6 +31,8 @@ function patientActivity(event: Extract<CaseDetail["api_reviews"][number], { led
   switch (event.kind) {
     case "teach_back_completed":
       return "Patient completed teach-back";
+    case "teach_back_answered":
+      return "Patient teach-back not yet understood · nurse callback";
     case "contact_permission_changed":
       return `Patient contact permission: ${event.data.permission ?? "changed"}`;
     case "slot_selected":

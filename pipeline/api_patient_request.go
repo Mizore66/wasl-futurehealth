@@ -73,14 +73,7 @@ func (r *patientRequest) holds(c *apiCase) bool {
 }
 
 func patientContestDue(at time.Time) time.Time {
-	d := at.In(patientContestZone)
-	for n := 0; n < patientContestWorkingDay; {
-		d = d.AddDate(0, 0, 1)
-		if wd := d.Weekday(); wd != time.Saturday && wd != time.Sunday {
-			n++
-		}
-	}
-	return d.UTC()
+	return workingDaysAfter(at, patientContestWorkingDay)
 }
 
 func patientOTPDigest(linkID, code string) string {

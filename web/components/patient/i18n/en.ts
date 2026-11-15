@@ -42,9 +42,10 @@ export const en: PatientDict = {
     intro: "One question, to check we explained it well",
     question: "What is the next step after your test result?",
     groupLabel: "Choose an answer",
-    letters: ["A", "B"],
+    letters: ["A", "B", "C"],
     wrong: "Another blood test in a month",
     right: "A check with a small camera, so the doctor can find the cause",
+    notSure: "I am not sure",
     notTest: "This is not an exam.",
     explainTitle: "Let us explain it another way",
     explain: [
@@ -53,6 +54,10 @@ export const en: PatientDict = {
       "To find the cause, a doctor looks inside the bowel with a small camera. This is a colonoscopy. Nurse Hessa will call you to explain it and book the appointment with you.",
     ],
     retry: "Ask me again",
+    callbackOpen: "Nurse Hessa will call you by {date} to go through it with you. This is a demo: no call is placed.",
+    callbackLate: "The call is late. You can call the nurse now:",
+    callbackResolved: "Your call with the nurse is recorded.",
+    callbackRef: "Reference",
     correct: "Well done, that is right",
     consentTitle: "May we send you reminders by SMS?",
     consentBody:

@@ -19,6 +19,8 @@ function reflects(journey: PatientJourney, intention: PatientIntention): boolean
   switch (intention.kind) {
     case "teach_back_completed":
       return journey.teach_back.status === "completed";
+    case "teach_back_answered":
+      return journey.teach_back.status !== "pending";
     case "contact_permission_changed":
       return journey.contact_permission.status === intention.data.permission;
     case "slot_selected":

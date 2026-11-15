@@ -199,24 +199,31 @@ test("teach-back and grant persist exact events; opt-out survives reload", async
   const initialHead = (await journey()).head;
   await page.getByRole("button", { name: /Another blood test/ }).click();
   await expect(page.locator("h1")).toHaveText("Let us explain it another way");
-  expect(await bodies()).toHaveLength(0);
+  expect(await bodies()).toEqual([expect.objectContaining({ kind: "teach_back_answered", expected_head: initialHead, data: { question_id: "crc-next-step-v1", answer_id: "blood_test" } })]);
+  const receipt = page.getByRole("status").filter({ hasText: /Nurse Hessa will call you by/ });
+  await expect(receipt).toContainText("This is a demo: no call is placed.");
+  const callback = (await journey()).teach_back.callback!;
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  await page.reload();
+  await expect(page.locator("h1")).toHaveText("Let us explain it another way");
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  await page.getByRole("button", { name: "Ask me again" }).click();
+  await page.getByRole("button", { name: "I am not sure" }).click();
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  expect((await journey()).teach_back).toMatchObject({ status: "callback", understanding: "needs_human", attempts: 2, callback: { id: callback.id, status: "open" } });
   await page.getByRole("button", { name: "Ask me again" }).click();
   await page.getByRole("button", { name: /small camera/ }).click();
   await expect(page.locator("h1")).toHaveText("May we send you reminders by SMS?");
-  expect((await bodies())[0]).toMatchObject({
-    kind: "teach_back_completed",
-    expected_head: initialHead,
-    data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" },
-  });
+  expect((await bodies())[2]).toMatchObject({ kind: "teach_back_completed", data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } });
   await page.getByRole("button", { name: "Allow messages" }).click();
   await expect(page.locator("h1")).toHaveText("Thank you, Fatima");
-  expect((await bodies())[1]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "granted" } });
+  expect((await bodies())[3]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "granted" } });
   await expect(page.getByText("Your permission for SMS reminders is recorded. No SMS has been sent.")).toBeVisible();
   await page.reload();
   await expect(page.locator("h1")).toHaveText("Thank you, Fatima");
   await page.getByRole("button", { name: "Stop text messages" }).click();
   await expect(page.getByText("Text message permission is stopped. No SMS has been sent.")).toBeVisible();
-  expect((await bodies())[2]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "opted_out" } });
+  expect((await bodies())[4]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "opted_out" } });
   await page.reload();
   await expect(page.getByRole("button", { name: "Stop text messages" })).toHaveCount(0);
   await expect(page.getByText("Text message permission is stopped. No SMS has been sent.")).toBeVisible();

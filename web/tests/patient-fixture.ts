@@ -17,7 +17,7 @@ export function patientFixture(): PatientJourneyResponse {
       head: "canonical-signature",
       seq: 0,
       ledger_status: "ok",
-      teach_back: { question_id: "crc-next-step-v1", status: "pending", completed_at: "", event: "" },
+      teach_back: { question_id: "crc-next-step-v1", status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0 },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
       slot_selection: { status: "unselected", offers_version: patientOffers.version, slot_id: "", selected_at: "", event: "" },
       preparation: {

@@ -196,6 +196,14 @@ export type WorkItem = {
   cancelled?: boolean;
 };
 
+/** An open failed teach-back callback outranks contact outcomes: logging a call never resolves it. */
+export function teachBackCallbackWords(c: CaseSummary): string | null {
+  const cb = c.teach_back_callback;
+  if (!cb || cb.status !== "open") return null;
+  if (!cb.due_at) return "Teach-back failed · nurse callback open";
+  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${atWords(cb.due_at)}`;
+}
+
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
@@ -292,6 +300,13 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     view = "waiting";
     words.status = "Simulated slot confirmed";
     words.next = "Wait for the simulated appointment day";
+  }
+  const callback = teachBackCallbackWords(c);
+  if (callback) {
+    awaitingNext = false;
+    view = "call";
+    words.status = callback;
+    words.next = "Call to explain the next step, then record the consultation outcome on the case page";
   }
   return {
     id: c.id,

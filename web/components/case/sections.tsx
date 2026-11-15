@@ -14,6 +14,7 @@ import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
 import { PatientJourneyCard, PatientRequestsCard } from "./patient-journey-card";
+import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
 import {
   atWords,
@@ -551,6 +552,7 @@ export function PatientJourneySection({ detail }: { detail: CaseDetail }) {
   return (
     <>
       <PatientJourneyCard detail={detail} />
+      <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
       <PatientRequestsCard detail={detail} />
     </>
   );

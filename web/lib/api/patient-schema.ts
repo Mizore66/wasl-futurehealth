@@ -1,10 +1,25 @@
 import { z } from "zod";
 
+/** A failed teach-back's nurse-callback task as the patient sees it (pipeline/api_teachback.go callbackRowLocked). */
+export const PatientTeachBackCallback = z.strictObject({
+  id: z.string().min(1),
+  source: z.literal("patient_link"),
+  state: z.enum(["misunderstood", "needs_human", "unparsed"]),
+  owner: z.string(),
+  status: z.enum(["open", "resolved"]),
+  opened_at: z.string(),
+  due_at: z.string(),
+  overdue: z.boolean().optional(),
+  resolved_at: z.string().optional(),
+});
 export const PatientTeachBack = z.strictObject({
   question_id: z.literal("crc-next-step-v1"),
-  status: z.enum(["pending", "completed"]),
+  status: z.enum(["pending", "completed", "clarify", "callback"]),
   completed_at: z.string(),
   event: z.string(),
+  understanding: z.enum(["not_answered", "understood", "partial", "misunderstood", "needs_human", "unparsed"]),
+  attempts: z.number().int().nonnegative(),
+  callback: PatientTeachBackCallback.optional(),
 });
 export const PatientContactPermission = z.strictObject({
   status: z.enum(["unknown", "granted", "denied", "opted_out"]),
@@ -50,7 +65,7 @@ export const PatientJourneyResponse = z.looseObject({
 });
 export const PatientPublicEvent = z.looseObject({
   hash: z.string(),
-  kind: z.enum(["teach_back_completed", "contact_permission_changed", "slot_selected", "preparation_changed"]),
+  kind: z.enum(["teach_back_completed", "teach_back_answered", "contact_permission_changed", "slot_selected", "preparation_changed"]),
   at: z.string(),
   seq: z.number().int().positive(),
   data: z.record(z.string(), z.unknown()),
@@ -76,6 +91,11 @@ export const PatientMutation = z.discriminatedUnion("kind", [
   }),
   z.strictObject({
     ...mutationBase,
+    kind: z.literal("teach_back_answered"),
+    data: z.strictObject({ question_id: z.literal("crc-next-step-v1"), answer_id: z.enum(["blood_test", "not_sure"]) }),
+  }),
+  z.strictObject({
+    ...mutationBase,
     kind: z.literal("contact_permission_changed"),
     data: z.strictObject({ permission: z.enum(["granted", "denied", "opted_out"]) }),
   }),
@@ -92,6 +112,7 @@ export const PatientMutation = z.discriminatedUnion("kind", [
 ]);
 
 export type PatientJourney = z.infer<typeof PatientJourney>;
+export type PatientTeachBackCallback = z.infer<typeof PatientTeachBackCallback>;
 export type PatientOffers = z.infer<typeof PatientOffers>;
 export type PatientOffer = z.infer<typeof PatientOffer>;
 export type PatientJourneyResponse = z.infer<typeof PatientJourneyResponse>;

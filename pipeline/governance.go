@@ -46,11 +46,13 @@ const (
 	ActCoordinateCase = "coordinate_case"
 	// ActResolvePatientContest: an independent senior clinician resolves a patient's contest of a decision.
 	ActResolvePatientContest = "resolve_patient_contest"
+	// ActResolveTeachBackCallback: a nurse navigator or clinician records the outcome of a failed teach-back callback.
+	ActResolveTeachBackCallback = "resolve_teachback_callback"
 )
 
 var rbac = map[string]map[string]bool{
-	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true},
+	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActResolveTeachBackCallback: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},

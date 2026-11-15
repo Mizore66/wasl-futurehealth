@@ -47,9 +47,10 @@ export const fil: PatientDict = {
     intro: "Isang tanong, para matiyak na malinaw ang paliwanag namin",
     question: "Ano ang susunod na hakbang pagkatapos ng resulta mo?",
     groupLabel: "Pumili ng sagot",
-    letters: ["A", "B"],
+    letters: ["A", "B", "C"],
     wrong: "Isa pang blood test pagkalipas ng isang buwan",
     right: "Pagsusuri gamit ang maliit na camera, para malaman ng doktor ang dahilan",
+    notSure: "Hindi ako sigurado",
     notTest: "Hindi ito pagsusulit.",
     explainTitle: "Ipaliwanag natin sa ibang paraan",
     explain: [
@@ -58,6 +59,10 @@ export const fil: PatientDict = {
       "Para malaman ang dahilan, tinitingnan ng doktor ang loob ng bituka gamit ang maliit na camera. Ito ang colonoscopy. Tatawagan ka ni Nurse Hessa para ipaliwanag ito at i-book ang appointment mo.",
     ],
     retry: "Itanong ulit",
+    callbackOpen: "Tatawagan ka ni Nurse Hessa bago ang {date} para pag-usapan ito kasama mo. Demo lamang ito: walang tawag na gagawin.",
+    callbackLate: "Nahuli ang tawag. Puwede mong tawagan ang nurse ngayon:",
+    callbackResolved: "Naitala na ang tawag mo sa nurse.",
+    callbackRef: "Reference",
     correct: "Magaling, tama iyan",
     consentTitle: "Puwede ka ba naming padalhan ng paalala sa SMS?",
     consentBody:
