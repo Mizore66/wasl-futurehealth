@@ -93,7 +93,9 @@ History is folded by `(case_id, event, kind)` in decision order. Each intent ret
 - `withheld`: consent or another canonical rule withholds it; not actionable;
 - `recorded`: a non-released intent without a suppression code.
 
-A `duplicate` group has the same `(kind,event)` on at least two distinct cases. One `overlap` group contains current intents spanning at least two programmes. Repetition across decisions of one case does not itself create a duplicate. At least two `released`, `held`, or `recorded` intents make a group actionable. Flags never delete, rewrite, cancel or suppress history, and there are no send/dismiss controls.
+Built: an intent whose key is absent from its case's latest canonical decision carries `participation: resolved`. A booked appointment reminder that disappears once the appointment is fulfilled is one example. The intent keeps its lifecycle, first and latest decision IDs and signature as history, but it is never actionable. Canonical decisions are not rewritten.
+
+A `duplicate` group has the same `(kind,event)` on at least two distinct cases. One `overlap` group contains current intents spanning at least two programmes. Repetition across decisions of one case does not itself create a duplicate. At least two current `released`, `held`, or `recorded` intents make a group actionable, and a review action is anchored on a current intent. Flags never delete, rewrite, cancel or suppress history, and there are no send/dismiss controls.
 
 ## Next coordinator action
 
@@ -103,7 +105,7 @@ The rule identifier is `wasl-person-next-action/1`. Candidates are:
 2. Unresolved cases with canonical coordinator-actionable drop-off: `never_notified`, `no_acknowledgement`, `not_booked`, `referral_rejected`, `referral_unanswered`, `no_show`, `no_followup_ct`, `no_eye_exam`, `ungradable_no_repeat`, `technical_repeat_not_done`, `incomplete_scan_not_completed`, `followup_ldct_not_done`, or `no_followup_documented`.
 3. Unseen overdue canonical DR next-due recall.
 
-Clinical holds, unlinked records, evidence waits and specialist decisions are not coordinator actions. Patient-contact follow-up without canonical `granted` permission becomes `review_contact_permission`, never a recommendation to contact. Provider-only rejected/unanswered referral follow-up remains administrative. The separate overlay never overrides canonical consent for ranking.
+Clinical holds, unlinked records, evidence waits and specialist decisions are not coordinator actions. Built: a patient follow-up drop-off is not a candidate while the case's latest canonical decision lists an unsigned `evidence` review in `pending`, for example an unread LDCT follow-up scan or DR clinic note. Consent therefore cannot turn it into `review_contact_permission` either. Once a later decision no longer lists that review, the drop-off is a candidate again. Earlier decisions' reviews, pending identity-link reviews, provider-only referral follow-up, duplicate-outreach review and DR recall are not gated. Patient-contact follow-up without canonical `granted` permission becomes `review_contact_permission`, never a recommendation to contact. Provider-only rejected/unanswered referral follow-up remains administrative. The separate overlay never overrides canonical consent for ranking.
 
 Candidates sort by:
 

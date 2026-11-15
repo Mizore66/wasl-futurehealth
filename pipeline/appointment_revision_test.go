@@ -17,14 +17,14 @@ func TestAppointmentNormalizationKeepsMetaVersion(t *testing.T) {
 }
 
 func TestAppointmentRejectsMalformedVersion(t *testing.T) {
-	for _, version := range []string{"0", "-1", "two"} {
+	for _, version := range []interface{}{"0", "-1", "two", "", nil, float64(2), true} {
 		res := clinicalFixture("Appointment")
-		clinicalSetPath(res, version, "meta", "versionId")
-		if ev, _ := normalise("ahs-mushrif", 0, clinicalRaw(t, res)); ev != nil {
-			t.Fatalf("versionId %q accepted", version)
+		res["meta"].(map[string]interface{})["versionId"] = version
+		if ev, _, normErr := normaliseChecked("ahs-mushrif", 0, clinicalRaw(t, res)); ev != nil || normErr == nil || normErr.Code != "invalid_appointment_version" {
+			t.Fatalf("versionId %#v: event=%+v error=%v", version, ev, normErr)
 		}
-		if code := clinicalPrepRejectCode(t, clinicalRaw(t, res)); code == "" {
-			t.Fatalf("versionId %q was not rejected at the prep boundary", version)
+		if code := clinicalPrepRejectCode(t, clinicalRaw(t, res)); code != "invalid_appointment_version" {
+			t.Fatalf("versionId %#v materialized rejection code=%q", version, code)
 		}
 	}
 }
@@ -34,6 +34,7 @@ type apptOutcome struct {
 	kinds    string
 	active   string
 	conflict int
+	dropoff  string
 }
 
 func apptPrep(seq uint64, version int, status string) *Prep {
@@ -73,7 +74,7 @@ func runAppointments(t *testing.T, replay bool, preps ...*Prep) apptOutcome {
 		out.kinds += o.Kind + ";"
 	}
 	if d := C.Final()[loop]; d != nil {
-		out.state = d.State
+		out.state, out.dropoff = d.State, d.Dropoff
 	}
 	return out
 }

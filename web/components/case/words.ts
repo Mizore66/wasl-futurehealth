@@ -1,5 +1,6 @@
 import type { Audit, CaseDetail, Programme, ReferralCondition } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
+import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
@@ -119,7 +120,7 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
       body: `${parts.join(", ")}.${str(closure.rule) ? ` Rule: ${str(closure.rule)}.` : ""}`.replace(/^./, (m) => m.toUpperCase()),
     };
   }
-  const hold = d.holds[0];
+  const hold = caseHolds(d).current[0];
   if (hold) return { title: "Held, not closed", body: `${holdWords(hold)}${hold.rule ? ` Rule: ${hold.rule}.` : ""}` };
   return { title: "Open", body: statusWords(c).next + "." };
 }
@@ -302,6 +303,8 @@ type LedgerLike =
         reason?: string;
         unit?: string;
         destination?: string;
+        plan?: string;
+        review_date?: string;
       };
     }
   | { ledger: "compensation"; kind: string; resolution?: string }
@@ -374,6 +377,9 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "note") return "Note added";
     if (e.kind === "referral_response") return referralResponseWords(d);
     if (e.kind === "referrer_response") return referrerResponseWords(d);
+    if (e.kind === "clinician_disposition") {
+      return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${d.review_date ?? "date not recorded"}`;
+    }
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {

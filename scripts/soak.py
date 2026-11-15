@@ -741,9 +741,11 @@ def pipeline_invariants(report, logs):
             violations.append("%s.%s=%r (required zero)" % (section, name, value))
     for programme, results in report.get("closure", {}).items():
         for lane, metrics in results.items():
-            if lane.startswith("wasl_") and isinstance(metrics, dict) and metrics.get("false_closures") != 0:
-                violations.append("closure.%s.%s.false_closures=%r (required zero)" % (
-                    programme, lane, metrics.get("false_closures")))
+            if not (lane.startswith("wasl_") and isinstance(metrics, dict)):
+                continue
+            for name in ("false_closures", "unsafe_closures"):
+                if metrics.get(name) != 0:
+                    violations.append("closure.%s.%s.%s=%r (required zero)" % (programme, lane, name, metrics.get(name)))
     if "timeout waiting for quiescence" in logs.lower():
         violations.append("quiescence timeout recorded")
     return violations

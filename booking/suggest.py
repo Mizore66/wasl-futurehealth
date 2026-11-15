@@ -18,7 +18,7 @@ solved by `wsi7 mcf`); the stress-test flags (--arrivals bursty, --female-share,
 rounding and integer-cost assignment apply, with reviewed golden changes to probabilities and two equal-cost slots.
 """
 from __future__ import annotations
-import json, os, sys, argparse, collections, hashlib
+import json, math, os, sys, argparse, collections, hashlib
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
@@ -71,6 +71,18 @@ def load(run):
             lang = ((c.get("language") or {}).get("coding") or [{}])[0].get("code", "")
         sr[f"{prov}/ServiceRequest/{r['id']}"] = {"gender": pt.get("gender"), "lang": lang}
     return last, sr
+
+
+def clock_anchor(d):
+    """Absolute day a programme clock starts from: the inadequate/unsatisfactory exam for a repeat, else the referral.
+    Independent of the synthetic request day, which only orders scheduling."""
+    if d["state"] == "inadequate":
+        day = d.get("inadequate_day")
+        if day is None and d.get("proc_day", -1) >= 0:
+            day = d["proc_day"]
+        if day is not None:
+            return {"kind": "inadequate_procedure", "day": day}
+    return {"kind": "referral", "day": d["sr_day"]}
 
 
 def stable_u(key, salt):
@@ -136,11 +148,21 @@ def _sha(value):
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
-def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead):
+def _current_day(dec):
+    """Canonical decision clock (`now`) as an integer engine day, or None when the run recorded none."""
+    now = (dec or {}).get("now")
+    return int(math.floor(now)) if isinstance(now, (int, float)) and math.isfinite(now) else None
+
+
+def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead, current_day=None):
     """Deterministic synthetic seats from the existing engine's hard-feasibility and no-show rules.
 
     This is a catalogue, not a second assignment pass: sessions stay in calendar order and every declared
     non-overbooked seat is named. Per-case fields (deadline, lead time and no-show risk) intentionally differ.
+
+    The seat window, lead time and no-show risk stay anchored to the original request day. Female-list protection is
+    evaluated on the later of that day and the case's current canonical clock, so seats held at the original request
+    are released once their session is within the engine's seven-day boundary (session day <= now + reserve_days).
     """
     day = requested_day
     lo = max(day + prep_lead, earliest)
@@ -158,6 +180,16 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
     # Match BookingEngine.build's bounded candidate window, counting sessions rather than occupied seats because
     # coordinator reservations occupy their own append-only ledger, not the engine's retrospective assignment state.
     sessions = sessions[: eng.K]
+    held = {}
+    if eng.protect is not None and prefs.female_endoscopist != "hard":
+        demand = list(eng._hard_arr)
+        at = day if current_day is None else max(day, current_day)
+        # The engine only knew hard arrivals up to `at`; later ones would over-hold seats.
+        eng._hard_arr = [x for x in demand if x[0] <= at]
+        try:
+            held = eng._held(at, sessions)
+        finally:
+            eng._hard_arr = demand
     out = []
     for s0 in sessions:
         s = int(s0)
@@ -167,7 +199,7 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
         nurse = pred > eng.nurse_thr
         if nurse:
             pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 1, region))
-        for seat in range(1, int(cal.cap[s]) + 1):
+        for seat in range(1, int(cal.cap[s]) - held.get(s, 0) + 1):
             out.append({
                 "slot_id": f"sim:{procedure}:{s}:{seat}", "session_id": s, "unit": str(cal.unit[s]),
                 "day": int(cal.day[s]), "region": region, "deadline": int(deadline),
@@ -239,8 +271,10 @@ def cervical(last, sr, a, rng):
                       travel_ok=stable_u(k, "travel") < 0.3, prior_no_show=d["state"] == "no_show")
         day = arrival_day(k, a)
         repeat = d["state"] == "inadequate"
-        lo, hi = (day + REPEAT_WINDOW[0], day + REPEAT_WINDOW[1]) if repeat else (day, day + int(d.get("deadline") or 56))
-        meta[k] = (d, prefs, day, repeat, lo, hi)
+        anchor = clock_anchor(d)
+        t0 = anchor["day"]
+        lo, hi = (t0 + REPEAT_WINDOW[0], t0 + REPEAT_WINDOW[1]) if repeat else (t0, t0 + int(d.get("deadline") or 56))
+        meta[k] = (d, prefs, day, repeat, lo, hi, anchor)
         by_day[day].append(Event("result_accepted", k, day, prefs, hi, lo))   # booked when the result arrives
     if getattr(a, "forecast", "") == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
@@ -256,12 +290,13 @@ def cervical(last, sr, a, rng):
     finally:
         getattr(eng, "close", lambda: None)()
     cases = {}
-    for k, (d, prefs, day, repeat, lo, hi) in meta.items():
+    for k, (d, prefs, day, repeat, lo, hi, anchor) in meta.items():
         base = {"procedure": "colposcopy", "repeat_after_unsatisfactory": repeat, "requested_day": day, "window_days": [lo, hi],
+                "clock_anchor": anchor,
                 "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
                 "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
         b = out.get(k)
-        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1)
+        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1, _current_day(d))
         if b is None:
             cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", "eligible_slots": candidates, **base}
         else:
@@ -317,11 +352,12 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
                       region=region, travel_ok=stable_u(k, "travel") < (0.6 if a.misallocated else 0.3),
                       prior_no_show=d["state"] == "no_show")
         day = as_of + arrival_day(k, a)  # spread requests over 60 days
-        meta[k] = (d, prefs, day)
+        meta[k] = (d, prefs, day, clock_anchor(d))
     urgent = {k for k in meta if a.crc_urgent_share > 0 and stable_u(k, "urgent") < a.crc_urgent_share}
     by_day = collections.defaultdict(list)
-    for k, (_, prefs, day) in meta.items():
-        by_day[day].append(Event("result_accepted", k, day, prefs, day + (14 if k in urgent else 31)))
+    for k, (_, prefs, day, anchor) in meta.items():
+        # earliest: the actual clinical anchor (referral / unsatisfactory exam) as well as the usual request + prep lead
+        by_day[day].append(Event("result_accepted", k, day, prefs, anchor["day"] + (14 if k in urgent else 31), anchor["day"]))
     if a.forecast == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
@@ -340,17 +376,17 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
         getattr(eng, "close", lambda: None)()
     cases, unbooked = {}, 0
     reg_demand, reg_booked_out = collections.Counter(), collections.Counter()
-    for k, (d, prefs, day) in meta.items():
+    for k, (d, prefs, day, anchor) in meta.items():
         b = out.get(k)
-        deadline = day + (14 if k in urgent else 31)
-        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5)
+        deadline = anchor["day"] + (14 if k in urgent else 31)
+        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, max(day + 5, anchor["day"]), 5, _current_day(d))
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
         if b is None:
             unbooked += 1
             cases[k] = {"status": "no_slot_within_horizon", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region,
                         "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"],
-                        "eligible_slots": candidates, **lv}
+                        "clock_anchor": anchor, "deadline_day": deadline, "eligible_slots": candidates, **lv}
             if a.crc_urgent_share > 0:
                 cases[k]["target_days"] = 14 if k in urgent else 31
             continue
@@ -359,7 +395,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
             reg_booked_out[prefs.region] += 1
         cases[k] = {"status": "suggested", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
-                    "wait_days": b.day - day, "eligible_slots": candidates, **lv}
+                    "wait_days": b.day - day, "clock_anchor": anchor, "deadline_day": deadline, "eligible_slots": candidates, **lv}
         if a.crc_urgent_share > 0:
             cases[k]["target_days"] = 14 if k in urgent else 31
     cerv = cervical(last, sr, a, rng)
