@@ -63,6 +63,11 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
               );
             })}
           </nav>
+          {view?.programme === "crc" && (
+            <Link href="/app/referrals/returned" className="inline-flex min-h-11 items-center text-small underline">
+              Returned referrals, referring GP view
+            </Link>
+          )}
           <span className="text-small text-muted">
             {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
           </span>

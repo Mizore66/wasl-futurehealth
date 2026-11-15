@@ -272,6 +272,7 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | not read by the web server; the senior_clinician signs in with it for r3 and contest resolution |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
+   | `WASL_API_REFERRER_TOKEN` | a clinician-role token whose actor the API lists in `WASL_REFERRING_CLINICIANS` (for example `ahs-mushrif:<actor>`) and not in `WASL_RECEIVING_UNIT_CLINICIANS` | the referring GP's answers on `/app/referrals/returned` (`POST /referrer-response`); built, synthetic ledger only |
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.

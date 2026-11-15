@@ -37,7 +37,7 @@ type Tab = "needs" | "all" | "returned" | "accepted";
 const TABS: [Tab, string, (r: Referral) => boolean][] = [
   ["needs", "Needs you", (r) => r.state === "new" || r.state === "grade"],
   ["all", "All", () => true],
-  ["returned", "Waiting on GP", (r) => r.state === "returned"],
+  ["returned", "Waiting on GP", (r) => r.state === "returned" && r.handoff?.status !== "referrer_acted"],
   ["accepted", "Accepted", (r) => r.state === "accepted" || r.state === "done"],
 ];
 const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, accepted: 3, done: 4 };

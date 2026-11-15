@@ -88,6 +88,7 @@ type apiServer struct {
 	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu              sync.Mutex
 	unitClinicians  map[string]string // verified actor -> receiving unit (WASL_RECEIVING_UNIT_CLINICIANS)
+	referrers       map[string]string // verified actor -> referring provider (WASL_REFERRING_CLINICIANS)
 	reviews         []map[string]interface{}
 	rstates         map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
 	claims          map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
@@ -132,7 +133,12 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
-	s.unitClinicians = receivingUnitCliniciansFromEnv()
+	s.unitClinicians, s.referrers = actorAssignmentsFromEnv("WASL_RECEIVING_UNIT_CLINICIANS"), actorAssignmentsFromEnv("WASL_REFERRING_CLINICIANS")
+	for actor := range s.referrers {
+		if s.unitClinicians[actor] != "" {
+			panic(fmt.Sprintf("actor %q is both a receiving-unit clinician and a referring clinician", actor))
+		}
+	}
 	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	// Recovery deployments use their configured Basic-auth identities and TLS;
 	// all other serving modes require the bearer-bound synthetic-demo principals.
@@ -735,7 +741,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/referral-response")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/referral-response") || strings.HasSuffix(rest, "/referrer-response")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -765,7 +771,9 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAction(w, r, c)
 	case sub == "referral-response" && r.Method == http.MethodPost:
 		s.caseReferralResponse(w, r, c)
-	case sub == "actions" || sub == "referral-response":
+	case sub == "referrer-response" && r.Method == http.MethodPost:
+		s.caseReferrerResponse(w, r, c)
+	case sub == "actions" || sub == "referral-response" || sub == "referrer-response":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	default:
@@ -1146,7 +1154,8 @@ type caseOverlay struct {
 	notes     []map[string]interface{}
 	agreement map[string]interface{}
 	booking   caseBookingState
-	referral  map[string]interface{} // the receiving unit's referral response, if any
+	referral  map[string]interface{}   // the receiving unit's referral response, if any
+	referrer  []map[string]interface{} // the responsible referrer's acknowledgement and response to a returned referral
 	lastAt    string
 }
 
@@ -1288,6 +1297,8 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		c.ov.notes = append(c.ov.notes, entry)
 	case referralResponseKind:
 		c.ov.referral = entry
+	case referrerResponseKind:
+		c.ov.referrer = append(c.ov.referrer, entry)
 	}
 	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
 	c.ov.n++
@@ -1807,7 +1818,7 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	role, _ := ev["role"].(string)
 	actor, _ := ev["actor"].(string)
 	permission := ActCoordinateCase
-	if kind == referralResponseKind {
+	if kind == referralResponseKind || kind == referrerResponseKind {
 		permission = ActRespondReferral
 	}
 	if !rbac[role][permission] || ev["action"] != permission {
@@ -1833,9 +1844,13 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if !ok {
 		return errors.New("data must be an object")
 	}
-	if kind == referralResponseKind {
-		if err := replayReferralResponse(c, raw); err != nil {
-			return fmt.Errorf("invalid referral response: %v", err)
+	if kind == referralResponseKind || kind == referrerResponseKind {
+		replay := replayReferralResponse
+		if kind == referrerResponseKind {
+			replay = replayReferrerResponse
+		}
+		if err := replay(c, raw); err != nil {
+			return fmt.Errorf("invalid %s: %v", kind, err)
 		}
 		s.reviews = append(s.reviews, ev)
 		c.applyOverlay(ev)

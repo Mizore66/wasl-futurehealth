@@ -59,8 +59,8 @@ func referralReceivingUnit(c *apiCase) string {
 	return handoffUnits("crc")[0]
 }
 
-// parseReceivingUnitClinicians reads "unit:actor,unit:actor" into actor -> unit.
-func parseReceivingUnitClinicians(config string) (map[string]string, error) {
+// parseActorAssignments reads the env variable `name` of form "scope:actor,scope:actor" into actor -> scope.
+func parseActorAssignments(name, config string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, entry := range strings.Split(config, ",") {
 		entry = strings.TrimSpace(entry)
@@ -70,18 +70,18 @@ func parseReceivingUnitClinicians(config string) (map[string]string, error) {
 		unit, actor, ok := strings.Cut(entry, ":")
 		unit, actor = strings.TrimSpace(unit), strings.TrimSpace(actor)
 		if !ok || unit == "" || actor == "" || utf8.RuneCountInString(actor) > maxActorRunes {
-			return nil, fmt.Errorf("invalid WASL_RECEIVING_UNIT_CLINICIANS entry %q: need unit:actor", entry)
+			return nil, fmt.Errorf("invalid %s entry %q: need scope:actor", name, entry)
 		}
 		if prev, dup := out[actor]; dup && prev != unit {
-			return nil, fmt.Errorf("WASL_RECEIVING_UNIT_CLINICIANS assigns actor %q to two units", actor)
+			return nil, fmt.Errorf("%s assigns actor %q twice", name, actor)
 		}
 		out[actor] = unit
 	}
 	return out, nil
 }
 
-func receivingUnitCliniciansFromEnv() map[string]string {
-	m, err := parseReceivingUnitClinicians(os.Getenv("WASL_RECEIVING_UNIT_CLINICIANS"))
+func actorAssignmentsFromEnv(name string) map[string]string {
+	m, err := parseActorAssignments(name, os.Getenv(name))
 	if err != nil {
 		panic(err)
 	}
@@ -275,8 +275,7 @@ func replayReferralResponse(c *apiCase, raw map[string]interface{}) error {
 }
 
 // referralViewLocked is the persisted response and, for a return, the hand-off packet to the referrer. The packet uses
-// the canonical hand-off clock and statuses (handoff.go) at the case's run day; the referrer's later action is not
-// recorded here.
+// the canonical hand-off clock and statuses (handoff.go) at the case's run day, with the referrer's answer (api_referrer.go).
 func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 	e := c.ov.referral
 	if e == nil {
@@ -305,6 +304,7 @@ func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 		"reason_code": referralReturnReasons[fmt.Sprint(e["reason"])], "info_requested": e["requested_info"],
 		"clinical_priority": map[bool]string{true: "urgent", false: "routine"}[urgent], "responsible_clinician": "referring PCP, " + c.Provider,
 		"decided_by": e["unit"], "decided_at": decided, "act_by": round4(actBy), "medical_director_day": round4(medDir), "status": status, "event": e["event"]}
+	referrerView(c, handoff)
 	return response, handoff
 }
 

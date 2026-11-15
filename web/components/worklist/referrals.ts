@@ -1,4 +1,4 @@
-import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralCondition, ReferralReturnReason } from "@/lib/api/schema";
+import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralCondition, ReferralInfo, ReferralReturnReason } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { handoffUrgent } from "@/lib/domain/handoff";
 import { shortId } from "@/lib/domain/ids";
@@ -95,11 +95,14 @@ const PACKET_REASONS: Record<string, string> = {
   duplicate: "Duplicate referral",
   other: "Other",
 };
-const INFO_WORDS: Record<string, string> = {
+export const INFO_LABELS: Record<ReferralInfo, string> = {
   reason_for_referral: "Reason for referral",
   relevant_clinical_information: "Relevant clinical information",
   expected_outcome: "Expected outcome",
+  anticoagulant_plan: "Blood thinner plan",
+  kidney_function_result: "Kidney function result",
 };
+const INFO_WORDS: Record<string, string> = INFO_LABELS;
 const PACKET_STATUS: Record<HandoffStatus, string> = {
   awaiting_referrer: "Awaiting the referrer",
   referrer_acted: "The referrer has acted",

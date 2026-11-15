@@ -308,7 +308,11 @@ export const ReferralResponse = z.looseObject({
   event: z.string(),
 });
 
-/** The hand-off packet a persisted return projects, on the canonical hand-off clock. */
+/** The responsible referrer's answers to a returned referral (pipeline/api_referrer.go). Only acknowledge leaves it open. */
+export const ReferrerResponseCode = z.enum(["acknowledge", "supply_info", "re_refer", "redirect", "manage_in_primary_care", "close"]);
+const ReferrerEntry = { at: z.string(), actor: z.string(), run_day: z.number(), event: z.string() };
+
+/** The hand-off packet a persisted return projects, on the canonical hand-off clock, with the referrer's answers. */
 export const ReferralHandoff = z.looseObject({
   referral_id: z.string(),
   reason_code: z.string(),
@@ -318,6 +322,20 @@ export const ReferralHandoff = z.looseObject({
   act_by: z.number(),
   medical_director_day: z.number(),
   status: HandoffStatus,
+  event: z.string().optional(),
+  info_requested: z.array(ReferralInfo).default([]),
+  destinations: z.array(z.string()).default([]),
+  acknowledgement: z.looseObject(ReferrerEntry).optional(),
+  referrer_response: z
+    .looseObject({
+      ...ReferrerEntry,
+      response: ReferrerResponseCode.exclude(["acknowledge"]),
+      supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
+      destination: z.string().optional(),
+      reason: z.string().optional(),
+    })
+    .optional(),
+  acted_at: z.number().optional(),
 });
 
 /** POST /api/cases/{id}/referral-response body. `referral_id` and `expected_head` are added by the caller. */
@@ -325,6 +343,14 @@ export const ReferralResponseRequest = z.discriminatedUnion("response", [
   z.object({ response: z.literal("accept") }),
   z.object({ response: z.literal("accept_with_conditions"), conditions: z.array(ReferralCondition).min(1) }),
   z.object({ response: z.literal("return"), reason: ReferralReturnReason, requested_info: z.array(ReferralInfo).optional() }),
+]);
+
+/** POST /api/cases/{id}/referrer-response body. `referral_id`, `packet` and `expected_head` are added by the caller. */
+export const ReferrerResponseRequest = z.discriminatedUnion("response", [
+  z.object({ response: z.literal("acknowledge") }),
+  z.object({ response: z.literal("supply_info"), supplied_info: z.partialRecord(ReferralInfo, z.string().trim().min(1).max(1000)) }),
+  z.object({ response: z.enum(["re_refer", "redirect"]), destination: z.string().min(1).max(64) }),
+  z.object({ response: z.enum(["manage_in_primary_care", "close"]), reason: z.string().trim().min(1).max(200) }),
 ]);
 
 /**
@@ -1336,6 +1362,8 @@ export type CurrentDecision = z.infer<typeof CurrentDecision>;
 export type HandoffStatus = z.infer<typeof HandoffStatus>;
 export type ReferralCondition = z.infer<typeof ReferralCondition>;
 export type ReferralReturnReason = z.infer<typeof ReferralReturnReason>;
+export type ReferralInfo = z.infer<typeof ReferralInfo>;
+export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type Audit = z.infer<typeof Audit>;
