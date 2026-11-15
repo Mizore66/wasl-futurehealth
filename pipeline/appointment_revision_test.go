@@ -34,6 +34,7 @@ type apptOutcome struct {
 	kinds    string
 	active   string
 	conflict int
+	dropoff  string
 }
 
 func apptPrep(seq uint64, version int, status string) *Prep {
@@ -73,7 +74,7 @@ func runAppointments(t *testing.T, replay bool, preps ...*Prep) apptOutcome {
 		out.kinds += o.Kind + ";"
 	}
 	if d := C.Final()[loop]; d != nil {
-		out.state = d.State
+		out.state, out.dropoff = d.State, d.Dropoff
 	}
 	return out
 }
