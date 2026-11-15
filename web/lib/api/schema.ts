@@ -333,6 +333,21 @@ export const PatientRightsRequestStaff = z.looseObject({
   closure_held: z.boolean().optional(),
 });
 /** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
+/** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
+export const OutcomeHandoff = z.looseObject({
+  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  referrer_status: z.enum(["pending", "acknowledged"]),
+  responsible_referrer: z.string(),
+  consent: z.string(),
+  version: z.string().optional(),
+  approved_by: z.string().optional(),
+  approved_at: z.string().optional(),
+  acknowledged_at: z.string().optional(),
+  content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
+  history: z.array(z.looseObject({ kind: z.enum(["content_approved", "referrer_acknowledged", "patient_acknowledged"]), version: z.string(), actor: z.string(), role: z.string(), at: z.string(), event: z.string() })),
+});
+export type OutcomeHandoff = z.infer<typeof OutcomeHandoff>;
+
 export const TeachBackCallback = z.looseObject({
   id: z.string(),
   source: z.enum(["patient_link", "engine"]),
@@ -912,6 +927,8 @@ export const CaseDetail = withMeta({
   patient_requests: z.array(PatientRightsRequestStaff).optional(),
   /** Failed teach-back nurse-callback tasks with their consultation outcomes (pipeline/api_teachback.go). */
   teach_back_callbacks: z.array(TeachBackCallback).optional(),
+  /** Post-closure outcome hand-off: clinician approval, referrer and patient acknowledgements (pipeline/api_outcome_handoff.go). */
+  outcome_handoff: OutcomeHandoff.optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),

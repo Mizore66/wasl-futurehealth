@@ -25,6 +25,7 @@ const (
 	RoleReviewer    = "reviewer"    // identity reviewer (HIM / registration): merge / split
 	RoleAuditor     = "auditor"     // read-only: verifies the ledger, publishes anchors, no PHI writes
 	RoleSystem      = "system"      // linker / closure services
+	RoleReferrer    = "referrer"    // responsible referring clinician: acknowledges a case's approved outcome hand-off only
 
 	// Senior resolution roles (independent double review, r3): the discipline's sign capability, never the r1/r2 slots.
 	RoleSeniorReviewer  = "senior_reviewer"
@@ -48,11 +49,16 @@ const (
 	ActResolvePatientContest = "resolve_patient_contest"
 	// ActResolveTeachBackCallback: a nurse navigator or clinician records the outcome of a failed teach-back callback.
 	ActResolveTeachBackCallback = "resolve_teachback_callback"
+	// Post-closure outcome hand-off: a clinician approves patient-safe content; the case's responsible referrer acknowledges it.
+	ActViewOutcomeHandoff        = "view_outcome_handoff"
+	ActApproveOutcomeHandoff     = "approve_outcome_handoff"
+	ActAcknowledgeOutcomeHandoff = "acknowledge_outcome_handoff"
 )
 
 var rbac = map[string]map[string]bool{
-	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActResolveTeachBackCallback: true},
+	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true},
+	RoleReferrer:    {ActViewOutcomeHandoff: true, ActAcknowledgeOutcomeHandoff: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},

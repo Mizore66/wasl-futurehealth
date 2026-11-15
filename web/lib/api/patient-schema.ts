@@ -170,6 +170,23 @@ export const PatientRightsSubmission = z.strictObject({
   reason: z.string().max(500),
 });
 
+export const OUTCOME_NEXT_STEPS = ["routine_screening", "surveillance", "specialist_follow_up", "discuss_with_doctor"] as const;
+/** The post-closure hand-off as the patient link sees it (pipeline/api_outcome_handoff.go handoffViewLocked). Content appears only once consent releases it. */
+export const PatientOutcomeHandoff = z.looseObject({
+  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  delivery: z.literal("simulated"),
+  version: z.string().optional(),
+  approved_at: z.string().optional(),
+  acknowledged_at: z.string().optional(),
+  content: z
+    .looseObject({ outcome: z.literal("follow_up_complete"), next_step: z.enum(OUTCOME_NEXT_STEPS), safety_net: z.literal("safety_net_v1") })
+    .optional(),
+});
+export const PatientOutcomeResponse = z.looseObject({ handoff: PatientOutcomeHandoff });
+export const PatientOutcomeAck = z.strictObject({ version: z.string().min(1).max(128), otp: z.string().max(6) });
+
+export type PatientOutcomeHandoff = z.infer<typeof PatientOutcomeHandoff>;
+export type PatientOutcomeAck = z.infer<typeof PatientOutcomeAck>;
 export type PatientRightsRequest = z.infer<typeof PatientRightsRequest>;
 export type PatientRightsList = z.infer<typeof PatientRightsList>;
 export type PatientRightsReceipt = z.infer<typeof PatientRightsReceipt>;

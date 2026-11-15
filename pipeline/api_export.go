@@ -158,6 +158,9 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	if callbacks := s.callbacksViewLocked(c); len(callbacks) > 0 {
 		body["teach_back_callbacks"] = callbacks
 	}
+	if s.handoffEligibleLocked(c) || len(c.handoff) > 0 {
+		body["outcome_handoff"] = s.handoffViewLocked(c, true)
+	}
 	s.mu.Unlock()
 	return body
 }

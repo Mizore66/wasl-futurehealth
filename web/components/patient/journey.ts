@@ -1,7 +1,7 @@
 import type { PatientOffer } from "@/lib/api/patient-schema";
 import { LANGS, type Lang, type PatientDict } from "./i18n";
 
-export const STEPS = ["notice", "check", "book"] as const;
+export const STEPS = ["notice", "check", "book", "outcome"] as const;
 export type Step = (typeof STEPS)[number];
 
 export const CLINIC_PHONE = { display: "02 555 0142", tel: "+97125550142" } as const;

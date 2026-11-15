@@ -53,6 +53,7 @@ type Link = {
   failNext?: "empty201" | "500" | "network";
   otp?: string;
   rights: RightsRow[];
+  handoff: { status: string; acknowledged_at?: string };
 };
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -66,6 +67,7 @@ function fresh(token: string, expires: number, programme = "crc"): Link {
     requests: new Map(),
     bodies: [],
     rights: [],
+    handoff: { status: "pending_approval" },
     journey: {
       schema: "wasl-patient-journey/1",
       head: hash(`canonical:${token}`),
@@ -162,6 +164,36 @@ async function rights(req: IncomingMessage, res: ServerResponse, path: string) {
   return send(res, 201, { meta: {}, request: row, replayed: false, explanation });
 }
 
+const HANDOFF_VERSION = hash("outcome-handoff:routine_screening");
+function handoffView(link: Link) {
+  const { status, acknowledged_at } = link.handoff;
+  const shown = status === "released" || status === "acknowledged";
+  return {
+    status,
+    delivery: "simulated",
+    ...(shown && {
+      version: HANDOFF_VERSION,
+      approved_at: "2026-10-01T08:00:00Z",
+      acknowledged_at,
+      content: { outcome: "follow_up_complete", next_step: "routine_screening", safety_net: "safety_net_v1" },
+    }),
+  };
+}
+
+/** Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released; acknowledgement needs a one-time code. */
+async function outcome(req: IncomingMessage, res: ServerResponse) {
+  const link = authorized(req);
+  if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
+  if (req.method === "GET") return send(res, 200, { meta: {}, handoff: handoffView(link) });
+  const input = JSON.parse(await body(req)) as { version: string; otp: string };
+  if (link.handoff.status === "acknowledged" && input.version === HANDOFF_VERSION) return send(res, 200, { meta: {}, replayed: true, handoff: handoffView(link) });
+  if (link.handoff.status !== "released" || input.version !== HANDOFF_VERSION) return send(res, 409, { error: "there is no released outcome with that version to acknowledge" });
+  if (!link.otp || input.otp !== link.otp) return send(res, 403, { error: "a valid one-time code for this link is required" });
+  link.otp = undefined;
+  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString() };
+  return send(res, 201, { meta: {}, replayed: false, handoff: handoffView(link) });
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
   if (url.pathname === "/__health") return send(res, 200, { ok: true });
@@ -196,6 +228,13 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     if (!link) return send(res, 404, { error: "unknown test link" });
     return send(res, 200, payload(link));
   }
+  if (url.pathname === "/__mock/handoff" && req.method === "POST") {
+    const input = JSON.parse(await body(req)) as { token: string; mode: string };
+    const link = links.get(input.token);
+    if (!link) return send(res, 404, { error: "unknown test link" });
+    link.handoff = { status: input.mode };
+    return send(res, 200, { ok: true });
+  }
   if (url.pathname === "/__mock/stale" && req.method === "POST") {
     const input = JSON.parse(await body(req)) as { token: string };
     const link = links.get(input.token);
@@ -205,6 +244,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     return send(res, 200, { head: link.journey.head });
   }
   if (url.pathname === "/api/patient/verification" || url.pathname === "/api/patient/requests") return rights(req, res, url.pathname);
+  if (url.pathname === "/api/patient/outcome") return outcome(req, res);
   if (url.pathname !== "/api/patient/journey") return send(res, 404, { error: "not found" });
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });

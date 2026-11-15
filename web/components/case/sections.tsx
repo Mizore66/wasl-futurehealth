@@ -14,6 +14,7 @@ import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
 import { PatientJourneyCard, PatientRequestsCard } from "./patient-journey-card";
+import { OutcomeHandoffCard } from "./outcome-handoff-card";
 import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
 import {
@@ -554,6 +555,7 @@ export function PatientJourneySection({ detail }: { detail: CaseDetail }) {
       <PatientJourneyCard detail={detail} />
       <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
       <PatientRequestsCard detail={detail} />
+      {detail.outcome_handoff && <OutcomeHandoffCard handoff={detail.outcome_handoff} />}
     </>
   );
 }

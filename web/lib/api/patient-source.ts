@@ -55,7 +55,7 @@ export async function postPatientJourney(token: string, rawBody: string): Promis
   throw new Error(`POST patient journey: HTTP ${res.status}`);
 }
 
-export type PatientRightsPath = "/api/patient/requests" | "/api/patient/verification";
+export type PatientRightsPath = "/api/patient/requests" | "/api/patient/verification" | "/api/patient/outcome";
 
 /** Forwards only the link credential and the raw body; Go owns code verification, case binding and the ledger. */
 export async function forwardPatientRights(token: string, path: PatientRightsPath, rawBody?: string): Promise<{ status: number; body: unknown }> {

@@ -6,10 +6,11 @@ import { BookFlow } from "@/components/patient/book-flow";
 import { CheckFlow } from "@/components/patient/check-flow";
 import { isStep, parsePhoneQuery, STEPS } from "@/components/patient/journey";
 import { NoticeScreen } from "@/components/patient/notice-screen";
+import { OutcomeHandoff } from "@/components/patient/outcome-handoff";
 import { PhoneFrame } from "@/components/patient/phone-frame";
 import { getPatientJourney, PATIENT_COOKIE } from "@/lib/api/patient-source";
 
-const TITLES = { notice: "Patient phone: notice", check: "Patient phone: check", book: "Patient phone: book" } as const;
+const TITLES = { notice: "Patient phone: notice", check: "Patient phone: check", book: "Patient phone: book", outcome: "Patient phone: outcome" } as const;
 
 export function generateStaticParams() {
   return STEPS.map((step) => ({ step }));
@@ -44,6 +45,7 @@ export default async function Page({ params, searchParams }: PageProps<"/patient
       {step === "notice" && <NoticeScreen lang={query.lang} journey={initial.journey} />}
       {step === "check" && <CheckFlow query={query} initial={initial.journey} />}
       {step === "book" && <BookFlow query={query} initial={initial.journey} offers={initial.offers} />}
+      {step === "outcome" && <OutcomeHandoff lang={query.lang} />}
     </PhoneFrame>
   );
 }

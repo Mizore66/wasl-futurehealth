@@ -94,6 +94,21 @@ export interface PatientDict {
     prep: readonly [string, string];
   };
   /** Explanation and contest requests. `{code}` and `{due}` are replaced. */
+  outcome: {
+    title: string;
+    complete: string;
+    nextHead: string;
+    next: Record<"routine_screening" | "surveillance" | "specialist_follow_up" | "discuss_with_doctor", string>;
+    safetyHead: string;
+    safetyNet: string;
+    pending: string;
+    held: string;
+    suppressed: string;
+    notReady: string;
+    acknowledge: string;
+    acknowledged: string;
+    simulated: string;
+  };
   rights: {
     explain: string;
     contest: string;

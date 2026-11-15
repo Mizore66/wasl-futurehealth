@@ -1124,7 +1124,7 @@ func patientLinksTokenHash(token string) string {
 func freshPatientCases(old map[string]*apiCase) map[string]*apiCase {
 	out := map[string]*apiCase{}
 	for id, c := range old {
-		out[id] = &apiCase{ID: c.ID, Programme: c.Programme, State: c.State, Consent: c.Consent, last: c.last, decisions: c.decisions}
+		out[id] = &apiCase{ID: c.ID, Programme: c.Programme, State: c.State, Consent: c.Consent, Provider: c.Provider, Closed: c.Closed, last: c.last, decisions: c.decisions}
 	}
 	return out
 }

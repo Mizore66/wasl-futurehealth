@@ -410,6 +410,45 @@ test("rights: an explanation request returns this case's provenance; a wrong cod
   await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
 });
 
+for (const { lang, dir } of LANGS) {
+  test(`outcome: approved content, next step and safety net are acknowledged once (${lang})`, async ({ page }) => {
+    const t = DICTS[lang];
+    await control("/__mock/handoff", "pending_approval");
+    await open(page, "outcome", lang);
+    await expect(page.locator(`div[lang="${lang}"]`)).toHaveAttribute("dir", dir);
+    await expect(page.getByRole("status")).toHaveText(t.outcome.pending);
+    await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
+
+    await control("/__mock/handoff", "released");
+    await page.reload();
+    await expect(page.locator("h1")).toHaveText(t.outcome.title);
+    await expect(page.getByRole("region", { name: t.outcome.nextHead })).toContainText(t.outcome.next.routine_screening);
+    await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toContainText(t.outcome.safetyNet);
+    await expect(page.getByText(t.outcome.simulated)).toBeVisible();
+    await page.getByRole("button", { name: t.rights.getCode }).click();
+    const code = (await page.getByRole("status").innerText()).match(/\d{6}/)![0];
+    const submit = page.getByRole("button", { name: t.outcome.acknowledge });
+    await expect(submit).toBeDisabled();
+    await page.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
+    await submit.click();
+    await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
+    await expectNoSeriousAxe(page);
+
+    await page.reload();
+    await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
+  });
+}
+
+test("outcome: held and suppressed consent show no content", async ({ page }) => {
+  for (const [mode, line] of [["held_consent", DICTS.en.outcome.held], ["suppressed", DICTS.en.outcome.suppressed]] as const) {
+    await control("/__mock/handoff", mode);
+    await open(page, "outcome", "en");
+    await expect(page.getByRole("status")).toHaveText(line);
+    await expect(page.getByRole("region", { name: DICTS.en.outcome.safetyHead })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: DICTS.en.rights.getCode })).toHaveCount(0);
+  }
+});
+
 test("a breast case keeps its own programme through steps, languages and forged parameters", async ({ page }) => {
   token = randomUUID();
   await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "breast" }) });

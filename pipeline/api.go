@@ -62,6 +62,7 @@ type apiCase struct {
 	patient   patientCaseState     // patient-link actions; separate from coordinator, consent and booking heads
 	requests  []*patientRequest    // patient explanation requests and contests, in ledger order
 	callbacks []*teachBackCallback // failed teach-back nurse-callback tasks, in ledger order
+	handoff   []*outcomeHandoff    // post-closure outcome hand-off approvals and acknowledgements, in ledger order
 	last      *Decision            // full last decision (detail view)
 	decisions []*Decision
 }
@@ -105,6 +106,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/patient/journey", s.patientJourney)
 	mux.HandleFunc("/api/patient/verification", s.patientVerification)
 	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
+	mux.HandleFunc("/api/patient/outcome", s.patientOutcomeRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -745,7 +747,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest") || strings.HasSuffix(rest, "/teach-back-callback")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest") || strings.HasSuffix(rest, "/teach-back-callback") || strings.HasSuffix(rest, "/outcome-handoff")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -777,6 +779,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.casePatientContest(w, r, c)
 	case sub == "teach-back-callback" && r.Method == http.MethodPost:
 		s.caseTeachBackCallback(w, r, c)
+	case sub == "outcome-handoff" && (r.Method == http.MethodGet || r.Method == http.MethodPost):
+		s.caseOutcomeHandoff(w, r, c)
 	case sub == "actions":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
@@ -1750,6 +1754,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["type"] == patientRequestEventType {
 		if err := s.replayPatientRequest(ev); err != nil {
 			return fmt.Errorf("patient request: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == outcomeHandoffEventType {
+		if err := s.replayOutcomeHandoff(ev); err != nil {
+			return fmt.Errorf("outcome hand-off: %v", err)
 		}
 		return nil
 	}
