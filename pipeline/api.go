@@ -654,7 +654,13 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 		m["breast"] = c.last.Breast
 	}
 	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
-		m["ldct"] = c.last.LDCT
+		ld := *c.last.LDCT
+		if ld.ClockAnchor != nil {
+			clock := *ld.ClockAnchor
+			clock.Registration = pseudonymizeRegistration(clock.Registration)
+			ld.ClockAnchor = &clock
+		}
+		m["ldct"] = &ld // list/fixture routes also need aliases; never mutate the signed decision
 	}
 	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
 		m["ifhas"] = c.last.Ifhas

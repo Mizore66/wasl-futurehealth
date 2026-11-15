@@ -562,9 +562,14 @@ var exportBreastDecisionAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
+// Clock references share the existing report-reference and registration alias
+// boundaries. Unknown nested fields remain default-deny, including in audit.
+var exportLDCTClockAllow = exportObject(exportKeys("kind", "provider", "registration", "report", "version", "day"))
+
 var exportLDCTDecisionAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("scan_report", "scan_label", "coded_lungrads", "scan_day", "due_day", "deadline_day", "followup_report",
 		"followup_label", "followup_next_step", "workup_document", "outcome", "within_deadline")
+	m["clock_anchor"] = exportLDCTClockAllow
 	m["rec"] = exportObject(exportKeys("action", "due_days", "deadline_days", "urgency", "cell", "next_step"))
 	return m
 }())
@@ -795,7 +800,11 @@ var exportClosureAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 
-var exportRecommendationAllow = exportObject(exportKeys("rule", "cell", "action", "deadline_days", "due_days", "urgency", "window", "next_step", "optional"))
+var exportRecommendationAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("rule", "cell", "action", "deadline_days", "due_days", "urgency", "window", "next_step", "optional", "scan_day")
+	m["clock_anchor"] = exportLDCTClockAllow
+	return m
+}())
 var exportAutoAuditAllow = exportObject(exportKeys("loop", "report", "item", "p", "status", "auto_verdict", "audit_answer", "result"))
 var exportEscalationAllow = exportObject(exportKeys("loop", "state", "programme", "rule", "outcome", "to", "day", "basis"))
 var exportSurveillanceOpenedAllow = exportObject(func() map[string]*exportAllow {

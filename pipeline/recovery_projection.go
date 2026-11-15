@@ -214,7 +214,7 @@ func (s *apiServer) loadRecovery() {
 	for i := range in.Waitlist {
 		w := &in.Waitlist[i]
 		if p.Waitlist[w.CaseID] != nil || s.cases[w.CaseID] == nil || s.cases[w.CaseID].Programme != w.Programme ||
-			(w.Programme != "crc" && w.Programme != "cervical") || w.PrepLead < 0 || w.DeadlineDay < w.RequestedDay ||
+			(w.Programme != "crc" && w.Programme != "cervical") || w.PrepLead < 0 ||
 			w.SourceDecisionSig == "" || !knownSourceDecision(s.cases[w.CaseID], w.SourceDecisionSig) {
 			fail(fmt.Errorf("invalid recovery waitlist case %q", w.CaseID))
 			return

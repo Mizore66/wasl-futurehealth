@@ -160,6 +160,9 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			if summary["state"] != "inadequate" || summary["dropoff"] != "inadequate" {
 				t.Fatalf("held control was not held: %v", summary)
 			}
+			if current["inadequate_day"] != float64(119) {
+				t.Fatalf("held control lost its clinical examination anchor: %v", current["inadequate_day"])
+			}
 			held = summary
 		case strings.HasSuffix(id, "9004"):
 			if summary["dropoff"] != "referral_rejected" || current["handoff"] != nil {
@@ -193,7 +196,20 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 		"inputs": inputs, "input_sha256": sha(canon(inputs)), "out_log_sha256": sha(raw.Bytes()),
 		"cases_sha256": sha(canon(exposed)), "currents": details, "held_control": held,
 	}
-	for name, value := range map[string]interface{}{"referral-inbox-synthetic.json": exposed, "referral-inbox-provenance.json": provenance} {
+	// The inadequate_day extension changes the held decision's signed bytes.
+	// Preserve the complete original generation record and compare today's output
+	// against a separately generated version, never rewrite historical evidence.
+	historical, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
+	if err != nil || !referralGenerationRecordIntact(historical, generationHelper) {
+		t.Fatal("immutable referral generation record or witness changed")
+	}
+	provenance["schema"] = "wasl-referral-clinical-dates/2"
+	provenance["previous_generation_sha256"] = sha(historical)
+	for name, value := range map[string]interface{}{"referral-inbox-synthetic.json": exposed, "referral-inbox-clinical-dates-provenance-v2.json": provenance} {
 		path := filepath.Join("..", "web", "data", name)
 		encoded, err := json.MarshalIndent(value, "", "  ")
 		if err != nil {
@@ -216,18 +232,9 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			if err := json.Unmarshal(encoded, &want); err != nil {
 				t.Fatal(err)
 			}
-			if name == "referral-inbox-provenance.json" {
-				// This is the immutable HISTORICAL generation record, including all
-				// 125 generation-source hashes, its source HEAD and generation helper.
-				// Bind the entire original record rather than pretending today's code
-				// must equal historical code after an unrelated valid feature change.
-				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !referralGenerationRecordIntact(saved, generationHelper) {
-					t.Fatal("immutable referral generation record or witness changed")
-				}
+			if name == "referral-inbox-clinical-dates-provenance-v2.json" {
+				// Historical v1 bytes and witness were checked above. Verify the
+				// separately versioned current signed outputs and complete inputs.
 				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
 				t.Logf("current verification source manifest: %s; historical generation record preserved", sha(canon(recomputed["production_source_sha256"])))
 				// These three fields describe when/how the saved fixture was generated,
