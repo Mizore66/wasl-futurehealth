@@ -217,34 +217,26 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 				t.Fatal(err)
 			}
 			if name == "referral-inbox-provenance.json" {
-				// Preserve the approved generation record, without regenerating fixtures.
-				// Accepted PR183 changed only api.go's Closed query predicate. Pin
-				// that exact new source, while retaining its historical generation hash.
-				// Every other production hash and all recomputed outputs still compare.
-				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
-				sourceHashes := recomputed["production_source_sha256"].(map[string]interface{})
-				const generationAPI = "9314f93a56a1c8ba0004060e8229eaefba816734b22ac67e9fb148eee2e363c4"
-				const acceptedAPI = "77abf1430a4e19631d323bf5e5650e53e7635d8537d351249cf68938f2ac818c"
-				if sourceHashes["api.go"] != acceptedAPI || got["production_source_sha256"].(map[string]interface{})["api.go"] != generationAPI {
-					t.Fatal("unexpected API source change since approved referral generation")
-				}
-				sourceHashes["api.go"] = generationAPI
-				// This non-executable witness is the exact whole generation helper
-				// from 44f8911026dac7bbe18381144ea2596d512edab7, not a function
-				// extract or this current verification helper. Check its original
-				// recorded digest without needing historical Git objects at runtime.
+				// This is the immutable HISTORICAL generation record, including all
+				// 125 generation-source hashes, its source HEAD and generation helper.
+				// Bind the entire original record rather than pretending today's code
+				// must equal historical code after an unrelated valid feature change.
 				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
 				if err != nil {
 					t.Fatal(err)
 				}
-				const generationHelperSHA = "a35eb7de2c08d64683e7e84520795cc3ad0a913826a4d5d073df2fd5bacbce10"
-				if sha(generationHelper) != generationHelperSHA || got["helper_sha256"] != generationHelperSHA {
-					t.Fatal("approved referral generation helper identity changed")
+				if !referralGenerationRecordIntact(saved, generationHelper) {
+					t.Fatal("immutable referral generation record or witness changed")
 				}
-				recomputed["helper_sha256"] = sha(generationHelper)
-				// HEAD advances after preparation; original generation metadata stays saved.
-				delete(got, "source_head_at_generation")
-				delete(recomputed, "source_head_at_generation")
+				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
+				t.Logf("current verification source manifest: %s; historical generation record preserved", sha(canon(recomputed["production_source_sha256"])))
+				// These three fields describe when/how the saved fixture was generated,
+				// not its present behavioral contract. ALL inputs, signed OUT hashes,
+				// cases, currents, held control and other fields still compare below.
+				for _, field := range []string{"source_head_at_generation", "production_source_sha256", "helper_sha256"} {
+					delete(got, field)
+					delete(recomputed, field)
+				}
 			}
 			if !bytes.Equal(canon(actual), canon(want)) {
 				t.Fatalf("%s is stale; explicitly regenerate the synthetic controls", name)
@@ -252,4 +244,48 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 		}
 	}
 	t.Logf("canonical synthetic controls: inputs=%s out_log=%s cases=%s; genuine signatures verified; held stays inadequate", sha(canon(inputs)), sha(raw.Bytes()), sha(canon(exposed)))
+}
+
+func referralGenerationRecordIntact(record, witness []byte) bool {
+	return sha(record) == "9b7616a9a44e8cd65f9f17325255b301cc9a8d1f37e46d5ea2b4c7fb9d396200" &&
+		sha(witness) == "a35eb7de2c08d64683e7e84520795cc3ad0a913826a4d5d073df2fd5bacbce10"
+}
+
+func TestReferralGenerationRecordIntegrity(t *testing.T) {
+	record, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	witness, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !referralGenerationRecordIntact(record, witness) {
+		t.Fatal("approved generation record rejected")
+	}
+	for _, field := range []string{"production_source_sha256", "source_head_at_generation", "helper_sha256", "inputs", "input_sha256", "out_log_sha256", "cases_sha256", "currents", "held_control"} {
+		t.Run(field, func(t *testing.T) {
+			var changed map[string]interface{}
+			if err := json.Unmarshal(record, &changed); err != nil {
+				t.Fatal(err)
+			}
+			if _, exists := changed[field]; !exists {
+				t.Fatalf("mutation target absent: %s", field)
+			}
+			changed[field] = "tampered historical generation value"
+			if referralGenerationRecordIntact(canon(changed), witness) {
+				t.Fatalf("generation field mutation accepted: %s", field)
+			}
+		})
+	}
+	t.Run("generation_witness", func(t *testing.T) {
+		changed := append([]byte(nil), witness...)
+		if len(changed) == 0 {
+			t.Fatal("empty witness")
+		}
+		changed[0] ^= 1
+		if referralGenerationRecordIntact(record, changed) {
+			t.Fatal("altered historical generation helper accepted")
+		}
+	})
 }

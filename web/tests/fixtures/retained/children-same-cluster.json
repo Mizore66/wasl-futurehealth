@@ -269,6 +269,11 @@
           {
             "provider": "ahs-mushrif",
             "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "referral"
+          },
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5",
             "role": "downstream"
           },
           {
@@ -369,6 +374,18 @@
             "source": "fhir",
             "status": "final",
             "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "6216ad9f52a6731c",
+            "seq": 7,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
           }
         ]
       },
@@ -467,6 +484,11 @@
           {
             "provider": "ahs-mushrif",
             "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "referral"
+          },
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5",
             "role": "downstream"
           },
           {
@@ -567,6 +589,18 @@
             "source": "fhir",
             "status": "final",
             "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "6216ad9f52a6731c",
+            "seq": 7,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
           }
         ]
       },
@@ -643,10 +677,111 @@
           }
         ],
         "holds": [],
-        "identities": [],
+        "identities": [
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_ee49bfef3eb37a3b20ec35418aee26b844c199a570ec6ee2a7e1370de81386ed",
+            "role": "referral"
+          },
+          {
+            "provider": "ahs-mushrif",
+            "registration": "reg_433b2b758a76d26b445f5f93910b1807379b747006cf20d5469cbe122aa1b6f5",
+            "role": "downstream"
+          },
+          {
+            "provider": "skmc-endo",
+            "registration": "reg_1461ca96764be95d3b1bd2a906eb8a825e42cb7f8780685c2571ceb6acba91a8",
+            "role": "downstream"
+          }
+        ],
         "links": [],
         "outreach": [],
-        "timeline": []
+        "timeline": [
+          {
+            "arrival_day": 1,
+            "category": "lung-finding",
+            "day": -719.9999,
+            "id": "ahs-mushrif/DiagnosticReport/index",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f7860cf008d18055",
+            "seq": 1,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "f9606e00c826964d",
+            "seq": 2,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": 1,
+            "id": "ahs-mushrif/Consent/synthetic-consent",
+            "provider": "ahs-mushrif",
+            "raw_sha": "4db1c9cd267df0e0",
+            "seq": 3,
+            "source": "fhir",
+            "status": "permit",
+            "type": "Consent"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-pet",
+            "day": -699.9999,
+            "id": "skmc-endo/DiagnosticReport/pet",
+            "provider": "skmc-endo",
+            "raw_sha": "7268c0423fdf81dd",
+            "seq": 4,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -619.9999,
+            "id": "skmc-endo/DiagnosticReport/ct1",
+            "provider": "skmc-endo",
+            "raw_sha": "54d6f58615e7e417",
+            "seq": 5,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "lung-ct",
+            "day": -369.9999,
+            "id": "skmc-endo/DiagnosticReport/ct2",
+            "provider": "skmc-endo",
+            "raw_sha": "ed980281d18346a9",
+            "seq": 6,
+            "source": "fhir",
+            "status": "final",
+            "type": "DiagnosticReport"
+          },
+          {
+            "arrival_day": 1,
+            "category": "",
+            "day": -719.9999,
+            "id": "ahs-mushrif/ServiceRequest/a",
+            "provider": "ahs-mushrif",
+            "raw_sha": "6216ad9f52a6731c",
+            "seq": 7,
+            "source": "fhir",
+            "status": "active",
+            "type": "ServiceRequest"
+          }
+        ]
       },
       "history_availability": "reference_only",
       "lifecycle": "active",
