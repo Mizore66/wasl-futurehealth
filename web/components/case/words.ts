@@ -285,7 +285,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; follow_up_owner?: string; next_review?: string } }
+  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; follow_up_owner?: string; next_review?: string; procedure?: string; provider?: string; retrieval_owner?: string; retrieval_due?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -330,6 +330,30 @@ export function dispositionWords(d: { plan?: string; follow_up_owner?: string; n
   return { status: `Declined · GP review ${on}`, next: `${d.follow_up_owner ?? "The GP"} reviews on ${on}` };
 }
 
+const RETRIEVAL_OUTCOME_WORDS: Record<string, string> = {
+  not_found: "record not found",
+  not_matching: "record is for another patient or procedure",
+  non_closing: "record does not close the loop",
+};
+
+type Reconciliation = { procedure?: string; provider?: string; retrieval_owner?: string; retrieval_due?: string };
+
+/**
+ * A patient's report that the procedure was done elsewhere, as an owned retrieval task. `today` (YYYY-MM-DD) decides
+ * due or overdue. Never worded as a completed procedure: only retrieved, reviewed evidence can say that.
+ */
+export function reconciliationWords(r: Reconciliation, today: string): { status: string; next: string; overdue: boolean } {
+  const due = r.retrieval_due ?? "a date not recorded";
+  const overdue = !!r.retrieval_due && today > r.retrieval_due;
+  return {
+    status: overdue ? `Reported done elsewhere · record retrieval overdue since ${due}` : `Reported done elsewhere · record due ${due}`,
+    next: `${r.retrieval_owner ?? "The coordinator"} retrieves the ${r.procedure ?? "procedure"} report from ${r.provider ?? "the provider"} by ${due}`,
+    overdue,
+  };
+}
+
+export const retrievalOutcomeWords = (outcome: string | undefined) => RETRIEVAL_OUTCOME_WORDS[outcome ?? ""] ?? plain(outcome ?? "outcome not recorded");
+
 /** A coordinator, compensation or unrecognised ledger event as a sentence, built only from fields it carries. */
 export function ledgerWords(e: LedgerLike): string {
   if (e.ledger === "coordinator") {
@@ -339,6 +363,8 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
     if (e.kind === "note") return "Note added";
     if (e.kind === "clinician_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
+    if (e.kind === "completed_elsewhere") return `Reported done elsewhere: ${d.procedure ?? "procedure"} at ${d.provider ?? "another provider"} · ${d.retrieval_owner ?? "coordinator"} to retrieve the record by ${d.retrieval_due ?? "a date not recorded"}`;
+    if (e.kind === "retrieval_outcome") return `Record retrieval ended: ${retrievalOutcomeWords(d.outcome)} · follow-up resumes`;
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {

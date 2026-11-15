@@ -57,7 +57,7 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
     if (event.kind === "contact_outcome") what = `${outcomeWords(event.data.outcome, event.data.channel)}${quoted(event.data.note)}`;
     else if (event.kind === "note") what = `Note${quoted(event.data.text)}`;
     else if (event.kind.startsWith("booking_")) what = `${ledgerWordsWithHistory(event, coordinator.slice(0, coordinatorIndex))}${quoted(event.data.reason)}`;
-    else if (event.kind === "clinician_disposition") what = ledgerWords(event);
+    else if (event.kind === "clinician_disposition" || event.kind === "completed_elsewhere" || event.kind === "retrieval_outcome") what = ledgerWords(event);
     coordinatorIndex += 1;
     if (!what) return;
     const who = event.actor || "Actor not recorded";

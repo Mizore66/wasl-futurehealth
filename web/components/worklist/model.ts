@@ -8,7 +8,7 @@ import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { atWords, dispositionWords, ledgerWordsWithHistory } from "@/components/case/words";
+import { atWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
 import { isActionable, obligationWords, openObligation } from "./obligation";
 
@@ -197,6 +197,10 @@ export type WorkItem = {
   reserved?: boolean;
   /** The simulated reservation was cancelled (live API only). */
   cancelled?: boolean;
+  /** What the programme's procedure is called, e.g. "colonoscopy". */
+  procedure?: string;
+  /** A pending record retrieval after a completed-elsewhere report (live API only): chase and booking are suspended. */
+  retrieval?: { owner: string; due: string; overdue: boolean };
 };
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
@@ -298,6 +302,14 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Choose another simulated slot";
     }
   }
+  const reconciliation = ov?.reconciliation?.status === "pending" ? ov.reconciliation : undefined;
+  const retrieval = reconciliation && reconciliationWords(reconciliation, new Date(wallNow).toISOString().slice(0, 10));
+  if (retrieval) {
+    awaitingNext = false;
+    view = "waiting";
+    words.status = retrieval.status;
+    words.next = retrieval.next;
+  }
   if (c.recovery?.backfill) {
     awaitingNext = false;
     view = "waiting";
@@ -319,6 +331,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     deadline: due ? Math.round(due.dueDay - due.fromDay) : overdueClockDays(c),
     overdue: due ? due.state === "overdue" : c.overdue,
     referralDay: c.referral_day,
+    procedure: PROCEDURE[c.programme],
     textsAllowed: c.consent === "granted" && !contactBlocked,
     contactBlocked,
     textsStopped,
@@ -328,6 +341,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     dropoff: c.dropoff,
     hasRecord,
     ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
+    ...(reconciliation && retrieval ? { retrieval: { owner: reconciliation.retrieval_owner, due: reconciliation.retrieval_due, overdue: retrieval.overdue } } : {}),
   };
 }
 

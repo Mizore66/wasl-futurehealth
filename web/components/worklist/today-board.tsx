@@ -17,13 +17,14 @@ import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
 import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
-import { outcomeWords } from "@/components/case/words";
+import { outcomeWords, reconciliationWords, retrievalOutcomeWords } from "@/components/case/words";
+import { ElsewhereForm } from "./elsewhere-form";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
-import { ApiOverlay, Booking, CasePatient, CaseSummary, type CaseAction } from "@/lib/api/schema";
+import { ApiOverlay, Booking, CasePatient, CaseSummary, RETRIEVAL_OUTCOMES, type CaseAction } from "@/lib/api/schema";
 import { z } from "zod";
 import { Pager } from "./pager";
 import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
@@ -41,8 +42,8 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
 type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
-type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
-type Stage = "reached" | "callback";
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; retrieval?: WorkItem["retrieval"]; log: Contact[] };
+type Stage = "reached" | "callback" | "elsewhere";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
   tab: View;
@@ -53,7 +54,7 @@ type State = {
   q: string;
   calling: string | null;
   stage: Stage | null;
-  /** Wall-clock ms when "Call back on…" was opened: the one instant every callback choice is computed from. */
+  /** Wall-clock ms when "Call back on…" or "Done elsewhere…" was opened: the one instant its dates are computed from. */
   callbackFrom: number;
   last: Logged | null;
   over: Record<string, Patch>;
@@ -78,7 +79,7 @@ const contactProjection = (item: WorkItem): ContactProjection => ({
 const bookingRowProjection = (item: WorkItem) => ({
   view: item.view, status: item.status, next: item.next, head: item.head,
   snoozed: item.snoozed, noAnswer: item.noAnswer, awaitingNext: item.awaitingNext,
-  reserved: item.reserved, cancelled: item.cancelled,
+  reserved: item.reserved, cancelled: item.cancelled, retrieval: item.retrieval,
 });
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
@@ -95,6 +96,7 @@ const TABS: [View, string][] = [
 ];
 
 const OUTCOME_CHIP = { voicemail: "Voicemail", wrong_number: "Wrong number" } as const;
+const RETRIEVAL_CHIP = { not_found: "Record not found", not_matching: "Another patient or procedure", non_closing: "Report does not close the loop" } as const;
 
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -350,6 +352,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
           supersedeRead(row.id);
           apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
+        else if (res.conflict === "reconciliation") setRefusal({ id: row.id, text: `Not saved: ${res.error}` });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -382,14 +385,29 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
     </div>
   );
   /* A persisted Reached outcome keeps its follow-up choices until a later outcome, snooze or booking replaces it. */
-  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" ? "callback" : null) : p?.awaitingNext ? "reached" : null;
+  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" || s.stage === "elsewhere" ? s.stage : null) : p?.awaitingNext ? "reached" : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
 
   type Chip = [string, () => void];
   let chipsTitle = "";
   let chips: Chip[] = [];
-  if (p && !p.contactBlocked) {
+  if (p?.retrieval) {
+    const retrieval = p.retrieval;
+    chipsTitle = "Record retrieval outcome";
+    chips = RETRIEVAL_OUTCOMES.map((outcome): Chip => [
+      RETRIEVAL_CHIP[outcome],
+      () =>
+        log(
+          p,
+          `Record retrieval ended: ${retrievalOutcomeWords(outcome)}`,
+          { view: "call", status: "Record retrieval ended · follow-up resumes", next: "Call to arrange the procedure", retrieval: undefined, awaitingNext: false },
+          `Logged: ${RETRIEVAL_CHIP[outcome]}`,
+          `${first} moved to To call · ${retrieval.owner}'s retrieval task closed`,
+          { action: "retrieval_outcome", outcome },
+        ),
+    ]);
+  } else if (p && !p.contactBlocked) {
     if (!last && !stage) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
@@ -451,6 +469,13 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
           () => {
             setWant({ k: "chips" });
             setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "callback", callbackFrom: Date.now() }));
+          },
+        ],
+        [
+          "Done elsewhere…",
+          () => {
+            setWant({ k: "chips" });
+            setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "elsewhere", callbackFrom: Date.now() }));
           },
         ],
         [
@@ -648,7 +673,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
               <Button
                 variant="cta"
                 size="touch"
-                disabled={p.contactBlocked || ledgerInvalid}
+                disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
                 className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
@@ -779,7 +804,33 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
               )}
             </AnimatePresence>
 
-            {chips.length > 0 && (
+            {p && stage === "elsewhere" && !p.retrieval && (
+              <div className="mt-4">
+                <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
+                  Done elsewhere
+                </h3>
+                <ElsewhereForm
+                  owner={p.owner === "No owner" ? "" : p.owner}
+                  procedure={p.procedure ?? ""}
+                  nowMs={s.callbackFrom}
+                  disabled={busy || ledgerInvalid}
+                  onCancel={() => setS((prev) => ({ ...prev, calling: null, stage: "reached" }))}
+                  onRecord={(action) => {
+                    const words = reconciliationWords(action, new Date().toISOString().slice(0, 10));
+                    log(
+                      p,
+                      `Reported done elsewhere: ${action.procedure} at ${action.provider}`,
+                      { view: "waiting", status: words.status, next: words.next, awaitingNext: false, retrieval: { owner: action.retrieval_owner, due: action.retrieval_due, overdue: words.overdue } },
+                      "Logged: Done elsewhere",
+                      `${first} moved to Waiting for the record`,
+                      action,
+                    );
+                  }}
+                />
+              </div>
+            )}
+
+            {chips.length > 0 && stage !== "elsewhere" && (
               <div className="mt-4">
                 <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
                   {chipsTitle}

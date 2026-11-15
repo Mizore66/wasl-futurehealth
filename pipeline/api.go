@@ -1130,14 +1130,35 @@ var (
 		"booking_reschedule":  {"reservation_id", "expected_reservation_version", "expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
 		"booking_cancel":      {"reservation_id", "expected_reservation_version", "reason"},
 		dispositionKind:       {"reason", "counselling", "safety_net", "plan", "follow_up_owner", "next_review", "fit_reoffer", "decline_event"},
+		elsewhereKind:         {"procedure", "performed", "provider", "source", "report_ref", "retrieval_owner", "retrieval_due"},
+		retrievalKind:         {"outcome", "note", "report_event"},
 	}
-	refusalReasons = map[string]bool{"patient_preference": true, "procedure_anxiety": true, "logistics_or_access": true,
+	elsewhereSources = map[string]bool{"patient": true, "carer": true, "other_provider": true}
+	// Every recorded retrieval outcome resumes follow-up: a retrieved closing report enters the pipeline as a source
+	// event (identity link, two readers, human sign-off), never through this overlay action.
+	retrievalOutcomes = map[string]bool{"not_found": true, "not_matching": true, "non_closing": true}
+	// suspendedByReconciliation are the ordinary chase and booking actions refused while a record retrieval is pending.
+	suspendedByReconciliation = map[string]bool{"contact_outcome": true, "booking_accept": true, "booking_choose_slot": true, "booking_reschedule": true}
+	refusalReasons            = map[string]bool{"patient_preference": true, "procedure_anxiety": true, "logistics_or_access": true,
 		"comorbidity_or_frailty": true, "prefers_alternative_test": true, "other": true}
 	dispositionPlans = map[string]bool{"follow_up": true, "closed_declined": true}
 	fitReoffers      = map[string]bool{"offered_accepted": true, "offered_declined": true, "not_appropriate": true}
 )
 
-const dispositionKind = "clinician_disposition"
+const (
+	dispositionKind = "clinician_disposition"
+	// elsewhereKind records a report that the procedure was done at another provider and opens an owned record retrieval.
+	elsewhereKind = "completed_elsewhere"
+	// retrievalKind records why a pending retrieval ended without closing evidence; follow-up resumes.
+	retrievalKind          = "retrieval_outcome"
+	maxRetrievalHorizon    = 90 * 24 * time.Hour
+	maxProviderRunes       = 120
+	maxReportRefRunes      = 64
+	maxProcedureRunes      = 64
+	approxMonthLayout      = "2006-01"
+	calendarDayLayout      = "2006-01-02"
+	reconciliationConflict = "reconciliation"
+)
 
 // actionPermission is the RBAC action a case action kind needs; the ledger event records it as "action".
 func actionPermission(kind string) string {
@@ -1167,8 +1188,26 @@ func (o *caseOverlay) pendingDecline() string {
 	return ""
 }
 
+// pendingRetrieval is the hash of the completed-elsewhere report whose record retrieval has no outcome yet.
+func (o *caseOverlay) pendingRetrieval() string {
+	if o.reconciliation == nil || o.reconciliation["retrieval"] != nil {
+		return ""
+	}
+	h, _ := o.reconciliation["event"].(string)
+	return h
+}
+
 // actionPreconditionLocked holds the case-state rules of an action, shared by the write path and ledger replay.
 func actionPreconditionLocked(c *apiCase, kind string, data map[string]interface{}) *actionRefusal {
+	pendingRetrieval := c.ov.pendingRetrieval()
+	switch {
+	case suspendedByReconciliation[kind] && pendingRetrieval != "":
+		return &actionRefusal{409, reconciliationConflict, "the case is reported done elsewhere and its record retrieval is pending; record the retrieval outcome before chasing or booking"}
+	case kind == elsewhereKind && pendingRetrieval != "":
+		return &actionRefusal{409, reconciliationConflict, "a record retrieval is already pending for this case"}
+	case kind == retrievalKind && (pendingRetrieval == "" || data["report_event"] != pendingRetrieval):
+		return &actionRefusal{409, reconciliationConflict, "a retrieval outcome must answer the case's pending completed-elsewhere report"}
+	}
 	if kind != dispositionKind {
 		return nil
 	}
@@ -1193,8 +1232,10 @@ type caseOverlay struct {
 	agreement map[string]interface{}
 	// disposition is the latest clinician disposition; its decline_event names the decline it answers.
 	disposition map[string]interface{}
-	booking     caseBookingState
-	lastAt      string
+	// reconciliation is the latest completed-elsewhere report; its "retrieval" entry is the outcome that ended it.
+	reconciliation map[string]interface{}
+	booking        caseBookingState
+	lastAt         string
 }
 
 func (s *apiServer) caseHead(c *apiCase) string {
@@ -1307,6 +1348,18 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 		}
 	case dispositionKind:
 		err = validateDisposition(in, out, text)
+	case elsewhereKind:
+		err = validateElsewhere(out, text)
+	case retrievalKind:
+		if err = text("outcome", 32, true, false); err == nil && !retrievalOutcomes[out["outcome"].(string)] {
+			err = errors.New("outcome must be one of not_found|not_matching|non_closing")
+		}
+		if err == nil {
+			err = text("note", maxNoteRunes, false, true)
+		}
+		if err == nil {
+			err = text("report_event", 64, false, false)
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -1359,6 +1412,42 @@ func validateDisposition(in, out map[string]interface{}, text func(k string, max
 	return nil
 }
 
+// validateElsewhere: what was done, roughly when (YYYY-MM or YYYY-MM-DD), where, who reported it, an optional report
+// reference, and the owned retrieval task (owner and YYYY-MM-DD due date).
+func validateElsewhere(out map[string]interface{}, text func(k string, max int, required, multi bool) error) error {
+	for _, f := range []struct {
+		k        string
+		max      int
+		required bool
+	}{{"procedure", maxProcedureRunes, true}, {"performed", 10, true}, {"provider", maxProviderRunes, true}, {"source", 32, true},
+		{"report_ref", maxReportRefRunes, false}, {"retrieval_owner", maxOwnerRunes, true}, {"retrieval_due", 10, true}} {
+		if err := text(f.k, f.max, f.required, false); err != nil {
+			return err
+		}
+	}
+	if !elsewhereSources[out["source"].(string)] {
+		return errors.New("source must be one of patient|carer|other_provider")
+	}
+	if _, err := approxDate(out["performed"].(string)); err != nil {
+		return err
+	}
+	if _, err := time.Parse(calendarDayLayout, out["retrieval_due"].(string)); err != nil {
+		return errors.New("retrieval_due must be a YYYY-MM-DD date")
+	}
+	return nil
+}
+
+// approxDate parses a reported procedure date given as a month (YYYY-MM) or a day (YYYY-MM-DD); it returns the earliest instant.
+func approxDate(s string) (time.Time, error) {
+	if t, err := time.Parse(calendarDayLayout, s); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse(approxMonthLayout, s); err == nil {
+		return t, nil
+	}
+	return time.Time{}, errors.New("performed must be a YYYY-MM month or a YYYY-MM-DD date")
+}
+
 // applyOverlay projects one validated coordinator event onto the case overlay.
 func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 	data, _ := ev["data"].(map[string]interface{})
@@ -1383,6 +1472,15 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 	case dispositionKind:
 		entry["role"] = ev["role"]
 		c.ov.disposition = entry
+	case elsewhereKind:
+		c.ov.reconciliation = entry
+	case retrievalKind:
+		ended := map[string]interface{}{}
+		for k, v := range c.ov.reconciliation {
+			ended[k] = v
+		}
+		ended["retrieval"] = entry
+		c.ov.reconciliation = ended
 	}
 	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
 	c.ov.n++
@@ -1431,6 +1529,26 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			summary = d
 		}
 		m["disposition"] = summary
+	}
+	if r := o.reconciliation; r != nil {
+		summary := map[string]interface{}{"status": "pending"}
+		for _, k := range []string{"at", "event", "procedure", "performed", "provider", "source", "report_ref", "retrieval_owner", "retrieval_due"} {
+			if v, ok := r[k]; ok {
+				summary[k] = v
+			}
+		}
+		if full {
+			summary["actor"] = r["actor"]
+		}
+		if ended, ok := r["retrieval"].(map[string]interface{}); ok {
+			summary["status"] = "resumed"
+			retrieval := map[string]interface{}{"at": ended["at"], "event": ended["event"], "outcome": ended["outcome"]}
+			if full {
+				retrieval = ended
+			}
+			summary["retrieval"] = retrieval
+		}
+		m["reconciliation"] = summary
 	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
@@ -1699,7 +1817,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition", nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition|completed_elsewhere|retrieval_outcome", nil)
 		return
 	}
 	permission := actionPermission(kind)
@@ -1735,6 +1853,18 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
+	if kind == elsewhereKind {
+		performed, _ := approxDate(data["performed"].(string))
+		due, _ := time.Parse(calendarDayLayout, data["retrieval_due"].(string))
+		if performed.After(now) {
+			s.actionErr(w, 400, "performed must not be in the future", nil)
+			return
+		}
+		if !due.After(now) || due.After(now.Add(maxRetrievalHorizon)) {
+			s.actionErr(w, 400, "retrieval_due must be a future date within 90 days", nil)
+			return
+		}
+	}
 
 	// decide and record under the lock, but write the response only after releasing it
 	code, body := func() (int, map[string]interface{}) {
@@ -1755,6 +1885,11 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if _, named := data["decline_event"]; kind == dispositionKind && !named {
 			if p := c.ov.pendingDecline(); p != "" {
 				data["decline_event"] = p
+			}
+		}
+		if _, named := data["report_event"]; kind == retrievalKind && !named {
+			if p := c.ov.pendingRetrieval(); p != "" {
+				data["report_event"] = p
 			}
 		}
 		if refusal := actionPreconditionLocked(c, kind, data); refusal != nil {
