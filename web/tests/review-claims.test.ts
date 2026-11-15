@@ -8,7 +8,7 @@ import { reviewView } from "@/components/review/case-view";
 import { CaseDetail, ReviewState } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 
-const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn() }));
+const actions = vi.hoisted(() => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn(), readReviewSource: vi.fn(() => new Promise(() => {})) }));
 const router = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("@/app/app/review/[id]/actions", () => actions);
 vi.mock("next/navigation", () => ({ useRouter: () => router }));

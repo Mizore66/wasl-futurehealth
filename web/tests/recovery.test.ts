@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { confirmRecovery, getRecoverySlot, getRecoverySlots } from "@/lib/api/recovery-source";
+import { cancelRecovery, confirmRecovery, getRecoverySlot, getRecoverySlots } from "@/lib/api/recovery-source";
 import { CaseList } from "@/lib/api/schema";
 import { workItem } from "@/components/worklist/model";
 import { loadSample } from "./samples";
@@ -56,12 +56,67 @@ describe("recovery API contracts", () => {
   });
 });
 
+describe("recovery backfill cancellation", () => {
+  const cancel = { case_id: input.case_id, expected_slot_head: "slot-head", expected_case_head: "case-head", request_id: "browser-cancel-0001", reason: "Patient cannot attend that day" };
+
+  it("refuses in fixture mode without calling the API", async () => {
+    vi.stubEnv("WASL_API_URL", "");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel)).toMatchObject({ ok: false, status: 503 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blank reason before any request", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", { ...cancel, reason: "   " })).toMatchObject({ ok: false, status: 400 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("posts the cancellation with the coordinator token and returns the compensating event", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
+    const event = { hash: "cancel-hash", at: "2026-11-14T00:00:00Z", type: "waitlist_recovery", kind: "cancel_backfill" };
+    const fetchMock = vi.fn().mockResolvedValue(response(201, { meta, event, case_head: "cancel-hash", canonical_unchanged: true, dispatched: false, duplicate: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel);
+    expect(result).toMatchObject({ ok: true, status: 201, response: { event: { hash: "cancel-hash" }, dispatched: false } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.test/api/recovery/slots/rel_aaaaaaaaaaaaaaaaaaaaaaaa/cancel");
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer coordinator-secret-1234567890");
+    expect(JSON.parse(init.body)).toEqual(cancel);
+  });
+
+  it("returns a stale-head conflict as a refusal", async () => {
+    vi.stubEnv("WASL_API_URL", "http://api.test");
+    vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(409, { meta, error: "stale expected_case_head", conflict: "case_head" })));
+    expect(await cancelRecovery("rel_aaaaaaaaaaaaaaaaaaaaaaaa", cancel)).toEqual({ ok: false, status: 409, error: "stale expected_case_head", conflict: "case_head" });
+  });
+});
+
 describe("recovery case projection", () => {
-  it("moves a persisted simulated backfill to Waiting after reload", () => {
-    const c = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((item) => !item.closed)!;
-    const item = workItem({ ...c, recovery: { source_releases: [], backfill: { slot_id: "rel_aaaaaaaaaaaaaaaaaaaaaaaa", status: "simulated_backfill_confirmed", day: 40, event: "ledger-hash", outreach_status: "none" } } }, 120, false);
-    expect(item.view).toBe("waiting");
-    expect(item.status).toBe("Simulated slot confirmed");
-    expect(c.state).not.toBe("closed");
+  const open = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((item) => !item.closed)!;
+  const project = (outreach_status: "none" | "recorded_not_dispatched" | "cancelled_consent", consent: "granted" | "denied") =>
+    workItem({
+      ...open, consent, contact_state: undefined, api_patient: undefined, api_overlay: undefined,
+      recovery: { source_releases: [], backfill: { slot_id: "rel_aaaaaaaaaaaaaaaaaaaaaaaa", status: "simulated_backfill_confirmed", day: 40, event: "ledger-hash", outreach_status } },
+    }, 120, false);
+
+  it.each([
+    ["none", "granted", "call", "Simulated slot confirmed · no outreach recorded", "Contact the patient about the simulated recovery slot on day 40"],
+    ["none", "denied", "waiting", "Simulated slot confirmed · no outreach recorded", "Patient contact is not permitted; the simulated slot has not been offered"],
+    ["recorded_not_dispatched", "granted", "waiting", "Simulated slot confirmed · outreach recorded, not sent", "Wait for the simulated appointment day"],
+    ["cancelled_consent", "granted", "waiting", "Simulated slot confirmed · outreach cancelled after consent withdrawal", "Patient contact is not permitted; the simulated slot has not been offered"],
+  ] as const)("projects outreach %s with consent %s after reload", (outreach, consent, view, status, next) => {
+    const item = project(outreach, consent);
+    expect([item.view, item.status, item.next]).toEqual([view, status, next]);
+    expect(open.state).not.toBe("closed");
+  });
+
+  it("never tells the coordinator to wait when no outreach was recorded for a contactable patient", () => {
+    expect(project("none", "granted").next).not.toMatch(/wait/i);
   });
 });

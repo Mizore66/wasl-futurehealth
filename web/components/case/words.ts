@@ -286,7 +286,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string } }
+  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; review_date?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -329,6 +329,9 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "snooze") return d.until ? `Snoozed until ${atWords(d.until)}` : "Snoozed";
     if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
     if (e.kind === "note") return "Note added";
+    if (e.kind === "clinician_disposition") {
+      return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${d.review_date ?? "date not recorded"}`;
+    }
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {

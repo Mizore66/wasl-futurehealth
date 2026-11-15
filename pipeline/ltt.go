@@ -3,7 +3,7 @@ package main
 // Learn-then-Test data collection (Angelopoulos, Bates, Candès, Jordan, Lei): for every candidate closure link tier λ,
 // replay each calibration cohort through the same deterministic linker/closure cores with the noisy double-review loop,
 // and count per-loop losses for the two safety risks:
-//   R1(λ) = P(loop falsely closed)            (false closure, wrong patient or inadequate evidence)
+//   R1(λ) = P(loop unsafely closed)           (false outcome, or closing evidence not proven to be the patient's: closureLossVersion)
 //   R2(λ) = P(loop releases a wrong-patient message)
 // scripts/ltt_select.py turns the counts into binomial-tail p-values and picks λ by fixed-sequence testing.
 // Calibration cohorts are drawn from the persons3 "cal" split (gen -split cal), disjoint from the eval split.
@@ -26,21 +26,24 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 		taus = append(taus, t)
 	}
 	type row struct {
-		Cohort        string  `json:"cohort"`
-		Review        bool    `json:"with_review"`
-		Tau           float64 `json:"tau_close"`
-		Loops         int     `json:"loops"`
-		Closed        int     `json:"closed"`
-		TP            int     `json:"tp"`
-		FalseClosures int     `json:"false_closures"`
-		TruthClosed   int     `json:"truth_closed"`
-		Recall        float64 `json:"recall"`
-		LoopsWrongMsg int     `json:"loops_with_wrong_patient_message"`
-		Released      int     `json:"messages_released"`
-		WrongReleased int     `json:"wrong_patient_released"`
-		Items         int     `json:"review_items"`
-		Dropped       int     `json:"review_items_dropped,omitempty"` // raised but dropped by the worklists (-replayworklist)
-		ReviewerH1k   float64 `json:"reviewer_hours_per_1k_loops"`
+		Cohort        string                 `json:"cohort"`
+		Review        bool                   `json:"with_review"`
+		Tau           float64                `json:"tau_close"`
+		Loops         int                    `json:"loops"`
+		Closed        int                    `json:"closed"`
+		TP            int                    `json:"tp"`
+		FalseClosures int                    `json:"false_closures"`
+		Unsafe        int                    `json:"unsafe_closures"`
+		Foreign       int                    `json:"foreign_evidence_closures"`
+		Unverified    int                    `json:"unverified_evidence_closures"`
+		TruthClosed   int                    `json:"truth_closed"`
+		Recall        float64                `json:"recall"`
+		LoopsWrongMsg int                    `json:"loops_with_wrong_patient_message"`
+		Released      int                    `json:"messages_released"`
+		WrongReleased int                    `json:"wrong_patient_released"`
+		Items         int                    `json:"review_items"`
+		Dropped       int                    `json:"review_items_dropped,omitempty"` // raised but dropped by the worklists (-replayworklist)
+		ReviewerH1k   float64                `json:"reviewer_hours_per_1k_loops"`
 		ByProg        map[string]*lttProgRow `json:"by_programme,omitempty"`              // -lttprog only
 		IDConfirm     *lttIDConfirm          `json:"second_identifier_confirm,omitempty"` // -lttprog only
 	}
@@ -58,15 +61,18 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 				} else {
 					rp = replay(nil, o.preps, o.gbm, o.iso, P, true) // gate only: no human answers
 				}
-				acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
+				repPK := repPKOf(o.preps)
+				acc := evalDecisions(rp.final, o.tr, repPK)
 				var bp map[string]*lttProgRow
 				if LTTProg { // programme-specific resolution (lung no_followup_needed, DR no_referral_needed, breast no_recall_needed)
-					bp = lttByProg(rp.final, o.tr)
+					bp = lttByProg(rp.final, o.tr, repPK)
 					tot := lttProgRow{}
 					for _, x := range bp {
 						tot.Loops, tot.Closed, tot.TP, tot.FalseClosures, tot.TruthClosed = tot.Loops+x.Loops, tot.Closed+x.Closed, tot.TP+x.TP, tot.FalseClosures+x.FalseClosures, tot.TruthClosed+x.TruthClosed
+						tot.UnsafeClosures, tot.ForeignEvidence, tot.UnverifiedEvidence = tot.UnsafeClosures+x.UnsafeClosures, tot.ForeignEvidence+x.ForeignEvidence, tot.UnverifiedEvidence+x.UnverifiedEvidence
 					}
 					acc["loops"], acc["closed_pred"], acc["tp"], acc["false_closures"] = tot.Loops, tot.Closed, tot.TP, tot.FalseClosures
+					acc["unsafe_closures"], acc["foreign_evidence_closures"], acc["unverified_evidence_closures"] = tot.UnsafeClosures, tot.ForeignEvidence, tot.UnverifiedEvidence
 					acc["missed"], acc["recall"] = tot.TruthClosed-tot.TP, frac(tot.TP, tot.TruthClosed)
 				}
 				secs := 0.0
@@ -86,7 +92,8 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 				}
 				g := govMetrics(o, rp)
 				r := row{Cohort: filepath.Base(filepath.Dir(dir)), Review: mode, Tau: tau, Loops: acc["loops"].(int), Closed: acc["closed_pred"].(int),
-					TP: acc["tp"].(int), FalseClosures: acc["false_closures"].(int), Recall: acc["recall"].(float64),
+					TP: acc["tp"].(int), FalseClosures: acc["false_closures"].(int),
+					Unsafe: acc["unsafe_closures"].(int), Foreign: acc["foreign_evidence_closures"].(int), Unverified: acc["unverified_evidence_closures"].(int), Recall: acc["recall"].(float64),
 					LoopsWrongMsg: len(wrongLoops), Released: g["released"].(int), WrongReleased: g["wrong_patient_released"].(int), Items: len(sos),
 					ReviewerH1k: r3(1000 * secs / 3600 / float64(len(o.tr.Loops)))}
 				r.TruthClosed = r.TP + acc["missed"].(int)
@@ -128,11 +135,11 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 					}
 				}
 				rows = append(rows, r)
-				fmt.Fprintf(os.Stderr, "ltt %s review=%v tau=%.4f closed=%d FC=%d R=%.3f wrongmsg=%d items=%d dropped=%d\n", r.Cohort, mode, tau, r.Closed, r.FalseClosures, r.Recall, r.WrongReleased, r.Items, r.Dropped)
+				fmt.Fprintf(os.Stderr, "ltt %s review=%v tau=%.4f closed=%d FC=%d unsafe=%d R=%.3f wrongmsg=%d items=%d dropped=%d\n", r.Cohort, mode, tau, r.Closed, r.FalseClosures, r.Unsafe, r.Recall, r.WrongReleased, r.Items, r.Dropped)
 			}
 		}
 	}
-	b, _ := json.MarshalIndent(map[string]interface{}{"policy": PolicyName, "reviewer": cfg, "grid": taus, "rows": rows}, "", " ")
+	b, _ := json.MarshalIndent(map[string]interface{}{"policy": PolicyName, "closure_loss": closureLossVersion, "reviewer": cfg, "grid": taus, "rows": rows}, "", " ")
 	os.MkdirAll(filepath.Dir(out), 0700)
 	if err := os.WriteFile(out, b, 0600); err != nil {
 		panic(err)
@@ -148,13 +155,16 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 var LTTProg = false
 
 type lttProgRow struct {
-	Loops         int `json:"loops"`
-	Closed        int `json:"closed"`
-	TP            int `json:"tp"`
-	FalseClosures int `json:"false_closures"`
-	TruthClosed   int `json:"truth_closed"`
-	LoopsWrongMsg int `json:"loops_with_wrong_patient_message"`
-	Items         int `json:"review_items"`
+	Loops              int `json:"loops"`
+	Closed             int `json:"closed"`
+	TP                 int `json:"tp"`
+	FalseClosures      int `json:"false_closures"`
+	TruthClosed        int `json:"truth_closed"`
+	UnsafeClosures     int `json:"unsafe_closures"`
+	ForeignEvidence    int `json:"foreign_evidence_closures"`
+	UnverifiedEvidence int `json:"unverified_evidence_closures"`
+	LoopsWrongMsg      int `json:"loops_with_wrong_patient_message"`
+	Items              int `json:"review_items"`
 }
 
 // lttIDConfirm: the second-identifier confirming reviews (IDConfirm, -secondidconfirm) raised in one replay; a true
@@ -201,8 +211,8 @@ func lttLoopOutcome(id string, lt *LoopTruth, final map[string]*Decision) (bool,
 	return t, p, p && !t
 }
 
-func lttByProg(final map[string]*Decision, tr *Truth) map[string]*lttProgRow {
-	bp := map[string]*lttProgRow{}
+func lttByProg(final map[string]*Decision, tr *Truth, repPK map[string]string) map[string]*lttProgRow {
+	bp, safety := map[string]*lttProgRow{}, map[string]*closureSafety{}
 	for id, lt := range tr.Loops {
 		pg := lttProgOf(lt)
 		if bp[pg] == nil {
@@ -223,6 +233,17 @@ func lttByProg(final map[string]*Decision, tr *Truth) map[string]*lttProgRow {
 		if f {
 			x.FalseClosures++
 		}
+		own := ownedEvidence
+		if p {
+			own = closureEvidenceOwner(final[id].ClosingReport, lt, tr, repPK)
+		}
+		if safety[pg] == nil {
+			safety[pg] = &closureSafety{}
+		}
+		safety[pg].add(p, f, own)
+	}
+	for pg, s := range safety {
+		bp[pg].UnsafeClosures, bp[pg].ForeignEvidence, bp[pg].UnverifiedEvidence = s.unsafe, s.foreign, s.unverified
 	}
 	return bp
 }
