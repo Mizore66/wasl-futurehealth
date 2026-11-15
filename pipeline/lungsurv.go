@@ -142,7 +142,8 @@ type survSpec struct {
 	id, rule, overdueEsc string
 	after                float64 // only CTs after this day count (the report that opened the child)
 	lo, hi               float64
-	earlyTol             float64 // later PET rounds: reject CTs before lo-earlyTol; zero keeps round 1/stable legacy timing
+	earlyTol             float64 // later PET rounds: reject CTs before lo-earlyTol; zero keeps round 1 legacy timing
+	stableFromLo         bool    // Fleischner stable child: a stable CT before lo neither closes nor blocks; within_window checks lo
 	srDay, deadline      float64
 }
 
@@ -169,7 +170,7 @@ func (c *ClosureCore) survChild(f *LoopFacts, sp survSpec, chain []Block, cl *Lu
 			continue
 		}
 		lab, hl := h.labelOf(r)
-		if lungWorkupLabel(lab) { // a PET/CT or pathology report is not a surveillance CT
+		if lungWorkupLabel(lab) || (sp.stableFromLo && lab == "stable" && r.d.Day < sp.lo) { // a PET/CT or pathology report is not a surveillance CT
 			continue
 		}
 		if !cl.FollowUpCT {
@@ -188,8 +189,8 @@ func (c *ClosureCore) survChild(f *LoopFacts, sp survSpec, chain []Block, cl *Lu
 		ch := appendBlock(chain, "link_decision", linkBlock(f, r.d, r.pc))
 		ch = appendBlock(ch, "evidence", lungEvBlock(r.d, hl))
 		ch, hs := h.withSignoff(ch, r.d.ReportID)
-		within := r.d.Day <= hi // round 1/stable: preserve the existing upper-bound-only meaning
-		if sp.earlyTol > 0 {
+		within := r.d.Day <= hi // PET round 1: preserve the existing upper-bound-only meaning
+		if sp.earlyTol > 0 || sp.stableFromLo {
 			within = r.d.Day >= sp.lo && within
 		}
 		cl.Outcome, cl.FollowUp, cl.Closer, cl.WithinWindow = lab, r.d.ReportID, "ct", within
@@ -321,7 +322,7 @@ func (c *ClosureCore) stableSurvLoop(f *LoopFacts, ld *LungDecision, parentState
 		"parent_closing_report": ld.FollowUp, "reason": "fleischner_stable", "rule": "fleischner2017", "cell": ld.Rec.Cell, "next_step": ld.Rec.Next,
 		"optional": ld.Rec.NextOpt, "from": ld.Rec.NextFrom, "window": []float64{round4(lo), round4(hi)}})
 	return c.survChild(f, survSpec{id: id, rule: "fleischner2017", overdueEsc: "overdue_lung_nodule_window", after: parentClosed,
-		lo: lo, hi: hi, srDay: parentClosed, deadline: hi - parentClosed}, chain, cl, sv, fus, h)
+		lo: lo, hi: hi, stableFromLo: true, srDay: parentClosed, deadline: hi - parentClosed}, chain, cl, sv, fus, h)
 }
 
 // finishPETSurv: pending items, outreach (with the parent's consent history) and the signature of the child decision.
