@@ -74,6 +74,7 @@ func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 	t.Setenv("WASL_API_CORS_ORIGIN", "https://contract.test")
 	run := t.TempDir()
 	var out []interface{}
+	states := map[string]string{}
 	for i, spec := range specs {
 		state, contact := spec.state, spec.contact
 		if state == "" {
@@ -84,20 +85,25 @@ func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 		}
 		d := &Decision{ID: "dec-" + spec.suffix, LoopID: contractID(spec.suffix), State: state, Prog: "crc", Contact: contact, Provider: "contract-provider"}
 		d.Sig = decSig(d)
+		states[d.LoopID] = state
 		it := &ReviewItem{ItemID: spec.item, LoopID: d.LoopID, Kinds: []string{"link"}, Pair: pairAB, P: 0.5}
-		for _, env := range []OutEnvelope{{Kind: "item", OSeq: uint64(2*i + 1), Item: it}, {Kind: "dec", OSeq: uint64(2*i + 2), Dec: d}} {
+		for _, env := range []OutEnvelope{{Kind: "review", OSeq: uint64(2*i + 1), Item: it}, {Kind: "decision", OSeq: uint64(2*i + 2), Dec: d}} {
 			b, err := json.Marshal(env)
 			if err != nil {
 				t.Fatal(err)
 			}
-			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out", Data: b})
+			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out.p0", Data: b})
 		}
 	}
 	writeAgentNDJSON(t, filepath.Join(run, "out_log.ndjson"), out)
-	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), nil)
+	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
 	writeAgentNDJSON(t, filepath.Join(run, "reviewer_decisions.ndjson"), nil)
-	writeRequiredAPIJSON(t, run)
-	return loadAPI(run, ""), run
+	writeRequiredAPIJSONForCaseStates(t, run, states)
+	s, err := loadAPIVerified(run, "")
+	if err != nil {
+		t.Fatalf("load canonical contract fixture: %v", err)
+	}
+	return s, run
 }
 
 type contractResponse struct {
@@ -425,17 +431,20 @@ func TestAPIContractWorkflowReplayAndRestart(t *testing.T) {
 	}
 
 	consentID := contractID("consent")
-	consentHead := s.cases[consentID].last.Sig
+	consentHead := func() string {
+		o, _ := s.apiContactOverlay(s.cases[consentID])
+		return o["revision"].(string)
+	}
 	if res := post(consentID, "consent", RoleCoordinator, "coordinator-1", map[string]interface{}{"event": "consent_granted", "expected_head": "stale"}); res.code != 409 {
 		t.Fatalf("stale consent: %d", res.code)
 	}
 	for _, event := range []string{"consent_granted", "consent_denied", "consent_granted", "consent_opted_out"} {
-		res := post(consentID, "consent", RoleCoordinator, "coordinator-1", map[string]interface{}{"event": event, "expected_head": consentHead, "note": event})
+		res := post(consentID, "consent", RoleCoordinator, "coordinator-1", map[string]interface{}{"event": event, "expected_head": consentHead(), "note": event})
 		if res.code != 201 {
 			t.Fatalf("consent %s: %d %s", event, res.code, res.raw)
 		}
 	}
-	if res := post(consentID, "consent", RoleCoordinator, "coordinator-1", map[string]interface{}{"event": "consent_granted", "expected_head": consentHead}); res.code != 409 {
+	if res := post(consentID, "consent", RoleCoordinator, "coordinator-1", map[string]interface{}{"event": "consent_granted", "expected_head": consentHead()}); res.code != 409 {
 		t.Fatalf("grant after opt-out: %d", res.code)
 	}
 	if res := post(consentID, "review", RoleCoordinator, "coordinator-1", map[string]interface{}{"decision": "confirm_contact"}); res.code != 409 {
@@ -549,6 +558,10 @@ func TestAPIContractMalformedWritersAreAtomicAcrossContentTypes(t *testing.T) {
 			if tc.suffix == "actions" {
 				valid = []byte(fmt.Sprintf(`{"expected_head":%q,"action":"note","text":"ok"}`, s.caseHead(s.cases[id])))
 			}
+			if tc.suffix == "consent" {
+				o, _ := s.apiContactOverlay(s.cases[id])
+				valid = []byte(fmt.Sprintf(`{"event":"consent_granted","expected_head":%q}`, o["revision"]))
+			}
 			res := contractRequest(t, h, http.MethodPost, "/api/cases/"+id+"/"+tc.suffix, tc.role, "actor-1", contentType, valid)
 			if res.code != 201 {
 				t.Fatalf("valid %s content-type=%q: %d %s", tc.suffix, contentType, res.code, res.raw)
@@ -633,7 +646,8 @@ func FuzzAPIContractWriters(f *testing.F) {
 			case "actions":
 				body = []byte(fmt.Sprintf(`{"expected_head":%q,"action":"note","text":"valid"}`, s.caseHead(s.cases[contractID("fuzz")])))
 			case "consent":
-				body = []byte(fmt.Sprintf(`{"event":"consent_granted","expected_head":%q}`, s.cases[contractID("fuzz")].last.Sig))
+				o, _ := s.apiContactOverlay(s.cases[contractID("fuzz")])
+				body = []byte(fmt.Sprintf(`{"event":"consent_granted","expected_head":%q}`, o["revision"]))
 			case "undo":
 				body = []byte(`{"target":"does-not-exist"}`)
 			}

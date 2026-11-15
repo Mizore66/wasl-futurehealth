@@ -4,13 +4,20 @@
 
 ## Identity boundary
 
-`report7` materialisation writes `identity_clusters.json` atomically with mode `0600`. Its schema is `wasl-identity-clusters/1`. It contains only:
+Canonical `report7` materialisation writes `identity_clusters.json` atomically with mode `0600`, using **`wasl-identity-clusters/2`**. The reader also accepts the original **active-only `/1`** contract with its original closed wire shape; `/1` does not silently accept `/2` fields. Regenerate temporal artifacts from the unchanged immutable canonical source, not guessed rows or edited signed decisions.
+
+`/2` contains only:
 
 - the policy and SHA-256 hashes of the exact `fhir_log.ndjson` and `out_log.ndjson`;
-- final trusted `LinkerCore.Clusters()` membership;
-- each canonical referral loop's registration.
+- unchanged final trusted `LinkerCore.Clusters()` membership;
+- a complete, sorted `catalog` for every decision-bearing actual OUT case, including inactive roots and stored surveillance children;
+- each row's `case_id`, source-validated `lifecycle: active|retained`, explicit person `participation: current|reference_only`, signed canonical `parent_case_id` where applicable, and **separate `current` and `history` association slots**.
 
-Clusters, registrations and cases are sorted. Surveillance children inherit `baseLoop(caseID)` membership. Names, birth dates, Emirates IDs, truth IDs, candidate pairs, scores and review answers are never written. Person membership never uses the synthetic display-name fixtures, case `link_decision` blocks, API-overlay reviews, or a singleton fallback.
+A resolved association has `status: resolved`, the canonical registration, provider-qualified `request_id`, accepted `request_version`, normalized `request_sha256`, `request_seq`, and the accepted explicit-subject `binding_seq` (which can be carried through a proven patientless revision). An unavailable association has only `status: unavailable` and a bounded reason: `inactive_request`, `conflicting_request`, `unbound_request`, `unknown_programme`, `unproven_binding`, or (only for a validated detached active child) `detached_child`. It contains no fake registration or selected conflicted body. Every history entry additionally binds `decision_id`, same-case `decision_sig`, the replay-captured `facts_seq`, and `transition` (the actual triggering accepted request association). Child entries also bind `origin_decision_id` and `parent_decision_id` to the producing clinical decision and its signed immediate parent. For retirement, `association` remains the child's last clinical-origin association; `transition` and `facts_seq` retain the real later cause, even when its subject differs. Neither the tombstone nor its trigger is rewritten.
+
+Replay captures evidence at the canonical facts/output boundary before later inputs overwrite or retire it. Source verification invokes the **existing canonical request fold** without scoring or union operations; it does not introduce a second revision policy. A same-version conflict invalidates that version's apparent first-arrival historical winner in either delivery order. Previously accepted, distinct lower-version context can remain a historical reference. A new explicit subject can establish current root work without taking the former subject's history. A stored child does not inherit the final root's subject: its producing accepted context and the contexts of its signed immediate-parent lineage must all belong to the final selected root's **final trusted canonical cluster**. Equivalent registrations within that cluster are valid continuity, not different people. Without that continuity, the child is positively validated `reference_only`, with its actual latest OUT lifecycle still `active` when applicable. It contributes no current person cases, obligations, outreach flags or actions for either person; its proven subject retains non-actionable references. This does not change clinical eligibility, stored decisions or `Final()`. Historical membership never activates care.
+
+Clusters and registrations are sorted and nonoverlapping. Every actual case and every historical decision must be present exactly once; omission is corruption, not unavailability. Source provenance, lifecycle, canonical parent, current active binding, signatures, and both exact-log hashes are checked. The exporter independently compares **all** retained OUT decisions with replay, not just active `Final()`. Names, birth dates, Emirates IDs, truth IDs, candidate pairs, scores and review answers are never written. Person membership never uses display fixtures, raw-last-arrival request maps, near links, API-overlay reviews, or a singleton fallback. The active linker index and clinical eligibility reducers remain active-only.
 
 The opaque ID is:
 
@@ -35,7 +42,7 @@ These routes require `ActReadQueue`. Missing/invalid credentials receive `401`; 
 
 ## Response
 
-The top-level schema is `wasl-person-journey/1`, with the ordinary API `meta` envelope and:
+Legacy active-only responses keep `wasl-person-journey/1` and the ordinary API `meta` envelope:
 
 - `person`: opaque ID, anchor case, maximum canonical decision day (`as_of_day`), sorted cases and programmes, pseudonymous registrations, and canonical-artifact provenance including its SHA-256;
 - `cases`: programme/case ordered projections containing only `case`, cluster-confirmed `identities` and `timeline`, trusted `links`, current `holds` from the latest canonical decision, `outreach`, and decision history including consent transitions, outreach and signatures; near-miss links and their associated records are excluded;
@@ -43,6 +50,24 @@ The top-level schema is `wasl-person-journey/1`, with the ordinary API `meta` en
 - `obligations`, `outreach_flags`, and one `next_action`.
 
 The person projection excludes evidence, current full decisions, review items, sign-offs, API review events/states, coordinator notes, claims, audit history, review ledger data and review hashes. Full evidence and independently blinded review remain on the existing case routes. Responses are deep-copied and registration-pseudonymized; the raw identity artifact is never served.
+
+### Retained `/2` response
+
+A `/2` artifact produces **`wasl-person-journey/2`**. `cases` contains only active current participation with `lifecycle: active` and `history_availability: reference_only`. Current detail is latest-only and is omitted when that old signed output cannot be associated with the current subject; it is never copied from another subject. Contact is blocked when that subject context is unavailable. Full original decisions and source timelines remain on the existing authorized case/audit routes.
+
+`retained_references` is separate from `cases`, obligations, duplicate/overlap action inputs and next-action ranking. Each reference has `case_id`, optional canonical parent, case lifecycle, `availability: reference_only`, `history_access: authorized_case_audit`, `actionable: false`, and only the programmes/decision references proven for **this as-of subject**. Outreach summaries preserve their actual `released` and hold status with `participation: historical`; they do not expose additional downstream registration aliases. The original complete outreach object stays unchanged in authorized case history. These summaries are not dispatch/delivery evidence and are not newly cancelled messages.
+
+A retained-only person can have `cases: []`, no current obligations/flags, `next_action.kind: none`, and proven history references. `person.case_ids` covers current cases and scoped references; an old case can be a non-actionable reference for its former subject while its current association belongs to a different person. No old subject's history is relabelled as the new subject's journey. Unknown/unselected programme is not inserted into `person.programmes`.
+
+A reference-only case lookup with no unique proven historical subject returns **409**, schema **`wasl-person-association-unavailable/2`**, with `case_id`, the truthful OUT `lifecycle: active|retained`, bounded `association: {status: unavailable, reason}`, `history_access: authorized_case_audit`, and `actionable: false`. It has **no person**. Multiple historical subjects use `multiple_historical_subjects`; missing binding, conflict and unknown programme retain their bounded source reasons. This response is case-local: unrelated valid people still resolve. A malformed active mapping, missing active **or inactive** catalog row, forged provenance, bad parent, stale hash or malformed artifact still fails closed with the existing person-only 503, never a partial supposedly complete journey.
+
+Case list/detail history uses a separate retained lifecycle variant: `state: inactive`, `inactive: true`, `lifecycle: retained`, `actionable: false`, request lifecycle metadata, and `programme_availability: selected|unavailable`. Only this non-actionable variant permits an empty current programme. Original active programme/state enums are unchanged. The original tombstone, signatures and review history are not rewritten.
+
+### Materialized counts and administrative rights
+
+`report7.materialized_catalog` names its own `wasl-materialized-catalog/1` counts: `retained_cases` (all actual OUT case IDs), `active_cases` (eligible latest non-inactive decisions), and `retained_live_replay_mismatch` (must be zero after the complete retained comparison). Preflight checks these against actual OUT independently. Native `report7.loops` and `loops_by_programme` remain **clinical truth/evaluation denominators**, checked for internal consistency, not replaced by retained/active catalog counts. The API dashboard keeps its active-case meaning and health keeps its materialized-case meaning. Legacy declaration checks remain supported.
+
+Retirement does not prohibit every coordinator append. Existing authorized historical/admin notes, consent denial/withdrawal/opt-out under the existing rights/head rules, and ownership/version-checked cancellation of an existing simulated reservation remain permitted. None activates care or dispatches. New claims/clinical reviews, new booking acquisition/rescheduling, outreach and actionable obligations remain ineligible. No blanket append/history guard is added. The separately documented coordinator overlay re-materialization fail-closed contract in `API.md` is unchanged; this read-model upgrade does not repair or bypass an invalid ledger.
 
 ## Obligations
 

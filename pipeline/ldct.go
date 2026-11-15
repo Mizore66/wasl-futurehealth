@@ -9,8 +9,8 @@ package main
 //   category  : both readers agree on the LDCT report (or the coded Lung-RADS equals reader A's reading of the summary,
 //               or a clinician signs the evidence item) -> ldctRule(label).
 //                 1/2 -> closes as no_recall_needed (annual screening recorded, next LDCT due in 12 months).
-//                 0   -> open with a 91-day completion clock; a later categorised report on the same registration
-//                        (addendum after comparison, or a 1-3 month LDCT) decides the loop from its own day.
+//                 0   -> open with a 91-day completion clock; a later categorised report explicitly parented to the
+//                        index lineage (addendum after comparison, or a 1-3 month LDCT) decides from its own day.
 //   follow-up : 3/4A -> the next independent LDCT report on the scan's own registration (not an addendum or same-day
 //               reread) that both readers read with a category other than 0 closes the loop (outcome followup_done; the
 //               follow-up category and its next step are recorded; action categories raise followup_needs_tracking).
@@ -18,7 +18,7 @@ package main
 //               whose label both readers agree on (or a clinician signs): wk_treatment | wk_benign | wk_surveillance ->
 //               closed; benign annual closure needs benign tissue or MDT; wk_dna -> no_show (rebook); wk_incomplete
 //               (tissue / PET awaited, MDT pending) -> stays open.
-//   overdue   : the clock is the deciding scan's day + the rule deadline (0: 91; 3: 213; 4A: 121; 4B/4X: 30).
+//   overdue   : the proven examination clock + the unchanged rule deadline (0: 91; 3: 213; 4A: 121; 4B/4X: 30).
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable, a label the rule does not know) raises a
 // review item and holds.
 import (
@@ -33,19 +33,20 @@ type LDCTSR struct {
 
 // LDCTDecision: the LDCT-specific part of a decision (also served by the API as the case summary's "ldct" object).
 type LDCTDecision struct {
-	Scan           string   `json:"scan_report,omitempty"`    // the LDCT report whose category decides the loop
-	ScanLabel      string   `json:"scan_label,omitempty"`     // LR0..LR4X
-	Coded          bool     `json:"coded_lungrads,omitempty"` // the category came from a coded value that agreed with the text
-	Rec            *LDCTRec `json:"rec,omitempty"`
-	ScanDay        float64  `json:"scan_day"`
-	DueDay         float64  `json:"due_day,omitempty"`      // scan day + rule due days (annual: next screening LDCT)
-	DeadlineDay    float64  `json:"deadline_day,omitempty"` // overdue after this day (action loops)
-	FollowReport   string   `json:"followup_report,omitempty"`
-	FollowLabel    string   `json:"followup_label,omitempty"`     // 3/4A: the follow-up LDCT's category
-	FollowNext     string   `json:"followup_next_step,omitempty"` // that category's next step (stepped management)
-	Workup         string   `json:"workup_document,omitempty"`
-	Outcome        string   `json:"outcome,omitempty"` // followup_done | last read work-up label (wk_*)
-	WithinDeadline bool     `json:"within_deadline,omitempty"`
+	Scan           string           `json:"scan_report,omitempty"`    // the LDCT report whose category decides the loop
+	ScanLabel      string           `json:"scan_label,omitempty"`     // LR0..LR4X
+	Coded          bool             `json:"coded_lungrads,omitempty"` // the category came from a coded value that agreed with the text
+	Rec            *LDCTRec         `json:"rec,omitempty"`
+	ScanDay        float64          `json:"scan_day"` // clinical day of Scan, never another report's clock
+	ClockAnchor    *LDCTClockAnchor `json:"clock_anchor,omitempty"`
+	DueDay         float64          `json:"due_day,omitempty"`      // proven clock + rule due days (legacy own exam: scan day)
+	DeadlineDay    float64          `json:"deadline_day,omitempty"` // same clock + rule deadline; no target on an unproven clock
+	FollowReport   string           `json:"followup_report,omitempty"`
+	FollowLabel    string           `json:"followup_label,omitempty"`     // 3/4A: the follow-up LDCT's category
+	FollowNext     string           `json:"followup_next_step,omitempty"` // that category's next step (stepped management)
+	Workup         string           `json:"workup_document,omitempty"`
+	Outcome        string           `json:"outcome,omitempty"` // followup_done | last read work-up label (wk_*)
+	WithinDeadline bool             `json:"within_deadline,omitempty"`
 }
 
 // LDCTMinFollowupDays: a same-day reread is not the recommended interval LDCT. This is a Wasl safety assumption (A8),
@@ -57,11 +58,20 @@ func ldctScanFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "ldct-screen" || !diagnosticReportEvidenceEligible(e.Status) {
+		if e.RType != "DiagnosticReport" || e.Category != "ldct-screen" {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus,
-			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
+		eligible := diagnosticReportEvidenceEligible(e.Status)
+		if !eligible && e.Focus == "" {
+			continue
+		}
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version, Parent: e.Focus, Relation: e.Relation,
+			Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
+		// Retain ineligible intermediates solely for explicit lineage traversal. The evaluator filters their status;
+		// do not carry their reader verdicts as clinical evidence or alter the original event.
+		if eligible {
+			d.Ev = e.Ev
+		}
 		if V7Cal != nil {
 			d.PCal = 1
 		}
@@ -106,12 +116,16 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	ld := &LDCTDecision{ScanDay: f.SRDay}
 	// ---- rows (same identity trust rule as the other programmes)
+	scanParents := reportParentLineage(f.Down, "lung_ldct", "LDCTScan")
 	var scans, notes []row
 	for _, d := range f.Down {
 		if d.Prog != "lung_ldct" || d.Day < f.SRDay-1 {
 			continue
 		}
 		if d.RType == "LDCTScan" {
+			if d.Status != "" && !diagnosticReportEvidenceEligible(d.Status) {
+				continue
+			}
 			scans = append(scans, row{d: d, pc: 1, trusted: true})
 			continue
 		}
@@ -136,6 +150,45 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	byDay(scans)
 	byDay(notes)
+	// The tracking request identifies the only report that may open this episode. Other scans remain available
+	// solely for the category-specific completion/follow-up exceptions below; none can replace a missing anchor.
+	requestedScan := ""
+	if f.LDCT != nil {
+		requestedScan = f.LDCT.Scan
+	}
+	anchor := -1
+	var indexScan *row
+	if requestedScan != "" {
+		for i := range scans {
+			if scans[i].d.ReportID == requestedScan {
+				anchor = i
+				break
+			}
+		}
+	}
+	if anchor < 0 {
+		scans = nil
+	} else {
+		indexScan = &scans[anchor]
+		var revisions, independent []row
+		for i := range scans {
+			if i == anchor {
+				continue
+			}
+			if inExplicitReportLineage(requestedScan, scans[i].d.ReportID, scanParents) {
+				revisions = append(revisions, scans[i])
+			} else {
+				independent = append(independent, scans[i])
+			}
+		}
+		// Resolve eligible index corrections, including supersession of the root, before evidence/label gates or
+		// interval scans. The root establishes authorization; its unread/unknown label cannot veto a valid correction.
+		// Explicit descendants supersede ancestors regardless of exam day or lexical report ID.
+		anchored := make([]row, 0, len(scans))
+		anchored = append(anchored, *indexScan)
+		anchored = append(anchored, revisions...)
+		scans = append(unsupersededReportRows(anchored, scanParents), independent...)
+	}
 	// ---- review items (identical shape to the other programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
@@ -208,41 +261,34 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		return appendBlock(base, "hold_decision", body)
 	}
-	// ---- the deciding scan: the first read scan; a categorised scan after an LR0 replaces it; for 3/4A the next read
-	// scan with a category other than 0 is the follow-up. An unread scan blocks what comes after it.
-	var dec, follow, unread, reclass *row
-	var decLab, decHuman, idxHuman, folLab, folHuman string
+	// ---- the deciding scan starts at the request's anchor; an explicitly linked revision or LR0 completion replaces
+	// it; for 3/4A the next eligible independent interval scan with a category other than 0 is the follow-up. An unread
+	// eligible completion/follow-up blocks what comes after it. Ineligible reports raise no evidence review.
+	var dec, follow, unread *row
+	var decLab, decHuman, folLab, folHuman string
 	incompleteFollow := false
 	excludedFollow := ""
 	for i := range scans {
+		linkedRevision := scans[i].d.ReportID != requestedScan && inExplicitReportLineage(requestedScan, scans[i].d.ReportID, scanParents)
 		if dec != nil {
-			if dr, ok := ldctRule(decLab); !ok || dr.Action == LDCTAnnual || dr.Action == LDCTWorkup {
-				break // later scans do not concern this loop (the next screen opens its own tracking request)
+			dr, ok := ldctRule(decLab)
+			if !ok {
+				break
+			}
+			if (dr.Action == LDCTAnnual || dr.Action == LDCTWorkup) && !linkedRevision {
+				continue // only an authorized revision can replace a terminal index; unrelated scans open their own loops
 			}
 		}
-		if dec != nil && (decLab == "LR3" || decLab == "LR4A") {
-			// An addendum linked to the deciding report reclassifies it and keeps the index examination day; it is not
-			// a new interval LDCT. Any other addendum, and a same-day reread, cannot satisfy the 3/6-month
-			// recommendation and gets no evidence review merely for being ineligible.
+		if dec != nil && decLab == "LR0" {
+			if !linkedRevision {
+				continue // chronology alone never proves that a later scan completes this incomplete index
+			}
+		}
+		if dec != nil && (decLab == "LR3" || decLab == "LR4A") && !linkedRevision {
+			// An authorized revision reclassifies the index below, rather than satisfying interval follow-up.
+			// Other addenda and same-day rereads cannot satisfy the 3/6-month recommendation or raise evidence review.
 			if scans[i].d.Parent != "" {
-				if scans[i].d.Parent != dec.d.ReportID {
-					excludedFollow = "followup_addendum_not_interval_ldct"
-					continue
-				}
-				lab, h := labelOf(scans[i])
-				if lab == "" {
-					unread = &scans[i]
-					raise(scans[i], "evidence")
-					break
-				}
-				if lab == "LR0" { // an incomplete addendum cannot stand in for the categorised index: keep it and hold
-					excludedFollow = "addendum_reclassifies_to_incomplete"
-					continue
-				}
-				if reclass == nil {
-					idxHuman = decHuman
-				}
-				reclass, decLab, decHuman = &scans[i], lab, h
+				excludedFollow = "followup_addendum_not_interval_ldct"
 				continue
 			}
 			if scans[i].d.Day < dec.d.Day+LDCTMinFollowupDays {
@@ -252,11 +298,21 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		lab, h := labelOf(scans[i])
 		if lab == "" {
+			// An unread LR0 completion still holds under the known incomplete index and its original clock.
+			// This is context only: the superseded root never gates a readable correction or supplies closure.
+			if dec == nil && linkedRevision && indexScan != nil {
+				if indexLab, indexHuman := labelOf(*indexScan); indexLab == "LR0" {
+					dec, decLab, decHuman = indexScan, indexLab, indexHuman
+				}
+			}
+			if linkedRevision && dec != nil && decLab != "LR0" {
+				dec, decLab, decHuman = &scans[i], "", ""
+			}
 			unread = &scans[i]
 			raise(scans[i], "evidence")
 			break
 		}
-		if dec == nil || decLab == "LR0" {
+		if dec == nil || decLab == "LR0" || linkedRevision {
 			dec, decLab, decHuman = &scans[i], lab, h
 			continue
 		}
@@ -275,7 +331,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	switch {
 	case len(scans) == 0:
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "scan_report_not_received"})
-	case dec == nil: // the first scan is unread
+	case dec == nil || decLab == "": // the index or its authorized terminal revision is unread
 		chain = appendBlock(nil, "evidence", ldctEvBlock(unread.d, ""))
 		chain = hold(chain, "review_hold", map[string]interface{}{"reason": "scan_readers_disagree", "report": unread.d.ReportID})
 	case !recOK: // a label the rule does not know (a mistyped human label): hold, never close
@@ -285,35 +341,48 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		chain = hold(nil, "review_hold", map[string]interface{}{"reason": reason, "label": decLab})
 	default:
-		eff := dec
-		if reclass != nil {
-			eff = reclass
+		// The current report/date pair is independent of its proven clinical clock.
+		ld.Scan, ld.ScanLabel, ld.ScanDay = dec.d.ReportID, decLab, dec.d.Day
+		ld.Coded = dec.d.Ev != nil && dec.d.Ev.Model == "coded_lungrads" && decHuman == ""
+		clock, clockError := ldctClockFor(f, *dec, indexScan, labelOf)
+		if clockError != "" {
+			// No actionable target or interval is supplied by an unproven clock.
+			chain = hold(appendBlock(nil, "evidence", ldctEvBlock(dec.d, decHuman)), "review_hold", map[string]interface{}{"reason": clockError})
+			recOK, rec = false, LDCTRec{}
+			break
 		}
-		ld.Scan, ld.ScanLabel, ld.Rec, ld.ScanDay = dec.d.ReportID, decLab, &rec, dec.d.Day
-		ld.Coded = eff.d.Ev != nil && eff.d.Ev.Model == "coded_lungrads" && decHuman == ""
-		ld.DueDay = ld.ScanDay + float64(rec.Due)
+		ld.Rec, ld.ClockAnchor = &rec, clock
+		clockDay := dec.d.Day
+		if clock != nil {
+			clockDay = clock.Day
+		}
+		ld.DueDay = clockDay + float64(rec.Due)
 		if rec.Deadline > 0 {
-			ld.DeadlineDay = ld.ScanDay + float64(rec.Deadline)
+			ld.DeadlineDay = clockDay + float64(rec.Deadline)
 		}
-		var gchain []Block
-		if reclass != nil {
-			gchain = appendBlock(gchain, "evidence", ldctEvBlock(dec.d, idxHuman))
+		// Current evidence stays first; the distinct source and clock descriptor
+		// are signed by the normal append-only decision/audit path.
+		gchain := appendBlock(nil, "evidence", ldctEvBlock(dec.d, decHuman))
+		if clock != nil && clock.Kind == "reclassified_index_exam" {
+			gchain = appendBlock(gchain, "evidence", ldctEvBlock(indexScan.d, ""))
 		}
-		gchain = appendBlock(gchain, "evidence", ldctEvBlock(eff.d, decHuman))
 		recBody := map[string]interface{}{"rule": "acr2022lungrads", "cell": rec.Cell, "action": rec.Action,
 			"due_days": rec.Due, "deadline_days": rec.Deadline, "urgency": rec.Urgency, "next_step": rec.Next, "scan_day": round4(ld.ScanDay),
 			"source": ldctSource}
-		if reclass != nil {
-			recBody["reclassified_by"] = reclass.d.ReportID
+		if clock != nil {
+			recBody["clock_anchor"] = clock
+			if clock.Kind == "reclassified_index_exam" {
+				recBody["reclassified_by"] = dec.d.ReportID
+			}
 		}
 		gchain = appendBlock(gchain, "recommendation", recBody)
 		if decHuman != "" {
-			gchain, _ = withSignoff(gchain, eff.d.ReportID)
+			gchain, _ = withSignoff(gchain, dec.d.ReportID)
 			human = true
 		}
 		switch rec.Action {
 		case LDCTAnnual:
-			state, closedDay, closing = "no_recall_needed", eff.d.Day, eff.d.ReportID
+			state, closedDay, closing = "no_recall_needed", dec.d.Day, dec.d.ReportID
 			chain = appendBlock(gchain, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "no_recall_needed",
 				"programme": "lung_ldct", "rule": "acr2022lungrads", "cell": rec.Cell, "closed_day": round4(closedDay),
 				"next_step": rec.Next, "next_screen_due_day": round4(ld.DueDay),
@@ -362,7 +431,9 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			workupWrongKind := false
 			for i := range notes {
 				r := notes[i]
-				if r.d.Day < ld.ScanDay {
+				// Anchoring the deadline to the parent must not admit work-up
+				// evidence earlier than the current classification (main's guard).
+				if r.d.Day < dec.d.Day {
 					continue
 				}
 				if !r.trusted {

@@ -43,23 +43,24 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string      `json:"state"`
-	Dropoff   string      `json:"dropoff"`
-	Owner     string      `json:"owner,omitempty"`
-	Provider  string      `json:"provider"`
-	SRDay     float64     `json:"referral_day"`
-	Deadline  float64     `json:"deadline_day,omitempty"`
-	Overdue   bool        `json:"overdue"`
-	Priority  string      `json:"priority,omitempty"`
-	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string      `json:"review"`  // none | open | signed
-	Closed    bool        `json:"closed"`
-	ClosedDay float64     `json:"closed_day,omitempty"`
-	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
-	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision   // full last decision (detail view)
+	ID        string           `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string           `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string           `json:"state"`
+	Dropoff   string           `json:"dropoff"`
+	Owner     string           `json:"owner,omitempty"`
+	Provider  string           `json:"provider"`
+	SRDay     float64          `json:"referral_day"`
+	Deadline  float64          `json:"deadline_day,omitempty"`
+	Overdue   bool             `json:"overdue"`
+	Priority  string           `json:"priority,omitempty"`
+	Consent   string           `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string           `json:"review"`  // none | open | signed
+	Closed    bool             `json:"closed"`
+	ClosedDay float64          `json:"closed_day,omitempty"`
+	Fixture   string           `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ov        caseOverlay      // coordinator actions replayed from the ledger; never merged into the canonical fields above
+	patient   patientCaseState // patient-link actions; separate from coordinator, consent and booking heads
+	last      *Decision        // full last decision (detail view)
 	decisions []*Decision
 }
 
@@ -68,8 +69,10 @@ type apiServer struct {
 	meta            map[string]interface{}
 	cases           map[string]*apiCase
 	order           []string
-	queue           map[string][]*ReviewItem // loop -> raised items
+	queue           map[string][]*ReviewItem // loop -> currently eligible raised items
+	retiredQueue    map[string][]*ReviewItem // loop -> historical raised items, replay-only; never actionable
 	signoffs        map[string][]map[string]interface{}
+	idSignoffs      []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
 	dashboard       map[string]interface{}
@@ -78,6 +81,7 @@ type apiServer struct {
 	booking         map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
 	bookingCalendar string
 	bookingSlots    map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
+	sawBookingStamp bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
 	recovery        recoveryProjection
 	fixtures        map[string]string
 	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
@@ -89,11 +93,13 @@ type apiServer struct {
 	now             func() time.Time                           // UTC clock; replaceable in lease tests
 	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
+	patientRequests map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
 }
 
 func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
+	mux.HandleFunc("/api/patient/journey", s.patientJourney)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -196,7 +202,7 @@ func cors(h http.Handler) http.Handler {
 }
 
 func loadAPI(run, data string) *apiServer {
-	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{},
+	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{}, retiredQueue: map[string][]*ReviewItem{},
 		signoffs: map[string][]map[string]interface{}{}, facts: map[string][]map[string]interface{}{}, ids: map[string][]map[string]string{},
 		claims: map[reviewQuestionKey]*reviewClaimState{}, now: time.Now}
 	s.appendLine = func(line []byte) error { return appendLedgerLine(filepath.Join(run, "api_reviews.ndjson"), line) }
@@ -233,6 +239,14 @@ func loadAPI(run, data string) *apiServer {
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
 		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
 		c.Consent = consentFromDecision(d)
+		if d.Inactive {
+			// The case and every earlier decision remain available through the
+			// authorized detail/audit views, but no current review obligation
+			// survives retirement. Earlier claims/reads still require their
+			// original raised items to validate append-only ledger history.
+			s.retiredQueue[c.ID] = s.queue[c.ID]
+			delete(s.queue, c.ID)
+		}
 	}
 	// reviewer sign-offs (signed resolutions)
 	if f, err := os.Open(filepath.Join(run, "reviewer_decisions.ndjson")); err == nil {
@@ -304,7 +318,7 @@ func (s *apiServer) readerModel() string {
 }
 
 func consentFromDecision(d *Decision) string {
-	if d.Contact != "" {
+	if d != nil && d.Contact != "" {
 		return d.Contact
 	}
 	return "unknown"
@@ -319,14 +333,19 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	s.idSignoffs = nil
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
-		if !strings.HasSuffix(m.Subject, ".res") {
+		if !apiFHIRSubject.MatchString(m.Subject) && m.Subject != "fhir.review" || strings.HasSuffix(m.Subject, ".ctl") {
 			continue
 		}
 		prov := strings.Split(m.Subject, ".")[1]
 		arr, _ := strconv.ParseFloat(m.Hdr["Wsi-Arr"], 64)
 		e, so := normalise(prov, arr, m.Data)
-		if e == nil || so != nil || e.PatientKey == "" {
+		if so != nil {
+			s.idSignoffs = append(s.idSignoffs, *so)
+			continue
+		}
+		if e == nil || e.PatientKey == "" {
 			continue
 		}
 		h := sha256.Sum256(m.Data)
@@ -338,9 +357,24 @@ func (s *apiServer) loadTimelines() {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
 		}
 	}
+	projection, _ := s.loadPersonProjection()
 	for id, c := range s.cases {
-		pks := map[string]bool{srPK[id]: true}
-		// linked downstream registrations come from the link_decision blocks of the case's decisions
+		referral := srPK[baseLoop(id)]
+		pks := map[string]bool{referral: true}
+		if projection != nil {
+			if currentReferral := projection.referralByCase[id]; currentReferral != "" {
+				referral = currentReferral
+				pks[referral] = true
+			}
+			// Retained/conflicted cases need not have a current cluster entry.
+			// Preserve their recorded timeline without inventing membership.
+			if cluster := projection.byCase[id]; cluster != nil {
+				for _, registration := range cluster.registrations {
+					pks[registration] = true
+				}
+			}
+		}
+		// Keep historical candidates internally; the served current projection uses trusted membership.
 		for _, d := range c.decisions {
 			for _, b := range d.Chain {
 				if b.Type == "link_decision" {
@@ -362,7 +396,7 @@ func (s *apiServer) loadTimelines() {
 				continue
 			}
 			role := "downstream"
-			if pk == srPK[id] {
+			if pk == referral {
 				role = "referral"
 			}
 			ids = append(ids, map[string]string{"registration": pk, "provider": strings.Split(pk, "|")[0], "role": role})
@@ -556,8 +590,12 @@ func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 	states, drop, review := map[string]int{}, map[string]int{}, map[string]int{}
 	byProg := map[string]map[string]int{}
-	overdue, closed := 0, 0
+	overdue, closed, activeCases := 0, 0, 0
 	for _, c := range s.cases {
+		if c.last != nil && c.last.Inactive {
+			continue
+		}
+		activeCases++
 		states[c.State]++
 		drop[c.Dropoff]++
 		review[c.Review]++
@@ -582,7 +620,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 		rep["exactly_once"] = map[string]interface{}{"duplicate_outputs": cr["duplicate_outputs"], "lost_outputs": cr["lost_outputs"], "ingest_lost": cr["ingest_lost"], "ingest_duplicates": cr["ingest_duplicates"]}
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"cases": len(s.cases), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
+		"cases": activeCases, "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
 		"by_programme": byProg, "sla": s.dashboard["sla"], "providers": s.dashboard["providers"], "origins": s.dashboard["origins"],
 		"small_cell_rule": s.dashboard["small_cell_rule"], "metrics": rep, "fixtures": s.fixtures,
 		"capacity": s.capacity(),
@@ -616,7 +654,13 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 		m["breast"] = c.last.Breast
 	}
 	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
-		m["ldct"] = c.last.LDCT
+		ld := *c.last.LDCT
+		if ld.ClockAnchor != nil {
+			clock := *ld.ClockAnchor
+			clock.Registration = pseudonymizeRegistration(clock.Registration)
+			ld.ClockAnchor = &clock
+		}
+		m["ldct"] = &ld // list/fixture routes also need aliases; never mutate the signed decision
 	}
 	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
 		m["ifhas"] = c.last.Ifhas
@@ -625,20 +669,42 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
-	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
+	m := map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
-		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
+		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false), "contact_state": s.contactSummary(c)}
+	if c.last != nil && c.last.Inactive {
+		m["inactive"] = true
+		m["lifecycle"] = "retained"
+		m["actionable"] = false
+		m["programme_availability"] = "selected"
+		if c.Programme == "" {
+			m["programme_availability"] = "unavailable"
+		}
+		m["request_status"] = c.last.RequestStatus
+		m["request_version"] = c.last.RequestVersion
+		m["request_conflict"] = c.last.RequestConflict
+	}
+	s.mu.Lock()
+	if c.patient.Seq > 0 {
+		m["api_patient"] = s.patientViewLocked(c, false)
+	}
+	s.mu.Unlock()
+	return m
 }
 
-// GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
+// GET /api/cases?programme=crc&state=closed&closed=true&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
 func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	match := func(c *apiCase) bool {
 		eq := func(k, v string) bool { x := q.Get(k); return x == "" || x == v }
+		if c.last != nil && c.last.Inactive && q.Get("state") != "inactive" && q.Get("include_inactive") != "true" {
+			return false
+		}
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", c.Owner) && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
+			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&
 			(q.Get("fixture") == "" || c.Fixture != "") && (q.Get("q") == "" || strings.Contains(c.ID, q.Get("q")))
 	}
 	ids := append([]string{}, s.order...)
@@ -798,6 +864,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		defer s.mu.Unlock()
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if req.Decision == "confirm_contact" && s.contactGuardLocked(c).Blocked {
+			return 409, map[string]interface{}{"error": "contact is blocked by a recorded denial or opt-out; confirm_contact refused", "conflict": "consent"}
 		}
 		ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
 			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
@@ -1530,6 +1599,9 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		s.actionErr(w, 400, "expected_head is required (the case's api_overlay.head)", nil)
 		return
 	}
+	if _, given := fields["owner"]; kind == "assign_owner" && !given {
+		fields["owner"] = actor
+	}
 	data, err := validateActionData(kind, fields)
 	if err != nil {
 		s.actionErr(w, 400, err.Error(), nil)
@@ -1554,11 +1626,17 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if head := s.caseHead(c); expected != head {
 			return 409, map[string]interface{}{"error": "stale expected_head: the case changed since it was read", "conflict": "head", "current_head": head}
 		}
-		if kind == "contact_outcome" && c.Consent != "granted" {
-			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
+		if kind == "contact_outcome" {
+			guard := s.contactGuardLocked(c)
+			if !guard.Allowed {
+				return 409, map[string]interface{}{"error": "contact outcomes need canonical contact permission granted and no demo denial or opt-out", "conflict": "consent", "consent": guard.Canonical, "contact_blocked": guard.Blocked}
+			}
 		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
+			if failure := s.bookingReadinessGateLocked(c, kind); failure != nil {
+				return failure.code, failure.body
+			}
 			var failure *bookingFailure
 			booking, failure = s.prepareBookingLocked(c, kind, data)
 			if failure != nil {
@@ -1567,12 +1645,18 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
 			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
+		if bookingAcquisition(kind) {
+			ev["booking_policy"] = bookingPolicyReadiness1 // server-owned, included BEFORE append hashing
+		}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
 		if booking != nil {
 			s.applyBookingLocked(c, stored, booking)
+		}
+		if bookingAcquisition(kind) {
+			s.sawBookingStamp = true
 		}
 		c.applyOverlay(stored)
 		body := map[string]interface{}{"event": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "api_overlay": s.overlayViewLocked(c, true),
@@ -1644,6 +1728,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
 		return errors.New("hash mismatch")
 	}
+	if ev["type"] == patientEventType {
+		if err := s.replayPatientEvent(ev); err != nil {
+			return fmt.Errorf("patient journey: %v", err)
+		}
+		return nil
+	}
 	if ev["type"] == reviewClaimEventType {
 		if err := s.replayClaim(ev); err != nil {
 			return fmt.Errorf("review claim: %v", err)
@@ -1658,16 +1748,36 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		return nil
 	}
 	if _, isCoord := ev["type"]; !isCoord {
+		if err := validateConsentRevision(ev, s.caseEvents(sstr(ev, "case"))); err != nil {
+			return err
+		}
+		// Legacy confirm_contact is still a contact action. Check the same guard as
+		// HTTP against this valid ledger prefix, before appending the event. A later
+		// denial must not retroactively invalidate an earlier authorized contact.
+		if ev["decision"] == "confirm_contact" {
+			id, _ := ev["case"].(string)
+			c := s.cases[id]
+			if c == nil {
+				return errors.New("confirm_contact for unknown case")
+			}
+			if s.contactGuardLocked(c).Blocked {
+				return errors.New("confirm_contact after demo consent denial/opt-out")
+			}
+		}
 		if hasProtocolFields(ev) {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)
 			}
 		}
-		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
+		s.reviews = append(s.reviews, ev) // legacy review event; consent_rev, when present, is also checked
 		return nil
 	}
 	if ev["type"] != coordEventType {
 		return fmt.Errorf("unknown event type %v", ev["type"])
+	}
+	stamped, err := coordinatorBookingPolicy(ev)
+	if err != nil {
+		return err
 	}
 	kind, _ := ev["kind"].(string)
 	id, _ := ev["case"].(string)
@@ -1704,11 +1814,19 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if err != nil || !reflect.DeepEqual(norm, raw) {
 		return fmt.Errorf("invalid or non-canonical action data (%v)", err)
 	}
-	if kind == "contact_outcome" && c.Consent != "granted" {
-		return errors.New("contact outcome on a case without granted consent")
+	if kind == "contact_outcome" && !s.contactGuardLocked(c).Allowed {
+		return errors.New("contact outcome without granted canonical consent or after demo denial/opt-out")
 	}
 	var booking *bookingTransition
 	if bookingActionName(kind) {
+		if bookingAcquisition(kind) && !stamped && s.sawBookingStamp {
+			return errors.New("unstamped booking acquisition after the first readiness policy stamp")
+		}
+		if stamped {
+			if failure := s.bookingReadinessGateLocked(c, kind); failure != nil {
+				return fmt.Errorf("invalid stamped booking readiness: %v", failure.body["error"])
+			}
+		}
 		var failure *bookingFailure
 		booking, failure = s.prepareBookingLocked(c, kind, norm)
 		if failure != nil {
@@ -1718,6 +1836,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	s.reviews = append(s.reviews, ev)
 	if booking != nil {
 		s.applyBookingLocked(c, ev, booking)
+	}
+	if stamped {
+		s.sawBookingStamp = true // only after ALL guards accepted this acquisition
 	}
 	c.applyOverlay(ev)
 	return nil

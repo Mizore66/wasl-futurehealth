@@ -3,10 +3,54 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+// Exercise an actual generated LR0 completion, not a hand-added parent in a DownFact.
+func TestGenLDCTCompletionCarriesIndexLineage(t *testing.T) {
+	tr := &Truth{Loops: map[string]*LoopTruth{}, Reports: map[string]string{}, ReportUID: map[string]string{}}
+	var generated []GenEvent
+	lg := &lungGen{r: rand.New(rand.NewSource(2)), tr: tr, evs: &generated, ctr: map[string]int{"lcs-centrect": 1}, textUse: map[string]int{}}
+	g := &ldctGen{lungGen: lg, src: ldctProviders[0], hosp: ldctProviders[1]}
+	for _, label := range []string{"LR1", "LR2", "LR3", "LR4A", "LR4B", "LR4X"} {
+		g.scans = append(g.scans, lungDoc{ID: label, Text: "Synthetic completion " + label, Key: map[string]interface{}{"label": label, "style": ""}})
+	}
+	p := &Person{Qid: "synthetic-completion", Dob: "1960-01-01", En: "Synthetic Fixture", Sex: "M"}
+	x := &reg{pk: lcSRRec, mrn: "LCS-MRN000001", name: p.En, dob: p.Dob, sex: p.Sex, script: "lat"}
+	g.loop(p, x, -200, "LR0", "LCS-ct-1", -199, true, "", func(*Person, float64, string) (string, bool) { return "synthetic-note", false })
+	var completion *Event
+	for _, ge := range generated {
+		if ge.Res["resourceType"] != "DiagnosticReport" {
+			continue
+		}
+		e, _, err := normaliseChecked(ge.Prov, ge.Arrival, canon(ge.Res))
+		if err != nil {
+			t.Fatal(err)
+		}
+		e.Ev = &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: tr.Reports[e.ID]}
+		completion = e
+	}
+	if completion == nil || completion.ID != "LCS-ct-2" || completion.Ev.Label != "LR1" {
+		t.Fatal("fixture must emit the synthetic LR1 completion")
+	}
+	if completion.Focus != "LCS-ct-1" {
+		t.Errorf("generated completion must explicitly name its LR0 index, got parent %q", completion.Focus)
+	}
+	rec := &Rec{Pk: lcSRRec, evOrder: []string{"index", "completion"}, evs: map[string]*Event{
+		"index": {ID: "LCS-ct-1", ReportID: "LCS-ct-1", Provider: g.src.ID, RType: "DiagnosticReport", Status: "final", Version: 1,
+			Day: -200, Category: "ldct-screen", Ev: &TwoVerdict{Kind: "ldct-screen", Agree: true, Label: "LR0"}},
+		"completion": completion,
+	}}
+	f := lcFacts(ldctScanFacts(rec)...)
+	f.SRDay = -200
+	d, _ := runLung(t, f, 120)
+	if d.State != "no_recall_needed" || d.ClosingReport != "LCS-ct-2" || d.LDCT.ScanLabel != "LR1" || d.LDCT.ScanDay != completion.Day || d.LDCT.DueDay != completion.Day+365 || !verifyChain(d.Chain) {
+		t.Fatalf("actual generated completion must decide category, clock and closure: state=%s LDCT=%+v", d.State, d.LDCT)
+	}
+}
 
 // The LDCT programme must not perturb any other programme: same seed, -ldct 0 vs -ldct N -> every screening, lung, DR
 // and breast feed is byte-identical, -ldct 0 writes no LDCT feed, and LDCT loops are persons aged 55-75 who have no

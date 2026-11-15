@@ -1,0 +1,20 @@
+{
+  "actionable": false,
+  "association": {
+    "reason": "conflicting_request",
+    "status": "unavailable"
+  },
+  "case_id": "ahs-mushrif/ServiceRequest/a",
+  "history_access": "authorized_case_audit",
+  "lifecycle": "retained",
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-14T00:00:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "retained-synthetic-contract"
+  },
+  "schema": "wasl-person-association-unavailable/2"
+}

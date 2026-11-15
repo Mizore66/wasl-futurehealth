@@ -1,0 +1,40 @@
+{
+  "case": "exp-prov/ServiceRequest/EXP-sr-1",
+  "history": [
+    {
+      "action": "record_consent",
+      "actor": "coord",
+      "at": "2026-11-13T08:32:44.8487709Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "consent_rev": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "decision": "consent_granted",
+      "hash": "0c7b40cec0ad9171d656dbaeb9d778942f494092a71b373bca2d52e85b6dc8a9",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "item": "",
+      "mode": "demo",
+      "note": "synthetic",
+      "role": "coordinator"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-13T08:32:44Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "overlay": {
+    "canonical_consent": "granted",
+    "canonical_unchanged": true,
+    "contact_blocked": false,
+    "demo_pending_consent": "released",
+    "events": 1,
+    "last_event_hash": "0c7b40cec0ad9171d656dbaeb9d778942f494092a71b373bca2d52e85b6dc8a9",
+    "mode": "demo",
+    "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+    "revision": "0c7b40cec0ad9171d656dbaeb9d778942f494092a71b373bca2d52e85b6dc8a9",
+    "status": "granted"
+  }
+}

@@ -248,7 +248,7 @@ func TestReuseIDConfirmAcrossLoops(t *testing.T) {
 	defer func(g, r bool) { V7Guard, ReuseIDConfirm = g, r }(V7Guard, ReuseIDConfirm)
 	V7Guard, ReuseIDConfirm = true, true
 	L, loop1 := newLoopLinker(t)
-	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
 	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Persn", Day: 5}})
 	loop2 := "ahs-mushrif/ServiceRequest/SR2"
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
@@ -356,10 +356,10 @@ func TestLinkContradiction(t *testing.T) {
 	}{
 		{r("F", "1972-01-01"), r("M", "1973-01-01"), "sex"},
 		{r("F", "1972-03-14"), r("F", "1975-06-02"), "dob"},
-		{r("F", "1972-03-14"), r("F", "1972-09-30"), ""},  // within a year: entry error, not a contradiction
-		{r("F", "1972-01-01"), r("F", "1980-07-01"), ""},  // placeholders on both sides
-		{r("F", "1972-01-01"), r("F", "1980-03-05"), ""},  // one placeholder
-		{r("U", "1972-03-14"), r("M", "1972-03-14"), ""},  // unknown sex
+		{r("F", "1972-03-14"), r("F", "1972-09-30"), ""}, // within a year: entry error, not a contradiction
+		{r("F", "1972-01-01"), r("F", "1980-07-01"), ""}, // placeholders on both sides
+		{r("F", "1972-01-01"), r("F", "1980-03-05"), ""}, // one placeholder
+		{r("U", "1972-03-14"), r("M", "1972-03-14"), ""}, // unknown sex
 		{r("F", ""), r("F", "1972-03-14"), ""},
 	}
 	defer func(v bool) { LinkContradictionDOB = v }(LinkContradictionDOB)

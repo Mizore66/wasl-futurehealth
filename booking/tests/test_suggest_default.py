@@ -7,7 +7,14 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
+# Retain the qualified PR185 component pin; it is NOT yet a qualified combined-main golden.
+# Main adds readiness-held cases while this branch adds absolute clinical anchors.
+# The combined producer needs an observed output/semantic diff before any pin update.
 GOLDEN = "068dcb049ea1a125193dc9af06605d7d7c1b66606993396086e7e03a008fc359"
+PRE_INTEGRATION_GOLDENS = {
+    "PR185_b039e30f": GOLDEN,
+    "main_ac815cb8": "b0e4f515352c2615acec1b4f11a768b5e300cf6cee4c3d402ccf9c3e9d4ee04b",
+}
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -44,7 +51,7 @@ def test_default_unchanged():
         synthetic_run(d)
         raw = run(d)
         h = hashlib.sha256(raw).hexdigest()
-        assert h == GOLDEN, (h, GOLDEN)
+        assert h == GOLDEN, (h, GOLDEN, PRE_INTEGRATION_GOLDENS, "combined source not yet qualified")
         res = json.loads(raw)
         assert len(res["calendar_version"]) == 64
         suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
@@ -69,7 +76,7 @@ def test_lookahead_labelled():
     opt = res["inputs"]["optimiser"]
     assert opt["optimiser"] == "lookahead" and opt["arrivals"] == "bursty" and opt["forecast"] == "trailing", opt
     assert res["data_mode"] == "simulated" and res["decision_support_only"] is True
-    crc = [c for c in res["cases"].values() if c["procedure"] == "colonoscopy"]
+    crc = [c for c in res["cases"].values() if c["procedure"] == "colonoscopy" and c["status"] != "not_applicable"]
     assert {c["target_days"] for c in crc} == {14, 31}
     assert res["summary"]["suggested"] + res["summary"]["no_slot"] == len(crc)
     return f"lookahead run labelled {opt['method'][:40]}...; {res['summary']['suggested']}/{len(crc)} CRC suggested"
