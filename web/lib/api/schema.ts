@@ -307,6 +307,18 @@ export const ApiOverlay = z.looseObject({
   contact_outcomes: z.array(OverlayContact).optional(),
   notes: z.array(OverlayNote).optional(),
   canonical_owner: z.string().optional(),
+  /** A clinician's recorded plan for the hold the case is still in. A plan, not completed care: the loop stays open. */
+  clinician_disposition: z.looseObject({
+    at: z.string(),
+    event: z.string(),
+    hold: z.enum(["clinician_decision_no_fundal_view", "clinician_decision_outside_fleischner"]),
+    plan: z.enum(["repeat_diagnostic", "alternative_diagnostic", "specialist_pathway", "primary_care_pathway"]),
+    owner: z.string(),
+    review_date: z.string(),
+    actor: z.string().optional(),
+    reason: z.string().optional(),
+    details: z.string().optional(),
+  }).optional(),
 });
 
 /** Case detail `review_ledger`: whether the shared ledger replayed completely. */
@@ -608,7 +620,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -635,6 +647,10 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  plan: z.string().optional(),
+  details: z.string().optional(),
+  review_date: z.string().optional(),
+  hold: z.string().optional(),
 });
 
 const coordinatorShape = {

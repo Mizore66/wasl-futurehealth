@@ -44,17 +44,20 @@ const (
 	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
 	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
 	ActCoordinateCase = "coordinate_case"
+	// ActRecordDisposition: a clinician's plan for a programme hold that names a clinician as the decider. It records a
+	// plan, owner and review date; it never completes a procedure, closes a loop or signs evidence.
+	ActRecordDisposition = "record_clinician_disposition"
 )
 
 var rbac = map[string]map[string]bool{
 	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActRecordDisposition: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},
 
 	RoleSeniorReviewer:  {ActSignLink: true, ActReadQueue: true},
-	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true},
+	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true, ActRecordDisposition: true},
 }
 
 // RBACEnforce can be switched off only by the counterfactual audit replay ("what would forged events have done").
