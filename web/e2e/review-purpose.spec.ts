@@ -104,6 +104,7 @@ test.beforeAll(async () => {
     if (!scenario) return send(404, { meta, error: "unknown synthetic route" });
     if (req.method === "GET" && route === `/api/cases/${scenario.canonical.case.id}`) { scenario.gets++; return send(200, liveDetail(scenario, who)); }
     // Do not fabricate a verified audit or governance history for this UI-only fixture. Existing suites cover those paths.
+    if (req.method === "GET" && route.endsWith("/review/source")) return send(200, { meta, item: new URL(req.url ?? "/", "http://synthetic").searchParams.get("item") ?? "", source: { report: "SYN-SRC-1", report_version: 1, day: 0, text: "Synthetic source report." } });
     if (req.method === "GET") return send(404, { meta, error: "not provided by purpose-only synthetic mock" });
     if (who.role !== "clinician") return send(403, { meta, error: "token is not bound to a clinician" });
     let raw = "";
