@@ -3,13 +3,16 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Runs against a real materialised run (scripts/demo.sh) copied to a temp dir; skipped if none exists.
@@ -37,28 +40,189 @@ func apiFixture(t *testing.T) (*apiServer, *httptest.Server) {
 	return s, httptest.NewServer(cors(mux))
 }
 
-func apiUnexpectedNull(v interface{}, booking bool) bool {
-	if v == nil {
-		return !booking // simulated reservation summaries intentionally use null for no ID/slot/timestamp yet
-	}
-	switch x := v.(type) {
-	case map[string]interface{}:
-		for k, child := range x {
-			if apiUnexpectedNull(child, booking || k == "booking") {
-				return true
+// apiUnexpectedNulls checks the GET response contract, retaining the existing
+// simulated-booking exemption and only the documented review-state null fields.
+func apiUnexpectedNulls(v interface{}) []string {
+	var paths []string
+	var walk func(interface{}, string, bool, bool)
+	walk = func(v interface{}, path string, booking, reviewState bool) {
+		if v == nil && !booking {
+			paths = append(paths, path)
+		}
+		switch x := v.(type) {
+		case map[string]interface{}:
+			for k, child := range x {
+				childPath := path + "." + k
+				// Only direct elements of the top-level api_review_states array
+				// are review states, not similarly named keys elsewhere.
+				if path == "$" && k == "api_review_states" {
+					if states, ok := child.([]interface{}); ok {
+						for i, state := range states {
+							walk(state, fmt.Sprintf("%s[%d]", childPath, i), booking, true)
+						}
+						continue
+					}
+				}
+				if reviewState && child == nil {
+					// docs/API.md: unclaimed/released/consumed/frozen/terminal
+					// claims are null. next_read is null only at a terminal state.
+					if k == "claim" || k == "next_read" && (x["state"] == "resolved_agreed" || x["state"] == "resolved_senior") {
+						continue
+					}
+				}
+				walk(child, childPath, booking || k == "booking", false)
+			}
+		case []interface{}:
+			for i, child := range x {
+				walk(child, fmt.Sprintf("%s[%d]", path, i), booking, false)
 			}
 		}
-	case []interface{}:
-		for _, child := range x {
-			if apiUnexpectedNull(child, booking) {
-				return true
-			}
-		}
 	}
-	return false
+	walk(v, "$", false, false)
+	sort.Strings(paths)
+	return paths
+}
+
+func TestAPIUnexpectedNullContract(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"unclaimed", `{"api_review_states":[{"state":"awaiting_r1","claim":null,"next_read":"r1","reads":[]}]}`, false},
+		{"released", `{"api_review_states":[{"state":"awaiting_r1","claim_head":"released-head","claim":null,"next_read":"r1","reads":[]}]}`, false},
+		{"consumed", `{"api_review_states":[{"state":"awaiting_r2","claim_head":"consumed-head","claim":null,"next_read":"r2","reads":[]}]}`, false},
+		{"frozen", `{"api_review_states":[{"state":"awaiting_r1","frozen":true,"claim":null,"next_read":"r1","reads":[]}]}`, false},
+		{"awaiting senior", `{"api_review_states":[{"state":"awaiting_r3","claim":null,"next_read":"r3","reads":[]}]}`, false},
+		{"terminal agreement", `{"api_review_states":[{"state":"resolved_agreed","claim":null,"next_read":null,"reads":[]}]}`, false},
+		{"terminal senior", `{"api_review_states":[{"state":"resolved_senior","claim":null,"next_read":null,"reads":[]}]}`, false},
+		{"populated claim", `{"api_review_states":[{"state":"awaiting_r1","claim":{"owner":"reviewer-a","role":"reviewer","read":"r1","claimed_at":"2026-11-13T10:00:00Z","heartbeat_at":"2026-11-13T10:00:00Z","expires_at":"2026-11-13T10:05:00Z","status":"active"},"next_read":"r1","reads":[]}]}`, false},
+		{"null states", `{"api_review_states":null}`, true},
+		{"null state element", `{"api_review_states":[null]}`, true},
+		{"null reads", `{"api_review_states":[{"state":"resolved_agreed","claim":null,"next_read":null,"reads":null}]}`, true},
+		{"null read element", `{"api_review_states":[{"claim":null,"reads":[null]}]}`, true},
+		{"null evidence", `{"evidence":null}`, true},
+		{"null identities", `{"identities":null}`, true},
+		{"null timeline", `{"timeline":null}`, true},
+		{"root claim", `{"claim":null}`, true},
+		{"unrelated claim", `{"case":{"claim":null}}`, true},
+		{"nested states", `{"case":{"api_review_states":[{"claim":null}]}}`, true},
+		{"states object not array", `{"api_review_states":{"claim":null}}`, true},
+		{"nested claim", `{"api_review_states":[{"reads":[{"claim":null}]}]}`, true},
+		{"claim nested in claim", `{"api_review_states":[{"claim":{"claim":null}}]}`, true},
+		{"populated claim null owner", `{"api_review_states":[{"claim":{"owner":null}}]}`, true},
+		{"populated claim null expiry", `{"api_review_states":[{"claim":{"owner":"reviewer-a","expires_at":null}}]}`, true},
+		{"populated claim null status", `{"api_review_states":[{"claim":{"owner":"reviewer-a","status":null}}]}`, true},
+		{"populated claim nested null list", `{"api_review_states":[{"claim":{"reads":null}}]}`, true},
+		{"unrelated review subtree", `{"api_review_states":[{"review_state":{"claim":null}}]}`, true},
+		{"other review field", `{"api_review_states":[{"claim":null,"question":null}]}`, true},
+		{"review list", `{"api_review_states":[{"claim":null,"evidence":null}]}`, true},
+		{"nonterminal next read", `{"api_review_states":[{"state":"awaiting_r1","claim":null,"next_read":null}]}`, true},
+		{"unknown state next read", `{"api_review_states":[{"state":"unknown","next_read":null}]}`, true},
+		{"frozen nonterminal next read", `{"api_review_states":[{"state":"awaiting_r1","frozen":true,"claim":null,"next_read":null}]}`, true},
+		{"awaiting senior next read", `{"api_review_states":[{"state":"awaiting_r3","claim":null,"next_read":null}]}`, true},
+		{"root next read", `{"state":"resolved_agreed","next_read":null}`, true},
+		{"unrelated next read", `{"case":{"state":"resolved_agreed","next_read":null}}`, true},
+		{"nested terminal next read", `{"api_review_states":[{"claim":null,"reads":[{"state":"resolved_agreed","next_read":null}]}]}`, true},
+		{"booking does not exempt siblings", `{"booking":{"slot":null},"claim":null,"evidence":null}`, true},
+		{"existing booking exemption", `{"booking":{"reservation_id":null,"slot":null}}`, false},
+		{"empty lists", `{"api_review_states":[],"evidence":[],"identities":[],"timeline":[]}`, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var body map[string]interface{}
+			if err := json.Unmarshal([]byte(tc.body), &body); err != nil {
+				t.Fatal(err)
+			}
+			if paths := apiUnexpectedNulls(body); (len(paths) > 0) != tc.want {
+				t.Fatalf("unexpected nulls at %v, want rejected=%v", paths, tc.want)
+			}
+		})
+	}
+}
+
+func TestAPIReviewNullLifecycleContract(t *testing.T) {
+	e := newIR(t)
+	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
+	e.s.now = func() time.Time { return now }
+	check := func(name, wantState string, wantClaim bool, wantNext interface{}) {
+		t.Helper()
+		t.Run(name, func(t *testing.T) {
+			body := ledgerHandlerGet(t, e, e.path, irRevA)
+			if paths := apiUnexpectedNulls(map[string]interface{}{"api_review_states": body["api_review_states"]}); len(paths) != 0 {
+				t.Fatalf("unexpected nulls at %v", paths)
+			}
+			for _, entry := range body["api_review_states"].([]interface{}) {
+				state := entry.(map[string]interface{})
+				if state["item"] != irLinkItem || state["question"] != "link" {
+					continue
+				}
+				claim, exists := state["claim"]
+				if !exists || (claim != nil) != wantClaim || state["state"] != wantState {
+					t.Fatalf("review state: %v, want state=%s claim=%v", state, wantState, wantClaim)
+				}
+				if next, exists := state["next_read"]; !exists || next != wantNext {
+					t.Fatalf("next_read: %v, want %v (present=%v)", next, wantNext, exists)
+				}
+				return
+			}
+			t.Fatal("link review state missing")
+		})
+	}
+	check("unclaimed", "awaiting_r1", false, "r1")
+	claimed := e.claim(t, irRevA, irLinkItem, "link", "claim", "", 201)
+	check("populated", "awaiting_r1", true, "r1")
+	now = now.Add(reviewClaimTTL)
+	check("expired still populated", "awaiting_r1", true, "r1")
+	taken := e.claim(t, irRevA, irLinkItem, "link", "takeover", claimHead(claimed), 201)
+	released := e.claim(t, irRevA, irLinkItem, "link", "release", claimHead(taken), 201)
+	check("released", "awaiting_r1", false, "r1")
+	reclaimed := e.claim(t, irRevA, irLinkItem, "link", "claim", claimHead(released), 201)
+	first := e.must(t, irRevA, irBodyWithClaim(irLinkItem, "same", "r1", "", claimHead(reclaimed)), 201)
+	check("consumed", "awaiting_r2", false, "r2")
+	e.must(t, irRevB, irBody(irLinkItem, "same", "r2", stateOf(first)["head"].(string)), 201)
+	check("terminal agreement", "resolved_agreed", false, nil)
+
+	// Exercise the other terminal state through a real disagreement and senior read.
+	e = newIR(t)
+	e.s.now = func() time.Time { return now }
+	first = e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201)
+	second := e.must(t, irRevB, irBody(irLinkItem, "different", "r2", stateOf(first)["head"].(string)), 201)
+	check("awaiting senior", "awaiting_r3", false, "r3")
+	e.must(t, irSR, irBody(irLinkItem, "same", "r3", stateOf(second)["head"].(string)), 201)
+	check("terminal senior", "resolved_senior", false, nil)
+
+	// A canonical sign-off freezes an active lease without making next_read null.
+	e = newIR(t)
+	e.s.now = func() time.Time { return now }
+	e.claim(t, irRevA, irLinkItem, "link", "claim", "", 201)
+	signoff := fmt.Sprintf(`{"item":%q,"loop":%q,"kinds":["link"],"link":"same","reviewer":"canon","wrong":false}`+"\n", irLinkItem, ledgerLoop)
+	if err := os.WriteFile(filepath.Join(e.run, "reviewer_decisions.ndjson"), []byte(signoff), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	e.s = loadAPI(e.run, "")
+	e.s.now = func() time.Time { return now }
+	var err error
+	e.h, err = e.s.handler(irTokens, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("frozen", "awaiting_r1", false, "r1")
+}
+
+func TestAPIUnexpectedNullPaths(t *testing.T) {
+	var body map[string]interface{}
+	if err := json.Unmarshal([]byte(`{"api_review_states":[{"claim":null,"reads":null},{"claim":{"owner":null}}],"evidence":[null],"identities":null,"timeline":null}`), &body); err != nil {
+		t.Fatal(err)
+	}
+	want := "$.api_review_states[0].reads\n$.api_review_states[1].claim.owner\n$.evidence[0]\n$.identities\n$.timeline"
+	if got := strings.Join(apiUnexpectedNulls(body), "\n"); got != want {
+		t.Fatalf("null paths:\ngot %s\nwant %s", got, want)
+	}
 }
 
 func getJ(t *testing.T, url string) (int, map[string]interface{}) {
+	t.Helper()
 	resp, err := http.Get(url)
 	if err != nil {
 		t.Fatal(err)
@@ -67,8 +231,8 @@ func getJ(t *testing.T, url string) (int, map[string]interface{}) {
 	b, _ := io.ReadAll(resp.Body)
 	var m map[string]interface{}
 	json.Unmarshal(b, &m)
-	if apiUnexpectedNull(m, false) {
-		t.Errorf("%s: response contains an unexpected null (lists must be [])", url)
+	for _, path := range apiUnexpectedNulls(m) {
+		t.Errorf("%s: response contains an unexpected null at %s (lists must be [])", url, path)
 	}
 	return resp.StatusCode, m
 }
@@ -203,14 +367,17 @@ func TestAPIBookingSupport(t *testing.T) {
 		t.Fatalf("dashboard capacity: %v", cap)
 	}
 	// an open CRC case gets a suggestion with the governing capacity condition; a closed one does not
-	var open string
+	var openIDs []string
 	for id, c := range s.cases {
 		if c.Programme == "crc" && (c.State == "open" || c.State == "no_show") {
-			open = id
-			break
+			openIDs = append(openIDs, id)
 		}
 	}
-	_, c := getJ(t, srv.URL+"/api/cases/"+open)
+	sort.Strings(openIDs)
+	if len(openIDs) == 0 {
+		t.Fatal("no open CRC case in materialised run")
+	}
+	_, c := getJ(t, srv.URL+"/api/cases/"+openIDs[0])
 	b := c["booking"].(map[string]interface{})
 	if b["data_mode"] != "simulated" || b["capacity_condition"] == nil || (b["status"] != "suggested" && b["status"] != "no_slot_within_horizon") {
 		t.Fatalf("open case booking: %v", b)

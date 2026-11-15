@@ -50,6 +50,23 @@ func consentBody(kind, head, note string) string {
 	return string(b)
 }
 
+
+func consentRev(t *testing.T, u string) string {
+	t.Helper()
+	_, m := doReq(t, "GET", u, RoleAuditor, "a", "")
+	o, _ := m["overlay"].(map[string]interface{})
+	rev, _ := o["revision"].(string)
+	if rev == "" {
+		t.Fatalf("overlay carries no consent revision: %v", m)
+	}
+	return rev
+}
+
+func consentPost(t *testing.T, u, actor, event, note string) (int, map[string]interface{}) {
+	t.Helper()
+	return doReq(t, "POST", u, RoleCoordinator, actor, consentBody(event, consentRev(t, u), note))
+}
+
 func TestConsentEventAuthorization(t *testing.T) {
 	_, srv := consentFixture(t, t.TempDir())
 	defer srv.Close()
@@ -103,12 +120,17 @@ func TestConsentEventTransitions(t *testing.T) {
 		{"consent_granted", "granted", "released", false}, // a denial can be reversed by an explicit grant
 		{"consent_opted_out", "opted_out", "cancelled", true},
 	}
+	rev := "sig-head-1"
 	for i, tc := range cases {
-		c, m := doReq(t, "POST", u, RoleCoordinator, "c1", consentBody(tc.event, "sig-head-1", "n"))
+		c, m := doReq(t, "POST", u, RoleCoordinator, "c1", consentBody(tc.event, rev, "n"))
 		if c != 201 {
 			t.Fatalf("%s: want 201, got %d %v", tc.event, c, m)
 		}
 		o := m["overlay"].(map[string]interface{})
+		if o["revision"] == rev {
+			t.Fatalf("%s: consent revision did not advance", tc.event)
+		}
+		rev, _ = o["revision"].(string)
 		if o["status"] != tc.status || o["demo_pending_consent"] != tc.pending || o["contact_blocked"] != tc.blocked || o["events"].(float64) != float64(i+1) {
 			t.Fatalf("%s: overlay %v", tc.event, o)
 		}
@@ -121,7 +143,7 @@ func TestConsentEventTransitions(t *testing.T) {
 		}
 	}
 	// opt-out is sticky: grant is refused
-	if c, _ := doReq(t, "POST", u, RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", "")); c != 409 {
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "c1", consentBody("consent_granted", rev, "")); c != 409 {
 		t.Fatalf("grant after opt-out: want 409, got %d", c)
 	}
 	if s.cases[consentCase].Consent != "unknown" {
@@ -177,8 +199,8 @@ func TestConsentEventHistoryReloadAndCanonicalUntouched(t *testing.T) {
 	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), append(preBytes, '\n'), 0644)
 	_, srv := consentFixture(t, run)
 	u := srv.URL + "/api/cases/" + consentCase + "/consent"
-	doReq(t, "POST", u, RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", "first"))
-	doReq(t, "POST", u, RoleCoordinator, "c2", consentBody("consent_denied", "sig-head-1", "second"))
+	consentPost(t, u, "c1", "consent_granted", "first")
+	consentPost(t, u, "c2", "consent_denied", "second")
 	srv.Close()
 
 	led, _ := os.ReadFile(filepath.Join(run, "api_reviews.ndjson"))
@@ -229,7 +251,7 @@ func TestConsentBlocksDemoContactConfirmation(t *testing.T) {
 	if c != 409 || len(s.reviews) != n {
 		t.Fatalf("confirm_contact after denial: want 409 and no event, got %d", c)
 	}
-	doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", ""))
+	consentPost(t, u+"/consent", "c1", "consent_granted", "")
 	if c, _ := doReq(t, "POST", u+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}`); c != 201 {
 		t.Fatalf("confirm_contact after grant passes through: got %d", c)
 	}
@@ -284,7 +306,7 @@ func TestConsentDetailOverlayStatus(t *testing.T) {
 		{"consent_denied", "denied", "cancelled", true},
 		{"consent_opted_out", "opted_out", "cancelled", true},
 	} {
-		doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody(tc.event, "sig-head-1", ""))
+		consentPost(t, u+"/consent", "c1", tc.event, "")
 		o := detail()
 		if o["status"] != tc.status || o["demo_pending_consent"] != tc.pending || o["contact_blocked"] != tc.blocked || o["canonical_consent"] != "unknown" {
 			t.Fatalf("%s: detail overlay %v", tc.event, o)
@@ -297,7 +319,7 @@ func TestConsentRepeatedAndDenyThenOptOut(t *testing.T) {
 	defer srv.Close()
 	u := srv.URL + "/api/cases/" + consentCase + "/consent"
 	post := func(ev string) (int, map[string]interface{}) {
-		return doReq(t, "POST", u, RoleCoordinator, "c1", consentBody(ev, "sig-head-1", ""))
+		return consentPost(t, u, "c1", ev, "")
 	}
 	if c, _ := post("consent_denied"); c != 201 {
 		t.Fatalf("deny: %d", c)
@@ -367,5 +389,101 @@ func TestConsentEscapedCaseIDMatchesCaseRoutes(t *testing.T) {
 	// plain slashes still work
 	if c, _ := doReq(t, "GET", srv.URL+"/api/cases/"+consentCase+"/consent", RoleAuditor, "a", ""); c != 200 {
 		t.Fatalf("plain: %d", c)
+	}
+}
+
+func TestConsentStaleRevisionRejectedAfterOtherWriter(t *testing.T) {
+	s, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	u := srv.URL + "/api/cases/" + consentCase + "/consent"
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "a", consentBody("consent_denied", "sig-head-1", "")); c != 201 {
+		t.Fatalf("A denial: %d", c)
+	}
+	c, m := doReq(t, "POST", u, RoleCoordinator, "b", consentBody("consent_granted", "sig-head-1", ""))
+	cur := consentRev(t, u)
+	if c != 409 || m["current_revision"] != cur || len(s.reviews) != 1 {
+		t.Fatalf("stale grant: want 409 with current revision and no append, got %d %v (events %d)", c, m, len(s.reviews))
+	}
+	if _, g := doReq(t, "GET", u, RoleAuditor, "a", ""); g["overlay"].(map[string]interface{})["contact_blocked"] != true {
+		t.Fatalf("overlay must stay contact-blocked: %v", g)
+	}
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "b", consentBody("consent_granted", cur, "")); c != 201 {
+		t.Fatalf("grant after reload: %d", c)
+	}
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "b", consentBody("consent_granted", cur, "")); c != 409 {
+		t.Fatalf("retry with the superseded revision: want 409, got %d", c)
+	}
+	if len(s.reviews) != 2 {
+		t.Fatalf("want 2 events, got %d", len(s.reviews))
+	}
+}
+
+func TestConsentRevisionSurvivesRestartAndIgnoresUnrelatedEvents(t *testing.T) {
+	run := t.TempDir()
+	s, srv := consentFixture(t, run)
+	u := srv.URL + "/api/cases/" + consentCase + "/consent"
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "a", consentBody("consent_granted", "sig-head-1", "")); c != 201 {
+		t.Fatalf("grant: %d", c)
+	}
+	rev := consentRev(t, u)
+	srv.Close()
+	_ = s
+
+	s2, srv2 := consentFixture(t, run)
+	defer srv2.Close()
+	u2 := srv2.URL + "/api/cases/" + consentCase + "/consent"
+	if got := consentRev(t, u2); got != rev {
+		t.Fatalf("revision after restart: %s != %s", got, rev)
+	}
+	if c, _ := doReq(t, "POST", u2, RoleCoordinator, "b", consentBody("consent_denied", "sig-head-1", "")); c != 409 || len(s2.reviews) != 1 {
+		t.Fatalf("stale write after restart: %d events=%d", c, len(s2.reviews))
+	}
+	if c, _ := doReq(t, "POST", srv2.URL+"/api/cases/"+consentCase+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}`); c != 201 {
+		t.Fatalf("unrelated review: %d", c)
+	}
+	if got := consentRev(t, u2); got != rev {
+		t.Fatalf("unrelated ledger event advanced the consent revision")
+	}
+	if c, _ := doReq(t, "POST", u2, RoleCoordinator, "b", consentBody("consent_denied", rev, "")); c != 201 {
+		t.Fatalf("write at current revision: %d", c)
+	}
+}
+
+func TestConsentFailedAppendDoesNotAdvanceRevision(t *testing.T) {
+	s, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	u := srv.URL + "/api/cases/" + consentCase + "/consent"
+	before := consentRev(t, u)
+	s.appendLine = func([]byte) error { return io.ErrShortWrite }
+	if c, _ := doReq(t, "POST", u, RoleCoordinator, "a", consentBody("consent_granted", before, "")); c != 500 {
+		t.Fatalf("want 500, got %d", c)
+	}
+	if consentRev(t, u) != before {
+		t.Fatal("failed append advanced the revision")
+	}
+}
+
+func TestLedgerReplayRejectsBrokenConsentRevisionLinkage(t *testing.T) {
+	mk := func(prev, decision, rev string) map[string]interface{} {
+		ev := map[string]interface{}{"case": consentCase, "item": "", "decision": decision, "note": "", "role": RoleCoordinator, "actor": "a",
+			"action": ActRecordConsent, "at": "2026-11-08T10:00:00Z", "head_signed": "sig-head-1", "mode": "demo", "prev": prev, "consent_rev": rev}
+		ev["hash"] = apiEventHash(ev)
+		return ev
+	}
+	e1 := mk("genesis", "consent_denied", "sig-head-1")
+	if err := validateLedgerSemantics([]map[string]interface{}{e1, mk(sstr(e1, "hash"), "consent_granted", sstr(e1, "hash"))}); err != nil {
+		t.Fatalf("valid linkage rejected: %v", err)
+	}
+	if err := validateLedgerSemantics([]map[string]interface{}{e1, mk(sstr(e1, "hash"), "consent_granted", "sig-head-1")}); err == nil {
+		t.Fatal("stale consent_rev accepted on replay")
+	}
+	if err := validateLedgerSemantics([]map[string]interface{}{mk("genesis", "consent_denied", "other")}); err == nil {
+		t.Fatal("first consent event with a foreign consent_rev accepted")
+	}
+	legacy := mk("genesis", "consent_denied", "")
+	delete(legacy, "consent_rev")
+	legacy["hash"] = apiEventHash(legacy)
+	if err := validateLedgerSemantics([]map[string]interface{}{legacy}); err != nil {
+		t.Fatalf("legacy event without consent_rev must stay valid: %v", err)
 	}
 }

@@ -34,46 +34,58 @@ type Rec struct {
 	reportGroupLatest map[string]int    // logical-report group -> newest accepted version
 }
 
+type trackingRevision struct {
+	loop     string
+	event    *Event
+	rec      int // -1 until a patient registration is available
+	version  int
+	conflict bool
+	tracking bool // any revision of this provider+ID was a root tracking order
+}
+
 type LinkerCore struct {
-	P           int
-	K, Cap      int
-	Thr, Lo     float64
-	GuardThr    float64
-	gbm         *GBM
-	recs        []*Rec
-	byPk        map[string]int
-	keyIdx      map[string][]int
-	eidIdx      map[string][]int
-	parent      []int
-	members     map[int][]int
-	adj         map[int]map[int]float64
-	basis       map[[2]int]string
-	idConfirmed map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
-	cannot      map[int]map[int]bool
-	pscore      map[[2]int]float64
-	near        map[int]map[int]float64 // lo <= p < thr
-	demoMissing map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
-	loops       map[string]*LoopFacts   // static part (sr info)
-	loopRec     map[string]int
-	tasks       map[string][]TaskFact // loop -> tasks
-	comms       map[string][]CommFact // loop -> communications
-	signoffs    map[string][]Signoff
-	evOver      map[string]map[string]string
-	lastHash    map[string]string
-	Stats       map[string]int
-	provLast    map[string]float64
-	provDone    map[string]bool
-	lastTick    int
-	streamT     float64 // HistClock: latest input arrival day seen
-	streamSeen  bool
-	PSeq        []uint64
-	optOut      map[string]bool    // v6: pk -> outreach consent withheld
-	contact     map[string]string  // stage 3: pk -> granted|denied|opted_out (absent = unknown)
-	pcal7       map[[2]int]float64 // v7: calibrated probability of each model edge
-	xref        map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
-	ann         ANNIndex
-	trace       func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
-	traceSeq    uint64
+	P              int
+	K, Cap         int
+	Thr, Lo        float64
+	GuardThr       float64
+	gbm            *GBM
+	recs           []*Rec
+	byPk           map[string]int
+	keyIdx         map[string][]int
+	eidIdx         map[string][]int
+	parent         []int
+	members        map[int][]int
+	adj            map[int]map[int]float64
+	basis          map[[2]int]string
+	idConfirmed    map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
+	cannot         map[int]map[int]bool
+	pscore         map[[2]int]float64
+	near           map[int]map[int]float64      // lo <= p < thr
+	demoMissing    map[[2]string]bool           // demoguard: pairs emitted as near/demographic_missing
+	loops          map[string]*LoopFacts        // active tracking requests only: static part (sr info)
+	requests       map[string]*trackingRevision // current ServiceRequest revisions, including category changes
+	loopRec        map[string]int
+	tasks          map[string][]TaskFact // loop -> tasks
+	comms          map[string][]CommFact // loop -> communications
+	signoffs       map[string][]Signoff
+	evOver         map[string]map[string]string
+	lastHash       map[string]string
+	Stats          map[string]int
+	provLast       map[string]float64
+	provDone       map[string]bool
+	lastTick       int
+	streamT        float64 // HistClock: latest input arrival day seen
+	streamSeen     bool
+	PSeq           []uint64
+	optOut         map[string]bool     // pk -> registration-local denied/opted-out projection
+	contact        map[string]string   // pk -> granted|denied|opted_out (absent = unknown)
+	consentJournal map[string][]*Event // pk -> authorised active Consent journal, in ingest order only for storage
+	consentSeen    map[string]struct{} // stable normalized payload -> already journalled
+	pcal7          map[[2]int]float64  // v7: calibrated probability of each model edge
+	xref           map[string][]int    // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
+	ann            ANNIndex
+	trace          func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq       uint64
 }
 
 var annMode = new(string)
@@ -107,10 +119,11 @@ func (L *LinkerCore) attachANN() {
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
-		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
+		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{}, requests: map[string]*trackingRevision{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{},
+		consentJournal: map[string][]*Event{}, consentSeen: map[string]struct{}{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -467,7 +480,7 @@ func reportBodyKey(e *Event) string {
 		}
 		body = sha([]byte(e.Text))
 	}
-	return e.Category + "|" + e.Focus + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
+	return e.Category + "|" + e.Focus + "|" + e.Relation + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
 }
 
 // reportContentKey adds revision semantics to exact cross-transport dedupe.
@@ -762,6 +775,11 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		if e.RType == "DiagnosticReport" && !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
+		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
+			// Tracking orders govern their own loop, never another loop's
+			// receiving-unit response (including retired orders kept for audit).
+			continue
+		}
 		if near && e.RType != "DiagnosticReport" {
 			continue
 		}
@@ -787,8 +805,8 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
 			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog})
-		if rt == "Pathology" {
-			out[len(out)-1].Parent = e.Focus
+		if e.RType == "DiagnosticReport" {
+			out[len(out)-1].Parent, out[len(out)-1].Relation = e.Focus, e.Relation
 		}
 	}
 	return out
@@ -868,12 +886,192 @@ func (L *LinkerCore) markNearDependents(i int, aff map[int]bool) {
 	}
 }
 
+func requestVersion(e *Event) int {
+	if e.Version == 0 {
+		return 1 // legacy materialized tracking requests
+	}
+	return e.Version
+}
+
+func sameRequestContent(a, b *Event) bool {
+	ac, bc := *a, *b
+	ac.Version, bc.Version = requestVersion(a), requestVersion(b)
+	return string(canon(&ac)) == string(canon(&bc))
+}
+
+func removeLoopRegistration(rec *Rec, loop string) {
+	for i, lp := range rec.srs {
+		if lp == loop {
+			rec.srs = append(rec.srs[:i], rec.srs[i+1:]...)
+			return
+		}
+	}
+}
+
+func addLoopRegistration(rec *Rec, loop string) {
+	for _, lp := range rec.srs {
+		if lp == loop {
+			return
+		}
+	}
+	rec.srs = append(rec.srs, loop)
+	sort.Strings(rec.srs)
+}
+
+func removeCurrentRequestEvent(rec *Rec, e *Event) {
+	if rec == nil || e == nil {
+		return
+	}
+	key := e.RType + "/" + e.ID
+	delete(rec.evs, key)
+	for i, k := range rec.evOrder {
+		if k == key {
+			rec.evOrder = append(rec.evOrder[:i], rec.evOrder[i+1:]...)
+			break
+		}
+	}
+}
+
+func trackingBase(e *Event, rec *Rec) *LoopFacts {
+	return &LoopFacts{LoopID: e.Provider + "/ServiceRequest/" + e.ID, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
+		Prog: e.Prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT, IFHAS: e.IFHAS}
+}
+
+// foldTrackingRequest folds every ServiceRequest revision before category
+// routing. An intake-only ID never owns a loop, but an intake category correction
+// must retire the same ID's old tracking order, even if delivered first.
+func (L *LinkerCore) foldTrackingRequest(e *Event, recIdx int) (loop string, store, changed bool) {
+	loop = e.Provider + "/ServiceRequest/" + e.ID
+	version := requestVersion(e)
+	tracking := e.Category != "referral-intake"
+	if version <= 0 || (tracking && !trackingRequestStatuses[e.Status]) {
+		// normaliseChecked rejects this before Prep; a direct/materialized caller
+		// gets the same no-op quarantine and cannot supersede a valid revision.
+		if version <= 0 {
+			L.Stats["invalid_tracking_request_version"]++
+		} else {
+			L.Stats["invalid_tracking_request_status"]++
+		}
+		return loop, false, false
+	}
+	incoming := *e
+	incoming.Version = version
+	current, seen := L.requests[loop]
+	var currentRec *Rec
+	if seen && current.rec >= 0 {
+		currentRec = L.recs[current.rec]
+	}
+	newTracking := seen && tracking && !current.tracking
+	if seen {
+		// A delayed old tracking revision establishes the resource's tracking
+		// history, not its current category. Emit the current intake retirement.
+		current.tracking = current.tracking || tracking
+		tracking = current.tracking
+		if newTracking && currentRec != nil {
+			addLoopRegistration(currentRec, loop)
+			L.loopRec[loop] = current.rec
+		}
+		if version < current.version {
+			L.Stats["stale_tracking_request_version"]++
+			return loop, false, newTracking
+		}
+		if version == current.version {
+			if current.conflict {
+				return loop, false, newTracking
+			}
+			if sameRequestContent(current.event, &incoming) {
+				return loop, false, newTracking
+			}
+			// Same-version disagreement is a durable tombstone. Neither arrival
+			// order nor another copy of either revision can select a winner.
+			current.conflict = true
+			delete(L.loops, loop)
+			removeCurrentRequestEvent(currentRec, current.event)
+			L.Stats["conflicting_tracking_request_version"]++
+			return loop, false, tracking
+		}
+	}
+	if currentRec != nil {
+		removeLoopRegistration(currentRec, loop)
+		removeCurrentRequestEvent(currentRec, current.event)
+	}
+	L.requests[loop] = &trackingRevision{loop: loop, event: &incoming, rec: recIdx, version: version, tracking: tracking}
+	if recIdx < 0 {
+		// Preserve an unbound revision by resource identity alone, including
+		// active orders. Never let delayed older revisions bind or activate it.
+		delete(L.loops, loop)
+		delete(L.loopRec, loop)
+		return loop, false, tracking
+	}
+	if !tracking {
+		return loop, true, false // distinct intake responses retain downstream semantics
+	}
+	rec := L.recs[recIdx]
+	addLoopRegistration(rec, loop)
+	L.loopRec[loop] = recIdx
+	if e.Prog == "" {
+		L.Stats["unknown_programme"]++
+		delete(L.loops, loop)
+		return loop, true, true
+	}
+	if e.Status == "active" && e.Category != "referral-intake" {
+		L.loops[loop] = trackingBase(&incoming, rec)
+	} else {
+		delete(L.loops, loop)
+	}
+	return loop, true, true
+}
+
+// Revisions can remove facts from a different registration than the incoming
+// one. Invalidate both sides, including near-link and explicit-reference
+// dependents, even for intake-only IDs and same-version conflicts. Rejected
+// stale/duplicate revisions remain no-ops through the facts hash guard.
+func (L *LinkerCore) foldRequestAndInvalidate(e *Event, recIdx int, roots map[int]bool, loops map[string]bool) (string, bool, bool) {
+	invalidate := func(rec int, event *Event) {
+		if rec >= 0 {
+			roots[L.Find(rec)] = true
+			L.markNearDependents(rec, roots)
+			for near := range L.near[rec] {
+				roots[L.Find(near)] = true
+			}
+		}
+		if XRefLinkQ && event != nil && event.XRef != "" {
+			loops[event.XRef] = true
+		}
+	}
+	if previous := L.requests[e.Provider+"/ServiceRequest/"+e.ID]; previous != nil {
+		invalidate(previous.rec, previous.event)
+	}
+	loop, store, changed := L.foldTrackingRequest(e, recIdx)
+	invalidate(recIdx, e)
+	return loop, store, changed
+}
+
+func (L *LinkerCore) retirementFacts(loop string) *LoopFacts {
+	r := L.requests[loop]
+	if r == nil || !r.tracking {
+		return nil
+	}
+	f := &LoopFacts{LoopID: loop, Provider: r.event.Provider, Inactive: true, ReqStatus: r.event.Status, ReqVersion: r.version, ReqConflict: r.conflict}
+	if !r.conflict {
+		f.SRDay, f.Prog = r.event.Day, r.event.Prog
+		if r.rec >= 0 {
+			f.SRRec = L.recs[r.rec].Pk
+		}
+	} else {
+		// Conflicts have no clinically selected request body or status.
+		f.ReqStatus = "conflict"
+	}
+	return f
+}
+
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	base := L.loops[loop]
+	s := L.loopRec[loop]
+	contact, optedOut := L.clusterConsent(s)
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
 		Prog: base.Prog, Priority: base.Priority, Cat: base.Cat, IndexDay: base.IndexDay,
-		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: L.optOut[base.SRRec], Contact: contactOf(L.contact, base.SRRec)}
-	s := L.loopRec[loop]
+		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: optedOut, Contact: contact}
 	ms := L.clusterOf(s)
 	best, weak, hops, pred := L.widestP(s, ms)
 	if V7Cal != nil || V7Guard {
@@ -885,18 +1083,29 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	}
 	if base.DR != nil {
 		f.DR = base.DR
-		f.Down = append(f.Down, drScreenFacts(L.recs[s])...) // screening reports on the screen's own registration
+		var screens []DownFact
+		screens, f.EpisodeError = drScreenFacts(L.recs[s], base.DR.Screen)
+		f.Down = append(f.Down, screens...)
 	}
 	if base.Breast != nil {
 		f.Breast = base.Breast
-		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
+		var screens []DownFact
+		screens, f.EpisodeError = breastScreenFacts(L.recs[s], base.Breast.Screen)
+		f.Down = append(f.Down, screens...)
 	}
 	if base.LDCT != nil {
 		f.LDCT = base.LDCT
 		f.Down = append(f.Down, ldctScanFacts(L.recs[s])...) // LDCT reports (index, completion, follow-up) on the scan's own registration
 	}
 	if base.Prog == "ifhas" {
-		f.Down = append(f.Down, ifhasScreenFacts(L.recs[s])...) // IFHAS results on the visit's own registration (ifhas.go)
+		f.IFHAS = base.IFHAS
+		index := ""
+		if base.IFHAS != nil {
+			index = base.IFHAS.Screen
+		}
+		var screens []DownFact
+		screens, f.EpisodeError = ifhasScreenFacts(L.recs[s], index)
+		f.Down = append(f.Down, screens...)
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
@@ -1099,32 +1308,57 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				L.Stats["rbac_denied_consent"]++
 				break
 			}
-			L.Stats["consent_records"]++
-			L.optOut[e.PatientKey] = e.Status == "deny"
-			prev := L.contact[e.PatientKey]
-			switch e.Status { // idempotent: re-applying the same record (duplicate/replay) is a no-op
-			case "permit":
-				if prev != "opted_out" { // a stale permit never overrides a later withdrawal
-					L.contact[e.PatientKey] = "granted"
-				}
-			case "deny":
-				if prev == "granted" || prev == "opted_out" {
-					L.contact[e.PatientKey] = "opted_out" // withdrawal after granting
-				} else {
-					L.contact[e.PatientKey] = "denied"
-				}
+			if e.ConsentStatus == "" {
+				// Historical normalized events carry no lifecycle proof. They remain
+				// visible in the raw log but cannot authorize an outreach transition.
+				L.Stats["consent_legacy_inert"]++
+				break
 			}
-			if L.contact[e.PatientKey] != prev {
-				L.Stats["contact_"+L.contact[e.PatientKey]]++
+			if e.ConsentStatus != "active" || !supportedConsentProvision(e.Status) {
+				L.Stats["consent_inert"]++
+				break
+			}
+			added, previous, current := L.addConsent(e)
+			if !added {
+				break
+			}
+			L.Stats["consent_records"]++
+			if current != previous {
+				L.Stats["contact_"+current]++
 			}
 			if i, ok := L.byPk[e.PatientKey]; ok {
-				for _, lp := range L.recs[i].srs {
-					affLoops[lp] = true
-				}
+				// A changed record can affect every loop in the trusted cluster,
+				// including when its clinical time predates the current arrival.
+				affRoots[L.Find(i)] = true
 			}
 			break
 		}
 		if e.PatientKey == "" {
+			if e.RType == "ServiceRequest" {
+				loop := e.Provider + "/ServiceRequest/" + e.ID
+				recIdx := -1
+				if current := L.requests[loop]; current != nil {
+					recIdx = current.rec
+				}
+				// Fold every revision even before any patient is known, so a
+				// delayed older active request cannot supply stale scope or bind it.
+				// Activation still requires an established registration.
+				_, store, changed := L.foldRequestAndInvalidate(e, recIdx, affRoots, affLoops)
+				if recIdx >= 0 {
+					affRoots[L.Find(recIdx)] = true
+				}
+				if changed {
+					affLoops[loop] = true
+				}
+				if store {
+					rec := L.recs[recIdx]
+					key := e.RType + "/" + e.ID
+					if _, exists := rec.evs[key]; !exists {
+						rec.evOrder = append(rec.evOrder, key)
+					}
+					rec.evs[key] = e
+				}
+			}
 			break
 		}
 		i, ok := L.byPk[e.PatientKey]
@@ -1137,6 +1371,16 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
+		if e.RType == "ServiceRequest" {
+			loop, store, changed := L.foldRequestAndInvalidate(e, i, affRoots, affLoops)
+			affRoots[L.Find(i)] = true
+			if changed {
+				affLoops[loop] = true
+			}
+			if !store {
+				break
+			}
+		}
 		var previousReport *Event
 		if e.RType == "DiagnosticReport" {
 			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
@@ -1323,20 +1567,6 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if XRefLinkQ && L.noteXRef(e, i) { // a rejected intake citing a referral: that loop may need a link question
 			affLoops[e.XRef] = true
 		}
-		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
-			loop := e.Provider + "/ServiceRequest/" + e.ID
-			if _, ok := L.loops[loop]; !ok {
-				prog := e.Prog
-				if prog == "" {
-					L.Stats["unknown_programme"]++
-					break
-				}
-				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}
-				L.loopRec[loop] = i
-				rec.srs = append(rec.srs, loop)
-			}
-		}
 		affRoots[L.Find(i)] = true
 		L.markNearDependents(i, affRoots)
 		for z := range L.near[i] {
@@ -1357,10 +1587,15 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	}
 	sort.Strings(lps)
 	for _, lp := range lps {
-		if _, ok := L.loops[lp]; !ok {
+		var f *LoopFacts
+		if _, ok := L.loops[lp]; ok {
+			f = L.factsFor(lp)
+		} else {
+			f = L.retirementFacts(lp)
+		}
+		if f == nil {
 			continue
 		}
-		f := L.factsFor(lp)
 		h := sha(canon(f))
 		if L.lastHash[lp] == h {
 			continue

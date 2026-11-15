@@ -18,7 +18,7 @@ solved by `wsi7 mcf`); the stress-test flags (--arrivals bursty, --female-share,
 rounding and integer-cost assignment apply, with reviewed golden changes to probabilities and two equal-cost slots.
 """
 from __future__ import annotations
-import json, math, os, sys, argparse, collections, hashlib
+import json, os, sys, argparse, collections, hashlib
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
@@ -33,6 +33,21 @@ LIST_CAP = 4
 # provider -> region (cohort providers are all in Abu Dhabi city / Al Ain; assumed, synthetic)
 PROV_REGION = {"ahs-mushrif": "AD", "medlab": "AA", "skmc-endo": "AD", "noor-endo": "AA", "corniche-wh": "AD"}
 NEEDS_SLOT = {"open", "no_show", "inadequate", "referral_rejected"}  # still need (another) colonoscopy
+
+
+def readiness_hold(d):
+    """Why a case that needs a slot must not be offered one yet, or None. Mirrors pipeline bookingReadiness: a returned
+    referral stays blocked until a canonical re-referral changes its state; an inadequate case waits for its pending review."""
+    if d["state"] == "referral_rejected":
+        return "returned referral unresolved"
+    if d["state"] == "inadequate" and d.get("pending"):
+        return "repeat disposition review pending"
+    return None
+
+
+def held_case(d, procedure):
+    return {"status": "not_applicable", "procedure": procedure, "state_at_run_end": d["state"],
+            "eligible_slots": [], "reason": f"clinical_readiness: {readiness_hold(d)}"}
 
 
 def load(run):
@@ -121,21 +136,11 @@ def _sha(value):
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
-def _current_day(dec):
-    """Canonical decision clock (`now`) as an integer engine day, or None when the run recorded none."""
-    now = (dec or {}).get("now")
-    return int(math.floor(now)) if isinstance(now, (int, float)) and math.isfinite(now) else None
-
-
-def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead, current_day=None):
+def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead):
     """Deterministic synthetic seats from the existing engine's hard-feasibility and no-show rules.
 
     This is a catalogue, not a second assignment pass: sessions stay in calendar order and every declared
     non-overbooked seat is named. Per-case fields (deadline, lead time and no-show risk) intentionally differ.
-
-    The seat window, lead time and no-show risk stay anchored to the original request day. Female-list protection is
-    evaluated on the later of that day and the case's current canonical clock, so seats held at the original request
-    are released once their session is within the engine's seven-day boundary (session day <= now + reserve_days).
     """
     day = requested_day
     lo = max(day + prep_lead, earliest)
@@ -153,13 +158,6 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
     # Match BookingEngine.build's bounded candidate window, counting sessions rather than occupied seats because
     # coordinator reservations occupy their own append-only ledger, not the engine's retrospective assignment state.
     sessions = sessions[: eng.K]
-    held = {}
-    if eng.protect is not None and prefs.female_endoscopist != "hard":
-        demand = list(eng._hard_arr)
-        try:
-            held = eng._held(day if current_day is None else max(day, current_day), sessions)
-        finally:
-            eng._hard_arr = demand
     out = []
     for s0 in sessions:
         s = int(s0)
@@ -169,7 +167,7 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
         nurse = pred > eng.nurse_thr
         if nurse:
             pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 1, region))
-        for seat in range(1, int(cal.cap[s]) - held.get(s, 0) + 1):
+        for seat in range(1, int(cal.cap[s]) + 1):
             out.append({
                 "slot_id": f"sim:{procedure}:{s}:{seat}", "session_id": s, "unit": str(cal.unit[s]),
                 "day": int(cal.day[s]), "region": region, "deadline": int(deadline),
@@ -228,7 +226,7 @@ COLPO_FEMALE_SHARE = 0.5   # assumed share of colposcopy clinics run by a female
 def cervical(last, sr, a, rng):
     """Cervical loops that still need a colposcopy: a repeat 6-12 weeks after an unsatisfactory exam (DoH 10.6.4), or a
     first colposcopy inside the loop's DoH window (App 5). Same engine, SYNTHETIC colposcopy-clinic calendar."""
-    need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT]
+    need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT and not readiness_hold(d)]
     # same slot density per day as the CRC calendar (slots_per_fit over its 95-day window), over 160 days so repeats fit
     cal, _ = calendar(len(need), a.slots_per_fit * 160 / 95, rng, a.misallocated, f_share=a.colpo_female_share, days=160)
     eng = make_engine(a, cal, 1)
@@ -263,7 +261,7 @@ def cervical(last, sr, a, rng):
                 "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
                 "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
         b = out.get(k)
-        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1, _current_day(d))
+        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1)
         if b is None:
             cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", "eligible_slots": candidates, **base}
         else:
@@ -303,7 +301,9 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     a = ap.parse_args(argv)
     last, sr = preloaded if preloaded is not None else load(a.run)
     rng = np.random.default_rng(a.seed)
-    open_cases = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "crc" and d["state"] in NEEDS_SLOT]
+    open_cases = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "crc" and d["state"] in NEEDS_SLOT and not readiness_hold(d)]
+    held = {k: held_case(d, "colonoscopy" if d["prog"] == "crc" else "colposcopy") for k, d in sorted(last.items())
+            if d.get("prog") in ("crc", "cervical") and d["state"] in NEEDS_SLOT and readiness_hold(d)}
     as_of = 0  # suggestions are made from the start of an empty synthetic calendar window
     cal, share = calendar(len(open_cases), a.slots_per_fit, rng, a.misallocated, f_share=a.female_share)
     eng = make_engine(a, cal, 5)  # female-list protection on by default
@@ -343,7 +343,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     for k, (d, prefs, day) in meta.items():
         b = out.get(k)
         deadline = day + (14 if k in urgent else 31)
-        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5, _current_day(d))
+        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, day + 5, 5)
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
         if b is None:
@@ -399,7 +399,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
                    "prep_risk_band": dict(collections.Counter(c["prep_risk"]["band"] for c in cases.values())),
                    "requires_clinician_order": True,
                    "simulated_effect": "booking/RESULTS.md, Queue levers (simulated)"},
-        "cases": {**cases, **cerv["cases"]},
+        "cases": {**cases, **cerv["cases"], **held},
         "cervical": cerv["summary"],
     }
     given = {"optimiser": (a.optimiser, "myopic"), "arrivals": (a.arrivals, "uniform"), "female_list_share": (a.female_share, 0.25),

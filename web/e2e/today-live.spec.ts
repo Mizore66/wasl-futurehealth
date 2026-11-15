@@ -118,6 +118,7 @@ test.describe("Today, live mode against a mock API", () => {
           if (invalid) return send(500, { meta, error: "review ledger failed validation; writes refused", detail: invalid });
           if (expected_head !== head(id)) return send(409, { meta, error: "stale expected_head", conflict: "head", current_head: head(id) });
           if (action === "contact_outcome" && byId.get(id)?.consent !== "granted") return send(409, { meta, error: "contact outcomes need contact permission granted", conflict: "consent" });
+          if (action === "assign_owner" && data.owner === undefined) data.owner = principal.actor;
           const ev = append(id, action, data, principal.actor);
           send(201, { meta, event: apiEvent(id, ev), api_overlay: overlay(id, true) });
         });
@@ -215,6 +216,110 @@ test.describe("Today, live mode against a mock API", () => {
     await expect(open).toContainText("Note: “Prefers a morning call”");
     await expect(open).toContainText("Reached (phone): “Will check her diary”");
     await expect(open).toContainText("seed-coordinator");
+  });
+
+  test("a saved Reached outcome keeps its follow-up choices after a reload and after switching patients (issue #131)", async ({ page }) => {
+    const choices = ["Appointment agreed", "Call back on…", "Declined"];
+    const outcomes = (id: string) => ledger.get(id)?.map((e) => e.data.outcome);
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    const list = page.getByRole("region", { name: "Your list" });
+    await open.getByRole("button", { name: "Reached" }).click();
+    await expect(open.getByRole("group", { name: "What next?" }).getByRole("button")).toHaveText(choices);
+
+    await page.reload();
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open.getByRole("group", { name: "What next?" }).getByRole("button")).toHaveText(choices);
+    await expect(open.getByText("Reached (phone)")).toHaveCount(1);
+
+    await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(open.getByRole("group", { name: "After the call" })).toBeVisible();
+    await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
+    await expect(open.getByRole("group", { name: "What next?" }).getByRole("button")).toHaveText(choices);
+
+    await open.getByRole("button", { name: "Appointment agreed" }).click();
+    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Appointment agreed");
+    expect(outcomes(first)).toEqual(["reached", "appointment_agreed"]);
+
+    await page.reload();
+    await page.getByRole("tab", { name: /^Waiting/ }).click();
+    await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
+    await expect(open.getByRole("group", { name: "What next?" })).toHaveCount(0);
+    await expect(open.getByRole("group", { name: "After the call" })).toBeVisible();
+  });
+
+  test("a restored Reached follow-up saves a call back or a decline without another Reached (issue #131)", async ({ page }) => {
+    append(first, "contact_outcome", { outcome: "reached", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
+    append(second, "contact_outcome", { outcome: "reached", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
+    await page.goto("/app/today");
+    const open = page.getByRole("region", { name: "Open patient" });
+    await open.getByRole("button", { name: "Call back on…" }).click();
+    await open.getByRole("group", { name: "Call back on" }).getByRole("button").first().click();
+    await expect(open.getByRole("status")).toContainText("Logged: Call back");
+    expect(ledger.get(first)?.map((e) => e.kind)).toEqual(["contact_outcome", "snooze"]);
+
+    await page.reload();
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await open.getByRole("button", { name: "Declined" }).click();
+    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Declined");
+    expect(ledger.get(second)?.map((e) => e.data.outcome)).toEqual(["reached", "declined"]);
+  });
+
+  for (const [label, outcome, status, trail] of [
+    ["Voicemail", "voicemail", "Left a voicemail · retry", "Left a voicemail (phone)"],
+    ["Wrong number", "wrong_number", "Wrong number · check the record", "Wrong number (phone)"],
+  ]) {
+    test(`${label} is logged as ${outcome} on the phone and survives a reload (issue #134)`, async ({ page }) => {
+      append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T08:00:00.000Z");
+      append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T09:00:00.000Z");
+      await page.goto("/app/today");
+      const open = page.getByRole("region", { name: "Open patient" });
+      const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ });
+      await row.click();
+      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await expect(open.getByRole("group", { name: "How did it go?" }).getByRole("button")).toHaveText(["Reached", "No answer", "Voicemail", "Wrong number"]);
+
+      await open.getByRole("button", { name: label, exact: true }).click();
+      await expect(open.getByRole("status")).toContainText(`Logged: ${label}`);
+      await expect(row).toContainText(status);
+      await expect(open).toContainText(trail);
+      expect(ledger.get(first)?.at(-1)).toMatchObject({ kind: "contact_outcome", data: { outcome, channel: "phone" }, actor: "mock-coordinator" });
+
+      await page.reload();
+      await expect(row).toContainText(status);
+      await row.click();
+      await expect(open).toContainText(trail);
+      await expect(open.getByText(trail)).toHaveCount(1);
+      await expect(open.getByText("No answer (phone)")).toHaveCount(2);
+
+      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await open.getByRole("button", { name: "No answer", exact: true }).click();
+      await expect(row).toContainText("No answer ×1 · retry tomorrow");
+      expect(ledger.get(first)?.map((e) => e.data.outcome)).toEqual(["no_answer", "no_answer", outcome, "no_answer"]);
+
+      await page.reload();
+      await expect(row).toContainText("No answer ×1 · retry tomorrow");
+      await row.click();
+      await expect(open.getByText(trail)).toHaveCount(1);
+      await expect(open.getByText("No answer (phone)")).toHaveCount(3);
+    });
+  }
+
+  test("Take this patient assigns the verified coordinator, not a fixed name (issue #148)", async ({ page }) => {
+    await page.goto("/app/today");
+    await page.getByRole("tab", { name: /^No owner/ }).click();
+    const open = page.getByRole("region", { name: "Open patient" });
+    const heading = await open.getByRole("heading", { level: 2 }).innerText();
+    await open.getByRole("button", { name: "Take this patient" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Yours now");
+    const events = [...ledger.values()].flat();
+    expect(events.map((e) => [e.kind, e.data.owner, e.actor])).toEqual([["assign_owner", "mock-coordinator", "mock-coordinator"]]);
+    await expect(open).not.toContainText("Hessa");
+
+    await page.reload();
+    await page.getByRole("tab", { name: /^To call/ }).click();
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: new RegExp(heading) }).click();
+    await expect(open).not.toContainText("Hessa");
   });
 
   test("a partial ledger replay shows only the valid prefix under a warning and disables writes", async ({ page }) => {
