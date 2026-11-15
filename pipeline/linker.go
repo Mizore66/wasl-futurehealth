@@ -86,6 +86,9 @@ type LinkerCore struct {
 	ann            ANNIndex
 	trace          func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
 	traceSeq       uint64
+
+	// Provider/resource ownership, including ambiguous and conflicting holds.
+	appointmentCurrent map[appointmentLineageKey]appointmentLineageState
 }
 
 var annMode = new(string)
@@ -1382,6 +1385,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		var previousReport *Event
+		if e.RType == "Appointment" && !L.acceptAppointmentRevision(e, i, affRoots) {
+			break
+		}
 		if e.RType == "DiagnosticReport" {
 			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
 				L.Stats["stale_report_version"]++
