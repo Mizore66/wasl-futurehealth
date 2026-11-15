@@ -111,6 +111,20 @@ def test_crc_zero_negative_and_absent_anchors_keep_request_relative_bound():
     assert c["clock_anchor"] == {"kind": "referral", "day": 4} and c["deadline_day"] == 35
 
 
+def test_repeat_negative_and_zero_exam_anchors_remain_absolute():
+    # Explicit normalized examination days are signed values; zero is not absence.
+    # These are software producer controls, not clinical reader/model evidence.
+    for exam in (-10, -1, 0):
+        for prog in ("crc", "cervical"):
+            case_id = f"{prog}-signed-exam-{exam}"
+            c = book([dec(case_id, prog, "inadequate", sr_day=-20, inadequate_day=exam)], arrival=3)["cases"][case_id]
+            assert c["clock_anchor"] == {"kind": "inadequate_procedure", "day": exam}
+            if prog == "crc":
+                assert c["deadline_day"] == exam + 31
+            else:
+                assert c["window_days"] == [exam + 42, exam + 84]
+
+
 def test_no_slot_crc_recovery_targets_are_absolute_deadlines():
     decs = [dec("crc-i", "crc", sr_day=200, deadline=31), dec("crc-r", "crc", "inadequate", sr_day=0, inadequate_day=100, deadline=31)]
     res, out, w = waitlist_via_generate(decs, arrival=42)
@@ -159,7 +173,8 @@ EXPECTED = [
     "test_crc_repeat_deadline_is_inadequate_exam_plus_31", "test_urgent_cervical_initial_window_is_referral_relative",
     "test_cervical_repeat_window_is_unsatisfactory_exam_plus_42_to_84", "test_aggregates_match_per_case_absolute_comparisons",
     "test_crc_initial_never_offered_before_referral_anchor", "test_crc_repeat_never_offered_before_exam_and_later_capacity_absent_is_no_slot",
-    "test_crc_zero_negative_and_absent_anchors_keep_request_relative_bound", "test_no_slot_crc_recovery_targets_are_absolute_deadlines",
+    "test_crc_zero_negative_and_absent_anchors_keep_request_relative_bound", "test_repeat_negative_and_zero_exam_anchors_remain_absolute",
+    "test_no_slot_crc_recovery_targets_are_absolute_deadlines",
     "test_no_slot_cervical_recovery_targets_use_window", "test_recovery_legacy_fallback_only_when_absolute_metadata_absent",
 ]
 
