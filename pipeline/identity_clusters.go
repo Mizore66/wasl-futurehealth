@@ -245,7 +245,7 @@ func retainedOutDecisions(run string) (map[string][]*Decision, error) {
 	cases := map[string][]*Decision{}
 	seen := map[string]bool{}
 	_, err := scanAPILog(filepath.Join(run, "out_log.ndjson"), func(m LogMsg) error {
-		if err := validateOutRecord(m, map[string]bool{}); err != nil {
+		if err := validateOutRecord(m, map[string]string{}); err != nil {
 			return err
 		}
 		d := decodeEnv(m).Dec

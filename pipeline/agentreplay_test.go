@@ -408,6 +408,13 @@ func TestRestoreAgentPolicyFromOut(t *testing.T) {
 }
 
 func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
+	entryPolicyName := PolicyName
+	t.Cleanup(func() {
+		if PolicyName != entryPolicyName {
+			t.Errorf("PolicyName leaked after materialized run: got %q, want entry %q", PolicyName, entryPolicyName)
+		}
+	})
+	defer func() { PolicyName = entryPolicyName }()
 	if testing.Short() {
 		t.Skip("loads the real models")
 	}

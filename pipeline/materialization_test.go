@@ -16,6 +16,9 @@ import (
 func generatedCRCMaterialization(t *testing.T, path string, multiple bool, procedureText ...string) ([]LogMsg, *ClosureCore, *LoopFacts) {
 	t.Helper()
 	f := crcSyntheticFacts(path)
+	// The reducer-only fixture omits sender metadata. API materializations must
+	// carry the explicit synthetic provider that real linker facts supply.
+	f.Provider = "ahs-mushrif"
 	if path != "" {
 		crcOrdinaryProcedure(f)
 	}
@@ -33,7 +36,7 @@ func generatedCRCMaterialization(t *testing.T, path string, multiple bool, proce
 	appendOut := func(outs []OutMsg) {
 		for _, out := range outs {
 			seq := uint64(len(logs) + 1)
-			logs = append(logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{OSeq: seq, Dec: out.Dec, Item: out.Item})})
+			logs = append(logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{Kind: out.Kind, OSeq: seq, Dec: out.Dec, Item: out.Item})})
 		}
 	}
 	initial := C.Apply(&FactsMsg{ID: "initial", Facts: f, InSeq: 1})
@@ -210,7 +213,7 @@ func TestCRCMaterializationRetirementReorderingAndReplay(t *testing.T) {
 	f.Down[1].Ev = &TwoVerdict{Kind: "pathology", Agree: true, Label: "histology", CRC: extractCRCProposal("Diagnosis: hyperplastic polyp, non-neoplastic.", "pathology")}
 	for _, out := range C.Apply(&FactsMsg{ID: "corrected", Facts: f, InSeq: 20}) {
 		seq := uint64(len(logs) + 1)
-		logs = append(logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{OSeq: seq, Dec: out.Dec, Item: out.Item})})
+		logs = append(logs, LogMsg{Seq: seq, Subject: "out.p0", Data: canon(OutEnvelope{Kind: out.Kind, OSeq: seq, Dec: out.Dec, Item: out.Item})})
 	}
 	baseline := materializationProjection(t, logs)
 	want, err := baseline.validate()

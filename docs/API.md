@@ -62,6 +62,8 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
+Case detail and export distinguish current projections from preserved history. Current `identities`, `timeline` and `links` use the same hash-bound canonical identity cluster as person reads when available; legacy runs retain recorded trusted links across clinical evidence replacements and apply canonical registration-pair rejections. Messaging-only second-identifier answers and separate API review/undo overlays do not split canonical identity. Optional `identity_history` and `link_history` retain excluded registrations and relationships. The top-level `evidence` array contains only the current decision's supporting reports from current registrations. Optional `evidence_history` retains other report bodies with `history: rejected_registration | superseded`, `block_hash`, `decision_id` and the original `decision_sig`. A superseded report can belong to a still-trusted registration; it is not an identity rejection. Historical evidence must never be selected as the current readers' checklist. These read-only labels do not rewrite original events, chains or signatures.
+
 ### Screening/index denominators and materialized care cases
 
 New `report7.json` and `dashboard.json` outputs declare `materialization` with schema `wasl-materialization/1`. The API dashboard and person journey expose the same counts over their respective current case sets:

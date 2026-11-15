@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,10 @@ import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
-import type { Referral, ReferralState } from "./referrals";
-import { rememberSearchFocus, SearchField } from "./search-field";
+import { formatDay } from "@/lib/domain/day";
+import { handoffActBy } from "@/lib/domain/handoff";
+import { handoffWords, type Handoff, type Referral, type ReferralState } from "./referrals";
+import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { Pager } from "./pager";
 import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
@@ -36,23 +39,32 @@ const TABS: [Tab, string, (r: Referral) => boolean][] = [
 ];
 const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, accepted: 3, done: 4 };
 
-type Override = { state: ReferralState; outcome: string; log: string[] };
+type Override = { state: ReferralState; outcome: string; log: string[]; handoff?: Handoff };
 type Mode = null | "cond" | "ret";
 
 export function ReferralInbox({
   referrals,
   window,
-  actBy,
+  now,
   q,
   aside,
 }: {
   referrals: Referral[];
   /** Days the unit has to answer (dashboard `sla.referral_response_days`). */
   window: number;
-  actBy: string;
+  /** The run day: a return is decided on it. */
+  now: number;
   q: string;
   aside: React.ReactNode;
 }) {
+  const router = useRouter();
+  /* The query is a navigation, not a reload, so the session decisions below outlive it. */
+  const [text, setText] = useState(q);
+  const [seenQ, setSeenQ] = useState(q);
+  if (seenQ !== q) {
+    setSeenQ(q);
+    setText(q);
+  }
   const [tab, setTab] = useState<Tab>("needs");
   const [page, setPage] = useState(1);
   const [sel, setSel] = useState<string | null>(null);
@@ -88,7 +100,7 @@ export function ReferralInbox({
   };
   const roving = useRovingTabs({ ids: TABS.map(([id]) => id), selected: tab, onSelect: selectTab, prefix: "referrals" });
 
-  const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state }));
+  const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state, handoff: over[r.id]?.handoff ?? r.handoff }));
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
   const test = TABS.find(([id]) => id === tab)![2];
   const list = sorted.filter(test);
@@ -106,6 +118,17 @@ export function ReferralInbox({
   };
   const needCount = all.filter(TABS[0][2]).length;
 
+  /* An unconfirmed mode and picks belong to the referral shown when they were started. A search can change which
+     referral is shown (or show none) without any click here, so they are dropped when the displayed id changes.
+     Committed decisions live in `over` and are untouched. */
+  const [draftFor, setDraftFor] = useState<string | null>(null);
+  const shownId = r?.id ?? null;
+  if (draftFor !== shownId) {
+    setDraftFor(shownId);
+    setMode(null);
+    setPicked([]);
+  }
+
   const late = sorted.filter((x) => x.state === "new" && x.waiting > window);
   const grade = sorted.find((x) => x.state === "grade");
   const finding = [
@@ -121,9 +144,9 @@ export function ReferralInbox({
     setMode(null);
     setPicked([]);
   };
-  const act = (id: string, state: ReferralState, outcome: string, entry: string) => {
+  const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff) => {
     setWant({ k: "undo" });
-    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), entry] } }));
+    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), entry], handoff } }));
     open(id);
   };
   const accept = (x: Referral, conds: string[] = []) =>
@@ -133,6 +156,10 @@ export function ReferralInbox({
       conds.length ? `Accepted with conditions. ${conds.join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
+  const returnToGp = (x: Referral, reason: string) => {
+    const handoff: Handoff = { status: "awaiting_referrer", actBy: handoffActBy(now, x.urgent) };
+    act(x.id, "returned", `Returned to the ${x.clinic} GP. Reason: ${reason.toLowerCase()}. Act by ${formatDay(handoff.actBy)}.`, `Returned to the GP: ${reason.toLowerCase()}`, handoff);
+  };
   const undo = (id: string) => {
     setWant({ k: "heading" });
     setOver((o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== id)));
@@ -150,8 +177,8 @@ export function ReferralInbox({
                 id: "now",
                 kind: "current" as const,
                 who: r.state === "returned" ? `${r.clinic} GP` : r.state === "grade" ? "You" : "SKMC endoscopy",
-                what: { new: "Your answer", grade: "Review the incomplete report", returned: "Act on the return", accepted: "Book and do the colonoscopy", done: "" }[r.state],
-                when: r.state === "returned" ? `by ${actBy}` : `${r.waiting} days since referral`,
+                what: r.state === "returned" ? handoffWords(r.handoff).what : { new: "Your answer", grade: over[r.id] ? "Complete the report" : "Review the incomplete report", accepted: "Book and do the colonoscopy", done: "", returned: "" }[r.state],
+                when: r.state === "returned" ? handoffWords(r.handoff).when : `${r.waiting} days since referral`,
               },
             ]),
       ]
@@ -183,7 +210,6 @@ export function ReferralInbox({
         </div>
         {aside}
       </header>
-
       <div className="flex flex-wrap items-stretch gap-gap">
         <section aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
           <div {...roving.listProps} aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
@@ -198,8 +224,16 @@ export function ReferralInbox({
               </button>
             ))}
           </div>
-          <form action="/app/referrals" onSubmit={() => rememberSearchFocus("referrals")} className="px-4 pb-2 pt-3">
-            <SearchField label="Search case id" name="q" defaultValue={q} placeholder="Case id, then Enter" restoreKey="referrals" />
+          <form
+            action="/app/referrals"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const next = text.trim();
+              router.push(next ? `/app/referrals?q=${encodeURIComponent(next)}` : "/app/referrals");
+            }}
+            className="px-4 pb-2 pt-3"
+          >
+            <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
           </form>
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {paging.rows.map((x) => {
@@ -349,13 +383,13 @@ export function ReferralInbox({
                       </button>
                     ))}
                   </div>
-                  <p className="m-0 mt-2 text-small text-muted">Returning hands the case back to the {r.clinic} GP, who must act by {actBy}.</p>
+                  <p className="m-0 mt-2 text-small text-muted">Returning hands the case back to the {r.clinic} GP, who must act by {formatDay(handoffActBy(now, r.urgent))}.</p>
                   <div className="mt-3 flex items-center gap-gap">
                     {picked[0] ? (
                       <Button
                         variant="cta"
                         size="touch"
-                        onClick={() => act(r.id, "returned", `Returned to the ${r.clinic} GP. Reason: ${picked[0].toLowerCase()}. Act by ${actBy}.`, `Returned to the GP: ${picked[0].toLowerCase()}`)}
+                        onClick={() => returnToGp(r, picked[0])}
                       >
                         Return to GP
                       </Button>
@@ -373,7 +407,7 @@ export function ReferralInbox({
                     {GRADES.map(([n, w]) => (
                       <button
                         key={n}
-                        onClick={() => act(r.id, "accepted", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
+                        onClick={() => act(r.id, "grade", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
                         className="flex h-14 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
                       >
                         <span className="font-medium">{n}</span>
@@ -425,6 +459,7 @@ export function ReferralInbox({
           </section>
         )}
       </div>
+      <p className="mt-6 text-small text-muted">Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the GP. Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
     </div>
   );
 }
@@ -437,7 +472,7 @@ function lineFor(x: Referral, o: Override | undefined): string {
     case "grade":
       return "Report incomplete · grade the prep";
     case "returned":
-      return "Returned to GP · waiting on the GP";
+      return !x.handoff || x.handoff.status === "awaiting_referrer" ? "Returned to GP · waiting on the GP" : `Returned to GP · ${handoffWords(x.handoff).what.toLowerCase()}`;
     case "accepted":
       return "Accepted · in progress";
     case "done":

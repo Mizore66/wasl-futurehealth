@@ -120,8 +120,14 @@ func TestActionsSurviveVerifiedReload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("verified reload rejected an API-created coordinator event: %v", err)
 	}
+	if reloaded.ledgerErr != "" || !bytes.Equal(canon(s.overlayView(s.cases[loop], true)), canon(reloaded.overlayView(reloaded.cases[loop], true))) {
+		t.Fatalf("coordinator overlay changed on verified reload: ledger=%q", reloaded.ledgerErr)
+	}
 	if got := reloaded.overlayView(reloaded.cases[loop], true)["actions"]; got != 1 {
 		t.Fatalf("reloaded coordinator actions = %v, want 1", got)
+	}
+	if !bytes.Equal(canon(s.cases[loop].last), canon(reloaded.cases[loop].last)) {
+		t.Fatal("coordinator reload changed the canonical decision/signature")
 	}
 }
 

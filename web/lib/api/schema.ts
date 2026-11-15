@@ -790,6 +790,16 @@ export const Booking = z.looseObject({
   reservation_explanation: z.string().optional(),
 });
 
+export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
+
+/** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
+export const Handoff = z.looseObject({
+  clinical_priority: z.string(),
+  decided_at: z.number(),
+  act_by: z.number(),
+  status: HandoffStatus,
+});
+
 export const ActiveCurrentDecision = z.looseObject({
   inactive: z.literal(false).optional(),
   id: z.string(),
@@ -803,6 +813,7 @@ export const ActiveCurrentDecision = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
+  handoff: Handoff.optional(),
 });
 
 export const RetainedCurrentDecision = ActiveCurrentDecision.omit({ inactive: true }).extend({
@@ -868,7 +879,15 @@ export const CaseDetail = withMeta({
   identities: z.array(Identity),
   timeline: z.array(TimelineEvent),
   links: z.array(Link),
+  /** Only evidence supporting the current decision and current trusted registrations. */
   evidence: z.array(Evidence),
+  /** Preserved canonical reports, never the primary current readers' checklist. */
+  evidence_history: z.array(Evidence.extend({
+    history: z.enum(["rejected_registration", "superseded"]),
+    block_hash: z.string(),
+    decision_id: z.string(),
+    decision_sig: z.string(),
+  })).optional(),
   holds: z.array(Hold),
   outreach: z.array(z.looseObject({})),
   decisions: z.array(Decision),
@@ -1295,6 +1314,8 @@ export type FixtureName = z.infer<typeof FixtureName>;
 export type Role = z.infer<typeof Role>;
 export type Meta = z.infer<typeof Meta>;
 export type CaseSummary = z.infer<typeof CaseSummary>;
+export type CurrentDecision = z.infer<typeof CurrentDecision>;
+export type HandoffStatus = z.infer<typeof HandoffStatus>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type Audit = z.infer<typeof Audit>;

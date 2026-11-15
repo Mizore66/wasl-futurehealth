@@ -14,7 +14,9 @@ func serveAgentConsent(t *testing.T, run string) (*apiServer, *httptest.Server) 
 	t.Helper()
 	s := loadAPI(run, "")
 	for _, c := range s.cases {
-		c.last.Sig = "sig-" + c.ID
+		if c.last == nil || c.last.Sig == "" || c.last.Sig != decSig(c.last) {
+			t.Fatalf("consent fixture requires an authentic canonical decision: %s", c.ID)
+		}
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -138,21 +140,22 @@ func TestCaseListExposesEffectiveContactState(t *testing.T) {
 
 func TestReplayRejectsContactOutcomeAfterBlockingConsent(t *testing.T) {
 	l := agentLoop("1")
+	run := twoCaseRun(t)
+	initial := loadAPI(run, "")
+	if initial.ledgerErr != "" {
+		t.Fatal(initial.ledgerErr)
+	}
 	line := func(ev map[string]interface{}) string {
 		ev["hash"] = apiEventHash(ev)
 		b, _ := json.Marshal(ev)
 		return string(b) + "\n"
 	}
 	consent := map[string]interface{}{"case": l, "item": "", "decision": "consent_denied", "note": "", "role": RoleCoordinator, "actor": "c1",
-		"action": ActRecordConsent, "at": "2026-11-20T09:00:00Z", "head_signed": "", "mode": "demo", "prev": "genesis"}
+		"action": ActRecordConsent, "at": "2026-11-20T09:00:00Z", "head_signed": initial.cases[l].last.Sig, "mode": "demo", "prev": "genesis"}
 	consentLine := line(consent)
 	outcome := map[string]interface{}{"type": coordEventType, "kind": "contact_outcome", "case": l,
 		"data": map[string]interface{}{"outcome": "reached", "channel": "phone"}, "role": RoleCoordinator, "actor": "nurse-1",
-		"action": ActCoordinateCase, "at": "2026-11-20T10:00:00Z", "head": "sig-" + l, "seq": 1, "mode": "demo", "prev": consent["hash"]}
-	run := twoCaseRun(t)
-	if s := loadAPI(run, ""); s.ledgerErr != "" {
-		t.Fatal(s.ledgerErr)
-	}
+		"action": ActCoordinateCase, "at": "2026-11-20T10:00:00Z", "head": headOf(initial, l), "seq": 1, "mode": "demo", "prev": consent["hash"]}
 	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), []byte(consentLine+line(outcome)), 0o644)
 	if s := loadAPI(run, ""); s.ledgerErr == "" || !strings.Contains(s.ledgerErr, "consent") {
 		t.Fatalf("replay accepted an outcome after a denial: %q", s.ledgerErr)

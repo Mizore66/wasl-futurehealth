@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { allNewReferrals, syntheticReferrals } from "./paging-fixtures";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));
 vi.mock("motion/react", async () => {
   const { createElement } = await import("react");
   return { useReducedMotion: () => true, AnimatePresence: ({ children }: { children: unknown }) => children,
@@ -18,7 +19,7 @@ afterEach(async () => { if (root) await act(async () => root!.unmount()); root =
 async function mount(referrals = allNewReferrals(1201)) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(ReferralInbox, { referrals, window: 7, actBy: "Day 125", q: "", aside: null })));
+  await act(async () => root!.render(createElement(ReferralInbox, { referrals, window: 7, now: 120, q: "", aside: null })));
 }
 const list = () => host.querySelector<HTMLElement>('section[aria-label="Referral list"]')!;
 const open = () => host.querySelector<HTMLElement>('section[aria-label="Open referral"]')!;

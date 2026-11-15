@@ -74,6 +74,7 @@ func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 	t.Setenv("WASL_API_CORS_ORIGIN", "https://contract.test")
 	run := t.TempDir()
 	var out []interface{}
+	states := map[string]string{}
 	for i, spec := range specs {
 		state, contact := spec.state, spec.contact
 		if state == "" {
@@ -84,20 +85,25 @@ func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 		}
 		d := &Decision{ID: "dec-" + spec.suffix, LoopID: contractID(spec.suffix), State: state, Prog: "crc", Contact: contact, Provider: "contract-provider"}
 		d.Sig = decSig(d)
+		states[d.LoopID] = state
 		it := &ReviewItem{ItemID: spec.item, LoopID: d.LoopID, Kinds: []string{"link"}, Pair: pairAB, P: 0.5}
-		for _, env := range []OutEnvelope{{Kind: "item", OSeq: uint64(2*i + 1), Item: it}, {Kind: "dec", OSeq: uint64(2*i + 2), Dec: d}} {
+		for _, env := range []OutEnvelope{{Kind: "review", OSeq: uint64(2*i + 1), Item: it}, {Kind: "decision", OSeq: uint64(2*i + 2), Dec: d}} {
 			b, err := json.Marshal(env)
 			if err != nil {
 				t.Fatal(err)
 			}
-			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out", Data: b})
+			out = append(out, LogMsg{Seq: env.OSeq, Subject: "out.p0", Data: b})
 		}
 	}
 	writeAgentNDJSON(t, filepath.Join(run, "out_log.ndjson"), out)
 	writeAgentNDJSON(t, filepath.Join(run, "fhir_log.ndjson"), []interface{}{json.RawMessage(preflightFHIRLine)})
 	writeAgentNDJSON(t, filepath.Join(run, "reviewer_decisions.ndjson"), nil)
-	writeRequiredAPIJSONForCases(t, run, len(specs))
-	return loadAPI(run, ""), run
+	writeRequiredAPIJSONForCaseStates(t, run, states)
+	s, err := loadAPIVerified(run, "")
+	if err != nil {
+		t.Fatalf("load canonical contract fixture: %v", err)
+	}
+	return s, run
 }
 
 type contractResponse struct {

@@ -25,7 +25,7 @@ func readMaterializedOUT(run string) (*materializedDecisions, materializationCou
 		return nil, materializationCounts{}, err
 	}
 	projection := newMaterializedDecisions()
-	loops := map[string]bool{}
+	loops := map[string]string{}
 	if _, err := scanAPILog(path, func(m LogMsg) error {
 		if err := validateOutRecord(m, loops); err != nil {
 			return err
