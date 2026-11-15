@@ -1,13 +1,13 @@
 """The lookahead and stress-test flags are off by default. The golden pins deterministic numerics: probabilities are
 rounded to 12 decimal places and two equal-cost bookings swap slots while retaining constraints and deadlines.
 Also checks that the lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
-Run: python tests/test_suggest_default.py"""
+Run: python tests/test_suggest_default.py (also executes test_catalogue_protection.py by name)"""
 import hashlib, json, os, sys, tempfile, contextlib, io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "b0e4f515352c2615acec1b4f11a768b5e300cf6cee4c3d402ccf9c3e9d4ee04b"
+GOLDEN = "b3ae94202e300d88ebe0ec39f6200c84a1c9927000c5ccaa47c069553c3ed6f2"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -41,7 +41,7 @@ def test_default_unchanged():
         os.makedirs(d)
         synthetic_run(d)
         raw = run(d)
-        h = hashlib.sha256(raw).hexdigest()
+        h = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()  # Windows text mode writes CRLF
         assert h == GOLDEN, (h, GOLDEN)
         res = json.loads(raw)
         assert len(res["calendar_version"]) == 64
@@ -74,5 +74,6 @@ def test_lookahead_labelled():
 
 
 if __name__ == "__main__":
-    for f in (test_default_unchanged, test_lookahead_labelled):
+    import test_catalogue_protection  # noqa: E402
+    for f in (test_default_unchanged, test_lookahead_labelled, test_catalogue_protection.run_named):
         print(f.__name__, "->", f())
