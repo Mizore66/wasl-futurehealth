@@ -447,6 +447,18 @@ exit 2
             self.assertIn("person_journey fixture", r.stdout)
             self.assertEqual((samples / "tracked.json").read_text(), "{}\n")
 
+    def test_snapshot_publishes_the_plain_person_only_when_asked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "curl.log"
+            env, samples = self.snapshot_env(tmp, self.snapshot_success_body(log=log, person_fixture=False))
+            env["WASL_SNAPSHOT_PLAIN_PERSON"] = "1"
+            r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertIn("not a cross-programme showcase", r.stdout)
+            self.assertIn("case_id=provider/ServiceRequest/closed", log.read_text())
+            self.assertTrue((samples / "person_journey.json").exists())
+
     def test_snapshot_published_person_is_the_actionable_fixture(self):
         with tempfile.TemporaryDirectory() as tmp:
             env, samples = self.snapshot_env(tmp, self.snapshot_success_body())

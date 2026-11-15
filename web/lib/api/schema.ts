@@ -60,8 +60,11 @@ export const Dropoff = z.enum([
 
 export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
 export const ReviewStatus = z.enum(["none", "open", "signed"]);
-export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure"]);
-/** The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops. */
+export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure", "person_journey"]);
+/**
+ * The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops, and `person_journey` (the anchor
+ * case of an actionable cross-programme person, pipeline/api_people.go pickPersonFixture) only in runs that contain one.
+ */
 export const CRC_FIXTURES = ["evidence_closure", "false_closure_trap", "review_hold"] as const;
 export const Role = z.enum(["coordinator", "clinician", "reviewer", "auditor"]);
 
@@ -908,6 +911,7 @@ export const Fixtures = withMeta({
     false_closure_trap: CaseSummary,
     review_hold: CaseSummary,
     dr_exam_closure: CaseSummary.optional(),
+    person_journey: CaseSummary.optional(),
   }),
 });
 
@@ -938,6 +942,7 @@ export const Dashboard = withMeta({
     false_closure_trap: z.string(),
     review_hold: z.string(),
     dr_exam_closure: z.string().optional(),
+    person_journey: z.string().optional(),
   }),
   // --- Provider/origin breakdowns (issue #45) ---
   // The API copies these from the run's dashboard.json and serves null when the run has none (pipeline/api.go getDashboard),
