@@ -50,6 +50,14 @@ func TestLungEarlyStableCTsCannotCompleteWindows(t *testing.T) {
 				t.Fatalf("flag=%v %s: child within_window %v", flag, name, got)
 			}
 		}
+		p, _ = lwRun(t, flag, solid, lwIdx+800, lwCT("ct-r", lo-1, "resolved"))
+		if p.State != "closed" || p.ClosingReport != "ct-r" || p.Lung.WithinWindow {
+			t.Fatalf("flag=%v: resolved CT before the parent window must close outside it: %+v", flag, p.Lung)
+		}
+		_, s = lwRun(t, flag, solid, lwIdx+900, lwCT("ct-p", lo, "stable"), lwCT("ct-r", slo-1, "resolved"))
+		if s == nil || s.State != "closed" || s.ClosingReport != "ct-r" || s.Chain[len(s.Chain)-1].Body["within_window"] != false {
+			t.Fatalf("flag=%v: resolved CT before the child window must close outside it: %+v", flag, s)
+		}
 		p, s = lwRun(t, flag, solid, lwIdx+900, lwCT("ct-e1", 1, "stable"), lwCT("ct-p", lo+10, "stable"),
 			lwCT("ct-e2", lo+11, "stable"), lwCT("ct-c", slo+10, "stable"))
 		if p.ClosingReport != "ct-p" || p.ProcDay != lwIdx+lo+10 || s == nil || s.ClosingReport != "ct-c" {

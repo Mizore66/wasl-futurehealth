@@ -11,6 +11,8 @@ package main
 //                 no routine follow-up -> closes as no_followup_needed (provenance: index CT, both readers, the cell).
 //   follow-up : a follow-up chest CT on a TRUSTED identity link (calibrated p >= tau | EID | human) whose outcome both
 //               readers agree on (or a clinician signs): stable / resolved -> closed (next interval or discharge);
+//               a stable CT dated before the window start neither closes nor blocks the obligation, and
+//               within_window checks both window bounds;
 //               growing / solid component >= 6 mm -> escalated to specialist / MDT (end state); not assessable -> hold.
 //   overdue   : the clock is the end of the Fleischner window.
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable) raises a review item and holds.
