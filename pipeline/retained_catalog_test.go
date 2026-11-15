@@ -73,6 +73,13 @@ func materializeRetainedFixture(t *testing.T, resources ...map[string]interface{
 	}
 	writeLog("fhir_log.ndjson", fhir)
 	writeLog("out_log.ndjson", out)
+	// Preserve the actual normalizer's rejected-input evidence as production
+	// does, so strict startup can distinguish quarantine from malformed input.
+	prepLog := make([]LogMsg, 0, len(preps))
+	for i, prep := range preps {
+		prepLog = append(prepLog, LogMsg{Seq: uint64(i + 1), Subject: "prep", Data: canon(prep)})
+	}
+	writeLog("prep_log.ndjson", prepLog)
 	for name, body := range map[string]string{"dashboard.json": "{}", "anchors.json": "{}", "report7.json": `{"live_vs_replay_final_mismatch":0}`} {
 		if err := os.WriteFile(filepath.Join(run, name), []byte(body), 0600); err != nil {
 			t.Fatal(err)
@@ -476,6 +483,7 @@ func retainedHTTPContractFixture(t *testing.T, name string, body []byte) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(payload, frozen) {
+		t.Logf("retained contract actual %s: %s", name, payload)
 		t.Fatalf("actual canonical HTTP child contract differs: %s", name)
 	}
 }

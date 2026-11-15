@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type currentIdentity struct {
 	keep     map[string]bool
@@ -27,28 +30,50 @@ func weakestEdge(b Block) (string, string, bool) {
 
 func (s *apiServer) rejectedRegistrationPairs(caseID string) map[[2]string]bool {
 	rejected := map[[2]string]bool{}
-	for _, so := range s.signoffs[caseID] {
-		pair, _ := so["pair"].([]interface{})
-		if len(pair) != 2 {
-			continue
+	// Cannot-links are registration-global and persistent in LinkerCore. A later
+	// same, held confirmation, messaging answer or API-ledger compensation does
+	// not undo one. The API review overlay never changes canonical membership.
+	consider := func(so *Signoff) {
+		if CheckSignoff(so, DualMerge) == nil && !secondIDPurpose(so.Purpose) && so.Hold == "" &&
+			so.Link == "different" && validRegistration(so.Pair[0]) && validRegistration(so.Pair[1]) {
+			rejected[registrationPair(so.Pair[0], so.Pair[1])] = true
 		}
-		key := registrationPair(fmt.Sprint(pair[0]), fmt.Sprint(pair[1]))
-		switch so["link"] {
-		case "different":
-			rejected[key] = true
-		case "same":
-			delete(rejected, key)
+	}
+	materialized := map[string]bool{}
+	for i := range s.idSignoffs {
+		consider(&s.idSignoffs[i])
+		materialized[s.idSignoffs[i].ItemID] = true
+	}
+	// Older fixtures may persist full sign-offs directly in the optional ledger.
+	// Never recover a missing purpose or pair by guessing from a question/loop.
+	for _, signoffs := range s.signoffs {
+		for _, raw := range signoffs {
+			var so Signoff
+			if json.Unmarshal(canon(raw), &so) == nil && !materialized[so.ItemID] {
+				consider(&so)
+			}
 		}
 	}
 	return rejected
 }
 
-// currentIdentityFor derives the registrations that belong to the case's patient from the latest decision only,
-// minus every component a reviewer "different" answer cut away from the referral registration. It returns nil
-// when the case has no referral registration to anchor on, which leaves the projections unfiltered.
+// currentIdentityFor uses the same hash-bound canonical cluster as person reads.
+// Older runs have no cluster artifact: retain their recorded trusted links across
+// clinical evidence replacements, applying canonical cannot-links conservatively.
+// Neither path infers identity from demographics or from a winning report alone.
 func (s *apiServer) currentIdentityFor(c *apiCase) *currentIdentity {
 	if c.last == nil {
 		return nil
+	}
+	rejected := s.rejectedRegistrationPairs(c.ID)
+	if projection, err := s.loadPersonProjection(); err == nil {
+		if cluster := projection.byCase[c.ID]; cluster != nil {
+			keep := map[string]bool{}
+			for _, registration := range cluster.registrations {
+				keep[registration] = true
+			}
+			return &currentIdentity{keep: keep, rejected: rejected}
+		}
 	}
 	ref := ""
 	for _, id := range s.ids[c.ID] {
@@ -61,13 +86,15 @@ func (s *apiServer) currentIdentityFor(c *apiCase) *currentIdentity {
 	}
 	nodes := map[string]bool{ref: true}
 	edges := [][2]string{}
-	for _, b := range c.last.Chain {
-		if b.Type != "link_decision" {
-			continue
-		}
-		if a, c, ok := weakestEdge(b); ok {
-			nodes[a], nodes[c] = true, true
-			edges = append(edges, [2]string{a, c})
+	for _, d := range c.decisions {
+		for _, b := range d.Chain {
+			if b.Type != "link_decision" || b.Body["near_miss"] == true {
+				continue
+			}
+			if a, c, ok := weakestEdge(b); ok {
+				nodes[a], nodes[c] = true, true
+				edges = append(edges, [2]string{a, c})
+			}
 		}
 	}
 	for _, o := range c.last.Outreach {
@@ -78,7 +105,6 @@ func (s *apiServer) currentIdentityFor(c *apiCase) *currentIdentity {
 			}
 		}
 	}
-	rejected := s.rejectedRegistrationPairs(c.ID)
 	adj := map[string][]string{}
 	affected := map[string]bool{}
 	for _, e := range edges {
@@ -122,13 +148,46 @@ func (s *apiServer) currentIdentityFor(c *apiCase) *currentIdentity {
 }
 
 func (ci *currentIdentity) linkIsCurrent(b Block, inLast bool) bool {
-	if !inLast {
+	if b.Body["near_miss"] == true {
 		return false
 	}
 	if a, c, ok := weakestEdge(b); ok {
-		return ci.keep[a] && ci.keep[c]
+		return ci.keep[a] && ci.keep[c] && !ci.rejected[registrationPair(a, c)]
 	}
-	return true
+	return inLast
+}
+
+// evidenceHistoryLabel separates the current clinical explanation from preserved
+// evidence. Source membership wins even when a stale report remains in the latest
+// chain; evidence replacement alone is supersession, never an identity split.
+func (s *apiServer) evidenceHistoryLabel(c *apiCase, b Block, ci *currentIdentity, inLast bool) string {
+	label := ""
+	if !inLast {
+		label = "superseded"
+	}
+	if ci != nil {
+		report, _ := b.Body["report"].(string)
+		for _, event := range s.facts[c.ID] {
+			if report != "" && event["id"] == report {
+				if registration, _ := event["patient_key"].(string); validRegistration(registration) {
+					if !ci.keep[registration] {
+						return "rejected_registration"
+					}
+					return label // a superseded path through another registration cannot reject this source
+				}
+			}
+		}
+		for _, d := range c.decisions {
+			for _, link := range d.Chain {
+				if link.Type == "link_decision" && report != "" && link.Body["downstream_event"] == report {
+					if a, z, ok := weakestEdge(link); ok && (!ci.keep[a] || !ci.keep[z]) {
+						return "rejected_registration"
+					}
+				}
+			}
+		}
+	}
+	return label
 }
 
 func (ci *currentIdentity) linkHistoryLabel(b Block) string {

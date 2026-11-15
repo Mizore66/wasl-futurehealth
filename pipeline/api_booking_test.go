@@ -179,11 +179,28 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	s, srv := serveAgent(t, run)
 	id := agentLoop("2") // canonical no_show remains no_show throughout simulated rebooking
 	canonicalState := s.cases[id].State
+	checkReload := func(wantEvents int) {
+		t.Helper()
+		reloaded, err := loadAPIVerified(run, "")
+		if err != nil {
+			t.Fatalf("verified booking reload after %d events: %v", wantEvents, err)
+		}
+		if reloaded.ledgerErr != "" || !bytes.Equal(canon(s.bookingFor(id)), canon(reloaded.bookingFor(id))) || !bytes.Equal(canon(s.overlayView(s.cases[id], true)), canon(reloaded.overlayView(reloaded.cases[id], true))) {
+			t.Fatalf("booking reload mismatch after %d events: ledger=%q", wantEvents, reloaded.ledgerErr)
+		}
+		if len(reloaded.reviews) != wantEvents {
+			t.Fatalf("reloaded history length %d, want %d", len(reloaded.reviews), wantEvents)
+		}
+		if reloaded.cases[id].State != "no_show" || !bytes.Equal(canon(s.cases[id].last), canon(reloaded.cases[id].last)) {
+			t.Fatal("booking reload changed the canonical no-show decision/signature")
+		}
+	}
 	accepted := requireBooking(t, srv, s, id, "booking_accept", "", "")
 	reservation := accepted["api_overlay"].(map[string]interface{})["booking"].(map[string]interface{})
 	if reservation["status"] != "reserved" || reservation["mode"] != "simulated" || reservation["reservation_id"] != accepted["event"].(map[string]interface{})["hash"] {
 		t.Fatalf("accept projection: %v", reservation)
 	}
+	checkReload(1)
 	rescheduled := requireBooking(t, srv, s, id, "booking_reschedule", "sim:colonoscopy:201:1", "Provider list changed")
 	rescheduleHash := rescheduled["event"].(map[string]interface{})["hash"]
 	if s.bookingSlots["sim:colonoscopy:202:1"].version != rescheduleHash || s.bookingSlots["sim:colonoscopy:201:1"].version != rescheduleHash {
@@ -193,10 +210,12 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	if s.bookingSlots[oldSlot].reservationID != "" {
 		t.Fatal("successful reschedule did not release old slot")
 	}
+	checkReload(2)
 	requireBooking(t, srv, s, id, "booking_cancel", "", "Patient asked to cancel")
 	if got := bookingSummary(s, id); got["status"] != "cancelled" || got["slot"].(map[string]interface{})["slot_id"] != "sim:colonoscopy:201:1" {
 		t.Fatalf("cancel traceability: %v", got)
 	}
+	checkReload(3)
 	// A released slot's pre-cancellation version cannot be replayed.
 	var staleBody map[string]interface{}
 	json.Unmarshal([]byte(bookingRequest(t, s, id, "booking_choose_slot", "sim:colonoscopy:201:1", "Rebook")), &staleBody)
@@ -212,17 +231,7 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	if s.cases[id].State != canonicalState || s.cases[id].State != "no_show" {
 		t.Fatalf("canonical no-show changed: %q", s.cases[id].State)
 	}
-	wantBooking, wantOverlay := canon(s.bookingFor(id)), canon(s.overlayView(s.cases[id], true))
-	reloaded, err := loadAPIVerified(run, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if reloaded.ledgerErr != "" || !bytes.Equal(wantBooking, canon(reloaded.bookingFor(id))) || !bytes.Equal(wantOverlay, canon(reloaded.overlayView(reloaded.cases[id], true))) {
-		t.Fatalf("reload mismatch: %q\n%s\n%s", reloaded.ledgerErr, wantBooking, canon(reloaded.bookingFor(id)))
-	}
-	if len(reloaded.reviews) != 4 {
-		t.Fatalf("history length %d", len(reloaded.reviews))
-	}
+	checkReload(4)
 	for _, file := range []string{"outreach_log.ndjson", "dispatch_log.ndjson", "appointments.ndjson"} {
 		if _, err := os.Stat(filepath.Join(run, file)); !os.IsNotExist(err) {
 			t.Fatalf("unexpected provider/outreach artifact %s", file)
@@ -402,11 +411,25 @@ func TestBookingDemoOptOutConsentGuardAndReload(t *testing.T) {
 		t.Fatal("demo opt-out changed canonical consent")
 	}
 	reloaded, err := loadAPIVerified(run, "")
-	if err != nil || reloaded.ledgerErr != "" {
-		t.Fatalf("reload after opt-out and cancellation: err=%v ledger=%q", err, reloaded.ledgerErr)
+	if err != nil {
+		t.Fatalf("verified reload after opt-out and cancellation: %v", err)
+	}
+	if reloaded.ledgerErr != "" {
+		t.Fatalf("reload after opt-out and cancellation: ledger=%q", reloaded.ledgerErr)
 	}
 	if got := bookingSummary(reloaded, id); got["status"] != "cancelled" {
 		t.Fatalf("cancelled booking did not survive replay: %v", got)
+	}
+	if reloaded.cases[id].Consent != canonicalConsent || !reloaded.contactGuardLocked(reloaded.cases[id]).Blocked {
+		t.Fatal("reload lost the opt-out guard or changed canonical consent")
+	}
+	reloadedSrv := httptest.NewServer(apiHandler(reloaded))
+	t.Cleanup(reloadedSrv.Close)
+	if code, body := coord(t, reloadedSrv, id, bookingRequest(t, reloaded, id, "booking_choose_slot", "sim:colonoscopy:201:2", "Try after reload")); code != 409 || body["conflict"] != "consent" || body["contact_blocked"] != true {
+		t.Fatalf("rebook after opt-out reload: %d %v", code, body)
+	}
+	if len(reloaded.reviews) != before+1 {
+		t.Fatal("refused rebooking after reload appended an event")
 	}
 }
 
