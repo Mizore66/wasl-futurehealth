@@ -41,6 +41,19 @@ func closureStatsProg(pred map[string]bool, tr *Truth, prog string) map[string]i
 		"precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn), "false_closure_rate_upper95": r3(wilsonUp(fp, tp+fp))}
 }
 
+func closureStatsDecisions(final map[string]*Decision, tr *Truth, repPK map[string]string, prog string) map[string]interface{} {
+	pred, safety := map[string]bool{}, closureSafety{}
+	for id, lt := range tr.Loops {
+		d := final[id]
+		if progOf(lt) != prog || d == nil || d.State != "closed" {
+			continue
+		}
+		pred[id] = true
+		safety.add(true, lt.State != "closed", closureEvidenceOwner(d.ClosingReport, lt, tr, repPK))
+	}
+	return safety.into(closureStatsProg(pred, tr, prog))
+}
+
 // ruleTrackers: the two v5 rule baselines generalised to both programmes, plus the EID-only tracker's view of the
 // first procedure date (what an EID-matching registry would report for the KPI).
 type ruleOut struct {
@@ -323,13 +336,7 @@ func report7(data, wasl, run string, P int) {
 	gov, govNoRev := strip(govMetrics(o, rp)), strip(govMetrics(o, noRev))
 
 	// ---- closure per programme, live (with review) vs no review vs rule baselines
-	predOf := func(f map[string]*Decision) map[string]bool {
-		m := map[string]bool{}
-		for k, d := range f {
-			m[k] = d.State == "closed"
-		}
-		return m
-	}
+	repPK := repPKOf(preps)
 	rules := ruleTrackers(preps, &tr)
 	nLoops := map[string]int{}
 	for _, lt := range tr.Loops {
@@ -338,8 +345,8 @@ func report7(data, wasl, run string, P int) {
 	closure := map[string]interface{}{}
 	for _, pg := range []string{"crc", "cervical"} {
 		closure[pg] = map[string]interface{}{"loops": nLoops[pg],
-			"wasl_live_with_review":  closureStatsProg(predOf(liveFinal), &tr, pg),
-			"wasl_no_review":         closureStatsProg(predOf(noRev.final), &tr, pg),
+			"wasl_live_with_review":  closureStatsDecisions(liveFinal, &tr, repPK, pg),
+			"wasl_no_review":         closureStatsDecisions(noRev.final, &tr, repPK, pg),
 			"baseline_eid_only":      closureStatsProg(rules.eidClose, &tr, pg),
 			"baseline_any_proc_120d": closureStatsProg(rules.naiveClose, &tr, pg)}
 	}

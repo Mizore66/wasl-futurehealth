@@ -2,7 +2,8 @@
 
 Input: pipeline/results/ltt/counts_*.json from `wsi7 ltt` (per calibration cohort, per closure link tier λ).
 Risks, each per loop:
-  R_fc(λ)  = P(loop falsely closed)                          target α_fc
+  R_fc(λ)  = P(loop unsafely closed: false outcome or closing evidence not proven the patient's)  target α_fc
+             (closure_loss.py; artifacts without unsafe_closures are labelled outcome_only_v1)
   R_wp(λ)  = P(loop has a wrong-patient message released)    target α_wp
 H0(λ): R(λ) > α. p-value: exact binomial tail P(Bin(n, α) <= k) (valid for 0/1 losses), and the Hoeffding–Bentkus
 p-value min(exp(-n·h(R̂, α)), e·P(Bin(n, α) <= ceil(n R̂))) for comparison. Family-wise control: Bonferroni δ/2 per
@@ -13,6 +14,7 @@ Usage: python scripts/ltt_select.py pipeline/results/ltt [--alpha-fc 0.001] [--a
 """
 import argparse, glob, json, math, os
 from scipy.stats import binom
+import closure_loss
 
 ap = argparse.ArgumentParser()
 ap.add_argument("dir")
@@ -26,6 +28,7 @@ a = ap.parse_args()
 rows = [r for f in sorted(glob.glob(os.path.join(a.dir, "counts_*.json"))) for r in json.load(open(f))["rows"]]
 cohorts = sorted({r["cohort"] for r in rows})
 has_prog = all("by_programme" in r for r in rows)  # counts from `wsi7 ltt -lttprog` (scripts/ltt_cohorts.sh WASL_LTT_ALL=1)
+LOSS = closure_loss.pooled(rows)[1]
 PROGS = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"]
 
 
@@ -47,9 +50,9 @@ def p_hb(k, n, al):
 
 out = {"method": "Learn-then-Test, fixed-sequence (strict→loose), Bonferroni over 2 risks",
        "alpha_false_closure": a.alpha_fc, "alpha_wrong_patient": a.alpha_wp, "delta": a.delta, "delta_per_risk": a.delta / 2,
-       "calibration_cohorts": cohorts, "modes": {}}
+       "closure_loss": LOSS, "calibration_cohorts": cohorts, "modes": {}}
 md = [f"# Learn-then-Test closure gate\n", f"Calibration: {len(cohorts)} cohorts from the persons3 `cal` split (disjoint from eval), v2 noise. "
-      f"α_fc = {a.alpha_fc}, α_wp = {a.alpha_wp}, δ = {a.delta} (δ/2 per risk). p-values: exact binomial tail (HB shown for reference).\n"]
+      f"Closure loss `{LOSS}`. α_fc = {a.alpha_fc}, α_wp = {a.alpha_wp}, δ = {a.delta} (δ/2 per risk). p-values: exact binomial tail (HB shown for reference).\n"]
 if has_prog:
     r0 = [r for r in rows if r["with_review"] and r["tau_close"] == rows[0]["tau_close"]]
     mix = {}
@@ -72,7 +75,7 @@ for review in (True, False):
     for t in taus:
         g = [r for r in rs if r["tau_close"] == t]
         n = sum(r["loops"] for r in g)
-        k_fc = sum(r["false_closures"] for r in g)
+        k_fc = closure_loss.pooled(g)[0]
         k_wp = sum(r["loops_with_wrong_patient_message"] for r in g)
         closed, tp, truth = sum(r["closed"] for r in g), sum(r["tp"] for r in g), sum(r["truth_closed"] for r in g)
         items = sum(r["review_items"] for r in g)
@@ -84,7 +87,7 @@ for review in (True, False):
             lam = t
         from scipy.optimize import brentq
         a_min = brentq(lambda al: binom.cdf(k_fc, n, al) - a.delta / 2, 1e-9, 0.5)  # smallest α_fc this tier certifies
-        table.append({"tau_close": t, "n_loops": n, "false_closures": k_fc, "loops_wrong_patient_msg": k_wp, "closed": closed,
+        table.append({"tau_close": t, "n_loops": n, "false_closures": sum(r["false_closures"] for r in g), "unsafe_closures": k_fc, "loops_wrong_patient_msg": k_wp, "closed": closed,
                       "recall": round(tp / max(truth, 1), 4), "review_items_per_100": round(100 * items / n, 2),
                       "p_fc_binom": p_fc, "p_fc_hb": p_hb(k_fc, n, a.alpha_fc), "p_wp_binom": p_wp, "p_wp_hb": p_hb(k_wp, n, a.alpha_wp),
                       "certified": ok, "alpha_fc_certifiable": a_min})
@@ -104,9 +107,9 @@ for review in (True, False):
     out["modes"][mode] = {"loosest_certified_tau_close": lam, "operating_tau_close": op, "table": table,
                           "n_needed_zero_errors": math.ceil(math.log(a.delta / 2) / math.log(1 - min(a.alpha_fc, a.alpha_wp)))}
     md.append(f"\n## {mode.replace('_', ' ')}: loosest certified λ = {lam if lam is not None else 'none'}; operating λ̂ = **{op}**\n")
-    md.append("| τ_close | loops | false closures | wrong-patient msg loops | recall | review items /100 | p_fc | p_wp | certified | smallest certifiable α_fc |\n|---|---|---|---|---|---|---|---|---|---|")
+    md.append("| τ_close | loops | unsafe closures | wrong-patient msg loops | recall | review items /100 | p_fc | p_wp | certified | smallest certifiable α_fc |\n|---|---|---|---|---|---|---|---|---|---|")
     for x in table:
-        md.append(f"| {x['tau_close']} | {x['n_loops']} | {x['false_closures']} | {x['loops_wrong_patient_msg']} | {x['recall']} | {x['review_items_per_100']} | "
+        md.append(f"| {x['tau_close']} | {x['n_loops']} | {x['unsafe_closures']} | {x['loops_wrong_patient_msg']} | {x['recall']} | {x['review_items_per_100']} | "
                   f"{x['p_fc_binom']:.2e} | {x['p_wp_binom']:.2e} | {'yes' if x['certified'] else 'no'} | {x['alpha_fc_certifiable']:.2e} |")
     if has_prog:
         progs = [p for p in PROGS if p in table[0]["by_programme"]] + sorted(set(table[0]["by_programme"]) - set(PROGS))
@@ -122,16 +125,16 @@ for review in (True, False):
                       "breast `closed`/`no_recall_needed` plus `closed` on a recall loop). "
                       f"Alone: binomial test at δ/2 = {a.delta / 2} per risk (needs n ≥ {n_need} with 0 events); "
                       f"all {K} programmes at once: δ/(2·{K}) = {a.delta / (2 * K):.4f} per risk (needs n ≥ {n_need_k}).\n")
-            md.append("| programme | loops | false closures | wrong-patient msg loops | recall | review items /100 | p_fc | p_wp | n ≥ " + str(n_need) +
+            md.append("| programme | loops | unsafe closures | wrong-patient msg loops | recall | review items /100 | p_fc | p_wp | n ≥ " + str(n_need) +
                       " | certified alone | certified jointly | smallest certifiable α_fc |\n|---|---|---|---|---|---|---|---|---|---|---|---|")
             for pg in progs:
                 c = x["by_programme"][pg]
-                n, kf, kw = c["loops"], c["false_closures"], c["loops_with_wrong_patient_message"]
+                n, kf, kw = c["loops"], closure_loss.one(c)[0], c["loops_with_wrong_patient_message"]
                 pf, pw = p_binom(kf, n, a.alpha_fc), p_binom(kw, n, a.alpha_wp)
                 alone = pf <= a.delta / 2 and pw <= a.delta / 2
                 joint = pf <= a.delta / (2 * K) and pw <= a.delta / (2 * K)
                 amin = brentq(lambda al: binom.cdf(kf, n, al) - a.delta / 2, 1e-9, 0.9999)
-                per[pg] = {"n_loops": n, "false_closures": kf, "loops_wrong_patient_msg": kw, "recall": round(c["tp"] / max(c["truth_closed"], 1), 4),
+                per[pg] = {"n_loops": n, "unsafe_closures": kf, "loops_wrong_patient_msg": kw, "recall": round(c["tp"] / max(c["truth_closed"], 1), 4),
                            "review_items_per_100": round(100 * c["review_items"] / n, 2), "p_fc_binom": pf, "p_wp_binom": pw,
                            "reaches_n_needed": n >= n_need, "certified_alone": alone, "certified_jointly": joint, "alpha_fc_certifiable": amin}
                 q = per[pg]
@@ -139,10 +142,10 @@ for review in (True, False):
                           f"{'yes' if q['reaches_n_needed'] else 'no'} | {'yes' if alone else 'no'} | {'yes' if joint else 'no'} | {amin:.2e} |")
             out["modes"][mode]["per_programme_at_operating"] = per
             out["modes"][mode]["n_needed_zero_errors_all_programmes_jointly"] = n_need_k
-        md.append(f"\nFalse closures / wrong-patient message loops by programme at every tier ({mode.replace('_', ' ')}):\n")
+        md.append(f"\nUnsafe closures / wrong-patient message loops by programme at every tier ({mode.replace('_', ' ')}):\n")
         md.append("| τ_close | " + " | ".join(progs) + " |\n|---|" + "---|" * len(progs))
         for y in table:
-            md.append(f"| {y['tau_close']} | " + " | ".join(f"{y['by_programme'][p]['false_closures']} / {y['by_programme'][p]['loops_with_wrong_patient_message']}" for p in progs) + " |")
+            md.append(f"| {y['tau_close']} | " + " | ".join(f"{closure_loss.one(y['by_programme'][p])[0]} / {y['by_programme'][p]['loops_with_wrong_patient_message']}" for p in progs) + " |")
 md.append(f"\nWith 0 observed errors, certifying α = {min(a.alpha_fc, a.alpha_wp)} at δ/2 = {a.delta/2} needs n ≥ "
           f"{out['modes']['with_review']['n_needed_zero_errors']} calibration loops.\n")
 md.append(f"**Design floor:** the operating tier must be ≥ {a.min_tau}, above the 0.989 cap on uncorroborated model edges, so a name-only link cannot auto-close a loop. "
