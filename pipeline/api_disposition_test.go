@@ -105,3 +105,17 @@ func TestDispositionAfterDeclineIsClinicianOnlyValidatedAndReplayed(t *testing.T
 		t.Fatal("closed_declined touched canonical closure")
 	}
 }
+
+func TestDispositionRefusesADeclineThePatientReversed(t *testing.T) {
+	run := twoCaseRun(t)
+	s, srv := serveAgent(t, run)
+	l := agentLoop("1")
+	for _, outcome := range []string{"declined", "appointment_agreed"} {
+		if code, m := coord(t, srv, l, hb(headOf(s, l), `"action":"contact_outcome","outcome":"`+outcome+`","channel":"phone"`)); code != 201 {
+			t.Fatalf("%s: %d %v", outcome, code, m)
+		}
+	}
+	if code, m := postAction(t, srv, l, RoleClinician, "dr-hamdan", dispositionBody(headOf(s, l), followUp()...)); code != 409 || m["conflict"] != "decline" {
+		t.Fatalf("disposition of a reversed decline: %d %v", code, m)
+	}
+}

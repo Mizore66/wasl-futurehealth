@@ -1174,18 +1174,18 @@ type actionRefusal struct {
 	msg      string
 }
 
-// pendingDecline is the hash of the latest declined contact outcome, unless a disposition already answers it.
+// pendingDecline is the hash of the latest contact outcome when it is a decline no disposition answers yet. A decline the
+// patient has since reversed by a later contact outcome is not pending.
 func (o *caseOverlay) pendingDecline() string {
-	for i := len(o.contacts) - 1; i >= 0; i-- {
-		if o.contacts[i]["outcome"] == "declined" {
-			h, _ := o.contacts[i]["event"].(string)
-			if o.disposition != nil && o.disposition["decline_event"] == h {
-				return ""
-			}
-			return h
-		}
+	n := len(o.contacts)
+	if n == 0 || o.contacts[n-1]["outcome"] != "declined" {
+		return ""
 	}
-	return ""
+	h, _ := o.contacts[n-1]["event"].(string)
+	if o.disposition != nil && o.disposition["decline_event"] == h {
+		return ""
+	}
+	return h
 }
 
 // pendingRetrieval is the hash of the completed-elsewhere report whose record retrieval has no outcome yet.

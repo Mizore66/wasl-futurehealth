@@ -25,7 +25,9 @@ export function nextScreenDays(c: CaseSummary): number | null {
  */
 export function overdueClockDays(c: CaseSummary): number | null {
   if (c.ldct?.rec?.action === "annual" || c.ifhas?.rec?.action === "routine") return null;
-  return caseDeadlineDays(c);
+  // Lung-nodule deadlines are served as fractional days; floor so the countdown reads in whole days and never shows
+  // overdue before the API does.
+  return Math.floor(caseDeadlineDays(c));
 }
 
 type Clocked = { days: number; deadline: number | null };

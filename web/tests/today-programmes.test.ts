@@ -44,6 +44,13 @@ describe("Today clocks follow each programme's rule", () => {
     expect(clockWords({ days: 10, deadline: 14 })).toEqual({ over: false, short: "4 left", long: "4 days left of 14" });
   });
 
+  it("counts a fractional lung-nodule deadline in whole days", () => {
+    const nodule = page("lung_nodule").find((c) => !c.closed && !Number.isInteger(c.deadline_day))!;
+    const row = at(nodule, 100);
+    expect(Number.isInteger(row.deadline)).toBe(true);
+    expect(clockWords(row).long).toMatch(/^\d+ days left of \d+$/);
+  });
+
   it("orders overdue first, then fewest days left, and routine intervals last", () => {
     const rows = [
       { ...at(open("crc"), 25), id: "crc-6-left" },

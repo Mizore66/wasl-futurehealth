@@ -874,7 +874,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
 
             {live && ledgerRead?.bookingPanel && (
               <div className="mt-6" aria-label="Simulated booking">
-                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live onProjection={(projection) => bookingProjection(p.id, projection)} />
+                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live retrievalPending={!!p.retrieval} onProjection={(projection) => bookingProjection(p.id, projection)} />
               </div>
             )}
 

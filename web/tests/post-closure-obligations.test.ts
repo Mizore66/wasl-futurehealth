@@ -115,7 +115,7 @@ const seenDr = parse(rawDr, [{ ...find(rawDr, "/PHC-sr-1000"), state: "closed", 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.cases = [overdueDr, upcomingDr, seenDr, parent, child];
-  mocks.all.mockResolvedValue({ cases: mocks.cases });
+  mocks.all.mockImplementation(async (q: CaseQuery = {}) => ({ cases: mocks.cases.filter((c) => matches(c, q)) }));
 });
 
 async function today(sp: Record<string, string>) {
@@ -125,15 +125,16 @@ async function today(sp: Record<string, string>) {
 }
 
 describe("Today worklist, deliberately scoped to open cases and due recalls", () => {
-  it("reads closed cases too, and queues only the overdue DR recall", async () => {
+  it("reads closed DR cases too, and queues only the overdue DR recall", async () => {
     const board = await today({ programme: "diabetic_retinopathy", provider: "" });
-    expect(mocks.all).toHaveBeenCalledExactlyOnceWith();
+    expect(mocks.all.mock.calls).toEqual([[{ closed: false }], [{ closed: true, programme: "diabetic_retinopathy" }]]);
     expect(board.items.map((i) => i.id)).toEqual([overdueDr.id]);
     expect(board.items[0]).toMatchObject({ view: "call", next: "Arrange the eye-clinic review", deadline: 91 });
   });
 
   it("shows the LDCT child exactly once and never the closed parent", async () => {
     const board = await today({ programme: "lung_ldct", provider: "" });
+    expect(mocks.all.mock.calls).toEqual([[{ closed: false }]]);
     expect(board.items.map((i) => i.id)).toEqual([child.id]);
   });
 });
