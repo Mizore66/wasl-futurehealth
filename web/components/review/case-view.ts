@@ -1,10 +1,32 @@
 import { Evidence, evidenceLabelsFor, GUIDED_EVIDENCE_LABELS, isGuided, Link as LinkFacts, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
-import { shortId } from "@/lib/domain/ids";
+import { caseHref, shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
 import { recordFace, type Face } from "@/lib/people/identity";
 import { purposeOf, type ReviewItems, type ReviewPurpose } from "./decision";
+
+/** CRC evidence items raised for one narrow decision; any other reason is the ordinary report-adequacy review. */
+export const CRC_PURPOSES = {
+  prep_ungraded_day15: {
+    field: "Prep graded",
+    question: "Was the bowel preparation adequate?",
+    scope: "This answer settles only this question: the bowel preparation. Histology and other closure requirements can still keep the case open.",
+  },
+  completion_undocumented: {
+    field: "Caecum reached",
+    question: "Was the caecum reached?",
+    scope: "This answer settles only this question: whether the caecum was reached. Histology and other closure requirements can still keep the case open.",
+  },
+} as const;
+export type CrcPurpose = keyof typeof CRC_PURPOSES;
+
+/** Item reasons the image reader raises or routes; the clinician judges the photographs, so they must be shown. */
+const IMAGE_REASONS = ["completion_undocumented", "prep_grade_one_click", "image_prep_conflict"];
+
+export type PhotoView = { sha: string; station: string; available: boolean; src: string };
+export type ImageContext = { model: string; caecal: string; prep: string; hint: string; textPrep: string };
+const crcPurposeOf = (reason: string | undefined): CrcPurpose | undefined => (reason && reason in CRC_PURPOSES ? (reason as CrcPurpose) : undefined);
 
 /*
  * Everything the review desk shows, derived from one case detail.
@@ -43,7 +65,17 @@ export type ReviewView = {
   pathology: boolean;
   programme: Programme;
   evidenceQuestion: string;
+  /** Set when the evidence item asks one narrow CRC question; the answer does not decide whole-case closure. */
+  evidenceScope?: string;
+  /** The one check row a narrow answer settles; every other disputed row (histology included) stays open. */
+  evidenceField?: string;
   evidenceChoices: string[];
+  /** The evidence item was raised on photographic evidence: photos are shown, or their absence is said. */
+  imageBacked: boolean;
+  /** The photos the API filed on this item's report at the station the item asks about; never inferred from scores. */
+  photos: PhotoView[];
+  /** The image model's read of those photos, shown only after the clinician's own first read. */
+  imageContext?: ImageContext;
   shortId: string;
   name: string;
   nameAr: string;
@@ -216,11 +248,15 @@ function automatedSnapshot(ev: CaseDetail["evidence"][number] | undefined, progr
 }
 
 /** The evidence one raised item judges: its own chain's block first, so a revised report keeps its own version's readers and quote. */
-function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean) {
-  if (!item) return only ? undefined : c.evidence[0];
+function evidenceFromChain(item: RaisedItem) {
   const block = item.chain.find((e) => e.type === "evidence" && shortId(String(e.body.report)) === shortId(item.report));
   const parsed = block && Evidence.safeParse(block.body);
-  return parsed?.success ? parsed.data : c.evidence.find((e) => shortId(e.report) === shortId(item.report));
+  return parsed?.success ? parsed.data : undefined;
+}
+
+function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean) {
+  if (!item) return only ? undefined : c.evidence[0];
+  return evidenceFromChain(item) ?? c.evidence.find((e) => shortId(e.report) === shortId(item.report));
 }
 
 /** The link decision in a raised item's own chain: the item's original link context, which may be a multi-hop path whose weakest edge is not the outreach pair. */
@@ -276,12 +312,19 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   const evidenceChoices = !guided ? [] : evidenceItem ? evidenceLabelsFor(c, evidenceItem.report) : GUIDED_EVIDENCE_LABELS[programme];
   const pathology = evidenceChoices.includes("histology");
   const reportWord = pathology ? "pathology report" : copy.report;
+  const crcPurpose = programme === "crc" && !pathology ? crcPurposeOf(evidenceItem?.reason) : undefined;
+  const imageBacked = programme === "crc" && !pathology && !!evidenceItem?.reason && IMAGE_REASONS.includes(evidenceItem.reason);
   const evidenceQuestion = pathology
     ? "Does the pathology report show histology?"
-    : programme === "crc"
-      ? "Is the colonoscopy report adequate?"
-      : `Select the ${copy.report} evidence label`;
+    : crcPurpose
+      ? CRC_PURPOSES[crcPurpose].question
+      : programme === "crc"
+        ? "Is the colonoscopy report adequate?"
+        : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" && !pathology ? checksFrom(ev?.fields) : [];
+  /* The image model is read only from this exact item's own chain; aggregate evidence never carries it. */
+  const chainEvidence = imageBacked && evidenceItem ? evidenceFromChain(evidenceItem) : undefined;
+  const imageContext = chainEvidence?.image_reader ? { image_reader: chainEvidence.image_reader, fields: chainEvidence.fields } : undefined;
   /*
    * The recorded reason identifies the question that was raised, not its original per-field or configured guard checks.
    * The identifier projection below is materialized context only; it does not establish an original guard outcome.
@@ -360,7 +403,20 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     pathology,
     programme,
     evidenceQuestion,
+    evidenceScope: crcPurpose && CRC_PURPOSES[crcPurpose].scope,
+    evidenceField: crcPurpose && CRC_PURPOSES[crcPurpose].field,
     evidenceChoices: [...evidenceChoices],
+    imageBacked,
+    photos: imageBacked && evidenceItem
+      ? (c.review_photos?.[evidenceItem.item] ?? []).map((p) => ({ ...p, src: `${caseHref("/app/review", c.case.id)}/photo/${encodeURIComponent(evidenceItem.item)}/${p.sha}` }))
+      : [],
+    imageContext: imageContext && {
+      model: imageContext.image_reader.model,
+      caecal: imageContext.image_reader.caecal_photo,
+      prep: imageContext.image_reader.prep,
+      hint: imageContext.image_reader.hint,
+      textPrep: readerValues(imageContext.fields?.regex)[1] ?? "not_stated",
+    },
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
@@ -400,7 +456,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
     automatedEvidence: only && evidenceItem && programme !== "crc" ? automatedSnapshot(ev, programme) : undefined,
-    items: { link: linkItem?.item, evidence: evidenceItem?.item },
+    items: { link: linkItem?.item, evidence: evidenceItem?.item, ...(crcPurpose && { scoped: true }) },
     context: { link: linkBound, evidence: !only || !evidenceItem || Boolean(ev) },
     trail,
   };

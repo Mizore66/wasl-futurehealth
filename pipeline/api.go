@@ -97,6 +97,8 @@ type apiServer struct {
 	appendLine              func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 	patientRequests         map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
 	demo                    map[string]regDemo                         // materialized demographics, identity-review roles only
+	photos                  map[string][]ImgRef                        // exact provider/report/version media observations
+	pixels                  *pixelStore                                // content-verified synthetic photos; never serialized paths
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -134,6 +136,7 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
+	s.pixels = newPixelStore(os.Getenv("WASL_IMAGE_PIXELS_DIR"))
 	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	// Recovery deployments use their configured Basic-auth identities and TLS;
 	// all other serving modes require the bearer-bound synthetic-demo principals.
@@ -354,6 +357,11 @@ func (s *apiServer) loadTimelines() {
 			continue
 		}
 		s.rememberReviewReportSource(e, m.Data)
+		if e.RType == "DiagnosticReport" {
+			// Empty media is an explicit source observation too. A later row
+			// cannot erase an ambiguity or resurrect an older positive list.
+			s.observePhotoAssociation(prov+"/DiagnosticReport/"+e.ID, e.Version, e.Images)
+		}
 		if e.PatientKey == "" {
 			continue
 		}
@@ -743,6 +751,9 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/cases/")
 	sub := ""
+	if s.casePhotoRoute(w, r, rest) {
+		return
+	}
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
 	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {

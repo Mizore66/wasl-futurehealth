@@ -108,12 +108,13 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
     <section aria-labelledby={`readers-h-${view.items.evidence ?? "case"}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id={`readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">
-          Is the report enough to close her case?
+          {view.evidenceScope ? view.evidenceQuestion : "Is the report enough to close her case?"}
         </h2>
         <span className="text-small text-muted">
           {view.unit} report {view.report.id}{view.report.version ? ` version ${view.report.version}` : ""} · {view.report.on}
         </span>
       </div>
+      {view.evidenceScope && <p className="m-0 mt-1 text-small text-muted">{view.evidenceScope}</p>}
       <div className="mt-2" data-testid="readers">
         <div className="hidden h-8 grid-cols-[minmax(0,34fr)_minmax(0,22fr)_minmax(0,22fr)_minmax(0,22fr)] items-center text-small text-muted @xl:grid">
           <span>Check</span>
@@ -134,7 +135,7 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
             </span>
             <span className="flex items-center">
               <Label>Decision</Label>
-              <Decision check={c} signed={signed} />
+              <Decision check={c} signed={view.evidenceField && c.field !== view.evidenceField ? undefined : signed} />
             </span>
           </div>
         ))}
