@@ -1,4 +1,5 @@
 import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/schema";
+import { effectiveOwner } from "@/lib/api/owner";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { compareInstants } from "@/lib/domain/instant";
@@ -205,6 +206,13 @@ export type WorkItem = {
   cancelled?: boolean;
 };
 
+/** What happened to patient outreach for a confirmed recovery backfill; no message is ever dispatched. */
+export const OUTREACH_WORDS: Record<NonNullable<NonNullable<CaseSummary["recovery"]>["backfill"]>["outreach_status"], string> = {
+  none: "no outreach recorded",
+  recorded_not_dispatched: "outreach recorded, not sent",
+  cancelled_consent: "outreach cancelled after consent withdrawal",
+};
+
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
@@ -237,7 +245,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   }
   const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
-  const owner = ov?.owner || c.owner;
+  const owner = effectiveOwner(c);
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
@@ -296,11 +304,21 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Choose another simulated slot";
     }
   }
-  if (c.recovery?.backfill) {
+  const backfill = c.recovery?.backfill;
+  if (backfill) {
+    const contactable = c.consent === "granted" && !contactBlocked;
     awaitingNext = false;
-    view = "waiting";
-    words.status = "Simulated slot confirmed";
-    words.next = "Wait for the simulated appointment day";
+    words.status = `Simulated slot confirmed · ${OUTREACH_WORDS[backfill.outreach_status]}`;
+    if (backfill.outreach_status === "recorded_not_dispatched") {
+      view = "waiting";
+      words.next = "Wait for the simulated appointment day";
+    } else if (backfill.outreach_status === "none" && contactable) {
+      view = "call";
+      words.next = `Contact the patient about the simulated recovery slot on day ${backfill.day}`;
+    } else {
+      view = "waiting";
+      words.next = "Patient contact is not permitted; the simulated slot has not been offered";
+    }
   }
   return {
     id: c.id,

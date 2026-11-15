@@ -55,6 +55,52 @@ func closureStats(pred map[string]bool, tr *Truth) map[string]interface{} {
 		"precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn), "false_closure_rate_upper95": wilsonUp(fp, tp+fp)}
 }
 
+// closureLossVersion names the closure-safety loss: a predicted closure is unsafe when its outcome is false or its
+// closing evidence is not proven, from the truth, to belong to the loop's person. v1 counted false outcomes only.
+const closureLossVersion = "outcome_or_evidence_ownership_v2"
+
+type evidenceOwnership int
+
+const (
+	ownedEvidence evidenceOwnership = iota
+	foreignEvidence
+	unverifiedEvidence
+)
+
+func closureEvidenceOwner(report string, lt *LoopTruth, tr *Truth, repPK map[string]string) evidenceOwnership {
+	pk, ok := repPK[report]
+	q := tr.PKQid[pk]
+	switch {
+	case !ok || q == "" || lt.Qid == "":
+		return unverifiedEvidence
+	case q != lt.Qid:
+		return foreignEvidence
+	}
+	return ownedEvidence
+}
+
+type closureSafety struct{ unsafe, foreign, unverified int }
+
+func (s *closureSafety) add(predClosed, outcomeFalse bool, own evidenceOwnership) {
+	if predClosed {
+		switch own {
+		case foreignEvidence:
+			s.foreign++
+		case unverifiedEvidence:
+			s.unverified++
+		}
+	}
+	if outcomeFalse || (predClosed && own != ownedEvidence) {
+		s.unsafe++
+	}
+}
+
+func (s closureSafety) into(m map[string]interface{}) map[string]interface{} {
+	m["unsafe_closures"], m["foreign_evidence_closures"], m["unverified_evidence_closures"] = s.unsafe, s.foreign, s.unverified
+	m["closure_loss"] = closureLossVersion
+	return m
+}
+
 func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]string) map[string]interface{} {
 	conf := map[string]map[string]int{}
 	ok, n := 0, 0
@@ -64,6 +110,7 @@ func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]strin
 	ovOK, unOK := 0, 0
 	ttcErr := []float64{}
 	human, autoClosed := 0, 0
+	safety := closureSafety{}
 	for id, lt := range tr.Loops {
 		d := final[id]
 		n++
@@ -82,6 +129,11 @@ func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]strin
 		pred[id] = pc
 		o := byOrigin[lt.Origin]
 		t := lt.State == "closed"
+		own := ownedEvidence
+		if pc {
+			own = closureEvidenceOwner(d.ClosingReport, lt, tr, repPK)
+		}
+		safety.add(pc, pc && !t, own)
 		switch {
 		case t && pc:
 			o[0]++
@@ -91,9 +143,12 @@ func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]strin
 			attr["missed_pred_"+ps]++
 		case pc && !t:
 			o[2]++
-			if tr.PKQid[repPK[d.ClosingReport]] != lt.Qid {
+			switch own {
+			case foreignEvidence:
 				attr["false_wrong_patient"]++
-			} else {
+			case unverifiedEvidence:
+				attr["false_evidence_unverified"]++
+			default:
 				attr["false_evidence_truth_"+lt.State]++
 			}
 		}
@@ -116,7 +171,7 @@ func evalDecisions(final map[string]*Decision, tr *Truth, repPK map[string]strin
 	for k, v := range byOrigin {
 		bo[k] = map[string]interface{}{"closed_true": v[0] + v[1], "recall": frac(v[0], v[0]+v[1]), "false_closures": v[2]}
 	}
-	res := closureStats(pred, tr)
+	res := safety.into(closureStats(pred, tr))
 	res["loops"] = n
 	res["state_accuracy"] = frac(ok, n)
 	res["confusion_truth_pred"] = conf

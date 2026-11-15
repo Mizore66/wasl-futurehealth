@@ -127,8 +127,12 @@ func TestLDCTIndexCorrectionAfterIntervalFollowup(t *testing.T) {
 						if lcHoldReason(d) != "scan_readers_disagree" || len(d.Pending) != 1 || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/correction" || !hasReview(out, "evidence") {
 							t.Fatalf("unread correction must hold on revised evidence: %+v", d)
 						}
-					} else if d.LDCT.Scan != "correction" || d.LDCT.ScanLabel != "LR4B" || d.LDCT.ScanDay != 110 || d.LDCT.DeadlineDay != 140 || d.Deadline != 30 || !d.Overdue || !hasEsc(d, "urgent_ldct_workup_open") {
-						t.Fatalf("later LR4B index correction must require urgent work-up from its own day: %+v", d.LDCT)
+					} else {
+						a := d.LDCT.ClockAnchor
+						if d.LDCT.Scan != "correction" || d.LDCT.ScanLabel != "LR4B" || d.LDCT.ScanDay != 110 || d.LDCT.DeadlineDay != 40 || d.Deadline != 30 || !d.Overdue || !hasEsc(d, "urgent_ldct_workup_open") ||
+							a == nil || a.Kind != "reclassified_index_exam" || a.Provider != root.Provider || a.Registration != root.PatientKey || a.Report != "lcs-centre/DiagnosticReport/root" || a.Version != 1 || a.Day != 10 || d.Chain[0].Body["report"] != "lcs-centre/DiagnosticReport/correction" {
+							t.Fatalf("simulated current correction/day110 must retain the exact proven index v1/day10 clock/deadline40: %+v anchor=%+v", d.LDCT, a)
+						}
 					}
 				}
 			})
