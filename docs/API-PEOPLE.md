@@ -93,7 +93,9 @@ History is folded by `(case_id, event, kind)` in decision order. Each intent ret
 - `withheld`: consent or another canonical rule withholds it; not actionable;
 - `recorded`: a non-released intent without a suppression code.
 
-A `duplicate` group has the same `(kind,event)` on at least two distinct cases. One `overlap` group contains current intents spanning at least two programmes. Repetition across decisions of one case does not itself create a duplicate. At least two `released`, `held`, or `recorded` intents make a group actionable. Flags never delete, rewrite, cancel or suppress history, and there are no send/dismiss controls.
+Built: an intent whose key is absent from its case's latest canonical decision carries `participation: resolved`. A booked appointment reminder that disappears once the appointment is fulfilled is one example. The intent keeps its lifecycle, first and latest decision IDs and signature as history, but it is never actionable. Canonical decisions are not rewritten.
+
+A `duplicate` group has the same `(kind,event)` on at least two distinct cases. One `overlap` group contains current intents spanning at least two programmes. Repetition across decisions of one case does not itself create a duplicate. At least two current `released`, `held`, or `recorded` intents make a group actionable, and a review action is anchored on a current intent. Flags never delete, rewrite, cancel or suppress history, and there are no send/dismiss controls.
 
 ## Next coordinator action
 

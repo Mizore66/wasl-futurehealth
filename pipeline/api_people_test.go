@@ -808,3 +808,79 @@ func TestPersonFixtureSelectsActionableCrossProgrammePerson(t *testing.T) {
 		t.Fatalf("person fixture overwrote an existing tag: %s %q", id, s.cases[anchor].Fixture)
 	}
 }
+
+func TestPersonOutreachRetiresIntentsOmittedByLatestDecision(t *testing.T) {
+	reminder := Outreach{Kind: "appointment_reminder", Event: "shared-event", Released: true}
+	mk := func(id, programme string, latest []Outreach) *apiCase {
+		booked := testPersonDecision(id, programme)
+		booked.ID, booked.Dropoff, booked.Outreach = "d-booked-"+id, "", []Outreach{reminder}
+		fulfilled := testPersonDecision(id, programme)
+		fulfilled.ID, fulfilled.Dropoff, fulfilled.Outreach = "d-fulfilled-"+id, "", latest
+		return &apiCase{ID: id, Programme: programme, State: "open", last: fulfilled, decisions: []*Decision{booked, fulfilled}}
+	}
+	intentsOf := func(flag map[string]interface{}) map[string]map[string]interface{} {
+		out := map[string]map[string]interface{}{}
+		for _, intent := range flag["intents"].([]map[string]interface{}) {
+			out[intent["case_id"].(string)] = intent
+		}
+		return out
+	}
+	flagsByMatch := func(cases []*apiCase) map[string]map[string]interface{} {
+		out := map[string]map[string]interface{}{}
+		for _, flag := range personOutreachFlags(&apiServer{}, cases) {
+			out[flag["match"].(string)] = flag
+		}
+		return out
+	}
+
+	a, b := mk("a", "crc", nil), mk("b", "cervical", nil)
+	flags := flagsByMatch([]*apiCase{a, b})
+	duplicate := flags["duplicate"]
+	if duplicate == nil || duplicate["actionable"] != false {
+		t.Fatalf("disappeared intents stayed actionable: %+v", flags)
+	}
+	if overlap := flags["overlap"]; overlap != nil && overlap["actionable"] != false {
+		t.Fatalf("disappeared intents made an actionable overlap: %+v", overlap)
+	}
+	for id, intent := range intentsOf(duplicate) {
+		if intent["participation"] != "resolved" || intent["lifecycle"] != "released" || intent["first_decision_id"] != "d-booked-"+id || intent["latest_decision_id"] != "d-booked-"+id {
+			t.Fatalf("resolved intent lost its history or was not marked resolved: %+v", intent)
+		}
+	}
+	if len(a.decisions[0].Outreach) != 1 || !a.decisions[0].Outreach[0].Released || len(a.last.Outreach) != 0 {
+		t.Fatalf("canonical decisions were rewritten: %+v %+v", a.decisions[0].Outreach, a.last.Outreach)
+	}
+	if got := testNextCandidate([]*apiCase{a, b}); got.kind != "none" {
+		t.Fatalf("disappeared outreach drove the next action: %+v", got)
+	}
+	a.Closed, b.Closed, a.State, b.State = true, true, "closed", "closed"
+	a.last.State, b.last.State = "closed", "closed"
+	if got := testNextCandidate([]*apiCase{a, b}); got.kind != "none" {
+		t.Fatalf("closed cases with disappeared outreach drove the next action: %+v", got)
+	}
+
+	mixed := []*apiCase{mk("a", "crc", nil), mk("b", "cervical", []Outreach{reminder})}
+	flags = flagsByMatch(mixed)
+	if flags["duplicate"]["actionable"] != false {
+		t.Fatalf("one current and one disappeared intent was actionable: %+v", flags["duplicate"])
+	}
+	if got := intentsOf(flags["duplicate"])["b"]["participation"]; got != nil {
+		t.Fatalf("current intent was marked %v", got)
+	}
+	if got := testNextCandidate(mixed); got.kind != "none" {
+		t.Fatalf("mixed group drove the next action: %+v", got)
+	}
+
+	current := []*apiCase{mk("b", "cervical", []Outreach{reminder}), mk("a", "crc", []Outreach{reminder})}
+	flags = flagsByMatch(current)
+	if flags["duplicate"]["actionable"] != true || flags["overlap"]["actionable"] != true {
+		t.Fatalf("two current intents lost actionability: %+v", flags)
+	}
+	ordered := flags["duplicate"]["intents"].([]map[string]interface{})
+	if ordered[0]["case_id"] != "a" || ordered[1]["case_id"] != "b" || ordered[0]["first_decision_id"] != "d-booked-a" || ordered[0]["latest_decision_id"] != "d-fulfilled-a" {
+		t.Fatalf("current intents lost ordering or provenance: %+v", ordered)
+	}
+	if got := testNextCandidate(current); got.kind != "review_duplicate_outreach" || got.caseID != "a" {
+		t.Fatalf("current duplicate did not drive review: %+v", got)
+	}
+}

@@ -561,6 +561,7 @@ type personIntent struct {
 	LatestDecisionSig string
 	Lifecycle         string
 	Historical        bool
+	Resolved          bool
 	Outreach          Outreach
 }
 
@@ -584,6 +585,12 @@ func intentLifecycle(outreach Outreach) string {
 func foldPersonIntents(c *apiCase) []personIntent {
 	latest := map[string]personIntent{}
 	order := []string{}
+	current := map[string]bool{}
+	if c.last != nil {
+		for _, outreach := range c.last.Outreach {
+			current[c.ID+"\x00"+outreach.Event+"\x00"+outreach.Kind] = true
+		}
+	}
 	for _, decision := range c.decisions {
 		for _, outreach := range decision.Outreach {
 			key := c.ID + "\x00" + outreach.Event + "\x00" + outreach.Kind
@@ -596,6 +603,7 @@ func foldPersonIntents(c *apiCase) []personIntent {
 			intent.Lifecycle, intent.Outreach = intentLifecycle(outreach), outreach
 			intent.Programme = decision.Prog
 			intent.Historical = c.last != nil && c.last.Inactive
+			intent.Resolved = !current[key]
 			latest[key] = intent
 		}
 	}
@@ -607,7 +615,7 @@ func foldPersonIntents(c *apiCase) []personIntent {
 }
 
 func actionableIntent(intent personIntent) bool {
-	return !intent.Historical && (intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded")
+	return !intent.Historical && !intent.Resolved && (intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded")
 }
 
 func personFlagID(match string, intents []personIntent) string {
@@ -625,6 +633,8 @@ func intentBody(intent personIntent) map[string]interface{} {
 		"latest_decision_sig": intent.LatestDecisionSig, "lifecycle": intent.Lifecycle, "outreach": intent.Outreach}
 	if intent.Historical {
 		body["participation"] = "historical"
+	} else if intent.Resolved {
+		body["participation"] = "resolved"
 	}
 	return body
 }
@@ -753,7 +763,7 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		}
 		anchor := ""
 		for _, intent := range intents {
-			if caseByID[intent["case_id"].(string)] != nil && intent["participation"] != "historical" {
+			if caseByID[intent["case_id"].(string)] != nil && intent["participation"] == nil {
 				anchor = intent["case_id"].(string)
 				break
 			}
