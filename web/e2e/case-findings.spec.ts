@@ -43,6 +43,11 @@ for (const width of [1440, 390] as const) {
     await expect(value("Within deadline")).toHaveText(dr.within_deadline ? "Yes" : "No");
     await expect(value("Next due")).toHaveText(`Clinic review ${day(dr.next_due.due_day)} (note review interval)`);
     expect(await rows.count()).toBeGreaterThanOrEqual(8);
+    const why = page.getByRole("region", { name: "Why it closed" });
+    await expect(why).toContainText("Closed with evidence");
+    await expect(why).not.toContainText("Waiting for the eye-clinic exam");
+    await expect(why.getByRole("list", { name: "Holds" })).toHaveCount(0);
+    await expect(why.getByText("Earlier holds, no longer in force (1)")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({ path: `test-results/screens/case-findings-dr-${width}.png`, fullPage: true });
     await noSeriousAxe(page);
