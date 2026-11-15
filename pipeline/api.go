@@ -1779,6 +1779,10 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)
 			}
+			// The protocol validated the original signed programme and raised
+			// (possibly retired) item; never recheck against today's live queue.
+			s.reviews = append(s.reviews, ev)
+			return nil
 		}
 		c := s.cases[sstr(ev, "case")]
 		if evKind(ev) == "review" {
@@ -1791,7 +1795,7 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 				}
 			}
 		}
-		if c != nil && !s.crcDecisionFitsItem(c, s.queueItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
+		if c != nil && !s.crcDecisionFitsItem(c, s.raisedReviewItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
 			if !s.legacyUnboundCRCReview(c, ev) {
 				return errors.New("review decision does not fit the item's report")
 			}

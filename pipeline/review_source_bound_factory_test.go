@@ -139,6 +139,32 @@ func newSourceBoundIR202(t *testing.T, combined bool) (*irEnv, sourceBoundIRIDs2
 	return &irEnv{s: s, h: h, run: run, path: "/api/cases/" + url.PathEscape(ledgerLoop)}, ids
 }
 
+// Attach a genuinely raised colonoscopy question to a hand-built overlay test
+// server. The case/ledger under test stays unchanged; only its evidence seed
+// gains the original source identity now required for a live evidence write.
+func attachSourceBoundEvidence202(t *testing.T, s *apiServer, loop string) string {
+	t.Helper()
+	for _, item := range s.queue[loop] {
+		if s.raisedReportCategory(loop, item) == "colonoscopy" {
+			return item.ItemID
+		}
+	}
+	run, ids := sourceBoundIRRun202(t, loop, false)
+	source := loadAPI(run, "")
+	item := source.queueItem(loop, ids.Evidence)
+	if s.queue == nil {
+		s.queue = map[string][]*ReviewItem{}
+	}
+	s.queue[loop] = append(s.queue[loop], item)
+	if s.reviewReportSources == nil {
+		s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
+	}
+	for key, report := range source.reviewReportSources {
+		s.reviewReportSources[key] = report
+	}
+	return ids.Evidence
+}
+
 // A bound live evidence seed for the existing action-specific undo RBAC test.
 // It does not convert or discard the distinct historical itemless contract.
 func newSourceBoundUndoRig202(t *testing.T) (*undoRig, string) {

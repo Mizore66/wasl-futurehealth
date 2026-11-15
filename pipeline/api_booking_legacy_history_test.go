@@ -231,7 +231,10 @@ func TestPR205AuthenticParentHistory(t *testing.T) {
 			t.Fatalf("non-acquisition after stamp: %d %v", code, v)
 		}
 	}
-	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"decision":"adequate","note":"Synthetic legacy review unaffected"}`); code != 201 {
+	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"decision":"adequate","note":"Synthetic evidence without an original source"}`); code != 400 {
+		t.Fatalf("source-less evidence after stamp: %d %v", code, v)
+	}
+	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleReviewer, `{"decision":"same","note":"Synthetic legacy link review unaffected"}`); code != 201 {
 		t.Fatalf("review after stamp: %d %v", code, v)
 	}
 	// Unstamped cancel after a stamp neither requires nor resets the global barrier.

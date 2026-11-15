@@ -61,7 +61,15 @@ func (r *undoRig) do(method, path, role, actor, body string) (int, map[string]in
 // review appends an ordinary review event through the real handler and returns its hash.
 func (r *undoRig) review(caseID, role, actor, decision string) string {
 	r.t.Helper()
-	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, `{"decision":"`+decision+`"}`)
+	body := map[string]string{"decision": decision}
+	if decision == "adequate" || decision == "inadequate" {
+		body["item"] = attachSourceBoundEvidence202(r.t, r.s, caseID)
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, string(encoded))
 	if code != 201 {
 		r.t.Fatalf("seed review: %d %v", code, m)
 	}

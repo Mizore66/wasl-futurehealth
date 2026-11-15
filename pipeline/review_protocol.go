@@ -603,7 +603,7 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
 	}
-	if !s.crcDecisionFitsItem(c, it, sstr(ev, "decision")) {
+	if !s.crcDecisionFitsItem(&apiCase{ID: id, Programme: signed.Prog}, it, sstr(ev, "decision")) {
 		return fmt.Errorf("protocol read decision does not fit the item's report")
 	}
 	if err := checkClaimedProtocolRead(s.claimsLocked(), ev, false); err != nil {
