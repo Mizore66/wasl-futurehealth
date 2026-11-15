@@ -7,6 +7,7 @@ answered from reviewer_decisions.ndjson; a "cross-person" pair is two registrati
 """
 import glob, json, os, sys
 from collections import Counter, defaultdict
+import closure_loss
 
 cohort, run = sys.argv[1], sys.argv[2]
 tr = json.load(open(os.path.join(cohort, "truth.json")))
@@ -69,7 +70,11 @@ def cross(pair):
 def safety(r):
     out = {}
     for pg in ("crc", "cervical"):
-        out["false_closures_" + pg] = r["closure"][pg]["wasl_live_with_review"]["false_closures"]
+        c = r["closure"][pg]["wasl_live_with_review"]
+        out["false_closures_" + pg] = c["false_closures"]
+        k, out["closure_loss"] = closure_loss.one(c)
+        if out["closure_loss"] == closure_loss.V2:
+            out["unsafe_closures_" + pg] = k
     for pg in ("lung_nodule", "diabetic_retinopathy", "breast"):
         b = r.get("programmes_live", {}).get(pg)
         if b and "closure" in b:

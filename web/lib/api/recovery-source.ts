@@ -2,11 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { apiMode, authenticated, liveBase } from "./source";
 import {
+  RecoveryCancelRequest,
   RecoveryConfirmRequest,
   RecoveryConfirmResponse,
   RecoveryDetail,
   RecoveryError,
   RecoveryList,
+  type RecoveryCancelRequest as CancelInput,
   type RecoveryConfirmRequest as ConfirmInput,
 } from "./recovery-schema";
 
@@ -37,14 +39,12 @@ export type RecoveryResult =
   | { ok: false; status: number; error: string; conflict?: string };
 
 /** The API derives coordinator identity from its token; no actor or role is accepted from this client. */
-export async function confirmRecovery(slotID: string, input: ConfirmInput): Promise<RecoveryResult> {
-  const request = RecoveryConfirmRequest.safeParse(input);
-  if (!request.success) return { ok: false, status: 400, error: "Malformed recovery confirmation" };
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "Fixture mode is read-only; no backfill was saved" };
+async function postRecovery(slotID: string, action: "confirm" | "cancel", body: unknown): Promise<RecoveryResult> {
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "Fixture mode is read-only; no backfill was changed" };
   const response = await fetch(
-    `${liveBase()}/api/recovery/slots/${encodeURIComponent(slotID)}/confirm`,
+    `${liveBase()}/api/recovery/slots/${encodeURIComponent(slotID)}/${action}`,
     authenticated(
-      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) },
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) },
       "coordinator",
     ),
   );
@@ -56,5 +56,18 @@ export async function confirmRecovery(slotID: string, input: ConfirmInput): Prom
     const error = RecoveryError.safeParse(json);
     return { ok: false, status: response.status, error: error.success ? error.data.error : `HTTP ${response.status}`, conflict: error.success ? error.data.conflict : undefined };
   }
-  throw new Error(`POST recovery confirmation: HTTP ${response.status}`);
+  throw new Error(`POST recovery ${action}: HTTP ${response.status}`);
+}
+
+export async function confirmRecovery(slotID: string, input: ConfirmInput): Promise<RecoveryResult> {
+  const request = RecoveryConfirmRequest.safeParse(input);
+  if (!request.success) return { ok: false, status: 400, error: "Malformed recovery confirmation" };
+  return postRecovery(slotID, "confirm", request.data);
+}
+
+/** Appends a compensating cancellation; the confirmation stays in the ledger. */
+export async function cancelRecovery(slotID: string, input: CancelInput): Promise<RecoveryResult> {
+  const request = RecoveryCancelRequest.safeParse(input);
+  if (!request.success) return { ok: false, status: 400, error: "A cancellation reason (up to 200 characters) is required" };
+  return postRecovery(slotID, "cancel", request.data);
 }

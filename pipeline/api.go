@@ -693,15 +693,16 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	return m
 }
 
-// GET /api/cases?programme=crc&state=closed&closed=true&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
+// GET /api/cases?programme=crc&state=closed&closed=true&owner=...&unowned=true&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
 func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	match := func(c *apiCase) bool {
+		owner := s.effectiveOwner(c)
 		eq := func(k, v string) bool { x := q.Get(k); return x == "" || x == v }
 		if c.last != nil && c.last.Inactive && q.Get("state") != "inactive" && q.Get("include_inactive") != "true" {
 			return false
 		}
-		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", c.Owner) && eq("consent", c.Consent) &&
+		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", owner) && (q.Get("unowned") != "true" || owner == "") && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
 			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&
@@ -1297,6 +1298,16 @@ func (s *apiServer) overlayView(c *apiCase, full bool) map[string]interface{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.overlayViewLocked(c, full)
+}
+
+// effectiveOwner is the saved coordinator owner when one exists, else the canonical owner.
+func (s *apiServer) effectiveOwner(c *apiCase) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if c.ov.owner != "" {
+		return c.ov.owner
+	}
+	return c.Owner
 }
 
 func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interface{} {

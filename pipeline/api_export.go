@@ -631,7 +631,7 @@ var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
 		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
-		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent")
+		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent", "confirmation")
 	m["data"] = exportCoordinatorDataAllow
 	m["expected_claim_head"] = &exportAllow{leaf: true, op: true, empty: true}
 	return m

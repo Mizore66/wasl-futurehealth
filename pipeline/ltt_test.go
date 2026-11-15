@@ -25,7 +25,7 @@ func TestLTTProgrammeResolution(t *testing.T) {
 		"dr2":        {State: "no_referral_needed"},
 		"br1":        {State: "no_recall_needed"},
 	}
-	bp := lttByProg(final, tr)
+	bp := lttByProg(final, tr, nil)
 	want := map[string][4]int{ // loops, closed, tp, false closures
 		"crc": {2, 2, 1, 1}, "cervical": {1, 0, 0, 0}, "lung_nodule": {3, 3, 2, 2}, "diabetic_retinopathy": {2, 2, 1, 2}, "breast": {1, 1, 0, 1},
 	}
@@ -40,7 +40,7 @@ func TestLTTProgrammeResolution(t *testing.T) {
 	for _, id := range []string{"crc1", "crc2", "cerv1"} {
 		tr2.Loops[id] = tr.Loops[id]
 	}
-	acc, bp2 := evalDecisions(final, tr2, map[string]string{}), lttByProg(final, tr2)
+	acc, bp2 := evalDecisions(final, tr2, map[string]string{}), lttByProg(final, tr2, map[string]string{})
 	fc, tp, closed := 0, 0, 0
 	for _, x := range bp2 {
 		fc, tp, closed = fc+x.FalseClosures, tp+x.TP, closed+x.Closed

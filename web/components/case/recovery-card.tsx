@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OUTREACH_WORDS } from "@/components/worklist/model";
 import type { CaseDetail } from "@/lib/api/schema";
 
 export function RecoveryCard({ detail }: { detail: CaseDetail }) {
@@ -12,7 +13,7 @@ export function RecoveryCard({ detail }: { detail: CaseDetail }) {
       {backfill && (
         <div data-testid="case-recovery-backfill">
           <p><strong>Simulated slot confirmed</strong> · day {backfill.day}</p>
-          <p className="text-small">No provider booking or message was made. Outreach: {backfill.outreach_status.replaceAll("_", " ")}.</p>
+          <p className="text-small">No provider booking or message was made. Outreach: {OUTREACH_WORDS[backfill.outreach_status]}.</p>
           <p className="text-small break-all">Ledger {backfill.event}</p>
           <Link href={`/app/recovery?slot=${backfill.slot_id}`} className="inline-flex min-h-11 items-center">Open recovery projection</Link>
         </div>
