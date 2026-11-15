@@ -18,7 +18,7 @@ solved by `wsi7 mcf`); the stress-test flags (--arrivals bursty, --female-share,
 rounding and integer-cost assignment apply, with reviewed golden changes to probabilities and two equal-cost slots.
 """
 from __future__ import annotations
-import json, os, sys, argparse, collections, hashlib
+import json, math, os, sys, argparse, collections, hashlib
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
@@ -148,11 +148,21 @@ def _sha(value):
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
-def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead):
+def _current_day(dec):
+    """Canonical decision clock (`now`) as an integer engine day, or None when the run recorded none."""
+    now = (dec or {}).get("now")
+    return int(math.floor(now)) if isinstance(now, (int, float)) and math.isfinite(now) else None
+
+
+def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earliest, prep_lead, current_day=None):
     """Deterministic synthetic seats from the existing engine's hard-feasibility and no-show rules.
 
     This is a catalogue, not a second assignment pass: sessions stay in calendar order and every declared
     non-overbooked seat is named. Per-case fields (deadline, lead time and no-show risk) intentionally differ.
+
+    The seat window, lead time and no-show risk stay anchored to the original request day. Female-list protection is
+    evaluated on the later of that day and the case's current canonical clock, so seats held at the original request
+    are released once their session is within the engine's seven-day boundary (session day <= now + reserve_days).
     """
     day = requested_day
     lo = max(day + prep_lead, earliest)
@@ -170,6 +180,16 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
     # Match BookingEngine.build's bounded candidate window, counting sessions rather than occupied seats because
     # coordinator reservations occupy their own append-only ledger, not the engine's retrospective assignment state.
     sessions = sessions[: eng.K]
+    held = {}
+    if eng.protect is not None and prefs.female_endoscopist != "hard":
+        demand = list(eng._hard_arr)
+        at = day if current_day is None else max(day, current_day)
+        # The engine only knew hard arrivals up to `at`; later ones would over-hold seats.
+        eng._hard_arr = [x for x in demand if x[0] <= at]
+        try:
+            held = eng._held(at, sessions)
+        finally:
+            eng._hard_arr = demand
     out = []
     for s0 in sessions:
         s = int(s0)
@@ -179,7 +199,7 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
         nurse = pred > eng.nurse_thr
         if nurse:
             pred = float(eng._pred(prefs, int(cal.day[s]) - day, female, arabic, after, ramadan, 1, region))
-        for seat in range(1, int(cal.cap[s]) + 1):
+        for seat in range(1, int(cal.cap[s]) - held.get(s, 0) + 1):
             out.append({
                 "slot_id": f"sim:{procedure}:{s}:{seat}", "session_id": s, "unit": str(cal.unit[s]),
                 "day": int(cal.day[s]), "region": region, "deadline": int(deadline),
@@ -276,7 +296,7 @@ def cervical(last, sr, a, rng):
                 "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
                 "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
         b = out.get(k)
-        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1)
+        candidates = _eligible_slots(eng, cal, "colposcopy", prefs, day, hi, max(day + 1, lo), 1, _current_day(d))
         if b is None:
             cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", "eligible_slots": candidates, **base}
         else:
@@ -359,7 +379,7 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     for k, (d, prefs, day, anchor) in meta.items():
         b = out.get(k)
         deadline = anchor["day"] + (14 if k in urgent else 31)
-        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, max(day + 5, anchor["day"]), 5)
+        candidates = _eligible_slots(eng, cal, "colonoscopy", prefs, day, deadline, max(day + 5, anchor["day"]), 5, _current_day(d))
         reg_demand[prefs.region] += 1
         lv = levers.assess(k)
         if b is None:

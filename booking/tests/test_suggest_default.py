@@ -1,20 +1,23 @@
 """The lookahead and stress-test flags are off by default. The golden pins deterministic numerics: probabilities are
 rounded to 12 decimal places and two equal-cost bookings swap slots while retaining constraints and deadlines.
 Also checks that the lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
-Run: python tests/test_suggest_default.py"""
+Run: python tests/test_suggest_default.py (also executes test_catalogue_protection.py by name)"""
 import hashlib, json, os, sys, tempfile, contextlib, io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-# Preserve both component pins. The combined pin includes main's 41 returned-referral
-# holds and their calendar reallocation; with those holds made inapplicable, the
-# combined producer is byte-identical to PR185 on the same synthetic input.
-COMBINED_GOLDEN = "99487b9c97ac64ec9354e6fa6baf9d8899e838b73d0b746ceee9701a6b9b5b1f"
+# Preserve component pins; the combined producer retains clinical clocks,
+# returned-referral holds and the current-clock catalogue seat protection.
+# The main-216 join changes only catalogue/reservation fields (102/209 cases);
+# bookings, clinical anchors, deadlines, summaries and inputs remain identical.
+COMBINED_GOLDEN = "1004c30a1e7cf6907f62a940225a63c378eb8657b71a7e20c9355de1f1afdf8d"
 GOLDEN = "068dcb049ea1a125193dc9af06605d7d7c1b66606993396086e7e03a008fc359"
 PRE_INTEGRATION_GOLDENS = {
     "PR185_b039e30f": GOLDEN,
+    "PR185_before_main216": "99487b9c97ac64ec9354e6fa6baf9d8899e838b73d0b746ceee9701a6b9b5b1f",
     "main_ac815cb8": "b0e4f515352c2615acec1b4f11a768b5e300cf6cee4c3d402ccf9c3e9d4ee04b",
+    "main_28a8ac26": "b3ae94202e300d88ebe0ec39f6200c84a1c9927000c5ccaa47c069553c3ed6f2",
 }
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
@@ -51,7 +54,7 @@ def test_default_unchanged():
         os.makedirs(d)
         synthetic_run(d)
         raw = run(d)
-        h = hashlib.sha256(raw).hexdigest()
+        h = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()  # Windows text mode writes CRLF
         assert h == COMBINED_GOLDEN, (h, COMBINED_GOLDEN, PRE_INTEGRATION_GOLDENS)
         res = json.loads(raw)
         held = [c for c in res["cases"].values() if c["state_at_run_end"] == "referral_rejected"]
@@ -97,7 +100,6 @@ def test_clinical_date_cases_are_collected():
 
 
 if __name__ == "__main__":
-    for f in (test_clinical_date_cases_are_collected,):
-        print(f.__name__, "->", f())
-    for f in (test_default_unchanged, test_lookahead_labelled):
+    import test_catalogue_protection  # noqa: E402
+    for f in (test_clinical_date_cases_are_collected, test_default_unchanged, test_lookahead_labelled, test_catalogue_protection.run_named):
         print(f.__name__, "->", f())
