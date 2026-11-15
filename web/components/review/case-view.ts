@@ -1,10 +1,10 @@
-import { Evidence, GUIDED_EVIDENCE_LABELS, isGuided, Link as LinkFacts, type CaseDetail } from "@/lib/api/schema";
+import { Evidence, GUIDED_EVIDENCE_LABELS, isGuided, Link as LinkFacts, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
 import { recordFace, type Face } from "@/lib/people/identity";
-import type { ReviewItems } from "./decision";
+import { purposeOf, type ReviewItems, type ReviewPurpose } from "./decision";
 
 /*
  * Everything the review desk shows, derived from one case detail.
@@ -39,7 +39,7 @@ export type ReviewView = {
   closed: boolean;
   /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
-  programme: CaseDetail["case"]["programme"];
+  programme: Programme;
   evidenceQuestion: string;
   evidenceChoices: string[];
   shortId: string;
@@ -55,6 +55,8 @@ export type ReviewView = {
   reportSource: string;
   unit: string;
   held: string;
+  /** Set when the evidence item is a pilot review: a suggested closure to confirm, or an audit of a closed case. */
+  purpose?: ReviewPurpose;
   /** The checks the two readers could not settle: what the one evidence answer covers. */
   disputed: { field: string; says: string }[];
   referredOn: string;
@@ -63,9 +65,11 @@ export type ReviewView = {
   link: { score: number; line: number; basis: string; rule: string };
   identity: IdentityRow[];
   identitySummary: string;
-  /** False when the API sent no identifier comparison for this link item; the rows then carry no identifier values. */
+  /** Availability of the registration comparison, never original item-time or guard authority. */
   identityAvailable: boolean;
-  /** Why the second-identifier rule is not met, one sentence per failed check, from the per-record facts the API sent. */
+  /** Explicit source qualification and original configured guard unavailability; safe to serialize. */
+  identityContext: string;
+  /** Limited visible-field diagnostics, never the original configured guard result. */
   identityGuard: string[];
   checks: Check[];
   quote: string;
@@ -89,7 +93,7 @@ const PROVIDERS: Record<string, string> = {
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
 
-const PROGRAMME_COPY: Record<CaseDetail["case"]["programme"], { procedure: string; referral: string; report: string }> = {
+const PROGRAMME_COPY: Record<Programme, { procedure: string; referral: string; report: string }> = {
   crc: { procedure: "colonoscopy", referral: "stool test referral", report: "colonoscopy report" },
   cervical: { procedure: "colposcopy", referral: "cervical screening referral", report: "colposcopy report" },
   lung_nodule: { procedure: "follow-up CT", referral: "lung nodule referral", report: "CT report" },
@@ -109,10 +113,9 @@ const GUARD_WORDS: Record<string, string> = {
   eid_placeholder: "An Emirates ID is a default or placeholder number.",
   eid_invalid: "An Emirates ID fails its check digit.",
   eid_differ: "The Emirates IDs differ.",
-  eid_second_disabled: "EID second-identifier check is disabled for this run.",
+  eid_second_disabled: "The EID path is disabled for this visible-field check.",
   sex_unknown: "Sex is unknown on one or both records, so a matching Emirates ID does not confirm the match.",
   sex_differ: "The recorded sexes differ.",
-  name_or_shared_id_check: "The recorded fields pass the visible checks, but the linker's name-agreement or shared-ID check did not.",
 };
 const IDENTIFIER_ROWS = [["name", "Name"], ["dob", "Date of birth"], ["sex", "Sex"], ["eid", "Emirates ID"]] as const;
 
@@ -158,6 +161,15 @@ function checksFrom(fields: Record<string, unknown> | undefined): Check[] {
     return { field, rules: r, second: s, decision, disputed };
   });
 }
+
+export const PURPOSE_LABEL: Record<ReviewPurpose, string> = { shadow_confirm: "Suggested closure", auto_audit: "Post-closure audit" };
+
+const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
+  shadow_confirm: (closed) =>
+    `Suggested automatic closure to confirm. The case is ${closed ? "closed" : "open"}. Confirming permits closure; a different answer is followed instead.`,
+  auto_audit: (closed) =>
+    `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed; disagreeing reopens it.`,
+};
 
 type RaisedItem = CaseDetail["review_items"][number];
 
@@ -218,6 +230,7 @@ function linkFromChain(item: RaisedItem): CaseDetail["links"][number] | undefine
 
 /** With `only`, everything shown is derived from that one raised item; without it, from the case's first link and evidence items. */
 export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
+  if (c.case.lifecycle === "retained") throw new Error("Retained cases have no current review work");
   const raised = only ? [only] : c.review_items;
   const linkItem = raised.find((r) => r.kinds.includes("link"));
   const evidenceItem = raised.find((r) => r.kinds.includes("evidence"));
@@ -261,10 +274,8 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
   const evidenceQuestion = programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
-  /*
-   * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
-   * with agreeing name, sex and date of birth, was on file for the pair. Which record lacks what comes only from identity_review.
-   */
+  /* The recorded reason identifies the question that was raised, not its original per-field or configured guard checks.
+   * The identifier projection below is materialized context only; it does not establish an original guard outcome. */
   const noSecondId = linkItem?.reason === "second_identifier";
   const disputed = checks
     .filter((k) => k.disputed)
@@ -279,6 +290,8 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
     : ev && !ev.agree && `${copy.report} readers disagree`;
   const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
+
+  const purpose = purposeOf(evidenceItem?.reason);
 
   const projection = linkItem && c.identity_review?.find((e) => e.item === linkItem.item);
   const compared = projection && projection.available ? projection : undefined;
@@ -299,7 +312,11 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
         recordRow,
       ]
     : [{ field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "unavailable" }, recordRow];
-  const identityGuard = compared && !compared.guard.met ? compared.guard.failures.map((code) => GUARD_WORDS[code] ?? code) : [];
+  const identityContext = compared?.source_scope === "materialized_registration"
+    ? "These identifiers are materialized across recorded events, not an original item-time snapshot. The original configured guard result is unavailable."
+    : "The identifier source scope is unavailable. The original configured guard result is unavailable.";
+  const visibleChecks = compared?.guard.visible_checks;
+  const identityGuard = visibleChecks && !visibleChecks.met ? visibleChecks.failures.flatMap((code) => GUARD_WORDS[code] ? [GUARD_WORDS[code]] : []) : [];
 
   const trail: ChainNode[] = [];
   const add = (id: string, who: string, what: string, day: number | undefined) =>
@@ -345,7 +362,8 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     referralSource: `${providerName(c.case.provider)} · ${copy.referral}`,
     reportSource: `${unit} · ${copy.report}`,
     unit,
-    held: held.length ? `Held: ${held.join(", and ")}.` : "",
+    held: purpose ? PURPOSE_SUMMARY[purpose](c.case.closed) : held.length ? `Held: ${held.join(", and ")}.` : "",
+    purpose,
     disputed,
     referredOn: formatDay(c.case.referral_day),
     report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "", version: evidenceItem?.report_version },
@@ -358,6 +376,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     },
     identity,
     identityAvailable: Boolean(compared),
+    identityContext,
     identityGuard,
     identitySummary: !compared
       ? "The identifier comparison is not available for this item, so the two records cannot be compared on this page. A person must confirm."

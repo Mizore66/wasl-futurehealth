@@ -112,9 +112,13 @@ func recordField(entry map[string]interface{}, side int, field string) map[strin
 	return entry["records"].([]interface{})[side].(map[string]interface{})[field].(map[string]interface{})
 }
 
+func visibleChecksOf(entry map[string]interface{}) map[string]interface{} {
+	return entry["guard"].(map[string]interface{})["visible_checks"].(map[string]interface{})
+}
+
 func guardFailures(entry map[string]interface{}) []string {
 	var out []string
-	for _, v := range entry["guard"].(map[string]interface{})["failures"].([]interface{}) {
+	for _, v := range visibleChecksOf(entry)["failures"].([]interface{}) {
 		out = append(out, v.(string))
 	}
 	return out
@@ -138,6 +142,22 @@ func TestIdentityReviewProjectsPerRecordFactsToReviewers(t *testing.T) {
 	h := ledgerHandler(t, loadAPI(run, ""))
 	detail := ledgerGet(t, h, "/api/cases/"+url.PathEscape(ledgerLoop), tokReviewer1)
 
+	for _, scenario := range identityScenarios() {
+		entry := identityEntry(t, detail, scenario.item)
+		guard := entry["guard"].(map[string]interface{})
+		if entry["source_scope"] != "materialized_registration" || guard["authoritative"] != false || guard["reason"] != "original_guard_context_unavailable" {
+			t.Fatalf("materialized fields gained original context authority: %+v", entry)
+		}
+		for _, key := range []string{"met", "failures"} {
+			if _, present := guard[key]; present {
+				t.Fatalf("visible checks escaped into an original guard outcome: %+v", guard)
+			}
+		}
+		if containsAll(guardFailures(entry), "name_or_shared_id_check") {
+			t.Fatalf("projection invented an unrecorded name/shared-ID result: %+v", guard)
+		}
+	}
+
 	missing := identityEntry(t, detail, "rv-dob-missing")
 	if got := comparisonOf(missing)["dob"]; got != "missing" {
 		t.Fatalf("dob verdict = %q, want missing", got)
@@ -148,7 +168,7 @@ func TestIdentityReviewProjectsPerRecordFactsToReviewers(t *testing.T) {
 	if st := recordField(missing, 1, "dob"); st["state"] != "missing" || st["value"] != nil && st["value"] != "" {
 		t.Fatalf("second record dob = %v", st)
 	}
-	if !containsAll(guardFailures(missing), "dob_missing") || missing["guard"].(map[string]interface{})["met"] != false {
+	if !containsAll(guardFailures(missing), "dob_missing") || visibleChecksOf(missing)["met"] != false {
 		t.Fatalf("guard = %v", missing["guard"])
 	}
 
@@ -188,8 +208,11 @@ func TestIdentityReviewProjectsPerRecordFactsToReviewers(t *testing.T) {
 	}
 
 	eidMatch := identityEntry(t, detail, "rv-eid-match")
-	if comparisonOf(eidMatch)["eid"] != "match" || !containsAll(guardFailures(eidMatch), "name_or_shared_id_check") {
-		t.Fatalf("eid match entry = %v", eidMatch)
+	if comparisonOf(eidMatch)["eid"] != "match" || visibleChecksOf(eidMatch)["met"] != true {
+		t.Fatalf("matching EID lost its limited visible-field comparison: %v", eidMatch)
+	}
+	if len(guardFailures(eidMatch)) != 0 || eidMatch["guard"].(map[string]interface{})["authoritative"] != false {
+		t.Fatalf("matching visible fields invented original name/shared-ID failure or authority: %v", eidMatch)
 	}
 }
 

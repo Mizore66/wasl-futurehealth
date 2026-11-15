@@ -106,8 +106,8 @@ func verdictEID(a, b regDemo) string {
 	return "differ"
 }
 
-// identityGuard restates the v7 second-identifier rule over the two records' own facts. The name-agreement and
-// shared-ID checks of the Emirates-ID path are the linker's and are not recomputed here.
+// identityGuard is a limited diagnostic over materialized fields and projection-time configuration, not the original
+// configured guard result. Original item-time facts and the linker's name/shared-ID checks are unavailable here.
 func identityGuard(dob, sex, eid string, a, b regDemo) map[string]interface{} {
 	eidPath := EIDSecondID && eid == "match" && sex == "match" && dobsCompatible(a.Dob, b.Dob)
 	failures := []string{}
@@ -126,13 +126,13 @@ func identityGuard(dob, sex, eid string, a, b regDemo) map[string]interface{} {
 	}
 	met := dob == "match" || eidPath
 	if met {
-		failures = []string{"name_or_shared_id_check"}
+		failures = []string{}
 	}
 	return map[string]interface{}{"met": met, "failures": failures}
 }
 
-// identityReview is the item-specific identifier comparison for each unsigned link item. It is returned only to roles that
-// may sign a link; every other viewer, the redacted export included, gets no key at all.
+// identityReview compares each unsigned link item's exact registrations using fields materialized across recorded
+// events, not an original item-time snapshot. Only roles that may sign a link receive it; exports get no key at all.
 func (s *apiServer) identityReview(c *apiCase, viewer apiPrincipal) []map[string]interface{} {
 	if !rbac[viewer.role][ActSignLink] {
 		return nil
@@ -154,11 +154,12 @@ func (s *apiServer) identityReview(c *apiCase, viewer apiPrincipal) []map[string
 		}
 		name, dob, sex, eid := verdictName(a, b), verdictDob(a, b), verdictSex(a, b), verdictEID(a, b)
 		entry["available"] = true
+		entry["source_scope"] = "materialized_registration"
 		entry["records"] = []map[string]interface{}{demoView(it.Pair[0], a), demoView(it.Pair[1], b)}
 		entry["comparison"] = []map[string]string{
 			{"field": "name", "verdict": name}, {"field": "dob", "verdict": dob}, {"field": "sex", "verdict": sex}, {"field": "eid", "verdict": eid},
 		}
-		entry["guard"] = identityGuard(dob, sex, eid, a, b)
+		entry["guard"] = map[string]interface{}{"authoritative": false, "reason": "original_guard_context_unavailable", "visible_checks": identityGuard(dob, sex, eid, a, b)}
 		out = append(out, entry)
 	}
 	return out

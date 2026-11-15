@@ -176,9 +176,10 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
         />
       </div>
 
-      <p className="m-0 mt-4 font-medium">{view.identitySummary}</p>
+      <p role="note" aria-label="Identifier source context" className="m-0 mt-4 text-small text-muted">{view.identityContext}</p>
+      <p className="m-0 mt-2 font-medium">{view.identitySummary}</p>
       {view.identityGuard.length > 0 && (
-        <ul aria-label="Why the second identifier is not met" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
+        <ul aria-label="Visible identifier field limitations" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
           {view.identityGuard.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -198,7 +199,7 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
           </div>
           <ScoreTrack score={view.link.score} line={view.link.line} />
           <p className="m-0 mt-2 text-small leading-[18px] text-muted">
-            Held anyway. Before Wasl messages her about this appointment, the rule asks for a {view.link.rule}.
+            This score describes the displayed link context. The original configured guard result is unavailable.
           </p>
           <p className="m-0 mt-1 text-small leading-[18px] text-muted">
             Readers: the rules reader applies the DoH closure checklist word for word; the second reader is a language model ({view.readerModel}). Both must

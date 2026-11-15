@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -88,7 +89,7 @@ func TestPatientNoOpGrantRetryPreservesLaterDenial(t *testing.T) {
 			if code != http.StatusOK {
 				t.Fatalf("no-op grant: %d %v", code, body)
 			}
-			code, body, _ = p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_" + permission, "expected_head": patientTestSignature(patientTestCaseA), "note": "later synthetic contact restriction"})
+			code, body, _ = p.request(t, http.MethodPost, "/api/cases/"+patientTestCaseA+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_" + permission, "expected_head": head, "note": "later synthetic contact restriction"})
 			if code != http.StatusCreated {
 				t.Fatalf("staff restriction: %d %v", code, body)
 			}
@@ -121,6 +122,9 @@ func TestPatientNoOpAppendFailureDoesNotBindRequest(t *testing.T) {
 func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	s, run := exportRun(t)
 	writeRequiredAPIJSON(t, run)
+	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), []byte(preflightFHIRLine+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	now := time.Date(2026, 11, 13, 10, 0, 0, 0, time.UTC)
 	s.now = func() time.Time { return now }
 	h, err := s.handler("staff-token-123456:coordinator:coordinator-one", "")
@@ -144,7 +148,7 @@ func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	later.ID, later.InSeq, later.State, later.Dropoff = "dec-2", original.InSeq+1, "open", "not_booked"
 	later.Sig = decSig(&later)
 	m := LogMsg{Seq: 2, Subject: "out.p0", Hdr: map[string]string{}}
-	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: &later})
+	encodeEnv(&m, OutEnvelope{Kind: "decision", OSeq: m.Seq, PSeq: m.Seq, FSeq: m.Seq, Dec: &later, Proc: "closure-0"})
 	line, err := json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)
@@ -152,6 +156,7 @@ func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	if err := appendLedgerLine(filepath.Join(run, "out_log.ndjson"), append(line, '\n')); err != nil {
 		t.Fatal(err)
 	}
+	writeRequiredAPIJSONForCaseStates(t, run, map[string]string{exportLoop: later.State})
 	reloaded, err := loadAPIVerified(run, "")
 	if err != nil {
 		t.Fatal(err)
@@ -174,7 +179,12 @@ func TestPatientHistorySurvivesLaterCanonicalDecision(t *testing.T) {
 	if code != http.StatusCreated {
 		t.Fatalf("patient write after canonical advance: %d %v", code, body)
 	}
-	code, body, _ = p2.request(t, http.MethodPost, "/api/cases/"+exportLoop+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_opted_out", "expected_head": later.Sig, "note": "synthetic consent remains blocked"})
+	before := len(reloaded.reviews)
+	code, body, _ = p2.request(t, http.MethodPost, "/api/cases/"+exportLoop+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_opted_out", "expected_head": later.Sig})
+	if code != http.StatusConflict || body["current_revision"] != head || len(reloaded.reviews) != before {
+		t.Fatalf("canonical advance replaced the patient consent revision: %d %v", code, body)
+	}
+	code, body, _ = p2.request(t, http.MethodPost, "/api/cases/"+exportLoop+"/consent", "staff-token-123456", map[string]interface{}{"event": "consent_opted_out", "expected_head": head, "note": "synthetic consent remains blocked"})
 	if code != http.StatusCreated {
 		t.Fatalf("staff write after canonical advance: %d %v", code, body)
 	}

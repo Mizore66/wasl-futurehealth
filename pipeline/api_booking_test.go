@@ -179,11 +179,28 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	s, srv := serveAgent(t, run)
 	id := agentLoop("2") // canonical no_show remains no_show throughout simulated rebooking
 	canonicalState := s.cases[id].State
+	checkReload := func(wantEvents int) {
+		t.Helper()
+		reloaded, err := loadAPIVerified(run, "")
+		if err != nil {
+			t.Fatalf("verified booking reload after %d events: %v", wantEvents, err)
+		}
+		if reloaded.ledgerErr != "" || !bytes.Equal(canon(s.bookingFor(id)), canon(reloaded.bookingFor(id))) || !bytes.Equal(canon(s.overlayView(s.cases[id], true)), canon(reloaded.overlayView(reloaded.cases[id], true))) {
+			t.Fatalf("booking reload mismatch after %d events: ledger=%q", wantEvents, reloaded.ledgerErr)
+		}
+		if len(reloaded.reviews) != wantEvents {
+			t.Fatalf("reloaded history length %d, want %d", len(reloaded.reviews), wantEvents)
+		}
+		if reloaded.cases[id].State != "no_show" || !bytes.Equal(canon(s.cases[id].last), canon(reloaded.cases[id].last)) {
+			t.Fatal("booking reload changed the canonical no-show decision/signature")
+		}
+	}
 	accepted := requireBooking(t, srv, s, id, "booking_accept", "", "")
 	reservation := accepted["api_overlay"].(map[string]interface{})["booking"].(map[string]interface{})
 	if reservation["status"] != "reserved" || reservation["mode"] != "simulated" || reservation["reservation_id"] != accepted["event"].(map[string]interface{})["hash"] {
 		t.Fatalf("accept projection: %v", reservation)
 	}
+	checkReload(1)
 	rescheduled := requireBooking(t, srv, s, id, "booking_reschedule", "sim:colonoscopy:201:1", "Provider list changed")
 	rescheduleHash := rescheduled["event"].(map[string]interface{})["hash"]
 	if s.bookingSlots["sim:colonoscopy:202:1"].version != rescheduleHash || s.bookingSlots["sim:colonoscopy:201:1"].version != rescheduleHash {
@@ -193,10 +210,12 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	if s.bookingSlots[oldSlot].reservationID != "" {
 		t.Fatal("successful reschedule did not release old slot")
 	}
+	checkReload(2)
 	requireBooking(t, srv, s, id, "booking_cancel", "", "Patient asked to cancel")
 	if got := bookingSummary(s, id); got["status"] != "cancelled" || got["slot"].(map[string]interface{})["slot_id"] != "sim:colonoscopy:201:1" {
 		t.Fatalf("cancel traceability: %v", got)
 	}
+	checkReload(3)
 	// A released slot's pre-cancellation version cannot be replayed.
 	var staleBody map[string]interface{}
 	json.Unmarshal([]byte(bookingRequest(t, s, id, "booking_choose_slot", "sim:colonoscopy:201:1", "Rebook")), &staleBody)
@@ -212,17 +231,7 @@ func TestBookingLifecycleReloadAndNoShowSafety(t *testing.T) {
 	if s.cases[id].State != canonicalState || s.cases[id].State != "no_show" {
 		t.Fatalf("canonical no-show changed: %q", s.cases[id].State)
 	}
-	wantBooking, wantOverlay := canon(s.bookingFor(id)), canon(s.overlayView(s.cases[id], true))
-	reloaded, err := loadAPIVerified(run, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if reloaded.ledgerErr != "" || !bytes.Equal(wantBooking, canon(reloaded.bookingFor(id))) || !bytes.Equal(wantOverlay, canon(reloaded.overlayView(reloaded.cases[id], true))) {
-		t.Fatalf("reload mismatch: %q\n%s\n%s", reloaded.ledgerErr, wantBooking, canon(reloaded.bookingFor(id)))
-	}
-	if len(reloaded.reviews) != 4 {
-		t.Fatalf("history length %d", len(reloaded.reviews))
-	}
+	checkReload(4)
 	for _, file := range []string{"outreach_log.ndjson", "dispatch_log.ndjson", "appointments.ndjson"} {
 		if _, err := os.Stat(filepath.Join(run, file)); !os.IsNotExist(err) {
 			t.Fatalf("unexpected provider/outreach artifact %s", file)
@@ -402,11 +411,25 @@ func TestBookingDemoOptOutConsentGuardAndReload(t *testing.T) {
 		t.Fatal("demo opt-out changed canonical consent")
 	}
 	reloaded, err := loadAPIVerified(run, "")
-	if err != nil || reloaded.ledgerErr != "" {
-		t.Fatalf("reload after opt-out and cancellation: err=%v ledger=%q", err, reloaded.ledgerErr)
+	if err != nil {
+		t.Fatalf("verified reload after opt-out and cancellation: %v", err)
+	}
+	if reloaded.ledgerErr != "" {
+		t.Fatalf("reload after opt-out and cancellation: ledger=%q", reloaded.ledgerErr)
 	}
 	if got := bookingSummary(reloaded, id); got["status"] != "cancelled" {
 		t.Fatalf("cancelled booking did not survive replay: %v", got)
+	}
+	if reloaded.cases[id].Consent != canonicalConsent || !reloaded.contactGuardLocked(reloaded.cases[id]).Blocked {
+		t.Fatal("reload lost the opt-out guard or changed canonical consent")
+	}
+	reloadedSrv := httptest.NewServer(apiHandler(reloaded))
+	t.Cleanup(reloadedSrv.Close)
+	if code, body := coord(t, reloadedSrv, id, bookingRequest(t, reloaded, id, "booking_choose_slot", "sim:colonoscopy:201:2", "Try after reload")); code != 409 || body["conflict"] != "consent" || body["contact_blocked"] != true {
+		t.Fatalf("rebook after opt-out reload: %d %v", code, body)
+	}
+	if len(reloaded.reviews) != before+1 {
+		t.Fatal("refused rebooking after reload appended an event")
 	}
 }
 
@@ -505,5 +528,236 @@ func TestBookingAppendFailureAndReplayFailClosed(t *testing.T) {
 	os.WriteFile(filepath.Join(changed, "booking.json"), b, 0o600)
 	if got := loadAPI(changed, ""); got.ledgerErr == "" {
 		t.Fatal("changed booking source was not rejected")
+	}
+}
+
+func TestBookingElapsedSlotsAreRejectedAndHidden(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	id := agentLoop("1")
+	availability := func(slot string) interface{} {
+		for _, item := range s.bookingFor(id)["eligible_slots"].([]interface{}) {
+			if c := item.(map[string]interface{}); c["slot_id"] == slot {
+				return c["availability"]
+			}
+		}
+		return nil
+	}
+	rejected := func(kind, slot string) {
+		t.Helper()
+		events, versions := len(s.reviews), s.bookingSlots[slot].version
+		if code, body := coord(t, srv, id, bookingRequest(t, s, id, kind, slot, "Elapsed")); code != 409 || body["conflict"] != "slot_elapsed" {
+			t.Fatalf("%s %s: %d %v", kind, slot, code, body)
+		}
+		if len(s.reviews) != events || s.bookingSlots[slot].version != versions || s.bookingSlots[slot].reservationID != "" {
+			t.Fatalf("%s %s: rejected request changed history or slot state", kind, slot)
+		}
+	}
+
+	s.cases[id].last.Now = 13
+	if got := availability("sim:colonoscopy:202:1"); got != "elapsed" {
+		t.Fatalf("day-12 slot at run day 13: %v", got)
+	}
+	rejected("booking_accept", "sim:colonoscopy:201:1")
+	rejected("booking_choose_slot", "sim:colonoscopy:202:1")
+
+	s.cases[id].last.Now = 12
+	if got := availability("sim:colonoscopy:202:1"); got != "available" {
+		t.Fatalf("day-12 slot at run day 12: %v", got)
+	}
+	requireBooking(t, srv, s, id, "booking_choose_slot", "sim:colonoscopy:202:1", "Boundary day is still in the future")
+
+	s.cases[id].last.Now = 40
+	reservation := bookingSummary(s, id)["reservation_id"]
+	rejected("booking_reschedule", "sim:colonoscopy:201:1")
+	if got := bookingSummary(s, id); got["status"] != "reserved" || got["reservation_id"] != reservation {
+		t.Fatalf("rejected reschedule changed the reservation: %v", got)
+	}
+	if got := availability("sim:colonoscopy:202:1"); got != "reserved" {
+		t.Fatalf("historical reservation availability: %v", got)
+	}
+	requireBooking(t, srv, s, id, "booking_cancel", "", "Release elapsed seat")
+	if got := availability("sim:colonoscopy:202:1"); got != "elapsed" {
+		t.Fatalf("cancelled elapsed slot: %v", got)
+	}
+	rejected("booking_choose_slot", "sim:colonoscopy:202:1")
+}
+
+// persistRunClock rewrites the materialised decisions' run clock, as a later pipeline run would have persisted it.
+func persistRunClock(t *testing.T, run, now string) {
+	t.Helper()
+	path := filepath.Join(run, "out_log.ndjson")
+	b := actRead(t, path)
+	if !bytes.Contains(b, []byte(`"now":0`)) {
+		t.Fatal("fixture decisions carry no zero run clock to advance")
+	}
+	if err := os.WriteFile(path, bytes.ReplaceAll(b, []byte(`"now":0`), []byte(`"now":`+now)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func slotAvailability(s *apiServer, id, slot string) interface{} {
+	for _, item := range s.bookingFor(id)["eligible_slots"].([]interface{}) {
+		if c := item.(map[string]interface{}); c["slot_id"] == slot {
+			return c["availability"]
+		}
+	}
+	return nil
+}
+
+// Preservation control for the elapsed guard's ordering: every earlier safety check keeps its own conflict code and
+// an elapsed slot never turns a refusal into an append. Not a RED claim; these paths are already correct by design.
+func TestBookingElapsedGuardKeepsEarlierSafetyChecks(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	granted, other, denied := agentLoop("1"), agentLoop("2"), agentLoop("3")
+	requireBooking(t, srv, s, granted, "booking_accept", "", "") // sim:colonoscopy:201:1, day 10, on a clock of 0
+	for _, id := range []string{granted, other, denied} {
+		s.cases[id].last.Now = 13 // every slot in this fixture up to day 12 has now elapsed; day 14 has not
+	}
+	events := len(s.reviews)
+
+	// Stale suggestion version precedes elapsed.
+	valid := bookingRequest(t, s, other, "booking_choose_slot", "sim:colonoscopy:202:1", "Stale")
+	stale := strings.Replace(valid, s.bookingCase(other)["suggestion_version"].(string), strings.Repeat("f", 64), 1)
+	if code, body := coord(t, srv, other, stale); code != 409 || body["conflict"] != "suggestion" {
+		t.Fatalf("stale suggestion on an elapsed slot: %d %v", code, body)
+	}
+	// Stale case head precedes everything.
+	staleHead := strings.Replace(valid, headOf(s, other), strings.Repeat("e", 64), 1)
+	if code, body := coord(t, srv, other, staleHead); code != 409 || body["conflict"] != "head" {
+		t.Fatalf("stale head on an elapsed slot: %d %v", code, body)
+	}
+	// Double booking: a slot occupied by another case reports occupancy, not elapsed.
+	if code, body := coord(t, srv, other, bookingRequest(t, s, other, "booking_choose_slot", "sim:colonoscopy:201:1", "Occupied")); code != 409 || body["conflict"] != "slot" {
+		t.Fatalf("occupied elapsed slot: %d %v", code, body)
+	}
+	// A slot outside the case's own catalogue reports slot, not elapsed.
+	if code, body := coord(t, srv, other, bookingRequest(t, s, other, "booking_choose_slot", "sim:colonoscopy:201:2", "Not listed")); code != 409 || body["conflict"] != "slot" {
+		t.Fatalf("cross-case elapsed slot: %d %v", code, body)
+	}
+	// Consent precedes elapsed: the denied case's day-14 slot is made elapsed too.
+	s.cases[denied].last.Now = 20
+	if code, body := coord(t, srv, denied, bookingRequest(t, s, denied, "booking_accept", "", "")); code != 409 || body["conflict"] != "consent" {
+		t.Fatalf("denied consent on an elapsed slot: %d %v", code, body)
+	}
+	// Role precedes everything.
+	if code, _ := postAction(t, srv, other, RoleReviewer, "reviewer", bookingRequest(t, s, other, "booking_choose_slot", "sim:colonoscopy:202:1", "Role")); code != 403 {
+		t.Fatalf("reviewer role: %d", code)
+	}
+	// An active reservation precedes elapsed for a second acquisition.
+	if code, body := coord(t, srv, granted, bookingRequest(t, s, granted, "booking_choose_slot", "sim:colonoscopy:202:1", "Already reserved")); code != 409 || body["conflict"] != "state" {
+		t.Fatalf("second acquisition on an elapsed slot: %d %v", code, body)
+	}
+	if len(s.reviews) != events {
+		t.Fatalf("refused requests appended %d events", len(s.reviews)-events)
+	}
+	for _, line := range bytes.Split(bytes.TrimSpace(actRead(t, filepath.Join(run, "api_reviews.ndjson"))), []byte("\n")) {
+		var ev map[string]interface{}
+		if err := json.Unmarshal(line, &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev["kind"] != "booking_accept" {
+			t.Fatalf("unexpected ledger event %v", ev["kind"])
+		}
+	}
+}
+
+// A reservation whose day has elapsed stays visible, may move to a future slot, and an authentic ledger replays
+// unchanged under a later persisted run clock: the guard is live-only and never rejudges history.
+func TestBookingElapsedReservationMovesForwardAndReplaysUnderLaterClock(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	id := agentLoop("1")
+	requireBooking(t, srv, s, id, "booking_accept", "", "") // day 10 on a clock of 0
+	s.cases[id].last.Now = 11
+	if got := slotAvailability(s, id, "sim:colonoscopy:201:1"); got != "reserved" {
+		t.Fatalf("elapsed current reservation must stay reserved, got %v", got)
+	}
+	if got := slotAvailability(s, id, "sim:colonoscopy:202:1"); got != "available" {
+		t.Fatalf("future target: %v", got)
+	}
+	requireBooking(t, srv, s, id, "booking_reschedule", "sim:colonoscopy:202:1", "Move the elapsed seat forward")
+	if got := bookingSummary(s, id); got["status"] != "reserved" || got["slot"].(map[string]interface{})["slot_id"] != "sim:colonoscopy:202:1" {
+		t.Fatalf("reschedule from an elapsed reservation: %v", got)
+	}
+	if got := slotAvailability(s, id, "sim:colonoscopy:201:1"); got != "elapsed" {
+		t.Fatalf("released elapsed slot: %v", got)
+	}
+	ledger := actRead(t, filepath.Join(run, "api_reviews.ndjson"))
+
+	persistRunClock(t, run, "40")
+	reloaded, rsrv := serveAgent(t, run)
+	if reloaded.ledgerErr != "" {
+		t.Fatalf("authentic history rejudged against a later clock: %s", reloaded.ledgerErr)
+	}
+	if reloaded.cases[id].last.Now != 40 {
+		t.Fatalf("persisted clock not applied: %v", reloaded.cases[id].last.Now)
+	}
+	if !bytes.Equal(ledger, actRead(t, filepath.Join(run, "api_reviews.ndjson"))) {
+		t.Fatal("replay rewrote the ledger")
+	}
+	if got := bookingSummary(reloaded, id); got["status"] != "reserved" || got["slot"].(map[string]interface{})["slot_id"] != "sim:colonoscopy:202:1" {
+		t.Fatalf("reservation lost on replay: %v", got)
+	}
+	if got := slotAvailability(reloaded, id, "sim:colonoscopy:202:1"); got != "reserved" {
+		t.Fatalf("historical reservation must stay visible: %v", got)
+	}
+	// Cancel stays available for the elapsed historical reservation, and then the slot is no longer bookable.
+	requireBooking(t, rsrv, reloaded, id, "booking_cancel", "", "Release the elapsed seat")
+	if got := slotAvailability(reloaded, id, "sim:colonoscopy:202:1"); got != "elapsed" {
+		t.Fatalf("cancelled elapsed slot: %v", got)
+	}
+	if code, body := coord(t, rsrv, id, bookingRequest(t, reloaded, id, "booking_choose_slot", "sim:colonoscopy:202:1", "Elapsed")); code != 409 || body["conflict"] != "slot_elapsed" {
+		t.Fatalf("choose after cancel: %d %v", code, body)
+	}
+}
+
+// Authentic parent-80ef8fd4 legacy history, byte-for-byte, under a later persisted clock. Only the copied temporary run's
+// decision clock is advanced; the fixture bytes and their hashes are untouched.
+func TestBookingAuthenticLegacyHistoryReplaysUnderLaterPersistedClock(t *testing.T) {
+	run, m := pr205Run(t, true)
+	persistRunClock(t, run, "9999")
+	s, srv := serveAgent(t, run)
+	if s.ledgerErr != "" {
+		t.Fatalf("authentic legacy history rejudged against a later clock: %s", s.ledgerErr)
+	}
+	if len(m.HTTP) == 0 {
+		t.Fatal("manifest carries no authentic reservations")
+	}
+	for _, r := range m.HTTP {
+		id := r.Event["case"].(string)
+		if s.cases[id].last.Now != 9999 {
+			t.Fatalf("persisted clock not applied for %s", id)
+		}
+		if !bytes.Equal(canon(bookingSummary(s, id)), canon(r.Reservation)) {
+			t.Fatalf("authentic reservation changed under a later clock: %s", id)
+		}
+		slot := bookingSummary(s, id)["slot"].(map[string]interface{})["slot_id"].(string)
+		if got := slotAvailability(s, id, slot); got != "reserved" {
+			t.Fatalf("authentic reservation must stay visible: %s %v", id, got)
+		}
+		requireBooking(t, srv, s, id, "booking_cancel", "", "Release legacy capacity")
+		if got := slotAvailability(s, id, slot); got != "elapsed" {
+			t.Fatalf("released legacy slot under a later clock: %s %v", id, got)
+		}
+	}
+}
+
+// The exported and redacted projection carries the elapsed enum value unchanged and no reservation text.
+func TestBookingElapsedAvailabilitySurvivesExportRedaction(t *testing.T) {
+	run := bookingRun(t)
+	s, _ := serveAgent(t, run)
+	id := agentLoop("1")
+	s.cases[id].last.Now = 11
+	detail := redactExportDetail(s.caseDetailBody(s.cases[id]))
+	exported := detail["booking"].(map[string]interface{})["eligible_slots"].([]interface{})
+	seen := map[string]interface{}{}
+	for _, item := range exported {
+		c := item.(map[string]interface{})
+		seen[c["slot_id"].(string)] = c["availability"]
+	}
+	if seen["sim:colonoscopy:201:1"] != "elapsed" || seen["sim:colonoscopy:202:1"] != "available" {
+		t.Fatalf("exported availability: %v", seen)
 	}
 }

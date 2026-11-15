@@ -5,8 +5,8 @@ import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySec
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
-import { caseDeadlineDays } from "@/components/worklist/days";
-import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
+import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -60,13 +60,21 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const [detail, audit, personJourney] = await Promise.all([getCase(id), getAudit(id), optionalPersonJourney]);
   if (!detail) notFound();
   const c = detail.case;
+  if (c.lifecycle === "retained") return <>
+    <h1 className="text-title font-semibold">Retired case {shortId(c.id)}</h1>
+    <p>This tracking request is inactive. Its original decisions, signed reviews and source history are retained, not current care or outreach work.</p>
+    <p>{c.programme_availability === "unavailable" ? "No current programme was selected." : "The recorded programme does not confer active eligibility."}</p>
+    <Link className={BUTTON} href={`${caseHref("/app/patients", c.id)}/audit`}>Authorized audit history</Link>
+    <Link className={BUTTON} href={`/app/people?case_id=${encodeURIComponent(c.id)}`}>Historical person association</Link>
+    <TimelineCard detail={detail} />
+    <LedgerCard detail={detail} />
+  </>;
   const person = personForLoop(c.id);
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
   const closedIn = c.closed ? closedInDays(c) : null;
   /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
   const due = caseDeadlineDays(c);
-  const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
   /* Independent review: only a terminal state on every question clears waiting, even while canonical review is still open. */
   const waiting = allQuestionsResolved(detail)
     ? false
@@ -93,12 +101,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             </div>
             <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
               {closedIn !== null ? (
-                <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+                <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
               ) : (
                 <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
+                {statusWords(c).status === "Closed" ? (isNoAction(c) ? "closed, no action needed" : "closed with evidence") : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
               </span>
             </p>
           </div>
@@ -107,7 +115,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       </header>
 
       <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
-        {personJourney && (
+        {personJourney && personJourney.schema !== "wasl-person-association-unavailable/2" && (
           <Link
             href={`/app/people?case_id=${encodeURIComponent(c.id)}`}
             className={cn(BUTTON, "border border-control bg-surface text-ink no-underline hover:bg-active hover:text-ink")}
@@ -166,11 +174,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               {first ? "Her case, step by step" : "The case, step by step"}
             </h2>
             <span className="text-small text-muted" data-testid="closed-in">
-              {closedIn !== null
-                ? closedIn <= due
-                  ? `Closed in ${closedIn} days, ${due - closedIn} inside the ${dueWords}`
-                  : `Closed in ${closedIn} days, ${closedIn - due} past the ${dueWords}`
-                : statusWords(c).next}
+              {closedIn !== null ? closedHeadline(c) : statusWords(c).next}
             </span>
           </div>
           <SealedChain nodes={nodes} className="mt-4" />
@@ -238,8 +242,25 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
       <div className="mt-gap grid items-start gap-gap lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-gap">
           {earlier.map((ev) => (
-            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
+            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Supporting reading: report ${shortId(ev.report)}`} />
           ))}
+          {!!detail.evidence_history?.length && (
+            <section aria-label="Historical evidence" className="rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="evidence-history">
+              <details>
+                <summary className="min-h-11 cursor-pointer py-2 font-medium">Historical evidence</summary>
+                <p>These reports are preserved for audit, not the current clinical checklist. Original decisions and signatures are unchanged.</p>
+                <ul className="m-0 space-y-3 pl-5">
+                  {detail.evidence_history.map((ev) => (
+                    <li key={ev.block_hash}>
+                      <span className="font-medium">{ev.history === "rejected_registration" ? "Rejected registration" : "Superseded evidence"}</span>
+                      <span className="block text-small">Report {shortId(ev.report)} · recorded result: {ev.label}</span>
+                      <span className="block text-small text-muted">Decision {shortId(ev.decision_id)} · signature {ev.decision_sig.slice(0, 12)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </section>
+          )}
           <ConsentCard detail={detail} />
           <PatientJourneySection detail={detail} />
           <SignoffsCard detail={detail} />

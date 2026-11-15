@@ -93,11 +93,12 @@ func TestDRRecallOverdueMessage(t *testing.T) {
 	if d, _ = runLung(t, f, 400); d.Outreach[0].Released || d.Outreach[0].Suppress != SupConsent {
 		t.Fatalf("opted out: want cancelled, got %+v", d.Outreach)
 	}
-	// seen by a later screen: no recall, no message
+	// An independent annual screen belongs to a new request, not this episode:
+	// it must not mark the old episode seen or suppress its recall.
 	f = facts("granted")
 	f.Down = append(f.Down, drScreen("PHC-dr-2", 380, "R0M0"))
-	if d, _ = runLung(t, f, 400); d.DR.Next.Overdue || len(d.Outreach) != 0 {
-		t.Fatalf("seen: %+v %+v", d.DR.Next, d.Outreach)
+	if d, _ = runLung(t, f, 400); d.DR.Next.Seen || !d.DR.Next.Overdue || len(d.Outreach) != 1 || d.DR.Screen != "PHC-dr-1" {
+		t.Fatalf("independent annual screen altered old-episode recall: %+v %+v", d.DR.Next, d.Outreach)
 	}
 }
 

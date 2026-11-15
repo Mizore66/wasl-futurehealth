@@ -13,16 +13,16 @@
           "updated_at": null,
           "updated_event": null
         },
-        "head": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
-        "last_action_at": "2026-11-13T03:26:25.358745Z",
+        "head": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
+        "last_action_at": "2026-11-13T08:26:41.5812902Z",
         "last_appointment_agreement": {
-          "at": "2026-11-13T03:26:25.308685Z",
-          "event": "7b0fc4fce14fdc162e9c275480c55a30c0baaab806b3fd149c473d9a768bedd6"
+          "at": "2026-11-13T08:26:41.4512435Z",
+          "event": "b7efe8c49c6f0b35ebfe38fde18cdfd33e9dcc5b6d214bff1ef54150c209f2de"
         },
         "last_contact": {
-          "at": "2026-11-13T03:26:25.358745Z",
+          "at": "2026-11-13T08:26:41.5812902Z",
           "channel": "phone",
-          "event": "7c56bb3ef4f13e1be6e645cf6cce7a7cec318578c8ea99f38e3d3d6f2fd5c570",
+          "event": "b48cd6c9b4a7c35b0ffe20a8a76906a0033903e7513ec6e89044caab7a7e8d69",
           "outcome": "declined"
         },
         "ledger_status": "ok",
@@ -30,10 +30,10 @@
         "owner": "coordinator-bound",
         "snooze": {
           "actor": "coordinator-bound",
-          "at": "2026-11-13T03:26:25.315807Z",
-          "event": "8b82a1121dc107b370f195da219344e8079a78eae4a0c1373986d47096fd01e6",
+          "at": "2026-11-13T08:26:41.4856756Z",
+          "event": "9904ebedd664b5d826d608625a4f5f211ac68c1932c49a0b80911635d7fbaaf8",
           "reason": "Call back Mon 16 Nov",
-          "until": "2026-11-16T03:26:25Z"
+          "until": "2026-11-16T08:26:41Z"
         }
       },
       "closed": false,
@@ -58,7 +58,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-13T03:26:25Z",
+    "loaded_at": "2026-11-13T08:26:41Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",
