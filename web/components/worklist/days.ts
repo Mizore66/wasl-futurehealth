@@ -19,11 +19,28 @@ export function nextScreenDays(c: CaseSummary): number | null {
   return isNoAction(c) ? intervalDays(c) || null : null;
 }
 
-/** Over-31 first, then the longest wait. Snoozed rows sink. */
-export function byUrgency(a: { days: number; snoozed?: boolean }, b: { days: number; snoozed?: boolean }): number {
-  return (
-    Number(!!a.snoozed) - Number(!!b.snoozed) ||
-    Number(b.days > STANDARD_DAYS) - Number(a.days > STANDARD_DAYS) ||
-    b.days - a.days
-  );
+/**
+ * Days from referral the case's overdue clock allows, or null when its rule sets only a routine interval. Mirrors the
+ * API: an annual LDCT or a routine IFHAS result is never overdue.
+ */
+export function overdueClockDays(c: CaseSummary): number | null {
+  if (c.ldct?.rec?.action === "annual" || c.ifhas?.rec?.action === "routine") return null;
+  return caseDeadlineDays(c);
+}
+
+type Clocked = { days: number; deadline: number | null };
+
+const daysLeft = (r: Clocked) => (r.deadline === null ? Infinity : r.deadline - r.days);
+
+export function clockWords(r: Clocked): { over: boolean; short: string; long: string } {
+  if (r.deadline === null) return { over: false, short: "routine interval", long: "Routine interval · no overdue clock" };
+  const left = r.deadline - r.days;
+  return left < 0
+    ? { over: true, short: `${-left} over`, long: `${-left} days over ${r.deadline}` }
+    : { over: false, short: `${left} left`, long: `${left} days left of ${r.deadline}` };
+}
+
+/** Overdue first, then fewest days left on the case's own clock, routine intervals last. Snoozed rows sink. */
+export function byUrgency(a: Clocked & { snoozed?: boolean }, b: Clocked & { snoozed?: boolean }): number {
+  return Number(!!a.snoozed) - Number(!!b.snoozed) || daysLeft(a) - daysLeft(b) || b.days - a.days;
 }

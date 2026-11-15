@@ -9,7 +9,7 @@ import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, dispositionWords, ledgerWordsWithHistory } from "@/components/case/words";
-import { caseDeadlineDays, isNoAction, nextScreenDays } from "./days";
+import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -166,6 +166,8 @@ export type WorkItem = {
   status: string;
   next: string;
   days: number;
+  /** Days from referral the case's own rule allows; null for a routine interval with no overdue clock. */
+  deadline: number | null;
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
@@ -310,6 +312,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     status: words.status,
     next: words.next,
     days: elapsedDays(c, now),
+    deadline: overdueClockDays(c),
     overdue: c.overdue,
     referralDay: c.referral_day,
     textsAllowed: c.consent === "granted" && !contactBlocked,

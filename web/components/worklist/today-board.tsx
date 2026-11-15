@@ -12,7 +12,7 @@ import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
-import { byUrgency, STANDARD_DAYS } from "./days";
+import { byUrgency, clockWords } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
@@ -119,7 +119,7 @@ function useReadFence() {
   return { revisionFor, supersede };
 }
 
-export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
+export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushrif Healthcare Centre" }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean; scope?: string }) {
   const [s, setS] = useState<State>({ tab: "call", page: 1, mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
@@ -309,9 +309,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     : {
         name: top.name,
         rest:
-          (top.days > STANDARD_DAYS
-            ? `is ${top.days - STANDARD_DAYS} days over ${STANDARD_DAYS}: ${top.status.toLowerCase()}.`
-            : `has ${STANDARD_DAYS - top.days} days left of ${STANDARD_DAYS}: ${top.status.toLowerCase()}.`) +
+          `${clockWords(top).over ? `is ${clockWords(top).long}` : top.deadline === null ? "has no overdue clock" : `has ${clockWords(top).long}`}: ${top.status.toLowerCase()}.` +
           ` ${toCall.length - 1} more to call.`,
       };
 
@@ -512,7 +510,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
           <span className="text-small text-muted">
-            Al Mushrif Healthcare Centre · run day {Math.floor(now)}, {formatDay(now)}
+            {scope} · run day {Math.floor(now)}, {formatDay(now)}
           </span>
           {aside}
         </div>
@@ -550,7 +548,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(s.tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {paging.rows.map((r) => {
               const on = p?.id === r.id;
-              const over = r.days > STANDARD_DAYS;
+              const clock = clockWords(r);
               return (
                 <div key={r.id} className={cn("relative flex min-h-[68px] items-start gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
                   <div className="flex size-11 flex-none items-center justify-center">
@@ -574,8 +572,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                           {r.nameAr}
                         </span>
                       )}
-                      <span className={cn("ml-auto whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
-                        {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
+                      <span className={cn("ml-auto whitespace-nowrap text-small", clock.over ? "font-medium text-negative" : "text-muted")}>
+                        {r.days} days · {clock.short}
                       </span>
                     </span>
                     <span className="mt-0.5 block text-muted">{r.status}</span>
@@ -589,7 +587,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
           <div className="border-t border-rule px-4 py-3 text-small text-muted">
             {s.tab === "call"
-              ? `${list.length} to call · ${list.filter((r) => r.days > STANDARD_DAYS).length} over ${STANDARD_DAYS} days`
+              ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
               : s.tab === "waiting"
                 ? `${list.length} waiting on someone else`
                 : `${list.length} with no owner`}
@@ -635,13 +633,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", clockWords(p).over ? "text-negative" : "text-ink")}>
                     <NumberFlow value={p.days} />
                   </span>
                   <span className="text-muted">days since referral</span>
                 </div>
-                <div className={cn("mt-0.5 text-body sm:text-small", p.days > STANDARD_DAYS ? "text-negative" : "text-muted")}>
-                  {p.days > STANDARD_DAYS ? `${p.days - STANDARD_DAYS} days over ${STANDARD_DAYS}` : `${STANDARD_DAYS - p.days} days left of ${STANDARD_DAYS}`}
+                <div className={cn("mt-0.5 text-body sm:text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
+                  {clockWords(p).long}
                 </div>
               </div>
             </div>
@@ -803,7 +801,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               </div>
             )}
 
-            <Track days={p.days} referralDay={p.referralDay} />
+            <Track days={p.days} deadline={p.deadline} referralDay={p.referralDay} />
 
             <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
               <Field label="Texts" value={p.textsStopped ? "Stopped by patient" : p.contactBlocked ? "Contact blocked · denial or opt-out recorded" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
@@ -870,13 +868,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   );
 }
 
-function Track({ days, referralDay }: { days: number; referralDay: number }) {
-  const SCALE = 40;
-  const fill = (Math.min(days, STANDARD_DAYS) / SCALE) * 100;
-  const over = (Math.min(Math.max(0, days - STANDARD_DAYS), SCALE - STANDARD_DAYS) / SCALE) * 100;
-  const tick = (STANDARD_DAYS / SCALE) * 100;
+function Track({ days, deadline, referralDay }: { days: number; deadline: number | null; referralDay: number }) {
+  if (deadline === null) {
+    return <p className="m-0 mt-5 text-small text-muted">Referred {formatDay(referralDay)} · routine interval, no overdue clock</p>;
+  }
+  const SCALE = Math.round((deadline * 40) / 31);
+  const fill = (Math.min(days, deadline) / SCALE) * 100;
+  const over = (Math.min(Math.max(0, days - deadline), SCALE - deadline) / SCALE) * 100;
+  const tick = (deadline / SCALE) * 100;
   return (
-    <div role="img" aria-label={`Day ${days} of ${STANDARD_DAYS} since referral${days > STANDARD_DAYS ? `, ${days - STANDARD_DAYS} over` : ""}`} className="mt-5">
+    <div role="img" aria-label={`Day ${days} of ${deadline} since referral${days > deadline ? `, ${days - deadline} over` : ""}`} className="mt-5">
       <div className="relative h-4">
         <span className="absolute inset-x-0 top-1 h-2 rounded-chip bg-raised" />
         <span className="absolute left-0 top-1 h-2 rounded-l-chip bg-hue" style={{ width: `${fill}%` }} />
@@ -886,7 +887,7 @@ function Track({ days, referralDay }: { days: number; referralDay: number }) {
       <div className="relative mt-1.5 h-4 text-small tabular-nums text-muted">
         <span className="absolute left-0">Referred {formatDay(referralDay)}</span>
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${tick}%` }}>
-          Day {STANDARD_DAYS} · {formatDay(referralDay + STANDARD_DAYS)}
+          Day {deadline} · {formatDay(referralDay + deadline)}
         </span>
       </div>
     </div>
