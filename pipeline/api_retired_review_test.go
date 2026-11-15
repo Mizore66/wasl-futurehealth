@@ -48,6 +48,11 @@ func TestAPIRetiredReviewHistoryReplaysWithoutBlockingOtherCases(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newIR(t)
+			if tt.question == "evidence" {
+				var ids sourceBoundIRIDs202
+				e, ids = newSourceBoundIR202(t, false)
+				tt.item = ids.Evidence
+			}
 			claim := ""
 			if !tt.legacy {
 				claim = claimHead(e.claim(t, tt.token, tt.item, tt.question, "claim", "", 201))
@@ -136,7 +141,9 @@ func TestAPIRetiredReviewHistoryReplaysWithoutBlockingOtherCases(t *testing.T) {
 			unrelated := &irEnv{s: s, h: h, run: e.run, path: "/api/cases/" + url.PathEscape(other.LoopID)}
 			lease := unrelated.claim(t, irRevA, "other-link", "link", "claim", "", 201)
 			unrelated.must(t, irRevA, irBodyWithClaim("other-link", "same", "r1", "", claimHead(lease)), 201)
-			ledgerPost(t, h, unrelated.path+"/review", irClinA, `{"item":"other-ev","decision":"adequate","note":"synthetic"}`, 201)
+			// This unrelated legacy link write needs no report evidence; source-less
+			// evidence writes are intentionally rejected by the stricter protocol.
+			ledgerPost(t, h, unrelated.path+"/review", irRevA, `{"decision":"same","note":"synthetic"}`, 201)
 			ledgerPost(t, h, unrelated.path+"/actions", irCoord,
 				fmt.Sprintf(`{"action":"note","text":"synthetic handoff","expected_head":%q}`, headOf(s, other.LoopID)), 201)
 			if reloaded := loadAPI(e.run, ""); reloaded.ledgerErr != "" || len(reloaded.reviews) != len(prior.reviews)+4 {
