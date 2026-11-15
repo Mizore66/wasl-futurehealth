@@ -745,6 +745,26 @@ func appendReasons(candidate *personActionCandidate, c *apiCase) {
 	}
 }
 
+// currentEvidenceReviewPending reports an unsigned evidence review listed by the
+// latest canonical decision: the drop-off is waiting on a clinician read, not a coordinator.
+func currentEvidenceReviewPending(s *apiServer, c *apiCase) bool {
+	pending := map[string]bool{}
+	for _, id := range c.last.Pending {
+		pending[id] = true
+	}
+	for _, item := range s.queue[c.ID] {
+		if !pending[item.ItemID] {
+			continue
+		}
+		for _, kind := range item.Kinds {
+			if kind == "evidence" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[string]interface{}, flags []map[string]interface{}) []personActionCandidate {
 	candidates := []personActionCandidate{}
 	caseByID := map[string]*apiCase{}
@@ -804,6 +824,9 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		if !c.Closed && coordinatorDropoffs[c.Dropoff] {
 			patientFollowup = c.Dropoff != "referral_rejected" && c.Dropoff != "referral_unanswered"
 			reason = "dropoff_" + c.Dropoff
+			if patientFollowup && currentEvidenceReviewPending(s, c) {
+				continue
+			}
 		} else if c.last.DR != nil && c.last.DR.Next != nil && c.last.DR.Next.Overdue && !c.last.DR.Next.Seen {
 			patientFollowup, reason = true, "dr_next_recall_overdue"
 		}
