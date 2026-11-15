@@ -54,8 +54,17 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
+  const plan = c.api_overlay?.clinician_disposition;
+  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${plan.review_date}` };
   return DROPOFF_WORDS[c.dropoff];
 }
+
+const PLAN_WORDS: Record<NonNullable<NonNullable<CaseSummary["api_overlay"]>["clinician_disposition"]>["plan"], string> = {
+  repeat_diagnostic: "Plan: repeat the test",
+  alternative_diagnostic: "Plan: a different test",
+  specialist_pathway: "Plan: specialist pathway",
+  primary_care_pathway: "Plan: primary-care pathway",
+};
 
 /** Whole days since referral at run day `now`. */
 export function elapsedDays(c: CaseSummary, now: number): number {

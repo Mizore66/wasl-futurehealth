@@ -607,12 +607,13 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	m["snooze"] = exportSnoozeAllow
 	m["last_contact"] = exportContactOutcomeAllow
 	m["last_appointment_agreement"] = exportAgreementAllow
+	m["clinician_disposition"] = exportObject(exportKeys("at", "event", "hold", "plan", "review_date"))
 	m["booking"] = exportBookingSummaryAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "plan", "review_date", "hold", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
 	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
 var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
 var exportPatientAllow = exportObject(func() map[string]*exportAllow {

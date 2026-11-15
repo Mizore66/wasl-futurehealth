@@ -34,6 +34,11 @@ func newUndoRig(t *testing.T) *undoRig {
 		d := &Decision{ID: "dec-" + id, LoopID: id, Prog: "crc", State: "open", Sig: "head-" + id}
 		s.cases[id] = &apiCase{ID: id, Programme: "crc", State: "open", last: d, decisions: []*Decision{d}}
 		s.order = append(s.order, id)
+		seedEvidenceSource(t, s, id)
+	}
+	// Each case's evidence source is one more FHIR record; the run's report must still declare them all.
+	if err := os.WriteFile(filepath.Join(run, "report7.json"), []byte(`{"events":3,"programmes_live":{"crc":{"cases":1}}}`), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/cases/", s.undoRoutes(s.caseRoutes))
@@ -61,7 +66,11 @@ func (r *undoRig) do(method, path, role, actor, body string) (int, map[string]in
 // review appends an ordinary review event through the real handler and returns its hash.
 func (r *undoRig) review(caseID, role, actor, decision string) string {
 	r.t.Helper()
-	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, `{"decision":"`+decision+`"}`)
+	body := `{"decision":"` + decision + `"}`
+	if reviewActFor(r.s.cases[caseID], decision) == ActSignEvidence {
+		body = `{"item":"` + r.s.queue[caseID][0].ItemID + `","decision":"` + decision + `"}`
+	}
+	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, body)
 	if code != 201 {
 		r.t.Fatalf("seed review: %d %v", code, m)
 	}

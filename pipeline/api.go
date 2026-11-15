@@ -74,6 +74,7 @@ type apiServer struct {
 	signoffs        map[string][]map[string]interface{}
 	idSignoffs      []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	sources         map[string][]sourcePointer          // provider-qualified report@version -> FHIR log pointers (no text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
 	dashboard       map[string]interface{}
 	report          map[string]interface{}
@@ -262,14 +263,7 @@ func loadAPI(run, data string) *apiServer {
 		f.Close()
 	}
 	for id, c := range s.cases {
-		switch {
-		case len(s.signoffs[id]) > 0:
-			c.Review = "signed"
-		case len(s.queue[id]) > 0:
-			c.Review = "open"
-		default:
-			c.Review = "none"
-		}
+		c.Review = s.reviewStatusLocked(id)
 	}
 	s.loadTimelines()
 	s.pickFixtures()
@@ -334,6 +328,7 @@ func (s *apiServer) loadTimelines() {
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
 	s.idSignoffs = nil
+	s.sources = map[string][]sourcePointer{}
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
 		if !apiFHIRSubject.MatchString(m.Subject) && m.Subject != "fhir.review" || strings.HasSuffix(m.Subject, ".ctl") {
 			continue
@@ -344,6 +339,9 @@ func (s *apiServer) loadTimelines() {
 		if so != nil {
 			s.idSignoffs = append(s.idSignoffs, *so)
 			continue
+		}
+		if e != nil {
+			s.indexSource(prov, e, m)
 		}
 		if e == nil || e.PatientKey == "" {
 			continue
@@ -740,6 +738,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
+	} else if strings.HasSuffix(rest, "/review/source") {
+		rest, sub = strings.TrimSuffix(rest, "/review/source"), "review/source"
 	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
@@ -761,6 +761,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
 		s.caseReview(w, r, c)
+	case sub == "review/source" && r.Method == http.MethodGet:
+		s.caseReviewSource(w, r, c)
 	case sub == "review/claim" && r.Method == http.MethodPost:
 		s.caseReviewClaim(w, r, c)
 	case sub == "review/claim":
@@ -849,6 +851,12 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if !found {
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
+			return
+		}
+	}
+	if act == ActSignEvidence {
+		if refusal := s.evidenceSourceRefusal(c, req.Item); refusal != nil {
+			writeJSONResp(w, 409, s.envelope(refusal))
 			return
 		}
 	}
@@ -1136,8 +1144,43 @@ var (
 		"booking_choose_slot": {"expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
 		"booking_reschedule":  {"reservation_id", "expected_reservation_version", "expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
 		"booking_cancel":      {"reservation_id", "expected_reservation_version", "reason"},
+		dispositionKind:       {"reason", "plan", "details", "owner", "review_date", "hold"},
 	}
+	// clinicianDecisionHolds maps each escalation that leaves the next step to a clinician to its programme.
+	clinicianDecisionHolds = map[string]string{"clinician_decision_no_fundal_view": "diabetic_retinopathy", "clinician_decision_outside_fleischner": "lung_nodule"}
+	dispositionPlans       = map[string]bool{"repeat_diagnostic": true, "alternative_diagnostic": true, "specialist_pathway": true, "primary_care_pathway": true}
 )
+
+const dispositionKind = "clinician_disposition"
+
+func actionForKind(kind string) string {
+	if kind == dispositionKind {
+		return ActRecordDisposition
+	}
+	return ActCoordinateCase
+}
+
+// clinicianDecisionHold is the decision's clinician-decision escalation, or "" when the decision has none.
+func clinicianDecisionHold(d *Decision) string {
+	if d == nil {
+		return ""
+	}
+	for _, e := range d.Escalations {
+		if prog, ok := clinicianDecisionHolds[e]; ok && prog == d.Prog {
+			return e
+		}
+	}
+	return ""
+}
+
+func caseEverHeld(c *apiCase, hold string) bool {
+	for _, d := range c.decisions {
+		if clinicianDecisionHold(d) == hold {
+			return true
+		}
+	}
+	return false
+}
 
 // caseOverlay is the replayed coordinator state of one case (api metadata only).
 type caseOverlay struct {
@@ -1148,6 +1191,7 @@ type caseOverlay struct {
 	contacts  []map[string]interface{}
 	notes     []map[string]interface{}
 	agreement map[string]interface{}
+	plans     []map[string]interface{}
 	booking   caseBookingState
 	lastAt    string
 }
@@ -1247,6 +1291,23 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 		}
 	case "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel":
 		return validateBookingActionData(kind, in)
+	case dispositionKind:
+		for _, f := range []struct {
+			k     string
+			max   int
+			multi bool
+		}{{"reason", maxNoteRunes, true}, {"plan", 32, false}, {"details", maxNoteRunes, true}, {"owner", maxOwnerRunes, false}, {"review_date", 10, false}, {"hold", 64, false}} {
+			if err = text(f.k, f.max, true, f.multi); err != nil {
+				return nil, err
+			}
+		}
+		if !dispositionPlans[out["plan"].(string)] {
+			err = errors.New("plan must be one of repeat_diagnostic|alternative_diagnostic|specialist_pathway|primary_care_pathway")
+		} else if _, perr := time.Parse("2006-01-02", out["review_date"].(string)); perr != nil {
+			err = errors.New("review_date must be a YYYY-MM-DD date")
+		} else if clinicianDecisionHolds[out["hold"].(string)] == "" {
+			err = errors.New("hold is not a clinician-decision hold")
+		}
 	case "contact_outcome":
 		if err = text("outcome", 32, true, false); err == nil {
 			err = text("channel", 32, true, false)
@@ -1288,6 +1349,8 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		}
 	case "note":
 		c.ov.notes = append(c.ov.notes, entry)
+	case dispositionKind:
+		c.ov.plans = append(c.ov.plans, entry)
 	}
 	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
 	c.ov.n++
@@ -1334,6 +1397,17 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 	}
 	if o.agreement != nil {
 		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
+	}
+	if plan := currentDisposition(c); plan != nil {
+		if full {
+			m["clinician_disposition"] = plan
+		} else {
+			m["clinician_disposition"] = map[string]interface{}{"at": plan["at"], "event": plan["event"], "hold": plan["hold"],
+				"plan": plan["plan"], "owner": plan["owner"], "review_date": plan["review_date"]}
+		}
+	}
+	if full && len(o.plans) > 0 {
+		m["clinician_dispositions"] = append([]map[string]interface{}{}, o.plans...)
 	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
@@ -1568,9 +1642,20 @@ func (s *apiServer) actionErr(w http.ResponseWriter, code int, msg string, extra
 	writeJSONResp(w, code, s.envelope(body))
 }
 
+// currentDisposition is the latest plan recorded for the hold the case is still in; a cleared hold projects none.
+func currentDisposition(c *apiCase) map[string]interface{} {
+	hold := clinicianDecisionHold(c.last)
+	for i := len(c.ov.plans) - 1; hold != "" && i >= 0; i-- {
+		if c.ov.plans[i]["hold"] == hold {
+			return c.ov.plans[i]
+		}
+	}
+	return nil
+}
+
 func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
-	if err := Authorize(role, ActCoordinateCase); err != nil {
+	if err := Authorize(role, ActCoordinateCase); err != nil && Authorize(role, ActRecordDisposition) != nil {
 		s.actionErr(w, 403, err.Error(), map[string]interface{}{"role": role, "action": ActCoordinateCase})
 		return
 	}
@@ -1602,8 +1687,24 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel", nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition", nil)
 		return
+	}
+	if err := Authorize(role, actionForKind(kind)); err != nil {
+		s.actionErr(w, 403, err.Error(), map[string]interface{}{"role": role, "action": actionForKind(kind)})
+		return
+	}
+	if kind == dispositionKind {
+		if _, given := fields["hold"]; given {
+			s.actionErr(w, 400, "hold is set by the server from the case's current decision", nil)
+			return
+		}
+		hold := clinicianDecisionHold(c.last)
+		if hold == "" {
+			s.actionErr(w, 409, "the case has no hold that leaves the next step to a clinician", map[string]interface{}{"conflict": "hold"})
+			return
+		}
+		fields["hold"] = hold
 	}
 	expected, ok := expV.(string)
 	if !ok || expected == "" || len(expected) > 128 {
@@ -1658,7 +1759,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			}
 		}
 		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
-			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
+			"action": actionForKind(kind), "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
 		if bookingAcquisition(kind) {
 			ev["booking_policy"] = bookingPolicyReadiness1 // server-owned, included BEFORE append hashing
 		}
@@ -1801,8 +1902,8 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	role, _ := ev["role"].(string)
 	actor, _ := ev["actor"].(string)
-	if !rbac[role][ActCoordinateCase] || ev["action"] != ActCoordinateCase {
-		return errors.New("coordinator event with a role that lacks coordinate_case")
+	if want := actionForKind(kind); !rbac[role][want] || ev["action"] != want {
+		return fmt.Errorf("coordinator event with a role that lacks %s", want)
 	}
 	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
 		return errors.New("bad actor")
@@ -1830,6 +1931,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	if kind == "contact_outcome" && !s.contactGuardLocked(c).Allowed {
 		return errors.New("contact outcome without granted canonical consent or after demo denial/opt-out")
+	}
+	if kind == dispositionKind && !caseEverHeld(c, norm["hold"].(string)) {
+		return errors.New("clinician disposition for a hold the case never had")
 	}
 	var booking *bookingTransition
 	if bookingActionName(kind) {
