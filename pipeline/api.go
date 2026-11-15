@@ -695,8 +695,8 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	}
 	if cb := s.teachBackCallbackSummaryLocked(c); cb != nil {
 		m["teach_back_callback"] = cb
+		m["escalations"] = s.servedEscalationsLocked(c)
 	}
-	m["escalations"] = s.servedEscalationsLocked(c)
 	s.mu.Unlock()
 	return m
 }
