@@ -447,12 +447,58 @@ export const ReviewLedger = z.looseObject({
 });
 
 /** Patient-link self-service projection. Summary rows omit timestamps/event ids; detail includes the full projection. */
+export const PatientRightsRequestStaff = z.looseObject({
+  receipt: z.string(),
+  kind: z.enum(["explanation_requested", "contest_submitted"]),
+  decision: z.string(),
+  submitted_at: z.string(),
+  status: z.enum(["answered", "open", "resolved"]),
+  owner: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  closure_held: z.boolean().optional(),
+});
+/** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
+/** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
+export const OutcomeHandoff = z.looseObject({
+  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  referrer_status: z.enum(["pending", "acknowledged"]),
+  responsible_referrer: z.string(),
+  consent: z.string(),
+  version: z.string().optional(),
+  approved_by: z.string().optional(),
+  approved_at: z.string().optional(),
+  acknowledged_at: z.string().optional(),
+  content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
+  history: z.array(z.looseObject({ kind: z.enum(["content_approved", "referrer_acknowledged", "patient_acknowledged"]), version: z.string(), actor: z.string(), role: z.string(), at: z.string(), event: z.string() })),
+});
+export type OutcomeHandoff = z.infer<typeof OutcomeHandoff>;
+
+export const TeachBackCallback = z.looseObject({
+  id: z.string(),
+  source: z.enum(["patient_link", "engine"]),
+  state: z.enum(["misunderstood", "needs_human", "unparsed"]),
+  owner: z.string(),
+  status: z.enum(["open", "resolved"]),
+  escalation: z.string(),
+  opened_at: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  consultations: z
+    .array(z.looseObject({ outcome: z.enum(["understood_on_call", "another_explanation"]), actor: z.string(), role: z.string(), at: z.string(), event: z.string() }))
+    .optional(),
+});
 export const CasePatient = z.looseObject({
   schema: z.literal("wasl-patient-journey/1"),
   head: z.string(),
   seq: z.number().int().nonnegative(),
   ledger_status: z.enum(["ok", "invalid"]),
-  teach_back: z.looseObject({ status: z.enum(["pending", "completed"]), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
+  teach_back: z.looseObject({ status: z.enum(["pending", "completed", "clarify", "callback"]), attempts: z.number().int().optional(), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
   contact_permission: z.looseObject({ status: Consent, updated_at: z.string().optional(), event: z.string().optional() }),
   slot_selection: z.looseObject({
     status: z.enum(["unselected", "selected"]), slot_id: z.string(), offers_version: z.string().optional(), selected_at: z.string().optional(), event: z.string().optional(),
@@ -504,6 +550,9 @@ export const ActiveCaseSummary = z.looseObject({
   contact_state: ContactState.optional(),
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
+  teach_back_callback: TeachBackCallback.optional(),
+  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks. */
+  escalations: z.array(z.string()).optional(),
 });
 
 const RetainedRequest = {
@@ -833,7 +882,7 @@ const patientShape = {
   /** viewerEvent omits prev when it chains onto a concealed independent read. */
   prev: z.string().optional(),
   type: z.literal("patient_journey"),
-  kind: z.enum(["teach_back_completed", "contact_permission_changed", "slot_selected", "preparation_changed"]),
+  kind: z.enum(["teach_back_completed", "teach_back_answered", "contact_permission_changed", "slot_selected", "preparation_changed"]),
   link_id: z.string(),
   request_id: z.string(),
   head: z.string(),
@@ -1084,6 +1133,12 @@ export const CaseDetail = withMeta({
   api_overlay: ApiOverlay.optional(),
   /** Separate patient-link projection; never merged into canonical timeline or booking. */
   api_patient: CasePatient.optional(),
+  /** Patient explanation requests and contests (pipeline/api_patient_request.go); separate from staff undo/contest. */
+  patient_requests: z.array(PatientRightsRequestStaff).optional(),
+  /** Failed teach-back nurse-callback tasks with their consultation outcomes (pipeline/api_teachback.go). */
+  teach_back_callbacks: z.array(TeachBackCallback).optional(),
+  /** Post-closure outcome hand-off: clinician approval, referrer and patient acknowledgements (pipeline/api_outcome_handoff.go). */
+  outcome_handoff: OutcomeHandoff.optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
@@ -1537,6 +1592,7 @@ export type ReferralInfo = z.infer<typeof ReferralInfo>;
 export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
+export type TeachBackCallback = z.infer<typeof TeachBackCallback>;
 export type Audit = z.infer<typeof Audit>;
 export type CaseList = z.infer<typeof CaseList>;
 export type Fixtures = z.infer<typeof Fixtures>;

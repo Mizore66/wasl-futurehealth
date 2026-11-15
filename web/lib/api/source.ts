@@ -428,6 +428,26 @@ async function postAnswer(id: string, route: string, credential: Role | WebCrede
   throw new Error(`POST ${route}: HTTP ${res.status}`);
 }
 
+export type TeachBackOutcome = "understood_on_call" | "another_explanation";
+export type TeachBackCallbackResult = { ok: true } | { ok: false; status: number; error: string };
+
+/** Record a failed teach-back consultation outcome. The API binds the coordinator token to its role and actor. */
+export async function postTeachBackCallback(id: string, callback: string, outcome: TeachBackOutcome): Promise<TeachBackCallbackResult> {
+  if (apiMode() !== "live") throw new Error("postTeachBackCallback needs WASL_API_URL: fixtures mode cannot append callback outcomes");
+  let init: RequestInit;
+  try {
+    init = authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ callback, outcome }) }, "coordinator");
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/teach-back-callback`, init);
+  if (res.status === 201) return { ok: true };
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  const e = ApiError.safeParse(await res.json().catch(() => undefined));
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
 export type BookingActionResult =
   /** A 201 means the append happened. An unreadable body is null, never a licence to retry blindly. */
   | { ok: true; status: 201; response: ActionResponse | null }

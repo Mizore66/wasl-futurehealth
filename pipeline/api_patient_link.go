@@ -66,7 +66,7 @@ func provisionPatientLink(run, caseID string, ttl time.Duration, now time.Time) 
 		return "", errors.New("unknown synthetic case")
 	}
 	if !patientCaseSupported(s.cases[caseID]) {
-		return "", errors.New("patient self-service supports only synthetic CRC cases")
+		return "", errors.New("patient self-service supports only the seven synthetic screening programmes")
 	}
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {

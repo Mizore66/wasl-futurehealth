@@ -58,7 +58,7 @@ const fullInfo = `"supplied_info":{"anticoagulant_plan":"Hold apixaban 48 hours 
 
 func TestReferrerResponseRejectsWrongPrincipalsAndIncompleteAnswers(t *testing.T) {
 	run, s, srv, l, packet := returnedReferral(t)
-	before := ledgerLines(t, run)
+	before := referralLedgerLines(t, run)
 	body := func(rest string) string { return referrerBody(headOf(s, l), l, packet, rest) }
 	for _, c := range []struct {
 		name, role, actor, body string
@@ -89,7 +89,7 @@ func TestReferrerResponseRejectsWrongPrincipalsAndIncompleteAnswers(t *testing.T
 	if code, m := postReferrer(t, srv, agentLoop("770"), RoleClinician, refReferrer, referrerBody(headOf(s, agentLoop("770")), agentLoop("770"), packet, `"response":"acknowledge"`)); code != 400 {
 		t.Fatalf("a case with no returned packet took a referrer response: %d %v", code, m)
 	}
-	if n := ledgerLines(t, run); n != before {
+	if n := referralLedgerLines(t, run); n != before {
 		t.Fatalf("refused submissions appended %d ledger events", n-before)
 	}
 	if h := s.overlayView(s.cases[l], false)["referral_handoff"].(map[string]interface{}); h["status"] != "medical_director" || h["referrer_response"] != nil || h["acknowledgement"] != nil {
@@ -120,7 +120,7 @@ func TestReferrerResponseResolvesHandoffAcrossReplay(t *testing.T) {
 	if code, m := postReferrer(t, srv, l, RoleClinician, refReferrer, referrerBody(headOf(s, l), l, packet, `"response":"close","reason":"Patient seen in clinic"`)); code != 409 || m["conflict"] != "handoff_state" {
 		t.Fatalf("a second resolution was not refused: %d %v", code, m)
 	}
-	if n := ledgerLines(t, run); n != 3 {
+	if n := referralLedgerLines(t, run); n != 3 {
 		t.Fatalf("ledger holds %d events, want the return, the acknowledgement and the response", n)
 	}
 

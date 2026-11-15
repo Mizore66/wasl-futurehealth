@@ -191,6 +191,15 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	if c.patient.Seq > 0 {
 		body["api_patient"] = s.patientViewLocked(c, true)
 	}
+	if len(c.requests) > 0 {
+		body["patient_requests"] = s.patientRequestsViewLocked(c, true)
+	}
+	if callbacks := s.callbacksViewLocked(c); len(callbacks) > 0 {
+		body["teach_back_callbacks"] = callbacks
+	}
+	if s.handoffEligibleLocked(c) || len(c.handoff) > 0 {
+		body["outcome_handoff"] = s.handoffViewLocked(c, true)
+	}
 	s.mu.Unlock()
 	return body
 }
@@ -769,7 +778,7 @@ var exportRecoveryCaseAllow = exportObject(func() map[string]*exportAllow {
 
 var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
-		"review", "closed", "closed_day", "fixture", "decisions", "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict")
+		"review", "closed", "closed_day", "fixture", "decisions", "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict", "canonical_closed", "closure_hold")
 	m["programme"] = &exportAllow{leaf: true, empty: true}
 	m["request_status"] = &exportAllow{leaf: true, empty: true}
 	m["api_overlay"] = exportOverlayAllow
@@ -826,6 +835,8 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["api_reviews"] = exportList(exportReviewEventAllow)
 	m["api_overlay"] = exportOverlayAllow
 	m["api_patient"] = exportPatientAllow
+	m["patient_requests"] = exportList(exportObject(exportKeys("receipt", "kind", "decision", "submitted_at", "status", "owner", "due_at", "overdue",
+		"outcome", "resolved_at", "closure_held", "excluded_reviewers", "resolved_by")))
 	m["current"] = exportDecisionAllow
 	m["booking"] = exportBookingAllow
 	m["agent_investigations"] = exportList(exportAgentInvestigationAllow)

@@ -31,10 +31,10 @@ describe("phone query", () => {
 describe("booking slots", () => {
   it("formats the server October offers with the right weekdays", () => {
     const t = DICTS.en.book;
-    expect(patientOffers.slots.map((slot) => slotLabel(slot, t))).toEqual([
-      { weekday: "Friday", date: "9", time: "9:30", period: "am" },
-      { weekday: "Thursday", date: "8", time: "11:00", period: "am" },
-      { weekday: "Monday", date: "12", time: "1:00", period: "pm" },
+    expect(patientOffers.slots.map((slot) => slotLabel(slot, t, "en"))).toEqual([
+      { weekday: "Friday", date: "9", month: "October", time: "9:30", period: "am" },
+      { weekday: "Thursday", date: "8", month: "October", time: "11:00", period: "am" },
+      { weekday: "Monday", date: "12", month: "October", time: "1:00", period: "pm" },
     ]);
   });
 

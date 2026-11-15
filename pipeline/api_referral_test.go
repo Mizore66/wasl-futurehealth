@@ -73,7 +73,7 @@ func refBody(head, loop, rest string) string {
 	return hb(head, `"referral_id":"`+loop+`",`+rest)
 }
 
-func ledgerLines(t *testing.T, run string) int {
+func referralLedgerLines(t *testing.T, run string) int {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(run, "api_reviews.ndjson"))
 	if os.IsNotExist(err) {
@@ -115,7 +115,7 @@ func TestReferralResponseRejectsWrongPrincipalsAndBindings(t *testing.T) {
 	if code, m := postAction(t, srv, l, RoleCoordinator, "nurse-1", refBody(headOf(s, l), l, `"action":"referral_response","response":"accept"`)); code != 400 {
 		t.Fatalf("coordinator actions endpoint accepted a referral response: %d %v", code, m)
 	}
-	if n := ledgerLines(t, run); n != 0 {
+	if n := referralLedgerLines(t, run); n != 0 {
 		t.Fatalf("refused submissions appended %d ledger events", n)
 	}
 	if code, m := postReferral(t, srv, agentLoop("773"), RoleClinician, refUnitClinician, refBody(headOf(s, agentLoop("773")), agentLoop("773"), `"response":"accept"`)); code != 409 || m["conflict"] != "referral_state" {
@@ -147,7 +147,7 @@ func TestReferralResponsesPersistAcrossReplay(t *testing.T) {
 	if code, m := postReferral(t, srv, acc, RoleClinician, refUnitClinician, refBody(headOf(s, acc), acc, `"response":"return","reason":"wrong_unit"`)); code != 409 || m["conflict"] != "referral_state" {
 		t.Fatalf("a second answer at the current head was not refused: %d %v", code, m)
 	}
-	if n := ledgerLines(t, run); n != 3 {
+	if n := referralLedgerLines(t, run); n != 3 {
 		t.Fatalf("ledger holds %d events, want 3", n)
 	}
 
