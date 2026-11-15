@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -139,6 +140,14 @@ func TestPatientContestHoldsClosureUntilAnIndependentHumanResolvesIt(t *testing.
 	held := reloaded.summary0(reloaded.cases[patientTestCaseA])
 	if held["closed"] != false || held["canonical_closed"] != true || held["closure_hold"] != "patient_contest" {
 		t.Fatalf("an open contest must hold automatic closure after reload: %v", held)
+	}
+	dash := httptest.NewRecorder()
+	reloaded.getDashboard(dash, httptest.NewRequest("GET", "/api/dashboard", nil))
+	var board struct {
+		Closed int `json:"closed"`
+	}
+	if err := json.Unmarshal(dash.Body.Bytes(), &board); err != nil || board.Closed != 0 {
+		t.Fatalf("dashboard must count a contested case as not closed, like the case list: %v %s", err, dash.Body.String())
 	}
 	if reloaded.cases[patientTestCaseA].last.Sig != patientTestSignature(patientTestCaseA) {
 		t.Fatal("contest rewrote the canonical signature")

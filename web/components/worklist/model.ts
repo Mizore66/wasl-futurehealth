@@ -320,7 +320,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     status: words.status,
     next: words.next,
     days: elapsedDays(c, now),
-    overdue: c.overdue,
+    overdue: c.overdue || (c.teach_back_callback?.status === "open" && c.teach_back_callback.overdue === true),
     referralDay: c.referral_day,
     textsAllowed: c.consent === "granted" && !contactBlocked,
     contactBlocked,

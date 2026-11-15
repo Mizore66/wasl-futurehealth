@@ -62,6 +62,13 @@ describe("failed teach-back callback", () => {
     expect(workItem({ ...withTask, teach_back_callback: { ...open, status: "resolved" } }, 120, false).status).toBe(workItem(row, 120, false).status);
   });
 
+  it("flags the row overdue while an open callback is late, whatever the programme deadline says", () => {
+    const row = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((c) => !c.closed && !c.overdue)!;
+    expect(workItem({ ...row, teach_back_callback: open }, 120, false).overdue).toBe(false);
+    expect(workItem({ ...row, teach_back_callback: { ...open, overdue: true } }, 120, false).overdue).toBe(true);
+    expect(workItem({ ...row, teach_back_callback: { ...open, overdue: true, status: "resolved" } }, 120, false).overdue).toBe(false);
+  });
+
   it("parses consultation outcomes on case detail", () => {
     const detail = CaseDetail.parse({
       ...(loadSample("case_evidence_closure.json") as object),

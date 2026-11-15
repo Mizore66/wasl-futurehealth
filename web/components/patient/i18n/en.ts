@@ -102,7 +102,7 @@ export const en: PatientDict = {
     complete: "Your care team has finished this follow-up check. A doctor approved this message.",
     nextHead: "What happens next",
     next: {
-      routine_screening: "Go back to your usual screening. We will remind you when the next one is due.",
+      routine_screening: "Go back to your usual screening. Your care team will tell you when the next one is due.",
       surveillance: "You will have a planned check later. The care team will contact you to arrange it.",
       specialist_follow_up: "A specialist team will contact you about your next appointment.",
       discuss_with_doctor: "Please book a visit with your doctor to talk about this result.",

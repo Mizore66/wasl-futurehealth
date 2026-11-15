@@ -127,6 +127,27 @@ func TestOutcomeHandoffAcknowledgementsAreIndependentAndSurviveReplay(t *testing
 	}
 }
 
+func TestOutcomeHandoffStaleApprovalConflictsInsteadOfReplacing(t *testing.T) {
+	h := newHandoffTestAPI(t)
+	_, first := h.approve(t, "routine_screening")
+	firstVersion := handoffView(first)["version"].(string)
+	revise := func(seen string) (int, map[string]interface{}) {
+		return h.staffCall(t, http.MethodPost, handoffClinicianToken, patientTestCaseA, map[string]interface{}{
+			"kind": handoffApproved, "decision": patientTestSignature(patientTestCaseA), "next_step": "surveillance", "version": seen})
+	}
+	if code, body := revise(""); code != http.StatusConflict || handoffView(body)["version"] != firstVersion || ledgerLines(t, h.patientTestAPI) != 1 {
+		t.Fatalf("an approval that never saw the first one replaced it: %d %v", code, body)
+	}
+	code, body := revise(firstVersion)
+	content, _ := handoffView(body)["content"].(map[string]interface{})
+	if code != http.StatusCreated || content["next_step"] != "surveillance" {
+		t.Fatalf("a revision made against the current approval: %d %v", code, body)
+	}
+	if code, body := revise(firstVersion); code != http.StatusOK || body["replayed"] != true {
+		t.Fatalf("a retried revision must replay, not conflict: %d %v", code, body)
+	}
+}
+
 func TestOutcomeHandoffRefusesOpenCasesWrongActorsAndForgedLinks(t *testing.T) {
 	h := newHandoffTestAPI(t)
 	if code, body := h.staffCall(t, http.MethodPost, "staff-token-123456", patientTestCaseA, map[string]interface{}{

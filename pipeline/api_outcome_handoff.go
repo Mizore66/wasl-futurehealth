@@ -187,8 +187,16 @@ func (s *apiServer) staffHandoffError(c *apiCase, kind, role, actor, sig, nextSt
 			return http.StatusConflict, "decision is not this case's current decision; review the current outcome", outcomeContent{}, false
 		}
 		content, _ := outcomeContentFor(c.last, nextStep)
-		if approved := s.approvedHandoffLocked(c); approved != nil && approved.Version == content.version() {
+		approved, current := s.approvedHandoffLocked(c), ""
+		if approved != nil {
+			current = approved.Version
+		}
+		if current == content.version() {
 			return 0, "", content, true
+		}
+		// version is the approval the clinician saw ("" for none); a stale one must not silently replace a newer approval.
+		if version != current {
+			return http.StatusConflict, "the outcome hand-off changed since it was loaded; review the current approval", outcomeContent{}, false
 		}
 		return 0, "", content, false
 	case handoffReferrerAck:

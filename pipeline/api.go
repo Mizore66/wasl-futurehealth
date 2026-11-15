@@ -610,7 +610,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 			byProg[c.Programme] = map[string]int{}
 		}
 		byProg[c.Programme]["cases"]++
-		if c.Closed {
+		if s.servedClosed(c) {
 			closed++
 			byProg[c.Programme]["closed"]++
 		}

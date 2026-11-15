@@ -107,7 +107,7 @@ export const fil: PatientDict = {
     complete: "Natapos na ng iyong care team ang follow-up check na ito. Inaprubahan ng doktor ang mensaheng ito.",
     nextHead: "Ano ang susunod",
     next: {
-      routine_screening: "Bumalik sa karaniwan mong screening. Paaalalahanan ka namin kapag oras na ng susunod.",
+      routine_screening: "Bumalik sa karaniwan mong screening. Sasabihin sa iyo ng iyong care team kapag oras na ng susunod.",
       surveillance: "Magkakaroon ka ng nakaplanong check sa ibang araw. Tatawagan ka ng care team para ayusin ito.",
       specialist_follow_up: "Tatawagan ka ng isang specialist team tungkol sa susunod mong appointment.",
       discuss_with_doctor: "Mangyaring mag-book ng pagbisita sa iyong doktor para pag-usapan ang resultang ito.",
