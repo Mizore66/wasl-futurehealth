@@ -555,7 +555,7 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 			continue
 		}
 		if v, ok := viewerEvent(r, conc); ok {
-			out = append(out, v)
+			out = append(out, s.reviewHistoryProjection(v))
 		}
 	}
 	return out
@@ -565,6 +565,9 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 func reviewActFor(c *apiCase, decision string) string {
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
 		"confirm_contact": ActRecordConsent}[decision]
+	if act == "" && c.Programme == "crc" && isCRCPathologyLabel(decision) {
+		act = ActSignEvidence
+	}
 	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(decision) != nil {
 		act = ActSignEvidence
 	}
@@ -581,6 +584,32 @@ func reviewActFor(c *apiCase, decision string) string {
 		act = ActSignEvidence
 	}
 	return act
+}
+
+func isCRCPathologyLabel(decision string) bool {
+	return decision == "histology" || decision == "no_histology"
+}
+
+// itemReportCategory uses this raised item's original provider/version source,
+// not a current presentation row that can change after another link or revision.
+func (s *apiServer) itemReportCategory(caseID string, it *ReviewItem) string {
+	return s.raisedReportCategory(caseID, it)
+}
+
+// crcDecisionFitsItem keeps a CRC pathology item to histology/no_histology and every other CRC evidence item to
+// adequate/inadequate. Decisions outside those four labels are not scoped by report kind.
+func (s *apiServer) crcDecisionFitsItem(c *apiCase, it *ReviewItem, decision string) bool {
+	if c.Programme != "crc" || !(isCRCPathologyLabel(decision) || decision == "adequate" || decision == "inadequate") {
+		return true
+	}
+	switch s.itemReportCategory(c.ID, it) {
+	case "pathology":
+		return isCRCPathologyLabel(decision)
+	case "colonoscopy":
+		return decision == "adequate" || decision == "inadequate"
+	default:
+		return false // missing or ambiguous source is not implicit colonoscopy
+	}
 }
 
 // replayProtocol validates a protocol event found in the ledger at startup with the same rules as a live write.
@@ -618,6 +647,9 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	act := reviewActFor(&apiCase{Programme: signed.Prog}, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
+	}
+	if !s.crcDecisionFitsItem(&apiCase{ID: id, Programme: signed.Prog}, it, sstr(ev, "decision")) {
+		return fmt.Errorf("protocol read decision does not fit the item's report")
 	}
 	if err := checkClaimedProtocolRead(s.claimsLocked(), ev, false); err != nil {
 		return err
@@ -710,7 +742,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 // read's hash is removed from every field that repeats it (prev, action_head, target, ...). The stored bytes are untouched.
 func (s *apiServer) shownEventLocked(stored map[string]interface{}, viewer apiPrincipal) map[string]interface{} {
 	if v, ok := viewerEvent(stored, s.concealedHashesLocked(viewer)); ok {
-		return v
+		return s.reviewHistoryProjection(v)
 	}
 	return map[string]interface{}{}
 }

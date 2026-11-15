@@ -65,36 +65,41 @@ type apiCase struct {
 }
 
 type apiServer struct {
-	run, data       string
-	meta            map[string]interface{}
-	cases           map[string]*apiCase
-	order           []string
-	queue           map[string][]*ReviewItem // loop -> currently eligible raised items
-	retiredQueue    map[string][]*ReviewItem // loop -> historical raised items, replay-only; never actionable
-	signoffs        map[string][]map[string]interface{}
-	idSignoffs      []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
-	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	sources         map[string][]sourcePointer          // provider-qualified report@version -> FHIR log pointers (no text)
-	ids             map[string][]map[string]string      // loop -> linked registrations
-	dashboard       map[string]interface{}
-	report          map[string]interface{}
-	anchors         map[string]string
-	booking         map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	bookingCalendar string
-	bookingSlots    map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
-	sawBookingStamp bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
-	recovery        recoveryProjection
-	fixtures        map[string]string
-	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu              sync.Mutex
-	reviews         []map[string]interface{}
-	rstates         map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
-	claims          map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
-	now             func() time.Time                           // UTC clock; replaceable in lease tests
-	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
-	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
-	patientRequests map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
+	reviewReportSources     map[reviewReportSourceKey]reviewReportSource // original report revisions, independent of current presentation
+	nonbindingLegacyReviews map[string]bool                              // replay-recognized hashes; never stored in ledger events
+	run, data               string
+	meta                    map[string]interface{}
+	cases                   map[string]*apiCase
+	order                   []string
+	queue                   map[string][]*ReviewItem // loop -> currently eligible raised items
+	retiredQueue            map[string][]*ReviewItem // loop -> historical raised items, replay-only; never actionable
+	signoffs                map[string][]map[string]interface{}
+	idSignoffs              []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
+	facts                   map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids                     map[string][]map[string]string      // loop -> linked registrations
+	dashboard               map[string]interface{}
+	report                  map[string]interface{}
+	anchors                 map[string]string
+	booking                 map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	bookingCalendar         string
+	bookingSlots            map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
+	sawBookingStamp         bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
+	recovery                recoveryProjection
+	fixtures                map[string]string
+	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv               map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu                      sync.Mutex
+	reviews                 []map[string]interface{}
+	rstates                 map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	claims                  map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
+	now                     func() time.Time                           // UTC clock; replaceable in lease tests
+	ledgerErr               string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine              func([]byte) error                         // appends one ledger line durably (replaceable in tests)
+	patientRequests         map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
+	demo                    map[string]regDemo                         // materialized demographics, identity-review roles only
+	photos                  map[string][]ImgRef                        // exact provider/report/version media observations
+	pixels                  *pixelStore                                // content-verified synthetic photos; never serialized paths
+	sources                 map[string][]sourcePointer                 // exact source-log references; no report text cached
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -132,6 +137,7 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
+	s.pixels = newPixelStore(os.Getenv("WASL_IMAGE_PIXELS_DIR"))
 	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	// Recovery deployments use their configured Basic-auth identities and TLS;
 	// all other serving modes require the bearer-bound synthetic-demo principals.
@@ -328,6 +334,8 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
+	s.demo = map[string]regDemo{}
 	s.idSignoffs = nil
 	s.sources = map[string][]sourcePointer{}
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
@@ -341,10 +349,17 @@ func (s *apiServer) loadTimelines() {
 			s.idSignoffs = append(s.idSignoffs, *so)
 			continue
 		}
-		if e != nil {
-			s.indexSource(prov, e, m)
+		if e == nil {
+			continue
 		}
-		if e == nil || e.PatientKey == "" {
+		s.rememberReviewReportSource(e, m.Data)
+		s.indexSource(prov, e, m)
+		if e.RType == "DiagnosticReport" {
+			// Empty media is an explicit source observation too. A later row
+			// cannot erase an ambiguity or resurrect an older positive list.
+			s.observePhotoAssociation(prov+"/DiagnosticReport/"+e.ID, e.Version, e.Images)
+		}
+		if e.PatientKey == "" {
 			continue
 		}
 		h := sha256.Sum256(m.Data)
@@ -352,6 +367,9 @@ func (s *apiServer) loadTimelines() {
 			"day": round4(e.Day), "arrival_day": round4(arr), "category": e.Category, "raw_sha": hex.EncodeToString(h[:])[:16],
 			"source": firstNonEmpty(m.Hdr["Wsi-Src"], "fhir"), "patient_key": e.PatientKey}
 		byPK[e.PatientKey] = append(byPK[e.PatientKey], row)
+		d := s.demo[e.PatientKey]
+		d.absorb(e)
+		s.demo[e.PatientKey] = d
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
 		}
@@ -737,6 +755,9 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/cases/")
 	sub := ""
+	if s.casePhotoRoute(w, r, rest) {
+		return
+	}
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
 	} else if strings.HasSuffix(rest, "/review/source") {
@@ -805,7 +826,7 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 	out := []map[string]interface{}{}
 	for _, r := range s.reviews {
 		if r["case"] == id {
-			out = append(out, r)
+			out = append(out, s.reviewHistoryProjection(r))
 		}
 	}
 	return out
@@ -830,7 +851,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	act := reviewActFor(c, req.Decision)
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact (histology|no_histology on a CRC pathology item), or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {
@@ -860,6 +881,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			writeJSONResp(w, 409, s.envelope(refusal))
 			return
 		}
+	}
+	if !s.crcDecisionFitsItem(c, s.queueItem(c.ID, req.Item), req.Decision) {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision does not answer the report this item raised (CRC pathology: histology|no_histology; colonoscopy: adequate|inadequate)", "item": req.Item}))
+		return
 	}
 	if req.Read != "" || req.ExpectedHead != nil || req.ClaimHead != nil { // independent double review; without these fields the legacy path below is unchanged
 		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, req.ClaimHead, act); msg != "" {
@@ -1844,6 +1869,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
 		return errors.New("hash mismatch")
 	}
+	if _, projected := ev["source_binding"]; projected {
+		return errors.New("source_binding is projection-only, not stored event provenance")
+	}
 	if ev["type"] == patientEventType {
 		if err := s.replayPatientEvent(ev); err != nil {
 			return fmt.Errorf("patient journey: %v", err)
@@ -1884,8 +1912,32 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 			if err := s.replayProtocol(ev); err != nil {
 				return fmt.Errorf("independent review: %v", err)
 			}
+			// The protocol validated the original signed programme and raised
+			// (possibly retired) item; never recheck against today's live queue.
+			s.reviews = append(s.reviews, ev)
+			return nil
 		}
-		s.reviews = append(s.reviews, ev) // legacy review event; consent_rev, when present, is also checked
+		c := s.cases[sstr(ev, "case")]
+		if evKind(ev) == "review" {
+			if c != nil && c.Programme == "crc" && ev["action"] == ActSignEvidence {
+				if err := validateBaseReviewEvent(ev); err != nil {
+					return err
+				}
+				if reviewActFor(c, sstr(ev, "decision")) != ActSignEvidence {
+					return errors.New("unsupported CRC evidence history label")
+				}
+			}
+		}
+		if c != nil && !s.crcDecisionFitsItem(c, s.raisedReviewItem(c.ID, sstr(ev, "item")), sstr(ev, "decision")) {
+			if !s.legacyUnboundCRCReview(c, ev) {
+				return errors.New("review decision does not fit the item's report")
+			}
+			if s.nonbindingLegacyReviews == nil {
+				s.nonbindingLegacyReviews = map[string]bool{}
+			}
+			s.nonbindingLegacyReviews[sstr(ev, "hash")] = true
+		}
+		s.reviews = append(s.reviews, ev) // retain original hash/body; nonbinding metadata lives separately
 		return nil
 	}
 	if ev["type"] != coordEventType {

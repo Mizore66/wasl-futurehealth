@@ -80,6 +80,14 @@ func pr185ClockRequestWithEID(t *testing.T, eid string) *Event {
 
 func pr185ClockReport(t *testing.T, input pr185ClockReportInput) *Event {
 	t.Helper()
+	event, _ := pr185ClockReportSource(t, input)
+	return event
+}
+
+// Retain the exact normalized input for API fixtures that must open the source
+// report before accepting a review; no stored source or signed output changes.
+func pr185ClockReportSource(t *testing.T, input pr185ClockReportInput) (*Event, LogMsg) {
+	t.Helper()
 	if input.Provider == "" {
 		input.Provider = pr185ClockProvider
 	}
@@ -122,7 +130,8 @@ func pr185ClockReport(t *testing.T, input pr185ClockReportInput) *Event {
 	}
 	// Identical explicit software verdict seam to other canonical LDCT replay tests.
 	e.Ev = &TwoVerdict{Kind: input.Kind, Agree: input.Label != "", Label: input.Label}
-	return e
+	return e, LogMsg{Seq: 1, Subject: "fhir." + input.Provider + ".res",
+		Hdr: map[string]string{"Wsi-Arr": fmt.Sprint(input.Day + 1)}, Data: canon(res)}
 }
 
 func pr185ClockLatestFacts(t *testing.T, sr *Event, reports ...*Event) *LoopFacts {
