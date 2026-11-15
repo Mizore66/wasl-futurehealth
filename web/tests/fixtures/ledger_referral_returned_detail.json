@@ -1,0 +1,306 @@
+{
+  "agent_investigations": [],
+  "agent_provenance": {
+    "cached": false,
+    "experimental": false
+  },
+  "api_overlay": {
+    "actions": 3,
+    "booking": {
+      "mode": "simulated",
+      "reservation_id": null,
+      "reservation_version": null,
+      "revision": 0,
+      "slot": null,
+      "status": "unreserved",
+      "updated_at": null,
+      "updated_event": null
+    },
+    "canonical_owner": "",
+    "contact_outcomes": [],
+    "head": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+    "last_action_at": "2026-11-15T17:43:00.336033405Z",
+    "ledger_status": "ok",
+    "notes": [],
+    "owner": "",
+    "referral_handoff": {
+      "acknowledgement": {
+        "actor": "Dr Huda Al Mansoori",
+        "at": "2026-11-15T17:43:00.335150371Z",
+        "event": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+        "run_day": 130
+      },
+      "act_by": 112,
+      "acted_at": 130,
+      "clinical_priority": "urgent",
+      "decided_at": 110,
+      "decided_by": "skmc-endo",
+      "decision": "reject",
+      "destinations": [
+        "skmc-endo",
+        "noor-endo"
+      ],
+      "event": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "info_requested": [
+        "anticoagulant_plan",
+        "relevant_clinical_information"
+      ],
+      "medical_director_day": 116,
+      "reason": "anticoagulant_plan_missing",
+      "reason_code": "needs_more_info",
+      "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "referrer_response": {
+        "actor": "Dr Huda Al Mansoori",
+        "at": "2026-11-15T17:43:00.336033405Z",
+        "event": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+        "response": "supply_info",
+        "run_day": 130,
+        "supplied_info": {
+          "anticoagulant_plan": "Hold apixaban 48 hours before",
+          "relevant_clinical_information": "FIT 180 ug/g, no prior colonoscopy"
+        }
+      },
+      "responsible_clinician": "referring PCP, ahs-mushrif",
+      "status": "referrer_acted"
+    },
+    "referral_response": {
+      "actor": "Dr Layla Haddad",
+      "at": "2026-11-15T17:43:00.333923979Z",
+      "conditions": [],
+      "event": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "reason": "anticoagulant_plan_missing",
+      "requested_info": [
+        "anticoagulant_plan",
+        "relevant_clinical_information"
+      ],
+      "response": "return",
+      "run_day": 110,
+      "unit": "skmc-endo"
+    }
+  },
+  "api_review_states": [],
+  "api_reviews": [
+    {
+      "action": "respond_referral",
+      "actor": "Dr Layla Haddad",
+      "at": "2026-11-15T17:43:00.333923979Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "conditions": [],
+        "reason": "anticoagulant_plan_missing",
+        "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+        "requested_info": [
+          "anticoagulant_plan",
+          "relevant_clinical_information"
+        ],
+        "response": "return",
+        "run_day": 110,
+        "unit": "skmc-endo"
+      },
+      "hash": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "head": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b",
+      "kind": "referral_response",
+      "mode": "demo",
+      "prev": "genesis",
+      "role": "clinician",
+      "seq": 1,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "respond_referral",
+      "actor": "Dr Huda Al Mansoori",
+      "at": "2026-11-15T17:43:00.335150371Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "packet": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+        "provider": "ahs-mushrif",
+        "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+        "response": "acknowledge",
+        "run_day": 130
+      },
+      "hash": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "head": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "kind": "referrer_response",
+      "mode": "demo",
+      "prev": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "role": "clinician",
+      "seq": 2,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "respond_referral",
+      "actor": "Dr Huda Al Mansoori",
+      "at": "2026-11-15T17:43:00.336033405Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "packet": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+        "provider": "ahs-mushrif",
+        "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+        "response": "supply_info",
+        "run_day": 130,
+        "supplied_info": {
+          "anticoagulant_plan": "Hold apixaban 48 hours before",
+          "relevant_clinical_information": "FIT 180 ug/g, no prior colonoscopy"
+        }
+      },
+      "hash": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+      "head": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "kind": "referrer_response",
+      "mode": "demo",
+      "prev": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "role": "clinician",
+      "seq": 3,
+      "type": "coordinator_action"
+    }
+  ],
+  "booking": {
+    "status": "not_generated"
+  },
+  "case": {
+    "api_overlay": {
+      "actions": 3,
+      "booking": {
+        "mode": "simulated",
+        "reservation_id": null,
+        "reservation_version": null,
+        "revision": 0,
+        "slot": null,
+        "status": "unreserved",
+        "updated_at": null,
+        "updated_event": null
+      },
+      "head": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+      "last_action_at": "2026-11-15T17:43:00.336033405Z",
+      "ledger_status": "ok",
+      "owner": "",
+      "referral_handoff": {
+        "acknowledgement": {
+          "actor": "Dr Huda Al Mansoori",
+          "at": "2026-11-15T17:43:00.335150371Z",
+          "event": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+          "run_day": 130
+        },
+        "act_by": 112,
+        "acted_at": 130,
+        "clinical_priority": "urgent",
+        "decided_at": 110,
+        "decided_by": "skmc-endo",
+        "decision": "reject",
+        "destinations": [
+          "skmc-endo",
+          "noor-endo"
+        ],
+        "event": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+        "info_requested": [
+          "anticoagulant_plan",
+          "relevant_clinical_information"
+        ],
+        "medical_director_day": 116,
+        "reason": "anticoagulant_plan_missing",
+        "reason_code": "needs_more_info",
+        "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+        "referrer_response": {
+          "actor": "Dr Huda Al Mansoori",
+          "at": "2026-11-15T17:43:00.336033405Z",
+          "event": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+          "response": "supply_info",
+          "run_day": 130
+        },
+        "responsible_clinician": "referring PCP, ahs-mushrif",
+        "status": "referrer_acted"
+      },
+      "referral_response": {
+        "actor": "Dr Layla Haddad",
+        "at": "2026-11-15T17:43:00.333923979Z",
+        "conditions": [],
+        "event": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+        "reason": "anticoagulant_plan_missing",
+        "requested_info": [
+          "anticoagulant_plan",
+          "relevant_clinical_information"
+        ],
+        "response": "return",
+        "run_day": 110,
+        "unit": "skmc-endo"
+      }
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "granted",
+    "contact_state": {
+      "contact_blocked": false,
+      "status": "none"
+    },
+    "deadline_day": 0,
+    "decisions": 1,
+    "dropoff": "not_booked",
+    "fixture": "",
+    "id": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+    "overdue": false,
+    "owner": "",
+    "priority": "",
+    "programme": "crc",
+    "provider": "ahs-mushrif",
+    "referral_day": 100,
+    "review": "none",
+    "state": "open"
+  },
+  "current": {
+    "ack_day": 0,
+    "contact": "granted",
+    "dropoff": "not_booked",
+    "id": "dec-ref-2",
+    "in_seq": 0,
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+    "notif_day": 0,
+    "now": 130,
+    "overdue": false,
+    "policy": "v6",
+    "proc_day": 0,
+    "prog": "crc",
+    "prov": "ahs-mushrif",
+    "ref_day": 0,
+    "ref_status": "",
+    "reported_closed": false,
+    "sig": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b",
+    "sr_day": 100,
+    "state": "open",
+    "unowned": false
+  },
+  "decisions": [
+    {
+      "consent_log": [],
+      "decision_id": "dec-ref-2",
+      "dropoff": "not_booked",
+      "escalations": [],
+      "in_seq": 0,
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v6",
+      "sig": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b",
+      "state": "open"
+    }
+  ],
+  "evidence": [],
+  "holds": [],
+  "identities": [],
+  "links": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-15T17:43:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "001"
+  },
+  "outreach": [],
+  "review_items": [],
+  "review_ledger": {
+    "events_applied": 4,
+    "status": "ok"
+  },
+  "signoffs": [],
+  "timeline": []
+}

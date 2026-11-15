@@ -604,10 +604,23 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	m["last_appointment_agreement"] = exportAgreementAllow
 	m["booking"] = exportBookingSummaryAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
+	m["referral_response"] = exportReferralResponseAllow
+	m["referral_handoff"] = exportReferralHandoffAllow
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+// The receiving unit's answer and the hand-off it projects, as codes and days only: no actor, and none of the
+// referrer's free text (supplied information, close or primary-care reasons).
+var exportReferralResponseAllow = exportObject(exportKeys("response", "conditions", "reason", "requested_info", "unit", "run_day", "at", "event"))
+var exportReferralHandoffAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("decision", "reason_code", "info_requested", "clinical_priority", "decided_by", "decided_at", "act_by", "medical_director_day",
+		"status", "event", "destinations", "acted_at")
+	m["acknowledgement"] = exportObject(exportKeys("at", "run_day", "event"))
+	m["referrer_response"] = exportObject(exportKeys("response", "destination", "at", "run_day", "event"))
+	return m
+}())
+
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "response", "conditions", "requested_info", "unit", "destination", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
 	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
 var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
 var exportPatientAllow = exportObject(func() map[string]*exportAllow {

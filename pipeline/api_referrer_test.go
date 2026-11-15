@@ -129,7 +129,7 @@ func TestReferrerResponseResolvesHandoffAcrossReplay(t *testing.T) {
 		t.Fatalf("verified reload: %v %q", err, reloaded.ledgerErr)
 	}
 	reloaded.cases[l].last.Now = 130
-	live, replay := s.overlayView(s.cases[l], false), reloaded.overlayView(reloaded.cases[l], false)
+	live, replay := s.overlayView(s.cases[l], true), reloaded.overlayView(reloaded.cases[l], true)
 	if !bytes.Equal(canon(live), canon(replay)) {
 		t.Fatalf("replay differs\nlive   %v\nreplay %v", live, replay)
 	}
@@ -138,6 +138,10 @@ func TestReferrerResponseResolvesHandoffAcrossReplay(t *testing.T) {
 	if h["status"] != "referrer_acted" || h["acted_at"] != 130.0 || h["event"] != packet || r["response"] != "supply_info" || r["actor"] != refReferrer ||
 		r["supplied_info"].(map[string]interface{})["anticoagulant_plan"] != "Hold apixaban 48 hours before" {
 		t.Fatalf("resolved hand-off: %v", h)
+	}
+	summary := reloaded.overlayView(reloaded.cases[l], false)["referral_handoff"].(map[string]interface{})["referrer_response"].(map[string]interface{})
+	if _, ok := summary["supplied_info"]; ok || summary["response"] != "supply_info" {
+		t.Fatalf("the list summary carries the referrer's free text: %v", summary)
 	}
 	if replay["referral_response"].(map[string]interface{})["response"] != "return" {
 		t.Fatalf("the unit's return left the timeline: %v", replay["referral_response"])
@@ -190,4 +194,71 @@ func TestReferrerResponseReplayRefusesForgedEvents(t *testing.T) {
 			t.Fatalf("%s: forged referrer response replayed (%q)", name, r.ledgerErr)
 		}
 	}
+}
+
+func referralGet(t *testing.T, srv *httptest.Server, path string) map[string]interface{} {
+	t.Helper()
+	rq, _ := http.NewRequest("GET", srv.URL+path, nil)
+	rq.Header.Set("X-Wasl-Role", RoleCoordinator)
+	rq.Header.Set("X-Wasl-Actor", "coordinator-bound")
+	resp, err := http.DefaultClient.Do(rq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET %s: %d", path, resp.StatusCode)
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return decodeMap(t, b)
+}
+
+// The case detail and redacted audit after a conditional acceptance, and after a return the referrer acknowledged and
+// answered, as the handler serves them. web/tests/referral-ledger.test.ts parses them, so a change to either ledger
+// kind's served shape must regenerate them (WASL_WRITE_LEDGER_FIXTURES=1).
+func TestReferralLedgerFixtures(t *testing.T) {
+	_, s, srv, l, packet := returnedReferral(t)
+	for _, rest := range []string{`"response":"acknowledge"`, `"response":"supply_info",` + fullInfo} {
+		if code, m := postReferrer(t, srv, l, RoleClinician, refReferrer, referrerBody(headOf(s, l), l, packet, rest)); code != 201 {
+			t.Fatalf("%s: %d %v", rest, code, m)
+		}
+	}
+	accepted := agentLoop("770")
+	if code, m := postReferral(t, srv, accepted, RoleClinician, refUnitClinician, refBody(headOf(s, accepted), accepted,
+		`"response":"accept_with_conditions","conditions":["hold_anticoagulants","arabic_interpreter"]`)); code != 201 {
+		t.Fatalf("accept with conditions: %d %v", code, m)
+	}
+	returned := referralGet(t, srv, "/api/cases/"+l)
+	audit := referralGet(t, srv, "/api/cases/"+l+"/audit")
+	if h := audit["history"].([]interface{}); len(h) != 3 {
+		t.Fatalf("audit history: %d events, want the return, the acknowledgement and the answer", len(h))
+	}
+	for i, e := range audit["history"].([]interface{}) {
+		d, _ := e.(map[string]interface{})["data"].(map[string]interface{})
+		if _, ok := d["supplied_info"]; ok || d["response"] == nil {
+			t.Errorf("audit history[%d] data: %v", i, d)
+		}
+	}
+	generic, err := exportGeneric(s.overlayView(s.cases[l], true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	exported, _ := exportProject(generic, exportOverlayAllow)
+	ov := exported.(map[string]interface{})
+	h, _ := ov["referral_handoff"].(map[string]interface{})
+	r, _ := h["referrer_response"].(map[string]interface{})
+	if ov["referral_response"].(map[string]interface{})["reason"] != "anticoagulant_plan_missing" || h["status"] != "referrer_acted" || r["response"] != "supply_info" {
+		t.Fatalf("export left out the referral answer: %v", ov)
+	}
+	if _, ok := r["supplied_info"]; ok || r["actor"] != nil || ov["referral_response"].(map[string]interface{})["actor"] != nil {
+		t.Fatalf("export carries referral free text or actors: %v", ov)
+	}
+	writeOrCompareLedgerFixtures(t, map[string]map[string]interface{}{
+		"ledger_referral_returned_detail.json": returned,
+		"ledger_referral_audit.json":           audit,
+		"ledger_referral_accepted_detail.json": referralGet(t, srv, "/api/cases/"+accepted),
+	})
 }

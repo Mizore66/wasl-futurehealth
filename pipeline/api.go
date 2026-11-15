@@ -1336,6 +1336,11 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 	if response, handoff := referralViewLocked(c); response != nil {
 		m["referral_response"] = response
 		if handoff != nil {
+			// Like notes, the referrer's free text (supplied information, a close or primary-care reason) is detail only.
+			if r, ok := handoff["referrer_response"].(map[string]interface{}); ok && !full {
+				delete(r, "supplied_info")
+				delete(r, "reason")
+			}
 			m["referral_handoff"] = handoff
 		}
 	}

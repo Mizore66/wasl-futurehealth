@@ -43,7 +43,7 @@ const TABS: [Tab, string, (r: Referral) => boolean][] = [
 const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, accepted: 3, done: 4 };
 
 /** `saved`: appended to the ledger, so no local Undo and no session trail entry. */
-type Override = { state: ReferralState; outcome: string; log: string[]; handoff?: Handoff; saved?: boolean };
+type Override = { state: ReferralState; outcome: string; log: { who: string; what: string }[]; handoff?: Handoff; saved?: boolean };
 const REFUSED: Record<number, string> = {
   403: "your clinician account is not assigned to this referral's unit.",
   404: "the API has no such referral.",
@@ -163,9 +163,9 @@ export function ReferralInbox({
     setMode(null);
     setPicked([]);
   };
-  const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff) => {
+  const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff, who = ME) => {
     setWant({ k: "undo" });
-    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), entry], handoff } }));
+    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), { who, what: entry }], handoff } }));
     open(id);
   };
   const [busy, setBusy] = useState(false);
@@ -181,7 +181,7 @@ export function ReferralInbox({
       .then((res) => {
         if (!res.ok) return setRefusal({ id: x.id, text: `Not saved: ${REFUSED[res.status] ?? res.error}` });
         setWant({ k: "heading" });
-        setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case ledger.`, log: [entry], saved: true } }));
+        setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case ledger.`, log: [{ who: ME, what: entry }], saved: true } }));
         open(x.id);
         router.refresh();
       })
@@ -208,6 +208,7 @@ export function ReferralInbox({
       `Re-referral to ${x.unit} recorded in this session only. The canonical packet is unchanged and nothing is sent.`,
       `Re-referred to ${x.unit} (this session)`,
       { status: "referrer_acted", actBy: x.handoff?.actBy ?? now },
+      x.referrer,
     );
   const undo = (id: string) => {
     setWant({ k: "heading" });
@@ -219,7 +220,7 @@ export function ReferralInbox({
     ? [
         { id: "ref", kind: "human", who: r.referrer, what: `referred to ${r.unit}`, when: r.sent },
         ...(r.answer ? [{ id: "answer", kind: "human" as const, who: r.unit, what: r.answer, when: r.answerWhen }] : []),
-        ...(over[r.id]?.saved ? [] : (over[r.id]?.log ?? [])).map((what, i) => ({ id: `log-${i}`, kind: "human" as const, who: ME, what, when: "This session" })),
+        ...(over[r.id]?.saved ? [] : (over[r.id]?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, kind: "human" as const, who, what, when: "This session" })),
         ...(r.state === "done"
           ? []
           : [
@@ -528,13 +529,13 @@ export function ReferralInbox({
           </section>
         )}
       </div>
-      <p className="mt-6 text-small text-muted">{respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : "Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}."} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
+      <p className="mt-6 text-small text-muted">{respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
     </div>
   );
 }
 
 function lineFor(x: Referral, o: Override | undefined): string {
-  if (o) return o.log.at(-1)!;
+  if (o) return o.log.at(-1)!.what;
   switch (x.state) {
     case "new":
       return x.flags.length ? x.flags.join(" · ") : "Ready to accept";

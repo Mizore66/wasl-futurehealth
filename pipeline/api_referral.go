@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -259,7 +260,7 @@ func replayReferralResponse(c *apiCase, raw map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	if len(client) != len(norm) {
+	if !reflect.DeepEqual(norm, client) {
 		return errors.New("non-canonical referral response data")
 	}
 	if raw["unit"] != referralReceivingUnit(c) {

@@ -26,7 +26,7 @@ func referralRun(t *testing.T) string {
 	for i, drop := range []string{"referral_unanswered", "referral_unanswered", "not_booked", "in_progress"} {
 		loop := agentLoop("77" + itoa(i))
 		dec := &Decision{ID: "dec-ref-" + itoa(i), LoopID: loop, State: "open", Dropoff: drop, Prog: "crc", Contact: "granted",
-			Provider: "ahs-mushrif", SRDay: 100, Now: 110}
+			Provider: "ahs-mushrif", SRDay: 100, Now: 110, Policy: "v6"}
 		dec.Sig = decSig(dec)
 		states[loop] = "open"
 		b, err := json.Marshal(OutEnvelope{Kind: "decision", OSeq: uint64(i + 1), Dec: dec})

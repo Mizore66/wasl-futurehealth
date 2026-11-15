@@ -113,6 +113,9 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     expect(pane().textContent).toContain("recorded in this session only. The canonical packet is unchanged and nothing is sent.");
     expect(current()).toContain("Re-referred to Eye clinic, regional hospital (this session)");
     expect(current()).toContain("The referrer has acted");
+    const step = [...pane().querySelectorAll("li")].find((li) => li.textContent?.includes("Re-referred to Eye clinic"))!.textContent;
+    expect(step).toContain(DR[0].referrer);
+    expect(step).not.toContain("Dr Layla Haddad");
     expect(detail("Status")).toBe("Awaiting the referrer");
     click("Undo", pane());
     await act(async () => void (await new Promise((resolve) => setTimeout(resolve, 200))));
@@ -122,6 +125,8 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
 
   it("keeps the programme/provider selection on search", () => {
     render(DR, "programme=diabetic_retinopathy&provider=phc-retina");
+    expect(text()).toContain("Nothing is saved to the clinical record, booked or sent to the referrer.");
+    expect(text()).not.toContain("${referrer}");
     const field = host.querySelector<HTMLInputElement>('input[name="q"]')!;
     expect([...field.form!.querySelectorAll<HTMLInputElement>('input[type="hidden"]')].map((i) => [i.name, i.value])).toEqual([
       ["programme", "diabetic_retinopathy"],

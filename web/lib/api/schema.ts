@@ -675,7 +675,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -702,6 +702,13 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  // referral_response (the receiving unit) and referrer_response (the referring GP). Codes only, except supplied_info.
+  response: z.union([z.enum(["accept", "accept_with_conditions", "return"]), ReferrerResponseCode]).optional(),
+  conditions: z.array(ReferralCondition).optional(),
+  requested_info: z.array(ReferralInfo).optional(),
+  unit: z.string().optional(),
+  destination: z.string().optional(),
+  supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
 });
 
 const coordinatorShape = {
