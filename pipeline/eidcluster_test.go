@@ -9,7 +9,7 @@ import "testing"
 func constGBM() *GBM { return &GBM{trees: []*gbmNode{{leaf: true, value: 10}}} }
 
 func eidEvent(id, prov, mrn, name, dob, eid string) *Prep {
-	return &Prep{Seq: 0, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", Prog: "crc", PatientKey: prov + "|" + mrn,
+	return &Prep{Seq: 0, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: prov + "|" + mrn,
 		Name: name, Dob: dob, Sex: "F", Eid: eid, Day: 1}}
 }
 
@@ -154,7 +154,7 @@ func TestRefusedEIDClashSurvivesLaterSplit(t *testing.T) {
 	e1, e2 := luhnComplete("78419802077524"), luhnComplete("78419807358085")
 	L := NewLinkerCore(constGBM(), 1)
 	applySeq(L,
-		eidEvent("m1", "medlab", "M1", "Lamig Eddinari", "1999-07-19", e1),      // person A, valid id e1
+		eidEvent("m1", "medlab", "M1", "Lamig Eddinari", "1999-07-19", e1),     // person A, valid id e1
 		eidEvent("s1", "skmc-endo", "S1", "Lamia Eddinari", "1999-07-19", ""),  // person A, no id (the bridge)
 		eidEvent("a1", "ahs-mushrif", "A1", "Qamar Zubaydi", "1999-07-19", e2), // person B, valid id e2
 	)

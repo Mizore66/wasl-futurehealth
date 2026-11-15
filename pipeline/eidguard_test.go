@@ -29,7 +29,7 @@ func guardFeed(t *testing.T, on bool, v7 bool, regs []guardReg, human [][2]strin
 	for i, r := range regs {
 		ev := &Event{ID: "R" + itoa(i), Provider: r.prov, PatientKey: r.pk, Name: r.name, Sex: r.sex, Dob: r.dob, Eid: r.eid, Day: 1, Prog: "crc"}
 		if i == 0 {
-			ev.RType = "ServiceRequest"
+			ev.RType, ev.Status = "ServiceRequest", "active"
 			ev.ID = "SR1"
 		} else {
 			ev.RType, ev.Status, ev.Category, ev.Day = "DiagnosticReport", "final", "colonoscopy", 20

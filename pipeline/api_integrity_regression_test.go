@@ -145,7 +145,7 @@ func TestAPIIntegrityTrustedClinicalIdentitySurvivesEvidenceReplacement(t *testi
 			outs = append(outs, C.Apply(&fm)...)
 		}
 	}
-	feed(1, &Event{ID: "SR1", Provider: guardSR.prov, PatientKey: guardSR.pk, Name: guardSR.name, Sex: guardSR.sex, Dob: guardSR.dob, Eid: guardEID, RType: "ServiceRequest", Day: 1, Prog: "crc"})
+	feed(1, &Event{ID: "SR1", Provider: guardSR.prov, PatientKey: guardSR.pk, Name: guardSR.name, Sex: guardSR.sex, Dob: guardSR.dob, Eid: guardEID, RType: "ServiceRequest", Status: "active", Day: 1, Prog: "crc"})
 	feed(2, &Event{ID: "reportB", ReportID: "reportB", Version: 1, Provider: b.prov, PatientKey: b.pk, Name: b.name, Sex: b.sex, Dob: b.dob, Eid: guardEID, RType: "DiagnosticReport", Status: "final", Category: "colonoscopy", Day: 20, Prog: "crc", Text: "Poor prep; incomplete exam.", Ev: &TwoVerdict{Kind: "colonoscopy", Agree: true, Label: "inadequate"}})
 	outs = append(outs, C.Apply(&FactsMsg{ID: "tick25", IsTick: true, TickDay: 25, InSeq: 3})...)
 	before := lastDec(outs)
@@ -337,7 +337,7 @@ func TestAPIIntegrityRejectedEvidenceMovesToHistory(t *testing.T) {
 			outs = append(outs, C.Apply(&fm)...)
 		}
 	}
-	feed(1, &Event{ID: "SR1", Provider: guardSR.prov, PatientKey: guardSR.pk, Name: guardSR.name, Sex: guardSR.sex, Dob: guardSR.dob, Eid: guardEID, RType: "ServiceRequest", Day: 1, Prog: "crc"})
+	feed(1, &Event{ID: "SR1", Provider: guardSR.prov, PatientKey: guardSR.pk, Name: guardSR.name, Sex: guardSR.sex, Dob: guardSR.dob, Eid: guardEID, RType: "ServiceRequest", Status: "active", Day: 1, Prog: "crc"})
 	feed(2, &Event{ID: "reportB", ReportID: "reportB", Version: 1, Provider: b.prov, PatientKey: b.pk, Name: b.name, Sex: b.sex, Dob: b.dob, Eid: guardEID, RType: "DiagnosticReport", Status: "final", Category: "colonoscopy", Day: 20, Prog: "crc", Text: "Caecum reached. Good prep. No polyps.", Ev: &TwoVerdict{Kind: "colonoscopy", Agree: true, Label: "adequate"}})
 	outs = append(outs, C.Apply(&FactsMsg{ID: "tick25", IsTick: true, TickDay: 25, InSeq: 3})...)
 	if lastDec(outs).State != "closed" || lastDec(outs).ClosingReport != "reportB" {

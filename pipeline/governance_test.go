@@ -75,7 +75,7 @@ func consentPrep(seq uint64, pk, role, kind string) *Prep {
 
 func newLoopLinker(t *testing.T) (*LinkerCore, string) {
 	L := NewLinkerCore(nil, 1)
-	sr := &Prep{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}}
+	sr := &Prep{Seq: 1, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}}
 	L.Apply(sr)
 	return L, "ahs-mushrif/ServiceRequest/SR1"
 }

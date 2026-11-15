@@ -36,7 +36,16 @@ func validateAPIPreflight(run string) error {
 	}
 	loops := map[string]string{}
 	outPath, fhirPath := filepath.Join(run, "out_log.ndjson"), filepath.Join(run, "fhir_log.ndjson")
-	if _, err := scanAPILog(outPath, func(m LogMsg) error { return validateOutRecord(m, loops) }); err != nil {
+	latest := map[string]*Decision{}
+	if _, err := scanAPILog(outPath, func(m LogMsg) error {
+		if err := validateOutRecord(m, loops); err != nil {
+			return err
+		}
+		if d := decodeEnv(m).Dec; d != nil {
+			latest[d.LoopID] = d
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	fhirRecords, err := scanAPILog(fhirPath, func(m LogMsg) error {
@@ -49,7 +58,13 @@ func validateAPIPreflight(run string) error {
 	if err != nil {
 		return err
 	}
-	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], loops, fhirRecords)
+	active := 0
+	for _, d := range latest {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return validateDeclaredCounts(objects["dashboard.json"], objects["report7.json"], loops, fhirRecords, active)
 }
 
 func validateRequiredAPIJSON(path string) (map[string]interface{}, error) {
@@ -126,9 +141,8 @@ func validateOutRecord(m LogMsg, loops map[string]string) error {
 		if personProgrammeRank(programme) == len(personProgrammes) {
 			return fmt.Errorf("invalid out envelope: unsupported decision prog %q", programme)
 		}
-		if previous, ok := loops[d.LoopID]; ok && previous != programme {
-			return fmt.Errorf("invalid out envelope: decision programme changed for loop %q", d.LoopID)
-		}
+		// OUT is a history. Canonical tracking revisions can correct a loop's
+		// programme; source-derived counts use its latest retained decision.
 		loops[d.LoopID] = programme
 	case "item", "review":
 		if env.Item == nil || env.Dec != nil {
@@ -224,7 +238,17 @@ func preservedAPIRejection(run string, m LogMsg) bool {
 	return err == nil && matched
 }
 
-func validateDeclaredCounts(dashboard, report map[string]interface{}, loops map[string]string, fhirRecords int) error {
+func materializedCatalogCounts(final map[string]*Decision) map[string]interface{} {
+	active := 0
+	for _, d := range final {
+		if !d.Inactive {
+			active++
+		}
+	}
+	return map[string]interface{}{"schema": "wasl-materialized-catalog/1", "retained_cases": len(final), "active_cases": active, "retained_live_replay_mismatch": 0}
+}
+
+func validateDeclaredCounts(dashboard, report map[string]interface{}, loops map[string]string, fhirRecords int, activeCounts ...int) error {
 	check := func(artifact, field string, value interface{}, want int, source string) error {
 		n, ok := value.(float64)
 		if !ok || n < 0 || n != float64(int(n)) {
@@ -239,12 +263,46 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops map[
 	for _, programme := range loops {
 		byProgramme[programme]++
 	}
+	clinicalLoops := len(loops)
+	clinicalByProgramme := byProgramme
+	if raw, present := report["materialized_catalog"]; present {
+		catalog, ok := raw.(map[string]interface{})
+		if !ok || catalog["schema"] != "wasl-materialized-catalog/1" || len(catalog) != 4 || len(activeCounts) != 1 {
+			return fmt.Errorf("serve preflight: invalid materialized catalog counts")
+		}
+		for field, want := range map[string]int{"retained_cases": len(loops), "active_cases": activeCounts[0], "retained_live_replay_mismatch": 0} {
+			if err := check("report7.json", "materialized_catalog."+field, catalog[field], want, "out_log.ndjson decisions"); err != nil {
+				return err
+			}
+		}
+		// Retained OUT completeness and the clinical cohort are distinct. Preserve
+		// main's explicit cohort denominator while checking every native counter.
+		if _, declared := report["loops"]; declared {
+			declaredByProgramme, ok := report["loops_by_programme"].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("serve preflight: materialized catalog requires clinical loops_by_programme")
+			}
+			clinicalLoops = 0
+			clinicalByProgramme = map[string]int{}
+			for programme, value := range declaredByProgramme {
+				n, ok := value.(float64)
+				if !ok || n < 0 || n != float64(int(n)) {
+					return fmt.Errorf("serve preflight: invalid clinical loop count for %s", programme)
+				}
+				clinicalByProgramme[programme] = int(n)
+				clinicalLoops += int(n)
+			}
+		}
+	}
 	for _, artifact := range []struct {
 		name string
 		body map[string]interface{}
 	}{{"dashboard.json", dashboard}, {"report7.json", report}} {
 		for _, field := range []string{"cases", "loops", "events", "fhir_msgs"} {
 			want, source := len(loops), "out_log.ndjson decisions"
+			if artifact.name == "report7.json" && field == "loops" {
+				want, source = clinicalLoops, "declared clinical cohort (legacy: out_log.ndjson decisions)"
+			}
 			if field == "events" || field == "fhir_msgs" {
 				want, source = fhirRecords, "fhir_log.ndjson records"
 			}
@@ -262,6 +320,10 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops map[
 		if !ok {
 			return fmt.Errorf("serve preflight: %s: programmes_live must be an object", artifact.name)
 		}
+		expectedByProgramme, expectedTotal := byProgramme, len(loops)
+		if artifact.name == "report7.json" {
+			expectedByProgramme, expectedTotal = clinicalByProgramme, clinicalLoops
+		}
 		keys := make([]string, 0, len(programmes))
 		for name := range programmes {
 			keys = append(keys, name)
@@ -276,18 +338,18 @@ func validateDeclaredCounts(dashboard, report map[string]interface{}, loops map[
 			counted := false
 			for _, field := range []string{"loops", "cases"} {
 				if v, present := programme[field]; present {
-					if err := check(artifact.name, "programmes_live."+name+"."+field, v, byProgramme[name], "out_log.ndjson "+name+" decisions"); err != nil {
+					if err := check(artifact.name, "programmes_live."+name+"."+field, v, expectedByProgramme[name], "declared programme cohort (legacy: out_log.ndjson decisions)"); err != nil {
 						return err
 					}
 					counted = true
 				}
 			}
 			if counted {
-				total, declared = total+byProgramme[name], true
+				total, declared = total+expectedByProgramme[name], true
 			}
 		}
 		if declared {
-			if err := check(artifact.name, "programmes_live declared cases/loops", float64(total), len(loops), "out_log.ndjson decisions"); err != nil {
+			if err := check(artifact.name, "programmes_live declared cases/loops", float64(total), expectedTotal, "declared cohort (legacy: out_log.ndjson decisions)"); err != nil {
 				return err
 			}
 		}

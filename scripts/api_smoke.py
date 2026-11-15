@@ -181,7 +181,7 @@ def workflow_smoke(c, cid):
     before = c.ok(path)
     before_audit = c.ok(path + "/audit", "auditor")
     canonical_case = copy.deepcopy(before.get("case", {}))
-    canonical_case.pop("api_overlay", None)
+    strip_overlay_fields(canonical_case)
     canonical_before = (canonical_case, before.get("current"), before.get("decisions"))
     signatures_before = before_audit.get("decision_signatures")
     chain_before = before_audit.get("chain")
@@ -259,7 +259,7 @@ def workflow_smoke(c, cid):
     after = c.ok(path)
     after_audit = c.ok(path + "/audit", "auditor")
     after_case = copy.deepcopy(after.get("case", {}))
-    after_case.pop("api_overlay", None)
+    strip_overlay_fields(after_case)
     check((after_case, after.get("current"), after.get("decisions")) == canonical_before,
           "workflow: canonical case or decisions changed")
     check(after_audit.get("decision_signatures") == signatures_before and after_audit.get("chain") == chain_before,
@@ -388,9 +388,18 @@ def protocol_event(response, slot, question, label):
     return event
 
 
+# Case-summary fields derived from the API overlay or patient ledger; they move without touching canonical state.
+OVERLAY_DERIVED_CASE_FIELDS = ("api_overlay", "contact_state")
+
+
+def strip_overlay_fields(case):
+    for key in OVERLAY_DERIVED_CASE_FIELDS:
+        case.pop(key, None)
+
+
 def canonical_view(detail):
     case = copy.deepcopy(detail.get("case", {}))
-    case.pop("api_overlay", None)
+    strip_overlay_fields(case)
     return (case, detail.get("current"), detail.get("decisions"))
 
 

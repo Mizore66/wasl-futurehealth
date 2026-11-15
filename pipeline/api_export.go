@@ -101,8 +101,16 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	}
 	hist := []map[string]interface{}{}
 	for _, d := range c.decisions {
-		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
-			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
+		row := map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
+			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig}
+		if d.Inactive {
+			row["lifecycle"] = "retained"
+			row["inactive"] = true
+			row["request_status"] = d.RequestStatus
+			row["request_version"] = d.RequestVersion
+			row["request_conflict"] = d.RequestConflict
+		}
+		hist = append(hist, row)
 	}
 	identities, identityHistory, facts := s.ids[c.ID], []map[string]string{}, s.facts[c.ID]
 	if ci != nil {
@@ -674,6 +682,11 @@ var exportBookingAllow = exportObject(func() map[string]*exportAllow {
 	m["reason"] = exportOperationalLeaf
 	m["reservation_explanation"] = exportOperationalLeaf
 	m["eligible_slots"] = exportList(exportBookingSlotAllow)
+	m["readiness"] = exportObject(func() map[string]*exportAllow {
+		r := exportKeys("ready")
+		r["reason"] = exportOperationalLeaf
+		return r
+	}())
 	m["constraints"] = exportObject(exportKeys("female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show"))
 	m["booking"] = exportObject(exportKeys("loop_id", "session_id", "unit", "day", "endoscopist_female", "overbooked", "predicted_no_show",
 		"nurse_call", "prep_send_day", "deadline", "within_deadline", "booked_on"))
@@ -698,7 +711,9 @@ var exportRecoveryCaseAllow = exportObject(func() map[string]*exportAllow {
 
 var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
-		"review", "closed", "closed_day", "fixture", "decisions")
+		"review", "closed", "closed_day", "fixture", "decisions", "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict")
+	m["programme"] = &exportAllow{leaf: true, empty: true}
+	m["request_status"] = &exportAllow{leaf: true, empty: true}
 	m["api_overlay"] = exportOverlayAllow
 	m["api_patient"] = exportPatientAllow
 	m["recovery"] = exportRecoveryCaseAllow
@@ -709,7 +724,7 @@ var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 var exportDecisionAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "loop", "in_seq", "prov", "sr_day", "now", "state", "overdue", "unowned", "reported_closed", "closed_day",
 		"closing_report", "pending", "notif_day", "ack_day", "ref_status", "ref_day", "comm_flags", "dropoff", "human_assisted", "prog", "prio",
-		"deadline", "proc_day", "ec_state", "ec_turns", "tb_state", "prep_q", "policy", "contact", "sig", "audit_reopened")
+		"deadline", "proc_day", "ec_state", "ec_turns", "tb_state", "prep_q", "policy", "contact", "sig", "audit_reopened", "inactive", "request_status", "request_version", "request_conflict")
 	m["esc"] = exportOperationalLeaf
 	m["chain"] = &exportAllow{chain: true}
 	m["consent_log"] = exportList(exportConsentTransitionAllow)
@@ -720,7 +735,8 @@ var exportDecisionAllow = exportObject(func() map[string]*exportAllow {
 }())
 
 var exportDecisionHistoryAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("decision_id", "in_seq", "state", "dropoff", "overdue", "policy", "sig")
+	m := exportKeys("decision_id", "in_seq", "state", "dropoff", "overdue", "policy", "sig", "lifecycle", "inactive", "request_status", "request_version", "request_conflict")
+	m["request_status"] = &exportAllow{leaf: true, empty: true}
 	m["escalations"] = exportOperationalLeaf
 	m["consent_log"] = exportList(exportConsentTransitionAllow)
 	m["outreach"] = exportList(exportOutreachAllow)
@@ -812,6 +828,8 @@ func exportChainBodyAllow(blockType string) *exportAllow {
 		return exportSurveillanceOpenedAllow
 	case "outreach_guard":
 		return exportOutreachGuardAllow
+	case "tracking_request_retirement":
+		return exportObject(exportKeys("loop", "status", "version", "conflict", "request"))
 	default:
 		return exportObject(map[string]*exportAllow{})
 	}

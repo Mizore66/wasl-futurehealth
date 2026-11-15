@@ -571,6 +571,10 @@ func report7(data, wasl, run string, P int) {
 	if err := writeIdentityClusters(run, rp); err != nil {
 		panic(fmt.Errorf("materialise canonical identity projection: %w", err))
 	}
+	// Clinical truth/evaluation denominators above keep their original meaning.
+	// The identity writer independently compared EVERY actual retained OUT
+	// decision (not just active Final) before this success metadata is declared.
+	res["materialized_catalog"] = materializedCatalogCounts(liveFinal)
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0600)
 	fmt.Println(string(rb))

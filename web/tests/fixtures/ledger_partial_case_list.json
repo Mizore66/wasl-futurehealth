@@ -13,12 +13,12 @@
           "updated_at": null,
           "updated_event": null
         },
-        "head": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
-        "last_action_at": "2026-11-13T03:26:25.375084Z",
+        "head": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
+        "last_action_at": "2026-11-13T08:26:41.6511429Z",
         "last_contact": {
-          "at": "2026-11-13T03:26:25.375084Z",
+          "at": "2026-11-13T08:26:41.6511429Z",
           "channel": "phone",
-          "event": "2332ebc83739d6a6302297f3cdc1cf320927b45fd6eefddd21c6403679c72af0",
+          "event": "0bdbf20f6caa3ebeded48a1c19e2820f36de966f8b62b4d4bfd2706bf0e0589b",
           "outcome": "declined"
         },
         "ledger_status": "invalid",
@@ -47,7 +47,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-13T03:26:25Z",
+    "loaded_at": "2026-11-13T08:26:41Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",
