@@ -391,13 +391,58 @@ func (s *apiServer) raisedReviewItem(caseID, item string) *ReviewItem {
 	return nil
 }
 
-func (s *apiServer) itemSigned(caseID, item string) bool {
+// signoffAnswers reports whether a canonical sign-off answers question q of the raised item. Report, version and
+// head are compared when the sign-off records them, so a sign-off of superseded evidence answers nothing current.
+// A sign-off that carries neither a link nor an evidence answer is a whole-item sign-off for the kinds it names.
+func signoffAnswers(r map[string]interface{}, it *ReviewItem, q string) bool {
+	str := func(k string) string { v, _ := r[k].(string); return v }
+	if str("item") != it.ItemID ||
+		(str("report") != "" && str("report") != it.ReportID) ||
+		(str("signed_head") != "" && it.Head != "" && str("signed_head") != it.Head) {
+		return false
+	}
+	if v, ok := r["report_version"].(float64); ok && !sameReportReviewVersion(int(v), it.ReportVersion) {
+		return false
+	}
+	switch link, evidence := str("link"), str("evidence"); {
+	case link == "" && evidence == "":
+		kinds, _ := r["kinds"].([]interface{})
+		for _, k := range kinds {
+			if k == q {
+				return true
+			}
+		}
+		return len(kinds) == 0
+	case q == "link":
+		return link != ""
+	case q == "evidence":
+		return evidence != ""
+	}
+	return true
+}
+
+func (s *apiServer) questionSigned(caseID string, it *ReviewItem, q string) bool {
 	for _, r := range s.signoffs[caseID] {
-		if fmt.Sprint(r["item"]) == item {
+		if signoffAnswers(r, it, q) {
 			return true
 		}
 	}
 	return false
+}
+
+// reviewStatusLocked is open while any raised question lacks a matching canonical sign-off.
+func (s *apiServer) reviewStatusLocked(caseID string) string {
+	for _, it := range s.queue[caseID] {
+		for _, q := range it.Kinds {
+			if !s.questionSigned(caseID, it, q) {
+				return "open"
+			}
+		}
+	}
+	if len(s.signoffs[caseID]) > 0 {
+		return "signed"
+	}
+	return "none"
 }
 
 func itemHasKind(it *ReviewItem, kind string) bool {
@@ -413,15 +458,15 @@ func itemHasKind(it *ReviewItem, kind string) bool {
 func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[string]interface{} {
 	states := s.protoStatesLocked()
 	view := map[reviewQuestionKey]*reviewProtocolState{}
-	frozen := map[string]bool{}
+	frozen := map[reviewQuestionKey]bool{}
 	for _, it := range s.queue[c.ID] {
-		signed := s.itemSigned(c.ID, it.ItemID)
-		frozen[it.ItemID] = signed
 		for _, q := range it.Kinds {
 			if q != "link" && q != "evidence" {
 				continue
 			}
 			key := reviewQuestionKey{it.ItemID, q}
+			signed := s.questionSigned(c.ID, it, q)
+			frozen[key] = signed
 			if st := states[key]; st != nil {
 				view[key] = st // existing history stays visible after a canonical sign-off (frozen)
 			} else if s.claimsLocked()[key] != nil || !signed {
@@ -431,9 +476,9 @@ func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[st
 	}
 	out := projectReviewStates(view, s.claimsLocked(), viewer, s.clock())
 	for _, m := range out {
-		// A canonical sign-off freezes the item: history stays, but no form is actionable.
-		m["frozen"] = frozen[m["item"].(string)]
+		// A canonical sign-off freezes the question it answers: history stays, but no form is actionable.
 		key := reviewQuestionKey{Item: m["item"].(string), Question: m["question"].(string)}
+		m["frozen"] = frozen[key]
 		addClaimProjection(m, view[key], s.claimsLocked()[key], viewer, s.clock(), m["frozen"] == true)
 	}
 	return out
@@ -617,7 +662,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}
-		if s.itemSigned(c.ID, it.ItemID) {
+		if s.questionSigned(c.ID, it, question) {
 			return 409, map[string]interface{}{"error": "item already has a canonical sign-off; independent reads are closed"}
 		}
 		states := s.protoStatesLocked()

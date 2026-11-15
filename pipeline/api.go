@@ -262,14 +262,7 @@ func loadAPI(run, data string) *apiServer {
 		f.Close()
 	}
 	for id, c := range s.cases {
-		switch {
-		case len(s.signoffs[id]) > 0:
-			c.Review = "signed"
-		case len(s.queue[id]) > 0:
-			c.Review = "open"
-		default:
-			c.Review = "none"
-		}
+		c.Review = s.reviewStatusLocked(id)
 	}
 	s.loadTimelines()
 	s.pickFixtures()
