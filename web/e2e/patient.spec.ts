@@ -360,3 +360,45 @@ test.describe("desktop", () => {
     expect(box?.width).toBeLessThanOrEqual(390);
   });
 });
+
+for (const { lang } of LANGS) {
+  test(`rights: verified contest shows a receipt and pending review after reload (${lang})`, async ({ page }) => {
+    const t = DICTS[lang];
+    await open(page, "notice", lang);
+    await page.getByRole("button", { name: t.notice.rights }).click();
+    const sheet = page.getByRole("dialog", { name: t.notice.rights });
+    await sheet.getByRole("button", { name: t.rights.contest }).click();
+    await sheet.getByRole("textbox", { name: t.rights.reasonLabel }).fill("This is not my record");
+    await sheet.getByRole("button", { name: t.rights.getCode }).click();
+    const status = await sheet.getByRole("status").innerText();
+    const code = status.match(/\d{6}/)![0];
+    await sheet.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
+    await sheet.getByRole("button", { name: t.rights.submit }).click();
+    const list = sheet.getByRole("region", { name: t.rights.listHead });
+    await expect(list).toContainText(t.rights.held);
+    await expect(list).toContainText(t.rights.receipt);
+    await expectNoSeriousAxe(page);
+
+    await page.reload();
+    await page.getByRole("button", { name: t.notice.rights }).click();
+    const reopened = page.getByRole("dialog", { name: t.notice.rights }).getByRole("region", { name: t.rights.listHead });
+    await expect(reopened).toContainText(t.rights.pending.split("{due}")[0].trim());
+  });
+}
+
+test("rights: an explanation request returns this case's provenance; a wrong code records nothing", async ({ page }) => {
+  await open(page, "notice", "en");
+  await page.getByRole("button", { name: "Your rights" }).click();
+  const sheet = page.getByRole("dialog", { name: "Your rights" });
+  await sheet.getByRole("button", { name: "Ask for a clearer explanation" }).click();
+  await sheet.getByRole("button", { name: "Get a one-time code" }).click();
+  await sheet.getByRole("textbox", { name: "One-time code" }).fill("000000");
+  await sheet.getByRole("button", { name: "Send request" }).click();
+  await expect(sheet.getByRole("alert")).toHaveText(DICTS.en.rights.failed);
+  const code = (await sheet.getByRole("status").innerText()).match(/\d{6}/)![0];
+  await sheet.getByRole("textbox", { name: "One-time code" }).fill(code);
+  await sheet.getByRole("button", { name: "Send request" }).click();
+  const explanation = sheet.getByRole("region", { name: "How this decision was made" });
+  await expect(explanation).toContainText("ahs/DiagnosticReport/COLO-1");
+  await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
+});

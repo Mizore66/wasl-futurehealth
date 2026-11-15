@@ -62,6 +62,9 @@ func parseAPIOrigins(config string) (map[string]bool, error) {
 	return out, nil
 }
 
+// patientRoutes authenticate with a case-bound patient link, never a staff token or browser CORS grant.
+var patientRoutes = map[string]bool{"/api/patient/journey": true, "/api/patient/verification": true, "/api/patient/requests": true}
+
 func apiReadAction(path string) string {
 	if strings.HasPrefix(path, "/api/cases/") && (strings.HasSuffix(path, "/audit") || strings.HasSuffix(path, "/export")) {
 		return ActReadAudit
@@ -73,7 +76,7 @@ func apiReadAction(path string) string {
 // Preflight carries no credentials or case data and is handled by the downstream CORS policy.
 func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/patient/journey" || !strings.HasPrefix(r.URL.Path, "/api/") || r.Method == http.MethodOptions {
+		if patientRoutes[r.URL.Path] || !strings.HasPrefix(r.URL.Path, "/api/") || r.Method == http.MethodOptions {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -87,7 +90,7 @@ func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
 
 func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/patient/journey" || !strings.HasPrefix(r.URL.Path, "/api/") {
+		if patientRoutes[r.URL.Path] || !strings.HasPrefix(r.URL.Path, "/api/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -126,7 +129,7 @@ func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Han
 
 func corsWithOrigins(h http.Handler, origins map[string]bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/patient/journey" {
+		if patientRoutes[r.URL.Path] {
 			// The Next.js server proxies patient requests. No browser origin is
 			// granted direct CORS access to this credentialed endpoint.
 			h.ServeHTTP(w, r)
@@ -168,6 +171,8 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/patient/journey", s.patientJourney)
+	mux.HandleFunc("/api/patient/verification", s.patientVerification)
+	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)

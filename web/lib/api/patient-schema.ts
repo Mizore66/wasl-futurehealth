@@ -100,3 +100,48 @@ export type PatientError = z.infer<typeof PatientError>;
 export type PatientMutation = z.input<typeof PatientMutation>;
 export type PatientMutationKind = PatientMutation["kind"];
 export type PatientMutationData<K extends PatientMutationKind> = Extract<PatientMutation, { kind: K }>["data"];
+
+/** One explanation request or contest as the patient sees it (pipeline/api_patient_request.go patientRequestRowLocked). */
+export const PatientRightsRequest = z.looseObject({
+  receipt: z.string().min(1),
+  kind: z.enum(["explanation_requested", "contest_submitted"]),
+  decision: z.string(),
+  submitted_at: z.string(),
+  reason: z.string(),
+  status: z.enum(["answered", "open", "resolved"]),
+  owner: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  resolved_at: z.string().optional(),
+  closure_held: z.boolean().optional(),
+});
+export const PatientRightsList = z.looseObject({ requests: z.array(PatientRightsRequest), current_decision: z.string() });
+/** The case's own provenance, returned only after a verified explanation request. */
+export const PatientExplanation = z.looseObject({
+  decision: z.string(),
+  state: z.string(),
+  closed: z.boolean(),
+  closing_report: z.string(),
+  matched_records: z.array(z.strictObject({ provider: z.string(), role: z.string() })),
+  closure_held: z.boolean(),
+});
+export const PatientRightsReceipt = z.looseObject({
+  request: PatientRightsRequest,
+  replayed: z.boolean(),
+  explanation: PatientExplanation.optional(),
+});
+export const PatientVerification = z.looseObject({ delivery: z.literal("simulated"), code: z.string().regex(/^\d{6}$/), expires_at: z.string() });
+export const PatientRightsSubmission = z.strictObject({
+  kind: z.enum(["explanation_requested", "contest_submitted"]),
+  request_id: z.uuid(),
+  otp: z.string().max(6),
+  decision: z.string().min(1).max(128),
+  reason: z.string().max(500),
+});
+
+export type PatientRightsRequest = z.infer<typeof PatientRightsRequest>;
+export type PatientRightsList = z.infer<typeof PatientRightsList>;
+export type PatientRightsReceipt = z.infer<typeof PatientRightsReceipt>;
+export type PatientExplanation = z.infer<typeof PatientExplanation>;
+export type PatientRightsSubmission = z.infer<typeof PatientRightsSubmission>;

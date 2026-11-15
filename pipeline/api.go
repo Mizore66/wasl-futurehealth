@@ -60,6 +60,7 @@ type apiCase struct {
 	Fixture   string           `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	ov        caseOverlay      // coordinator actions replayed from the ledger; never merged into the canonical fields above
 	patient   patientCaseState // patient-link actions; separate from coordinator, consent and booking heads
+	requests  []*patientRequest // patient explanation requests and contests, in ledger order
 	last      *Decision        // full last decision (detail view)
 	decisions []*Decision
 }
@@ -94,12 +95,15 @@ type apiServer struct {
 	ledgerErr       string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine      func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 	patientRequests map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
+	patientOTPs     map[string]patientOTP                      // link id -> simulated one-time code; memory only, never in the ledger
 }
 
 func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/patient/journey", s.patientJourney)
+	mux.HandleFunc("/api/patient/verification", s.patientVerification)
+	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -683,6 +687,9 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	if c.patient.Seq > 0 {
 		m["api_patient"] = s.patientViewLocked(c, false)
 	}
+	if s.patientContestHoldLocked(c) {
+		m["closed"], m["canonical_closed"], m["closure_hold"] = false, c.Closed, "patient_contest"
+	}
 	s.mu.Unlock()
 	return m
 }
@@ -698,7 +705,7 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", c.Owner) && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
-			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&
+			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(s.servedClosed(c))) &&
 			(q.Get("fixture") == "" || c.Fixture != "") && (q.Get("q") == "" || strings.Contains(c.ID, q.Get("q")))
 	}
 	ids := append([]string{}, s.order...)
@@ -733,7 +740,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -761,6 +768,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	case sub == "actions" && r.Method == http.MethodPost:
 		s.caseAction(w, r, c)
+	case sub == "patient-contest" && r.Method == http.MethodPost:
+		s.casePatientContest(w, r, c)
 	case sub == "actions":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
@@ -1728,6 +1737,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["type"] == patientEventType {
 		if err := s.replayPatientEvent(ev); err != nil {
 			return fmt.Errorf("patient journey: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == patientRequestEventType {
+		if err := s.replayPatientRequest(ev); err != nil {
+			return fmt.Errorf("patient request: %v", err)
 		}
 		return nil
 	}

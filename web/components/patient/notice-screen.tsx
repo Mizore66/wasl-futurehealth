@@ -1,6 +1,7 @@
 import { BottomSheet } from "./bottom-sheet";
 import { DICTS, type Lang } from "./i18n";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
+import { RightsRequests } from "./rights-requests";
 
 export function NoticeScreen({ lang }: { lang: Lang }) {
   const t = DICTS[lang];
@@ -65,6 +66,7 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
             ))}
           </ul>
           <p className="m-0 mt-4 text-[14px] leading-[1.8] text-muted">{n.rightsNote}</p>
+          <RightsRequests lang={lang} />
         </BottomSheet>
       </main>
       <CallBar label={t.call} />

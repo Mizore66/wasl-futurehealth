@@ -318,6 +318,20 @@ export const ReviewLedger = z.looseObject({
 });
 
 /** Patient-link self-service projection. Summary rows omit timestamps/event ids; detail includes the full projection. */
+export const PatientRightsRequestStaff = z.looseObject({
+  receipt: z.string(),
+  kind: z.enum(["explanation_requested", "contest_submitted"]),
+  decision: z.string(),
+  submitted_at: z.string(),
+  status: z.enum(["answered", "open", "resolved"]),
+  owner: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  closure_held: z.boolean().optional(),
+});
 export const CasePatient = z.looseObject({
   schema: z.literal("wasl-patient-journey/1"),
   head: z.string(),
@@ -874,6 +888,8 @@ export const CaseDetail = withMeta({
   api_overlay: ApiOverlay.optional(),
   /** Separate patient-link projection; never merged into canonical timeline or booking. */
   api_patient: CasePatient.optional(),
+  /** Patient explanation requests and contests (pipeline/api_patient_request.go); separate from staff undo/contest. */
+  patient_requests: z.array(PatientRightsRequestStaff).optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),

@@ -69,6 +69,7 @@ type patientCaseState struct {
 
 type patientRequestRecord struct {
 	Fingerprint string
+	Receipt     string
 }
 
 type patientOffer struct {

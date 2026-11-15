@@ -22,7 +22,17 @@ type Journey = {
   preparation: { items: { item_id: string; completed: boolean; updated_at: string; event: string }[]; completed: number; total: 2 };
   last_action_at: string;
 };
-type Link = { token: string; expires: number; journey: Journey; requests: Map<string, string>; bodies: unknown[]; failNext?: "empty201" | "500" | "network" };
+type RightsRow = { receipt: string; kind: string; decision: string; submitted_at: string; reason: string; status: string; owner?: string; due_at?: string; overdue?: boolean; closure_held?: boolean };
+type Link = {
+  token: string;
+  expires: number;
+  journey: Journey;
+  requests: Map<string, string>;
+  bodies: unknown[];
+  failNext?: "empty201" | "500" | "network";
+  otp?: string;
+  rights: RightsRow[];
+};
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
@@ -32,6 +42,7 @@ function fresh(token: string, expires: number): Link {
     expires,
     requests: new Map(),
     bodies: [],
+    rights: [],
     journey: {
       schema: "wasl-patient-journey/1",
       head: hash(`canonical:${token}`),
@@ -91,6 +102,29 @@ async function body(req: IncomingMessage): Promise<string> {
   return raw;
 }
 
+/** Mirrors pipeline/api_patient_request.go: a simulated code shown to the caller, consumed once by a case-bound request. */
+async function rights(req: IncomingMessage, res: ServerResponse, path: string) {
+  const link = authorized(req);
+  if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
+  const decision = link.journey.head;
+  if (path === "/api/patient/verification") {
+    link.otp = String(100000 + Math.floor(Math.random() * 900000));
+    return send(res, 201, { delivery: "simulated", code: link.otp, expires_at: new Date(Date.now() + 600_000).toISOString() });
+  }
+  if (req.method === "GET") return send(res, 200, { meta: {}, requests: link.rights, current_decision: decision });
+  const input = JSON.parse(await body(req)) as { kind: string; otp: string; reason: string; decision: string };
+  if (!link.otp || input.otp !== link.otp) return send(res, 403, { error: "a valid one-time code for this link is required" });
+  link.otp = undefined;
+  const at = new Date().toISOString();
+  const row: RightsRow = { receipt: hash(`${link.token}:${randomUUID()}`), kind: input.kind, decision: input.decision, submitted_at: at, reason: input.reason, status: "answered" };
+  if (input.kind === "contest_submitted") Object.assign(row, { status: "open", owner: "senior_clinician", due_at: "2026-10-08T08:00:00Z", overdue: false, closure_held: true });
+  link.rights.push(row);
+  const explanation = input.kind === "explanation_requested"
+    ? { decision, state: "closed_normal", closed: true, closing_report: "ahs/DiagnosticReport/COLO-1", matched_records: [{ provider: "ahs", role: "referral" }], closure_held: false }
+    : undefined;
+  return send(res, 201, { meta: {}, request: row, replayed: false, explanation });
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
   if (url.pathname === "/__health") return send(res, 200, { ok: true });
@@ -132,6 +166,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     link.journey.seq += 1;
     return send(res, 200, { head: link.journey.head });
   }
+  if (url.pathname === "/api/patient/verification" || url.pathname === "/api/patient/requests") return rights(req, res, url.pathname);
   if (url.pathname !== "/api/patient/journey") return send(res, 404, { error: "not found" });
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });

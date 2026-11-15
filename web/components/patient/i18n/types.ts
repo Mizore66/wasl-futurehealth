@@ -87,4 +87,30 @@ export interface PatientDict {
     warn: string;
     prep: readonly [string, string];
   };
+  /** Explanation and contest requests. `{code}` and `{due}` are replaced. */
+  rights: {
+    explain: string;
+    contest: string;
+    reasonLabel: string;
+    reasonRequired: string;
+    getCode: string;
+    codeShown: string;
+    codeLabel: string;
+    submit: string;
+    sending: string;
+    failed: string;
+    listHead: string;
+    receipt: string;
+    answered: string;
+    pending: string;
+    overdue: string;
+    upheld: string;
+    revised: string;
+    held: string;
+    explanationHead: string;
+    matched: string;
+    report: string;
+    state: string;
+    none: string;
+  };
 }
