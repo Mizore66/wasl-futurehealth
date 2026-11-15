@@ -246,6 +246,69 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 	t.Logf("canonical synthetic controls: inputs=%s out_log=%s cases=%s; genuine signatures verified; held stays inadequate", sha(canon(inputs)), sha(raw.Bytes()), sha(canon(exposed)))
 }
 
+// The complete accepted-main to PR184 api.go delta: the documented owner query parameter, the effective-owner
+// predicate inside getCases, and the effectiveOwner helper. Each edit must appear exactly once.
+var referralOwnerDelta = [][2]string{
+	{"&owner=...&unowned=true&consent=", "&owner=...&consent="},
+	{"\t\towner := s.effectiveOwner(c)\n\t\teq := func", "\t\teq := func"},
+	{`eq("owner", owner) && (q.Get("unowned") != "true" || owner == "") && `, `eq("owner", c.Owner) && `},
+	{"// effectiveOwner is the saved coordinator owner when one exists, else the canonical owner.\nfunc (s *apiServer) effectiveOwner(c *apiCase) string {\n\ts.mu.Lock()\n\tdefer s.mu.Unlock()\n\tif c.ov.owner != \"\" {\n\t\treturn c.ov.owner\n\t}\n\treturn c.Owner\n}\n\n", ""},
+}
+
+// ownerDeltaOnly reports whether reversing the reviewed owner edits turns src into exactly the accepted api.go.
+func ownerDeltaOnly(src []byte, acceptedSHA string) bool {
+	s := string(src)
+	for _, e := range referralOwnerDelta {
+		if strings.Count(s, e[0]) != 1 {
+			return false
+		}
+		s = strings.Replace(s, e[0], e[1], 1)
+	}
+	return sha([]byte(s)) == acceptedSHA
+}
+
+// Keep the reviewed owner's four-edit transform and all adverse mutation controls
+// bound to their immutable source witness, not a whitelist for today's whole API.
+// Current behavior is exercised by the real API owner/filter/paging/reload tests.
+// Later unrelated API changes must not invalidate historical generation evidence.
+func TestReferralOwnerDeltaIsNarrow(t *testing.T) {
+	const acceptedAPI = "77abf1430a4e19631d323bf5e5650e53e7635d8537d351249cf68938f2ac818c"
+	const reviewedOwnerAPI = "93a64beca3ac87d8dba1f7faf8c9aaf704adff5385c30df31a742616dfc12272"
+	api, err := os.ReadFile(filepath.Join("testdata", "referral-owner-reviewed-api-1955.go.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha(api) != reviewedOwnerAPI || !ownerDeltaOnly(api, acceptedAPI) {
+		t.Fatal("reviewed owner source witness or its narrow accepted-main delta changed")
+	}
+	mutations := map[string]func(string) string{
+		"unrelated producer line": func(s string) string {
+			return strings.Replace(s, "func (s *apiServer) getCases(", "var _ = 1\nfunc (s *apiServer) getCases(", 1)
+		},
+		"closed predicate dropped": func(s string) string {
+			return strings.Replace(s, `(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&`, "", 1)
+		},
+		"inactive guard dropped": func(s string) string { return strings.Replace(s, `q.Get("include_inactive") != "true"`, `false`, 1) },
+		"helper body changed": func(s string) string {
+			return strings.Replace(s, "return c.ov.owner\n\t}\n\treturn c.Owner", "return c.Owner\n\t}\n\treturn c.Owner", 1)
+		},
+		"extra predicate": func(s string) string {
+			return strings.Replace(s, `eq("dropoff", c.Dropoff)`, `eq("dropoff", c.Dropoff) && c.Consent != "x"`, 1)
+		},
+		"reviewed edit missing":    func(s string) string { return strings.Replace(s, "&unowned=true", "", 1) },
+		"reviewed edit duplicated": func(s string) string { return s + "\n// &owner=...&unowned=true&consent=\n" },
+	}
+	for name, mutate := range mutations {
+		m := mutate(string(api))
+		if m == string(api) {
+			t.Fatalf("%s: mutation did not apply", name)
+		}
+		if ownerDeltaOnly([]byte(m), acceptedAPI) {
+			t.Fatalf("%s: unrelated api.go change was accepted", name)
+		}
+	}
+}
+
 func referralGenerationRecordIntact(record, witness []byte) bool {
 	return sha(record) == "9b7616a9a44e8cd65f9f17325255b301cc9a8d1f37e46d5ea2b4c7fb9d396200" &&
 		sha(witness) == "a35eb7de2c08d64683e7e84520795cc3ad0a913826a4d5d073df2fd5bacbce10"

@@ -1,4 +1,5 @@
 import type { CaseSummary, Programme } from "@/lib/api/schema";
+import { effectiveOwner } from "@/lib/api/owner";
 import { matches } from "@/lib/api/source";
 import { toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
 import { ownerLabel, PROGRAMME_NAMES, providerLabel } from "@/components/worklist/model";
@@ -33,7 +34,7 @@ export const REVIEW_LABELS: Record<ReviewStatus, string> = {
   signed: "Review signed",
 };
 
-const valueOf = (c: CaseSummary, k: FacetKey): string => (k === "owner" ? c.owner || UNOWNED : c[k]);
+const valueOf = (c: CaseSummary, k: FacetKey): string => (k === "owner" ? effectiveOwner(c) || UNOWNED : c[k]);
 
 function labelOf(k: FacetKey, v: string): string {
   switch (k) {
