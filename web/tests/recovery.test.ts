@@ -57,11 +57,25 @@ describe("recovery API contracts", () => {
 });
 
 describe("recovery case projection", () => {
-  it("moves a persisted simulated backfill to Waiting after reload", () => {
-    const c = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((item) => !item.closed)!;
-    const item = workItem({ ...c, recovery: { source_releases: [], backfill: { slot_id: "rel_aaaaaaaaaaaaaaaaaaaaaaaa", status: "simulated_backfill_confirmed", day: 40, event: "ledger-hash", outreach_status: "none" } } }, 120, false);
-    expect(item.view).toBe("waiting");
-    expect(item.status).toBe("Simulated slot confirmed");
-    expect(c.state).not.toBe("closed");
+  const open = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((item) => !item.closed)!;
+  const project = (outreach_status: "none" | "recorded_not_dispatched" | "cancelled_consent", consent: "granted" | "denied") =>
+    workItem({
+      ...open, consent, contact_state: undefined, api_patient: undefined, api_overlay: undefined,
+      recovery: { source_releases: [], backfill: { slot_id: "rel_aaaaaaaaaaaaaaaaaaaaaaaa", status: "simulated_backfill_confirmed", day: 40, event: "ledger-hash", outreach_status } },
+    }, 120, false);
+
+  it.each([
+    ["none", "granted", "call", "Simulated slot confirmed · no outreach recorded", "Contact the patient about the simulated recovery slot on day 40"],
+    ["none", "denied", "waiting", "Simulated slot confirmed · no outreach recorded", "Patient contact is not permitted; the simulated slot has not been offered"],
+    ["recorded_not_dispatched", "granted", "waiting", "Simulated slot confirmed · outreach recorded, not sent", "Wait for the simulated appointment day"],
+    ["cancelled_consent", "granted", "waiting", "Simulated slot confirmed · outreach cancelled after consent withdrawal", "Patient contact is not permitted; the simulated slot has not been offered"],
+  ] as const)("projects outreach %s with consent %s after reload", (outreach, consent, view, status, next) => {
+    const item = project(outreach, consent);
+    expect([item.view, item.status, item.next]).toEqual([view, status, next]);
+    expect(open.state).not.toBe("closed");
+  });
+
+  it("never tells the coordinator to wait when no outreach was recorded for a contactable patient", () => {
+    expect(project("none", "granted").next).not.toMatch(/wait/i);
   });
 });
