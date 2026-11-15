@@ -136,7 +136,13 @@ export const DrFinding = z.looseObject({
         "assumed_followup_91d",
         "assumed_treated_28d",
       ]),
+      from_day: z.number(),
+      interval_days: z.number(),
       due_day: z.number(),
+      seen: z.boolean().optional(),
+      seen_day: z.number().optional(),
+      seen_report: z.string().optional(),
+      recall_overdue: z.boolean().optional(),
     })
     .optional(),
 });
@@ -234,6 +240,44 @@ export const OverlayContact = z.looseObject({
   channel: z.string().default(""),
   actor: z.string().optional(),
   note: z.string().optional(),
+});
+/**
+ * The clinician's informed-refusal disposition (`decline_disposition`, clinician roles only). `decline_event` is the
+ * contact-outcome event of the decline it answers. Overlay metadata: it never records a procedure or a canonical closure.
+ */
+export const OverlayDisposition = z.looseObject({
+  at: z.string(),
+  event: z.string().default(""),
+  role: z.string().default(""),
+  decline_event: z.string(),
+  plan: z.enum(["follow_up", "closed_declined"]),
+  reason: z.string().default(""),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
+  fit_reoffer: z.string().optional(),
+  actor: z.string().optional(),
+  counselling: z.string().optional(),
+  safety_net: z.string().optional(),
+});
+/**
+ * A report that the procedure was done at another provider (`completed_elsewhere`) and its owned record retrieval.
+ * `pending` suspends chase and booking; a `retrieval_outcome` ends it as `resumed`. Overlay metadata only: it never
+ * records a procedure, an appointment or a canonical closure, which only retrieved evidence through the pipeline can.
+ */
+export const RETRIEVAL_OUTCOMES = ["not_found", "not_matching", "non_closing"] as const;
+export const OverlayReconciliation = z.looseObject({
+  status: z.enum(["pending", "resumed"]),
+  at: z.string(),
+  event: z.string().default(""),
+  procedure: z.string(),
+  performed: z.string(),
+  provider: z.string(),
+  source: z.string(),
+  report_ref: z.string().optional(),
+  retrieval_owner: z.string(),
+  retrieval_due: z.string(),
+  actor: z.string().optional(),
+  retrieval: z.looseObject({ at: z.string(), event: z.string().default(""), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().optional() }).optional(),
 });
 export const OverlayNote = z.looseObject({ at: z.string(), event: z.string().default(""), actor: z.string().default(""), text: z.string() });
 
@@ -371,6 +415,8 @@ export const ApiOverlay = z.looseObject({
   snooze: z.looseObject({ until: z.string(), reason: z.string().optional(), at: z.string().optional(), actor: z.string().optional() }).optional(),
   last_contact: OverlayContact.optional(),
   last_appointment_agreement: z.looseObject({ at: z.string(), event: z.string().default("") }).optional(),
+  decline_disposition: OverlayDisposition.optional(),
+  reconciliation: OverlayReconciliation.optional(),
   booking: BookingSummary.optional(),
   no_answer_streak: z.number().default(0),
   contact_outcomes: z.array(OverlayContact).optional(),
@@ -706,7 +752,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "referral_response", "referrer_response"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -741,6 +787,12 @@ export const CoordinatorData = z.looseObject({
   destination: z.string().optional(),
   supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
   plan: z.string().optional(),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
+  procedure: z.string().optional(),
+  provider: z.string().optional(),
+  retrieval_owner: z.string().optional(),
+  retrieval_due: z.string().optional(),
   details: z.string().optional(),
   review_date: z.string().optional(),
   hold: z.string().optional(),
@@ -1443,6 +1495,17 @@ export const CaseAction = z.discriminatedUnion("action", [
     note: z.string().max(1000).optional(),
   }),
   z.object({ action: z.literal("note"), text: z.string().min(1).max(1000) }),
+  z.object({
+    action: z.literal("completed_elsewhere"),
+    procedure: z.string().min(1).max(64),
+    performed: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/),
+    provider: z.string().min(1).max(120),
+    source: z.enum(["patient", "carer", "other_provider"]),
+    report_ref: z.string().min(1).max(64).optional(),
+    retrieval_owner: z.string().min(1).max(64),
+    retrieval_due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  z.object({ action: z.literal("retrieval_outcome"), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().min(1).max(1000).optional() }),
   ...BookingAction.options,
 ]);
 export const ActionResponse = withMeta({

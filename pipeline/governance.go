@@ -47,8 +47,9 @@ const (
 	// ActRespondReferral: a receiving-unit clinician's accept / conditional accept / return of a referral. Unit
 	// membership is checked separately against server configuration.
 	ActRespondReferral = "respond_referral"
-	// ActRecordDisposition: a clinician's plan for a programme hold that names a clinician as the decider. It records a
-	// plan, owner and review date; it never completes a procedure, closes a loop or signs evidence.
+	// ActRecordDisposition: a clinician's disposition, either a plan for a programme hold that names a clinician as the
+	// decider (clinician_disposition) or the informed-refusal answer to a coordinator-recorded decline
+	// (decline_disposition). It is overlay metadata: it never completes a procedure, closes a loop or signs evidence.
 	ActRecordDisposition = "record_clinician_disposition"
 )
 

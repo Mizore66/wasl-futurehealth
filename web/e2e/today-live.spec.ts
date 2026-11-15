@@ -219,7 +219,7 @@ test.describe("Today, live mode against a mock API", () => {
   });
 
   test("a saved Reached outcome keeps its follow-up choices after a reload and after switching patients (issue #131)", async ({ page }) => {
-    const choices = ["Appointment agreed", "Call back on…", "Declined"];
+    const choices = ["Appointment agreed", "Call back on…", "Done elsewhere…", "Declined"];
     const outcomes = (id: string) => ledger.get(id)?.map((e) => e.data.outcome);
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });

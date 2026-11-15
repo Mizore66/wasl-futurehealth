@@ -23,11 +23,14 @@ export function BookingControls({
   caseId,
   initial,
   live,
+  retrievalPending = false,
   onProjection,
 }: {
   caseId: string;
   initial: BookingProjection;
   live: boolean;
+  /** A completed-elsewhere record retrieval recorded after `initial` was read. */
+  retrievalPending?: boolean;
   onProjection?: (projection: BookingProjection) => void;
 }) {
   const [local, setLocal] = useState<{ base: BookingProjection; value: BookingProjection } | null>(null);
@@ -54,8 +57,9 @@ export function BookingControls({
   const eligibleCase = current.case.consent === "granted" && !current.case.closed && OPEN.has(current.case.state) && !notReady;
   const ledgerReady = overlay.ledger_status === "ok";
   const writesReady = live && locked === false && ledgerReady && !pending;
+  const reconciling = retrievalPending || overlay.reconciliation?.status === "pending";
   const backfill = current.case.recovery?.backfill;
-  const reserveReady = writesReady && !backfill && hasCatalogue && eligibleCase && candidates.length > 0;
+  const reserveReady = writesReady && !backfill && hasCatalogue && eligibleCase && !reconciling && candidates.length > 0;
   const acceptReady = reserveReady && booking.reservable === true && suggested?.availability === "available" && !!suggested.version;
   const chooseReady = reserveReady && available.length > 0;
   const cancelReady = writesReady && active && !!summary?.reservation_id && !!summary.reservation_version;
@@ -65,6 +69,7 @@ export function BookingControls({
   else if (locked) disabledReason = "Reload this case before another booking action.";
   else if (!ledgerReady) disabledReason = "The case ledger is invalid, so booking writes are disabled.";
   else if (!hasCatalogue && !active) disabledReason = "This older booking document has no versioned slot catalogue. Regenerate it to enable reservations.";
+  else if (reconciling) disabledReason = "A record retrieval for a procedure done elsewhere is pending. Record its outcome before booking.";
   else if (notReady) disabledReason = `Not clinically ready: ${booking.readiness?.reason ?? "a referral or repeat disposition is unresolved"}.`;
   else if (!eligibleCase && !active) disabledReason = "A simulated reservation needs an open booking-eligible case with canonical contact permission granted.";
 
