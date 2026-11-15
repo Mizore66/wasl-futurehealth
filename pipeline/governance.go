@@ -44,8 +44,9 @@ const (
 	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
 	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
 	ActCoordinateCase = "coordinate_case"
-	// ActRecordDisposition: a clinician's plan for a programme hold that names a clinician as the decider. It records a
-	// plan, owner and review date; it never completes a procedure, closes a loop or signs evidence.
+	// ActRecordDisposition: a clinician's disposition, either a plan for a programme hold that names a clinician as the
+	// decider (clinician_disposition) or the informed-refusal answer to a coordinator-recorded decline
+	// (decline_disposition). It is overlay metadata: it never completes a procedure, closes a loop or signs evidence.
 	ActRecordDisposition = "record_clinician_disposition"
 )
 
