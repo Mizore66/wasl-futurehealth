@@ -208,3 +208,25 @@ func TestRecoveryConcurrentCancelAndConfirm(t *testing.T) {
 		t.Fatalf("replay: %s", reloaded.ledgerErr)
 	}
 }
+
+func TestRecoveryCancelOnStaleSlotDoesNotReopenCapacity(t *testing.T) {
+	run, ids := recoveryTestRun(t, 2)
+	s, srv := recoveryTestServer(t, run)
+	slot := recoveryTestSlot(s, 1)
+	recoveryConfirmFor(t, s, srv, slot, ids[2], "recovery-stale-fill-0001")
+	s.recovery.Input.AsOfDay = slot.Day
+	cancel := recoveryCancelFor(s, slot, ids[2], "recovery-stale-cancel-01", "Source capacity no longer released")
+	if code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/cancel", RoleCoordinator, cancel); code != 201 {
+		t.Fatalf("cancel on stale slot: %d %v", code, body)
+	}
+	if status := s.recoverySlotSummaryLocked(slot)["status"]; status != "stale" {
+		t.Fatalf("released stale slot projects as %v, want stale", status)
+	}
+	fresh := recoveryRequest(ids[3], s.recoverySlotHeadLocked(slot), s.caseHead(s.cases[ids[3]]), "recovery-stale-refill-01", false)
+	if code, body := recoveryCall(t, srv, "POST", "/api/recovery/slots/"+slot.SlotID+"/confirm", RoleCoordinator, fresh); code != 409 || body["conflict"] != "slot_stale" {
+		t.Fatalf("stale capacity became selectable after cancellation: %d %v", code, body)
+	}
+	if s.recovery.Fills[slot.SlotID] != nil {
+		t.Fatalf("stale slot was refilled: %+v", s.recovery.Fills[slot.SlotID])
+	}
+}
