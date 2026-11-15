@@ -1129,8 +1129,58 @@ var (
 		"booking_choose_slot": {"expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
 		"booking_reschedule":  {"reservation_id", "expected_reservation_version", "expected_suggestion_version", "slot_id", "expected_slot_version", "reason"},
 		"booking_cancel":      {"reservation_id", "expected_reservation_version", "reason"},
+		dispositionKind:       {"reason", "counselling", "safety_net", "plan", "follow_up_owner", "next_review", "fit_reoffer", "decline_event"},
 	}
+	refusalReasons = map[string]bool{"patient_preference": true, "procedure_anxiety": true, "logistics_or_access": true,
+		"comorbidity_or_frailty": true, "prefers_alternative_test": true, "other": true}
+	dispositionPlans = map[string]bool{"follow_up": true, "closed_declined": true}
+	fitReoffers      = map[string]bool{"offered_accepted": true, "offered_declined": true, "not_appropriate": true}
 )
+
+const dispositionKind = "clinician_disposition"
+
+// actionPermission is the RBAC action a case action kind needs; the ledger event records it as "action".
+func actionPermission(kind string) string {
+	if kind == dispositionKind {
+		return ActRecordDisposition
+	}
+	return ActCoordinateCase
+}
+
+type actionRefusal struct {
+	code     int
+	conflict string
+	msg      string
+}
+
+// pendingDecline is the hash of the latest declined contact outcome, unless a disposition already answers it.
+func (o *caseOverlay) pendingDecline() string {
+	for i := len(o.contacts) - 1; i >= 0; i-- {
+		if o.contacts[i]["outcome"] == "declined" {
+			h, _ := o.contacts[i]["event"].(string)
+			if o.disposition != nil && o.disposition["decline_event"] == h {
+				return ""
+			}
+			return h
+		}
+	}
+	return ""
+}
+
+// actionPreconditionLocked holds the case-state rules of an action, shared by the write path and ledger replay.
+func actionPreconditionLocked(c *apiCase, kind string, data map[string]interface{}) *actionRefusal {
+	if kind != dispositionKind {
+		return nil
+	}
+	pending := c.ov.pendingDecline()
+	if pending == "" || data["decline_event"] != pending {
+		return &actionRefusal{409, "decline", "a disposition must answer the case's latest patient decline, which no disposition has answered yet"}
+	}
+	if _, given := data["fit_reoffer"]; c.Programme == "crc" && !given {
+		return &actionRefusal{400, "", "fit_reoffer is required for a CRC decline (offered_accepted|offered_declined|not_appropriate)"}
+	}
+	return nil
+}
 
 // caseOverlay is the replayed coordinator state of one case (api metadata only).
 type caseOverlay struct {
@@ -1141,8 +1191,10 @@ type caseOverlay struct {
 	contacts  []map[string]interface{}
 	notes     []map[string]interface{}
 	agreement map[string]interface{}
-	booking   caseBookingState
-	lastAt    string
+	// disposition is the latest clinician disposition; its decline_event names the decline it answers.
+	disposition map[string]interface{}
+	booking     caseBookingState
+	lastAt      string
 }
 
 func (s *apiServer) caseHead(c *apiCase) string {
@@ -1253,11 +1305,58 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 		if err == nil {
 			err = text("note", maxNoteRunes, false, true)
 		}
+	case dispositionKind:
+		err = validateDisposition(in, out, text)
 	}
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// validateDisposition: informed-refusal reason, counselling and safety-net advice, and either an owned follow-up
+// review (follow_up) or an explicit non-procedure end state (closed_declined).
+func validateDisposition(in, out map[string]interface{}, text func(k string, max int, required, multi bool) error) error {
+	for _, f := range []struct {
+		k     string
+		max   int
+		multi bool
+	}{{"reason", 32, false}, {"counselling", maxNoteRunes, true}, {"safety_net", maxNoteRunes, true}, {"plan", 32, false}} {
+		if err := text(f.k, f.max, true, f.multi); err != nil {
+			return err
+		}
+	}
+	if !refusalReasons[out["reason"].(string)] {
+		return errors.New("reason must be one of patient_preference|procedure_anxiety|logistics_or_access|comorbidity_or_frailty|prefers_alternative_test|other")
+	}
+	if !dispositionPlans[out["plan"].(string)] {
+		return errors.New("plan must be follow_up or closed_declined")
+	}
+	followUp := out["plan"] == "follow_up"
+	if err := text("follow_up_owner", maxOwnerRunes, followUp, false); err != nil {
+		return err
+	}
+	if err := text("next_review", 10, followUp, false); err != nil {
+		return err
+	}
+	if !followUp && (out["follow_up_owner"] != nil || out["next_review"] != nil) {
+		return errors.New("closed_declined takes no follow_up_owner or next_review")
+	}
+	if d, ok := out["next_review"].(string); ok {
+		if _, err := time.Parse("2006-01-02", d); err != nil {
+			return errors.New("next_review must be a YYYY-MM-DD date")
+		}
+	}
+	if err := text("fit_reoffer", 32, false, false); err != nil {
+		return err
+	}
+	if f, ok := out["fit_reoffer"].(string); ok && !fitReoffers[f] {
+		return errors.New("fit_reoffer must be one of offered_accepted|offered_declined|not_appropriate")
+	}
+	if err := text("decline_event", 64, false, false); err != nil {
+		return err
+	}
+	return nil
 }
 
 // applyOverlay projects one validated coordinator event onto the case overlay.
@@ -1281,6 +1380,9 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		}
 	case "note":
 		c.ov.notes = append(c.ov.notes, entry)
+	case dispositionKind:
+		entry["role"] = ev["role"]
+		c.ov.disposition = entry
 	}
 	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
 	c.ov.n++
@@ -1317,6 +1419,18 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 	}
 	if o.agreement != nil {
 		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
+	}
+	if d := o.disposition; d != nil {
+		summary := map[string]interface{}{}
+		for _, k := range []string{"at", "event", "role", "decline_event", "plan", "reason", "follow_up_owner", "next_review", "fit_reoffer"} {
+			if v, ok := d[k]; ok {
+				summary[k] = v
+			}
+		}
+		if full {
+			summary = d
+		}
+		m["disposition"] = summary
 	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
@@ -1553,7 +1667,7 @@ func (s *apiServer) actionErr(w http.ResponseWriter, code int, msg string, extra
 
 func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
-	if err := Authorize(role, ActCoordinateCase); err != nil {
+	if err := Authorize(role, ActCoordinateCase); err != nil && Authorize(role, ActRecordDisposition) != nil {
 		s.actionErr(w, 403, err.Error(), map[string]interface{}{"role": role, "action": ActCoordinateCase})
 		return
 	}
@@ -1585,7 +1699,12 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel", nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition", nil)
+		return
+	}
+	permission := actionPermission(kind)
+	if err := Authorize(role, permission); err != nil {
+		s.actionErr(w, 403, err.Error(), map[string]interface{}{"role": role, "action": permission})
 		return
 	}
 	expected, ok := expV.(string)
@@ -1609,6 +1728,13 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
+	if d, ok := data["next_review"].(string); ok {
+		review, _ := time.Parse("2006-01-02", d)
+		if !review.After(now) || review.After(now.Add(maxSnoozeHorizon)) {
+			s.actionErr(w, 400, "next_review must be a future date within 365 days", nil)
+			return
+		}
+	}
 
 	// decide and record under the lock, but write the response only after releasing it
 	code, body := func() (int, map[string]interface{}) {
@@ -1626,6 +1752,18 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 				return 409, map[string]interface{}{"error": "contact outcomes need canonical contact permission granted and no demo denial or opt-out", "conflict": "consent", "consent": guard.Canonical, "contact_blocked": guard.Blocked}
 			}
 		}
+		if _, named := data["decline_event"]; kind == dispositionKind && !named {
+			if p := c.ov.pendingDecline(); p != "" {
+				data["decline_event"] = p
+			}
+		}
+		if refusal := actionPreconditionLocked(c, kind, data); refusal != nil {
+			body := map[string]interface{}{"error": refusal.msg}
+			if refusal.conflict != "" {
+				body["conflict"] = refusal.conflict
+			}
+			return refusal.code, body
+		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
 			if failure := s.bookingReadinessGateLocked(c, kind); failure != nil {
@@ -1641,7 +1779,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			}
 		}
 		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
-			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
+			"action": permission, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
 		if bookingAcquisition(kind) {
 			ev["booking_policy"] = bookingPolicyReadiness1 // server-owned, included BEFORE append hashing
 		}
@@ -1784,8 +1922,8 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	role, _ := ev["role"].(string)
 	actor, _ := ev["actor"].(string)
-	if !rbac[role][ActCoordinateCase] || ev["action"] != ActCoordinateCase {
-		return errors.New("coordinator event with a role that lacks coordinate_case")
+	if permission := actionPermission(kind); !rbac[role][permission] || ev["action"] != permission {
+		return fmt.Errorf("case action %q with a role that lacks %s", kind, permission)
 	}
 	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
 		return errors.New("bad actor")
@@ -1813,6 +1951,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	if kind == "contact_outcome" && !s.contactGuardLocked(c).Allowed {
 		return errors.New("contact outcome without granted canonical consent or after demo denial/opt-out")
+	}
+	if refusal := actionPreconditionLocked(c, kind, norm); refusal != nil {
+		return errors.New(refusal.msg)
 	}
 	var booking *bookingTransition
 	if bookingActionName(kind) {

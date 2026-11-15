@@ -231,6 +231,24 @@ export const OverlayContact = z.looseObject({
   actor: z.string().optional(),
   note: z.string().optional(),
 });
+/**
+ * The clinician's informed-refusal disposition (`clinician_disposition`, role `clinician` only). `decline_event` is the
+ * contact-outcome event of the decline it answers. Overlay metadata: it never records a procedure or a canonical closure.
+ */
+export const OverlayDisposition = z.looseObject({
+  at: z.string(),
+  event: z.string().default(""),
+  role: z.string().default(""),
+  decline_event: z.string(),
+  plan: z.enum(["follow_up", "closed_declined"]),
+  reason: z.string().default(""),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
+  fit_reoffer: z.string().optional(),
+  actor: z.string().optional(),
+  counselling: z.string().optional(),
+  safety_net: z.string().optional(),
+});
 export const OverlayNote = z.looseObject({ at: z.string(), event: z.string().default(""), actor: z.string().default(""), text: z.string() });
 
 export const BookingSummarySlot = z.looseObject({
@@ -302,6 +320,7 @@ export const ApiOverlay = z.looseObject({
   snooze: z.looseObject({ until: z.string(), reason: z.string().optional(), at: z.string().optional(), actor: z.string().optional() }).optional(),
   last_contact: OverlayContact.optional(),
   last_appointment_agreement: z.looseObject({ at: z.string(), event: z.string().default("") }).optional(),
+  disposition: OverlayDisposition.optional(),
   booking: BookingSummary.optional(),
   no_answer_streak: z.number().default(0),
   contact_outcomes: z.array(OverlayContact).optional(),
@@ -608,7 +627,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -635,6 +654,9 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  plan: z.string().optional(),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
 });
 
 const coordinatorShape = {

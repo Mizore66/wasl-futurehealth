@@ -285,7 +285,7 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string } }
+  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; follow_up_owner?: string; next_review?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -320,6 +320,16 @@ export function ledgerWordsWithHistory(e: LedgerLike, prior: LedgerLike[]): stri
   return `Simulated booking action: ${plain(e.kind)}`;
 }
 
+/**
+ * A clinician disposition of a patient decline (`clinician_disposition`): the owned follow-up review, or the explicit
+ * non-procedure end state. Never worded as a completed procedure.
+ */
+export function dispositionWords(d: { plan?: string; follow_up_owner?: string; next_review?: string }): { status: string; next: string } {
+  if (d.plan === "closed_declined") return { status: "Declined · closed without the procedure", next: "GP documented informed refusal; no procedure" };
+  const on = d.next_review ?? "a date not recorded";
+  return { status: `Declined · GP review ${on}`, next: `${d.follow_up_owner ?? "The GP"} reviews on ${on}` };
+}
+
 /** A coordinator, compensation or unrecognised ledger event as a sentence, built only from fields it carries. */
 export function ledgerWords(e: LedgerLike): string {
   if (e.ledger === "coordinator") {
@@ -328,6 +338,7 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "snooze") return d.until ? `Snoozed until ${atWords(d.until)}` : "Snoozed";
     if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
     if (e.kind === "note") return "Note added";
+    if (e.kind === "clinician_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {

@@ -8,7 +8,7 @@ import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { atWords, ledgerWordsWithHistory } from "@/components/case/words";
+import { atWords, dispositionWords, ledgerWordsWithHistory } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays } from "./days";
 
 /*
@@ -202,6 +202,8 @@ export const DECLINED_STATUS = "Declined · GP to sign";
 export const DECLINED_RESERVED_NEXT = "GP to sign the decline · cancel the simulated reservation to release the slot";
 /** A decline recorded after the reservation was cancelled needs the GP's sign-off, not another booking. */
 export const DECLINED_CANCELLED_NEXT = "GP to sign the decline";
+/** A signed decline with a reservation still held: the GP prompt is gone, the slot still needs releasing. */
+export const SIGNED_RESERVED_NEXT = "Cancel the simulated reservation to release the slot";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
@@ -233,12 +235,15 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
+  // A clinician disposition answers only the decline it names; a newer decline is unsigned again.
+  const signed = lc?.outcome === "declined" && !!ov?.disposition && ov.disposition.decline_event === lc.event ? dispositionWords(ov.disposition) : undefined;
   let sinks = false;
   let awaitingNext = false;
   if (lc) {
     if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
       view = "waiting";
-      words.status = lc.outcome === "declined" ? DECLINED_STATUS : BOOKING_NEEDED;
+      words.status = lc.outcome === "declined" ? (signed?.status ?? DECLINED_STATUS) : BOOKING_NEEDED;
+      if (signed) words.next = signed.next;
     } else if (lc.outcome === "no_answer") {
       words.status = noAnswerStatus(Math.max(1, ov!.no_answer_streak));
       sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
@@ -268,7 +273,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   if (booking?.status === "reserved") {
     awaitingNext = false;
     if (declinedAfterBooking) {
-      words.next = DECLINED_RESERVED_NEXT;
+      words.next = signed ? SIGNED_RESERVED_NEXT : DECLINED_RESERVED_NEXT;
     } else {
       view = "waiting";
       words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
@@ -276,7 +281,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     }
   } else if (booking?.status === "cancelled" && declinedAfterBooking) {
     awaitingNext = false;
-    words.next = DECLINED_CANCELLED_NEXT;
+    words.next = signed?.next ?? DECLINED_CANCELLED_NEXT;
   } else if (booking?.status === "cancelled") {
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
