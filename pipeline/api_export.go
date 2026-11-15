@@ -79,7 +79,8 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	}
 	items := nz(s.queue[c.ID])
 	current := c.last
-	if s.imageVerdictWithheld(c, viewer) {
+	imageQuestions := s.visibleImageQuestions(c, viewer)
+	if imageQuestions != nil {
 		for i, b := range ev {
 			if _, has := b["image_reader"]; has {
 				cp := make(map[string]interface{}, len(b))
@@ -94,7 +95,9 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 		items = make([]*ReviewItem, len(s.queue[c.ID]))
 		for i, it := range s.queue[c.ID] {
 			cp := *it
-			cp.Chain = withoutImageVerdict(it.Chain)
+			if !imageQuestions[it.ItemID] {
+				cp.Chain = withoutImageVerdict(it.Chain)
+			}
 			items[i] = &cp
 		}
 		if current != nil {

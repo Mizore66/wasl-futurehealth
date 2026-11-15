@@ -101,12 +101,14 @@ func itemReportKey(it *ReviewItem) string {
 // itemPhotos: the report's photos filed at the item's station, sorted by digest.
 func (s *apiServer) itemPhotos(it *ReviewItem) []ImgRef {
 	station := photoStationFor(it)
-	if station == "" {
+	if station == "" || it.ReportVersion < 0 {
 		return nil
 	}
 	var out []ImgRef
 	seen := map[string]bool{}
-	for _, ref := range s.photos[itemReportKey(it)] {
+	// Zero/one use the existing legacy replay identity; a corrected version
+	// must never borrow an older version's media through the report-only key.
+	for _, ref := range s.photos[reportVersionKey(itemReportKey(it), it.ReportVersion)] {
 		if ref.Station == station && photoDigest.MatchString(ref.Sha) && !seen[ref.Sha] {
 			seen[ref.Sha] = true
 			out = append(out, ref)
@@ -183,20 +185,36 @@ func (s *apiServer) casePhoto(w http.ResponseWriter, r *http.Request, c *apiCase
 	w.Write(b)
 }
 
-// imageVerdictWithheld: a clinician who may answer the evidence question must not see the image model's read until a
-// first read of that question is visible to them (their own, or one already revealed). Other roles are not readers.
-func (s *apiServer) imageVerdictWithheld(c *apiCase, viewer *apiPrincipal) bool {
+// visibleImageQuestions is one active-protocol visibility snapshot for this
+// viewer. A nil map preserves the existing non-reader/auditor projection. A
+// clinician gets model bytes only in the exact answered item's own chain; case
+// aggregate evidence/current chains have no exact question/source binding and
+// are conservatively withheld. No historical or unrelated read unlocks them.
+func (s *apiServer) visibleImageQuestions(c *apiCase, viewer *apiPrincipal) map[string]bool {
 	if viewer == nil || Authorize(viewer.role, ActSignEvidence) != nil {
-		return false
+		return nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	visible := map[string]bool{}
+	states := s.protoStatesLocked()
 	for _, it := range s.queue[c.ID] {
-		if st := s.rstates[reviewQuestionKey{it.ItemID, "evidence"}]; st != nil && len(st.Reads) > 0 && !concealedFrom(st, *viewer) {
-			return false
+		if !itemHasKind(it, "evidence") {
+			continue
 		}
+		models := 0
+		for _, block := range it.Chain {
+			if _, ok := block.Body["image_reader"]; ok {
+				models++
+			}
+		}
+		st := states[reviewQuestionKey{it.ItemID, "evidence"}]
+		// A multi-model chain cannot identify which model belongs to the
+		// question without the shared item/source context contract. Withhold
+		// ambiguous bytes instead of selecting a first/local-ID match.
+		visible[it.ItemID] = models == 1 && st != nil && len(st.Reads) > 0 && !concealedFrom(st, *viewer)
 	}
-	return true
+	return visible
 }
 
 func withoutImageVerdict(chain []Block) []Block {

@@ -72,7 +72,7 @@ type apiServer struct {
 	queue           map[string][]*ReviewItem // loop -> raised items
 	signoffs        map[string][]map[string]interface{}
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	photos          map[string][]ImgRef                 // provider/DiagnosticReport/id -> media references (digest + capture station)
+	photos          map[string][]ImgRef                 // provider/DiagnosticReport/id[#vN] -> filed media (digest + station)
 	pixels          *pixelStore                         // synthetic photo files by content digest; nil = no pixels available
 	ids             map[string][]map[string]string      // loop -> linked registrations
 	dashboard       map[string]interface{}
@@ -336,7 +336,7 @@ func (s *apiServer) loadTimelines() {
 			if s.photos == nil {
 				s.photos = map[string][]ImgRef{}
 			}
-			s.photos[prov+"/DiagnosticReport/"+e.ID] = e.Images
+			s.photos[reportVersionKey(prov+"/DiagnosticReport/"+e.ID, e.Version)] = e.Images
 		}
 		if e == nil || so != nil || e.PatientKey == "" {
 			continue
