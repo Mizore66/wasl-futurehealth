@@ -33,6 +33,7 @@ export const STAGES = {
   waiting_for_reviewers: { step: 7, label: "Waiting for two reviewers" },
   message_held_for_consent: { step: 7, label: "Message held until consent" },
   recorded: { step: 8, label: "Recorded in the ledger" },
+  retained: { step: 8, label: "Retired: history only" },
 } as const satisfies Record<string, { step: Step; label: string }>;
 
 export type StageKey = keyof typeof STAGES;
@@ -101,13 +102,26 @@ export function resolutionProgress(c: WithStates): string | undefined {
   return `${done} of ${states.length} ${states.length === 1 ? "question" : "questions"} resolved`;
 }
 
+/** Legacy review events still in force: an undone review, or one whose contest was upheld, is compensated (pipeline/api_undo.go foldUndo) and answers nothing. */
+export function effectiveReviews(c: Pick<CaseDetail, "api_reviews">) {
+  const compensated = new Set<string>();
+  const contested = new Map<string, string>();
+  for (const e of c.api_reviews) {
+    if (e.ledger !== "compensation") continue;
+    if (e.kind === "undo") compensated.add(e.target);
+    else if (e.kind === "contest") contested.set(e.hash, e.target);
+    else if (e.resolution === "upheld") compensated.add(contested.get(e.target) ?? "");
+  }
+  return c.api_reviews.flatMap((e) => (legacyReviewMayAnswer(e) && !compensated.has(e.hash) ? [e] : []));
+}
+
 /** Review items with no final answer: signed in the run, answered by a legacy event, or resolved by the protocol. */
 export function openReviewItems(c: CaseDetail) {
   // Only review events answer a review item; coordinator and undo/contest events share the ledger but carry no item.
   // Protocol reads answer nothing until the server reports a terminal state for every question of the item.
   const signed = new Set([
     ...c.signoffs.map((s) => s.item),
-    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && legacyReviewMayAnswer(r) ? [r.item] : [])),
+    ...effectiveReviews(c).map((r) => r.item),
     ...resolvedItems(c),
   ]);
   return c.review_items.filter((r) => !signed.has(r.item));
@@ -115,6 +129,7 @@ export function openReviewItems(c: CaseDetail) {
 
 /** Where a case rests now. Steps 2 and 4 are transient and appear only in the replay. */
 export function caseStage(c: CaseDetail): CaseStage {
+  if (c.case.lifecycle === "retained") return stage("retained", "inactive");
   if (c.case.closed) {
     const via = c.signoffs.length > 0 ? "closed · human_signoff" : "closed · auto";
     return stage("recorded", via);

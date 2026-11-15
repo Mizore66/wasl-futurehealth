@@ -436,7 +436,7 @@ test.describe("Programme: provider links", () => {
     const n = sampleCount({ provider: "ahs-mushrif", state: "closed" });
     expect(n).toBeGreaterThan(0);
     await expect(page.getByTestId("showing")).toHaveText(`${casesWord(n)}: provider Al Mushrif · closed`);
-    await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" })).toHaveAttribute("aria-current", "true");
+    await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" })).not.toHaveAttribute("aria-current", "true");
   });
 
   test("queue levers: aggregate direct-pathway and prep-risk counts over the open cases needing a slot, as plain text", async ({ page }) => {

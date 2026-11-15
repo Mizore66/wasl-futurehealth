@@ -5,7 +5,9 @@
       "TestAPIFixturesAndContracts",
       "TestAPIReviewRBACAndAppendOnly",
       "TestAPIBookingSupport",
-      "TestHL7RoundTripCohort"
+      "TestHL7RoundTripCohort",
+      "TestAPIIntegrityMaterializedRunCounts",
+      "TestAPIIntegrityMaterializedRunCounts/copied_materialized_run"
     ]
   },
   "allowed_skips": {

@@ -46,7 +46,7 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
         await signOutForGovernance(caseId);
         return;
       }
-      setResult({ ok: response.ok, message: response.ok ? `${response.message} Event ${response.hash.slice(0, 12)}.` : response.error });
+      setResult({ ok: response.ok, message: response.ok ? response.hash ? `${response.message} Event ${response.hash.slice(0, 12)}.` : response.message : response.error });
       if (response.ok) form.current?.reset();
     });
   }

@@ -27,7 +27,7 @@ func agentOffline(t *testing.T) *offline {
 	ReplayWorklist, ReuseLinkAnswer = true, true
 	t.Cleanup(func() { ReplayWorklist, ReuseLinkAnswer = oldW, oldR })
 	ps := []*Prep{
-		{Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: arPkA, Name: "Lamia Eddinari", Dob: "1999-07-19", Sex: "F", Day: 1, Prog: "crc", IndexDay: 1, Category: "colonoscopy"}},
+		{Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Status: "active", PatientKey: arPkA, Name: "Lamia Eddinari", Dob: "1999-07-19", Sex: "F", Day: 1, Prog: "crc", IndexDay: 1, Category: "colonoscopy"}},
 		{Kind: "event", Ev: &Event{ID: "AP1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: arPkB, Name: "Lamia Eddinari", Sex: "F", Day: 5, Prog: "crc"}},
 		{Kind: "event", Ev: &Event{ID: "DR1", Provider: "skmc-endo", RType: "DiagnosticReport", Status: "final", PatientKey: arPkB, Name: "Lamia Eddinari", Sex: "F", Day: 10, Category: "colonoscopy", ReportID: "DR1"}},
 	}
@@ -408,6 +408,13 @@ func TestRestoreAgentPolicyFromOut(t *testing.T) {
 }
 
 func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
+	entryPolicyName := PolicyName
+	t.Cleanup(func() {
+		if PolicyName != entryPolicyName {
+			t.Errorf("PolicyName leaked after materialized run: got %q, want entry %q", PolicyName, entryPolicyName)
+		}
+	})
+	defer func() { PolicyName = entryPolicyName }()
 	if testing.Short() {
 		t.Skip("loads the real models")
 	}
