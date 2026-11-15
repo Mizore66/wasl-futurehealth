@@ -1091,3 +1091,72 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 	}
 	return pseudonymizeRegistrationFields(generic, "").(map[string]interface{}), nil
 }
+
+// personShowcase is the part of a journey that makes it a cross-programme demonstration.
+type personShowcase struct {
+	Person struct {
+		AnchorCaseID string   `json:"anchor_case_id"`
+		Programmes   []string `json:"programmes"`
+	} `json:"person"`
+	Obligations []struct {
+		Status string `json:"status"`
+	} `json:"obligations"`
+	OutreachFlags []struct {
+		Actionable bool `json:"actionable"`
+	} `json:"outreach_flags"`
+	NextAction struct {
+		Kind string `json:"kind"`
+	} `json:"next_action"`
+}
+
+func (p personShowcase) qualifies() bool {
+	open, actionable := false, false
+	for _, o := range p.Obligations {
+		open = open || o.Status == "open" || o.Status == "overdue"
+	}
+	for _, f := range p.OutreachFlags {
+		actionable = actionable || f.Actionable
+	}
+	return len(p.Person.Programmes) >= 3 && open && actionable && p.NextAction.Kind != "none"
+}
+
+// pickPersonFixture adds `person_journey`: the anchor case of the first trusted cluster (by canonical root) whose
+// journey spans at least three programmes with an open obligation, an actionable outreach group and a next action.
+// Like agent_review it never takes a case that already carries another fixture tag.
+func (s *apiServer) pickPersonFixture() {
+	if s.fixtures == nil {
+		s.fixtures = map[string]string{}
+	}
+	if id := s.fixtures["person_journey"]; id != "" && s.cases[id] != nil && s.cases[id].Fixture == "person_journey" {
+		s.cases[id].Fixture = ""
+	}
+	delete(s.fixtures, "person_journey")
+	projection, err := s.loadPersonProjection()
+	if err != nil {
+		return
+	}
+	for _, cluster := range projection.clusters {
+		programmes := map[string]bool{}
+		for _, id := range cluster.caseIDs {
+			programmes[s.cases[id].Programme] = true
+		}
+		if len(programmes) < 3 {
+			continue
+		}
+		body, err := s.personJourney(projection, cluster, apiPrincipal{role: "reviewer"})
+		if err != nil {
+			continue
+		}
+		raw, err := json.Marshal(body)
+		var showcase personShowcase
+		if err != nil || json.Unmarshal(raw, &showcase) != nil || !showcase.qualifies() {
+			continue
+		}
+		anchor := s.cases[showcase.Person.AnchorCaseID]
+		if anchor == nil || anchor.Fixture != "" {
+			continue
+		}
+		s.fixtures["person_journey"], anchor.Fixture = anchor.ID, "person_journey"
+		return
+	}
+}

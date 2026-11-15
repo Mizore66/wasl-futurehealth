@@ -764,3 +764,47 @@ func TestPersonOverlapRequiresActionableIntentsAcrossProgrammes(t *testing.T) {
 		}
 	}
 }
+
+func TestPersonFixtureSelectsActionableCrossProgrammePerson(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	s.fixtures = map[string]string{}
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok {
+		t.Fatalf("person without an actionable outreach group was published: %s", id)
+	}
+	for _, id := range []string{"provider/ServiceRequest/case-1", "provider/ServiceRequest/case-4"} {
+		s.cases[id].last.Outreach = []Outreach{{Kind: "appointment_reminder", Event: "two-programme-event", Released: true}}
+	}
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok {
+		t.Fatalf("two-programme person was published: %s", id)
+	}
+	for _, id := range []string{"provider/ServiceRequest/case-0", "provider/ServiceRequest/case-3"} {
+		s.cases[id].last.Outreach = []Outreach{{Kind: "appointment_reminder", Event: "shared-event", Released: true}}
+	}
+	s.pickPersonFixture()
+	anchor := "provider/ServiceRequest/case-0"
+	if s.fixtures["person_journey"] != anchor || s.cases[anchor].Fixture != "person_journey" {
+		t.Fatalf("three-programme actionable person not selected: fixtures=%v", s.fixtures)
+	}
+	w := personRequest(t, secureTestHandler(t, s, ""), http.MethodGet, "/api/people?case_id=provider%2FServiceRequest%2Fcase-0", "reviewer-token-1234567890")
+	var journey struct {
+		Person struct {
+			Programmes []string `json:"programmes"`
+		} `json:"person"`
+		NextAction struct {
+			Kind   string `json:"kind"`
+			CaseID string `json:"case_id"`
+		} `json:"next_action"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &journey); err != nil || len(journey.Person.Programmes) < 3 || journey.NextAction.Kind == "none" {
+		t.Fatalf("selected journey is not an actionable cross-programme person: %s", w.Body.String())
+	}
+
+	s.fixtures = map[string]string{"evidence_closure": anchor}
+	s.cases[anchor].Fixture = "evidence_closure"
+	s.pickPersonFixture()
+	if id, ok := s.fixtures["person_journey"]; ok || s.cases[anchor].Fixture != "evidence_closure" {
+		t.Fatalf("person fixture overwrote an existing tag: %s %q", id, s.cases[anchor].Fixture)
+	}
+}
