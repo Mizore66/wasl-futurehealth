@@ -7,7 +7,7 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "a7e6bb9353f96826c0c1e9ea908372afe183a9c5a048750c84bb5e4b1549e838"
+GOLDEN = "b3ae94202e300d88ebe0ec39f6200c84a1c9927000c5ccaa47c069553c3ed6f2"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -41,15 +41,13 @@ def test_default_unchanged():
         os.makedirs(d)
         synthetic_run(d)
         raw = run(d)
-        h = hashlib.sha256(raw).hexdigest()
+        h = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()  # Windows text mode writes CRLF
         assert h == GOLDEN, (h, GOLDEN)
         res = json.loads(raw)
         assert len(res["calendar_version"]) == 64
         suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
-        reservable = [c for c in suggested if c["reservable"]]
-        assert reservable and all(c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in reservable)
-        assert all(c["reservation_explanation"] == "suggested_session_has_no_regular_seat" and "suggested_slot_id" not in c for c in suggested if not c["reservable"])
-        assert len({c["suggested_slot_id"] for c in reservable}) == len(reservable)
+        assert suggested and all(c["reservable"] and c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in suggested)
+        assert len({c["suggested_slot_id"] for c in suggested}) == len(suggested)
         assert all(c["suggestion_version"] == suggest._sha({k: v for k, v in c.items() if k != "suggestion_version"}) for c in res["cases"].values())
         assert res["calendar_version"] == suggest._sha({k: v for k, v in res.items() if k != "calendar_version"})
         assert all(slot["slot_id"].startswith(f"sim:{case['procedure']}:{slot['session_id']}:") for case in res["cases"].values() for slot in case["eligible_slots"])

@@ -171,8 +171,11 @@ def _eligible_slots(eng, cal, procedure, prefs, requested_day, deadline, earlies
     held = {}
     if eng.protect is not None and prefs.female_endoscopist != "hard":
         demand = list(eng._hard_arr)
+        at = day if current_day is None else max(day, current_day)
+        # The engine only knew hard arrivals up to `at`; later ones would over-hold seats.
+        eng._hard_arr = [x for x in demand if x[0] <= at]
         try:
-            held = eng._held(day if current_day is None else max(day, current_day), sessions)
+            held = eng._held(at, sessions)
         finally:
             eng._hard_arr = demand
     out = []

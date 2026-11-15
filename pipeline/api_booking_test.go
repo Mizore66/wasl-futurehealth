@@ -762,6 +762,9 @@ func TestBookingElapsedAvailabilitySurvivesExportRedaction(t *testing.T) {
 	}
 }
 
+// Contract test for the API side of #130: the hand-written fixture omits the protected seat from the ordinary case's
+// catalogue, so this checks membership enforcement and replay, not booking/suggest.py's held-seat projection
+// (covered by booking/tests/test_catalogue_protection.py).
 func TestBookingProtectedSeatOnlyReservableByCasesThatListIt(t *testing.T) {
 	run := bookingRun(t)
 	s, srv := serveAgent(t, run)

@@ -78,6 +78,13 @@ class CatalogueProtection(unittest.TestCase):
         hard = Prefs(region="AD", female_endoscopist="hard")
         self.assertEqual(_ids(eng, cal, hard, day=0), _ids(eng, cal, hard, day=0, current_day=13))   # hard unaffected
 
+    def test_hard_arrivals_after_the_evaluated_day_do_not_hold_seats(self):
+        eng, cal = _setup()
+        eng._hard_arr = [(10, "AD")] * 10
+        ordinary = Prefs(region="AD")
+        self.assertLessEqual(PROTECTED, _ids(eng, cal, ordinary, day=0))
+        self.assertFalse(PROTECTED & _ids(eng, cal, ordinary, day=0, current_day=10))
+
     def test_producer_uses_the_canonical_decision_clock(self):
         with tempfile.TemporaryDirectory() as t:
             d = os.path.join(t, "golden-run")
@@ -104,8 +111,10 @@ class CatalogueProtection(unittest.TestCase):
                 self.assertEqual(_slot_ids(later[k]), _slot_ids(base[k]), k)
             released = [k for k in ordinary if _slot_ids(later[k]) - _slot_ids(base[k])]
             self.assertTrue(released, "no ordinary case gained protected seats on the current clock")
-            for k in ordinary:        # release only adds seats; nothing already offered is removed
-                self.assertLessEqual(_slot_ids(base[k]), _slot_ids(later[k]), k)
+            for k in ordinary:        # a later clock knows more hard arrivals, so it may hold more seats, but only
+                now = suggest.arrival_day(k, SimpleNamespace(arrivals="uniform")) + 13   # beyond the release boundary
+                removed = [s for s in base[k]["eligible_slots"] if s["slot_id"] not in _slot_ids(later[k])]
+                self.assertTrue(all(s["day"] > now + 7 for s in removed), k)
             for k in base:            # the original request, constraints and suggestion are untouched
                 self.assertEqual(later[k].get("requested_day"), base[k].get("requested_day"))
                 self.assertEqual(later[k].get("booking"), base[k].get("booking"))
@@ -117,6 +126,7 @@ EXPECTED_TESTS = {
     "test_protected_seats_release_at_the_seven_day_boundary",
     "test_catalogue_generation_does_not_consume_engine_demand_state",
     "test_same_original_request_releases_on_the_current_clock",
+    "test_hard_arrivals_after_the_evaluated_day_do_not_hold_seats",
     "test_producer_uses_the_canonical_decision_clock",
 }
 
