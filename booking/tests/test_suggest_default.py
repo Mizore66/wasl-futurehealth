@@ -7,9 +7,10 @@ import hashlib, json, os, sys, tempfile, contextlib, io
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-# Retain the qualified PR185 component pin; it is NOT yet a qualified combined-main golden.
-# Main adds readiness-held cases while this branch adds absolute clinical anchors.
-# The combined producer needs an observed output/semantic diff before any pin update.
+# Preserve both component pins. The combined pin includes main's 41 returned-referral
+# holds and their calendar reallocation; with those holds made inapplicable, the
+# combined producer is byte-identical to PR185 on the same synthetic input.
+COMBINED_GOLDEN = "99487b9c97ac64ec9354e6fa6baf9d8899e838b73d0b746ceee9701a6b9b5b1f"
 GOLDEN = "068dcb049ea1a125193dc9af06605d7d7c1b66606993396086e7e03a008fc359"
 PRE_INTEGRATION_GOLDENS = {
     "PR185_b039e30f": GOLDEN,
@@ -51,8 +52,13 @@ def test_default_unchanged():
         synthetic_run(d)
         raw = run(d)
         h = hashlib.sha256(raw).hexdigest()
-        assert h == GOLDEN, (h, GOLDEN, PRE_INTEGRATION_GOLDENS, "combined source not yet qualified")
+        assert h == COMBINED_GOLDEN, (h, COMBINED_GOLDEN, PRE_INTEGRATION_GOLDENS)
         res = json.loads(raw)
+        held = [c for c in res["cases"].values() if c["state_at_run_end"] == "referral_rejected"]
+        assert len(held) == 41
+        assert all(c["status"] == "not_applicable" and c["eligible_slots"] == []
+                   and c["reason"] == "clinical_readiness: returned referral unresolved"
+                   and "booking" not in c for c in held)
         assert len(res["calendar_version"]) == 64
         suggested = [c for c in res["cases"].values() if c["status"] == "suggested" and not c["booking"]["overbooked"]]
         assert suggested and all(c["reservable"] and c["suggested_slot_id"] in {s["slot_id"] for s in c["eligible_slots"]} for c in suggested)
