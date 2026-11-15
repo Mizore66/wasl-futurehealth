@@ -4,6 +4,7 @@ import type { z } from "zod";
 import {
   ActionError,
   ActionResponse,
+  ReferralResponseRequest,
   ApiError,
   CaseAction,
   Audit,
@@ -382,6 +383,39 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
   const refused = res.status === 500 ? ActionError.safeParse(json) : null;
   if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
   throw new Error(`POST actions: HTTP ${res.status}`);
+}
+
+/** Words for a 401 or a missing token on a referral response: the server's receiving-unit clinician credential. */
+export const CLINICIAN_TOKEN_REFUSED = "the API did not accept this server's clinician credential; an operator must fix the server configuration";
+export const CLINICIAN_TOKEN_MISSING = "this server has no clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+
+/**
+ * The receiving unit's answer to a referral, appended to the API ledger with the server-side clinician credential
+ * (WASL_API_CLINICIAN_TOKEN). The API maps that token's actor to a receiving unit; nothing here asserts identity or unit.
+ */
+export async function postReferralResponse(id: string, response: z.input<typeof ReferralResponseRequest>, expectedHead: string): Promise<ActionResult> {
+  const body = ReferralResponseRequest.safeParse(response);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  if (apiMode() !== "live") throw new Error("postReferralResponse needs WASL_API_URL: fixtures mode cannot append referral responses");
+  let init: RequestInit;
+  try {
+    init = authenticated(
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, referral_id: id, expected_head: expectedHead }) },
+      "clinician",
+    );
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: CLINICIAN_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/referral-response`, init);
+  if (res.status === 401) return { ok: false, status: 401, error: CLINICIAN_TOKEN_REFUSED };
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
+  const parsed = ActionError.safeParse(json);
+  if (parsed.success && (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409 || res.status === 500)) {
+    return { ok: false, status: res.status, error: parsed.data.error, conflict: parsed.data.conflict, currentHead: parsed.data.current_head };
+  }
+  throw new Error(`POST referral-response: HTTP ${res.status}`);
 }
 
 export type BookingActionResult =

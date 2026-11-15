@@ -87,6 +87,7 @@ type apiServer struct {
 	agentInv        map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
 	agentProv       map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu              sync.Mutex
+	unitClinicians  map[string]string // verified actor -> receiving unit (WASL_RECEIVING_UNIT_CLINICIANS)
 	reviews         []map[string]interface{}
 	rstates         map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
 	claims          map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
@@ -131,6 +132,7 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
+	s.unitClinicians = receivingUnitCliniciansFromEnv()
 	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	// Recovery deployments use their configured Basic-auth identities and TLS;
 	// all other serving modes require the bearer-bound synthetic-demo principals.
@@ -733,7 +735,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/referral-response")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -761,7 +763,9 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	case sub == "actions" && r.Method == http.MethodPost:
 		s.caseAction(w, r, c)
-	case sub == "actions":
+	case sub == "referral-response" && r.Method == http.MethodPost:
+		s.caseReferralResponse(w, r, c)
+	case sub == "actions" || sub == "referral-response":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	default:
@@ -1142,6 +1146,7 @@ type caseOverlay struct {
 	notes     []map[string]interface{}
 	agreement map[string]interface{}
 	booking   caseBookingState
+	referral  map[string]interface{} // the receiving unit's referral response, if any
 	lastAt    string
 }
 
@@ -1281,6 +1286,8 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		}
 	case "note":
 		c.ov.notes = append(c.ov.notes, entry)
+	case referralResponseKind:
+		c.ov.referral = entry
 	}
 	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
 	c.ov.n++
@@ -1314,6 +1321,12 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			streak++
 		}
 		m["no_answer_streak"] = streak
+	}
+	if response, handoff := referralViewLocked(c); response != nil {
+		m["referral_response"] = response
+		if handoff != nil {
+			m["referral_handoff"] = handoff
+		}
 	}
 	if o.agreement != nil {
 		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
@@ -1551,6 +1564,30 @@ func (s *apiServer) actionErr(w http.ResponseWriter, code int, msg string, extra
 	writeJSONResp(w, code, s.envelope(body))
 }
 
+// decodeActionBody reads one bounded JSON object with no duplicate keys, answering 400 itself on failure.
+func (s *apiServer) decodeActionBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}, bool) {
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
+	if err != nil {
+		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
+		return nil, false
+	}
+	if err := rejectDuplicateKeys(raw); err != nil {
+		s.actionErr(w, 400, err.Error(), nil)
+		return nil, false
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	var fields map[string]interface{}
+	if err := dec.Decode(&fields); err != nil || fields == nil {
+		s.actionErr(w, 400, "body must be one JSON object", nil)
+		return nil, false
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		s.actionErr(w, 400, "body must contain exactly one JSON object", nil)
+		return nil, false
+	}
+	return fields, true
+}
+
 func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	if err := Authorize(role, ActCoordinateCase); err != nil {
@@ -1561,23 +1598,8 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		s.actionErr(w, 400, "X-Wasl-Actor header "+err.Error(), nil)
 		return
 	}
-	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
-	if err != nil {
-		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
-		return
-	}
-	if err := rejectDuplicateKeys(raw); err != nil {
-		s.actionErr(w, 400, err.Error(), nil)
-		return
-	}
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	var fields map[string]interface{}
-	if err := dec.Decode(&fields); err != nil || fields == nil {
-		s.actionErr(w, 400, "body must be one JSON object", nil)
-		return
-	}
-	if _, err := dec.Token(); err != io.EOF {
-		s.actionErr(w, 400, "body must contain exactly one JSON object", nil)
+	fields, ok := s.decodeActionBody(w, r)
+	if !ok {
 		return
 	}
 	kindV, expV := fields["action"], fields["expected_head"]
@@ -1784,8 +1806,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	role, _ := ev["role"].(string)
 	actor, _ := ev["actor"].(string)
-	if !rbac[role][ActCoordinateCase] || ev["action"] != ActCoordinateCase {
-		return errors.New("coordinator event with a role that lacks coordinate_case")
+	permission := ActCoordinateCase
+	if kind == referralResponseKind {
+		permission = ActRespondReferral
+	}
+	if !rbac[role][permission] || ev["action"] != permission {
+		return fmt.Errorf("coordinator event with a role that lacks %s", permission)
 	}
 	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
 		return errors.New("bad actor")
@@ -1806,6 +1832,14 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	raw, ok := ev["data"].(map[string]interface{})
 	if !ok {
 		return errors.New("data must be an object")
+	}
+	if kind == referralResponseKind {
+		if err := replayReferralResponse(c, raw); err != nil {
+			return fmt.Errorf("invalid referral response: %v", err)
+		}
+		s.reviews = append(s.reviews, ev)
+		c.applyOverlay(ev)
+		return nil
 	}
 	norm, err := validateActionData(kind, raw)
 	if err != nil || !reflect.DeepEqual(norm, raw) {

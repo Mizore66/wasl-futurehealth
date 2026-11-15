@@ -7,7 +7,7 @@ import synthetic from "@/data/referral-inbox-synthetic.json";
 
 const mocks = vi.hoisted(() => ({ all: vi.fn(), detail: vi.fn(), extra: vi.fn() }));
 vi.mock("@/lib/api/all-cases", () => ({ getAllCases: mocks.all }));
-vi.mock("@/lib/api/source", () => ({ getCase: mocks.detail, getDashboard: async () => ({ sla: { referral_response_days: 7 } }) }));
+vi.mock("@/lib/api/source", () => ({ apiMode: () => "fixtures", getCase: mocks.detail, getDashboard: async () => ({ sla: { referral_response_days: 7 } }) }));
 vi.mock("@/components/worklist/synthetic-referrals", () => ({ syntheticReferrals: mocks.extra }));
 vi.mock("@/components/worklist/run-clock", () => ({ runClock: async () => 120, hasRecord: () => false }));
 

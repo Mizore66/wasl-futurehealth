@@ -1,4 +1,4 @@
-import type { CaseSummary, CurrentDecision, HandoffStatus } from "@/lib/api/schema";
+import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralCondition, ReferralReturnReason } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { handoffUrgent } from "@/lib/domain/handoff";
 import { shortId } from "@/lib/domain/ids";
@@ -20,6 +20,19 @@ const STATE_BY_DROPOFF: Partial<Record<CaseSummary["dropoff"], ReferralState>> =
   no_show: "accepted",
   awaiting_histology: "accepted",
   "": "done",
+};
+
+export const CONDITION_LABELS: Record<ReferralCondition, string> = {
+  hold_anticoagulants: "Hold blood thinners as advised",
+  arabic_interpreter: "Arabic interpreter on the day",
+  female_endoscopist: "Female endoscopist",
+  kidney_function_check: "Kidney function before booking",
+};
+export const REASON_LABELS: Record<ReferralReturnReason, string> = {
+  needs_clinic_visit: "Needs a clinic visit first",
+  anticoagulant_plan_missing: "Blood thinner plan missing",
+  wrong_unit: "Wrong unit",
+  not_fit_for_procedure: "Not fit for colonoscopy",
 };
 
 /** Where a returned referral stands with the referring GP, from the canonical hand-off packet or a session return. */
@@ -60,8 +73,12 @@ export type Referral = {
   hasRecord: boolean;
   /** Whether a return clocks the referrer two business days (suspected cancer) or five. */
   urgent: boolean;
-  /** Canonical hand-off of an existing returned referral; null when the case carries none. */
+  /** Hand-off of a returned referral: the persisted unit return's packet, else the canonical one; null when none. */
   handoff: Handoff | null;
+  /** The case's `api_overlay.head`, which a referral response must name; null when the API sent no overlay. */
+  head: string | null;
+  /** The receiving unit's persisted answer, in words, or null when the unit has not answered through the API. */
+  answer: string | null;
 };
 
 const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
@@ -72,7 +89,9 @@ const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
 };
 
 export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, handoff: Handoff | null = null): Referral | null {
-  const state = c.closed ? "done" : STATE_BY_DROPOFF[c.dropoff];
+  const answered = c.closed ? undefined : c.api_overlay?.referral_response;
+  const returned = c.api_overlay?.referral_handoff;
+  const state = c.closed ? "done" : answered ? (answered.response === "return" ? "returned" : "accepted") : STATE_BY_DROPOFF[c.dropoff];
   if (!state) return null;
   const person = personForLoop(c.id);
   const flags = [
@@ -95,7 +114,9 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
     flags,
     hasRecord,
     urgent: handoffUrgent(c.programme, c.priority),
-    handoff,
+    handoff: answered && returned ? { status: returned.status, actBy: returned.act_by } : handoff,
+    head: c.api_overlay?.head ?? null,
+    answer: answered ? answerWords(answered) : null,
     details: [
       ["Indication", "Positive FIT, colorectal screening"],
       ["Referred", formatDay(c.referral_day)],
@@ -105,4 +126,10 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
       ["Case", shortId(c.id)],
     ],
   };
+}
+
+function answerWords(a: NonNullable<NonNullable<CaseSummary["api_overlay"]>["referral_response"]>): string {
+  if (a.response === "return") return `Returned to the GP: ${a.reason ? REASON_LABELS[a.reason].toLowerCase() : "no reason recorded"}`;
+  if (a.response === "accept_with_conditions") return `Accepted with conditions: ${a.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}`;
+  return "Accepted the referral";
 }
