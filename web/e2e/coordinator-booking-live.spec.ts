@@ -50,6 +50,7 @@ type Reservation = {
   updated_event: string | null;
 };
 type State = {
+  runNow: number;
   head: string;
   consent: string;
   canonicalState: string;
@@ -62,7 +63,7 @@ let state: State;
 
 function reset() {
   state = {
-    head: hex("0"), consent: "granted", canonicalState: "open", events: [], versions: {}, occupied: {},
+    runNow: 10, head: hex("0"), consent: "granted", canonicalState: "open", events: [], versions: {}, occupied: {},
     reservation: {
       status: "unreserved", mode: "simulated", revision: 0, reservation_id: null, reservation_version: null,
       slot: null, updated_at: null, updated_event: null,
@@ -89,7 +90,7 @@ function booking() {
     booking: { ...candidates[0], overbooked: false, booked_on: 5 },
     constraints: { female_endoscopist: "none", arabic_only: false, region: "AD", travel_ok: false },
     eligible_slots: candidates.map((candidate) => ({
-      ...candidate, version: state.versions[candidate.slot_id], availability: state.occupied[candidate.slot_id] ? "reserved" : "available",
+      ...candidate, version: state.versions[candidate.slot_id], availability: state.occupied[candidate.slot_id] ? "reserved" : candidate.day < state.runNow ? "elapsed" : "available",
     })),
   };
 }
@@ -100,7 +101,7 @@ function detail() {
     consent: state.consent, closed: false, review: "none", api_overlay: overlay(false),
   };
   return {
-    ...base, case: caseSummary, current: { ...base.current, state: state.canonicalState, now: 40, sig: hex("0") },
+    ...base, case: caseSummary, current: { ...base.current, state: state.canonicalState, now: state.runNow, sig: hex("0") },
     review_items: [], signoffs: [], api_reviews: state.events, api_review_states: [], review_ledger: { status: "ok", events_applied: state.events.length },
     api_overlay: overlay(true), booking: booking(),
   };
@@ -132,6 +133,11 @@ function append(body: Record<string, unknown>) {
         slot_id: targetID, current_slot_version: state.versions[targetID], availability: state.occupied[targetID] ? "reserved" : "available",
       }) };
     }
+  }
+  // Mirrors the server: only after every other check, strictly before the run day, never for cancel.
+  const elapsedTarget = candidates.find((candidate) => candidate.slot_id === targetID);
+  if (kind !== "booking_cancel" && elapsedTarget && elapsedTarget.day < state.runNow) {
+    return { status: 409, body: conflict("simulated slot day has elapsed on the run clock", "slot_elapsed", { slot_id: targetID, run_day: state.runNow }) };
   }
   if (kind !== "booking_accept" && (typeof body.reason !== "string" || !body.reason.trim())) return { status: 400, body: { meta, error: "reason required" } };
 
@@ -196,6 +202,10 @@ test.describe("coordinator simulated booking, live mock", () => {
       if (route === "/mock/consent" && req.method === "POST") {
         state.consent = JSON.parse(raw).consent;
         return send(200, { consent: state.consent });
+      }
+      if (route === "/mock/run-now" && req.method === "POST") {
+        state.runNow = JSON.parse(raw).now;
+        return send(200, { now: state.runNow });
       }
       if (route === "/mock/state") return send(200, state);
       if (route === "/mock/no-show" && req.method === "POST") {
@@ -333,6 +343,65 @@ test.describe("coordinator simulated booking, live mock", () => {
       data: { action: "booking_accept", expected_head: hex("0"), expected_suggestion_version: hex("2"), slot_id: candidates[0].slot_id, expected_slot_version: hex("3") },
     });
     expect(denied.status()).toBe(409);
+  });
+
+  test("an elapsed candidate is neither acceptable nor selectable, and the API refuses it without a trace", async ({ page }) => {
+    const runNow = (now: number) => page.request.post(`http://127.0.0.1:${MOCK_PORT}/mock/run-now`, { data: { now } });
+    const mockState = async () => (await page.request.get(`http://127.0.0.1:${MOCK_PORT}/mock/state`)).json();
+    const card = page.getByRole("region", { name: "Booking" });
+
+    // Run day 22: the suggested Day 20 slot has elapsed; Day 25 and Day 28 remain.
+    await runNow(22);
+    await page.goto(caseURL);
+    await expect(card.getByRole("button", { name: "Accept simulated slot", exact: true })).toBeDisabled();
+    await card.getByRole("button", { name: "Choose another simulated slot", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("radio")).toHaveCount(2);
+    await expect(dialog.getByRole("radio", { name: /Day 20/ })).toHaveCount(0);
+    await expect(dialog.getByRole("radio", { name: /AD-2 · Day 25/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // A direct write for the elapsed slot is refused and leaves no event or slot change.
+    const refused = await page.request.post(`http://127.0.0.1:${MOCK_PORT}/api/cases/${encodeURIComponent(id)}/actions`, {
+      headers: { authorization: `Bearer ${SHARED.WASL_API_COORDINATOR_TOKEN}` },
+      data: { action: "booking_accept", expected_head: hex("0"), expected_suggestion_version: hex("2"), slot_id: candidates[0].slot_id, expected_slot_version: hex("3") },
+    });
+    expect(refused.status()).toBe(409);
+    expect((await refused.json()).conflict).toBe("slot_elapsed");
+    const untouched = await mockState();
+    expect(untouched.events).toHaveLength(0);
+    expect(untouched.head).toBe(hex("0"));
+    expect(untouched.versions[candidates[0].slot_id]).toBe(hex("3"));
+
+    // Run day 40: the whole catalogue has elapsed, so nothing can be accepted or chosen until a new catalogue exists.
+    await runNow(40);
+    await page.reload();
+    await expect(card.getByRole("button", { name: "Accept simulated slot", exact: true })).toBeDisabled();
+    await expect(card.getByRole("button", { name: "Choose another simulated slot", exact: true })).toBeDisabled();
+    expect((await mockState()).events).toHaveLength(0);
+  });
+
+  test("a reservation whose day has elapsed stays visible and cancellable, and can move to a future slot", async ({ page }) => {
+    const card = page.getByRole("region", { name: "Booking" });
+    await page.goto(caseURL);
+    await card.getByRole("button", { name: "Accept simulated slot", exact: true }).click();
+    await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
+    await expect(card).toContainText("AD-1 · Day 20");
+
+    await page.request.post(`http://127.0.0.1:${MOCK_PORT}/mock/run-now`, { data: { now: 22 } });
+    await page.reload();
+    await expect(card).toContainText("Simulated reservation confirmed");
+    await expect(card).toContainText("AD-1 · Day 20");
+    await expect(card.getByRole("button", { name: "Cancel simulated reservation", exact: true })).toBeEnabled();
+    await card.getByRole("button", { name: "Reschedule simulated slot", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("radio", { name: /Day 20/ })).toHaveCount(0);
+    await dialog.getByRole("radio", { name: /AD-2 · Day 25/ }).check();
+    await page.getByLabel("Reason (required)").fill("Elapsed seat moved to a future day");
+    await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
+    await expect(card).toContainText("AD-2 · Day 25");
+    const mock = await (await page.request.get(`http://127.0.0.1:${MOCK_PORT}/mock/state`)).json();
+    expect(mock.events.map((event: Event) => event.kind)).toEqual(["booking_accept", "booking_reschedule"]);
   });
 
   test("keyboard, 390px layout and axe remain usable", async ({ page }) => {
