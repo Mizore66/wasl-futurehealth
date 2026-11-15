@@ -31,7 +31,7 @@ async function render(sp: Record<string, string>) {
 
 it("opens on the CRC queue at Al Mushrif when the URL chooses nothing", async () => {
   const { board } = await render({});
-  expect(mocks.all).toHaveBeenCalledExactlyOnceWith({ closed: false });
+  expect(mocks.all).toHaveBeenCalledExactlyOnceWith();
   expect(board.items.length).toBeGreaterThan(0);
   expect(board.items.every((i) => i.id.startsWith("ahs-mushrif/") && i.deadline === 31)).toBe(true);
   expect(board.scope).toBe("Colorectal screening · Al Mushrif");

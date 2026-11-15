@@ -132,7 +132,13 @@ export const DrFinding = z.looseObject({
         "assumed_followup_91d",
         "assumed_treated_28d",
       ]),
+      from_day: z.number(),
+      interval_days: z.number(),
       due_day: z.number(),
+      seen: z.boolean().optional(),
+      seen_day: z.number().optional(),
+      seen_report: z.string().optional(),
+      recall_overdue: z.boolean().optional(),
     })
     .optional(),
 });

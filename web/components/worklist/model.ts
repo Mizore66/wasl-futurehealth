@@ -10,6 +10,7 @@ import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, dispositionWords, ledgerWordsWithHistory } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
+import { isActionable, obligationWords, openObligation } from "./obligation";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -225,7 +226,9 @@ export const HANDOFF_OWNER = "Dr Al Kaabi";
  */
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
-  const words = { ...statusWords(c) };
+  const recall = openObligation(c, now);
+  const due = isActionable(recall) ? recall : null;
+  const words = due ? obligationWords(due) : { ...statusWords(c) };
   if (c.api_patient?.slot_selection.status === "selected") {
     words.status = "Patient selected a simulated slot · coordinator review needed";
     words.next = "Review the preferred time; no appointment is reserved";
@@ -234,6 +237,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const ov = c.api_overlay;
   const owner = ov?.owner || c.owner;
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  if (due && view !== "none") view = "call";
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
@@ -311,9 +315,9 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     view,
     status: words.status,
     next: words.next,
-    days: elapsedDays(c, now),
-    deadline: overdueClockDays(c),
-    overdue: c.overdue,
+    days: due ? Math.floor(now - due.fromDay) : elapsedDays(c, now),
+    deadline: due ? Math.round(due.dueDay - due.fromDay) : overdueClockDays(c),
+    overdue: due ? due.state === "overdue" : c.overdue,
     referralDay: c.referral_day,
     textsAllowed: c.consent === "granted" && !contactBlocked,
     contactBlocked,
