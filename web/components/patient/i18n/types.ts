@@ -45,13 +45,19 @@ export interface PatientDict {
     intro: string;
     question: string;
     groupLabel: string;
-    letters: readonly [string, string];
+    letters: readonly [string, string, string];
     wrong: string;
     right: string;
+    notSure: string;
     notTest: string;
     explainTitle: string;
     explain: Three;
     retry: string;
+    /** `{date}` is replaced with the callback due date. */
+    callbackOpen: string;
+    callbackLate: string;
+    callbackResolved: string;
+    callbackRef: string;
     correct: string;
     consentTitle: string;
     consentBody: string;
@@ -86,5 +92,46 @@ export interface PatientDict {
     prepHead: string;
     warn: string;
     prep: readonly [string, string];
+  };
+  /** Explanation and contest requests. `{code}` and `{due}` are replaced. */
+  outcome: {
+    title: string;
+    complete: string;
+    nextHead: string;
+    next: Record<"routine_screening" | "surveillance" | "specialist_follow_up" | "discuss_with_doctor", string>;
+    safetyHead: string;
+    safetyNet: string;
+    pending: string;
+    held: string;
+    suppressed: string;
+    notReady: string;
+    acknowledge: string;
+    acknowledged: string;
+    simulated: string;
+  };
+  rights: {
+    explain: string;
+    contest: string;
+    reasonLabel: string;
+    reasonRequired: string;
+    getCode: string;
+    codeShown: string;
+    codeLabel: string;
+    submit: string;
+    sending: string;
+    failed: string;
+    listHead: string;
+    receipt: string;
+    answered: string;
+    pending: string;
+    overdue: string;
+    upheld: string;
+    revised: string;
+    held: string;
+    explanationHead: string;
+    matched: string;
+    report: string;
+    state: string;
+    none: string;
   };
 }

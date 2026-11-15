@@ -27,7 +27,7 @@ export function BottomSheet({
       <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(10,10,10,0.32)] data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none" />
       <Dialog.Content
         aria-describedby={undefined}
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[390px] rounded-t-card bg-surface px-5 pt-6 pb-7 data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-8 motion-reduce:animate-none"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-dvh w-full max-w-[390px] overflow-y-auto overscroll-contain rounded-t-card bg-surface px-5 pt-6 pb-7 data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-8 motion-reduce:animate-none"
       >
         <Dialog.Title className="m-0 mb-4 text-[20px] font-semibold">{title}</Dialog.Title>
         {children}

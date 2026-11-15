@@ -43,24 +43,27 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string           `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string           `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string           `json:"state"`
-	Dropoff   string           `json:"dropoff"`
-	Owner     string           `json:"owner,omitempty"`
-	Provider  string           `json:"provider"`
-	SRDay     float64          `json:"referral_day"`
-	Deadline  float64          `json:"deadline_day,omitempty"`
-	Overdue   bool             `json:"overdue"`
-	Priority  string           `json:"priority,omitempty"`
-	Consent   string           `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string           `json:"review"`  // none | open | signed
-	Closed    bool             `json:"closed"`
-	ClosedDay float64          `json:"closed_day,omitempty"`
-	Fixture   string           `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
-	ov        caseOverlay      // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	patient   patientCaseState // patient-link actions; separate from coordinator, consent and booking heads
-	last      *Decision        // full last decision (detail view)
+	ID        string               `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string               `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string               `json:"state"`
+	Dropoff   string               `json:"dropoff"`
+	Owner     string               `json:"owner,omitempty"`
+	Provider  string               `json:"provider"`
+	SRDay     float64              `json:"referral_day"`
+	Deadline  float64              `json:"deadline_day,omitempty"`
+	Overdue   bool                 `json:"overdue"`
+	Priority  string               `json:"priority,omitempty"`
+	Consent   string               `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string               `json:"review"`  // none | open | signed
+	Closed    bool                 `json:"closed"`
+	ClosedDay float64              `json:"closed_day,omitempty"`
+	Fixture   string               `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ov        caseOverlay          // coordinator actions replayed from the ledger; never merged into the canonical fields above
+	patient   patientCaseState     // patient-link actions; separate from coordinator, consent and booking heads
+	requests  []*patientRequest    // patient explanation requests and contests, in ledger order
+	callbacks []*teachBackCallback // failed teach-back nurse-callback tasks, in ledger order
+	handoff   []*outcomeHandoff    // post-closure outcome hand-off approvals and acknowledgements, in ledger order
+	last      *Decision            // full last decision (detail view)
 	decisions []*Decision
 }
 
@@ -100,12 +103,16 @@ type apiServer struct {
 	photos                  map[string][]ImgRef                        // exact provider/report/version media observations
 	pixels                  *pixelStore                                // content-verified synthetic photos; never serialized paths
 	sources                 map[string][]sourcePointer                 // exact source-log references; no report text cached
+	patientOTPs             map[string]patientOTP                      // link id -> simulated one-time code; memory only, never in the ledger
 }
 
 func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/patient/journey", s.patientJourney)
+	mux.HandleFunc("/api/patient/verification", s.patientVerification)
+	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
+	mux.HandleFunc("/api/patient/outcome", s.patientOutcomeRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -620,7 +627,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 			byProg[c.Programme] = map[string]int{}
 		}
 		byProg[c.Programme]["cases"]++
-		if c.Closed {
+		if s.servedClosed(c) {
 			closed++
 			byProg[c.Programme]["closed"]++
 		}
@@ -706,6 +713,13 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	if c.patient.Seq > 0 {
 		m["api_patient"] = s.patientViewLocked(c, false)
 	}
+	if s.patientContestHoldLocked(c) {
+		m["closed"], m["canonical_closed"], m["closure_hold"] = false, c.Closed, "patient_contest"
+	}
+	if cb := s.teachBackCallbackSummaryLocked(c); cb != nil {
+		m["teach_back_callback"] = cb
+		m["escalations"] = s.servedEscalationsLocked(c)
+	}
 	s.mu.Unlock()
 	return m
 }
@@ -722,7 +736,7 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", owner) && (q.Get("unowned") != "true" || owner == "") && eq("consent", c.Consent) &&
 			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
-			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&
+			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(s.servedClosed(c))) &&
 			(q.Get("fixture") == "" || c.Fixture != "") && (q.Get("q") == "" || strings.Contains(c.ID, q.Get("q")))
 	}
 	ids := append([]string{}, s.order...)
@@ -762,7 +776,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
 	} else if strings.HasSuffix(rest, "/review/source") {
 		rest, sub = strings.TrimSuffix(rest, "/review/source"), "review/source"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest") || strings.HasSuffix(rest, "/teach-back-callback") || strings.HasSuffix(rest, "/outcome-handoff")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -792,6 +806,12 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	case sub == "actions" && r.Method == http.MethodPost:
 		s.caseAction(w, r, c)
+	case sub == "patient-contest" && r.Method == http.MethodPost:
+		s.casePatientContest(w, r, c)
+	case sub == "teach-back-callback" && r.Method == http.MethodPost:
+		s.caseTeachBackCallback(w, r, c)
+	case sub == "outcome-handoff" && (r.Method == http.MethodGet || r.Method == http.MethodPost):
+		s.caseOutcomeHandoff(w, r, c)
 	case sub == "actions":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
@@ -2136,6 +2156,24 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["type"] == patientEventType {
 		if err := s.replayPatientEvent(ev); err != nil {
 			return fmt.Errorf("patient journey: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == patientRequestEventType {
+		if err := s.replayPatientRequest(ev); err != nil {
+			return fmt.Errorf("patient request: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == outcomeHandoffEventType {
+		if err := s.replayOutcomeHandoff(ev); err != nil {
+			return fmt.Errorf("outcome hand-off: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == teachBackCallbackEventType {
+		if err := s.replayTeachBackCallback(ev); err != nil {
+			return fmt.Errorf("teach-back callback: %v", err)
 		}
 		return nil
 	}

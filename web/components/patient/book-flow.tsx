@@ -5,15 +5,43 @@ import type { PatientJourney, PatientOffers } from "@/lib/api/patient-schema";
 import { cn } from "@/lib/utils";
 import { DICTS } from "./i18n";
 import { slotLabel, type PhoneQuery } from "./journey";
-import { CallBar } from "./parts";
+import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
+import { GatedNote, scriptLang } from "./programme-copy";
+import { offerPlace, offerTitle, patientScript } from "./programme";
 import { usePatientJourney } from "./use-patient-journey";
 
 type Mode = "proposed" | "choosing" | "confirmed";
 const PREP_IDS = ["clear_fluids_and_prep", "escort_home"] as const;
 
+/** No simulated offer for this case: the served next step and a coordinator contact, with no slot, confirmation or preparation. */
+function NoOffer({ query, initial }: { query: PhoneQuery; initial: PatientJourney }) {
+  const t = DICTS[query.lang];
+  const script = patientScript(initial, query.lang);
+  const type = phoneType(script.lang);
+  return (
+    <>
+      <main className="flex flex-1 flex-col gap-3 px-5 pt-2 pb-4">
+        <GatedNote script={script} />
+        <section data-testid="no-offer" className="rounded-card border border-line bg-surface p-5" {...scriptLang(script)}>
+          <h1 className={type.h1}>{script.book.title}</h1>
+          <p className={type.body}>{script.notice.next}</p>
+          <p className={cn(type.body, "mt-3 text-muted")}>{script.book.noOffer} <PhoneNumber /></p>
+        </section>
+      </main>
+      <CallBar label={t.call} />
+    </>
+  );
+}
+
 /** Slot choices are preferences for coordinator review, never reservations. */
-export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers }) {
+export function BookFlow(props: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers }) {
+  const title = offerTitle(props.offers.procedure, props.query.lang);
+  if (!title || props.offers.slots.length === 0) return <NoOffer query={props.query} initial={props.initial} />;
+  return <OfferFlow {...props} title={title} />;
+}
+
+function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; title: string }) {
   const t = DICTS[query.lang];
   const b = t.book;
   const ur = query.lang === "ur";
@@ -30,7 +58,7 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
     setMode("confirmed");
   }
 
-  const slots = offers.slots.map((slot) => slotLabel(slot, b));
+  const slots = offers.slots.map((slot) => slotLabel(slot, b, query.lang));
   const confirmed = mode === "confirmed" && journey.slot_selection.status === "selected";
   const savedIndex = offers.slots.findIndex((offer) => offer.slot_id === journey.slot_selection.slot_id);
   const slot = slots[confirmed ? savedIndex : current];
@@ -49,10 +77,12 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
     await save({ kind: "preparation_changed", data: { item_id, completed } });
   }
 
+  const place = offerPlace(offers.slots[confirmed ? savedIndex : current]?.unit ?? "", query.lang);
+
   if (!slot) {
     return (
       <main className="flex-1 px-5 pt-4 pb-4">
-        <h1 className="m-0 text-[20px] font-semibold">{b.title}</h1>
+        <h1 className="m-0 text-[20px] font-semibold">{title}</h1>
         <p role="status" className="mt-4 text-muted">{t.common.unavailable}</p>
       </main>
     );
@@ -62,29 +92,29 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
     <>
       <main className="flex flex-1 flex-col gap-3 px-5 pt-2 pb-4" aria-busy={busy}>
         <section className="rounded-card border border-line bg-surface p-5">
-          <h1 className={cn("m-0 mb-2 text-[20px] font-semibold", ur ? "leading-[2]" : "leading-[1.45]")}>{b.title}</h1>
+          <h1 className={cn("m-0 mb-2 text-[20px] font-semibold", ur ? "leading-[2]" : "leading-[1.45]")}>{title}</h1>
           <p className="m-0 mb-1 flex items-center gap-2" aria-live="polite">
             <span aria-hidden="true" className={cn("size-2.5 flex-none", confirmed ? "rounded-[2px] bg-positive" : "rounded-full bg-hue")} />
             <span className={cn("text-[15px] font-medium", confirmed ? "text-positive" : "text-hue")}>{confirmed ? b.confirmed : b.proposed}</span>
           </p>
           <p data-testid="slot-date" className="m-0 flex flex-wrap gap-x-1.5 text-[24px] leading-[1.5] font-semibold tabular-nums">
-            <span>{slot.weekday}</span> <bdi dir="ltr">{slot.date}</bdi> <span>{b.october}</span>
+            <span>{slot.weekday}</span> <bdi dir="ltr">{slot.date}</bdi> <span>{slot.month}</span>
           </p>
           <p data-testid="slot-time" className="m-0 flex flex-wrap gap-x-1.5 text-[17px] leading-[1.7] tabular-nums">
             <span>{b.at}</span> <bdi dir="ltr">{slot.time}</bdi> <span>{slot.period}</span>
           </p>
 
-          <div className="mt-4 flex items-center gap-3">
+          {place && <div className="mt-4 flex items-center gap-3">
             <div role="img" aria-label={b.mapLabel} className="relative size-16 flex-none overflow-hidden rounded-control bg-raised">
               <span aria-hidden="true" className="absolute top-[22px] right-0 left-0 h-1.5 bg-surface" />
               <span aria-hidden="true" className="absolute top-0 bottom-0 left-[38px] w-1.5 bg-surface" />
               <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="var(--color-ink)" className="absolute top-3 left-5"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
             </div>
             <div>
-              <div className="text-[16px] leading-[1.6] font-medium">{b.place} <bdi dir="ltr" className="font-normal text-muted">(SKMC)</bdi></div>
-              <div className="text-[14px] leading-[1.6] text-muted">{b.address}</div>
+              <div className="text-[16px] leading-[1.6] font-medium">{place.place} <bdi dir="ltr" className="font-normal text-muted">({place.abbr})</bdi></div>
+              <div className="text-[14px] leading-[1.6] text-muted">{place.address}</div>
             </div>
-          </div>
+          </div>}
 
           {mode === "proposed" && (
             <div className="mt-5 flex gap-3">
@@ -106,7 +136,7 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
                       onClick={() => { setCurrent(i); setMode("proposed"); }}
                       className="flex min-h-12 w-full cursor-pointer items-center gap-1.5 rounded-control border border-control bg-surface px-4 text-[16px] text-ink tabular-nums disabled:cursor-wait disabled:opacity-60"
                     >
-                      <span>{s.weekday}</span> <bdi dir="ltr">{s.date}</bdi> <span>{b.october}{b.sep}</span> <bdi dir="ltr">{s.time}</bdi> <span>{s.period}</span>
+                      <span>{s.weekday}</span> <bdi dir="ltr">{s.date}</bdi> <span>{s.month}{b.sep}</span> <bdi dir="ltr">{s.time}</bdi> <span>{s.period}</span>
                     </button>
                   ),
                 )}
@@ -123,7 +153,7 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
           <PatientStatus t={t.common} status={status} canRetry={canRetry} onRetry={() => void retrySave()} />
         </section>
 
-        <section aria-labelledby="prep-head" className="rounded-card border border-line bg-surface p-5">
+        {journey.preparation.total > 0 && <section aria-labelledby="prep-head" className="rounded-card border border-line bg-surface p-5">
           <h2 id="prep-head" className="m-0 mb-3 text-[18px] font-semibold">{b.prepHead}</h2>
           <p role="note" className="m-0 mb-2 flex items-start gap-2.5 rounded-control bg-pill-warning-bg p-3 text-[16px] leading-[1.75] font-medium text-pill-warning-ink">
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="mt-1 flex-none"><path d="M12 3l9.5 17h-19z" /><path d="M12 10v4" /><path d="M12 17.5v.01" /></svg>
@@ -150,7 +180,7 @@ export function BookFlow({ query, initial, offers }: { query: PhoneQuery; initia
               );
             })}
           </div>
-        </section>
+        </section>}
       </main>
       <CallBar label={t.call} quiet />
     </>

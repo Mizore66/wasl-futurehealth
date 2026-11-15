@@ -254,57 +254,114 @@ func TestPatientAuthenticationStrictBodiesAndCrossCaseAuthority(t *testing.T) {
 	}
 }
 
-func TestPatientRejectsNonCRCProgrammesAndEveryAction(t *testing.T) {
-	programmes := []string{"cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"}
-	actions := []struct {
+// patientProgrammeCases are representative synthetic decisions, one per programme, carrying each served recommendation.
+var patientProgrammeCases = []struct {
+	programme, nextStep, distractor string
+	decision                        func(*Decision)
+}{
+	{"crc", "colonoscopy", "blood_test", func(*Decision) {}},
+	{"cervical", "colposcopy", "wait_for_symptoms", func(*Decision) {}},
+	{"lung_nodule", "ct", "wait_for_symptoms", func(d *Decision) { d.Lung = &LungDecision{Rec: &FlRec{Action: "ct"}} }},
+	{"diabetic_retinopathy", "refer", "wait_for_symptoms", func(d *Decision) { d.DR = &DRDecision{Rec: &DRRec{Action: "refer"}} }},
+	{"breast", "recall", "wait_for_symptoms", func(d *Decision) { d.Breast = &BreastDecision{Rec: &BreastRec{Action: "recall"}} }},
+	{"lung_ldct", "annual", "urgent_visit", func(d *Decision) { d.LDCT = &LDCTDecision{Rec: &LDCTRec{Action: "annual"}} }},
+	{"ifhas", "follow_up", "wait_for_symptoms", func(d *Decision) { d.Ifhas = &IfhasDecision{Rec: &IfhasRec{Action: "follow_up"}} }},
+}
+
+func TestPatientJourneyProjectsEachProgrammesServedRecommendation(t *testing.T) {
+	for i, tc := range patientProgrammeCases {
+		t.Run(tc.programme, func(t *testing.T) {
+			p := newPatientTestAPI(t)
+			id := "exp-prov/ServiceRequest/PROGRAMME-" + tc.programme
+			d := &Decision{ID: "decision-" + id, LoopID: id, Prog: tc.programme, State: "open", Contact: "granted", Sig: patientTestSignature(id)}
+			tc.decision(d)
+			c := &apiCase{ID: id, Programme: tc.programme, State: "open", Consent: "granted", last: d, decisions: []*Decision{d}}
+			p.s.cases[id] = c
+			p.token = strings.Repeat(string(rune('a'+i)), 43)
+			p.writeLink(t, p.token, id, fmt.Sprintf("%032x", i+16), p.now.Add(time.Hour))
+
+			body := p.get(t)
+			journey := body["journey"].(map[string]interface{})
+			offers := body["offers"].(map[string]interface{})
+			question := tc.programme + "-next-step-v1"
+			if tc.programme == "crc" {
+				question = teachBackQuestionID
+			}
+			prep := journey["preparation"].(map[string]interface{})
+			if journey["programme"] != tc.programme || journey["next_step"] != tc.nextStep || journey["teach_back"].(map[string]interface{})["question_id"] != question {
+				t.Fatalf("projection: %v", journey)
+			}
+			if got := fmt.Sprint(journey["teach_back"].(map[string]interface{})["answers"]); got != fmt.Sprint([]string{tc.distractor, tc.nextStep, "not_sure"}) {
+				t.Fatalf("teach-back answers: %s", got)
+			}
+			booked := tc.programme == "crc"
+			if (len(offers["slots"].([]interface{})) > 0) != booked || (prep["total"].(float64) == 2) != booked || (offers["procedure"] == "colonoscopy") != booked {
+				t.Fatalf("offers or preparation do not belong to %s: offers=%v prep=%v", tc.programme, offers, prep)
+			}
+			head := journeyHead(body)
+			if !booked {
+				for j, action := range []struct {
+					kind string
+					data map[string]interface{}
+				}{
+					{"teach_back_completed", map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "colonoscopy"}},
+					{"teach_back_completed", map[string]interface{}{"question_id": question, "answer_id": "colonoscopy"}},
+					{"slot_selected", map[string]interface{}{"slot_id": patientSlotOffers[0].SlotID, "offers_version": patientOffersVersion()}},
+					{"preparation_changed", map[string]interface{}{"item_id": prepEscortHome, "completed": true}},
+				} {
+					if code, body := p.post(t, action.kind, patientUUID(byte(j+10)), head, action.data); code != http.StatusBadRequest {
+						t.Fatalf("CRC-only %s accepted on %s: %d %v", action.kind, tc.programme, code, body)
+					}
+				}
+			}
+			code, wrong := p.post(t, "teach_back_answered", patientUUID(1), head, map[string]interface{}{"question_id": question, "answer_id": tc.distractor})
+			if code != http.StatusCreated || wrong["journey"].(map[string]interface{})["teach_back"].(map[string]interface{})["status"] != "callback" {
+				t.Fatalf("wrong answer: %d %v", code, wrong)
+			}
+			code, right := p.post(t, "teach_back_completed", patientUUID(2), journeyHead(wrong), map[string]interface{}{"question_id": question, "answer_id": tc.nextStep})
+			if code != http.StatusCreated || right["journey"].(map[string]interface{})["teach_back"].(map[string]interface{})["status"] != "completed" {
+				t.Fatalf("served answer: %d %v", code, right)
+			}
+
+			p.srv.Close()
+			s2 := &apiServer{run: p.s.run, cases: freshPatientCases(p.s.cases), queue: p.s.queue, signoffs: p.s.signoffs, facts: p.s.facts, ids: p.s.ids, meta: p.s.meta, now: p.s.now}
+			s2.loadReviews()
+			if s2.ledgerErr != "" || s2.cases[id].patient.Teach.Status != "completed" || s2.cases[id].patient.Teach.QuestionID != question || len(s2.cases[id].callbacks) != 1 {
+				t.Fatalf("restart replay: err=%q patient=%+v", s2.ledgerErr, s2.cases[id].patient)
+			}
+		})
+	}
+}
+
+func TestPatientReplayRejectsCRCEventsOnOtherProgrammes(t *testing.T) {
+	p := newPatientTestAPI(t)
+	id := "exp-prov/ServiceRequest/NON-CRC-breast"
+	d := &Decision{ID: "decision-" + id, LoopID: id, Prog: "breast", State: "open", Contact: "granted", Sig: patientTestSignature(id),
+		Breast: &BreastDecision{Rec: &BreastRec{Action: "recall"}}}
+	c := &apiCase{ID: id, Programme: "breast", State: "open", Consent: "granted", last: d, decisions: []*Decision{d}}
+	p.s.cases[id] = c
+	linkID := fmt.Sprintf("%032x", 99)
+	for i, action := range []struct {
 		kind string
 		data map[string]interface{}
 	}{
 		{"teach_back_completed", map[string]interface{}{"question_id": teachBackQuestionID, "answer_id": "colonoscopy"}},
-		{"contact_permission_changed", map[string]interface{}{"permission": "granted"}},
 		{"slot_selected", map[string]interface{}{"slot_id": patientSlotOffers[0].SlotID, "offers_version": patientOffersVersion()}},
 		{"preparation_changed", map[string]interface{}{"item_id": prepEscortHome, "completed": true}},
+	} {
+		event := map[string]interface{}{
+			"type": patientEventType, "kind": action.kind, "case": id, "link_id": linkID,
+			"role": patientRole, "actor": "patient-link/" + linkID, "action": patientSelfService,
+			"at": p.now.Format(time.RFC3339Nano), "mode": "demo", "request_id": patientUUID(byte(20 + i)),
+			"head": patientHead(c), "head_signed": patientCanonicalSignature(c), "seq": float64(1),
+			"data": action.data, "prev": "",
+		}
+		if err := p.s.replayPatientEvent(event); err == nil {
+			t.Fatalf("restart replay accepted CRC-only %s on a breast case", action.kind)
+		}
 	}
-	for i, programme := range programmes {
-		t.Run(programme, func(t *testing.T) {
-			p := newPatientTestAPI(t)
-			id := "exp-prov/ServiceRequest/NON-CRC-" + programme
-			d := &Decision{ID: "decision-" + id, LoopID: id, Prog: programme, State: "open", Contact: "granted", Sig: patientTestSignature(id)}
-			c := &apiCase{ID: id, Programme: programme, State: "open", Consent: "granted", last: d, decisions: []*Decision{d}}
-			p.s.cases[id] = c
-			token := strings.Repeat(string(rune('a'+i)), 43)
-			p.writeLink(t, token, id, fmt.Sprintf("%032x", i+16), p.now.Add(time.Hour))
-
-			code, body, _ := p.request(t, http.MethodGet, "/api/patient/journey", token, nil)
-			if code != http.StatusUnauthorized || body["journey"] != nil || body["offers"] != nil {
-				t.Fatalf("non-CRC read: %d %v", code, body)
-			}
-			for j, action := range actions {
-				code, body, _ = p.request(t, http.MethodPost, "/api/patient/journey", token, map[string]interface{}{
-					"kind": action.kind, "expected_head": patientHead(c), "request_id": patientUUID(byte(j + 1)), "data": action.data,
-				})
-				if code != http.StatusUnauthorized {
-					t.Fatalf("%s on %s: want 401, got %d %v", action.kind, programme, code, body)
-				}
-			}
-			if len(p.s.reviews) != 0 || c.patient.Seq != 0 {
-				t.Fatalf("non-CRC requests mutated history or projection: events=%d patient=%+v", len(p.s.reviews), c.patient)
-			}
-
-			event := map[string]interface{}{
-				"type": patientEventType, "kind": "teach_back_completed", "case": id, "link_id": fmt.Sprintf("%032x", i+16),
-				"role": patientRole, "actor": "patient-link/" + fmt.Sprintf("%032x", i+16), "action": patientSelfService,
-				"at": p.now.Format(time.RFC3339Nano), "mode": "demo", "request_id": patientUUID(20),
-				"head": patientHead(c), "head_signed": patientCanonicalSignature(c), "seq": float64(1),
-				"data": actions[0].data, "prev": "",
-			}
-			if err := p.s.replayPatientEvent(event); err == nil {
-				t.Fatal("restart replay accepted a CRC-specific event on a non-CRC case")
-			}
-			if len(p.s.reviews) != 0 || c.patient.Seq != 0 {
-				t.Fatal("rejected non-CRC replay mutated history or projection")
-			}
-		})
+	if len(p.s.reviews) != 0 || c.patient.Seq != 0 {
+		t.Fatal("rejected replay mutated history or projection")
 	}
 }
 
@@ -996,12 +1053,6 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 		t.Fatal("TTL above 24 hours was accepted")
 	}
 	registryBefore := actRead(t, patientRegistryPath(run))
-	for _, programme := range programmes {
-		id := "exp-prov/ServiceRequest/NON-CRC-" + programme
-		if deniedToken, err := provisionPatientLink(run, id, 30*time.Minute, now); err == nil || err.Error() != "patient self-service supports only synthetic CRC cases" || deniedToken != "" {
-			t.Fatalf("%s did not reach the patient programme authorization gate: token_empty=%v err=%v", programme, deniedToken == "", err)
-		}
-	}
 	if deniedToken, err := provisionPatientLink(run, "exp-prov/ServiceRequest/MISSING", 30*time.Minute, now); err == nil || err.Error() != "unknown synthetic case" || deniedToken != "" {
 		t.Fatalf("unknown case did not reach patient case lookup: token_empty=%v err=%v", deniedToken == "", err)
 	}
@@ -1046,6 +1097,23 @@ func TestPatientLinkProvisioningContract(t *testing.T) {
 	if _, status := s.patientCredential(rq); status != http.StatusGone {
 		t.Fatalf("expired provisioned link: want 410, got %d", status)
 	}
+	for _, programme := range programmes {
+		id := "exp-prov/ServiceRequest/NON-CRC-" + programme
+		programmeToken, err := provisionPatientLink(run, id, 30*time.Minute, now)
+		if err != nil || programmeToken == "" {
+			t.Fatalf("%s link was not provisioned: %v", programme, err)
+		}
+		s, err := loadAPIVerified(run, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.now = func() time.Time { return now }
+		rq := httptest.NewRequest(http.MethodGet, "/api/patient/journey", nil)
+		rq.Header.Set("Authorization", "Bearer "+programmeToken)
+		if link, status := s.patientCredential(rq); status != 0 || link.Case != id {
+			t.Fatalf("%s link did not resolve to its own case: %+v status=%d", programme, link, status)
+		}
+	}
 }
 
 func patientLinksTokenHash(token string) string {
@@ -1056,7 +1124,7 @@ func patientLinksTokenHash(token string) string {
 func freshPatientCases(old map[string]*apiCase) map[string]*apiCase {
 	out := map[string]*apiCase{}
 	for id, c := range old {
-		out[id] = &apiCase{ID: c.ID, Programme: c.Programme, State: c.State, Consent: c.Consent, last: c.last, decisions: c.decisions}
+		out[id] = &apiCase{ID: c.ID, Programme: c.Programme, State: c.State, Consent: c.Consent, Provider: c.Provider, Closed: c.Closed, last: c.last, decisions: c.decisions}
 	}
 	return out
 }

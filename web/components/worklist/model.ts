@@ -220,6 +220,14 @@ export const OUTREACH_WORDS: Record<NonNullable<NonNullable<CaseSummary["recover
   cancelled_consent: "outreach cancelled after consent withdrawal",
 };
 
+/** An open failed teach-back callback outranks contact outcomes: logging a call never resolves it. */
+export function teachBackCallbackWords(c: CaseSummary): string | null {
+  const cb = c.teach_back_callback;
+  if (!cb || cb.status !== "open") return null;
+  if (!cb.due_at) return "Teach-back failed · nurse callback open";
+  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${atWords(cb.due_at)}`;
+}
+
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
@@ -343,6 +351,13 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Patient contact is not permitted; the simulated slot has not been offered";
     }
   }
+  const callback = teachBackCallbackWords(c);
+  if (callback) {
+    awaitingNext = false;
+    view = "call";
+    words.status = callback;
+    words.next = "Call to explain the next step, then record the consultation outcome on the case page";
+  }
   return {
     id: c.id,
     short: shortId(c.id),
@@ -356,7 +371,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     next: words.next,
     days: due ? Math.floor(now - due.fromDay) : elapsedDays(c, now),
     deadline: due ? Math.round(due.dueDay - due.fromDay) : overdueClockDays(c),
-    overdue: due ? due.state === "overdue" : c.overdue,
+    overdue: (due ? due.state === "overdue" : c.overdue) || (c.teach_back_callback?.status === "open" && c.teach_back_callback.overdue === true),
     referralDay: c.referral_day,
     procedure: PROCEDURE[c.programme],
     textsAllowed: c.consent === "granted" && !contactBlocked,

@@ -7,7 +7,7 @@ import { phoneHref, STEPS, type PhoneQuery, type Step } from "./journey";
 import { LanguageSheet } from "./language-sheet";
 import { PHONE_FONT } from "./parts";
 
-const STEP_NAMES: Record<Step, string> = { notice: "Notice", check: "Check", book: "Book" };
+const STEP_NAMES: Record<Step, string> = { notice: "Notice", check: "Check", book: "Book", outcome: "Outcome" };
 
 /** The phone column: a demo strip (English, honesty label, step links), then the patient's screen in her language. */
 export function PhoneFrame({ step, query, live = false, children }: { step: Step; query: PhoneQuery; live?: boolean; children: React.ReactNode }) {
