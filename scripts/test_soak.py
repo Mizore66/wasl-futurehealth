@@ -400,7 +400,7 @@ class EvidenceTests(unittest.TestCase):
 
     def test_pipeline_invariants_cover_wasl_lanes_not_intentional_baselines(self):
         report = {
-            "closure": {"crc": {"baseline": {"false_closures": 3}, "wasl_live_with_review": {"false_closures": 0}}},
+            "closure": {"crc": {"baseline": {"false_closures": 3}, "wasl_live_with_review": {"false_closures": 0, "unsafe_closures": 0}}},
             "consent_timing": {"released_without_granted_consent": 0, "released_after_opt_out_on_file": 0},
             "crash_recovery": {name: 0 for name in ("duplicate_outputs", "lost_outputs", "unexpected_outputs",
                 "final_state_mismatch_loops", "ingest_duplicates", "ingest_lost", "prep_duplicates", "prep_lost",
@@ -414,6 +414,22 @@ class EvidenceTests(unittest.TestCase):
         violations = soak.pipeline_invariants(report, "timeout waiting for quiescence")
         self.assertEqual(len(violations), 3)
         self.assertTrue(any("quiescence" in item for item in violations))
+
+    def test_pipeline_invariants_reject_foreign_or_unscored_closure_evidence(self):
+        report = {
+            "closure": {"cervical": {"wasl_no_review": {"false_closures": 0, "unsafe_closures": 1}},
+                        "crc": {"wasl_live_with_review": {"false_closures": 0}}},
+            "consent_timing": {"released_without_granted_consent": 0, "released_after_opt_out_on_file": 0},
+            "crash_recovery": {name: 0 for name in ("duplicate_outputs", "lost_outputs", "unexpected_outputs",
+                "final_state_mismatch_loops", "ingest_duplicates", "ingest_lost", "prep_duplicates", "prep_lost",
+                "prep_content_mismatch", "logical_duplicate_decisions")},
+            "outreach_live": {"wrong_patient_released": 0},
+            "outreach_no_review": {"wrong_patient_released": 0},
+        }
+        self.assertEqual(sorted(soak.pipeline_invariants(report, "quiescent: complete")), [
+            "closure.cervical.wasl_no_review.unsafe_closures=1 (required zero)",
+            "closure.crc.wasl_live_with_review.unsafe_closures=None (required zero)",
+        ])
 
 
 class RestartMeasurementTests(unittest.TestCase):
@@ -976,7 +992,7 @@ class LateScheduleTests(unittest.TestCase):
                 destination = Path(args[-1])
                 if destination.name == "report7.json":
                     report = {
-                        "closure": {"crc": {"wasl_live_with_review": {"false_closures": 0}}},
+                        "closure": {"crc": {"wasl_live_with_review": {"false_closures": 0, "unsafe_closures": 0}}},
                         "consent_timing": {"released_without_granted_consent": 0, "released_after_opt_out_on_file": 0},
                         "crash_recovery": {name: 0 for name in ("duplicate_outputs", "lost_outputs", "unexpected_outputs",
                             "final_state_mismatch_loops", "ingest_duplicates", "ingest_lost", "prep_duplicates", "prep_lost",
