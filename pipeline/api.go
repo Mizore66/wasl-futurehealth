@@ -96,6 +96,7 @@ type apiServer struct {
 	ledgerErr               string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine              func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 	patientRequests         map[string]patientRequestRecord            // request-id dedup across every case-bound patient link
+	demo                    map[string]regDemo                         // materialized demographics, identity-review roles only
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -336,6 +337,7 @@ func (s *apiServer) loadTimelines() {
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
 	s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
+	s.demo = map[string]regDemo{}
 	s.idSignoffs = nil
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
 		if !apiFHIRSubject.MatchString(m.Subject) && m.Subject != "fhir.review" || strings.HasSuffix(m.Subject, ".ctl") {
@@ -360,6 +362,9 @@ func (s *apiServer) loadTimelines() {
 			"day": round4(e.Day), "arrival_day": round4(arr), "category": e.Category, "raw_sha": hex.EncodeToString(h[:])[:16],
 			"source": firstNonEmpty(m.Hdr["Wsi-Src"], "fhir"), "patient_key": e.PatientKey}
 		byPK[e.PatientKey] = append(byPK[e.PatientKey], row)
+		d := s.demo[e.PatientKey]
+		d.absorb(e)
+		s.demo[e.PatientKey] = d
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
 		}

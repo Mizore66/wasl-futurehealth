@@ -503,6 +503,7 @@ export const ReviewItem = z.looseObject({
   pair: z.array(z.string()),
   p: z.number(),
   report: z.string(),
+  report_version: z.number().optional(),
   verdict: z.string(),
   conf: z.number().optional(),
   quote: z.string(),
@@ -830,6 +831,46 @@ export const ReviewClaimRequest = z.object({
   expected_claim_head: z.string().regex(/^(?:[0-9a-f]{64})?$/),
 });
 
+export const IdentityField = z.looseObject({ state: z.enum(["present", "placeholder", "missing", "unknown", "invalid"]), value: z.string().default("") });
+export const IdentityVerdict = z.enum(["match", "differ", "missing", "placeholder", "unknown", "invalid"]);
+
+const IdentityVisibleChecks = z.object({ met: z.boolean(), failures: z.array(z.string()) }).transform(({ met, failures }) => ({
+  met,
+  failures: failures.filter((code) => code !== "name_or_shared_id_check"),
+}));
+
+// Old snapshots had only a partial met/failures result. Preserve its useful
+// diagnostics without inventing original guard authority or mutating the input.
+const IdentityGuard = z.preprocess((value) => {
+  if (value === undefined) return {};
+  if (typeof value === "object" && value !== null && !Array.isArray(value) && "met" in value && "failures" in value && !("visible_checks" in value)) {
+    return {
+      authoritative: "authoritative" in value ? value.authoritative : false,
+      reason: "original_guard_context_unavailable",
+      visible_checks: { met: value.met, failures: value.failures },
+    };
+  }
+  return value;
+}, z.object({
+  authoritative: z.literal(false).default(false),
+  reason: z.literal("original_guard_context_unavailable").default("original_guard_context_unavailable"),
+  visible_checks: IdentityVisibleChecks.optional(),
+}));
+
+/** Materialized identifiers for one link item's registrations, not original item-time facts. Reviewer-only; never in the auditor export. */
+export const IdentityReview = z.discriminatedUnion("available", [
+  z.looseObject({ item: z.string(), pair: z.array(z.string()), available: z.literal(false), reason: z.string() }),
+  z.looseObject({
+    item: z.string(),
+    pair: z.array(z.string()),
+    available: z.literal(true),
+    source_scope: z.literal("materialized_registration").optional(),
+    records: z.array(z.looseObject({ registration: z.string(), name: IdentityField, dob: IdentityField, sex: IdentityField, eid: IdentityField })),
+    comparison: z.array(z.looseObject({ field: z.string(), verdict: IdentityVerdict })),
+    guard: IdentityGuard,
+  }),
+]);
+
 /** One (item, question) independent-review state machine as the API projects it for the calling credential. */
 export const ReviewState = z.looseObject({
   item: z.string(),
@@ -880,6 +921,7 @@ export const CaseDetail = withMeta({
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
+  identity_review: z.array(IdentityReview).optional(),
   current: CurrentDecision,
   booking: Booking,
 });

@@ -1,4 +1,4 @@
-import { evidenceLabelsFor, GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail, type Programme } from "@/lib/api/schema";
+import { Evidence, evidenceLabelsFor, GUIDED_EVIDENCE_LABELS, isGuided, Link as LinkFacts, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -11,12 +11,27 @@ import { purposeOf, type ReviewItems, type ReviewPurpose } from "./decision";
  * Names come from data/people.json (gap G1, simulated); every other value is the API's.
  */
 
-export type Verdict = "agrees" | "matches" | "missing" | "differs";
+export type Verdict = "match" | "differ" | "missing" | "placeholder" | "unknown" | "invalid" | "unavailable" | "separate";
 export type IdentityRow = { field: string; referral: string; report: string; verdict: Verdict };
 
 export type ReaderValue = "yes" | "no" | "not_stated" | "adequate" | "inadequate";
 export type CheckDecision = "agreed" | "agreed_none" | "not_needed" | "disputed";
 export type Check = { field: string; rules: ReaderValue; second: ReaderValue; decision: CheckDecision; disputed: boolean };
+
+export type AutomatedReaderFields = string | { quote?: string; [key: string]: string | number | boolean | undefined };
+/** Only automated facts from this item's selected evidence block cross the client boundary. */
+export type AutomatedReaderEvidence = {
+  report: string;
+  agree: boolean;
+  label: string;
+  quote: string;
+  reader_model?: string;
+  reader_a_regex?: string;
+  reader_a?: string;
+  reader_b?: string;
+  reader_a_fields?: AutomatedReaderFields;
+  reader_b_fields?: AutomatedReaderFields;
+};
 
 export type ReviewView = {
   caseId: string;
@@ -47,14 +62,29 @@ export type ReviewView = {
   /** The checks the two readers could not settle: what the one evidence answer covers. */
   disputed: { field: string; says: string }[];
   referredOn: string;
-  report: { id: string; on: string };
+  report: { id: string; on: string; version?: number };
+  referralRegistration: string;
   link: { score: number; line: number; basis: string; rule: string };
   identity: IdentityRow[];
   identitySummary: string;
+  /** Availability of the registration comparison, never original item-time or guard authority. */
+  identityAvailable: boolean;
+  /** Explicit source qualification and original configured guard unavailability; safe to serialize. */
+  identityContext: string;
+  /** Limited visible-field diagnostics, never the original configured guard result. */
+  identityGuard: string[];
   checks: Check[];
   quote: string;
   readerModel: string;
+  /** No human override, independent-human answers or loose unknown evidence fields. */
+  automatedEvidence?: AutomatedReaderEvidence;
   items: ReviewItems;
+  /**
+   * Whether the exact context each question needs is on screen. False when a raised item's own pair or own report cannot be
+   * established from the case; nothing is then borrowed from another item and the question is shown but cannot be answered.
+   * This is structural binding only: it does not say the context is current, original or guard-checked.
+   */
+  context: { link: boolean; evidence: boolean };
   trail: ChainNode[];
 };
 
@@ -74,6 +104,29 @@ const PROGRAMME_COPY: Record<Programme, { procedure: string; referral: string; r
   lung_ldct: { procedure: "LDCT follow-up", referral: "lung cancer screening referral", report: "LDCT report" },
   ifhas: { procedure: "IFHAS follow-up", referral: "IFHAS screening referral", report: "IFHAS results report" },
 };
+
+const SEX_WORD: Record<string, string> = { F: "Female", M: "Male" };
+const GUARD_WORDS: Record<string, string> = {
+  dob_missing: "Date of birth is not recorded on one or both records.",
+  dob_placeholder: "A date of birth is a placeholder (1 January or 1 July), so it does not confirm the match.",
+  dob_differ: "The dates of birth differ.",
+  dob_incompatible: "The dates of birth are not compatible.",
+  eid_missing: "Emirates ID is not recorded on one or both records.",
+  eid_placeholder: "An Emirates ID is a default or placeholder number.",
+  eid_invalid: "An Emirates ID fails its check digit.",
+  eid_differ: "The Emirates IDs differ.",
+  eid_second_disabled: "The EID path is disabled for this visible-field check.",
+  sex_unknown: "Sex is unknown on one or both records, so a matching Emirates ID does not confirm the match.",
+  sex_differ: "The recorded sexes differ.",
+};
+const IDENTIFIER_ROWS = [["name", "Name"], ["dob", "Date of birth"], ["sex", "Sex"], ["eid", "Emirates ID"]] as const;
+
+function identifierCell(field: string, v: { state: string; value: string }): string {
+  if (v.state === "present") return field === "sex" ? (SEX_WORD[v.value] ?? v.value) : v.value;
+  if (v.state === "missing") return "not recorded";
+  if (v.state === "unknown") return "unknown";
+  return `${v.value} (${v.state})`.trim();
+}
 
 const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", wasl: "name and details", human: "a person", below_tau: "below the line" };
 
@@ -120,19 +173,103 @@ const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
     `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed; disagreeing reopens it.`,
 };
 
-export function reviewView(c: CaseDetail): ReviewView {
+type RaisedItem = CaseDetail["review_items"][number];
+
+// Canonical reader wire fields (lungread/drread/breastread/ldctread.go), not a
+// classifier. IFHAS's existing reader fields are automated provenance notes.
+const AUTOMATED_FIELDS: Partial<Record<CaseDetail["case"]["programme"], readonly string[]>> = {
+  lung_nodule: ["type", "long_mm", "short_mm", "count", "solid_mm", "prior_long_mm", "prior_short_mm", "resolved", "not_assessable", "stated", "mean_mm"],
+  diabetic_retinopathy: ["r_right", "r_left", "m_right", "m_left", "urgent", "attended", "fundus", "outcome", "review_days"],
+  breast: ["birads_right", "birads_left", "birads_overall", "attended", "assessment", "biopsy", "outcome"],
+  lung_ldct: ["lungrads_overall", "lungrads_worst", "attended", "workup", "mdt", "tissue", "outcome"],
+};
+
+function automatedFields(value: unknown, programme: CaseDetail["case"]["programme"]): AutomatedReaderFields | undefined {
+  if (programme === "ifhas" && typeof value === "string") return value;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const fields: Exclude<AutomatedReaderFields, string> = {};
+  for (const key of [...(AUTOMATED_FIELDS[programme] ?? []), "label", "quote"]) {
+    const field = source[key];
+    if (typeof field === "string" || (key !== "quote" && key !== "label" && (typeof field === "boolean" || (typeof field === "number" && Number.isFinite(field))))) {
+      fields[key] = field;
+    }
+  }
+  return fields;
+}
+
+function automatedSnapshot(ev: CaseDetail["evidence"][number] | undefined, programme: CaseDetail["case"]["programme"]): AutomatedReaderEvidence | undefined {
+  if (!ev) return undefined;
+  // Deliberately no spreads from a loose API object or its chain/history.
+  return {
+    report: ev.report,
+    agree: ev.agree,
+    label: ev.label,
+    quote: ev.quote,
+    reader_model: ev.reader_model,
+    reader_a_regex: ev.reader_a_regex,
+    reader_a: ev.reader_a,
+    reader_b: ev.reader_b,
+    reader_a_fields: automatedFields(ev.reader_a_fields, programme),
+    reader_b_fields: automatedFields(ev.reader_b_fields, programme),
+  };
+}
+
+/** The evidence one raised item judges: its own chain's block first, so a revised report keeps its own version's readers and quote. */
+function evidenceFor(c: CaseDetail, item: RaisedItem | undefined, only: boolean) {
+  if (!item) return only ? undefined : c.evidence[0];
+  const block = item.chain.find((e) => e.type === "evidence" && shortId(String(e.body.report)) === shortId(item.report));
+  const parsed = block && Evidence.safeParse(block.body);
+  return parsed?.success ? parsed.data : c.evidence.find((e) => shortId(e.report) === shortId(item.report));
+}
+
+/** The link decision in a raised item's own chain: the item's original link context, which may be a multi-hop path whose weakest edge is not the outreach pair. */
+function linkFromChain(item: RaisedItem): CaseDetail["links"][number] | undefined {
+  const block = item.chain.find((e) => e.type === "link_decision");
+  const parsed = block && LinkFacts.safeParse(block.body);
+  return parsed?.success && parsed.data.loop === item.loop ? parsed.data : undefined;
+}
+
+/** With `only`, everything shown is derived from that one raised item; without it, from the case's first link and evidence items. */
+export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
   if (c.case.lifecycle === "retained") throw new Error("Retained cases have no current review work");
-  const referral = c.identities.find((i) => i.role === "referral");
-  const downstream = c.identities.find((i) => i.role === "downstream");
+  const raised = only ? [only] : c.review_items;
+  const linkItem = raised.find((r) => r.kinds.includes("link"));
+  const evidenceItem = raised.find((r) => r.kinds.includes("evidence"));
+  /*
+   * A view of one raised item takes its endpoints only from that item's own pair, by exact registration, and its link details only
+   * from that item's own chain or the exact edge. Nothing is borrowed from the referral, the first downstream record or links[0].
+   */
+  const pair = linkItem?.pair ?? evidenceItem?.pair;
+  const strict = Boolean(only && linkItem);
+  const exact = (registration: string | undefined) => (registration ? c.identities.find((i) => i.registration === registration) : undefined);
+  const referral = strict ? exact(pair?.[0]) : (c.identities.find((i) => pair && i.registration === pair[0]) ?? c.identities.find((i) => i.role === "referral"));
+  // An evidence-only item's absent registration is not the case's first downstream record either.
+  const downstream = only ? exact(pair?.[1]) : (c.identities.find((i) => pair && i.registration === pair[1]) ?? c.identities.find((i) => i.role === "downstream"));
   const a = referral && personFor(referral.registration);
   const b = downstream && personFor(downstream.registration);
-  const linkItem = c.review_items.find((r) => r.kinds.includes("link"));
-  const evidenceItem = c.review_items.find((r) => r.kinds.includes("evidence"));
-  const ev = evidenceItem ? c.evidence.find((e) => shortId(e.report) === shortId(evidenceItem.report)) : c.evidence[0];
-  const link = c.links[0];
+  const ev = evidenceFor(c, evidenceItem, Boolean(only));
+  const chainLink = strict && linkItem ? linkFromChain(linkItem) : undefined;
+  /* An accepted case-link fallback must be the exact edge for this pair and this item's own loop; another loop's edge is not borrowed. */
+  const edge = (l: CaseDetail["links"][number]) =>
+    Boolean(pair) && l.weakest_edge.a === pair?.[0] && l.weakest_edge.b === pair?.[1] && (!strict || l.loop === linkItem?.loop);
+  const endpoints = pair?.length === 2 && Boolean(referral) && Boolean(downstream);
+  const link = strict ? (endpoints ? (chainLink ?? c.links.find(edge)) : undefined) : (c.links.find(edge) ?? c.links[0]);
+  /* Strict views need both exact endpoints and the item's own link detail; absent either, no score or line is invented. */
+  const linkBound = !strict || (endpoints && Boolean(link));
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
-  const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
-  const unit = providerName(downstream?.provider ?? "");
+  const reportEvents = c.timeline.filter((e) => ev && e.id === ev.report);
+  // Timeline rows have no report-version association. A versioned item's date
+  // cannot come from an unversioned historical row, even when it is the only one.
+  const reportEvent = only && evidenceItem
+    ? (evidenceItem.report_version === undefined && reportEvents.length === 1 ? reportEvents[0] : undefined)
+    : reportEvents[0];
+  // The canonical evidence block carries its own provider-qualified report ID;
+  // missing qualification stays unavailable rather than borrowing another pair.
+  const evidenceProvider = /^([^/]+)\/DiagnosticReport\/[^/]+$/.exec(ev?.report ?? "")?.[1];
+  const unit = only && evidenceItem
+    ? (evidenceProvider ? providerName(evidenceProvider) : "Source unavailable")
+    : providerName(downstream?.provider ?? "");
   const programme = c.case.programme;
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);
@@ -146,9 +283,10 @@ export function reviewView(c: CaseDetail): ReviewView {
       : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" && !pathology ? checksFrom(ev?.fields) : [];
   /*
-   * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
-   * with agreeing name, sex and date of birth, was on file for the pair. It does not say which side lacks it, so the screen
-   * says only that the second identifier is not confirmed.
+   * The recorded reason identifies the question that was raised, not its original per-field or configured guard checks.
+   * The identifier projection below is materialized context only; it does not establish an original guard outcome.
+   * "second_identifier" means no exact date of birth, and no Emirates ID with agreeing name, sex and date of birth,
+   * was on file for the pair; it does not say which side lacks it.
    */
   const noSecondId = linkItem?.reason === "second_identifier";
   const disputed = checks
@@ -167,27 +305,30 @@ export function reviewView(c: CaseDetail): ReviewView {
 
   const purpose = purposeOf(evidenceItem?.reason);
 
-  const identity: IdentityRow[] = [
-    { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
-    {
-      field: "Emirates ID",
-      referral: "on record",
-      report: link?.weakest_edge.basis === "eid" ? "on record" : "not on report",
-      verdict: link?.weakest_edge.basis === "eid" ? "matches" : "missing",
-    },
-    {
-      field: "Second identifier",
-      referral: "on record",
-      report: noSecondId ? "not confirmed" : "on record",
-      verdict: noSecondId ? "missing" : "agrees",
-    },
-    {
-      field: "Record",
-      referral: referral?.registration.split("|")[1] ?? "",
-      report: downstream?.registration.split("|")[1] ?? "",
-      verdict: "differs",
-    },
-  ];
+  const projection = linkItem && c.identity_review?.find((e) => e.item === linkItem.item);
+  const compared = projection && projection.available ? projection : undefined;
+  const recordRow: IdentityRow = {
+    field: "Record",
+    referral: referral?.registration.split("|")[1] ?? "",
+    report: downstream?.registration.split("|")[1] ?? "",
+    verdict: "separate",
+  };
+  const identity: IdentityRow[] = compared
+    ? [
+        ...IDENTIFIER_ROWS.map(([key, field]): IdentityRow => ({
+          field,
+          referral: identifierCell(key, compared.records[0][key]),
+          report: identifierCell(key, compared.records[1][key]),
+          verdict: compared.comparison.find((x) => x.field === key)?.verdict ?? "unavailable",
+        })),
+        recordRow,
+      ]
+    : [{ field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "unavailable" }, recordRow];
+  const identityContext = compared?.source_scope === "materialized_registration"
+    ? "These identifiers are materialized across recorded events, not an original item-time snapshot. The original configured guard result is unavailable."
+    : "The identifier source scope is unavailable. The original configured guard result is unavailable.";
+  const visibleChecks = compared?.guard.visible_checks;
+  const identityGuard = visibleChecks && !visibleChecks.met ? visibleChecks.failures.flatMap((code) => GUARD_WORDS[code] ? [GUARD_WORDS[code]] : []) : [];
 
   const trail: ChainNode[] = [];
   const add = (id: string, who: string, what: string, day: number | undefined) =>
@@ -238,7 +379,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     purpose,
     disputed,
     referredOn: formatDay(c.case.referral_day),
-    report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "" },
+    report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "", version: evidenceItem?.report_version },
+    referralRegistration: referral?.registration ?? "",
     link: {
       score: link?.path_p_cal ?? 0,
       line: link?.tau ?? 0,
@@ -246,13 +388,24 @@ export function reviewView(c: CaseDetail): ReviewView {
       rule: typeof guard?.rule === "string" ? guard.rule : "",
     },
     identity,
-    identitySummary: noSecondId
-      ? `Matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, but no second identifier is confirmed. A person must confirm.`
-      : "A person must confirm the match.",
+    identityAvailable: Boolean(compared),
+    identityContext,
+    identityGuard,
+    identitySummary: !compared
+      ? "The identifier comparison is not available for this item, so the two records cannot be compared on this page. A person must confirm."
+      : noSecondId
+        ? `Matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, but no second identifier is confirmed. A person must confirm.`
+        : "A person must confirm the match.",
     checks,
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
+    automatedEvidence: only && evidenceItem && programme !== "crc" ? automatedSnapshot(ev, programme) : undefined,
     items: { link: linkItem?.item, evidence: evidenceItem?.item },
+    context: { link: linkBound, evidence: !only || !evidenceItem || Boolean(ev) },
     trail,
   };
+}
+
+export function reviewItemViews(c: CaseDetail): Record<string, ReviewView> {
+  return Object.fromEntries(c.review_items.map((item) => [item.item, reviewView(c, item)]));
 }

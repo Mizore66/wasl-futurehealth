@@ -120,9 +120,12 @@ function QuestionCard({
   claimBusy,
   headingRef,
   locked,
+  bound,
 }: {
   state: ReviewState;
   view: ReviewView;
+  /** False when this item has no context on screen: the question is shown but cannot be answered. */
+  bound: boolean;
   position: number;
   total: number;
   draft: string | undefined;
@@ -142,7 +145,10 @@ function QuestionCard({
   const reads = submittedReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
-  const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const canAnswer = bound && canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const subject = link
+    ? `Comparing ${view.referralRegistration.split("|")[1] ?? "the referral record"} with ${view.reportRegistration.split("|")[1] ?? "the report record"}`
+    : `Judging ${view.programme === "crc" ? "report" : "evidence from report"} ${view.report.id}${view.report.version ? `, version ${view.report.version}` : ""}`;
   const actions = state.claim_actions;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
@@ -167,6 +173,10 @@ function QuestionCard({
           {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
           {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
         </span>
+      </p>
+
+      <p className="m-0 mt-1 text-small" data-testid={`subject-${state.question}`}>
+        {bound ? subject : "The case context for this item is not available, so it cannot be answered here."}
       </p>
 
       {!terminal && (state.claim === undefined || actions === undefined) && (
@@ -355,6 +365,7 @@ function ClaimExpiryRefresher({ states, refreshRevision }: { states: ReviewState
 
 export function ReviewDesk({
   view,
+  itemViews,
   mode,
   next,
   waiting = true,
@@ -363,6 +374,8 @@ export function ReviewDesk({
   states,
 }: {
   view: ReviewView;
+  /** One view per raised item. When given, a question is answerable only if its own item is in here; otherwise `view` serves every item. */
+  itemViews?: Record<string, ReviewView>;
   mode: ApiMode;
   next: NextCase;
   /** Shared programme finding and reader projections from the case page. */
@@ -411,7 +424,27 @@ export function ReviewDesk({
   }
   const current = useMemo(() => (live ? orderedStates(override ?? states ?? []) : []), [live, override, states]);
   const resolved = live && allQuestionsResolved({ api_review_states: current });
-  const evidenceFinal = finalDecisions({ api_review_states: current }, "evidence")[0];
+  const viewFor = (item: string): ReviewView | undefined => (itemViews ? itemViews[item] : view);
+  /** A question is bound only when its own item has a view and that view established the exact context this question needs. */
+  const boundFor = (s: ReviewState): boolean => {
+    const v = viewFor(s.item);
+    return Boolean(v) && (!itemViews || (s.question === "link" ? v!.context.link : v!.context.evidence));
+  };
+  const contexts = [...new Set(current.map((s) => s.item))].flatMap((item) => {
+    const itemView = viewFor(item);
+    const own = { api_review_states: current.filter((s) => s.item === item) };
+    const evidenceFinal = finalDecisions(own, "evidence")[0];
+    return itemView
+      ? [{
+          item,
+          view: itemView,
+          link: own.api_review_states.some((s) => s.question === "link" && boundFor(s)),
+          evidence: own.api_review_states.some((s) => s.question === "evidence" && boundFor(s)),
+          linkAnswer: finalDecisions(own, "link")[0] as IdentityAnswer | undefined,
+          answerCell: evidenceFinal ? resolvedCell(evidenceFinal) : undefined,
+        }]
+      : [];
+  });
 
   const hasLink = Boolean(view.items.link);
   const hasEvidence = Boolean(view.items.evidence);
@@ -601,11 +634,7 @@ export function ReviewDesk({
       ? "Not the same patient. There is no second question."
       : "";
   const progress = resolutionProgress({ api_review_states: current });
-  const answerCell = !live
-    ? outcome && { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` }
-    : evidenceFinal
-      ? resolvedCell(evidenceFinal)
-      : undefined;
+  const answerCell = outcome && { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -646,7 +675,8 @@ export function ReviewDesk({
                   <QuestionCard
                     key={`${state.item}:${state.question}`}
                     state={state}
-                    view={view}
+                    view={viewFor(state.item) ?? view}
+                    bound={boundFor(state)}
                     position={i}
                     total={current.length}
                     draft={drafts[key]}
@@ -823,8 +853,22 @@ export function ReviewDesk({
         </aside>
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
-          {hasLink && <IdentityBridge view={view} answer={live ? (finalDecisions({ api_review_states: current }, "link")[0] as IdentityAnswer | undefined) : draft.identity} />}
-          {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+          {live ? (
+            <>
+              {contexts.map((ctx) => (
+                <div key={ctx.item} data-context-item={ctx.item} className="flex min-w-0 flex-col gap-3">
+                  {ctx.link && <IdentityBridge view={ctx.view} answer={ctx.linkAnswer} />}
+                  {ctx.evidence && !ctx.view.pathology && <ReadersTable view={ctx.view} signed={ctx.answerCell} />}
+                </div>
+              ))}
+              {view.programme !== "crc" && sharedEvidence}
+            </>
+          ) : (
+            <>
+              {hasLink && <IdentityBridge view={view} answer={draft.identity} />}
+              {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+            </>
+          )}
         </div>
       </div>
     </MotionConfig>
