@@ -125,7 +125,7 @@ describe("export route (download boundary)", () => {
     return d;
   };
   const bytesOf = (d: unknown) => new TextEncoder().encode(JSON.stringify(d, null, 1));
-  function live(b: Uint8Array) {
+  function live(b: Uint8Array<ArrayBuffer>) {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_AUDITOR_TOKEN", "auditor-secret-1234567890");
     vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(b, { status: 200, headers: { "content-type": "application/json" } })));

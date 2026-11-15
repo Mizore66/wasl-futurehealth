@@ -2,7 +2,8 @@ import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
-import { statusWords } from "@/components/worklist/model";
+import { isNoAction } from "@/components/worklist/days";
+import { noActionWords, statusWords } from "@/components/worklist/model";
 
 /*
  * Plain words for what the case and audit endpoints return (issues #1 and #5).
@@ -99,6 +100,9 @@ export function bodySummary(e: Chain): string {
 /** The closure reason (closed) or the hold reason (open), as the summary at the top of the case. */
 export function closureReason(d: CaseDetail): { title: string; body: string } {
   const c = d.case;
+  if (c.closed && isNoAction(c)) {
+    return { title: "Resolved, no action needed", body: `The screening finding needs no procedure: ${noActionWords(c)}.` };
+  }
   if (c.closed) {
     const closure = d.current.chain.find((e) => e.type === "closure_decision")?.body ?? {};
     const sla = num(closure.sla_days);
@@ -207,21 +211,22 @@ const LDCT_WORKUP_WORDS: Record<string, string> = {
   wk_dna: "LDCT work-up: did not attend",
 };
 
-function evidenceDecisionWords(decision: string, programme: Programme): string {
+function evidenceDecisionWords(decision: string, programme: Programme | ""): string {
+  if (programme === "") return `Historical evidence: ${plain(decision || "no answer")} (programme unavailable)`;
   if (programme === "lung_ldct") return LDCT_WORKUP_WORDS[decision] ?? `Lung-RADS ${decision || "no answer"}`;
   const answer = decision === "inadequate" ? "not adequate" : plain(decision || "no answer").toLowerCase();
   return `${EVIDENCE_LABEL[programme]} ${answer}`;
 }
 
 /** A sign-off's decision, as the reviewer would say it. */
-export function signoffWords(s: CaseDetail["signoffs"][number], programme: Programme): string {
+export function signoffWords(s: CaseDetail["signoffs"][number], programme: Programme | ""): string {
   if (s.kinds.includes("link")) return s.link === "same" ? "Same patient" : s.link === "different" ? "Not the same patient" : plain(s.link || "no answer");
   if (s.kinds.includes("evidence")) return evidenceDecisionWords(s.evidence, programme);
   return plain(s.link || s.evidence || "signed");
 }
 
 /** Review actions appended through the API: the decision as a sentence. */
-export function reviewWords(decision: string, programme: Programme): string {
+export function reviewWords(decision: string, programme: Programme | ""): string {
   if (decision === "same") return "Same patient";
   if (decision === "different") return "Not the same patient";
   if (decision === "adequate" || decision === "inadequate" || programme !== "crc") {

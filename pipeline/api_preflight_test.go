@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,15 +11,38 @@ import (
 
 func writeRequiredAPIJSON(t *testing.T, run string) {
 	t.Helper()
+	writeRequiredAPIJSONForCases(t, run, 1)
+}
+
+func writeRequiredAPIJSONForCases(t *testing.T, run string, cases int) {
+	t.Helper()
 	files := map[string]string{
-		"dashboard.json": `{"cases":1,"state_counts":{"closed":1}}`,
-		"report7.json":   `{"events":1,"programmes_live":{"crc":{"cases":1}}}`,
+		"dashboard.json": fmt.Sprintf(`{"cases":%d,"state_counts":{"closed":1}}`, cases),
+		"report7.json":   fmt.Sprintf(`{"events":1,"programmes_live":{"crc":{"cases":%d}}}`, cases),
 		"anchors.json":   `{"out.p0":"out-head","fhir":"fhir-head"}`,
 	}
 	for name, contents := range files {
 		if err := os.WriteFile(filepath.Join(run, name), []byte(contents), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// Shared CRC factories may emit multiple decisions per loop. Declare the latest
+// unique cases and their actual states, not the number of historical decisions.
+func writeRequiredAPIJSONForCaseStates(t *testing.T, run string, states map[string]string) {
+	t.Helper()
+	writeRequiredAPIJSONForCases(t, run, len(states))
+	counts := map[string]int{}
+	for _, state := range states {
+		counts[state]++
+	}
+	body, err := json.Marshal(map[string]interface{}{"cases": len(states), "state_counts": counts})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(run, "dashboard.json"), body, 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 

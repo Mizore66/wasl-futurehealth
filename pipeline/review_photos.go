@@ -98,17 +98,126 @@ func itemReportKey(it *ReviewItem) string {
 	return ""
 }
 
+// observePhotoAssociation records only unambiguous provider/report/version
+// associations. Reordered/duplicate references are the same station/digest set.
+// An empty observation or any contradiction is sticky: later replay cannot
+// restore authority by choosing the first or last positive list. This index is
+// derived only; neither normalized source references nor signed OUT are changed.
+func (s *apiServer) observePhotoAssociation(report string, version int, refs []ImgRef) {
+	if version < 0 {
+		return
+	}
+	if s.photos == nil {
+		s.photos = map[string][]ImgRef{}
+	}
+	key := reportVersionKey(report, version)
+	previous, observed := s.photos[key]
+	if !observed {
+		s.photos[key] = append([]ImgRef(nil), refs...)
+		return
+	}
+	oldSet, newSet := map[ImgRef]bool{}, map[ImgRef]bool{}
+	for _, ref := range previous {
+		oldSet[ref] = true
+	}
+	for _, ref := range refs {
+		newSet[ref] = true
+	}
+	if len(oldSet) != len(newSet) {
+		s.photos[key] = nil
+		return
+	}
+	for ref := range oldSet {
+		if !newSet[ref] {
+			s.photos[key] = nil
+			return
+		}
+	}
+}
+
+// explicitItemPhotoDigests recognizes only an unambiguous original item source
+// with an explicit producer digest list. The version is the immutable item's own
+// ReportVersion, used by itemPhotos' existing source key. False does not authorize
+// a source or establish legacy provenance: it leaves the pre-existing path alone.
+// This bounded consistency veto does not prove original capture stations or raw
+// FHIR bytes and introduces no metadata-absent availability policy.
+func explicitItemPhotoDigests(it *ReviewItem, report string) (map[string]bool, bool) {
+	parts := strings.Split(report, "/")
+	if len(parts) != 3 || parts[0] == "" || parts[1] != "DiagnosticReport" || parts[2] == "" || (it.ReportID != report && it.ReportID != parts[2]) {
+		return nil, false
+	}
+	var evidence map[string]interface{}
+	count := 0
+	for _, block := range it.Chain {
+		if block.Type == "evidence" {
+			evidence = block.Body
+			count++
+		}
+	}
+	if count != 1 || evidence["report"] != report {
+		return nil, false
+	}
+	reader, ok := evidence["image_reader"].(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	raw, present := reader["photo_shas"]
+	if !present {
+		return nil, false
+	}
+	var shas []string
+	switch refs := raw.(type) {
+	case nil: // An explicit null is the producer's empty digest list.
+	case []string:
+		shas = refs
+	case []interface{}:
+		for _, value := range refs {
+			digest, valid := value.(string)
+			if !valid {
+				return nil, false
+			}
+			shas = append(shas, digest)
+		}
+	default:
+		return nil, false
+	}
+	out := map[string]bool{}
+	for _, digest := range shas {
+		if !photoDigest.MatchString(digest) {
+			return nil, false
+		}
+		out[digest] = true
+	}
+	return out, true
+}
+
 // itemPhotos: the report's photos filed at the item's station, sorted by digest.
 func (s *apiServer) itemPhotos(it *ReviewItem) []ImgRef {
 	station := photoStationFor(it)
 	if station == "" || it.ReportVersion < 0 {
 		return nil
 	}
-	var out []ImgRef
-	seen := map[string]bool{}
+	report := itemReportKey(it)
 	// Zero/one use the existing legacy replay identity; a corrected version
 	// must never borrow an older version's media through the report-only key.
-	for _, ref := range s.photos[reportVersionKey(itemReportKey(it), it.ReportVersion)] {
+	refs := s.photos[reportVersionKey(report, it.ReportVersion)]
+	if original, explicit := explicitItemPhotoDigests(it, report); explicit {
+		observed := map[string]bool{}
+		for _, ref := range refs {
+			observed[ref.Sha] = true
+		}
+		if len(original) != len(observed) {
+			return nil
+		}
+		for digest := range observed {
+			if !original[digest] {
+				return nil
+			}
+		}
+	}
+	var out []ImgRef
+	seen := map[string]bool{}
+	for _, ref := range refs {
 		if ref.Station == station && photoDigest.MatchString(ref.Sha) && !seen[ref.Sha] {
 			seen[ref.Sha] = true
 			out = append(out, ref)

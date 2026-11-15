@@ -1,10 +1,10 @@
-import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail, type Programme } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
 import { recordFace, type Face } from "@/lib/people/identity";
-import type { ReviewItems } from "./decision";
+import { purposeOf, type ReviewItems, type ReviewPurpose } from "./decision";
 
 /** CRC evidence items raised for one narrow decision; any other reason is the ordinary report-adequacy review. */
 export const CRC_PURPOSES = {
@@ -26,7 +26,7 @@ const IMAGE_REASONS = ["completion_undocumented", "prep_grade_one_click", "image
 
 export type PhotoView = { sha: string; station: string; available: boolean; src: string };
 export type ImageContext = { model: string; caecal: string; prep: string; hint: string; textPrep: string };
-const purposeOf = (reason: string | undefined): CrcPurpose | undefined => (reason && reason in CRC_PURPOSES ? (reason as CrcPurpose) : undefined);
+const crcPurposeOf = (reason: string | undefined): CrcPurpose | undefined => (reason && reason in CRC_PURPOSES ? (reason as CrcPurpose) : undefined);
 
 /*
  * Everything the review desk shows, derived from one case detail.
@@ -46,7 +46,7 @@ export type ReviewView = {
   closed: boolean;
   /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
-  programme: CaseDetail["case"]["programme"];
+  programme: Programme;
   evidenceQuestion: string;
   /** Set when the evidence item asks one narrow CRC question; the answer does not decide whole-case closure. */
   evidenceScope?: string;
@@ -72,6 +72,8 @@ export type ReviewView = {
   reportSource: string;
   unit: string;
   held: string;
+  /** Set when the evidence item is a pilot review: a suggested closure to confirm, or an audit of a closed case. */
+  purpose?: ReviewPurpose;
   /** The checks the two readers could not settle: what the one evidence answer covers. */
   disputed: { field: string; says: string }[];
   referredOn: string;
@@ -93,7 +95,7 @@ const PROVIDERS: Record<string, string> = {
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
 
-const PROGRAMME_COPY: Record<CaseDetail["case"]["programme"], { procedure: string; referral: string; report: string }> = {
+const PROGRAMME_COPY: Record<Programme, { procedure: string; referral: string; report: string }> = {
   crc: { procedure: "colonoscopy", referral: "stool test referral", report: "colonoscopy report" },
   cervical: { procedure: "colposcopy", referral: "cervical screening referral", report: "colposcopy report" },
   lung_nodule: { procedure: "follow-up CT", referral: "lung nodule referral", report: "CT report" },
@@ -139,7 +141,17 @@ function checksFrom(fields: Record<string, unknown> | undefined): Check[] {
   });
 }
 
+export const PURPOSE_LABEL: Record<ReviewPurpose, string> = { shadow_confirm: "Suggested closure", auto_audit: "Post-closure audit" };
+
+const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
+  shadow_confirm: (closed) =>
+    `Suggested automatic closure to confirm. The case is ${closed ? "closed" : "open"}. Confirming permits closure; a different answer is followed instead.`,
+  auto_audit: (closed) =>
+    `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed; disagreeing reopens it.`,
+};
+
 export function reviewView(c: CaseDetail): ReviewView {
+  if (c.case.lifecycle === "retained") throw new Error("Retained cases have no current review work");
   const referral = c.identities.find((i) => i.role === "referral");
   const downstream = c.identities.find((i) => i.role === "downstream");
   const a = referral && personFor(referral.registration);
@@ -155,9 +167,9 @@ export function reviewView(c: CaseDetail): ReviewView {
   const copy = PROGRAMME_COPY[programme];
   const guided = isGuided(programme);
   const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
-  const purpose = programme === "crc" ? purposeOf(evidenceItem?.reason) : undefined;
+  const crcPurpose = programme === "crc" ? crcPurposeOf(evidenceItem?.reason) : undefined;
   const imageBacked = programme === "crc" && !!evidenceItem?.reason && IMAGE_REASONS.includes(evidenceItem.reason);
-  const evidenceQuestion = purpose ? CRC_PURPOSES[purpose].question : programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
+  const evidenceQuestion = crcPurpose ? CRC_PURPOSES[crcPurpose].question : programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
   /*
    * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
@@ -178,6 +190,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
     : ev && !ev.agree && `${copy.report} readers disagree`;
   const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
+
+  const purpose = purposeOf(evidenceItem?.reason);
 
   const identity: IdentityRow[] = [
     { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
@@ -230,8 +244,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     guided,
     programme,
     evidenceQuestion,
-    evidenceScope: purpose && CRC_PURPOSES[purpose].scope,
-    evidenceField: purpose && CRC_PURPOSES[purpose].field,
+    evidenceScope: crcPurpose && CRC_PURPOSES[crcPurpose].scope,
+    evidenceField: crcPurpose && CRC_PURPOSES[crcPurpose].field,
     evidenceChoices: [...evidenceChoices],
     imageBacked,
     photos: imageBacked && evidenceItem
@@ -254,7 +268,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     referralSource: `${providerName(c.case.provider)} · ${copy.referral}`,
     reportSource: `${unit} · ${copy.report}`,
     unit,
-    held: held.length ? `Held: ${held.join(", and ")}.` : "",
+    held: purpose ? PURPOSE_SUMMARY[purpose](c.case.closed) : held.length ? `Held: ${held.join(", and ")}.` : "",
+    purpose,
     disputed,
     referredOn: formatDay(c.case.referral_day),
     report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "" },
@@ -271,7 +286,7 @@ export function reviewView(c: CaseDetail): ReviewView {
     checks,
     quote: ev?.quote ?? "",
     readerModel: ev?.reader_model ?? "",
-    items: { link: linkItem?.item, evidence: evidenceItem?.item, ...(purpose && { scoped: true }) },
+    items: { link: linkItem?.item, evidence: evidenceItem?.item, ...(crcPurpose && { scoped: true }) },
     trail,
   };
 }

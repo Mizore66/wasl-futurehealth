@@ -2,75 +2,92 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { reviewView } from "@/components/review/case-view";
-import { OUTCOMES, outcomeOf, signaturesFor } from "@/components/review/decision";
+import { OUTCOMES, outcomeFor, recordedOutcome, signaturesFor } from "@/components/review/decision";
 import { ReviewDesk } from "@/components/review/review-desk";
-import { CaseDetail, ReviewState } from "@/lib/api/schema";
+import { ActiveCaseSummary, CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 
-vi.mock("@/app/app/review/[id]/actions", () => ({ claimReviewQuestion: vi.fn(), submitReviewRead: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+const queue = vi.hoisted(() => ({ reviewQueue: vi.fn() }));
+vi.mock("@/components/review/queue", () => queue);
+vi.mock("@/lib/api/source", () => ({ apiMode: () => "fixtures" }));
+vi.mock("@/lib/api/reviewer-session", () => ({ reviewerToken: async () => undefined }));
 
-const base = CaseDetail.parse(hold);
-const EVIDENCE = "rv-d55f7ccf9f12c409";
-const next = { href: "/app/review", label: "Back to Review", last: true };
-
-function withReason(reason: string | undefined, tissue = true): CaseDetail {
-  const detail = structuredClone(base);
-  detail.review_items = detail.review_items.filter((i) => i.kinds.includes("evidence")).map((i) => ({ ...i, reason }));
-  const fields = `yes/not_stated/${tissue ? "yes" : "no"}/no`;
-  detail.evidence[0].fields = { ...detail.evidence[0].fields, regex: fields, reader: fields };
-  return detail;
+function purposeCase(reason: "shadow_confirm" | "auto_audit"): CaseDetail {
+  const base = CaseDetail.extend({ case: ActiveCaseSummary }).parse(hold);
+  const item = base.review_items.find((i) => i.kinds.includes("evidence"))!;
+  return {
+    ...base,
+    case: { ...base.case, closed: reason === "auto_audit", review: "open" },
+    evidence: base.evidence.map((e) => ({ ...e, agree: true })),
+    review_items: [{ ...item, reason }],
+  };
 }
 
-const state = ReviewState.parse({
-  item: EVIDENCE, question: "evidence", state: "awaiting_r1", head: "", next_read: "r1", may_submit: true, claim_head: "c".repeat(64),
-  claim: { owner: "Rev-A", role: "clinician", read: "r1", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" },
-  claim_actions: { claim: false, renew: true, release: true, takeover: false },
-  reads: [{ read: "r1", submitted: false }], disagreement: false, canonical_unchanged: true,
-});
+describe("review purpose", () => {
+  it("labels a shadow confirmation as an open suggested closure", () => {
+    const view = reviewView(purposeCase("shadow_confirm"));
+    expect(view.purpose).toBe("shadow_confirm");
+    expect(view.held).toMatch(/suggested automatic closure/i);
+    expect(view.held).toMatch(/confirm/i);
+    expect(view.held).not.toMatch(/^Held:/);
+  });
 
-const render = (detail: CaseDetail, mode: "live" | "fixtures") =>
-  renderToStaticMarkup(createElement(ReviewDesk, { view: reviewView(detail), mode, next, states: mode === "live" ? [state] : undefined }));
+  it("labels an audit as post-closure, shows the closed state, and never calls it held", () => {
+    const view = reviewView(purposeCase("auto_audit"));
+    expect(view.purpose).toBe("auto_audit");
+    expect(view.closed).toBe(true);
+    expect(view.held).toMatch(/post-closure audit/i);
+    expect(view.held).toMatch(/closed/);
+    expect(view.held).toMatch(/reopens/);
+    expect(view.held).not.toMatch(/held|blocks|Nothing closes/i);
+  });
 
-const CASES = [
-  ["prep_ungraded_day15", "Was the bowel preparation adequate?", /bowel prep/i],
-  ["completion_undocumented", "Was the caecum reached?", /caecum/i],
-] as const;
+  it("adds no purpose to an ordinary evidence review", () => {
+    const view = reviewView(CaseDetail.parse(hold));
+    expect(view.purpose).toBeUndefined();
+  });
 
-describe.each(CASES)("%s review", (reason, question, scope) => {
-  it.each(["live", "fixtures"] as const)("asks its own question in %s mode without whole-case closure copy", (mode) => {
-    const markup = render(withReason(reason), mode);
-    expect(markup).toContain(question);
-    expect(markup).toContain("settles only this question");
-    expect(markup).toMatch(/histology/i);
-    expect(markup).toMatch(scope);
-    expect(markup).not.toContain("Is the colonoscopy report adequate?");
-    expect(markup).not.toContain("enough to close her case");
+  it("words the previews for each purpose and answer", () => {
+    expect(outcomeFor("close", "shadow_confirm").preview).toBe("Would confirm the suggested closure");
+    expect(outcomeFor("close", "shadow_confirm").text("Mariam", "Noor", false)).toMatch(/permits closure/);
+    expect(outcomeFor("inadequate", "shadow_confirm").preview).toMatch(/Would not confirm/);
+    expect(outcomeFor("close", "auto_audit").preview).toBe("Would leave the case closed");
+    expect(outcomeFor("close", "auto_audit").text("Mariam", "Noor", false)).toMatch(/stays closed/);
+    expect(outcomeFor("inadequate", "auto_audit").preview).toBe("Would reopen the case");
+    expect(outcomeFor("close", undefined)).toBe(OUTCOMES.close);
+  });
+
+  it("reports only the appended answer unless refreshed data confirms a change", () => {
+    const sigs = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
+    expect(recordedOutcome("close", sigs, false, "shadow_confirm").recordedText).toBe(
+      "Report adequate was appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+    );
+    expect(recordedOutcome("close", sigs, true, "shadow_confirm").recordedText).toContain("Refreshed case data confirms closure.");
+    const agree = recordedOutcome("close", sigs, false, "auto_audit").recordedText;
+    expect(agree).toMatch(/appended to the demo review log/);
+    expect(agree).toMatch(/not changed/);
+    const disagree = recordedOutcome("inadequate", signaturesFor({ report: "inadequate" }, { evidence: "rv-evidence" }), false, "auto_audit").recordedText;
+    expect(disagree).toMatch(/appended to the demo review log/);
+    expect(disagree).toMatch(/reopening is not confirmed/);
+  });
+
+  it.each(["shadow_confirm", "auto_audit"] as const)("renders the %s desk without the generic close copy", (reason) => {
+    const view = reviewView(purposeCase(reason));
+    const markup = renderToStaticMarkup(createElement(ReviewDesk, { view, mode: "fixtures", next: { href: "/app/review", label: "Back", last: true } }));
     expect(markup).not.toContain("Close the case");
   });
-
-  it("keeps the adequate answer but previews only the narrow resolution, with tissue taken and histology pending", () => {
-    const view = reviewView(withReason(reason, true));
-    const key = outcomeOf({ report: "adequate" }, view.items);
-    expect(signaturesFor({ report: "adequate" }, view.items)).toEqual([{ item: EVIDENCE, decision: "adequate" }]);
-    const outcome = OUTCOMES[key!];
-    const words = [outcome.commit, outcome.preview, outcome.text("Maryam", view.unit, false), outcome.recordedText].join(" ");
-    expect(words).not.toMatch(/clos/i);
-    expect(words).toMatch(/histology/i);
-  });
 });
 
-describe("ordinary CRC evidence review", () => {
-  it.each([undefined, "evidence_disputed"])("keeps the generic wording and closure preview for reason %s", (reason) => {
-    const detail = withReason(reason);
-    const view = reviewView(detail);
-    expect(view.evidenceQuestion).toBe("Is the colonoscopy report adequate?");
-    expect(outcomeOf({ report: "adequate" }, view.items)).toBe("close");
-    for (const mode of ["live", "fixtures"] as const) {
-      const markup = render(detail, mode);
-      expect(markup).toContain("Is the colonoscopy report adequate?");
-      expect(markup).toContain("enough to close her case");
-      expect(markup).not.toContain("settles only this question");
-    }
+describe("review queue page", () => {
+  it("shows each purpose in the queue and drops the universal claim", async () => {
+    const shadow = purposeCase("shadow_confirm");
+    const audit = purposeCase("auto_audit");
+    audit.case = { ...audit.case, id: "audit-case" };
+    queue.reviewQueue.mockResolvedValue({ cases: [shadow, audit], source: "open" });
+    const { default: Page } = await import("@/app/app/review/page");
+    const markup = renderToStaticMarkup(await Page({ searchParams: Promise.resolve({}) } as never));
+    expect(markup).not.toContain("Nothing closes without it");
+    expect(markup).toMatch(/Suggested closure/);
+    expect(markup).toMatch(/Post-closure audit/);
   });
 });

@@ -26,7 +26,7 @@ func ifNote(id string, day float64, label, basis string, p float64, nearMiss boo
 }
 
 func ifFacts(down ...DownFact) *LoopFacts {
-	return &LoopFacts{LoopID: "ifh-screen/ServiceRequest/IFH-sr-1", Provider: "ifh-screen", SRDay: 10, SRRec: ifSRRec, Prog: "ifhas", Down: down}
+	return &LoopFacts{LoopID: "ifh-screen/ServiceRequest/IFH-sr-1", Provider: "ifh-screen", SRDay: 10, SRRec: ifSRRec, Prog: "ifhas", IFHAS: &IFHASSR{Screen: "IFH-dr-1"}, Down: down}
 }
 
 const ifNormal = "bp=N;glyc=N;lipid=N;weight=N"
@@ -94,6 +94,50 @@ func TestIfhasClosesWhenEveryDomainResolved(t *testing.T) {
 	d, _ := runLung(t, ifFacts(screen, ifNote("IFU-dr-1", 30, "bp=managed;glyc=not_confirmed", "eid", 1, false)), 120)
 	if d.Ifhas.Status["bp"] != "managed" || d.Ifhas.Status["glyc"] != "not_confirmed" || d.ClosingReport != "IFU-dr-1" || d.ProcDay != 30 {
 		t.Fatalf("per-domain outcome not recorded: %+v", d.Ifhas)
+	}
+}
+
+func TestIfhasLaterPendingReopensAndFinalResolutionCloses(t *testing.T) {
+	screen := ifScreen("IFH-dr-1", 10, "bp=H;glyc=D;lipid=N;weight=N")
+	resolved := ifNote("IFU-dr-1", 30, "bp=managed;glyc=managed", "eid", 1, false)
+	reopened := ifNote("IFU-dr-2", 40, "glyc=pending", "eid", 1, false)
+	d, _ := runLung(t, ifFacts(screen, resolved, reopened), 40)
+	if d.State != "open" || d.Ifhas.Status["bp"] != "managed" || d.Ifhas.Status["glyc"] != "pending" ||
+		len(d.Ifhas.Documents) != 2 || d.Ifhas.Documents[0] != "IFU-dr-1" || d.Ifhas.Documents[1] != "IFU-dr-2" ||
+		d.Ifhas.ResDay["bp"] != 30 || d.Ifhas.ResDay["glyc"] != 0 || d.Ifhas.DeadlineDay != 69 ||
+		d.ClosedDay != 0 || d.ClosingReport != "" || d.Ifhas.WithinDeadline || lastBlock(d) != "hold_decision" || !verifyChain(d.Chain) {
+		t.Fatalf("later pending did not reopen final domain state: %+v", d)
+	}
+
+	saved := OutreachOn
+	OutreachOn = true
+	defer func() { OutreachOn = saved }()
+	f := ifFacts(screen, resolved, reopened)
+	f.Contact = "granted"
+	d, _ = runLung(t, f, 120)
+	if !d.Overdue || d.State == "closed" || d.Ifhas.WithinDeadline || !hasEsc(d, "overdue_ifhas_followup") || len(d.Outreach) != 1 ||
+		d.Outreach[0].Kind != "ifhas_overdue_followup" || !d.Outreach[0].Released {
+		t.Fatalf("reopened loop did not recover overdue/outreach state: %+v", d)
+	}
+
+	final := ifNote("IFU-dr-3", 50, "glyc=managed", "eid", 1, false)
+	d, _ = runLung(t, ifFacts(screen, reopened, resolved, final), 120) // input order must not change clinical reduction
+	if d.State != "closed" || d.ClosedDay != 50 || d.ClosingReport != "IFU-dr-3" || d.ProcDay != 50 || !d.Ifhas.WithinDeadline ||
+		len(d.Ifhas.Documents) != 3 || d.Ifhas.Documents[2] != "IFU-dr-3" || d.Ifhas.ResDay["bp"] != 30 || d.Ifhas.ResDay["glyc"] != 50 ||
+		d.Ifhas.Status["bp"] != "managed" || d.Ifhas.Status["glyc"] != "managed" || lastBlock(d) != "closure_decision" || !verifyChain(d.Chain) {
+		t.Fatalf("final reopened-domain resolution did not close on day 50: %+v", d)
+	}
+
+	laterResolved := ifNote("IFU-dr-4", 55, "bp=managed", "eid", 1, false)
+	d, _ = runLung(t, ifFacts(screen, resolved, reopened, final, laterResolved), 120)
+	if d.ClosedDay != 55 || d.ClosingReport != "IFU-dr-4" || d.Ifhas.ResDay["bp"] != 55 {
+		t.Fatalf("latest resolved status and closure candidate disagree: %+v", d)
+	}
+
+	unread := ifNote("IFU-unread", 35, "", "eid", 1, false)
+	d, out := runLung(t, ifFacts(screen, resolved, unread, reopened), 120)
+	if d.State == "closed" || d.ClosingReport != "" || len(d.Pending) != 1 || !hasReview(out, "evidence") || len(d.Ifhas.Documents) != 1 {
+		t.Fatalf("unread document after transient resolution allowed closure: %+v", d)
 	}
 }
 
