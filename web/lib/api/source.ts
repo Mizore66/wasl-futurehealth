@@ -26,6 +26,8 @@ import {
   ReviewError,
   ReviewRequest,
   ReviewResponse,
+  ReviewSourceResponse,
+  SourceStatus,
   UndoProjection,
   UndoRequest,
   type CaseSummary,
@@ -34,7 +36,9 @@ import {
   type ConsentRequest as ConsentRequestInput,
   type ContestRequest as ContestRequestBody,
   type ContestResolutionRequest as ContestResolutionRequestBody,
+  type ReviewSource,
   type Role,
+  type SourceStatus as SourceStatusValue,
   type UndoRequest as UndoRequestBody,
   type UndoProjection as UndoProjectionBody,
 } from "./schema";
@@ -468,6 +472,25 @@ export async function getCaseWithToken(id: string, token: string): Promise<Revie
   if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return { ok: true, detail: CaseDetail.parse(await res.json()) };
+}
+
+export type ReviewSourceResult =
+  | { ok: true; source: ReviewSource }
+  /** 409 names why the matching report cannot be opened; every other refusal carries no detail. */
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409; sourceStatus?: SourceStatusValue };
+
+/** The source report a raised evidence item judges, fetched with the signer's own token. Opening it records nothing. */
+export async function getReviewSourceWithToken(id: string, item: string, token: string): Promise<ReviewSourceResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}/review/source?item=${encodeURIComponent(item)}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  const json = await res.json().catch(() => undefined);
+  if (res.ok) return { ok: true, source: ReviewSourceResponse.parse(json).source };
+  if (res.status === 409) {
+    const status = SourceStatus.safeParse((json as { source_status?: unknown } | undefined)?.source_status);
+    return { ok: false, status: 409, sourceStatus: status.success ? status.data : undefined };
+  }
+  if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
+  throw new Error(`GET review source: HTTP ${res.status}`);
 }
 
 export type ReviewReadResult =

@@ -74,6 +74,7 @@ type apiServer struct {
 	signoffs        map[string][]map[string]interface{}
 	idSignoffs      []Signoff                           // actual FHIR answers retain pair/purpose omitted from the reviewer display ledger
 	facts           map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	sources         map[string][]sourcePointer          // provider-qualified report@version -> FHIR log pointers (no text)
 	ids             map[string][]map[string]string      // loop -> linked registrations
 	dashboard       map[string]interface{}
 	report          map[string]interface{}
@@ -327,6 +328,7 @@ func (s *apiServer) loadTimelines() {
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
 	s.idSignoffs = nil
+	s.sources = map[string][]sourcePointer{}
 	for _, m := range readLog(filepath.Join(s.run, "fhir_log.ndjson")) {
 		if !apiFHIRSubject.MatchString(m.Subject) && m.Subject != "fhir.review" || strings.HasSuffix(m.Subject, ".ctl") {
 			continue
@@ -337,6 +339,9 @@ func (s *apiServer) loadTimelines() {
 		if so != nil {
 			s.idSignoffs = append(s.idSignoffs, *so)
 			continue
+		}
+		if e != nil {
+			s.indexSource(prov, e, m)
 		}
 		if e == nil || e.PatientKey == "" {
 			continue
@@ -726,6 +731,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	sub := ""
 	if strings.HasSuffix(rest, "/review/claim") {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
+	} else if strings.HasSuffix(rest, "/review/source") {
+		rest, sub = strings.TrimSuffix(rest, "/review/source"), "review/source"
 	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
@@ -747,6 +754,8 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
 		s.caseReview(w, r, c)
+	case sub == "review/source" && r.Method == http.MethodGet:
+		s.caseReviewSource(w, r, c)
 	case sub == "review/claim" && r.Method == http.MethodPost:
 		s.caseReviewClaim(w, r, c)
 	case sub == "review/claim":
@@ -835,6 +844,12 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if !found {
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
+			return
+		}
+	}
+	if act == ActSignEvidence {
+		if refusal := s.evidenceSourceRefusal(c, req.Item); refusal != nil {
+			writeJSONResp(w, 409, s.envelope(refusal))
 			return
 		}
 	}

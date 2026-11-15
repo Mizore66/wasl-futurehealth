@@ -1195,6 +1195,15 @@ export const ReviewClaimResponse = withMeta({
 });
 
 /** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
+/** GET /api/cases/{id}/review/source: the complete report revision one raised evidence item judges. */
+export const ReviewSourceResponse = withMeta({
+  item: z.string(),
+  source: z.object({ report: z.string(), report_version: z.number().int(), day: z.number(), category: z.string().optional(), text: z.string() }),
+});
+export type ReviewSource = z.infer<typeof ReviewSourceResponse>["source"];
+export const SourceStatus = z.enum(["missing", "ambiguous", "unreadable"]);
+export type SourceStatus = z.infer<typeof SourceStatus>;
+
 export const ReviewError = withMeta({
   error: z.string(),
   conflict: z.enum(["claim_active", "claim_required", "claim_expired", "claim_head", "review_state", "head"]).optional(),

@@ -50,14 +50,15 @@ func irRun(t *testing.T) string {
 	defer f.Close()
 	for i, it := range []*ReviewItem{
 		{ItemID: irLinkItem, LoopID: ledgerLoop, Kinds: []string{"link"}},
-		{ItemID: irEvItem, LoopID: ledgerLoop, Kinds: []string{"evidence"}},
-		{ItemID: irBoth, LoopID: ledgerLoop, Kinds: []string{"link", "evidence"}},
+		{ItemID: irEvItem, LoopID: ledgerLoop, Kinds: []string{"evidence"}, ReportID: irSourceReport, ReportVersion: 1, Chain: sourceChain("exp-prov", irSourceReport)},
+		{ItemID: irBoth, LoopID: ledgerLoop, Kinds: []string{"link", "evidence"}, ReportID: irSourceReport, ReportVersion: 1, Chain: sourceChain("exp-prov", irSourceReport)},
 	} {
 		m := LogMsg{Seq: uint64(10 + i), Subject: "out.p0", Hdr: map[string]string{}}
 		encodeEnv(&m, OutEnvelope{Kind: "review", Item: it})
 		b, _ := json.Marshal(m)
 		f.Write(append(b, '\n'))
 	}
+	appendLogMsgs(t, run, "fhir_log.ndjson", sourceReportMsg(9, "exp-prov", irSourceReport, 1, irSourceText))
 	return run
 }
 

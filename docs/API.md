@@ -48,6 +48,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 | GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registration pseudonyms), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
 | GET | `/api/cases/{id}/audit` | Redacted `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; redacted review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
+| GET | `/api/cases/{id}/review/source?item=<item>` | Evidence signers only: the complete source report revision a raised evidence item judges (below) |
 | POST | `/api/cases/{id}/review/claim` | Append an independent-review claim, renew, release or takeover event (below) |
 | POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note, or simulated reservation accept/choose/reschedule/cancel (below) |
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
@@ -293,7 +294,17 @@ Patient actions append `patient_journey` events to the existing hash-chained `ap
 - 201 with the appended event;
 - 403 for a role that isn't allowed;
 - 404 for an item that wasn't raised for this case;
-- 400 for a malformed body or missing actor.
+- 400 for a malformed body or missing actor;
+- 409 with `source_status` (`missing` | `ambiguous` | `unreadable`) for an evidence decision whose item's source report cannot be opened, or that names no raised item. Nothing is appended. The same gate applies to independent reads, including the senior resolution. Identity decisions are not gated.
+
+### GET review source (built, synthetic run only)
+
+`GET /api/cases/{id}/review/source?item=<review item id>` returns `{"item", "source": {"report", "report_version", "day", "category", "text"}}` with `Cache-Control: no-store`. It needs a role allowed to sign evidence (clinician, senior clinician); other roles get 403 and no content.
+
+- **Binding:** the item's evidence chain names one provider-qualified report (`<provider>/DiagnosticReport/<id>`). The API serves only that report at the item's `report_version`. Another case's item, an identity-only item or an unraised item gets 404 or 400.
+- **Pointers, not copies:** at load the API keeps a pointer (FHIR log sequence and SHA-256) per report revision, not the text. Each request re-reads the synthetic run's `fhir_log.ndjson`, which stands in for the source system (simulated). A live deployment would retrieve from the authoritative source system instead (designed, not built).
+- **Fail closed:** no matching revision is `missing`, two different payloads for one revision are `ambiguous`, and a pointer that no longer matches its hash or has no text is `unreadable`. Each returns 409 with `source_status` and no paths.
+- Opening a source report appends nothing and never answers or closes a question. Auditor exports do not include report text.
 
 **Append-only:** every action is appended to `<run>/api_reviews.ndjson` as a hash-chained event (`prev` → `hash`). The run's decisions are never modified. Review history shows in `api_reviews` and in `/audit` → `history`.
 

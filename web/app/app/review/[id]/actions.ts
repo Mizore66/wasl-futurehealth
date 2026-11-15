@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { apiMode, getCaseWithToken, postReviewClaimWithToken, postReviewWithToken } from "@/lib/api/source";
+import { apiMode, getCaseWithToken, getReviewSourceWithToken, postReviewClaimWithToken, postReviewWithToken, type ReviewSourceResult } from "@/lib/api/source";
 import * as session from "@/lib/api/reviewer-session";
 import { type SignInResult } from "@/components/review/auth";
 import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
@@ -40,6 +40,14 @@ export type SubmitReadResult =
   /** The write was committed but its response was unreadable: no hash is claimed; `states` is a fresh read when available. */
   | { ok: true; committed: true; read: string; states?: ReviewState[]; hash?: undefined }
   | { ok: false; failure: ReadFailure; states?: ReviewState[] };
+
+/** The report behind one raised evidence item, read with the signed-in reviewer's own token. */
+export async function readReviewSource(caseId: string, item: string): Promise<ReviewSourceResult> {
+  if (apiMode() !== "live") throw new Error("readReviewSource needs WASL_API_URL");
+  const token = await session.reviewerToken();
+  if (!token) return { ok: false, status: 401 };
+  return getReviewSourceWithToken(caseId, item, token);
+}
 
 const ReadInput = z.strictObject({
   item: z.string().min(1),

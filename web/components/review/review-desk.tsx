@@ -42,6 +42,7 @@ import { ReviewerSignOut } from "./reviewer-login";
 import { IdentityBridge } from "./identity-bridge";
 import { Pill } from "./marks";
 import { ReadersTable } from "./readers-table";
+import { SourceReport } from "./source-report";
 
 export type NextCase = { href: string; label: string; last: boolean };
 
@@ -148,6 +149,8 @@ function QuestionCard({
   const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
   const actions = state.claim_actions;
   const needsNote = next === "r3" && !note.trim();
+  const [sourceOk, setSourceOk] = useState(false);
+  const withheld = !link && !sourceOk;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
@@ -252,6 +255,7 @@ function QuestionCard({
 
       {canAnswer && (
         <div className="mt-3">
+          {!link && <SourceReport caseId={view.caseId} item={state.item} onAvailable={setSourceOk} />}
           <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${id}-help`}>
             <legend className="p-0 text-small font-medium">
               {READ_LABEL[next]}: {link ? "your answer" : "your evidence label"}
@@ -292,8 +296,10 @@ function QuestionCard({
           />
           <button
             type="button"
-            onClick={onSubmit}
-            aria-disabled={busy || !draft || needsNote}
+            onClick={() => {
+              if (!withheld) onSubmit();
+            }}
+            aria-disabled={busy || !draft || needsNote || withheld}
             className="mt-3 min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
           >
             {busy ? "Saving…" : SUBMIT_LABEL[next]}
