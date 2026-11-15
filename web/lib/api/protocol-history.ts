@@ -2,6 +2,7 @@ import "server-only";
 import { getReviewCase } from "@/lib/api/reviewer-session";
 import { apiMode, getAudit, getUndoProjection } from "@/lib/api/source";
 import type { Audit, UndoProjection } from "@/lib/api/schema";
+import { containsModelOutput, viewerMayReadModel } from "@/lib/api/export-guard";
 import { concealsInitialRead, protocolRead } from "@/lib/domain/stage";
 
 /*
@@ -16,9 +17,23 @@ export type HistoryStatus = "ok" | "signin" | "concealed";
  * `signedIn`: the viewer's reviewer-session token was accepted for this case on the latest read. Governance controls
  * (undo, contest, resolve) act only as that token, so without it the page shows a sign-in prompt instead.
  */
-export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null; signedIn: boolean; session?: import("@/components/review/auth").ReviewSessionInfo };
+export type GatedHistory = { status: HistoryStatus; audit: Audit | null; projection: UndoProjection | null; signedIn: boolean; modelWithheld?: boolean; session?: import("@/components/review/auth").ReviewSessionInfo };
 
 type Viewer = Awaited<ReturnType<typeof getReviewCase>>;
+/** A model verdict is shown only to a signed-in viewer whose own detail shows a visible read for every evidence question. */
+const mayReadModel = (v: Viewer) => v.authenticated && viewerMayReadModel(v.detail);
+/** Model-free parts of an audit. The chain (and its hashes), every unknown key and any model-bearing event are dropped. */
+const withoutModel = (a: Audit): Audit => ({
+  meta: a.meta,
+  case: a.case,
+  chain: [],
+  chain_length: a.chain_length,
+  chain_verified: a.chain_verified,
+  decision_signatures: a.decision_signatures.map((s) => ({ decision_id: s.decision_id, policy: s.policy, sig: s.sig, recomputed: s.recomputed })),
+  anchors: a.anchors,
+  ...(a.anchor_note === undefined ? {} : { anchor_note: a.anchor_note }),
+  history: a.history.filter((e) => !containsModelOutput(e)),
+});
 const hidden = (v: Viewer) => v.authenticated && concealsInitialRead(v.detail.api_review_states ?? []);
 
 export async function gatedHistory(id: string, opts: { before?: Viewer; needAudit?: boolean } = {}): Promise<GatedHistory> {
@@ -34,9 +49,14 @@ export async function gatedHistory(id: string, opts: { before?: Viewer; needAudi
   const signedIn = after.authenticated;
   if (!audit) return { status: "ok", audit: null, projection: null, signedIn };
 
-  const hasProtocol = audit.history.some((e) => protocolRead(e) !== undefined);
+  // Fails closed: a representation carrying the image reader's verdict leaves this function only when the viewer was
+  // eligible both before and after the privileged fetch. Hiding history alone never conceals chain bodies or hashes.
+  const modelWithheld = containsModelOutput(audit) && !(mayReadModel(before) && mayReadModel(after));
+  const safe = modelWithheld ? withoutModel(audit) : audit;
+  const hasProtocol = safe.history.some((e) => protocolRead(e) !== undefined);
   const concealed = hidden(before) || hidden(after);
   const status: HistoryStatus = concealed ? "concealed" : hasProtocol && !after.authenticated ? "signin" : "ok";
-  if (status === "ok") return { status, audit, projection, signedIn, session: after.authenticated ? after.session : undefined };
-  return { status, audit: { ...audit, history: [] }, projection: null, signedIn };
+  const flag = modelWithheld ? { modelWithheld } : {};
+  if (status === "ok") return { status, audit: safe, projection, signedIn, ...flag, session: after.authenticated ? after.session : undefined };
+  return { status, audit: { ...safe, history: [] }, projection: null, signedIn, ...flag };
 }

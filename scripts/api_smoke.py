@@ -345,7 +345,12 @@ def discover_independent_items(c, programmes, need=2):
             for question, env in viewers:
                 code, detail = c.request("GET", case_path(cid), token_env=env)
                 check(code == 200, f"independent discovery: GET {cid} returned {code}")
+                pathology = {i.get("item") for i in detail.get("review_items", [])
+                             if any(e.get("category") == "pathology" and e.get("id", "").endswith("/" + i.get("report", "\0"))
+                                    for e in detail.get("timeline", []))}
                 for st in detail.get("api_review_states", []):
+                    if st.get("item") in pathology:  # a CRC pathology item takes histology labels, not the adequate/inadequate set the smoke submits
+                        continue
                     if st.get("question") == question and st.get("state") == "awaiting_r1" and st.get("claim_actions", {}).get("claim") is True:
                         found.append((cid, st["item"], question))
             if len(found) >= need:

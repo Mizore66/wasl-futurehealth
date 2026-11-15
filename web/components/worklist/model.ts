@@ -493,7 +493,7 @@ const FIELD = {
 const word = (v: string | undefined) => (v ? (FIELD[v] ?? v) : "Not read");
 
 /** Lung, DR and breast evidence: each reader's label, and the first reader's quote. */
-export function readerLabels(ev: CaseDetail["evidence"][number]): { checks: Check[]; quote: string } {
+export function readerLabels(ev: Pick<CaseDetail["evidence"][number], "reader_a_regex" | "reader_a" | "reader_b" | "label" | "quote" | "reader_a_fields">): { checks: Check[]; quote: string } {
   const a = ev.reader_a_regex ?? ev.reader_a ?? ev.label;
   const b = ev.reader_b ?? ev.label;
   const words = (v: string) => v.replaceAll("_", " ");

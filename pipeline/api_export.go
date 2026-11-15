@@ -133,11 +133,50 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 			}
 		}
 	}
+	items := nz(s.queue[c.ID])
+	current := c.last
+	imageQuestions := s.visibleImageQuestions(c, viewer)
+	if imageQuestions != nil {
+		// Historical evidence is another serialized copy of the same model
+		// content; importing a history label must not bypass question blinding.
+		for _, rows := range [][]map[string]interface{}{ev, evidenceHistory} {
+			for i, b := range rows {
+				if _, has := b["image_reader"]; has {
+					cp := make(map[string]interface{}, len(b))
+					for k, v := range b {
+						if k != "image_reader" {
+							cp[k] = v
+						}
+					}
+					rows[i] = cp
+				}
+			}
+		}
+		items = make([]*ReviewItem, len(s.queue[c.ID]))
+		for i, it := range s.queue[c.ID] {
+			cp := *it
+			if !imageQuestions[it.ItemID] {
+				cp.Chain = withoutImageVerdict(it.Chain)
+			}
+			items[i] = &cp
+		}
+		if current != nil {
+			cp := *current
+			cp.Chain = withoutImageVerdict(current.Chain)
+			current = &cp
+		}
+	}
 	body := map[string]interface{}{
 		"case": s.summary(c), "identities": nz(identities), "timeline": caseTimelineForSerialization(facts), "links": links, "evidence": ev, "holds": holds,
-		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
+		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": items, "signoffs": nz(s.signoffs[c.ID]),
+		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": current, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
+	}
+	if review := s.identityReview(c, viewerOrNobody(viewer)); review != nil {
+		body["identity_review"] = review
+	}
+	if photos := s.reviewPhotos(c); len(photos) > 0 {
+		body["review_photos"] = photos
 	}
 	if len(identityHistory) > 0 {
 		body["identity_history"] = identityHistory
@@ -629,7 +668,7 @@ var exportPatientAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
+	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind", "source_binding",
 		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
 		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent", "confirmation")

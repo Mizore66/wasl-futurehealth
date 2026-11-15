@@ -1,4 +1,6 @@
-import type { Check, CheckDecision, ReaderValue, ReviewView } from "./case-view";
+import { readerLabels } from "@/components/worklist/model";
+import { plain } from "@/lib/domain/terms";
+import type { AutomatedReaderEvidence, Check, CheckDecision, ReaderValue, ReviewView } from "./case-view";
 import type { Outcome } from "./decision";
 import { Mark, Pill, type Shape, type Tone } from "./marks";
 
@@ -48,18 +50,71 @@ const ROW = "grid grid-cols-1 gap-y-1 @xl:grid-cols-[minmax(0,34fr)_minmax(0,22f
 /** The column name, shown on each value only when the columns have folded into a card. */
 const Label = ({ children }: { children: string }) => <span className="mr-2 inline-block w-28 flex-none text-small text-muted @xl:hidden">{children}</span>;
 
+function automatedRows(ev: AutomatedReaderEvidence): { field: string; a: string; b: string }[] {
+  const a = ev.reader_a_fields;
+  const b = ev.reader_b_fields;
+  if (typeof a === "string" || typeof b === "string") {
+    return [{ field: "Reader note", a: typeof a === "string" && a ? a : "Unavailable", b: typeof b === "string" && b ? b : "Unavailable" }];
+  }
+  const keys = [...new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})])].filter((key) => key !== "quote");
+  return keys.map((key) => ({ field: plain(key), a: a?.[key] === undefined ? "Unavailable" : String(a?.[key]), b: b?.[key] === undefined ? "Unavailable" : String(b?.[key]) }));
+}
+
+/** Client-safe automated facts only; never another human's independent answer. */
+function AutomatedReadersTable({ view }: { view: ReviewView }) {
+  const ev = view.automatedEvidence;
+  // The snapshot is already explicitly whitelisted. Do not use the overall
+  // label as a substitute for a missing individual reader's output.
+  const labels = ev && readerLabels({ ...ev, label: "" });
+  const rows = ev ? automatedRows(ev) : [];
+  const quoteB = typeof ev?.reader_b_fields === "object" ? ev.reader_b_fields.quote : undefined;
+  return (
+    <section aria-labelledby={`automated-readers-h-${view.items.evidence ?? "case"}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
+      <h2 id={`automated-readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">Automated reader evidence</h2>
+      <p className="m-0 mt-1 text-small text-muted">
+        {view.unit} report {view.report.id}{view.report.version ? ` version ${view.report.version}` : ""} · {view.report.on || "Date unavailable"}
+      </p>
+      {!ev ? <p className="m-0 mt-3 text-small text-muted">Automated reader evidence is unavailable for this item.</p> : (
+        <>
+          <dl className="m-0 mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-small">
+            {labels?.checks.map((check) => (
+              <div key={check.name} className="contents"><dt>{check.name}</dt><dd className="m-0">{check.result || "Unavailable"}</dd></div>
+            ))}
+          </dl>
+          {rows.length ? (
+            <table className="mt-3 w-full border-collapse text-left text-small">
+              <caption className="pb-1 text-left text-muted">What each automated reader read, field by field</caption>
+              <thead><tr><th scope="col" className="py-1 pr-3 font-normal">Field</th><th scope="col" className="py-1 pr-3 font-normal">Reader A</th><th scope="col" className="py-1 font-normal">Reader B</th></tr></thead>
+              <tbody>{rows.map((row) => (
+                <tr key={row.field} className="border-t border-rule align-top"><th scope="row" className="py-2 pr-3 font-normal">{row.field}</th><td className="py-2 pr-3 [overflow-wrap:anywhere]">{row.a}</td><td className="py-2 [overflow-wrap:anywhere]">{row.b}</td></tr>
+              ))}</tbody>
+            </table>
+          ) : <p className="m-0 mt-3 text-small text-muted">Automated reader fields are unavailable for this item.</p>}
+          <blockquote className="m-0 mt-3 rounded-control bg-raised px-4 py-3 text-small">
+            <p className="m-0">{labels?.quote ? `“${labels.quote}”` : "Automated quote unavailable."}</p>
+            {quoteB && quoteB !== labels?.quote ? <p className="m-0 mt-2">Reader B quotes: “{quoteB}”</p> : !quoteB && <p className="m-0 mt-2 text-muted">Reader B quote unavailable.</p>}
+          </blockquote>
+          <p className="m-0 mt-2 text-small text-muted">Second reader model: {ev.reader_model || "Unavailable"}</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 /** Two readers side by side, one row per closure check, with the report quote below. */
 export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outcome["answerCell"] }) {
+  if (view.programme !== "crc") return <AutomatedReadersTable view={view} />;
   return (
-    <section aria-labelledby="readers-h" className="@container rounded-card border border-line bg-surface p-4 md:p-6">
+    <section aria-labelledby={`readers-h-${view.items.evidence ?? "case"}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 id="readers-h" className="m-0 text-section font-medium">
-          Is the report enough to close her case?
+        <h2 id={`readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">
+          {view.evidenceScope ? view.evidenceQuestion : "Is the report enough to close her case?"}
         </h2>
         <span className="text-small text-muted">
-          {view.unit} report {view.report.id} · {view.report.on}
+          {view.unit} report {view.report.id}{view.report.version ? ` version ${view.report.version}` : ""} · {view.report.on}
         </span>
       </div>
+      {view.evidenceScope && <p className="m-0 mt-1 text-small text-muted">{view.evidenceScope}</p>}
       <div className="mt-2" data-testid="readers">
         <div className="hidden h-8 grid-cols-[minmax(0,34fr)_minmax(0,22fr)_minmax(0,22fr)_minmax(0,22fr)] items-center text-small text-muted @xl:grid">
           <span>Check</span>
@@ -80,7 +135,7 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
             </span>
             <span className="flex items-center">
               <Label>Decision</Label>
-              <Decision check={c} signed={signed} />
+              <Decision check={c} signed={view.evidenceField && c.field !== view.evidenceField ? undefined : signed} />
             </span>
           </div>
         ))}
