@@ -10,11 +10,12 @@ import { facetValueLabel, facets as buildFacets, programmesInView } from "@/comp
 import { Refine } from "@/components/patients/refine";
 import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
 import { closedInDays, dueColumnWords, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
+import { isActionable, ldctChildren, obligationWords, openObligation, recallDueWords, type Obligation } from "@/components/worklist/obligation";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { apiMode, getCases } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
-import { caseHref } from "@/lib/domain/ids";
+import { caseHref, shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { cn } from "@/lib/utils";
 
@@ -66,7 +67,8 @@ const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
 /** Days from referral to the programme's deadline or annual screening interval. */
 const dueIn = (c: CaseSummary) => caseDeadlineDays(c);
 
-function mark(c: CaseSummary): Status {
+function mark(c: CaseSummary, ob: Obligation | null): Status {
+  if (isActionable(ob)) return "queued";
   if (c.closed) return "done";
   if (c.state === "inadequate" || c.review === "open") return "held";
   return "queued";
@@ -88,7 +90,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
   const sample = apiMode() === "fixtures";
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
   if (page > pages) redirect(filtersHref("/app/patients", filters, pages));
-  const rows = list.cases.map((c) => ({ c, it: workItem(c, now, hasRecord(c)) }));
+  const children = ldctChildren(everything.cases);
+  const rows = list.cases.map((c) => ({ c, it: workItem(c, now, hasRecord(c)), ob: openObligation(c, now, children) }));
   // Replay failure is server-wide, so any case the API listed saying so makes every status here a partial view.
   const ledgerPartial = listLedgerInvalid(rows.map((r) => r.it)) || everything.cases.some((c) => c.api_overlay?.ledger_status === "invalid");
   const from = list.total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -175,7 +178,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             </tr>
           </thead>
           <tbody className="max-md:block">
-            {rows.map(({ c, it }) => (
+            {rows.map(({ c, it, ob }) => (
               <tr key={c.id} className={cn("relative border-t border-rule max-md:flex max-md:flex-col max-md:gap-1 max-md:px-4 max-md:py-3", it.hasRecord && "hover:bg-ground")}>
                 <td className="px-4 py-2.5 max-md:block max-md:p-0">
                   <span className="flex min-h-11 flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -202,15 +205,29 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                   </span>
                 </td>
                 <td className="px-4 py-2.5 max-md:block max-md:p-0">
-                  <StatusMark status={mark(c)} label={c.closed ? `Closed day ${closedInDays(c)}` : it.status} className="max-md:text-body" />
+                  <StatusMark status={mark(c, ob)} label={c.closed ? `Closed day ${closedInDays(c)}` : it.status} className="max-md:text-body" />
+                  {ob && (
+                    <p className="m-0 text-small text-muted" data-testid="obligation">
+                      {ob.kind === "ldct_tracking" && ob.child ? (
+                        <>
+                          Follow-up tracked on{" "}
+                          <Link href={caseHref("/app/patients", ob.child)} className="relative z-10">
+                            {shortId(ob.child)}
+                          </Link>
+                        </>
+                      ) : (
+                        `${obligationWords(ob).status.replace(/^Closed · /, "")} · ${obligationWords(ob).next}`
+                      )}
+                    </p>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 tabular-nums text-muted max-md:block max-md:p-0">
                   <span className="md:hidden">Referred </span>
                   {formatDay(c.referral_day)}
                 </td>
-                <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
+                <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", (!c.closed && c.overdue) || (ob?.kind === "dr_recall" && ob.state === "overdue") ? "text-negative" : "text-muted")}>
                   <span className="md:hidden">Due </span>
-                  {dueColumnWords(c)}
+                  {ob?.kind === "dr_recall" ? recallDueWords(ob) : dueColumnWords(c)}
                   {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}
                 </td>
                 <td className="px-4 py-2.5 text-muted max-md:block max-md:p-0">
