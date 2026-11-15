@@ -761,3 +761,32 @@ func TestBookingElapsedAvailabilitySurvivesExportRedaction(t *testing.T) {
 		t.Fatalf("exported availability: %v", seen)
 	}
 }
+
+// Contract test for the API side of #130: the hand-written fixture omits the protected seat from the ordinary case's
+// catalogue, so this checks membership enforcement and replay, not booking/suggest.py's held-seat projection
+// (covered by booking/tests/test_catalogue_protection.py).
+func TestBookingProtectedSeatOnlyReservableByCasesThatListIt(t *testing.T) {
+	run := bookingRun(t)
+	s, srv := serveAgent(t, run)
+	hard, ordinary := agentLoop("1"), agentLoop("2")
+	protected := "sim:colonoscopy:201:2"
+	before := s.bookingSlots[protected].version
+	reject := func(kind string) {
+		t.Helper()
+		if code, body := coord(t, srv, ordinary, bookingRequest(t, s, ordinary, kind, protected, "Protected seat")); code != 409 || body["conflict"] != "slot" {
+			t.Fatalf("%s into protected seat: %d %v", kind, code, body)
+		}
+	}
+	reject("booking_choose_slot")
+	requireBooking(t, srv, s, ordinary, "booking_accept", "", "")
+	events := len(s.reviews)
+	reject("booking_reschedule")
+	if len(s.reviews) != events || s.bookingSlots[protected].version != before || s.bookingSlots[protected].reservationID != "" {
+		t.Fatal("rejected protected-seat requests changed history or slot state")
+	}
+	requireBooking(t, srv, s, hard, "booking_choose_slot", protected, "Hard female-endoscopist requirement")
+	reloaded, err := loadAPIVerified(run, "")
+	if err != nil || reloaded.ledgerErr != "" || reloaded.bookingSlots[protected].caseID != hard {
+		t.Fatalf("replay: %v %q", err, reloaded.ledgerErr)
+	}
+}
