@@ -44,9 +44,10 @@ const (
 	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
 	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
 	ActCoordinateCase = "coordinate_case"
-	// ActRecordDisposition: the clinician's informed-refusal disposition after a coordinator-recorded decline. It is
-	// overlay metadata like coordinate_case and never changes a canonical decision or closes a loop procedurally.
-	ActRecordDisposition = "record_disposition"
+	// ActRecordDisposition: a clinician's disposition, either a plan for a programme hold that names a clinician as the
+	// decider (clinician_disposition) or the informed-refusal answer to a coordinator-recorded decline
+	// (decline_disposition). It is overlay metadata: it never completes a procedure, closes a loop or signs evidence.
+	ActRecordDisposition = "record_clinician_disposition"
 )
 
 var rbac = map[string]map[string]bool{
@@ -57,7 +58,7 @@ var rbac = map[string]map[string]bool{
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},
 
 	RoleSeniorReviewer:  {ActSignLink: true, ActReadQueue: true},
-	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true},
+	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true, ActRecordDisposition: true},
 }
 
 // RBACEnforce can be switched off only by the counterfactual audit replay ("what would forged events have done").

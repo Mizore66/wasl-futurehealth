@@ -53,9 +53,10 @@ func TestAPICasesProgrammeLDCT(t *testing.T) {
 		}
 	}
 	// review labels: an LDCT label is an evidence sign-off on an LDCT case; a breast label is not
+	items := map[string]string{ldctID: seedEvidenceSource(t, s, ldctID), "bsu-screen/ServiceRequest/BSU-sr-1": seedEvidenceSource(t, s, "bsu-screen/ServiceRequest/BSU-sr-1")}
 	post := func(c *apiCase, decision string) int {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest("POST", "/api/cases/x/review", bytes.NewBufferString(`{"decision":"`+decision+`"}`))
+		r := httptest.NewRequest("POST", "/api/cases/x/review", bytes.NewBufferString(`{"item":"`+items[c.ID]+`","decision":"`+decision+`"}`))
 		r.Header.Set("X-Wasl-Role", "clinician")
 		r.Header.Set("X-Wasl-Actor", "dr-test")
 		s.caseReview(w, r, c)

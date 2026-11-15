@@ -1,4 +1,5 @@
 import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/schema";
+import { effectiveOwner } from "@/lib/api/owner";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { compareInstants } from "@/lib/domain/instant";
@@ -54,8 +55,17 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
+  const plan = c.api_overlay?.clinician_disposition;
+  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${plan.review_date}` };
   return DROPOFF_WORDS[c.dropoff];
 }
+
+const PLAN_WORDS: Record<NonNullable<NonNullable<CaseSummary["api_overlay"]>["clinician_disposition"]>["plan"], string> = {
+  repeat_diagnostic: "Plan: repeat the test",
+  alternative_diagnostic: "Plan: a different test",
+  specialist_pathway: "Plan: specialist pathway",
+  primary_care_pathway: "Plan: primary-care pathway",
+};
 
 /** Whole days since referral at run day `now`. */
 export function elapsedDays(c: CaseSummary, now: number): number {
@@ -203,6 +213,13 @@ export type WorkItem = {
   retrieval?: { owner: string; due: string; overdue: boolean };
 };
 
+/** What happened to patient outreach for a confirmed recovery backfill; no message is ever dispatched. */
+export const OUTREACH_WORDS: Record<NonNullable<NonNullable<CaseSummary["recovery"]>["backfill"]>["outreach_status"], string> = {
+  none: "no outreach recorded",
+  recorded_not_dispatched: "outreach recorded, not sent",
+  cancelled_consent: "outreach cancelled after consent withdrawal",
+};
+
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
@@ -239,14 +256,14 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   }
   const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
-  const owner = ov?.owner || c.owner;
+  const owner = effectiveOwner(c);
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
   if (due && view !== "none") view = "call";
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
   // A clinician disposition answers only the decline it names; a newer decline is unsigned again.
-  const signed = lc?.outcome === "declined" && !!ov?.disposition && ov.disposition.decline_event === lc.event ? dispositionWords(ov.disposition) : undefined;
+  const signed = lc?.outcome === "declined" && !!ov?.decline_disposition && ov.decline_disposition.decline_event === lc.event ? dispositionWords(ov.decline_disposition) : undefined;
   let sinks = false;
   let awaitingNext = false;
   if (lc) {
@@ -310,11 +327,21 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     words.status = retrieval.status;
     words.next = retrieval.next;
   }
-  if (c.recovery?.backfill) {
+  const backfill = c.recovery?.backfill;
+  if (backfill) {
+    const contactable = c.consent === "granted" && !contactBlocked;
     awaitingNext = false;
-    view = "waiting";
-    words.status = "Simulated slot confirmed";
-    words.next = "Wait for the simulated appointment day";
+    words.status = `Simulated slot confirmed · ${OUTREACH_WORDS[backfill.outreach_status]}`;
+    if (backfill.outreach_status === "recorded_not_dispatched") {
+      view = "waiting";
+      words.next = "Wait for the simulated appointment day";
+    } else if (backfill.outreach_status === "none" && contactable) {
+      view = "call";
+      words.next = `Contact the patient about the simulated recovery slot on day ${backfill.day}`;
+    } else {
+      view = "waiting";
+      words.next = "Patient contact is not permitted; the simulated slot has not been offered";
+    }
   }
   return {
     id: c.id,

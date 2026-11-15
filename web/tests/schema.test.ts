@@ -65,6 +65,21 @@ describe("docs/api-samples contract", () => {
     expect(CaseDetail.safeParse({ ...sample, evidence_history: [{ ...past, history: "superseded" }] }).success).toBe(true);
   });
 
+  it("accepts the person_journey anchor tag wherever the API serves it", () => {
+    const fx = loadSample("fixtures.json") as { fixtures: Record<string, { id: string; fixture: string }> };
+    fx.fixtures.person_journey = { ...fx.fixtures.evidence_closure, fixture: "person_journey" };
+    expect(Fixtures.parse(fx).fixtures.person_journey?.fixture).toBe("person_journey");
+    const dashboard = loadSample("dashboard.json") as { fixtures: Record<string, string> };
+    dashboard.fixtures.person_journey = fx.fixtures.person_journey.id;
+    expect(Dashboard.parse(dashboard).fixtures.person_journey).toBe(fx.fixtures.person_journey.id);
+    const journey = loadSample("person_journey.json") as { cases: { detail: { case: { fixture: string } } }[] };
+    expect(journey.cases.length).toBeGreaterThan(0);
+    for (const c of journey.cases) c.detail.case.fixture = "person_journey";
+    expect(PersonJourney.safeParse(journey).error?.issues ?? []).toEqual([]);
+    fx.fixtures.person_journey.fixture = "person_showcase";
+    expect(Fixtures.safeParse(fx).success).toBe(false);
+  });
+
   it("rejects an unknown case state", () => {
     const sample = loadSample("fixtures.json") as { fixtures: { review_hold: { state: string } } };
     sample.fixtures.review_hold.state = "teleported";

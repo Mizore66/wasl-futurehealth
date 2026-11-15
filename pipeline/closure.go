@@ -228,6 +228,11 @@ type row struct {
 	human   bool
 }
 
+// appointmentStates maps the Appointment statuses that carry a booking to their canonical loop state.
+var appointmentStates = map[string]string{
+	"booked": "booked", "arrived": "booked", "checked-in": "booked", "fulfilled": "procedure_done", "noshow": "no_show",
+}
+
 func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	f := ls.facts
 	now := c.now
@@ -380,6 +385,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		switch d.RType {
 		case "Appointment":
 			if trusted {
+				if appointmentStates[d.Status] == "" {
+					continue // cancelled, entered-in-error and unbooked statuses supply no booking fact
+				}
 				appts = append(appts, appt{d.Day, d.Status})
 				if d.Status == "fulfilled" && d.Day <= now+1e-9 && (procDay < 0 || d.Day < procDay) {
 					procDay = d.Day
@@ -389,7 +397,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		case "ServiceRequest":
 			if trusted {
-				st := map[string]string{"active": "accepted", "revoked": "rejected"}[d.Status]
+				st := referralIntakeStates[d.Status]
+				if st == "" {
+					continue
+				}
 				srs = append(srs, srFact{day: d.Day, status: st, prov: d.Provider, reason: d.Reason, ev: d.EventID})
 				if refDay < 0 || d.Day < refDay {
 					refDay = d.Day
@@ -421,6 +432,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	pqs, prepQ := prepStates(f.Comms, now), "" // ungraded-prep query threads per report (prepquery.go)
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
+	inadequateDay, hasInadequateDay := 0.0, false
 	var holdRow *row                                       // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{}                   // pilot: a post-closure audit that disagreed with the automatic verdict
@@ -647,6 +659,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		case "inadequate":
 			inadequate = true
+			if !hasInadequateDay || r.d.Day > inadequateDay {
+				inadequateDay, hasInadequateDay = r.d.Day, true
+			}
 			if holdRow == nil || holdRow.d.Ev == nil || holdRow.d.Ev.Label != "inadequate" {
 				rr := r
 				holdRow = &rr
@@ -691,14 +706,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			state = "inadequate"
 		case len(appts) > 0:
 			sort.SliceStable(appts, func(i, j int) bool { return appts[i].day < appts[j].day })
-			switch appts[len(appts)-1].status {
-			case "fulfilled":
-				state = "procedure_done"
-			case "noshow":
-				state = "no_show"
-			default:
-				state = "booked"
-			}
+			state = appointmentStates[appts[len(appts)-1].status]
 		case refStatus == "rejected":
 			state = "referral_rejected"
 		}
@@ -708,6 +716,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState, PrepQ: prepQ,
 		ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: notif, AckDay: ack, RefStatus: refStatus, RefDay: refDay,
 		CommFlags: commFlags, HumanAssisted: humanAssisted && state == "closed"}
+	if state == "inadequate" && hasInadequateDay {
+		d.InadequateDay = &inadequateDay
+	}
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}

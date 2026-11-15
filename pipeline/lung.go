@@ -11,6 +11,8 @@ package main
 //                 no routine follow-up -> closes as no_followup_needed (provenance: index CT, both readers, the cell).
 //   follow-up : a follow-up chest CT on a TRUSTED identity link (calibrated p >= tau | EID | human) whose outcome both
 //               readers agree on (or a clinician signs): stable / resolved -> closed (next interval or discharge);
+//               a stable CT dated before the window start neither closes nor blocks the obligation, and
+//               within_window checks both window bounds;
 //               growing / solid component >= 6 mm -> escalated to specialist / MDT (end state); not assessable -> hold.
 //   overdue   : the clock is the end of the Fleischner window.
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable) raises a review item and holds.
@@ -324,10 +326,13 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 				raise(r, "link")
 				continue
 			}
+			lab, h := labelOf(r)
+			if lab == "stable" && r.d.Day < ld.WindowStart {
+				continue // stability before the Fleischner interval opens neither completes nor blocks it
+			}
 			if !ld.FollowUpCT { // days can be negative (look-back cohort): -1 is not a usable "none" sentinel
 				procDay, ld.FollowUpCT = r.d.Day, true
 			}
-			lab, h := labelOf(r)
 			if lab == "" {
 				raise(r, "evidence")
 				if holdRow == nil {
@@ -372,7 +377,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			ch = appendBlock(ch, "evidence", lungEvBlock(r.d, h))
 			ch, hs := withSignoff(ch, r.d.ReportID)
 			human = human || hs || h != "" || r.d.Weak.Basis == "human"
-			ld.WithinWindow = r.d.Day <= ld.WindowEnd
+			ld.WithinWindow = r.d.Day >= ld.WindowStart && r.d.Day <= ld.WindowEnd
 			switch lab {
 			case "stable", "resolved":
 				state, closedDay, closing = "closed", r.d.Day, r.d.ReportID
@@ -577,7 +582,7 @@ func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentSta
 	lo, hi := from+float64(ld.Rec.NextLo), from+float64(ld.Rec.NextHi)
 	state, closedDay, closing := "open", 0.0, ""
 	for _, r := range fus {
-		if !r.trusted || r.d.Day <= parentClosed || r.d.Ev == nil || !r.d.Ev.Agree {
+		if !r.trusted || r.d.Day <= parentClosed || r.d.Ev == nil || !r.d.Ev.Agree || (r.d.Ev.Label == "stable" && r.d.Day < lo) {
 			continue
 		}
 		switch r.d.Ev.Label {
@@ -594,7 +599,7 @@ func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentSta
 		"window": []float64{round4(lo), round4(hi)}})
 	if state == "closed" {
 		chain = appendBlock(chain, "closure_decision", map[string]interface{}{"loop": id, "state": "closed", "programme": "lung_nodule",
-			"rule": "fleischner2017", "closed_day": round4(closedDay), "within_window": closedDay <= hi})
+			"rule": "fleischner2017", "closed_day": round4(closedDay), "within_window": closedDay >= lo && closedDay <= hi})
 	}
 	d := &Decision{LoopID: id, Provider: f.Provider, SRDay: parentClosed, State: state, Prog: "lung_nodule", Deadline: hi - parentClosed,
 		ClosingReport: closing, Chain: chain, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1, ProcDay: -1,

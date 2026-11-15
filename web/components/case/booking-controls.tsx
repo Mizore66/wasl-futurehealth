@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import { recordBooking, type BookingProjection, type BookingWriteResult } from "@/app/app/patients/[id]/booking-actions";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,8 @@ export function BookingControls({
   const ledgerReady = overlay.ledger_status === "ok";
   const writesReady = live && locked === false && ledgerReady && !pending;
   const reconciling = retrievalPending || overlay.reconciliation?.status === "pending";
-  const reserveReady = writesReady && hasCatalogue && eligibleCase && !reconciling && candidates.length > 0;
+  const backfill = current.case.recovery?.backfill;
+  const reserveReady = writesReady && !backfill && hasCatalogue && eligibleCase && !reconciling && candidates.length > 0;
   const acceptReady = reserveReady && booking.reservable === true && suggested?.availability === "available" && !!suggested.version;
   const chooseReady = reserveReady && available.length > 0;
   const cancelReady = writesReady && active && !!summary?.reservation_id && !!summary.reservation_version;
@@ -168,6 +170,12 @@ export function BookingControls({
         <p className="m-0 mt-2 text-warning">The suggested session is overbooked, so that suggestion is not a reservable seat. A different regular eligible slot may be chosen.</p>
       )}
       {disabledReason && <p className="m-0 mt-2 text-small text-muted">{disabledReason}</p>}
+      {backfill && (
+        <p className="m-0 mt-2 text-small text-muted" data-testid="booking-recovery-backfill">
+          A simulated recovery slot is already confirmed for this case (Day {backfill.day}), so ordinary reservations are disabled.{" "}
+          <Link href={`/app/recovery?slot=${backfill.slot_id}`}>Open recovery projection</Link>
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {active ? (

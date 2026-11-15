@@ -57,11 +57,11 @@ export function persistedLedger(detail: CaseDetail): PersistedLedger {
     if (event.kind === "contact_outcome") what = `${outcomeWords(event.data.outcome, event.data.channel)}${quoted(event.data.note)}`;
     else if (event.kind === "note") what = `Note${quoted(event.data.text)}`;
     else if (event.kind.startsWith("booking_")) what = `${ledgerWordsWithHistory(event, coordinator.slice(0, coordinatorIndex))}${quoted(event.data.reason)}`;
-    else if (event.kind === "clinician_disposition" || event.kind === "completed_elsewhere" || event.kind === "retrieval_outcome") what = ledgerWords(event);
+    else if (event.kind === "decline_disposition" || event.kind === "completed_elsewhere" || event.kind === "retrieval_outcome") what = ledgerWords(event);
     coordinatorIndex += 1;
     if (!what) return;
     const who = event.actor || "Actor not recorded";
-    timed.push({ at: event.at, what, when: saved(event.at, event.hash), who: event.kind === "clinician_disposition" ? `${who} (${event.role})` : who, hash: event.hash });
+    timed.push({ at: event.at, what, when: saved(event.at, event.hash), who: event.kind === "decline_disposition" ? `${who} (${event.role})` : who, hash: event.hash });
   });
   // Older snapshots may have the overlay but not the shared event array. Keep their contacts readable; new responses
   // use the shared hash chain above, not wall-clock sorting, when two actions share a timestamp.
