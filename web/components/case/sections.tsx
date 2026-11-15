@@ -659,7 +659,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
                 {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
-              {r.ledger === "compensation" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+              {r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>
           ))}
         </ul>

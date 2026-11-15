@@ -47,6 +47,8 @@ const ReadInput = z.strictObject({
   decision: ReviewDecision.refine((decision) => decision !== "confirm_contact", "confirm_contact is not a review-desk signature"),
   expectedHead: z.string(),
   claimHead: z.string().regex(/^[0-9a-f]{64}$/),
+  /* The API bounds a note in Unicode code points (maxNoteRunes), not UTF-16 units. */
+  note: z.string().refine((note) => [...note].length <= 1000, "a rationale is at most 1000 characters").default(""),
 });
 
 function refresh(caseId: string) {
@@ -70,7 +72,7 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const latest = await getCaseWithToken(caseId, token);
   if (!latest.ok) return { ok: false, failure: { status: latest.status, error: latest.status === 404 ? "case not found" : "sign in to review" } };
   const detail = latest.detail;
-  const { item, question, decision, expectedHead, claimHead } = parsed.data;
+  const { item, question, decision, expectedHead, claimHead, note } = parsed.data;
   const bad = refusal(detail, { item, decision });
   if (bad) return { ok: false, failure: { status: bad.status as 400 | 404, error: bad.error } };
   const raised = detail.review_items.find((r) => r.item === item)!;
@@ -88,10 +90,11 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   if (state.claim?.status !== "active" || state.claim.read !== state.next_read) {
     return { ok: false, failure: { status: 409, error: "an active claim is required before submitting a read" }, states };
   }
+  if (state.next_read === "r3" && !note.trim()) return { ok: false, failure: { status: 400, error: "a senior resolution needs a rationale" }, states };
 
   const res = await postReviewWithToken(
     caseId,
-    { item, decision, note: "", read: state.next_read, expected_head: expectedHead, claim_head: claimHead },
+    { item, decision, note, read: state.next_read, expected_head: expectedHead, claim_head: claimHead },
     token,
   );
   if (res.ok && res.response === null) {

@@ -101,7 +101,7 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
   return [...view.trail, ...preview, { id: "now", kind: "current", ...now, when: done ? "if saved" : "waiting" }];
 }
 
-type Drafts = Record<string, string>;
+type Drafts = Record<string, { decision?: string; note?: string }>;
 type ClaimOperationResult = "success" | "busy" | "terminal" | "transient";
 
 /** One card per (item, question): the server decides what is shown, what may be submitted and by whom. */
@@ -112,6 +112,8 @@ function QuestionCard({
   total,
   draft,
   onDraft,
+  note,
+  onNote,
   busy,
   error,
   onSubmit,
@@ -126,6 +128,8 @@ function QuestionCard({
   total: number;
   draft: string | undefined;
   onDraft: (value: string) => void;
+  note: string;
+  onNote: (value: string) => void;
   busy: boolean;
   error: string | undefined;
   onSubmit: () => void;
@@ -143,6 +147,7 @@ function QuestionCard({
   const next = state.next_read;
   const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
   const actions = state.claim_actions;
+  const needsNote = next === "r3" && !note.trim();
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
@@ -205,6 +210,7 @@ function QuestionCard({
           {reads.map((r) => (
             <li key={r.hash ?? r.read} className="py-0.5" data-read={r.read}>
               {readLine(r, state.question)}
+              {r.note && <span className="block text-muted">Rationale: &ldquo;{r.note}&rdquo;</span>}
               {r.hash && (
                 <>
                   {" "}
@@ -273,15 +279,27 @@ function QuestionCard({
               <EvidenceChoices name={`${id}-a`} programme={view.programme} options={evidenceOptions} value={draft} onPick={onDraft} disabled={busy} />
             )}
           </fieldset>
+          <label htmlFor={`${id}-note`} className="mt-3 block text-small font-medium">
+            {next === "r3" ? "Rationale for the senior resolution (required)" : "Rationale (optional)"}
+          </label>
+          <textarea
+            id={`${id}-note`}
+            value={note}
+            onChange={(e) => onNote(e.target.value)}
+            disabled={busy}
+            rows={3}
+            className="mt-1 block w-full rounded-control border border-control bg-surface px-3 py-2 text-ink"
+          />
           <button
             type="button"
             onClick={onSubmit}
-            aria-disabled={busy || !draft}
+            aria-disabled={busy || !draft || needsNote}
             className="mt-3 min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
           >
             {busy ? "Saving…" : SUBMIT_LABEL[next]}
           </button>
           {!draft && <p className="m-0 mt-1 text-small text-muted">Choose an answer to submit.</p>}
+          {draft && needsNote && <p className="m-0 mt-1 text-small text-muted">Explain why to submit the senior resolution.</p>}
         </div>
       )}
       {error && (
@@ -520,15 +538,15 @@ export function ReviewDesk({
     const qk = `${state.item}:${state.question}`;
     if (busyRef.current[qk]) return;
     const key = draftKey(state.item, state.question, state.next_read);
-    const decision = drafts[key];
-    if (!decision) return;
+    const { decision, note = "" } = drafts[key] ?? {};
+    if (!decision || (state.next_read === "r3" && !note.trim())) return;
     if (Object.keys(busyRef.current).length > 0) reconcileAfterOperations.current = true;
     busyRef.current[qk] = true;
     setBusy((current) => ({ ...current, [key]: true }));
     setNotice(undefined);
     setErrors((e) => ({ ...e, [qk]: "" }));
     try {
-      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head, claimHead: state.claim_head ?? "" });
+      const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, note, expectedHead: state.head, claimHead: state.claim_head ?? "" });
       if (res.states) applyOperationStates(res.states, state.item, state.question);
       if (res.ok) {
         setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
@@ -648,11 +666,16 @@ export function ReviewDesk({
                     view={view}
                     position={i}
                     total={current.length}
-                    draft={drafts[key]}
+                    draft={drafts[key]?.decision}
                     onDraft={(value) => {
                       draftHeads.current[key] = state.claim_head;
-                      setDrafts((d) => ({ ...d, [key]: value }));
+                      setDrafts((d) => ({ ...d, [key]: { ...d[key], decision: value } }));
                       setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
+                    }}
+                    note={drafts[key]?.note ?? ""}
+                    onNote={(value) => {
+                      draftHeads.current[key] = state.claim_head;
+                      setDrafts((d) => ({ ...d, [key]: { ...d[key], note: value } }));
                     }}
                     busy={Boolean(busy[key] || busy[`claim:${state.item}:${state.question}`])}
                     claimBusy={Boolean(busy[`claim:${state.item}:${state.question}`])}

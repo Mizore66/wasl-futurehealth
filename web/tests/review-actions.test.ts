@@ -141,6 +141,48 @@ describe("submitReviewRead", async () => {
     expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
   });
 
+  it("posts the exact rationale for an initial read", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([state()]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, note: "  Same NHS number and date of birth. " })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).note).toBe("  Same NHS number and date of birth. ");
+  });
+
+  const senior = state({
+    state: "awaiting_r3", head: "h2", next_read: "r3",
+    claim: { owner: "Sen-A", role: "senior_reviewer", read: "r3", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" },
+    reads: [{ read: "r1", submitted: true, decision: "same", hash: "h1" }, { read: "r2", submitted: true, decision: "different", hash: "h2" }, { read: "r3", submitted: false }],
+    disagreement: true,
+  });
+
+  it.each(["", "   \n\t"])("refuses a senior resolution with rationale %j without posting", async (note) => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockImplementation(async () => json(200, detail([senior])));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, expectedHead: "h2", note })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(await submit("c1", { ...input, expectedHead: "h2" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
+  });
+
+  it("posts a senior resolution with its rationale", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([senior]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, expectedHead: "h2", note: "The second read missed the matching address history." })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ read: "r3", note: "The second read missed the matching address history." });
+  });
+
+  it("accepts a 1000-character rationale and refuses 1001 without any request", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([state()]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, note: "é".repeat(1000) })).toMatchObject({ ok: true });
+    fetchMock.mockClear();
+    expect(await submit("c1", { ...input, note: "n".repeat(1001) })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("returns 401 without any request when signed out", async () => {
     const submit = await load();
     cookieStore.get = () => undefined as never;

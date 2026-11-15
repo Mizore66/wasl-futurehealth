@@ -692,3 +692,41 @@ func TestIndependentReviewFrozenProjection(t *testing.T) {
 		}
 	}
 }
+
+func TestIndependentReviewProjectionCarriesVisibleNotes(t *testing.T) {
+	e := newIR(t)
+	withNote := func(decision, read, head, note string) string {
+		return strings.Replace(irBody(irLinkItem, decision, read, head), `"note":"synthetic"`, fmt.Sprintf(`"note":%q`, note), 1)
+	}
+	readNotes := func(token string) map[string]interface{} {
+		out := map[string]interface{}{}
+		for _, v := range e.states(t, token)[irLinkItem+"/link"]["reads"].([]interface{}) {
+			m := v.(map[string]interface{})
+			if note, has := m["note"]; has {
+				out[m["read"].(string)] = note
+			}
+		}
+		return out
+	}
+	m1 := e.must(t, irRevA, withNote("same", "r1", "", "R1-RATIONALE"), 201)
+	if got := readNotes(irRevA); got["r1"] != "R1-RATIONALE" {
+		t.Fatalf("the author sees their own rationale: %v", got)
+	}
+	for _, tok := range []string{irRevB, irSR, irCoord} {
+		if got := readNotes(tok); len(got) != 0 {
+			t.Fatalf("a concealed first read's rationale leaks to %s: %v", tok, got)
+		}
+	}
+	m2 := e.must(t, irRevB, withNote("different", "r2", stateOf(m1)["head"].(string), "R2-RATIONALE"), 201)
+	e.must(t, irSR, withNote("same", "r3", stateOf(m2)["head"].(string), "R3-RATIONALE"), 201)
+	want := map[string]interface{}{"r1": "R1-RATIONALE", "r2": "R2-RATIONALE", "r3": "R3-RATIONALE"}
+	for _, tok := range []string{irRevA, irRevB, irSR, irCoord} {
+		if got := readNotes(tok); fmt.Sprint(got) != fmt.Sprint(want) {
+			t.Fatalf("after resolution %s sees %v, want %v", tok, got, want)
+		}
+	}
+	aud := securityRequest(t, e.h, http.MethodGet, e.path+"/audit", irAud, nil).Body.String()
+	if strings.Contains(aud, "RATIONALE") {
+		t.Fatal("the auditor projection must stay note-redacted")
+	}
+}

@@ -806,6 +806,7 @@ export const ReviewRead = z.looseObject({
   submitted: z.boolean(),
   decision: z.string().optional(),
   hash: z.string().optional(),
+  note: z.string().optional(),
 });
 
 /** A server-owned five-minute lease for one independent-review question. */
@@ -1300,7 +1301,8 @@ export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ReviewRead = z.infer<typeof ReviewRead>;
 export type ReviewState = z.infer<typeof ReviewState>;
 export type ReviewSlot = z.infer<typeof ReviewSlot>;
-export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string };
+/** `note` is the reviewer's rationale; a senior resolution (r3) requires a non-blank one. */
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string; note?: string };
 export type ReviewClaimInput = { item: string; question: "link" | "evidence"; operation: "claim" | "renew" | "release" | "takeover"; expectedClaimHead: string };
 export type ReviewClaim = z.infer<typeof ReviewClaim>;
 export type ReviewClaimActions = z.infer<typeof ReviewClaimActions>;

@@ -337,7 +337,7 @@ func projectReviewStates(states map[reviewQuestionKey]*reviewProtocolState, clai
 			if i == 0 && hidden {
 				e["concealed"] = true
 			} else {
-				e["decision"], e["hash"] = r.Decision, r.Hash
+				e["decision"], e["hash"], e["note"] = r.Decision, r.Hash, r.Note
 			}
 			reads = append(reads, e)
 		}
