@@ -48,7 +48,23 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 | `/app/pipeline` | V2-proof | `replay.json` |
 | `/app/pipeline/matching`, `/app/pipeline/reading` | V2-linker, V2-reader | `replay.json` + fixture cases |
 | `/app/results` | V2-results | `results.json` |
-| `/patient/[step]?lang=ar` | phones | static dictionaries |
+| `/patient/[step]?lang=en` | phones | static dictionaries, patient-approved only (see Patient languages) |
+| `/translation-review/[step]?lang=ar` | internal translation-review preview of draft dictionaries | static dictionaries; 404 unless `WASL_TRANSLATION_REVIEW_PREVIEW=1` |
+
+## Patient languages (#133, #157)
+
+Patient routes serve only a dictionary that is the clinical source copy or has a documented qualified medical-translation review. `web/components/patient/i18n/review.ts` (`TRANSLATION_REVIEW`) is the one register; `PATIENT_LANGS` is derived from it and `parsePhoneQuery` replaces any missing, unknown or unreviewed `lang` with English before anything renders, so direct `lang` requests and propagated step links cannot select a draft. **Built.**
+
+| Language | Status | Patient routes |
+|---|---|---|
+| English | source copy | yes (default) |
+| Arabic, Urdu, Filipino | unreviewed design drafts | no; internal preview only |
+
+This reverses the Arabic-default, four-language patient journey from #142. Re-enabling a draft is a deliberate change: replace its register entry with a `reviewed` record (reviewer, date, where the review is filed) and remove the "Needs medical translation review" header from its file; a unit test fails if the two disagree. Browser tests are not evidence of translation quality.
+
+The internal preview `/translation-review/[step]` renders the drafts for design and translation review only. It is off unless the deployment sets `WASL_TRANSLATION_REVIEW_PREVIEW=1` (Playwright does), is `noindex`/`no-store`, uses the same synthetic patient link cookie, and shows on every step, in English: "Internal translation review preview. Not for patients." and that the copy has not been reviewed by a qualified medical translator. **Built.**
+
+Refusal wording (#157): the English rights dialog keeps the right to decline follow-up and question decisions, no longer promises "Your care will not change", assures respectful treatment and continued access to other care, and sends the patient to their doctor for what declining means and what other choices exist. **Built** as copy; **not yet clinically signed off** — the revised meaning needs clinical review, and each draft's `notice.rightsItems[2]` still carries the old promise and must be retranslated from the revised English and pass qualified medical-translation review before any draft is patient-approved. Neither review can be done by code; both are human steps.
 
 ## Gaps to fill (internal)
 
