@@ -1342,12 +1342,12 @@ const OperationsUnmeasured = z.strictObject({ status: z.literal("unmeasured"), r
 const OperationsBackup = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("available"), source: z.literal("recovery_bundle_manifest"),
-    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm"]),
+    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm", "wasl-file-backup-v3-chunked"]),
     created_at: OperationsInstant, age_seconds: z.number().int().nonnegative(), verification_status: z.literal("not_verified_by_api"),
   }),
   z.strictObject({
     status: z.literal("unavailable"), source: z.literal("recovery_bundle_manifest"),
-    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm"]).optional(), created_at: OperationsInstant.optional(),
+    bundle_schema: z.enum(["wasl-file-backup-v1", "wasl-file-backup-v2-aesgcm", "wasl-file-backup-v3-chunked"]).optional(), created_at: OperationsInstant.optional(),
     reason: z.enum(["backup_manifest_unreadable", "backup_manifest_invalid", "backup_created_at_invalid", "backup_created_at_in_future"]),
   }),
   z.strictObject({
