@@ -5,7 +5,8 @@ import { useId, useRef, useState } from "react";
 import { recordBooking, type BookingProjection, type BookingWriteResult } from "@/app/app/patients/[id]/booking-actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { BookingAction, EligibleBookingSlot } from "@/lib/api/schema";
+import { CONDITION_LABELS } from "@/components/worklist/referrals";
+import type { BookingAction, EligibleBookingSlot, ReferralCondition } from "@/lib/api/schema";
 
 type Mode = "accept" | "choose" | "reschedule" | "cancel";
 
@@ -50,7 +51,9 @@ export function BookingControls({
   const summary = overlay.booking;
   const active = summary?.status === "reserved";
   const candidates = booking.eligible_slots ?? [];
-  const available = candidates.filter((slot) => slot.availability === "available" && !!slot.version);
+  // A slot that misses the receiving unit's slot-checkable acceptance conditions is never offered: the server refuses it.
+  const available = candidates.filter((slot) => slot.availability === "available" && !!slot.version && slot.referral_conditions_met !== false);
+  const requirements = booking.readiness?.requirements ?? [];
   const suggested = candidates.find((slot) => slot.slot_id === booking.suggested_slot_id);
   const hasCatalogue = !!booking.suggestion_version && !!booking.calendar_version && booking.eligible_slots !== undefined;
   const notReady = booking.readiness?.ready === false;
@@ -60,7 +63,7 @@ export function BookingControls({
   const reconciling = retrievalPending || overlay.reconciliation?.status === "pending";
   const backfill = current.case.recovery?.backfill;
   const reserveReady = writesReady && !backfill && hasCatalogue && eligibleCase && !reconciling && candidates.length > 0;
-  const acceptReady = reserveReady && booking.reservable === true && suggested?.availability === "available" && !!suggested.version;
+  const acceptReady = reserveReady && booking.reservable === true && suggested?.availability === "available" && !!suggested.version && suggested.referral_conditions_met !== false;
   const chooseReady = reserveReady && available.length > 0;
   const cancelReady = writesReady && active && !!summary?.reservation_id && !!summary.reservation_version;
 
@@ -168,6 +171,24 @@ export function BookingControls({
       )}
       {booking.reservation_explanation === "overbooked_suggestion_not_reservable" && (
         <p className="m-0 mt-2 text-warning">The suggested session is overbooked, so that suggestion is not a reservable seat. A different regular eligible slot may be chosen.</p>
+      )}
+      {booking.reservation_explanation === "suggestion_misses_referral_conditions" && (
+        <p className="m-0 mt-2 text-warning">The suggested slot does not meet the receiving unit&apos;s acceptance conditions. Choose a slot that does.</p>
+      )}
+      {requirements.length > 0 && (
+        <div className="mt-2" data-testid="booking-referral-conditions">
+          <p className="m-0 font-medium">Receiving unit&apos;s acceptance conditions</p>
+          <ul className="m-0 mt-1 list-disc pl-5 text-small">
+            {requirements.map((r) => (
+              <li key={r.code}>
+                {CONDITION_LABELS[r.code as ReferralCondition] ?? r.code}
+                <span className="text-muted">
+                  {r.check === "slot" ? " · checked against the chosen slot" : " · arrange before the procedure; Wasl cannot check this"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {disabledReason && <p className="m-0 mt-2 text-small text-muted">{disabledReason}</p>}
       {backfill && (
