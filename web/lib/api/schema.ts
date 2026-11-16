@@ -333,6 +333,9 @@ export const EligibleBookingSlot = z.looseObject({
   cross_region: z.boolean(),
   version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   availability: z.enum(["available", "reserved", "elapsed"]).optional(),
+  /** Present only after a conditional referral acceptance: whether this slot meets its slot-checkable conditions. */
+  referral_conditions_met: z.boolean().optional(),
+  unmet_conditions: z.array(z.string()).optional(),
 });
 
 /** Effective contact state on the case list: a recorded denial or opt-out blocks contact whatever `consent` says. */
@@ -572,6 +575,8 @@ export const ActiveCaseSummary = z.looseObject({
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
+  /** List marker of the canonical returned-referral packet: codes and days only; the packet itself is in the case detail. */
+  handoff: z.looseObject({ referral_id: z.string(), status: HandoffStatus, clinical_priority: z.string(), act_by: z.number() }).optional(),
   api_overlay: ApiOverlay.optional(),
   contact_state: ContactState.optional(),
   api_patient: CasePatient.optional(),
@@ -996,7 +1001,12 @@ export const Booking = z.looseObject({
   calendar_version: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   eligible_slots: z.array(EligibleBookingSlot).optional(),
   reservable: z.boolean().optional(),
-  readiness: z.object({ ready: z.boolean(), reason: z.string().optional() }).optional(),
+  readiness: z.object({
+    ready: z.boolean(),
+    reason: z.string().optional(),
+    /** The receiving unit's acceptance conditions. "slot": the server checks the chosen slot; "before_procedure": not verifiable by Wasl. */
+    requirements: z.array(z.looseObject({ code: z.string(), kind: z.string(), check: z.enum(["slot", "before_procedure"]) })).optional(),
+  }).optional(),
   reservation_explanation: z.string().optional(),
 });
 

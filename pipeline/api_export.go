@@ -784,6 +784,7 @@ var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m["api_overlay"] = exportOverlayAllow
 	m["api_patient"] = exportPatientAllow
 	m["recovery"] = exportRecoveryCaseAllow
+	m["handoff"] = exportObject(exportKeys("referral_id", "status", "clinical_priority", "decided_by", "decided_at", "act_by"))
 	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
 	return m
 }())
