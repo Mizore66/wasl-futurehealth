@@ -234,7 +234,8 @@ func TestRecoveryStreamScanMemoryIsBoundedBeyondOldScratchCap(t *testing.T) {
 	baseline, peak := stats.HeapAlloc, uint64(0)
 	seen := 0
 	summary, err := scanNATSStream(reader, recoveryStreamVisitor{message: func(recoveryMessage) error {
-		if seen++; seen%64 == 0 {
+		if seen++; seen%128 == 0 {
+			runtime.GC() // live (retained) heap, independent of GC pacing and other tests' garbage
 			runtime.ReadMemStats(&stats)
 			if stats.HeapAlloc > peak {
 				peak = stats.HeapAlloc
@@ -251,7 +252,7 @@ func TestRecoveryStreamScanMemoryIsBoundedBeyondOldScratchCap(t *testing.T) {
 	}
 	growth := int64(peak) - int64(baseline)
 	t.Logf("stream %d bytes, baseline heap %d, peak heap %d (growth %d)", total, baseline, peak, growth)
-	if growth > 32<<20 {
+	if growth > 16<<20 {
 		t.Fatalf("heap grew by %d bytes while streaming %d bytes; reader is not bounded", growth, total)
 	}
 }

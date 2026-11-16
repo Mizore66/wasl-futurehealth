@@ -212,7 +212,7 @@ Measured on macOS/arm64 with Python 3.13 and Go 1.27.4 by `scripts/test_recovery
 | Python heap peak (`tracemalloc`): streamed backup / verify / extraction / pipe into a reader | 0.29 / 0.21 / 0.21 / 0.22 MB |
 | Whole-process max RSS, `recovery.py backup` with the streamed generator / `recovery.py verify` | about 32 / 32 MB (interpreter and OpenSSL baseline) |
 | Plaintext written to `TMPDIR` during backup, extraction and streamed restore input | none |
-| Go live-heap growth while validating a 100,784,621-byte `wasl-nats-backup-v2-stream` payload (`scanNATSStream`, 64 KiB messages) | about 18 MB |
+| Go retained (post-GC) heap growth while validating a 100,784,621-byte `wasl-nats-backup-v2-stream` payload (`scanNATSStream`, 64 KiB messages) | about 1.3 MB |
 | Clean extraction and streamed-pipe SHA-256 vs the source stream | equal |
 
 These are single-run observations on one developer machine, not a sizing guarantee. Peak memory is bounded by the
