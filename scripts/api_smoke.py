@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -38,9 +39,16 @@ def check(cond, msg):
         raise SmokeFailure(msg)
 
 
+class NoSmokeRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None  # Never forward bearer credentials to a redirected origin.
+
+
 class Client:
     def __init__(self, base, timeout):
         self.base, self.timeout = base.rstrip("/"), timeout
+        self.last_headers = {}
+        self.opener = urllib.request.build_opener(NoSmokeRedirects())
 
     @staticmethod
     def token(role, actor=None):
@@ -71,9 +79,11 @@ class Client:
         if authenticate:
             headers["Authorization"] = "Bearer " + (self.env_token(token_env) if token_env else self.token(role, actor))
         req = urllib.request.Request(self.base + path, data=data, headers=headers, method=method)
+        self.last_headers = {}
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            with self.opener.open(req, timeout=self.timeout) as r:
                 code, raw = r.status, r.read()
+                self.last_headers = r.headers
         except urllib.error.HTTPError as e:
             with contextlib.closing(e):
                 code, raw = e.code, e.read()
@@ -757,6 +767,30 @@ def smoke(c, independent_client=None, workflow_client=None):
     return len(fx), total
 
 
+SOFTWARE_FACTORY_PATH = "/api/software-smoke/sessions"
+SOFTWARE_SESSION_PATH = re.compile(r"/api/software-smoke/sessions/[0-9a-f]{32}\Z")
+
+
+def discover_software_session(c):
+    """Only the exact advertised same-origin control may receive our coordinator token."""
+    code, _ = c.request("GET", "/healthz", authenticate=False)
+    check(code == 200, f"software discovery health: expected 200, got {code}")
+    advertised = c.last_headers.get("Wasl-Software-Smoke-Factory")
+    if advertised is None:
+        return None  # Original direct-API behavior, never a skipped assertion.
+    check(advertised == SOFTWARE_FACTORY_PATH, "unsafe software factory path")
+    code, session = c.request("POST", advertised, {}, role="coordinator")
+    check(code == 201, f"advertised software factory failed: expected 201, got {code}")
+    check(session.get("schema") == "wasl-software-smoke-session/1" and session.get("synthetic") is True,
+          "invalid synthetic software session contract")
+    base_path = session.get("base_path")
+    check(isinstance(base_path, str) and SOFTWARE_SESSION_PATH.fullmatch(base_path), "unsafe software session base_path")
+    origin = urllib.parse.urlsplit(c.base)
+    check(origin.scheme in {"http", "https"} and origin.netloc and not origin.username and not origin.password,
+          "invalid software session origin")
+    return Client(urllib.parse.urlunsplit((origin.scheme, origin.netloc, base_path, "", "")), c.timeout)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--base-url", required=True)
@@ -767,7 +801,13 @@ def main(argv=None):
     try:
         independent = Client(args.independent_base_url, args.timeout) if args.independent_base_url else None
         workflow = Client(args.workflow_base_url, args.timeout) if args.workflow_base_url else None
-        nfx, total = smoke(Client(args.base_url, args.timeout), independent, workflow)
+        actual = Client(args.base_url, args.timeout)
+        if independent is None and workflow is None:
+            session = discover_software_session(actual)
+            if session is not None:
+                independent = workflow = session
+                print("using isolated fresh synthetic software session; actual read/audit/export checks remain on", args.base_url)
+        nfx, total = smoke(actual, independent, workflow)
     except SmokeFailure as e:
         print(f"api smoke FAILED: {e}", file=sys.stderr)
         return 1

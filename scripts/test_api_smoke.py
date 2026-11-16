@@ -528,6 +528,66 @@ def run_smoke(fake):
         srv.server_close()
 
 
+class SoftwareSessionDiscoveryTests(unittest.TestCase):
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location("api_smoke_factory_test", SMOKE)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+
+    def client(self, advertised=None, response=None, status=201):
+        class DiscoveryClient:
+            base, timeout = "http://127.0.0.1:18088", 5
+            last_headers = {}
+            calls = []
+
+            def request(inner, method, path, *args, **kwargs):
+                inner.calls.append((method, path, kwargs))
+                if method == "GET":
+                    inner.last_headers = {} if advertised is None else {"Wasl-Software-Smoke-Factory": advertised}
+                    return 200, {}
+                return status, response or {}
+        return DiscoveryClient()
+
+    def test_absent_factory_preserves_direct_behavior(self):
+        c = self.client()
+        self.assertIsNone(self.module.discover_software_session(c))
+        self.assertEqual(len(c.calls), 1)
+
+    def test_unsafe_advertisement_never_receives_token(self):
+        for path in ("https://evil.example/factory", "//evil.example/factory", "/api/cases", "/api/software-smoke/sessions?x=1"):
+            with self.subTest(path=path):
+                c = self.client(path)
+                with self.assertRaisesRegex(self.module.SmokeFailure, "unsafe software factory"):
+                    self.module.discover_software_session(c)
+                self.assertEqual(len(c.calls), 1)
+
+    def test_session_requires_schema_synthetic_and_reserved_relative_path(self):
+        valid = {"schema": "wasl-software-smoke-session/1", "synthetic": True,
+                 "base_path": "/api/software-smoke/sessions/" + "a" * 32}
+        for changes in ({"schema": "wrong"}, {"synthetic": False},
+                        {"base_path": "https://evil.example/session"}, {"base_path": "//evil.example/session"},
+                        {"base_path": "/api/software-smoke/sessions/../cases"},
+                        {"base_path": valid["base_path"] + "?redirect=1"},
+                        {"base_path": "/api/software-smoke/sessions/%2e%2e"}):
+            with self.subTest(changes=changes):
+                c = self.client(self.module.SOFTWARE_FACTORY_PATH, dict(valid, **changes))
+                with self.assertRaises(self.module.SmokeFailure):
+                    self.module.discover_software_session(c)
+                self.assertEqual(len(c.calls), 2)
+        c = self.client(self.module.SOFTWARE_FACTORY_PATH, valid)
+        session = self.module.discover_software_session(c)
+        self.assertEqual(session.base, c.base + valid["base_path"])
+        self.assertEqual(c.calls[1][2]["role"], "coordinator")
+
+    def test_advertised_factory_failure_is_not_fallback(self):
+        c = self.client(self.module.SOFTWARE_FACTORY_PATH, status=500)
+        with self.assertRaisesRegex(self.module.SmokeFailure, "advertised software factory failed"):
+            self.module.discover_software_session(c)
+
+    def test_redirects_are_refused_before_credentials_can_leave_origin(self):
+        self.assertIsNone(self.module.NoSmokeRedirects().redirect_request(None, None, 302, "", {}, "https://evil.example"))
+
+
 class SmokeValidatorTests(unittest.TestCase):
     def assertFails(self, mutate, needle):
         r = run_smoke(Fake(mutate))

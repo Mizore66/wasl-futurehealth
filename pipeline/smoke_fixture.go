@@ -37,7 +37,7 @@ func writeIndependentSmokeFixture(run string) error {
 		if event == nil || signoff != nil || rejected != nil || event.Category != "colonoscopy" {
 			return fmt.Errorf("synthetic smoke report normalization failed: %v", rejected)
 		}
-		fact := DownFact{RType: "DiagnosticReport", Status: event.Status, Strength: 1,
+		fact := DownFact{RType: "DiagnosticReport", Status: event.Status, Strength: 1, PCal: 1,
 			Provider: event.Provider, EventID: event.ID, ReportID: event.ReportID,
 			Version: event.Version, Day: event.Day, RecPk: event.PatientKey,
 			Weak: Edge{Basis: "eid", A: "synthetic-smoke|1", B: event.PatientKey},

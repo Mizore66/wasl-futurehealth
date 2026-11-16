@@ -48,6 +48,14 @@ func TestPhaseDiagnosticsUntrustedStatusPrivacy(t *testing.T) {
 	}
 }
 
+var phaseTraceMu sync.Mutex
+
+func appendPhaseTrace(trace *[]string, entry string) {
+	phaseTraceMu.Lock()
+	*trace = append(*trace, entry)
+	phaseTraceMu.Unlock()
+}
+
 type phaseTraceKV struct {
 	jetstream.KeyValue
 	trace *[]string
@@ -61,32 +69,32 @@ func (k phaseTraceKV) Get(ctx context.Context, key string) (jetstream.KeyValueEn
 		body = v.Value()
 		rev = v.Revision()
 	}
-	*k.trace = append(*k.trace, fmt.Sprintf("get %s %d %x %v", key, rev, body, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("get %s %d %x %v", key, rev, body, e))
 	return v, e
 }
 func (k phaseTraceKV) Put(ctx context.Context, key string, body []byte) (uint64, error) {
 	v, e := k.KeyValue.Put(ctx, key, body)
-	*k.trace = append(*k.trace, fmt.Sprintf("put %s %x %d %v", key, body, v, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("put %s %x %d %v", key, body, v, e))
 	return v, e
 }
 func (k phaseTraceKV) Create(ctx context.Context, key string, body []byte, opts ...jetstream.KVCreateOpt) (uint64, error) {
 	v, e := k.KeyValue.Create(ctx, key, body, opts...)
-	*k.trace = append(*k.trace, fmt.Sprintf("create %s %x %d %v", key, body, v, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("create %s %x %d %v", key, body, v, e))
 	return v, e
 }
 func (k phaseTraceKV) Update(ctx context.Context, key string, body []byte, rev uint64) (uint64, error) {
 	v, e := k.KeyValue.Update(ctx, key, body, rev)
-	*k.trace = append(*k.trace, fmt.Sprintf("update %s %x %d %d %v", key, body, rev, v, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("update %s %x %d %d %v", key, body, rev, v, e))
 	return v, e
 }
 func (k phaseTraceKV) Delete(ctx context.Context, key string, opts ...jetstream.KVDeleteOpt) error {
 	e := k.KeyValue.Delete(ctx, key, opts...)
-	*k.trace = append(*k.trace, fmt.Sprintf("delete %s %v", key, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("delete %s %v", key, e))
 	return e
 }
 func (k phaseTraceKV) ListKeysFiltered(ctx context.Context, filters ...string) (jetstream.KeyLister, error) {
 	v, e := k.KeyValue.ListKeysFiltered(ctx, filters...)
-	*k.trace = append(*k.trace, fmt.Sprintf("list %q %v", filters, e))
+	appendPhaseTrace(k.trace, fmt.Sprintf("list %q %v", filters, e))
 	return v, e
 }
 
@@ -97,7 +105,7 @@ type phaseTraceJS struct {
 
 func (j phaseTraceJS) Stream(ctx context.Context, name string) (jetstream.Stream, error) {
 	v, e := j.JetStream.Stream(ctx, name)
-	*j.trace = append(*j.trace, fmt.Sprintf("stream %s %v", name, e))
+	appendPhaseTrace(j.trace, fmt.Sprintf("stream %s %v", name, e))
 	if v == nil {
 		return v, e
 	}
@@ -105,7 +113,7 @@ func (j phaseTraceJS) Stream(ctx context.Context, name string) (jetstream.Stream
 }
 func (j phaseTraceJS) PublishMsg(ctx context.Context, msg *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
 	v, e := j.JetStream.PublishMsg(ctx, msg, opts...)
-	*j.trace = append(*j.trace, fmt.Sprintf("publish %x %x %v %v", msg.Data, canon(msg.Header), v, e))
+	appendPhaseTrace(j.trace, fmt.Sprintf("publish %x %x %v %v", msg.Data, canon(msg.Header), v, e))
 	return v, e
 }
 
@@ -116,7 +124,7 @@ type phaseTraceStream struct {
 
 func (s phaseTraceStream) Info(ctx context.Context, opts ...jetstream.StreamInfoOpt) (*jetstream.StreamInfo, error) {
 	v, e := s.Stream.Info(ctx, opts...)
-	*s.trace = append(*s.trace, fmt.Sprintf("info %x %v", canon(v), e))
+	appendPhaseTrace(s.trace, fmt.Sprintf("info %x %v", canon(v), e))
 	return v, e
 }
 
@@ -127,13 +135,27 @@ type phaseTraceHistory struct {
 
 func (h phaseTraceHistory) Info(ctx context.Context) (*jetstream.StreamInfo, error) {
 	v, e := h.canonicalHistoryTransport.Info(ctx)
-	*h.trace = append(*h.trace, fmt.Sprintf("history-info %x %v", canon(v), e))
+	appendPhaseTrace(h.trace, fmt.Sprintf("history-info %x %v", canon(v), e))
 	return v, e
 }
 func (h phaseTraceHistory) Read(ctx context.Context, q uint64) (*jetstream.RawStreamMsg, error) {
 	v, e := h.canonicalHistoryTransport.Read(ctx, q)
-	*h.trace = append(*h.trace, fmt.Sprintf("history-read %d %x %v", q, canon(v), e))
+	appendPhaseTrace(h.trace, fmt.Sprintf("history-read %d %x %v", q, canon(v), e))
 	return v, e
+}
+
+// Only adjacent, independent source/cell observations may exchange completion
+// order after the joined initial-read optimization. Preserve every exact read
+// argument/result and all mutation/history/publication ordering in the oracle.
+func phaseTraceObservationOrder(trace []string) []string {
+	out := append([]string(nil), trace...)
+	for i := 0; i+1 < len(out); i++ {
+		if strings.HasPrefix(out[i], "get "+canonicalCellPrefix) && strings.HasPrefix(out[i+1], "get "+canonicalSourcePrefix) {
+			out[i], out[i+1] = out[i+1], out[i]
+			i++
+		}
+	}
+	return out
 }
 
 // The pre-existing canonical-history replay path is deterministic: it mints no
@@ -199,11 +221,11 @@ func TestPhaseDiagnosticsProductionReplayNoninterference(t *testing.T) {
 				t.Fatal("actual completed work was not observed")
 			}
 		}
-		return result{trace: trace, status: canon([]any{c.next, c.ackHWM, len(c.pending), len(c.holes), c.eofSent}), cells: kv.entries, stored: js.stored, checkpoint: c.floor}
+		return result{trace: phaseTraceObservationOrder(trace), status: canon([]any{c.next, c.ackHWM, len(c.pending), len(c.holes), c.eofSent}), cells: kv.entries, stored: js.stored, checkpoint: c.floor}
 	}
 	a, b := run(false), run(true)
 	if !reflect.DeepEqual(a, b) {
-		t.Fatal("diagnostic observation changed the exact operation trace, raw arguments/results or completion proofs")
+		t.Fatalf("diagnostic observation changed the exact operation trace, raw arguments/results or completion proofs: trace A=%q trace B=%q", a.trace, b.trace)
 	}
 }
 

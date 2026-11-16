@@ -169,6 +169,9 @@ func runServe(run, data, addr string) {
 			panic(err)
 		}
 	}
+	if os.Getenv("WASL_API_USERS_FILE") == "" {
+		handler = attachSyntheticSmokeFactory(s, handler, os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
+	}
 	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	auth, err := apiAuthFromEnvironment()

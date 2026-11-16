@@ -51,6 +51,7 @@ type snapshotStream struct {
 	metadata                    func(LogMsg) (*jetstream.MsgMetadata, error)
 	fetchErr, batchErr, infoErr error
 	stall                       bool
+	emptyBatch                  bool
 	batches                     []int
 }
 
@@ -82,6 +83,11 @@ func (c *snapshotConsumer) Fetch(n int, _ ...jetstream.FetchOpt) (jetstream.Mess
 	}
 	if c.s.stall {
 		return &snapshotBatch{ch: make(chan jetstream.Msg)}, nil
+	}
+	if c.s.emptyBatch {
+		ch := make(chan jetstream.Msg)
+		close(ch)
+		return &snapshotBatch{ch: ch, err: c.s.batchErr}, nil
 	}
 	// Deliberately deliver a full available batch, including a post-Info append:
 	// the regression must exercise the inner endpoint fence, not just Fetch(n).
@@ -714,6 +720,117 @@ func TestSnapshotDumpCompletenessAndFailures(t *testing.T) {
 			got, err := dumpStreamAt(context.Background(), &snapshotJS{streams: map[string]*snapshotStream{"FHIR": s}}, "FHIR", path, streamFence{Msgs: uint64(n), First: 1, Last: uint64(n)})
 			if err != nil || got != n || len(readLog(path)) != n {
 				t.Fatalf("boundary %d: got=%d err=%v", n, got, err)
+			}
+		})
+	}
+}
+
+func TestSnapshotDumpRetriesZeroProgressNoResponders(t *testing.T) {
+	for _, immediate := range []bool{false, true} {
+		name := "batch"
+		if immediate {
+			name = "fetch"
+		}
+		t.Run(name, func(t *testing.T) {
+			s := snapshotTestStream("FHIR", snapshotRows(3, 7, 11))
+			for i := range s.rows {
+				s.rows[i].Hdr = map[string]string{jetstream.MsgIDHeader: fmt.Sprintf("snapshot-retry/%d", s.rows[i].Seq)}
+			}
+			s.onFetch = func() {
+				s.fetchErr, s.batchErr, s.emptyBatch = nil, nil, false
+				if len(s.batches) == 1 {
+					err := fmt.Errorf("transient route: %w", nats.ErrNoResponders)
+					if immediate {
+						s.fetchErr = err
+					} else {
+						s.batchErr, s.emptyBatch = err, true
+					}
+				}
+			}
+			path := filepath.Join(t.TempDir(), "fhir.ndjson")
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			n, err := dumpStreamAt(ctx, &snapshotJS{streams: map[string]*snapshotStream{"FHIR": s}}, "FHIR", path, streamFence{Msgs: 3, First: 3, Last: 11})
+			if err != nil || n != 3 || len(s.batches) != 2 {
+				t.Fatalf("zero-progress recovery: n=%d attempts=%d err=%v", n, len(s.batches), err)
+			}
+			rows := readLog(path)
+			if !bytes.Equal(canon(rows), canon(s.rows)) {
+				t.Fatalf("recovered cut differs: got=%+v want=%+v", rows, s.rows)
+			}
+		})
+	}
+}
+
+func TestSnapshotDumpNoRespondersRetryExhaustionPreservesCanonical(t *testing.T) {
+	for _, immediate := range []bool{false, true} {
+		name := "batch"
+		if immediate {
+			name = "fetch"
+		}
+		t.Run(name, func(t *testing.T) {
+			s := snapshotTestStream("FHIR", snapshotRows(1))
+			if immediate {
+				s.fetchErr = nats.ErrNoResponders
+			} else {
+				s.batchErr, s.emptyBatch = nats.ErrNoResponders, true
+			}
+			dir := t.TempDir()
+			path := filepath.Join(dir, "fhir.ndjson")
+			original := []byte("previous canonical cut\n")
+			if err := os.WriteFile(path, original, 0600); err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			n, err := dumpStreamAt(ctx, &snapshotJS{streams: map[string]*snapshotStream{"FHIR": s}}, "FHIR", path, streamFence{Msgs: 1, First: 1, Last: 1})
+			if !errors.Is(err, nats.ErrNoResponders) || n != 0 || len(s.batches) != 3 {
+				t.Fatalf("expected three total attempts: n=%d attempts=%d err=%v", n, len(s.batches), err)
+			}
+			got, readErr := os.ReadFile(path)
+			if readErr != nil || !bytes.Equal(got, original) {
+				t.Fatalf("failed retry replaced canonical cut: got=%q err=%v", got, readErr)
+			}
+			partials, globErr := filepath.Glob(filepath.Join(dir, ".fhir.ndjson-partial-*"))
+			if globErr != nil || len(partials) != 1 {
+				t.Fatalf("private partial not retained: paths=%v err=%v", partials, globErr)
+			}
+			info, statErr := os.Stat(partials[0])
+			if statErr != nil {
+				t.Fatal(statErr)
+			}
+			if info.Mode().Perm() != 0600 || info.Size() != 0 {
+				t.Fatalf("unexpected private zero-progress partial: mode=%v size=%d", info.Mode(), info.Size())
+			}
+		})
+	}
+}
+
+func TestSnapshotDumpNoRespondersAfterProgressFailsClosed(t *testing.T) {
+	for _, count := range []int{1, 1001} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			seqs := make([]uint64, count)
+			for i := range seqs {
+				seqs[i] = uint64(i + 1)
+			}
+			s := snapshotTestStream("FHIR", snapshotRows(seqs...))
+			s.batchErr = nats.ErrNoResponders
+			dir := t.TempDir()
+			path := filepath.Join(dir, "fhir.ndjson")
+			n, err := dumpStreamAt(context.Background(), &snapshotJS{streams: map[string]*snapshotStream{"FHIR": s}}, "FHIR", path, streamFence{Msgs: uint64(count), First: 1, Last: uint64(count)})
+			want := count
+			if want > 1000 {
+				want = 1000
+			}
+			if !errors.Is(err, nats.ErrNoResponders) || n != want || len(s.batches) != 1 {
+				t.Fatalf("progress error must not retry or certify: n=%d attempts=%d err=%v", n, len(s.batches), err)
+			}
+			if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("progress error published canonical file: %v", err)
+			}
+			partials, globErr := filepath.Glob(filepath.Join(dir, ".fhir.ndjson-partial-*"))
+			if globErr != nil || len(partials) != 1 || len(readLog(partials[0])) != want {
+				t.Fatalf("progress partial not retained: paths=%v err=%v", partials, globErr)
 			}
 		})
 	}

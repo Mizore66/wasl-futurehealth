@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+func TestIndependentSmokeFixtureUnderCalibratedServePolicy(t *testing.T) {
+	t.Setenv("WASL_SYNTHETIC_DATA_ONLY", "1")
+	cal, guard, tau, policy, prep := V7Cal, V7Guard, TauClose, EvPolicy, PrepQuery
+	V7Cal, V7Guard, TauClose, EvPolicy, PrepQuery = &Cal7{}, true, TauV7Strict, "v7strict", true
+	t.Cleanup(func() { V7Cal, V7Guard, TauClose, EvPolicy, PrepQuery = cal, guard, tau, policy, prep })
+	if err := writeIndependentSmokeFixture(filepath.Join(t.TempDir(), "calibrated")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // Software-contract inputs only: no inference/clinical-validation result is asserted.
 func TestIndependentSmokeFixtureSourceBoundAndExclusive(t *testing.T) {
 	pilotSet(t, false, 0)

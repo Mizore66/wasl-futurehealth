@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -1234,6 +1235,24 @@ func dumpStreamAt(ctx context.Context, js jetstream.JetStream, stream, path stri
 		}
 	}
 	var last uint64
+	zeroProgressFailures := 0
+	// A newly created ordered consumer can briefly have no pull responder.
+	// Retry only zero-progress transport failures, at most three total attempts;
+	// never retry a batch that delivered rows or change the captured cut.
+	retryNoResponders := func(e error) error {
+		zeroProgressFailures++
+		if zeroProgressFailures >= 3 {
+			return e
+		}
+		timer := time.NewTimer(10 * time.Millisecond)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			return nil
+		}
+	}
 	for uint64(n) < fence.Msgs {
 		if e := ctx.Err(); e != nil {
 			return n, e
@@ -1244,6 +1263,11 @@ func dumpStreamAt(ctx context.Context, js jetstream.JetStream, stream, path stri
 		}
 		batch, e := cons.Fetch(int(want), jetstream.FetchMaxWait(2*time.Second))
 		if e != nil {
+			if errors.Is(e, nats.ErrNoResponders) {
+				if e = retryNoResponders(e); e == nil {
+					continue
+				}
+			}
 			return n, fmt.Errorf("dump %s fetch: %w", stream, e)
 		}
 		if batch == nil {
@@ -1306,11 +1330,17 @@ func dumpStreamAt(ctx context.Context, js jetstream.JetStream, stream, path stri
 			}
 		}
 		if e := batch.Error(); e != nil {
+			if got == 0 && errors.Is(e, nats.ErrNoResponders) {
+				if e = retryNoResponders(e); e == nil {
+					continue
+				}
+			}
 			return n, fmt.Errorf("dump %s batch: %w", stream, e)
 		}
 		if got == 0 {
 			return n, fmt.Errorf("dump %s incomplete: %d of %d", stream, n, fence.Msgs)
 		}
+		zeroProgressFailures = 0
 	}
 	if fence.Msgs > 0 && last != fence.Last {
 		return n, fmt.Errorf("dump %s: last endpoint mismatch", stream)
