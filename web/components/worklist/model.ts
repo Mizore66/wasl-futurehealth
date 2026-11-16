@@ -9,7 +9,7 @@ import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { atWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
+import { atWords, communicationWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
 import { isActionable, obligationWords, openObligation } from "./obligation";
 
@@ -26,7 +26,8 @@ type DropoffWords = { status: string; next: string; view: Exclude<View, "none"> 
 /** One row per drop-off: the trade word on the nurse's list, her next to-do, and which tab it sits in. */
 export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
   never_notified: { status: "Never notified", next: "Call to tell them the result", view: "call" },
-  no_acknowledgement: { status: "Notified, hasn't confirmed", next: "Call to check they understood", view: "call" },
+  // Receipt, not comprehension: understanding is checked separately (teach-back), never by this call.
+  no_acknowledgement: { status: "Notified, hasn't confirmed", next: "Call to confirm they received the result", view: "call" },
   not_booked: { status: "Not booked", next: "Arrange the colonoscopy", view: "call" },
   referral_rejected: { status: "Referral returned by the unit", next: "Call the GP to re-refer", view: "call" },
   referral_unanswered: { status: "Unit hasn't answered", next: "Chase the endoscopy unit", view: "call" },
@@ -216,7 +217,28 @@ export type WorkItem = {
   procedure?: string;
   /** A pending record retrieval after a completed-elsewhere report (live API only): chase and booking are suspended. */
   retrieval?: { owner: string; due: string; overdue: boolean };
+  /** The case's programme and provider, so an all-programmes queue can say which each row is. */
+  programme: Programme | "";
+  programmeName: string;
+  providerName: string;
+  /**
+   * The communication step this case still owes (issue #197): `notify` while the result was never told, `receipt` while
+   * the patient has not confirmed receiving it. Recorded by explicit staff actions only, never by a contact outcome.
+   */
+  communicationStep?: "notify" | "receipt";
+  /** The approved wording a staff notification must use, as the API serves it. */
+  notificationTemplate?: string;
 };
+
+/** Today's words for a recorded staff communication (issue #197). Receipt never claims understanding. */
+export const NOTIFIED_STATUS = "Result told · receipt not confirmed yet";
+export const RECEIPT_STATUS = "Receipt confirmed · understanding not checked";
+
+/** The words a served drop-off gives after a communication was recorded: the next obligation, as the API computed it. */
+export function obligationAfterCommunication(dropoff: string): { status: string; next: string; view: View } | undefined {
+  const w = (DROPOFF_WORDS as Record<string, DropoffWords | undefined>)[dropoff];
+  return w ? { status: dropoff === "no_acknowledgement" ? NOTIFIED_STATUS : RECEIPT_STATUS, next: w.next, view: w.view } : undefined;
+}
 
 /** What happened to patient outreach for a confirmed recovery backfill; no message is ever dispatched. */
 export const OUTREACH_WORDS: Record<NonNullable<NonNullable<CaseSummary["recovery"]>["backfill"]>["outreach_status"], string> = {
@@ -356,6 +378,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Patient contact is not permitted; the simulated slot has not been offered";
     }
   }
+  const communication = ov?.communication;
+  const communicationStep = c.dropoff === "never_notified" ? ("notify" as const) : c.dropoff === "no_acknowledgement" ? ("receipt" as const) : undefined;
+  if (communication && !lc && !snoozeLater) {
+    words.status = communication.receipt ? RECEIPT_STATUS : NOTIFIED_STATUS;
+  }
   const callback = teachBackCallbackWords(c);
   if (callback) {
     awaitingNext = false;
@@ -379,6 +406,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     overdue: (due ? due.state === "overdue" : c.overdue) || (c.teach_back_callback?.status === "open" && c.teach_back_callback.overdue === true),
     referralDay: c.referral_day,
     procedure: PROCEDURE[c.programme],
+    programme: c.programme,
+    programmeName: c.programme ? PROGRAMME_NAMES[c.programme] : "Programme unavailable",
+    providerName: providerLabel(c.provider),
+    ...(communicationStep ? { communicationStep } : {}),
+    ...(communicationStep === "notify" && c.notification_template ? { notificationTemplate: c.notification_template } : {}),
     textsAllowed: c.consent === "granted" && !contactBlocked,
     contactBlocked,
     textsStopped,
@@ -471,6 +503,11 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
   // Coordinator reservations join the human case chain in ledger order. They never enter the canonical source timeline.
   const coordinatorEvents = c.api_reviews.filter((e) => e.ledger === "coordinator");
   coordinatorEvents.forEach((e, i) => {
+    if (e.kind === "initial_notification" || e.kind === "receipt_acknowledgement") {
+      // Staff-recorded communication facts (#197) join the human chain; they are never clinical evidence.
+      nodes.push({ id: `communication-${e.hash}`, kind: "human", who: e.actor || "Coordinator", what: communicationWords(e.kind, e.data), when: atWords(e.at), t: lastT, order: 1000 + i, hash: e.hash });
+      return;
+    }
     if (!e.kind.startsWith("booking_")) return;
     const reason = e.data.reason ? `: “${e.data.reason}”` : "";
     nodes.push({

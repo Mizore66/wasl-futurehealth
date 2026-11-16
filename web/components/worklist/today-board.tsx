@@ -16,8 +16,9 @@ import { byUrgency, clockWords } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
-import { outcomeWords, reconciliationWords, retrievalOutcomeWords } from "@/components/case/words";
+import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, obligationAfterCommunication, outcomeStatus, ownerLabel, workItem } from "./model";
+import { communicationWords, outcomeWords, reconciliationWords, retrievalOutcomeWords } from "@/components/case/words";
+import { CommunicationForm } from "./communication-form";
 import { ElsewhereForm } from "./elsewhere-form";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
@@ -42,7 +43,7 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
 type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
-type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; retrieval?: WorkItem["retrieval"]; log: Contact[] };
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; retrieval?: WorkItem["retrieval"]; communicationStep?: WorkItem["communicationStep"]; log: Contact[] };
 type Stage = "reached" | "callback" | "elsewhere";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -79,7 +80,7 @@ const contactProjection = (item: WorkItem): ContactProjection => ({
 const bookingRowProjection = (item: WorkItem) => ({
   view: item.view, status: item.status, next: item.next, head: item.head,
   snoozed: item.snoozed, noAnswer: item.noAnswer, awaitingNext: item.awaitingNext,
-  reserved: item.reserved, cancelled: item.cancelled, retrieval: item.retrieval,
+  reserved: item.reserved, cancelled: item.cancelled, retrieval: item.retrieval, communicationStep: item.communicationStep,
 });
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
@@ -182,6 +183,8 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
     prefix: "today",
   });
 
+  /* An all-programmes queue names each row's programme; a single-programme queue says it once, in the scope. */
+  const mixed = new Set(items.map((it) => it.programme)).size > 1;
   const all: Row[] = items.map((it) => {
     const o = s.over[it.id];
     return { ...it, ...o, log: o?.log ?? [] };
@@ -350,9 +353,12 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
       .then((res) => {
         if (res.ok) {
           supersedeRead(row.id);
-          apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
+          // A recorded notification or receipt shows the obligation the API computed next, not one guessed here.
+          const next = res.obligation ? obligationAfterCommunication(res.obligation) : undefined;
+          const served = next ? { ...next, communicationStep: res.obligation === "no_acknowledgement" ? ("receipt" as const) : undefined } : {};
+          apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...served, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
-        else if (res.conflict === "reconciliation") setRefusal({ id: row.id, text: `Not saved: ${res.error}` });
+        else if (res.conflict === "reconciliation" || res.conflict === "communication" || res.conflict === "content" || res.conflict === "identity") setRefusal({ id: row.id, text: `Not saved: ${res.error}` });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -602,6 +608,11 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                       </span>
                     </span>
                     <span className="mt-0.5 block text-muted">{r.status}</span>
+                    {mixed && (
+                      <span className="mt-0.5 block text-small text-muted" data-testid="row-programme">
+                        {r.programmeName} · {r.providerName}
+                      </span>
+                    )}
                   </button>
                 </div>
               );
@@ -648,7 +659,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                       </span>
                     )}
                   </div>
-                  <p className="m-0 mt-1 text-muted">{[p.age, p.named ? p.short : null, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}</p>
+                  <p className="m-0 mt-1 text-muted">{[p.age, p.named ? p.short : null, p.programmeName, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}</p>
                   {p.hasRecord && (
                     <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center underline">
                       Open record
@@ -828,6 +839,28 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                   }}
                 />
               </div>
+            )}
+
+            {p.communicationStep && !p.contactBlocked && !p.retrieval && stage !== "elsewhere" && (
+              <CommunicationForm
+                key={`${p.id}-${p.communicationStep}`}
+                step={p.communicationStep}
+                template={p.notificationTemplate}
+                disabled={busy || ledgerInvalid}
+                onRecord={(action) => {
+                  const notify = action.action === "initial_notification";
+                  log(
+                    p,
+                    communicationWords(action.action, action),
+                    notify
+                      ? { status: "Result told · receipt not confirmed yet", next: "Call to confirm they received the result", communicationStep: "receipt", awaitingNext: false }
+                      : { status: "Receipt confirmed · understanding not checked", communicationStep: undefined, awaitingNext: false },
+                    notify ? "Logged: Result notification" : "Logged: Receipt acknowledged",
+                    notify ? "Next: confirm they received it" : "Next: the following step on the referral",
+                    action,
+                  );
+                }}
+              />
             )}
 
             {chips.length > 0 && stage !== "elsewhere" && (

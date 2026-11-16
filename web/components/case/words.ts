@@ -278,7 +278,18 @@ const OUTCOME_WORDS: Record<string, string> = {
   declined: "Declined the procedure",
   appointment_agreed: "Appointment agreed",
 };
-const CHANNEL_WORDS: Record<string, string> = { phone: "phone", sms: "SMS", email: "email", in_person: "in person" };
+const CHANNEL_WORDS: Record<string, string> = { phone: "phone", sms: "SMS", email: "email", in_person: "in person", video: "video" };
+
+/**
+ * A staff-recorded communication fact as a sentence (issue #197). Notification and receipt are worded apart, and
+ * neither ever claims the patient understood the next step: that is teach-back.
+ */
+export function communicationWords(kind: string, d: { channel?: string; occurred_at?: string; template?: string }): string {
+  const how = d.channel ? ` (${CHANNEL_WORDS[d.channel] ?? plain(d.channel).toLowerCase()})` : "";
+  const when = d.occurred_at ? ` · ${atWords(d.occurred_at)}` : "";
+  if (kind === "initial_notification") return `Result notification recorded${how}${when}${d.template ? ` · approved wording ${d.template}` : ""}`;
+  return `Receipt acknowledged${how}${when} · understanding not checked by this`;
+}
 
 export function outcomeWords(outcome: string | undefined, channel?: string): string {
   const o = outcome ? (OUTCOME_WORDS[outcome] ?? plain(outcome)) : "Contact outcome";
@@ -311,6 +322,8 @@ type LedgerLike =
         provider?: string;
         retrieval_owner?: string;
         retrieval_due?: string;
+        occurred_at?: string;
+        template?: string;
       };
     }
   | { ledger: "compensation"; kind: string; resolution?: string }
@@ -423,6 +436,7 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "decline_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
     if (e.kind === "completed_elsewhere") return `Reported done elsewhere: ${d.procedure ?? "procedure"} at ${d.provider ?? "another provider"} · ${d.retrieval_owner ?? "coordinator"} to retrieve the record by ${d.retrieval_due ?? "a date not recorded"}`;
     if (e.kind === "retrieval_outcome") return `Record retrieval ended: ${retrievalOutcomeWords(d.outcome)} · follow-up resumes`;
+    if (e.kind === "initial_notification" || e.kind === "receipt_acknowledgement") return communicationWords(e.kind, d);
     return `Coordinator action: ${plain(e.kind)}`;
   }
   if (e.ledger === "compensation") {
