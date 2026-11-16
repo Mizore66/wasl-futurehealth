@@ -133,7 +133,7 @@ The default-deny snapshot projector accepts this same contract for `docs/api-sam
 - **Drop-off:** `never_notified`, `no_acknowledgement`, `not_booked`, `referral_rejected`, `referral_unanswered`, `no_show`, `inadequate`, `awaiting_histology`, `in_progress`, or `""` when closed.
 - **Consent:** `unknown`, `granted`, `denied`, `opted_out`.
 - **Days:** fractional days since 1 May 2026, the cohort epoch.
-- **`handoff`** (only on a case whose canonical decision carries a returned-referral packet, every programme): `referral_id`, `status` (`awaiting_referrer|referrer_acted|coordinator|medical_director`), `clinical_priority`, `decided_by`, `decided_at`, `act_by`. A list marker only, with no advice or requested information; the packet itself is `current.handoff` in the case detail. The referral inbox reads the detail of marked cases only (issue #155).
+- **`handoff`** (only on a case whose canonical decision carries a returned-referral packet, every programme): `referral_id`, `status` (`awaiting_referrer|referrer_acted|coordinator|medical_director`), `clinical_priority`, `decided_by`, `decided_at`, `act_by`. A list marker only, with no advice or requested information; the packet itself is `current.handoff` in the case detail. In live mode the referral inbox reads the detail of marked cases only (issue #155); the static fixtures predate the marker and still use the dropoff rule. The person projection drops it from the case summary.
 
 ### CRC post-procedure dispositions
 

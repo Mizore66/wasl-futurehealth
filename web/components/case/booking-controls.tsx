@@ -183,7 +183,11 @@ export function BookingControls({
               <li key={r.code}>
                 {CONDITION_LABELS[r.code as ReferralCondition] ?? r.code}
                 <span className="text-muted">
-                  {r.check === "slot" ? " · checked against the chosen slot" : " · arrange before the procedure; Wasl cannot check this"}
+                  {r.check !== "slot"
+                    ? " · arrange before the procedure; Wasl cannot check this"
+                    : r.code === "arabic_interpreter"
+                      ? " · Arabic-speaking session checked against the chosen slot; interpreter not confirmed"
+                      : " · checked against the chosen slot"}
                 </span>
               </li>
             ))}

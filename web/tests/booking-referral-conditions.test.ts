@@ -23,6 +23,7 @@ const requirements = [
   { code: "female_endoscopist", kind: "clinician_preference", check: "slot" },
   { code: "hold_anticoagulants", kind: "medication", check: "before_procedure" },
 ];
+const interpreter = { code: "arabic_interpreter", kind: "interpreter", check: "slot" };
 
 function render(raw: Record<string, unknown>) {
   const booking = Booking.parse({ status: "suggested", suggestion_version: h("2"), calendar_version: h("3"), ...raw });
@@ -46,6 +47,14 @@ describe("booking controls after a conditional referral acceptance", () => {
     expect(html).toContain("Receiving unit&#x27;s acceptance conditions");
     expect(html).toContain("Female endoscopist<span class=\"text-muted\"> · checked against the chosen slot</span>");
     expect(html).toContain("Hold blood thinners as advised<span class=\"text-muted\"> · arrange before the procedure; Wasl cannot check this</span>");
+  });
+
+  it("does not claim an interpreter is arranged when only the slot's Arabic flag is checked", () => {
+    const { html } = render({
+      suggested_slot_id: "sim:colonoscopy:201:1", reservable: true, eligible_slots: [slot(201, true, true)],
+      readiness: { ready: true, requirements: [interpreter] },
+    });
+    expect(html).toContain("Arabic interpreter on the day<span class=\"text-muted\"> · Arabic-speaking session checked against the chosen slot; interpreter not confirmed</span>");
   });
 
   it("refuses the suggestion that misses a slot condition and offers only slots that meet it", () => {
