@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { BookFlow } from "@/components/patient/book-flow";
 import { CheckFlow } from "@/components/patient/check-flow";
-import type { Lang } from "@/components/patient/i18n";
+import { patientApproved, type Lang } from "@/components/patient/i18n";
 import { NoticeScreen } from "@/components/patient/notice-screen";
 import { patientScript } from "@/components/patient/programme";
 import { PatientJourneyResponse, type PatientJourney, type PatientOffers, type PatientProgramme } from "@/lib/api/patient-schema";
@@ -53,7 +53,8 @@ function journeyFor(programme: PatientProgramme, next: string, distractor: strin
 }
 
 function render(journey: PatientJourney, offers: PatientOffers, lang: Lang = "en") {
-  const query = { lang };
+  // Draft languages render only on the internal review surface (#133).
+  const query = { lang, surface: patientApproved(lang) ? ("patient" as const) : ("review" as const) };
   return {
     notice: renderToStaticMarkup(createElement(NoticeScreen, { lang, journey })),
     check: renderToStaticMarkup(createElement(CheckFlow, { query, initial: journey })),
