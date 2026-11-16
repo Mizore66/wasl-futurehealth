@@ -26,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
     const pkceVerifier = randomPKCECodeVerifier();
     const nonce = nonceForVerifier(pkceVerifier);
     const codeChallenge = await calculatePKCECodeChallenge(pkceVerifier);
-    defaultSessionStore(config.sessionDb).createLogin({ state, correlation, nonce, pkceVerifier, returnTo });
+    await (await defaultSessionStore(config.sessionStore)).createLogin({ state, correlation, nonce, pkceVerifier, returnTo });
     const destination = beginAuthorization(provider, config, { state, nonce, codeChallenge });
     const response = NextResponse.redirect(destination, 303);
     response.headers.set("cache-control", "no-store");

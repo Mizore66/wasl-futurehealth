@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { chmodSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { OidcCredential } from "./oidc-config";
+import { OIDC_CREDENTIALS, type OidcCredential, type SessionStoreConfig } from "./oidc-config";
 
 export const LOGIN_LIFETIME_MS = 10 * 60 * 1000;
 export const SESSION_LIFETIME_MS = 8 * 60 * 60 * 1000;
@@ -28,14 +28,25 @@ export type SessionResolution =
   | { ok: true; session: ReviewSession }
   | { ok: false; reason: "anonymous" | "expired" | "revoked" };
 
+export type CreateLoginInput = { state: string; correlation: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number };
+export type CreateSessionInput = { issuer: string; subject: string; credential: OidcCredential; now?: number };
+
+/**
+ * Server-side OIDC login and review-session storage. Every implementation must give the same semantics:
+ * - consumeLogin succeeds at most once per state, only with the initiating browser's correlation, and only before expiry;
+ *   a wrong correlation does not consume the transaction;
+ * - sessions have a fixed lifetime from creation and are never extended;
+ * - revocation is permanent and visible to every caller sharing the store;
+ * - only hashes of state, correlation and session IDs are persisted.
+ */
 export interface SessionStore {
-  createLogin(input: { state: string; correlation: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction;
-  consumeLogin(state: string, correlation: string, now?: number): LoginTransaction | undefined;
-  createSession(input: { issuer: string; subject: string; credential: OidcCredential; now?: number }): { sessionId: string; session: ReviewSession };
-  resolveSession(sessionId: string | undefined, now?: number): SessionResolution;
-  revokeSession(sessionId: string | undefined): boolean;
-  revokeSubject(issuer: string, subject: string): number;
-  close(): void;
+  createLogin(input: CreateLoginInput): Promise<LoginTransaction>;
+  consumeLogin(state: string, correlation: string, now?: number): Promise<LoginTransaction | undefined>;
+  createSession(input: CreateSessionInput): Promise<{ sessionId: string; session: ReviewSession }>;
+  resolveSession(sessionId: string | undefined, now?: number): Promise<SessionResolution>;
+  revokeSession(sessionId: string | undefined, now?: number): Promise<boolean>;
+  revokeSubject(issuer: string, subject: string, now?: number): Promise<number>;
+  close(): Promise<void>;
 }
 
 export const sha256 = (value: string): string => createHash("sha256").update(value).digest("hex");
@@ -47,6 +58,13 @@ export const randomOpaqueId = (): string => randomBytes(32).toString("base64url"
  */
 export const nonceForVerifier = (verifier: string): string => createHash("sha256").update(`wasl-oidc-nonce:${verifier}`).digest("base64url");
 
+export const isOpaqueId = (value: string | undefined): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
+export const isCredential = (value: unknown): value is OidcCredential => typeof value === "string" && OIDC_CREDENTIALS.includes(value as OidcCredential);
+
+export function validateLoginInput({ state, correlation, nonce, pkceVerifier }: CreateLoginInput): void {
+  if (state.length < 32 || correlation.length < 32 || nonce.length < 32 || pkceVerifier.length < 43) throw new Error("OIDC login parameters are too short");
+}
+
 type LoginRow = { nonce_hash: string; pkce_verifier: string; return_to: string; expires_at: number };
 type SessionRow = {
   issuer: string;
@@ -57,7 +75,7 @@ type SessionRow = {
   revoked_at: number | null;
 };
 
-/** Single-instance SQLite persistence. A shared deployment needs a separately verified shared SessionStore. */
+/** Single-instance SQLite persistence for local and synthetic verification. More than one web replica needs NatsSessionStore. */
 export class SqliteSessionStore implements SessionStore {
   private readonly db: DatabaseSync;
 
@@ -97,8 +115,9 @@ export class SqliteSessionStore implements SessionStore {
     }
   }
 
-  createLogin({ state, correlation, nonce, pkceVerifier, returnTo, now = Date.now() }: { state: string; correlation: string; nonce: string; pkceVerifier: string; returnTo: string; now?: number }): LoginTransaction {
-    if (state.length < 32 || correlation.length < 32 || nonce.length < 32 || pkceVerifier.length < 43) throw new Error("OIDC login parameters are too short");
+  async createLogin(input: CreateLoginInput): Promise<LoginTransaction> {
+    validateLoginInput(input);
+    const { state, correlation, nonce, pkceVerifier, returnTo, now = Date.now() } = input;
     const transaction = { nonceHash: sha256(nonce), pkceVerifier, returnTo, expiresAt: now + LOGIN_LIFETIME_MS };
     this.db.prepare("DELETE FROM login_transaction WHERE expires_at <= ?").run(now);
     this.db
@@ -107,7 +126,7 @@ export class SqliteSessionStore implements SessionStore {
     return transaction;
   }
 
-  consumeLogin(state: string, correlation: string, now = Date.now()): LoginTransaction | undefined {
+  async consumeLogin(state: string, correlation: string, now = Date.now()): Promise<LoginTransaction | undefined> {
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const row = this.db
@@ -129,7 +148,7 @@ export class SqliteSessionStore implements SessionStore {
     }
   }
 
-  createSession({ issuer, subject, credential, now = Date.now() }: { issuer: string; subject: string; credential: OidcCredential; now?: number }): { sessionId: string; session: ReviewSession } {
+  async createSession({ issuer, subject, credential, now = Date.now() }: CreateSessionInput): Promise<{ sessionId: string; session: ReviewSession }> {
     const sessionId = randomOpaqueId();
     const session = { issuer, subject, credential, createdAt: now, expiresAt: now + SESSION_LIFETIME_MS };
     this.db
@@ -138,8 +157,8 @@ export class SqliteSessionStore implements SessionStore {
     return { sessionId, session };
   }
 
-  resolveSession(sessionId: string | undefined, now = Date.now()): SessionResolution {
-    if (!sessionId || !/^[A-Za-z0-9_-]{43}$/.test(sessionId)) return { ok: false, reason: "anonymous" };
+  async resolveSession(sessionId: string | undefined, now = Date.now()): Promise<SessionResolution> {
+    if (!isOpaqueId(sessionId)) return { ok: false, reason: "anonymous" };
     const row = this.db
       .prepare("SELECT issuer, subject, credential, created_at, expires_at, revoked_at FROM review_session WHERE session_id_hash = ?")
       .get(sha256(sessionId)) as SessionRow | undefined;
@@ -149,26 +168,51 @@ export class SqliteSessionStore implements SessionStore {
     return { ok: true, session: { issuer: row.issuer, subject: row.subject, credential: row.credential, createdAt: row.created_at, expiresAt: row.expires_at } };
   }
 
-  revokeSession(sessionId: string | undefined): boolean {
-    if (!sessionId || !/^[A-Za-z0-9_-]{43}$/.test(sessionId)) return false;
-    const result = this.db.prepare("UPDATE review_session SET revoked_at = ? WHERE session_id_hash = ? AND revoked_at IS NULL").run(Date.now(), sha256(sessionId));
+  async revokeSession(sessionId: string | undefined, now = Date.now()): Promise<boolean> {
+    if (!isOpaqueId(sessionId)) return false;
+    const result = this.db.prepare("UPDATE review_session SET revoked_at = ? WHERE session_id_hash = ? AND revoked_at IS NULL").run(now, sha256(sessionId));
     return result.changes === 1;
   }
 
-  revokeSubject(issuer: string, subject: string): number {
-    return Number(this.db.prepare("UPDATE review_session SET revoked_at = ? WHERE issuer = ? AND subject = ? AND revoked_at IS NULL").run(Date.now(), issuer, subject).changes);
+  async revokeSubject(issuer: string, subject: string, now = Date.now()): Promise<number> {
+    return Number(this.db.prepare("UPDATE review_session SET revoked_at = ? WHERE issuer = ? AND subject = ? AND revoked_at IS NULL").run(now, issuer, subject).changes);
   }
 
-  close(): void {
-    this.db.close();
+  async close(): Promise<void> {
+    if (this.db.isOpen) this.db.close();
   }
 }
 
-let shared: { path: string; store: SqliteSessionStore } | undefined;
-export function defaultSessionStore(databasePath: string): SessionStore {
-  if (!shared || shared.path !== databasePath) {
-    shared?.store.close();
-    shared = { path: databasePath, store: new SqliteSessionStore(databasePath) };
+let shared: { key: string; store: Promise<SessionStore> } | undefined;
+
+/**
+ * One store per process and configuration. A NATS store whose connection has closed is replaced on the next request,
+ * so a broker restart cannot leave the web replica bound to a dead connection.
+ */
+export function defaultSessionStore(config: SessionStoreConfig): Promise<SessionStore> {
+  const key = JSON.stringify(config);
+  if (!shared || shared.key !== key) {
+    const previous = shared?.store;
+    if (previous) void previous.then((store) => store.close(), () => undefined);
+    const store: Promise<SessionStore> =
+      config.kind === "sqlite"
+        ? Promise.resolve(new SqliteSessionStore(config.path))
+        : import("./oidc-nats-store").then(({ NatsSessionStore }) =>
+            NatsSessionStore.connect(config, () => {
+              if (shared?.store === store) shared = undefined;
+            }),
+          );
+    shared = { key, store };
+    store.catch(() => {
+      if (shared?.store === store) shared = undefined;
+    });
   }
   return shared.store;
+}
+
+/** Test and shutdown hook: closes and forgets this process's store. */
+export async function closeDefaultSessionStore(): Promise<void> {
+  const current = shared;
+  shared = undefined;
+  if (current) await current.store.then((store) => store.close(), () => undefined);
 }
