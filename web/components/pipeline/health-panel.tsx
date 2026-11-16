@@ -120,7 +120,7 @@ function APIMeasurements({ measurements: m }: { measurements: Operations["api_me
     <>
       <p className="m-0 mt-1 text-small text-muted">
         {observed
-          ? `Requests completed by this API process in a rolling observed of at most ${observed.length_seconds / 60} minutes and ${observed.capacity.toLocaleString("en-US")} requests, kept in memory only. A restart starts an empty observed. Route labels are fixed templates; no case, person, actor or credential is recorded. This is a point-in-time observation of synthetic traffic, not an SLO.`
+          ? `Requests completed by this API process in a rolling window of at most ${observed.length_seconds / 60} minutes and ${observed.capacity.toLocaleString("en-US")} requests, kept in memory only. A restart starts an empty window. Route labels are fixed templates; no case, person, actor or credential is recorded. This is a point-in-time observation of synthetic traffic, not an SLO.`
           : "This response was not produced by an API process that records requests, so current latency and error rate are not measured."}
       </p>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -142,7 +142,7 @@ function APIMeasurements({ measurements: m }: { measurements: Operations["api_me
       </dl>
       {m.routes && m.routes.length > 0 && (
         <table data-testid="api-routes" className="mt-3 w-full max-w-xl text-left text-small">
-          <caption className="sr-only">Requests in the current observed by route</caption>
+          <caption className="sr-only">Requests in the current window by route</caption>
           <thead>
             <tr className="text-muted"><th scope="col" className="font-normal">Route</th><th scope="col" className="font-normal">Requests</th><th scope="col" className="font-normal">Server errors</th><th scope="col" className="font-normal">Client errors</th></tr>
           </thead>

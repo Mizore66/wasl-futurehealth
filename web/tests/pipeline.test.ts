@@ -329,7 +329,11 @@ describe("operational readiness state", () => {
     expect(html).toContain('dateTime="2026-11-13T11:59:59Z"');
     expect(html).toContain("Shortened by an API restart");
     expect(html).toContain("/api/cases/:case");
-    expect(html).toContain("not an SLO");
+    expect(html).toContain(
+      "Requests completed by this API process in a rolling window of at most 5 minutes and 4,096 requests, kept in memory only. A restart starts an empty window. Route labels are fixed templates; no case, person, actor or credential is recorded. This is a point-in-time observation of synthetic traffic, not an SLO.",
+    );
+    expect(html).toContain("<caption class=\"sr-only\">Requests in the current window by route</caption>");
+    expect(html).not.toMatch(/rolling observed|empty observed|current observed/);
   });
 
   it("keeps an empty observed window explicitly unmeasured", () => {
