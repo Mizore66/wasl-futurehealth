@@ -901,6 +901,8 @@ H7 showed that double review loses its protection when the two reviewers' errors
 
 ρ is the assumed correlation between the two reviewers; every rate here is a stress-test assumption. **Blinding is the only mitigation that helps**, and only while correlation is partial; at a blind factor of 0.85 every ρ gives 1. A 2% audit is too small to catch 4 bad closures in 3,330; it measures the error rate, it does not fix it. All false closures come from about 4 items that are hard for any reader. Reviewer time is unchanged (23.0–23.4 h per 1k loops).
 
+**Closure-loss version (#218, added later).** This table uses outcome-only false closures (`outcome_only_v1`): a closure counted as correct when the loop was truly closed, even if the closing report belonged to another patient. `wsi7 sweep` rows now also carry `unsafe_closures`, `foreign_evidence_closures`, `unverified_evidence_closures` and `closure_loss`, and `scripts/h7_mitigations.py` reports `unsafe_closures` per cell beside `false_closures` (refusing to mix v1 and v2 sweep files). The committed `h7_mitigations_summary.json` predates this and has no `closure_loss` key, so it is outcome-only; the sweep has not been rerun with the v2 loss.
+
 ### Rejected-referral hand-off packet (`b53ce89`)
 
 **What changed.** When a referral is finally rejected, responsibility goes back to the referring doctor (DoH Standard for Primary Healthcare Services 2022, 4.9.5). Wasl now builds a structured hand-off packet for them (`pipeline/handoff.go`). "Finally rejected" means one of: the e-consult outcome is reject; a redirect that the second unit also rejects; or a rejected referral whose e-consult is still unanswered after 5 business days.
