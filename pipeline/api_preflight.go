@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -33,6 +35,11 @@ func validateAPIPreflight(run string) error {
 	}
 	// No-review runs do not start the reviewer, so they have no reviewer ledger.
 	if err := validateRequiredAPINDJSON(filepath.Join(run, "reviewer_decisions.ndjson")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	// booking.json is optional (booking/suggest.py may not have run), but a present document must be one strict
+	// top-level object; otherwise booking and capacity would report not_generated for corrupted evidence.
+	if _, err := readBookingArtifact(filepath.Join(run, "booking.json")); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	loops := map[string]string{}
@@ -472,6 +479,38 @@ func validateRequiredAPINDJSON(path string) error {
 		return fmt.Errorf("serve preflight: %s:%d: NDJSON scanner completion: %w", path, line, err)
 	}
 	return nil
+}
+
+// readBookingArtifact strictly decodes the optional booking decision-support document. The returned error wraps
+// os.ErrNotExist only when the file is genuinely absent. Any other read failure, malformed or truncated JSON,
+// trailing content after the first value, or a top-level value other than an object is rejected and names the path.
+// Numbers stay json.Number so generated spellings (notably Python's 2.0) keep exact cross-language version hashes.
+func readBookingArtifact(path string) (map[string]interface{}, error) {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("serve preflight: optional JSON %s is present but unreadable: %v", path, err)
+	}
+	dec := json.NewDecoder(bytes.NewReader(contents))
+	dec.UseNumber()
+	var value interface{}
+	if err := dec.Decode(&value); err != nil {
+		kind := "malformed"
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			kind = "truncated"
+		}
+		return nil, fmt.Errorf("serve preflight: %s: %s JSON: %v", path, kind, err)
+	}
+	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("serve preflight: %s: malformed JSON: unexpected content after the top-level value", path)
+	}
+	object, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("serve preflight: %s: invalid JSON: expected top-level object", path)
+	}
+	return object, nil
 }
 
 func apiJSONErrorKind(err error) string {
