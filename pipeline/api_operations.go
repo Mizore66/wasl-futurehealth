@@ -84,16 +84,6 @@ type operationsRun struct {
 	Recovery  *operationsRecovery `json:"recovery,omitempty"`
 }
 
-type operationsUnmeasured struct {
-	Status string `json:"status"`
-	Reason string `json:"reason"`
-}
-
-type operationsAPIMeasurements struct {
-	Latency   operationsUnmeasured `json:"latency"`
-	ErrorRate operationsUnmeasured `json:"error_rate"`
-}
-
 type operationsBackup struct {
 	Status             string `json:"status"`
 	Source             string `json:"source"`
@@ -517,11 +507,11 @@ func (s *apiServer) getOperations(w http.ResponseWriter, r *http.Request) {
 		Schema: "wasl-operations/1", Meta: s.meta, ObservedAt: observedAt.Format(time.RFC3339Nano),
 		API:  operationsAPI{Status: health["status"].(string), Source: "/healthz", Dependencies: dependencies},
 		NATS: natsObservation, Queue: queue, Run: operationsRunFromReport(s.report),
-		APIMeasurements: operationsAPIMeasurements{
-			Latency:   operationsUnmeasured{Status: "unmeasured", Reason: "api_request_latency_not_recorded"},
-			ErrorRate: operationsUnmeasured{Status: "unmeasured", Reason: "api_request_outcomes_not_recorded"},
-		},
-		Backup: operationsBackupFromManifest(os.Getenv("WASL_BACKUP_MANIFEST"), observedAt),
+		APIMeasurements: unrecordedAPIMeasurements(),
+		Backup:          operationsBackupFromManifest(os.Getenv("WASL_BACKUP_MANIFEST"), observedAt),
+	}
+	if s.requests != nil {
+		response.APIMeasurements = s.requests.snapshot(observedAt)
 	}
 	writeJSONResp(w, http.StatusOK, response)
 }
