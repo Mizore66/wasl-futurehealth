@@ -126,12 +126,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	for _, s := range f.Signoffs {
 		signed[s.ItemID] = s
 	}
-	owner := ""
-	for _, t := range f.Tasks {
-		if t.Owner != "" {
-			owner = t.Owner
-		}
-	}
+	owner := canonicalTaskOwner(f.Tasks)
 	ld := &LungDecision{Scope: "in_scope", Risk: "high"}
 	sr := f.Lung
 	if sr == nil {

@@ -265,12 +265,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	for _, s := range f.Signoffs {
 		signed[s.ItemID] = s
 	}
-	owner := ""
-	for _, t := range f.Tasks {
-		if t.Owner != "" {
-			owner = t.Owner
-		}
-	}
+	owner := canonicalTaskOwner(f.Tasks)
 	// ---- programme rule (v6): the same engine closes CRC and cervical loops; only the rule row differs
 	prog := f.Prog
 	if prog == "" {
