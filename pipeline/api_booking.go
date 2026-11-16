@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -460,6 +461,8 @@ func bookingReadiness(c *apiCase) string {
 			reason += " (hand-off " + c.last.Handoff.Status + ")"
 		}
 		return reason
+	case referralReturned(c):
+		return "the receiving unit returned this referral: the hand-off to the referrer is unresolved, and a referrer answer alone does not make the procedure bookable"
 	case c.State == "inadequate" && c.last != nil && len(c.last.Pending) > 0:
 		return "a pending review must confirm the repeat before a simulated reservation"
 	}
@@ -503,10 +506,18 @@ func coordinatorBookingPolicy(ev map[string]interface{}) (bool, error) {
 // Admission policy, not historical occupancy validation. Call under s.mu after
 // ledger/head checks, immediately before preparing every LIVE booking transition;
 // replay calls it only for a validated stamped acquisition.
-func (s *apiServer) bookingReadinessGateLocked(c *apiCase, kind string) *bookingFailure {
+// It also rejects a slot that misses a conditional acceptance's slot-checkable conditions (api_referral.go).
+func (s *apiServer) bookingReadinessGateLocked(c *apiCase, kind string, data map[string]interface{}) *bookingFailure {
 	if bookingAcquisition(kind) {
 		if reason := bookingReadiness(c); reason != "" {
 			return bookingFail(409, "not clinically ready for a simulated reservation: "+reason, "readiness", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
+		}
+		slotID, _ := data["slot_id"].(string)
+		if candidate := s.candidateByID(c.ID, slotID); candidate != nil {
+			if unmet := referralSlotUnmet(c, candidate); len(unmet) > 0 {
+				return bookingFail(409, "the simulated slot does not meet the receiving unit's acceptance conditions: "+strings.Join(unmet, ", "),
+					"referral_conditions", map[string]interface{}{"unmet_conditions": unmet, "booking": s.bookingSummaryLocked(c)})
+			}
 		}
 	}
 	return nil
@@ -684,6 +695,10 @@ func (s *apiServer) bookingForLocked(id string) map[string]interface{} {
 		readiness["ready"], readiness["reason"] = false, reason
 		out["reservable"] = false
 	}
+	constraints := referralBookingConstraints(s.cases[id])
+	if len(constraints) > 0 {
+		readiness["requirements"] = constraints
+	}
 	out["readiness"] = readiness
 	if s.bookingCalendar != "" {
 		out["calendar_version"] = s.bookingCalendar
@@ -699,6 +714,17 @@ func (s *apiServer) bookingForLocked(id string) map[string]interface{} {
 					candidate["availability"] = "reserved"
 				} else if slotElapsed(s.cases[id], slot) {
 					candidate["availability"] = "elapsed"
+				}
+			}
+			if len(constraints) > 0 {
+				unmet := referralSlotUnmet(s.cases[id], candidate)
+				candidate["referral_conditions_met"] = len(unmet) == 0
+				if len(unmet) > 0 {
+					candidate["unmet_conditions"] = unmet
+					if slotID == out["suggested_slot_id"] {
+						out["reservable"] = false
+						out["reservation_explanation"] = "suggestion_misses_referral_conditions"
+					}
 				}
 			}
 			list[i] = candidate

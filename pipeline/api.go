@@ -714,7 +714,22 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.CRC != nil {
 		m["crc"] = c.last.CRC
 	}
+	if h := handoffMarker(c); h != nil {
+		m["handoff"] = h
+	}
 	return m
+}
+
+// handoffMarker: a list-level marker of the canonical returned-referral packet (codes, days and the rejecting unit only;
+// the advice and requested information stay in the case detail), so a referral inbox reads the detail of returned
+// cases instead of every open case.
+func handoffMarker(c *apiCase) map[string]interface{} {
+	if c.last == nil || c.last.Handoff == nil {
+		return nil
+	}
+	h := c.last.Handoff
+	return map[string]interface{}{"referral_id": h.ReferralID, "status": h.Status, "clinical_priority": h.Priority,
+		"decided_by": h.DecidedBy, "decided_at": round4(h.DecidedAt), "act_by": round4(h.ActBy)}
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
@@ -2153,7 +2168,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
-			if failure := s.bookingReadinessGateLocked(c, kind); failure != nil {
+			if failure := s.bookingReadinessGateLocked(c, kind, data); failure != nil {
 				return failure.code, failure.body
 			}
 			var failure *bookingFailure
@@ -2408,7 +2423,7 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 			return errors.New("unstamped booking acquisition after the first readiness policy stamp")
 		}
 		if stamped {
-			if failure := s.bookingReadinessGateLocked(c, kind); failure != nil {
+			if failure := s.bookingReadinessGateLocked(c, kind, norm); failure != nil {
 				return fmt.Errorf("invalid stamped booking readiness: %v", failure.body["error"])
 			}
 		}
