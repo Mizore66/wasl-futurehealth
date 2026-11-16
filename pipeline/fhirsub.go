@@ -798,8 +798,16 @@ func (c *SubConsumer) pendingEntries(filter string) ([]pendingEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	var entries []pendingEntry
+	var names []string
 	for key := range keys.Keys() {
+		names = append(names, key)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("list durable pending records: %w", err)
+	}
+	cancel() // listing is complete; later Gets keep their own original deadlines
+	var entries []pendingEntry
+	for _, key := range names {
 		getCtx, getCancel := context.WithTimeout(context.Background(), 2*time.Second)
 		entry, err := c.kv.Get(getCtx, key)
 		getCancel()
@@ -810,9 +818,6 @@ func (c *SubConsumer) pendingEntries(filter string) ([]pendingEntry, error) {
 			return nil, err
 		}
 		entries = append(entries, pendingEntry{key: key, entry: entry})
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("list durable pending records: %w", err)
 	}
 	return entries, nil
 }
@@ -1340,6 +1345,12 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) error {
 		if previous := s.pendingProvider[e.Num]; s.pending[e.Num] && previous != "" && previous != provider {
 			return fmt.Errorf("conflicting provider for %s event %d: %q versus %q", s.ref, e.Num, previous, provider)
 		}
+		if retained, err := c.reusePendingOverflowLocked(s, e); err != nil {
+			return err
+		} else if retained {
+			c.stats["dup_dropped_"+via]++
+			continue
+		}
 		owned, err := c.persistPendingLocked(s, e)
 		if err != nil {
 			return err
@@ -1448,6 +1459,68 @@ func (c *SubConsumer) validatePendingPayloadLocked(s *subscriptionState, e *subE
 		}
 		return nil
 	})
+}
+
+// reusePendingOverflowLocked preserves only an untouched, positively admitted
+// local overflow generation. It does not claim, publish, retire, or infer absence
+// from an earlier operation. Both key spellings are observed again, and the
+// selected value must still match the complete original receipt and payload.
+func (c *SubConsumer) reusePendingOverflowLocked(s *subscriptionState, e *subEvent) (bool, error) {
+	w := s.work[e.Num]
+	if c.kv == nil || w == nil || !s.overflowPending || !s.pending[e.Num] || s.buf[e.Num] != nil ||
+		w.state != s || w.positionRef != s.positionRef || s.positionRef != s.ref ||
+		!w.local || w.active || w.inflight || w.completed || w.published ||
+		w.providerOwned || w.queued || w.recovery || w.canonical != nil || w.message != nil ||
+		w.attempt != 0 || w.returnApplied || w.floor.Revision != 0 ||
+		w.cleanupRetry || w.cleanupRev != 0 || w.blocker != "" ||
+		w.mutation.Token != 0 || w.reservation.Token != 0 || w.unknown.Token != 0 || len(w.claimIntent) != 0 ||
+		w.legacyBinding != "" || s.holeCounts[e.Num] != 1 || !s.holes[w] ||
+		w.event.Key != pendingEventKeyFor(s.ref, e.Num) || w.event.Revision == 0 ||
+		w.origin.Revision == 0 || len(w.origin.Raw) == 0 {
+		return false, nil
+	}
+	if !samePendingPayload(&w.event, e) {
+		return true, errCanonicalConflict
+	}
+	key, alias := w.event.Key, pendingEventKey(e.Num)
+	revision, owner, acceptedSub := w.event.Revision, w.event.Owner, w.event.Sub
+	// origin is the older source observation when this generation was claimed.
+	// The accepted event revision instead acknowledges the exact marshal used by
+	// Create/claimPendingIO. Compare against that write without changing origin.
+	raw, err := json.Marshal(&w.event)
+	if err != nil {
+		return true, err
+	}
+	err = c.pendingIOLocked(s, e.Num, func() error {
+		if alias != key {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_, err := c.kv.Get(ctx, alias)
+			cancel()
+			if err == nil {
+				return errCanonicalConflict // any present alias requires full recovery
+			}
+			if !errors.Is(err, jetstream.ErrKeyNotFound) {
+				return err
+			}
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		entry, err := c.kv.Get(ctx, key)
+		cancel()
+		if err != nil {
+			return err
+		}
+		stored, err := decodePendingEntry(key, entry)
+		if err != nil {
+			return err
+		}
+		stored.Key, stored.Revision = key, entry.Revision()
+		if stored.Revision != revision || stored.Owner != owner || stored.Sub != acceptedSub ||
+			!bytes.Equal(entry.Value(), raw) || !samePendingPayload(e, stored) {
+			return errCanonicalConflict
+		}
+		return nil
+	})
+	return true, err
 }
 
 func (c *SubConsumer) persistPendingLocked(s *subscriptionState, e *subEvent) (bool, error) {

@@ -81,6 +81,13 @@ func TestAutomaticOverflowRefillAvoidsRepeatedFullBacklogScans(t *testing.T) {
 	if len(remaining) == 0 {
 		t.Fatal("no retained overflow remained after the initial scan")
 	}
+	// A replayed notification after real discovery must retain the same overflow
+	// obligation, not force every later capacity release back to full discovery.
+	for n := range remaining {
+		deliver(n)
+		deliver(n)
+		break
+	}
 
 	lists0, gets0, updates0 := atomic.LoadInt64(&counting.lists), atomic.LoadInt64(&counting.gets), atomic.LoadInt64(&counting.updates)
 	for _, n := range []int64{5, 10, 15} {
