@@ -4,11 +4,8 @@ package main
 // the production Compose file requires all of them and therefore fails before opening a listener when one is absent.
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -89,24 +86,13 @@ func recoveryApplicationHeader(header nats.Header) map[string][]string {
 }
 
 func readRecoveryStream(ctx context.Context, stream jetstream.Stream) ([]recoveryMessage, error) {
-	info, err := stream.Info(ctx)
+	messages := []recoveryMessage{}
+	err := eachRecoveryMessage(ctx, stream, func(m recoveryMessage) error {
+		messages = append(messages, m)
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	messages := make([]recoveryMessage, 0, info.State.Msgs)
-	if info.State.Msgs == 0 {
-		return messages, nil
-	}
-	for sequence := info.State.FirstSeq; sequence <= info.State.LastSeq; sequence++ {
-		raw, err := stream.GetMsg(ctx, sequence)
-		if errors.Is(err, jetstream.ErrMsgNotFound) {
-			continue // retained streams may contain deleted-sequence gaps
-		}
-		if err != nil {
-			return nil, fmt.Errorf("read %s sequence %d: %w", info.Config.Name, sequence, err)
-		}
-		messages = append(messages, recoveryMessage{Sequence: raw.Sequence, Time: raw.Time, Subject: raw.Subject,
-			Header: recoveryApplicationHeader(raw.Header), Data: raw.Data})
 	}
 	return messages, nil
 }
@@ -130,7 +116,7 @@ func backupNATS(ctx context.Context, js jetstream.JetStream, path string) (recov
 		return recoverySummary{}, err
 	}
 	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", CreatedAt: time.Now().UTC(),
-		NondeterministicFields: []string{"created_at", "nats_sequence", "nats_time", "consumer_delivered", "consumer_ack_floor"},
+		NondeterministicFields: recoveryNondeterministicFields,
 		Streams:                []recoveryStream{}}
 	summary := recoverySummary{Digests: map[string]string{}}
 	for _, info := range infos {
@@ -234,6 +220,11 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	if err != nil {
 		return recoveryNATSBundle{}, err
 	}
+	return parseNATSRecoveryBundle(encoded)
+}
+
+// parseNATSRecoveryBundle validates and normalises a whole v1 payload held in memory.
+func parseNATSRecoveryBundle(encoded []byte) (recoveryNATSBundle, error) {
 	var bundle recoveryNATSBundle
 	if err := json.Unmarshal(encoded, &bundle); err != nil {
 		return recoveryNATSBundle{}, fmt.Errorf("invalid NATS recovery bundle")
@@ -272,7 +263,15 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 // backup. It does not create, delete, publish, or acknowledge anything.
 func verifyNATS(ctx context.Context, js jetstream.JetStream, path string) (recoverySummary, error) {
 	summary := recoverySummary{Digests: map[string]string{}}
-	bundle, err := loadNATSRecoveryBundle(path)
+	reader, closer, streamed, _, err := openRecoveryPayload(path)
+	if err != nil {
+		return summary, err
+	}
+	defer closer.Close()
+	if streamed {
+		return verifyNATSStream(ctx, js, reader)
+	}
+	bundle, err := loadNATSRecoveryPayloadV1(reader)
 	if err != nil {
 		return summary, err
 	}
@@ -304,7 +303,21 @@ func verifyNATS(ctx context.Context, js jetstream.JetStream, path string) (recov
 }
 
 func restoreNATS(ctx context.Context, js jetstream.JetStream, path string) (recoverySummary, error) {
-	bundle, err := loadNATSRecoveryBundle(path)
+	return restoreNATSPayload(ctx, js, path, false)
+}
+
+// restoreNATSPayload restores a v1 payload (validated whole in memory) or a v2 stream (validated by a complete scan
+// before the first write, or by the caller's check-nats pass when prechecked) into an empty JetStream.
+func restoreNATSPayload(ctx context.Context, js jetstream.JetStream, path string, prechecked bool) (recoverySummary, error) {
+	reader, closer, streamed, rereadable, err := openRecoveryPayload(path)
+	if err != nil {
+		return recoverySummary{}, err
+	}
+	defer closer.Close()
+	if streamed {
+		return restoreNATSStream(ctx, js, path, reader, rereadable, prechecked)
+	}
+	bundle, err := loadNATSRecoveryPayloadV1(reader)
 	if err != nil {
 		return recoverySummary{}, err
 	}
@@ -317,7 +330,6 @@ func restoreNATS(ctx context.Context, js jetstream.JetStream, path string) (reco
 	}
 	summary := recoverySummary{Digests: map[string]string{}}
 	for _, saved := range bundle.Streams {
-		const restoreDuplicateWindow = 100 * time.Millisecond // NATS rejects shorter explicit windows.
 		config := saved.Config
 		seenIDs := map[string]bool{}
 		repeatedIDs := false
@@ -392,32 +404,11 @@ func restoreNATS(ctx context.Context, js jetstream.JetStream, path string) (reco
 // recoveryLogicalDigest hashes stable wire fields in retained stream order. Broker sequence and timestamps are
 // explicitly excluded: a clean restore may assign new physical metadata without changing the logical run.
 func recoveryLogicalDigest(messages []recoveryMessage) (string, error) {
-	h := sha256.New()
-	if _, err := h.Write([]byte("wasl-recovery-v1\x00")); err != nil {
-		return "", err
-	}
+	digester := newRecoveryDigester()
 	for _, m := range messages {
-		if _, err := h.Write([]byte(m.Subject)); err != nil {
-			return "", err
-		}
-		h.Write([]byte{0})
-		keys := make([]string, 0, len(m.Header))
-		for k := range m.Header {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			h.Write([]byte(k))
-			h.Write([]byte{0})
-			for _, v := range m.Header[k] {
-				h.Write([]byte(v))
-				h.Write([]byte{0})
-			}
-		}
-		h.Write([]byte{0})
-		h.Write(m.Data)
+		digester.add(m.Subject, m.Header, m.Data)
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return digester.sum(), nil
 }
 
 func readRequiredSecret(path string) (string, error) {
