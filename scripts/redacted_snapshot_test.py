@@ -393,6 +393,28 @@ class RedactedSnapshotTest(unittest.TestCase):
         for secret in ("future_internal", "internal_error", "secret-host", "password", "/secret/manifest", "secret-key", "/private/run", "secret-policy"):
             self.assertNotIn(secret, proc.stdout)
 
+    def test_operations_projects_measured_api_window_and_drops_unlisted_fields(self):
+        payload = valid_public_payload("operations")
+        payload["api_measurements"] = {
+            "window": {"scope": "current_api_process", "source": "in_memory_request_observer",
+                       "process_started_at": "2026-11-13T11:58:00Z", "start": "2026-11-13T11:58:00Z", "end": "2026-11-13T12:00:00Z",
+                       "start_bound": "process_start", "length_seconds": 300, "capacity": 4096, "samples": 3,
+                       "latest_sample_at": "2026-11-13T11:59:59Z", "actor": "secret-actor"},
+            "latency": {"status": "measured", "unit": "ms", "samples": 3, "p50": 2.5, "p90": 9.0, "p99": 9.0, "max": 9.0},
+            "error_rate": {"status": "measured", "definition": "http_5xx_responses_per_request", "samples": 3,
+                           "server_errors": 1, "client_errors": 0, "rate": 0.333333},
+            "routes": [{"route": "/api/cases/:case", "requests": 3, "server_errors": 1, "client_errors": 0, "case_id": "secret-case"}],
+        }
+        proc = self.run_snapshot(["operations"], payload)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        projected = json.loads(proc.stdout)["api_measurements"]
+        self.assertEqual(projected["latency"]["p90"], 9.0)
+        self.assertEqual(projected["error_rate"]["rate"], 0.333333)
+        self.assertEqual(projected["window"]["start_bound"], "process_start")
+        self.assertEqual(projected["routes"], [{"route": "/api/cases/:case", "requests": 3, "server_errors": 1, "client_errors": 0}])
+        for secret in ("secret-actor", "secret-case"):
+            self.assertNotIn(secret, proc.stdout)
+
     def test_operations_requires_each_contract_section(self):
         payload = valid_public_payload("operations")
         for key in ("observed_at", "api", "nats", "queue", "run", "api_measurements", "backup"):
