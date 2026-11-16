@@ -240,6 +240,7 @@ Implement/run:
 - The 43 reports have clinically verified model-assisted labels (two model passes plus clinician adjudication, κ = 1.000), not independent human double-labelling; see `docs/labelling/`.
 - Report:
   - precision, recall and false closures;
+  - unsafe closures (closure loss `outcome_or_evidence_ownership_v2`, #193): a false outcome **or** closing evidence that belongs to another person or cannot be mapped to one. `report7`, LTT, `final_aggregate`, `soak` and the H7 sweep (`wsi7 sweep`, `scripts/h7_mitigations.py`) report it beside the outcome-only `false_closures`; artifacts produced before it are labelled `outcome_only_v1` and never read as ownership-checked. The fresh4 I1 gate's ownership-aware version is protocol amendment 2 (`scripts/fresh4_eval/AMENDMENT-2.md`, #218); the frozen fresh4 run is outcome-only, so the amended gate is `not_evaluable` there;
   - wrong-patient dispatches;
   - review items/hours;
   - message-before-consent count;
