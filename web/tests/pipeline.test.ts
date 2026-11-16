@@ -5,7 +5,7 @@ import { HealthPanel } from "@/components/pipeline/health-panel";
 import replayJson from "@/data/replay.json";
 import readerJson from "@/data/reader.json";
 import { FEED_ROWS, ROWS, SLOTS, flowView, replayTrack } from "@/components/pipeline/flow";
-import { DEPENDENCY_ORDER, completedRunRate, loadOperations, stepAnnouncement } from "@/components/pipeline/health";
+import { DEPENDENCY_ORDER, apiErrorRateText, completedRunRate, loadOperations, stepAnnouncement } from "@/components/pipeline/health";
 import { Operations } from "@/lib/api/schema";
 import { getOperations } from "@/lib/api/source";
 import operationsJson from "@/data/api/operations.json";
@@ -302,6 +302,53 @@ describe("operational readiness state", () => {
     expect(html).toContain("Durable-consumer pending and unacknowledged counts");
     expect(html).not.toContain("0 pending");
     expect(html).not.toContain("NaN");
+  });
+
+  const observedWindow = {
+    scope: "current_api_process", source: "in_memory_request_observer", process_started_at: "2026-11-13T11:58:00Z",
+    start: "2026-11-13T11:58:00Z", end: "2026-11-13T12:00:00Z", start_bound: "process_start", length_seconds: 300, capacity: 4096,
+  } as const;
+
+  it("renders measured API latency, error rate, sample size, freshness and restart state", () => {
+    const measured = Operations.parse({
+      ...ok,
+      api_measurements: {
+        window: { ...observedWindow, samples: 11, latest_sample_at: "2026-11-13T11:59:59Z" },
+        latency: { status: "measured", unit: "ms", samples: 11, p50: 50, p90: 90, p99: 100, max: 100.5 },
+        error_rate: { status: "measured", definition: "http_5xx_responses_per_request", samples: 11, server_errors: 2, client_errors: 2, rate: 0.181818 },
+        routes: [
+          { route: "/api/cases/:case", requests: 10, server_errors: 2, client_errors: 1 },
+          { route: "/api/operations", requests: 1, server_errors: 0, client_errors: 1 },
+        ],
+      },
+    });
+    const html = renderToStaticMarkup(createElement(HealthPanel, { state: { kind: "live", operations: measured, fetchedAt: "2026-11-13T12:00:01Z" } }));
+    expect(html).toContain("p50 50 ms, p90 90 ms, p99 100 ms, max 100.5 ms");
+    expect(html).toContain("18.18% (2 of 11 requests returned a server error)");
+    expect(html).toContain('data-testid="api-window-samples">11<');
+    expect(html).toContain('dateTime="2026-11-13T11:59:59Z"');
+    expect(html).toContain("Shortened by an API restart");
+    expect(html).toContain("/api/cases/:case");
+    expect(html).toContain("not an SLO");
+  });
+
+  it("keeps an empty observed window explicitly unmeasured", () => {
+    const empty = Operations.parse({
+      ...ok,
+      api_measurements: {
+        window: { ...observedWindow, start_bound: "rolling_window", samples: 0 },
+        latency: { status: "unmeasured", reason: "no_requests_in_window" },
+        error_rate: { status: "unmeasured", reason: "no_requests_in_window" },
+        routes: [],
+      },
+    });
+    const html = renderToStaticMarkup(createElement(HealthPanel, { state: { kind: "live", operations: empty, fetchedAt: "2026-11-13T12:00:01Z" } }));
+    expect(html).toContain('data-testid="api-latency">Unmeasured<');
+    expect(html).toContain('data-testid="api-error-rate">Unmeasured<');
+    expect(html).toContain("None in window");
+    expect(html).not.toContain("api-routes");
+    expect(html).not.toContain(" 0 ms");
+    expect(apiErrorRateText(empty.api_measurements.error_rate)).toBe("Unmeasured");
   });
 
   it("renders zero-denominator completed-run rates as Unmeasured rather than 0%", () => {

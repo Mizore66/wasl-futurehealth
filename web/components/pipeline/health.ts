@@ -27,6 +27,29 @@ export function completedRunRate(numerator: number, denominator: number): string
   return `${Number(((numerator / denominator) * 100).toFixed(2))}%`;
 }
 
+type APIMeasurements = Operations["api_measurements"];
+
+/** Plain-language meaning of where the current API observation window begins. */
+export const WINDOW_BOUND_GLOSS: Record<NonNullable<APIMeasurements["window"]>["start_bound"], string> = {
+  rolling_window: "Full rolling window: requests completed in the last window length.",
+  process_start: "Shortened by an API restart: requests from before this process started are not retained.",
+  capacity: "Shortened by the sample limit: older requests in the window were dropped.",
+};
+
+/** Error rate text from the measured counts only; it never derives a rate from an unmeasured window. */
+export function apiErrorRateText(errorRate: APIMeasurements["error_rate"]): string {
+  if (errorRate.status !== "measured") return "Unmeasured";
+  const percent = Number((errorRate.rate * 100).toFixed(2));
+  return `${percent}% (${errorRate.server_errors} of ${errorRate.samples} requests returned a server error)`;
+}
+
+/** Latency percentiles text, or Unmeasured when no request completed in the window. */
+export function apiLatencyText(latency: APIMeasurements["latency"]): string {
+  if (latency.status !== "measured") return "Unmeasured";
+  const ms = (v: number) => `${v.toLocaleString("en-US", { maximumFractionDigits: 3 })} ms`;
+  return `p50 ${ms(latency.p50)}, p90 ${ms(latency.p90)}, p99 ${ms(latency.p99)}, max ${ms(latency.max)}`;
+}
+
 export const DEPENDENCY_ORDER = ["materialised_run", "nats", "reader", "ingest_adapter", "review_ledger"] as const;
 
 export const DEPENDENCY_GLOSS: Record<(typeof DEPENDENCY_ORDER)[number], { label: string; note: string }> = {
