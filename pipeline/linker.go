@@ -1286,6 +1286,11 @@ func (L *LinkerCore) foldTask(loop string, tf TaskFact) []string {
 	L.taskHistory[key] = append(L.taskHistory[key], taskRevision{Loop: loop, Fact: tf})
 	next := taskRevision{Loop: loop, Fact: tf}
 	next.Fact.Version = version(tf.Version)
+	if next.Fact.Status == "" {
+		// A live Task without a status is unknown work: it must never read as a
+		// legacy materialized fact in canonicalTaskOwner.
+		next.Fact.Status = "unknown"
+	}
 	current, exists := L.taskCurrent[key]
 	if exists {
 		cv, nv := current.Fact.Version, next.Fact.Version
@@ -1354,10 +1359,17 @@ var taskAssignsOwner = map[string]bool{
 // canonicalTaskOwner is the single owner projection used by every programme
 // reducer: the last owner among current Task revisions whose lifecycle assigns
 // responsibility. It never reads the coordinator overlay.
+//
+// foldTask always records the Task ID. A fact with neither ID nor status is a
+// pre-#158 materialized closure-seam input (for example the signed referral
+// inbox controls) and keeps its historical reading so recorded replays stay
+// byte-identical; any fact carrying a status, and every fact the current
+// linker emits, is lifecycle-checked and fails closed.
 func canonicalTaskOwner(tasks []TaskFact) string {
 	owner := ""
 	for _, t := range tasks {
-		if t.Owner != "" && taskAssignsOwner[t.Status] {
+		legacy := t.ID == "" && t.Status == ""
+		if t.Owner != "" && (taskAssignsOwner[t.Status] || legacy) {
 			owner = t.Owner
 		}
 	}

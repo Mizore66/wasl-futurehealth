@@ -168,6 +168,17 @@ func TestCurrentTaskRevisionOwnershipFold(t *testing.T) {
 	if d := owner(a, b, taskEvent(t, "accepted", 2, taskTestOwner, 3)); d.Owner != taskTestOwner {
 		t.Fatalf("higher version did not recover conflict: %+v", d)
 	}
+	// A live Task without a status is unknown work, never an owner, even
+	// though pre-#158 materialized facts without ID or status keep theirs.
+	if d := owner(taskEvent(t, "", 1, taskTestOwner, 2)); d.Owner != "" || !d.Unowned {
+		t.Fatalf("status-less live Task supplied owner: %+v", d)
+	}
+	if got := canonicalTaskOwner([]TaskFact{{Owner: taskTestOwner}}); got != taskTestOwner {
+		t.Fatalf("legacy materialized fact lost its historical owner: %q", got)
+	}
+	if got := canonicalTaskOwner([]TaskFact{{Owner: taskTestOwner, Status: "cancelled"}}); got != "" {
+		t.Fatalf("legacy fact with a terminal status supplied owner: %q", got)
+	}
 	// Refocusing a Task to another request retracts its owner from this loop.
 	moved := taskEvent(t, "accepted", 2, taskTestOwner, 3)
 	moved.Focus = "ServiceRequest/other"
