@@ -37,6 +37,21 @@ func main() {
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
+	if cmd == "smoke-fixture" {
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		out := fs.String("out", "", "NEW synthetic software-fixture directory (must not exist)")
+		fs.Parse(os.Args[2:])
+		if *out == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "smoke-fixture requires -out <new directory>")
+			os.Exit(2)
+		}
+		if err := writeIndependentSmokeFixture(*out); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		fmt.Println("built synthetic software fixture; not clinical evidence:", *out)
+		return
+	}
 	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
 		runMCF(os.Stdin, os.Stdout)
 		return

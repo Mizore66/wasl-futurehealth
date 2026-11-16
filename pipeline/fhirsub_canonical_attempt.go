@@ -505,16 +505,40 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 	if canonicalValidationFor(ctx) == nil {
 		ctx = canonicalValidationContext(ctx)
 	}
-	if _, _, found, err := c.readCanonicalSource(ctx, w.input.Incarnation, w.input.Source, sourceDiagnostic); err != nil || !found {
-		if err == nil {
-			err = errCanonicalUnknown
+	// Both independent exact observations remain AFTER the shared gate wait.
+	// Join before any work adoption, history traversal, write or publication.
+	// Validation memos and diagnostic predicates are branch-local, not shared
+	// mutable caches; source failure keeps its original precedence/disposition.
+	cellCtx := canonicalValidationContext(ctx)
+	var meta canonicalMetadataReceipt
+	var cell canonicalCell
+	var found bool
+	var cellErr error
+	var observedCell headPredicate
+	var cellPredicate *headPredicate
+	if cellDiagnostic != nil {
+		cellPredicate = &observedCell
+	}
+	cellDone := make(chan struct{})
+	go func() {
+		defer close(cellDone)
+		meta, cell, found, cellErr = c.readCanonicalAttemptCell(cellCtx, w, cellPredicate)
+	}()
+	_, _, sourceFound, sourceErr := c.readCanonicalSource(ctx, w.input.Incarnation, w.input.Source, sourceDiagnostic)
+	<-cellDone
+	if sourceErr != nil || !sourceFound {
+		if sourceErr == nil {
+			sourceErr = errCanonicalUnknown
 		}
-		return blocked(headSource, w.result, err)
+		return blocked(headSource, w.result, sourceErr)
 	}
-	meta, cell, found, err := c.readCanonicalAttemptCell(ctx, w, cellDiagnostic)
-	if err != nil {
-		return blocked(headCell, w.result, err)
+	if cellDiagnostic != nil {
+		*cellDiagnostic = observedCell
 	}
+	if cellErr != nil {
+		return blocked(headCell, w.result, cellErr)
+	}
+	var err error
 	if found && cell.Phase == canonicalPhaseReceipt {
 		if w.result.Proof != nil {
 			if err := compareCanonicalReceipts(*cell.Receipt, *w.result.Proof); err != nil {
@@ -705,7 +729,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 	}
 	submitted := &nats.Msg{Subject: w.input.Source.Identity.Subject, Data: bytes.Clone(w.input.Message.Data), Header: canonicalCopyHeader(w.attempt.WireHeaders)}
 	ack, wireErr := c.js.PublishMsg(ctx, submitted, jetstream.WithExpectStream(canonicalStream), jetstream.WithExpectLastSequence(w.attempt.ExpectedLast))
-	w.result = c.resolveCanonicalAck(ctx, w.input.Incarnation, w.input.Source.Identity, w.attempt, submitted, ack, wireErr)
+	w.result = c.resolveCanonicalAckAfterFresh(ctx, w.input.Incarnation, w.input.Source.Identity, w.attempt, submitted, ack, wireErr, releaseTurn)
 	w.wireUnknown = !w.result.Returned
 	if w.result.Returned {
 		w.proofOnly = true

@@ -213,20 +213,95 @@ serve() {  # WASL_SERVE_RUN / WASL_SERVE_DATA serve an already materialised lane
   printf '{"level":"INFO","msg":"api starting","address":"%s","run":"%s"}\n' "$addr" "$run"
   cd "$BIN" && exec ./wsi7 serve -run "$run" -data "$data" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "$addr"
 }
-smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 + WASL_PORT_OFFSET), poll /healthz, run scripts/api_smoke.py
-  local port="${WASL_SMOKE_PORT:-$((18088 + ${WASL_PORT_OFFSET:-0}))}" wait="${WASL_SMOKE_WAIT:-60}" addr rc=0 i=0 ok=0
-  addr="127.0.0.1:$port"
-  SMOKE_PID=""; trap '[ -z "$SMOKE_PID" ] || kill "$SMOKE_PID" 2>/dev/null || true' EXIT
-  serve "$addr" > "$OUT/smoke-serve.log" 2>&1 &
+smoke_source_out_guard() {
+  # Must run before even global OUT creation: a rejected destination must not
+  # add directories to the original evidence. Resolve root symlinks first.
+  python3 -I - "${WASL_SERVE_RUN:-$RUN}" "$OUT" <<'PY'
+import os, sys
+source, output = map(os.path.realpath, sys.argv[1:])
+if os.path.commonpath((source, output)) == source:
+    raise SystemExit("smoke: output is inside source run (or equal to it)")
+PY
+}
+smoke() {  # Real-run checks + separate built synthetic software fixture, both over real loopback HTTP.
+  smoke_source_out_guard
+  local port="${WASL_SMOKE_PORT:-$((18088 + ${WASL_PORT_OFFSET:-0}))}" wait="${WASL_SMOKE_WAIT:-60}" addr fixture_addr stage rc=0 i=0 ok=0
+  addr="127.0.0.1:$port"; fixture_addr="127.0.0.1:$((port + 1))"
+  # Check both adjacent loopback ports before starting either listener. Bind
+  # failures at startup still fail closed; health from another process is not proof.
+  python3 -I - "$port" <<'PY'
+import socket, sys
+port = int(sys.argv[1])
+if not 1 <= port < 65535:
+    raise SystemExit("smoke: two adjacent ports required")
+with socket.socket() as actual, socket.socket() as fixture:
+    actual.bind(("127.0.0.1", port))
+    fixture.bind(("127.0.0.1", port + 1))
+PY
+  mkdir -p "$OUT"
+  stage=$(mktemp -d "$OUT/smoke-lanes.XXXXXX")
+  # Preserve all source bytes/history; only newly created destination objects
+  # receive private writable modes. A root run symlink is allowed, internal
+  # symlinks/special files and recursive destinations are rejected before copy.
+  python3 -I - "${WASL_SERVE_RUN:-$RUN}" "$stage/actual" <<'PY'
+import os, shutil, stat, sys
+source, destination = map(os.path.realpath, sys.argv[1:])
+if os.path.commonpath((source, destination)) == source:
+    raise SystemExit("smoke: destination is inside source run")
+for root, dirs, files in os.walk(source, followlinks=False):
+    for name in dirs + files:
+        path = os.path.join(root, name)
+        mode = os.lstat(path).st_mode
+        if stat.S_ISLNK(mode):
+            raise SystemExit("smoke: internal source symlink rejected: " + path)
+        if not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
+            raise SystemExit("smoke: nonregular source entry rejected: " + path)
+def copy_private(src, dst):
+    os.mkdir(dst, 0o700)
+    os.chmod(dst, 0o700)
+    with os.scandir(src) as entries:
+        for entry in entries:
+            target = os.path.join(dst, entry.name)
+            if entry.is_symlink():
+                raise SystemExit("smoke: internal source symlink rejected: " + entry.path)
+            if entry.is_dir(follow_symlinks=False):
+                copy_private(entry.path, target)
+            elif entry.is_file(follow_symlinks=False):
+                fd = os.open(entry.path, os.O_RDONLY | os.O_NOFOLLOW)
+                with os.fdopen(fd, "rb") as original:
+                    if not stat.S_ISREG(os.fstat(original.fileno()).st_mode):
+                        raise SystemExit("smoke: nonregular source file rejected")
+                    out = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                    with os.fdopen(out, "wb") as copied:
+                        os.fchmod(copied.fileno(), 0o600)
+                        shutil.copyfileobj(original, copied)
+            else:
+                raise SystemExit("smoke: nonregular source entry rejected: " + entry.path)
+copy_private(source, destination)
+PY
+  "$BIN/wsi7" smoke-fixture -out "$stage/independent"
+  printf 'smoke: retained writable actual lane %s; independent lane %s is synthetic software evidence only\n' "$stage/actual" "$stage/independent"
+  SMOKE_PID=""; SMOKE_FIXTURE_PID=""
+  trap '[ -z "$SMOKE_PID" ] || kill "$SMOKE_PID" 2>/dev/null || true; [ -z "$SMOKE_FIXTURE_PID" ] || kill "$SMOKE_FIXTURE_PID" 2>/dev/null || true' EXIT
+  WASL_SERVE_RUN="$stage/actual" serve "$addr" > "$stage/actual-serve.log" 2>&1 &
   SMOKE_PID=$!; local pid=$SMOKE_PID
+  # No model/pilot options or cohort data are needed for the explicit software lane.
+  "$BIN/wsi7" serve -run "$stage/independent" -data "" -addr "$fixture_addr" > "$stage/independent-serve.log" 2>&1 &
+  SMOKE_FIXTURE_PID=$!; local fixture_pid=$SMOKE_FIXTURE_PID
   while [ "$i" -lt "$((wait * 2))" ]; do
-    kill -0 "$pid" 2>/dev/null || break
-    if curl -sf --max-time 2 "http://$addr/healthz" >/dev/null 2>&1; then ok=1; break; fi
+    kill -0 "$pid" 2>/dev/null && kill -0 "$fixture_pid" 2>/dev/null || break
+    if curl -sf --max-time 2 "http://$addr/healthz" >/dev/null 2>&1 && curl -sf --max-time 2 "http://$fixture_addr/healthz" >/dev/null 2>&1; then
+      # Both newly spawned processes must have actually acquired their listeners.
+      if grep -q 'api listener ready' "$stage/actual-serve.log" && grep -q 'api listener ready' "$stage/independent-serve.log"; then ok=1; break; fi
+    fi
     sleep 0.5; i=$((i + 1))
   done
-  if [ "$ok" != 1 ]; then echo "smoke: server did not become healthy on $addr (see $OUT/smoke-serve.log)" >&2; tail -5 "$OUT/smoke-serve.log" >&2 || true; rc=1
-  else python3 "$ROOT/scripts/api_smoke.py" --base-url "http://$addr" || rc=$?; fi
-  kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; SMOKE_PID=""
+  if [ "$ok" != 1 ]; then echo "smoke: both servers must become healthy (see $stage/actual-serve.log and $stage/independent-serve.log)" >&2; rc=1
+  else python3 "$ROOT/scripts/api_smoke.py" --base-url "http://$addr" --workflow-base-url "http://$fixture_addr" --independent-base-url "http://$fixture_addr" > "$stage/smoke.log" 2>&1 || rc=$?; fi
+  [ ! -f "$stage/smoke.log" ] || cat "$stage/smoke.log"
+  kill "$pid" "$fixture_pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true; wait "$fixture_pid" 2>/dev/null || true
+  SMOKE_PID=""; SMOKE_FIXTURE_PID=""
   return "$rc"
 }
 # Cleanup for snapshot: staging is always removed; if the swap into place was interrupted (SNAP_SWAP=1) the previous samples
@@ -371,6 +446,7 @@ case "${1:-all}" in
   recovery-verify) recovery_verify; exit 0;;
 esac
 case "${1:-all}" in cohort|run|audit|tamper|report|serve|smoke|snapshot|final) stale_bin;; esac
+[ "${1:-all}" != smoke ] || smoke_source_out_guard
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;

@@ -199,6 +199,13 @@ func canonicalCopyAck(ack *jetstream.PubAck) *jetstream.PubAck {
 // of body proof, and only an ordinary read of actual ACK.Sequence can prove it.
 // Returned=true with Proof=nil is no-resend/proof-only, never a retry grant.
 func (c *SubConsumer) resolveCanonicalAck(ctx context.Context, inc canonicalIncarnation, id canonicalIdentity, attempt *canonicalAttempt, submitted *nats.Msg, ack *jetstream.PubAck, wireErr error) canonicalResult {
+	return c.resolveCanonicalAckAfterFresh(ctx, inc, id, attempt, submitted, ack, wireErr, nil)
+}
+
+// afterFresh releases only shared scheduling exclusion after the actual fresh
+// ACK and submitted witness are validated. It supplies no proof or authority:
+// the independent stream observation and every subsequent check still run.
+func (c *SubConsumer) resolveCanonicalAckAfterFresh(ctx context.Context, inc canonicalIncarnation, id canonicalIdentity, attempt *canonicalAttempt, submitted *nats.Msg, ack *jetstream.PubAck, wireErr error, afterFresh func()) canonicalResult {
 	result := canonicalResult{Wire: canonicalWireUnknown, ObservedAck: canonicalCopyAck(ack)}
 	block := func(err error) canonicalResult { result.Blocked = err.Error(); return result }
 	if wireErr != nil {
@@ -234,6 +241,9 @@ func (c *SubConsumer) resolveCanonicalAck(ctx context.Context, inc canonicalInca
 		sent, err := canonicalHeaderDigestV1(submitted.Header)
 		witness, _ := canonicalHeaderDigestV1(attempt.WireHeaders)
 		if err == nil && sent == witness {
+			if afterFresh != nil {
+				afterFresh()
+			}
 			stream, err := c.js.Stream(ctx, canonicalStream)
 			if err != nil {
 				return block(err)

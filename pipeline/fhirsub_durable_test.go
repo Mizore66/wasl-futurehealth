@@ -2340,9 +2340,12 @@ func (k *pendingProtocolKV) fault(op string) (pendingProtocolFault, bool) {
 }
 
 func (k *pendingProtocolKV) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
+	k.mu.Lock()
 	k.reads[key]++
-	if k.observe != nil {
-		e, err := k.observe(key)
+	observe := k.observe
+	k.mu.Unlock()
+	if observe != nil {
+		e, err := observe(key)
 		if err != nil {
 			return nil, err
 		}

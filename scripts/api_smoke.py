@@ -2,6 +2,10 @@
 """Real-HTTP smoke test of the read/write API (`wsi7 serve`). Stdlib only; synthetic data only.
 
 Usage: python3 scripts/api_smoke.py --base-url http://127.0.0.1:8088 [--timeout 10]
+       [--independent-base-url http://127.0.0.1:8089]
+       [--workflow-base-url http://127.0.0.1:8089]
+Explicit optional software-fixture URLs isolate mutations from retained history;
+actual-run read/audit/export checks and all mutating assertions still run.
 Exits 0 when every check passes, 1 on the first failed assertion or transport error.
 Fixtures are iterated dynamically: the three original tags must be present, any others are validated too.
 """
@@ -639,7 +643,7 @@ def independent_review_smoke(c, programmes):
     return len(accepted)
 
 
-def smoke(c):
+def smoke(c, independent_client=None, workflow_client=None):
     code, _ = c.request("GET", "/api/cases", authenticate=False)
     check(code == 401, f"unauthenticated case list: expected 401, got {code}")
     code, _ = c.get("/api/cases", "auditor")
@@ -718,22 +722,52 @@ def smoke(c):
         check(a.get("case") == cid, f"fixture {tag}: audit case differs")
         check(a.get("chain_verified") is True, f"fixture {tag}: audit chain_verified is not true")
         check(isinstance(a.get("chain_length"), int) and a["chain_length"] >= 1, f"fixture {tag}: audit chain is empty")
+        # Actual-run exports remain checked here even when all mutating software
+        # exercises run on a separate fresh lane with its own canonical outputs.
+        export = c.ok(case_path(cid, "/export"), "auditor")
+        check(export.get("schema") == "wasl-case-export/1" and export.get("redacted") is True,
+              f"fixture {tag}: export schema/redaction marker missing")
+        unsigned = {k: v for k, v in export.items() if k != "content_sha256"}
+        check(hashlib.sha256(canonical_json(unsigned)).hexdigest() == export.get("content_sha256"),
+              f"fixture {tag}: export content_sha256 differs from canonical content hash")
+        check_export_redaction(export, {"actor", "target_actor", "owner", "canonical_owner", "note", "text", "quote", "reasoning"})
+        check(export.get("audit", {}).get("chain_verified") is True
+              and export.get("audit", {}).get("chain_length") == a["chain_length"],
+              f"fixture {tag}: export changed canonical audit verification")
+        check(c.ok(case_path(cid, "/export"), "auditor") == export, f"fixture {tag}: export is not deterministic")
+        code, _ = c.request("POST", case_path(cid, "/export"), {}, role="auditor")
+        check(code == 405, f"fixture {tag}: export POST expected 405, got {code}")
 
     code, body = c.get(case_path("smoke-unknown/ServiceRequest/none"))
     check(code == 404, f"unknown case: expected 404, got {code}")
     check("error" in body, "unknown case: 404 body has no error")
-    workflow_smoke(c, fx["review_hold"]["id"])
-    independent_review_smoke(c, list(progs))
+    code, body = c.get(case_path("smoke-unknown/ServiceRequest/none", "/export"), "auditor")
+    check(code == 404 and "error" in body, f"unknown actual export: expected JSON 404, got {code}")
+    if workflow_client is None:
+        workflow_smoke(c, fx["review_hold"]["id"])
+    else:
+        candidates = workflow_client.ok("/api/cases?programme=crc&limit=1").get("cases", [])
+        check(len(candidates) == 1 and candidates[0].get("id"), "workflow software fixture has no CRC case")
+        workflow_smoke(workflow_client, candidates[0]["id"])
+    if independent_client is None:
+        independent_review_smoke(c, list(progs))
+    else:
+        # Explicit separate source-bound software lane, not a fallback or a skipped assertion.
+        independent_review_smoke(independent_client, ["crc"])
     return len(fx), total
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--base-url", required=True)
+    ap.add_argument("--independent-base-url", help="separate fresh source-bound synthetic software-fixture API; never clinical evidence")
+    ap.add_argument("--workflow-base-url", help="separate fresh synthetic software-fixture API for mutating workflow checks")
     ap.add_argument("--timeout", type=float, default=10.0, help="per-request timeout in seconds")
     args = ap.parse_args(argv)
     try:
-        nfx, total = smoke(Client(args.base_url, args.timeout))
+        independent = Client(args.independent_base_url, args.timeout) if args.independent_base_url else None
+        workflow = Client(args.workflow_base_url, args.timeout) if args.workflow_base_url else None
+        nfx, total = smoke(Client(args.base_url, args.timeout), independent, workflow)
     except SmokeFailure as e:
         print(f"api smoke FAILED: {e}", file=sys.stderr)
         return 1
