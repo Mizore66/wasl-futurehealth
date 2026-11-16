@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "0f47647cba6e5271a5cbe1813f1b2712481c100f",
-    "committed_at": "2026-11-12T22:21:32Z"
+    "revision": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2",
+    "committed_at": "2026-11-16T17:04:05Z"
   },
   "scanner": {
     "name": "trivy",
@@ -13,13 +13,13 @@
     "machine": "arm64"
   },
   "summary": {
-    "packages": 783,
-    "with_discovered_license": 655,
+    "packages": 790,
+    "with_discovered_license": 662,
     "without_discovered_license": 128,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
       "0BSD": 1,
-      "Apache-2.0": 43,
+      "Apache-2.0": 49,
       "BSD-2-Clause": 12,
       "BSD-3-Clause": 15,
       "BlueOak-1.0.0": 3,
@@ -29,7 +29,8 @@
       "LGPL-3.0-or-later": 1,
       "MIT": 554,
       "MPL-2.0": 6,
-      "Python-2.0": 1
+      "Python-2.0": 1,
+      "Unlicense": 1
     }
   },
   "packages": [
@@ -1288,6 +1289,66 @@
       "purl": "pkg:npm/%40napi-rs/wasm-runtime@1.2.6",
       "development": true,
       "licenses": []
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/jetstream",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/jetstream@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/kv",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/kv@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nats-core",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/nats-core@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nkeys",
+      "version": "2.0.3",
+      "purl": "pkg:npm/%40nats-io/nkeys@2.0.3",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nuid",
+      "version": "3.0.0",
+      "purl": "pkg:npm/%40nats-io/nuid@3.0.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/transport-node",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/transport-node@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -7209,6 +7270,16 @@
       "development": true,
       "licenses": [
         "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "tweetnacl",
+      "version": "1.0.3",
+      "purl": "pkg:npm/tweetnacl@1.0.3",
+      "development": false,
+      "licenses": [
+        "Unlicense"
       ]
     },
     {
