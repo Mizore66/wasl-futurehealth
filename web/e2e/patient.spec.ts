@@ -2,9 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
-import { DICTS } from "@/components/patient/i18n";
+import { DICTS, PATIENT_LANGS, REVIEW_LANGS, type Lang } from "@/components/patient/i18n";
 
-const MOCK = "http://127.0.0.1:31987";
+const MOCK = `http://127.0.0.1:${process.env.PATIENT_MOCK_PORT ?? 31987}`;
 let token = "";
 let expiresAt = "";
 test.describe.configure({ mode: "serial" });
@@ -26,13 +26,25 @@ async function journey(): Promise<PatientJourney> {
   return (await (await fetch(`${MOCK}/__mock/state?token=${token}`)).json()).journey;
 }
 
-const LANGS = [
-  { lang: "ar", dir: "rtl" },
-  { lang: "en", dir: "ltr" },
-  { lang: "ur", dir: "rtl" },
-  { lang: "fil", dir: "ltr" },
-] as const;
+type Surface = "patient" | "review";
+const BASE: Record<Surface, string> = { patient: "/patient", review: "/translation-review" };
+/**
+ * Patient routes serve only patient-approved dictionaries (#133). Unreviewed drafts keep their layout, RTL and
+ * accessibility coverage on the internal translation-review preview, never on a patient route.
+ */
+const PHONES: { lang: Lang; dir: "rtl" | "ltr"; surface: Surface }[] = [
+  ...PATIENT_LANGS.map((lang) => ({ lang, dir: DICTS[lang].dir, surface: "patient" as const })),
+  ...REVIEW_LANGS.map((lang) => ({ lang, dir: DICTS[lang].dir, surface: "review" as const })),
+];
 const STEPS = ["notice", "check", "book"] as const;
+const UNREVIEWED_WARNING = "It has not been reviewed by a qualified medical translator and is not approved for patients.";
+
+/** Medical strings that differ from English in each draft: teach-back, consent, medication and preparation. */
+function draftStrings(lang: Lang): string[] {
+  const pick = (t: (typeof DICTS)[Lang]) => [t.notice.title, t.notice.rightsItems[2], t.check.question, t.check.right, t.check.consentBody, t.book.warn, ...t.book.prep, t.langName];
+  const en = pick(DICTS.en);
+  return pick(DICTS[lang]).filter((s, i) => s !== en[i]);
+}
 
 async function expectNoSeriousAxe(page: Page) {
   const axe = await new AxeBuilder({ page }).analyze();
@@ -46,9 +58,9 @@ async function enter(page: Page) {
   await expect(page.locator("h1")).toBeVisible();
 }
 
-async function open(page: Page, step: string, lang = "en") {
+async function open(page: Page, step: string, lang = "en", surface: Surface = "patient") {
   await enter(page);
-  await page.goto(`/patient/${step}?lang=${lang}`);
+  await page.goto(`${BASE[surface]}/${step}?lang=${lang}`);
 }
 
 function patientCookie(page: Page) {
@@ -56,10 +68,12 @@ function patientCookie(page: Page) {
 }
 
 for (const step of STEPS) {
-  for (const { lang, dir } of LANGS) {
-    test(`/patient/${step}?lang=${lang} uses a live projection, ${dir}, axe clean`, async ({ page }) => {
-      await open(page, step, lang);
+  for (const { lang, dir, surface } of PHONES) {
+    test(`${BASE[surface]}/${step}?lang=${lang} uses a live projection, ${dir}, axe clean`, async ({ page }) => {
+      await open(page, step, lang, surface);
       await expect(page.locator(`div[lang="${lang}"]`)).toHaveAttribute("dir", dir);
+      await expect(page.getByTestId("unreviewed-translation")).toHaveCount(surface === "review" ? 1 : 0);
+      if (surface === "review") await expect(page.getByTestId("unreviewed-translation")).toContainText(UNREVIEWED_WARNING);
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator("h1")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
@@ -67,11 +81,11 @@ for (const step of STEPS) {
       await expect(page.locator("[data-honesty=designed]")).toHaveCount(0);
       const nav = page.getByRole("navigation", { name: "Demo steps" });
       for (const s of STEPS) {
-        await expect(nav.locator(`a[href^="/patient/${s}?lang=${lang}"]`)).toHaveCount(1);
-        await expect(nav.locator(`a[href^="/patient/${s}"]`)).not.toHaveAttribute("href", /consent/);
+        await expect(nav.locator(`a[href^="${BASE[surface]}/${s}?lang=${lang}"]`)).toHaveCount(1);
+        await expect(nav.locator(`a[href^="${BASE[surface]}/${s}"]`)).not.toHaveAttribute("href", /consent/);
       }
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({ path: `test-results/screens/patient_${step}_${lang}.png` });
+      await page.screenshot({ path: `test-results/screens/${surface}_${step}_${lang}.png` });
       await expectNoSeriousAxe(page);
     });
   }
@@ -94,7 +108,7 @@ test("access verifies the link, sets a bounded host cookie and strips the token"
 
 test("invalid and expired access return no patient data and clear the cookie", async ({ page }) => {
   await page.goto("/patient/access?link=forged");
-  await expect(page.locator('p[role="alert"]')).toContainText("هذا الرابط غير صالح");
+  await expect(page.locator('p[role="alert"]')).toContainText(DICTS.en.common.invalidLink);
   expect(await patientCookie(page)).toBeUndefined();
   expect(page.url()).not.toContain("forged");
   await expect(page.getByText("Hello Fatima")).toHaveCount(0);
@@ -102,33 +116,106 @@ test("invalid and expired access return no patient data and clear the cookie", a
   await enter(page);
   await control("/__mock/expire");
   await page.goto(`/patient/access?link=${token}`);
-  await expect(page.locator('p[role="alert"]')).toContainText("انتهت صلاحية هذا الرابط");
+  await expect(page.locator('p[role="alert"]')).toContainText(DICTS.en.common.expiredLink);
   expect(await patientCookie(page)).toBeUndefined();
   await expect(page.getByText("Your colonoscopy appointment")).toHaveCount(0);
 });
 
-test("Arabic is the default language", async ({ page }) => {
-  await open(page, "notice", "ar");
+test("a reviewed language, not unreviewed Arabic, is the patient default", async ({ page }) => {
+  await enter(page);
   await page.goto("/patient/notice");
-  await expect(page.locator('div[lang="ar"]')).toHaveAttribute("dir", "rtl");
-  await expect(page.locator("h1")).toHaveText("نتيجة فحصكِ تحتاج فحصًا آخر");
+  await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+  await expect(page.locator("h1")).toHaveText(DICTS.en.notice.title);
+  await expect(page.locator('div[lang="ar"]')).toHaveCount(0);
 });
 
-test("notice: switch language, read rights, say who calls whom", async ({ page }) => {
-  await open(page, "notice", "ar");
-  await page.getByRole("button", { name: /اللغة/ }).click();
-  const sheet = page.getByRole("dialog", { name: "اللغة" });
-  await expect(sheet.getByRole("link")).toHaveCount(4);
-  await expect(sheet.getByRole("link", { name: "العربية" })).toHaveAttribute("aria-current", "true");
+// #133: a direct, missing or invalid `lang` and every propagated step link stay on a patient-approved dictionary.
+for (const lang of [...REVIEW_LANGS, "xx", ""]) {
+  for (const step of STEPS) {
+    test(`/patient/${step}?lang=${lang || "(empty)"} serves no unreviewed dictionary`, async ({ page }) => {
+      await open(page, step, lang);
+      await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+      await expect(page.getByTestId("unreviewed-translation")).toHaveCount(0);
+      const nav = page.getByRole("navigation", { name: "Demo steps" });
+      for (const s of STEPS) await expect(nav.locator(`a[href="/patient/${s}?lang=en"]`)).toHaveCount(1);
+      await page.getByRole("button", { name: `${DICTS.en.langTitle}: ${DICTS.en.langName}` }).click();
+      const sheet = page.getByRole("dialog", { name: DICTS.en.langTitle });
+      await expect(sheet.getByRole("link")).toHaveCount(PATIENT_LANGS.length);
+      for (const draft of REVIEW_LANGS) await expect(sheet.getByRole("link", { name: DICTS[draft].langName })).toHaveCount(0);
+      await sheet.getByRole("button", { name: DICTS.en.close }).click();
+      if (step === "notice") await page.getByRole("button", { name: DICTS.en.notice.rights }).click();
+      const body = await page.locator("body").innerText();
+      for (const draft of REVIEW_LANGS) for (const s of draftStrings(draft)) expect(body, `${draft} copy on a patient route`).not.toContain(s);
+    });
+  }
+}
+
+test("unreviewed drafts never reach the rendered patient journey, through teach-back, consent and preparation", async ({ page }) => {
+  for (const draft of REVIEW_LANGS) {
+    await page.context().clearCookies();
+    token = randomUUID();
+    await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token }) });
+    await open(page, "check", draft);
+    await page.getByRole("button", { name: DICTS.en.check.wrong }).click();
+    await page.getByRole("button", { name: "Ask me again" }).click();
+    await page.getByRole("button", { name: DICTS.en.check.right }).click();
+    await expect(page.locator("h1")).toHaveText(DICTS.en.check.consentTitle);
+    let body = await page.locator("body").innerText();
+    for (const s of draftStrings(draft)) expect(body).not.toContain(s);
+    await page.goto(`/patient/book?lang=${draft}`);
+    await expect(page.getByRole("heading", { name: DICTS.en.book.prepHead })).toBeVisible();
+    body = await page.locator("body").innerText();
+    for (const s of draftStrings(draft)) expect(body).not.toContain(s);
+    await expect(page.getByText(DICTS.en.book.warn)).toBeVisible();
+  }
+});
+
+test("translation review preview: separate path, unreviewed warning on every step, drafts only", async ({ page }) => {
+  for (const lang of REVIEW_LANGS) {
+    for (const step of [...STEPS, "outcome"]) {
+      await open(page, step, lang, "review");
+      await expect(page).toHaveURL(new RegExp(`/translation-review/${step}\\?lang=${lang}$`));
+      await expect(page.getByTestId("unreviewed-translation")).toContainText("Not for patients.");
+      await expect(page.getByTestId("unreviewed-translation")).toContainText(UNREVIEWED_WARNING);
+    }
+  }
+  // English is patient copy, never a preview of itself; the preview sheet lists only drafts.
+  await page.goto("/translation-review/notice?lang=en");
+  await expect(page.locator(`div[lang="${REVIEW_LANGS[0]}"]`)).toBeVisible();
+  const t = DICTS[REVIEW_LANGS[0]];
+  await page.getByRole("button", { name: `${t.langTitle}: ${t.langName}` }).click();
+  const sheet = page.getByRole("dialog", { name: t.langTitle });
+  await expect(sheet.getByRole("link")).toHaveCount(REVIEW_LANGS.length);
+  await expect(sheet.getByRole("link", { name: DICTS.en.langName })).toHaveCount(0);
+  for (const link of await sheet.getByRole("link").all()) await expect(link).toHaveAttribute("href", /^\/translation-review\//);
+  const response = await page.goto("/translation-review/notice?lang=ar&error=invalid");
+  expect(response?.headers()["cache-control"]).toBe("no-store");
+  expect(response?.headers()["x-robots-tag"]).toBe("noindex, nofollow");
+  await expect(page.getByTestId("unreviewed-translation")).toContainText(UNREVIEWED_WARNING);
+});
+
+test("notice: read rights, say who calls whom", async ({ page }) => {
+  await open(page, "notice", "en");
+  await page.getByRole("button", { name: "Language: English" }).click();
+  const sheet = page.getByRole("dialog", { name: "Language" });
+  await expect(sheet.getByRole("link")).toHaveCount(PATIENT_LANGS.length);
+  await expect(sheet.getByRole("link", { name: "English" })).toHaveAttribute("aria-current", "true");
   await sheet.getByRole("link", { name: "English" }).click();
   await expect(page).toHaveURL(/\/patient\/notice\?lang=en$/);
   await expect(page.locator("h1")).toHaveText("Your test result needs one more check");
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Next step" }) });
   await expect(card).toContainText("Nurse Hessa will call you within 2 working days");
+  await expect(card).toContainText("book a colonoscopy");
   await expect(card).toContainText("You can also call her: 02 555 0142");
   const rightsRow = page.getByRole("button", { name: "Your rights" });
   await rightsRow.click();
-  await expect(page.getByRole("dialog", { name: "Your rights" }).getByRole("listitem")).toHaveCount(3);
+  const rights = page.getByRole("dialog", { name: "Your rights" });
+  await expect(rights.getByRole("listitem")).toHaveCount(3);
+  // #157: the right to decline stays explicit; declining is never promised to leave care unchanged.
+  await expect(rights).toContainText("You can say no to follow-up or question any decision.");
+  await expect(rights).toContainText("you will still be treated with respect and can still get other care you need");
+  await expect(rights).toContainText("Talk to your doctor about what saying no could mean for you and what other choices you have.");
+  await expect(rights).not.toContainText(/care will not change/i);
   await expectNoSeriousAxe(page);
 });
 
@@ -153,10 +240,10 @@ async function expectSheetReachable(page: Page, dialog: Locator, parts: Locator[
 }
 
 for (const viewport of SHORT_VIEWPORTS) {
-  for (const { lang } of LANGS) {
+  for (const { lang, surface } of PHONES) {
     test(`rights and language sheets stay reachable at ${viewport.name}, ${lang}`, async ({ page }) => {
       const t = DICTS[lang];
-      await open(page, "notice", lang);
+      await open(page, "notice", lang, surface);
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       const phoneWidth = await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width);
 
@@ -186,7 +273,7 @@ for (const viewport of SHORT_VIEWPORTS) {
       await page.getByRole("button", { name: `${t.langTitle}: ${t.langName}` }).click();
       const sheet = page.getByRole("dialog", { name: t.langTitle });
       await expectSheetReachable(page, sheet, [...(await sheet.getByRole("link").all()), sheet.getByRole("button", { name: t.close })], viewport.width, viewport.height);
-      await expect(sheet.getByRole("link")).toHaveCount(LANGS.length);
+      await expect(sheet.getByRole("link")).toHaveCount(surface === "patient" ? PATIENT_LANGS.length : REVIEW_LANGS.length);
       await sheet.getByRole("button", { name: t.close }).click();
       await expect(sheet).toHaveCount(0);
       expect(await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width)).toBe(phoneWidth);
@@ -347,31 +434,33 @@ test("controls expose busy state and keep keyboard focus movement", async ({ pag
   await expect(page.locator("h1")).toBeFocused();
 });
 
-test("language persists across the three phones", async ({ page }) => {
-  await open(page, "notice", "ur");
+test("language persists across the three phones on the review preview", async ({ page }) => {
+  await open(page, "notice", "ur", "review");
   const nav = page.getByRole("navigation", { name: "Demo steps" });
   await nav.getByRole("link", { name: "2 Check" }).click();
-  await expect(page).toHaveURL(/\/patient\/check\?lang=ur$/);
+  await expect(page).toHaveURL(/\/translation-review\/check\?lang=ur$/);
   await expect(page.locator('div[lang="ur"]')).toHaveAttribute("dir", "rtl");
+  await expect(page.getByTestId("unreviewed-translation")).toBeVisible();
   await nav.getByRole("link", { name: "3 Book" }).click();
-  await expect(page).toHaveURL(/\/patient\/book\?lang=ur$/);
+  await expect(page).toHaveURL(/\/translation-review\/book\?lang=ur$/);
   await expect(page.getByTestId("slot-date")).toContainText("جمعہ");
+  await expect(page.getByTestId("unreviewed-translation")).toBeVisible();
 });
 
 test.describe("desktop", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
   test("centres a phone-width column", async ({ page }) => {
-    await open(page, "notice", "ar");
+    await open(page, "notice", "en");
     const box = await page.locator("main").boundingBox();
     expect(box && Math.round(box.x + box.width / 2)).toBe(720);
     expect(box?.width).toBeLessThanOrEqual(390);
   });
 });
 
-for (const { lang } of LANGS) {
+for (const { lang, surface } of PHONES) {
   test(`rights: verified contest shows a receipt and pending review after reload (${lang})`, async ({ page }) => {
     const t = DICTS[lang];
-    await open(page, "notice", lang);
+    await open(page, "notice", lang, surface);
     await page.getByRole("button", { name: t.notice.rights }).click();
     const sheet = page.getByRole("dialog", { name: t.notice.rights });
     await sheet.getByRole("button", { name: t.rights.contest }).click();
@@ -410,11 +499,11 @@ test("rights: an explanation request returns this case's provenance; a wrong cod
   await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
 });
 
-for (const { lang, dir } of LANGS) {
+for (const { lang, dir, surface } of PHONES) {
   test(`outcome: approved content, next step and safety net are acknowledged once (${lang})`, async ({ page }) => {
     const t = DICTS[lang];
     await control("/__mock/handoff", "pending_approval");
-    await open(page, "outcome", lang);
+    await open(page, "outcome", lang, surface);
     await expect(page.locator(`div[lang="${lang}"]`)).toHaveAttribute("dir", dir);
     await expect(page.getByRole("status")).toHaveText(t.outcome.pending);
     await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
@@ -454,13 +543,13 @@ test("a breast case keeps its own programme through steps, languages and forged 
   await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "breast" }) });
   await enter(page);
   const crcWords = /colonoscopy|bowel|SKMC|Endoscopy|Fatima|Hessa|October/i;
-  for (const lang of ["en", "ar"] as const) {
+  for (const [lang, surface] of [["en", "patient"], ["ar", "review"]] as const) {
     for (const step of STEPS) {
-      await page.goto(`/patient/${step}?lang=${lang}&programme=crc&case=ahs/ServiceRequest/OTHER&next_step=colonoscopy`);
+      await page.goto(`${BASE[surface]}/${step}?lang=${lang}&programme=crc&case=ahs/ServiceRequest/OTHER&next_step=colonoscopy`);
       await expect(page.locator("main")).toContainText(/breast clinic|What is the next step after your result\?/);
       await expect(page.locator("main")).not.toContainText(crcWords);
       const nav = page.getByRole("navigation", { name: "Demo steps" });
-      await expect(nav.locator("a").first()).toHaveAttribute("href", `/patient/notice?lang=${lang}`);
+      await expect(nav.locator("a").first()).toHaveAttribute("href", `${BASE[surface]}/notice?lang=${lang}`);
     }
   }
   await expect(page.getByText("until a reviewed translation is ready")).toBeVisible();
