@@ -1,4 +1,5 @@
 import type { CaseDetail, ReviewState } from "@/lib/api/schema";
+import { legacyReviewMayAnswer } from "@/lib/domain/review-authority";
 import { caseHolds } from "@/lib/domain/holds";
 
 /*
@@ -112,7 +113,7 @@ export function effectiveReviews(c: Pick<CaseDetail, "api_reviews">) {
     else if (e.kind === "contest") contested.set(e.hash, e.target);
     else if (e.resolution === "upheld") compensated.add(contested.get(e.target) ?? "");
   }
-  return c.api_reviews.flatMap((e) => (e.ledger === "review" && !protocolRead(e) && !compensated.has(e.hash) ? [e] : []));
+  return c.api_reviews.flatMap((e) => (e.ledger === "review" && legacyReviewMayAnswer(e) && !compensated.has(e.hash) ? [e] : []));
 }
 
 /** Review items with no final answer: signed in the run, answered by a legacy event, or resolved by the protocol. */

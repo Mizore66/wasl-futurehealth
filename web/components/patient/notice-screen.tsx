@@ -1,18 +1,25 @@
+import type { PatientJourney } from "@/lib/api/patient-schema";
 import { BottomSheet } from "./bottom-sheet";
 import { DICTS, type Lang } from "./i18n";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
+import { GatedNote, scriptLang } from "./programme-copy";
+import { patientScript } from "./programme";
+import { RightsRequests } from "./rights-requests";
 
-export function NoticeScreen({ lang }: { lang: Lang }) {
+export function NoticeScreen({ lang, journey }: { lang: Lang; journey: PatientJourney }) {
   const t = DICTS[lang];
   const n = t.notice;
-  const type = phoneType(lang);
+  const script = patientScript(journey, lang);
+  const s = script.notice;
+  const type = phoneType(script.lang);
   return (
     <>
       <main className="flex flex-1 flex-col gap-3 px-5 pt-5 pb-4">
-        <div className="pb-3">
-          <p className="m-0 mb-1.5 text-[16px] text-muted">{n.greet}</p>
-          <h1 className={type.h1}>{n.title}</h1>
-          <p className={type.body}>{n.body}</p>
+        <GatedNote script={script} />
+        <div className="pb-3" {...scriptLang(script)}>
+          <p className="m-0 mb-1.5 text-[16px] text-muted">{s.greet}</p>
+          <h1 className={type.h1}>{s.title}</h1>
+          <p className={type.body}>{s.body}</p>
         </div>
 
         <section aria-labelledby="next-step" className="rounded-card border border-line bg-surface p-5">
@@ -22,8 +29,8 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
               {n.nextHead}
             </h2>
           </div>
-          <p className={type.body}>{n.next}</p>
-          <div className="mt-4 flex items-center gap-3">
+          <p className={type.body} {...scriptLang(script)}>{s.next}</p>
+          <div className="mt-4 flex items-center gap-3" {...scriptLang(script)}>
             <span aria-hidden="true" className="flex size-11 flex-none items-center justify-center rounded-full bg-raised">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-soft)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4" />
@@ -31,9 +38,9 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
               </svg>
             </span>
             <div>
-              <div className="text-[17px] font-medium">{n.nurse}</div>
+              <div className="text-[17px] font-medium">{s.contact}</div>
               <div className="text-[14px] leading-[1.7] text-muted">
-                {n.alsoCall} <PhoneNumber />
+                {s.alsoCall} <PhoneNumber />
               </div>
             </div>
           </div>
@@ -65,6 +72,7 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
             ))}
           </ul>
           <p className="m-0 mt-4 text-[14px] leading-[1.8] text-muted">{n.rightsNote}</p>
+          <RightsRequests lang={lang} />
         </BottomSheet>
       </main>
       <CallBar label={t.call} />

@@ -238,6 +238,9 @@ func TestPR205AuthenticParentHistory(t *testing.T) {
 			t.Fatalf("non-acquisition after stamp: %d %v", code, v)
 		}
 	}
+	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"decision":"adequate","note":"Synthetic evidence without an original source"}`); code != 409 {
+		t.Fatalf("source-less evidence after stamp: %d %v", code, v)
+	}
 	if code, v := pr205HTTP(t, srv, "pr205-unrelated", "/review", RoleClinician, `{"item":"`+item+`","decision":"adequate","note":"Synthetic legacy review unaffected"}`); code != 201 {
 		t.Fatalf("review after stamp: %d %v", code, v)
 	}

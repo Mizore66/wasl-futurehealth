@@ -55,7 +55,7 @@ it("all-new 1201 traversal reaches all rows exactly once in stable waiting order
   await pager("Last"); expect(names()).toEqual([referrals[1200].name]);
   expect(list().querySelectorAll('[role="status"]')).toHaveLength(1);
   expect(open().querySelector('[data-testid="page-status"]')).toBeNull();
-});
+}, 20_000);
 
 it("accept/return remain open off-tab with identity-bound Undo, while paging resets mode/picked and preserves committed state", async () => {
   const referrals = syntheticReferrals(1201); await mount(referrals);

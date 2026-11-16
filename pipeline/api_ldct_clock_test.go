@@ -18,13 +18,16 @@ func pr185ClockAPI(t *testing.T) (*irEnv, *Decision, string) {
 	sr := pr185ClockRequestWithEID(t, pr185ClockEID())
 	root := pr185ClockReport(t, pr185ClockReportInput{EID: pr185ClockEID(), ID: "clock-index", Label: "LR3", Day: 10})
 	revision := pr185ClockReport(t, pr185ClockReportInput{EID: pr185ClockEID(), ID: "clock-revision", Status: "corrected", Version: 2, Label: "LR4B", Day: 110, Parent: "clock-index", Relation: addendumRelation})
-	unread := pr185ClockReport(t, pr185ClockReportInput{Provider: pr185ClockHospital, MRN: pr185ClockHospitalMRN, EID: pr185ClockEID(), ID: "clock-workup", Kind: "ldct-workup", Day: 120})
+	unread, source := pr185ClockReportSource(t, pr185ClockReportInput{Provider: pr185ClockHospital, MRN: pr185ClockHospitalMRN, EID: pr185ClockEID(), ID: "clock-workup", Kind: "ldct-workup", Day: 120})
 	d, out := replayLungRevisions(t, sr, root, revision, unread)
 	pr185RequireClock(t, d, "reclassified_index_exam", "lcs-centre/DiagnosticReport/clock-index", 10)
 	if len(d.Pending) != 1 {
 		t.Fatalf("canonical unread workup must raise one actual evidence item: %v", d.Pending)
 	}
 	e := newIR(t)
+	source.Seq = uint64(1_000_000 + len(e.s.sources))
+	appendLogMsgs(t, e.run, "fhir_log.ndjson", source)
+	e.s.indexSource(unread.Provider, unread, source)
 	c := &apiCase{ID: d.LoopID, Programme: "lung_ldct", Provider: d.Provider, SRDay: d.SRDay, State: d.State, Review: "open", Deadline: d.LDCT.DeadlineDay, last: d, decisions: []*Decision{d}}
 	e.s.cases[c.ID] = c
 	e.s.order = append(e.s.order, c.ID)

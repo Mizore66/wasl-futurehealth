@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { apiMode, getCase, postConsent } from "@/lib/api/source";
+import { apiMode, getCase, postConsent, postTeachBackCallback, type TeachBackCallbackResult } from "@/lib/api/source";
 import { ConsentEventName, type ApiContact } from "@/lib/api/schema";
 
 export type ConsentActionResult =
@@ -50,4 +50,25 @@ export async function recordConsent(
     };
   }
   return { ok: true, contact: detail.api_contact, expectedHead: detail.api_contact.overlay.revision };
+}
+
+const CallbackArgs = z.strictObject({
+  caseId: z.string().min(1).max(200),
+  callback: z.string().min(1).max(128),
+  outcome: z.enum(["understood_on_call", "another_explanation"]),
+});
+
+/** Record the outcome of a failed teach-back callback as the server's coordinator credential. */
+export async function recordTeachBackCallback(input: unknown): Promise<TeachBackCallbackResult> {
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: callback outcomes cannot be appended" };
+  const args = CallbackArgs.safeParse(input);
+  if (!args.success) return { ok: false, status: 400, error: "Malformed callback outcome" };
+  const result = await postTeachBackCallback(args.data.caseId, args.data.callback, args.data.outcome);
+  if (result.ok) {
+    const path = `/app/patients/${encodeURIComponent(args.data.caseId)}`;
+    revalidatePath(path);
+    revalidatePath(`${path}/audit`);
+    revalidatePath("/app/patients");
+  }
+  return result;
 }

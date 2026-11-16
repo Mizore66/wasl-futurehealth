@@ -133,11 +133,50 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 			}
 		}
 	}
+	items := nz(s.queue[c.ID])
+	current := c.last
+	imageQuestions := s.visibleImageQuestions(c, viewer)
+	if imageQuestions != nil {
+		// Historical evidence is another serialized copy of the same model
+		// content; importing a history label must not bypass question blinding.
+		for _, rows := range [][]map[string]interface{}{ev, evidenceHistory} {
+			for i, b := range rows {
+				if _, has := b["image_reader"]; has {
+					cp := make(map[string]interface{}, len(b))
+					for k, v := range b {
+						if k != "image_reader" {
+							cp[k] = v
+						}
+					}
+					rows[i] = cp
+				}
+			}
+		}
+		items = make([]*ReviewItem, len(s.queue[c.ID]))
+		for i, it := range s.queue[c.ID] {
+			cp := *it
+			if !imageQuestions[it.ItemID] {
+				cp.Chain = withoutImageVerdict(it.Chain)
+			}
+			items[i] = &cp
+		}
+		if current != nil {
+			cp := *current
+			cp.Chain = withoutImageVerdict(current.Chain)
+			current = &cp
+		}
+	}
 	body := map[string]interface{}{
 		"case": s.summary(c), "identities": nz(identities), "timeline": caseTimelineForSerialization(facts), "links": links, "evidence": ev, "holds": holds,
-		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
+		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": items, "signoffs": nz(s.signoffs[c.ID]),
+		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": current, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
+	}
+	if review := s.identityReview(c, viewerOrNobody(viewer)); review != nil {
+		body["identity_review"] = review
+	}
+	if photos := s.reviewPhotos(c); len(photos) > 0 {
+		body["review_photos"] = photos
 	}
 	if len(identityHistory) > 0 {
 		body["identity_history"] = identityHistory
@@ -151,6 +190,15 @@ func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]i
 	s.mu.Lock()
 	if c.patient.Seq > 0 {
 		body["api_patient"] = s.patientViewLocked(c, true)
+	}
+	if len(c.requests) > 0 {
+		body["patient_requests"] = s.patientRequestsViewLocked(c, true)
+	}
+	if callbacks := s.callbacksViewLocked(c); len(callbacks) > 0 {
+		body["teach_back_callbacks"] = callbacks
+	}
+	if s.handoffEligibleLocked(c) || len(c.handoff) > 0 {
+		body["outcome_handoff"] = s.handoffViewLocked(c, true)
 	}
 	s.mu.Unlock()
 	return body
@@ -610,10 +658,23 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 	m["clinician_disposition"] = exportObject(exportKeys("at", "event", "hold", "plan", "review_date"))
 	m["booking"] = exportBookingSummaryAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
+	m["referral_response"] = exportReferralResponseAllow
+	m["referral_handoff"] = exportReferralHandoffAllow
 	return m
 }())
 
-var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "plan", "review_date", "hold", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
+// The receiving unit's answer and the hand-off it projects, as codes and days only: no actor, and none of the
+// referrer's free text (supplied information, close or primary-care reasons).
+var exportReferralResponseAllow = exportObject(exportKeys("response", "conditions", "reason", "requested_info", "unit", "run_day", "at", "event"))
+var exportReferralHandoffAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("decision", "reason_code", "info_requested", "clinical_priority", "decided_by", "decided_at", "act_by", "medical_director_day",
+		"status", "event", "destinations", "acted_at")
+	m["acknowledgement"] = exportObject(exportKeys("at", "run_day", "event"))
+	m["referrer_response"] = exportObject(exportKeys("response", "destination", "at", "run_day", "event"))
+	return m
+}())
+
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel", "plan", "review_date", "hold", "response", "conditions", "requested_info", "unit", "destination", "question_id", "answer_id", "permission", "slot_id", "offers_version", "item_id", "completed",
 	"expected_suggestion_version", "expected_slot_version", "reservation_id", "expected_reservation_version"))
 var exportPatientPrepItemAllow = exportObject(exportKeys("item_id", "completed", "updated_at", "event"))
 var exportPatientAllow = exportObject(func() map[string]*exportAllow {
@@ -629,7 +690,7 @@ var exportPatientAllow = exportObject(func() map[string]*exportAllow {
 	return m
 }())
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
+	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind", "source_binding",
 		"head", "seq", "target", "target_action", "resolution", "action_head", "request_id", "request_only", "link_id",
 		"protocol", "read", "question", "expected_head", "claim_head", "resolution_reads", "claimed_at", "heartbeat_at", "expires_at", "expected_claim_head",
 		"slot", "expected_slot_head", "expected_case_head", "payload_fingerprint", "input_fingerprint", "source_release_hash", "eligibility_hash", "outreach_intent", "confirmation")
@@ -717,7 +778,7 @@ var exportRecoveryCaseAllow = exportObject(func() map[string]*exportAllow {
 
 var exportCaseAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
-		"review", "closed", "closed_day", "fixture", "decisions", "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict")
+		"review", "closed", "closed_day", "fixture", "decisions", "lifecycle", "inactive", "actionable", "programme_availability", "request_status", "request_version", "request_conflict", "canonical_closed", "closure_hold")
 	m["programme"] = &exportAllow{leaf: true, empty: true}
 	m["request_status"] = &exportAllow{leaf: true, empty: true}
 	m["api_overlay"] = exportOverlayAllow
@@ -774,6 +835,8 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m["api_reviews"] = exportList(exportReviewEventAllow)
 	m["api_overlay"] = exportOverlayAllow
 	m["api_patient"] = exportPatientAllow
+	m["patient_requests"] = exportList(exportObject(exportKeys("receipt", "kind", "decision", "submitted_at", "status", "owner", "due_at", "overdue",
+		"outcome", "resolved_at", "closure_held", "excluded_reviewers", "resolved_by")))
 	m["current"] = exportDecisionAllow
 	m["booking"] = exportBookingAllow
 	m["agent_investigations"] = exportList(exportAgentInvestigationAllow)

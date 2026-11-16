@@ -1,0 +1,86 @@
+{
+  "anchor_note": "Local anchors for this materialised run: OUT stream ledger heads and a FHIR log hash; `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
+  "anchors": {
+    "fhir": "fhir-head",
+    "out.p0": "out-head"
+  },
+  "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+  "chain": [],
+  "chain_length": 0,
+  "chain_note": "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted current chain and covers that chain only.",
+  "chain_scope": "current",
+  "chain_verified": true,
+  "decision_signatures": [
+    {
+      "decision_id": "dec-ref-2",
+      "policy": "v6",
+      "recomputed": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b",
+      "sig": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b"
+    }
+  ],
+  "history": [
+    {
+      "action": "respond_referral",
+      "at": "2026-11-15T17:43:00.333923979Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "conditions": [],
+        "requested_info": [
+          "anticoagulant_plan",
+          "relevant_clinical_information"
+        ],
+        "response": "return",
+        "unit": "skmc-endo"
+      },
+      "hash": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "head": "d3e80717498b0d394a67b8af40b5323fd59af66946e540efa2222337edcdf95b",
+      "kind": "referral_response",
+      "mode": "demo",
+      "prev": "genesis",
+      "role": "clinician",
+      "seq": 1,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "respond_referral",
+      "at": "2026-11-15T17:43:00.335150371Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "response": "acknowledge"
+      },
+      "hash": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "head": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "kind": "referrer_response",
+      "mode": "demo",
+      "prev": "44b1f389270119e8573a65d0845f4d4d5d98bc2e44465dc15fa99f7833307b7d",
+      "role": "clinician",
+      "seq": 2,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "respond_referral",
+      "at": "2026-11-15T17:43:00.336033405Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-772",
+      "data": {
+        "response": "supply_info"
+      },
+      "hash": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+      "head": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "kind": "referrer_response",
+      "mode": "demo",
+      "prev": "756a45a2cce2257e2ae02a5c659cdc2b1e2bbfc42c7fe4a479bbbba46a1803fb",
+      "role": "clinician",
+      "seq": 3,
+      "type": "coordinator_action"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-15T17:43:00Z",
+    "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
+    "policy": "redacted-internal-audit",
+    "reader_model": "not-disclosed",
+    "run": "redacted-internal-audit"
+  }
+}

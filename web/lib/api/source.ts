@@ -4,6 +4,8 @@ import type { z } from "zod";
 import {
   ActionError,
   ActionResponse,
+  ReferralResponseRequest,
+  ReferrerResponseRequest,
   ApiError,
   CaseAction,
   Audit,
@@ -61,9 +63,10 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 /**
  * `web_reviewer` is the credential for generic shared reads (dashboard, lists, case detail on shared pages). It is bound
  * to its own non-reader actor, so a first read concealed from everyone but its author is concealed from these pages too.
- * It never falls back to the assigned reviewer tokens, which are initial readers.
+ * It never falls back to the assigned reviewer tokens, which are initial readers. `referrer` is the referring GP's
+ * clinician credential for answering a returned referral, bound to a different actor from the receiving unit's clinician.
  */
-export type WebCredential = "web_reviewer";
+export type WebCredential = "web_reviewer" | "referrer";
 
 /** The web server has no token for this credential: a configuration fault here, not an API outage. */
 export class MissingCredentialError extends Error {
@@ -377,6 +380,74 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
   throw new Error(`POST actions: HTTP ${res.status}`);
 }
 
+/** Words for a 401 or a missing token on a referral response: the server's receiving-unit clinician credential. */
+export const CLINICIAN_TOKEN_REFUSED = "the API did not accept this server's clinician credential; an operator must fix the server configuration";
+export const CLINICIAN_TOKEN_MISSING = "this server has no clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+
+/** Words for a 401 or a missing token on a referrer's hand-off answer: the server's referring-clinician credential. */
+export const REFERRER_TOKEN_REFUSED = "the API did not accept this server's referring-clinician credential; an operator must fix the server configuration";
+export const REFERRER_TOKEN_MISSING = "this server has no referring-clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+
+/**
+ * The receiving unit's answer to a referral, appended to the API ledger with the server-side clinician credential
+ * (WASL_API_CLINICIAN_TOKEN). The API maps that token's actor to a receiving unit; nothing here asserts identity or unit.
+ */
+export async function postReferralResponse(id: string, response: z.input<typeof ReferralResponseRequest>, expectedHead: string): Promise<ActionResult> {
+  const body = ReferralResponseRequest.safeParse(response);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  return postAnswer(id, "referral-response", "clinician", { ...body.data, referral_id: id, expected_head: expectedHead }, [CLINICIAN_TOKEN_MISSING, CLINICIAN_TOKEN_REFUSED]);
+}
+
+/**
+ * The responsible referrer's answer to the returned packet `packet`, appended with the server-side referring-clinician
+ * credential (WASL_API_REFERRER_TOKEN). The API checks that token's actor belongs to the case's referring provider.
+ */
+export async function postReferrerResponse(id: string, packet: string, response: z.input<typeof ReferrerResponseRequest>, expectedHead: string): Promise<ActionResult> {
+  const body = ReferrerResponseRequest.safeParse(response);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  return postAnswer(id, "referrer-response", "referrer", { ...body.data, referral_id: id, packet, expected_head: expectedHead }, [REFERRER_TOKEN_MISSING, REFERRER_TOKEN_REFUSED]);
+}
+
+async function postAnswer(id: string, route: string, credential: Role | WebCredential, payload: object, [missing, refused]: [string, string]): Promise<ActionResult> {
+  if (apiMode() !== "live") throw new Error(`POST ${route} needs WASL_API_URL: fixtures mode cannot append referral answers`);
+  let init: RequestInit;
+  try {
+    init = authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, credential);
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: missing };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/${route}`, init);
+  if (res.status === 401) return { ok: false, status: 401, error: refused };
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
+  const parsed = ActionError.safeParse(json);
+  if (parsed.success && (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409 || res.status === 500)) {
+    return { ok: false, status: res.status, error: parsed.data.error, conflict: parsed.data.conflict, currentHead: parsed.data.current_head };
+  }
+  throw new Error(`POST ${route}: HTTP ${res.status}`);
+}
+
+export type TeachBackOutcome = "understood_on_call" | "another_explanation";
+export type TeachBackCallbackResult = { ok: true } | { ok: false; status: number; error: string };
+
+/** Record a failed teach-back consultation outcome. The API binds the coordinator token to its role and actor. */
+export async function postTeachBackCallback(id: string, callback: string, outcome: TeachBackOutcome): Promise<TeachBackCallbackResult> {
+  if (apiMode() !== "live") throw new Error("postTeachBackCallback needs WASL_API_URL: fixtures mode cannot append callback outcomes");
+  let init: RequestInit;
+  try {
+    init = authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ callback, outcome }) }, "coordinator");
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/teach-back-callback`, init);
+  if (res.status === 201) return { ok: true };
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  const e = ApiError.safeParse(await res.json().catch(() => undefined));
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
 export type BookingActionResult =
   /** A 201 means the append happened. An unreadable body is null, never a licence to retry blindly. */
   | { ok: true; status: 201; response: ActionResponse | null }
@@ -461,6 +532,18 @@ export async function getCaseWithToken(id: string, token: string): Promise<Revie
   if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return { ok: true, detail: CaseDetail.parse(await res.json()) };
+}
+
+export type ReviewPhotoResult = { ok: true; bytes: ArrayBuffer; type: "image/png" | "image/jpeg" } | { ok: false; status: 401 | 403 | 404 };
+
+/** One review-item photo as the holder of `token` may fetch it. Anything but a PNG or JPEG body counts as unavailable. */
+export async function getReviewPhotoWithToken(id: string, item: string, sha: string, token: string): Promise<ReviewPhotoResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}/review-photos/${encodeURIComponent(item)}/${sha}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  if (res.status === 401 || res.status === 403) return { ok: false, status: res.status };
+  const type = res.headers.get("content-type");
+  if (!res.ok || (type !== "image/png" && type !== "image/jpeg")) return { ok: false, status: 404 };
+  return { ok: true, bytes: await res.arrayBuffer(), type };
 }
 
 export type ReviewSourceResult =

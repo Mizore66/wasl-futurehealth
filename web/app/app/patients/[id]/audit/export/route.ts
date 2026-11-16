@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { exportFilename, fetchCaseExport } from "@/lib/api/export";
-import { exportConcealsInitialRead } from "@/lib/api/export-guard";
+import { containsModelOutput, exportConcealsInitialRead, viewerMayReadModel } from "@/lib/api/export-guard";
 import { caseIdFromParam } from "@/lib/domain/ids";
 
 /**
@@ -42,6 +42,17 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
       { status: 409, headers: noStore },
     );
   }
+  /*
+   * The export lists the image reader's verdict. Release those bytes only to a signed-in viewer whose own case detail,
+   * read after these bytes arrived, shows a visible read for every evidence question. A missing or failed session, an
+   * unmappable question or any error withholds; the bytes are never edited, so an allowed download keeps its hash.
+   */
+  if (containsModelOutput(doc) && !(await viewerMayReadModelNow(id))) {
+    return Response.json(
+      { error: "The export is withheld until you have completed your own independent read of the evidence question. Try again afterwards." },
+      { status: 409, headers: noStore },
+    );
+  }
   return new Response(bytes, {
     status: 200,
     headers: {
@@ -50,4 +61,14 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
       "content-disposition": `attachment; filename="${exportFilename(id)}"`,
     },
   });
+}
+
+async function viewerMayReadModelNow(id: string): Promise<boolean> {
+  try {
+    const { getReviewCase } = await import("@/lib/api/reviewer-session");
+    const viewer = await getReviewCase(id);
+    return viewer.authenticated && viewerMayReadModel(viewer.detail);
+  } catch {
+    return false;
+  }
 }

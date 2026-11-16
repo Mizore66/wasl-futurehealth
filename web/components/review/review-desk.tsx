@@ -15,6 +15,7 @@ import {
   answerWords,
   canAnswerClaim,
   claimSummary,
+  CRC_CHOICE_LABELS,
   draftKey,
   orderedStates,
   outcomeOf,
@@ -42,6 +43,7 @@ import { ReviewerSignOut } from "./reviewer-login";
 import { IdentityBridge } from "./identity-bridge";
 import { Pill } from "./marks";
 import { ReadersTable } from "./readers-table";
+import { imageModelRevealed, ReviewPhotos } from "./review-photos";
 import { SourceReport } from "./source-report";
 
 export type NextCase = { href: string; label: string; last: boolean };
@@ -96,7 +98,7 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
     id: `preview-${s.item}`,
     kind: "current",
     who: SIGNER.name,
-    what: `preview, not saved: ${signWords(s.decision)} (as ${roleFor(s.decision)})`,
+    what: `preview, not saved: ${signWords(s.decision, view.items.scoped)} (as ${roleFor(s.decision)})`,
     when: "not saved",
   }));
   return [...view.trail, ...preview, { id: "now", kind: "current", ...now, when: done ? "if saved" : "waiting" }];
@@ -122,9 +124,12 @@ function QuestionCard({
   claimBusy,
   headingRef,
   locked,
+  bound,
 }: {
   state: ReviewState;
   view: ReviewView;
+  /** False when this item has no context on screen: the question is shown but cannot be answered. */
+  bound: boolean;
   position: number;
   total: number;
   draft: string | undefined;
@@ -146,16 +151,20 @@ function QuestionCard({
   const reads = submittedReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
-  const canAnswer = canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const canAnswer = bound && canAnswerClaim(state) && next !== null && !terminal && !locked;
+  const subject = link
+    ? `Comparing ${view.referralRegistration.split("|")[1] ?? "the referral record"} with ${view.reportRegistration.split("|")[1] ?? "the report record"}`
+    : `Judging ${view.programme === "crc" ? "report" : "evidence from report"} ${view.report.id}${view.report.version ? `, version ${view.report.version}` : ""}`;
   const actions = state.claim_actions;
   const needsNote = next === "r3" && !note.trim();
   const [sourceOk, setSourceOk] = useState(false);
   const withheld = !link && !sourceOk;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
-    const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
+    const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
     return [label, display];
   });
   const title = link ? "Is it the same patient?" : view.evidenceQuestion;
+  const scoped = !link && Boolean(view.items.scoped);
   return (
     <section
       aria-labelledby={`${id}-h`}
@@ -171,9 +180,13 @@ function QuestionCard({
       <p className="m-0 mt-1 flex flex-wrap items-center gap-2" data-testid={`status-${state.question}`}>
         <Pill tone={headline.tone}>{headline.text}</Pill>
         <span className="text-small text-muted">
-          {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? "Colonoscopy report (clinician discipline)" : "Programme evidence (clinician discipline)"}
+          {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
           {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
         </span>
+      </p>
+
+      <p className="m-0 mt-1 text-small" data-testid={`subject-${state.question}`}>
+        {bound ? subject : "The case context for this item is not available, so it cannot be answered here."}
       </p>
 
       {!terminal && (state.claim === undefined || actions === undefined) && (
@@ -212,7 +225,7 @@ function QuestionCard({
         <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 mt-2 list-none p-0 text-small">
           {reads.map((r) => (
             <li key={r.hash ?? r.read} className="py-0.5" data-read={r.read}>
-              {readLine(r, state.question)}
+              {readLine(r, state.question, scoped)}
               {r.note && <span className="block text-muted">Rationale: &ldquo;{r.note}&rdquo;</span>}
               {r.hash && (
                 <>
@@ -229,12 +242,12 @@ function QuestionCard({
 
       {state.state === "resolved_agreed" && state.final_decision && (
         <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Both reads agree: {answerWords(state.final_decision, state.question)}. No senior form is needed.
+          Both reads agree: {answerWords(state.final_decision, state.question, scoped)}. No senior form is needed.
         </p>
       )}
       {state.state === "resolved_senior" && state.final_decision && (
         <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Senior resolution: {answerWords(state.final_decision, state.question)}.
+          Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
         </p>
       )}
       {terminal && <p className="m-0 mt-1 text-small text-muted">Case data is unchanged: this is a demo overlay, not a canonical decision.</p>}
@@ -267,6 +280,7 @@ function QuestionCard({
                   ? "Answer independently. You cannot see the first answer until you submit."
                   : "Answer first. The second reader will not see your answer until they have submitted theirs."}
               {!link && view.disputed.length > 0 ? ` The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}.` : ""}
+              {scoped && view.disputed.length > 0 ? " Your answer settles only this question; the other checks stay open." : ""}
             </p>
             {link ? (
               <Chips
@@ -378,6 +392,7 @@ function ClaimExpiryRefresher({ states, refreshRevision }: { states: ReviewState
 
 export function ReviewDesk({
   view,
+  itemViews,
   mode,
   next,
   waiting = true,
@@ -386,6 +401,8 @@ export function ReviewDesk({
   states,
 }: {
   view: ReviewView;
+  /** One view per raised item. When given, a question is answerable only if its own item is in here; otherwise `view` serves every item. */
+  itemViews?: Record<string, ReviewView>;
   mode: ApiMode;
   next: NextCase;
   /** Shared programme finding and reader projections from the case page. */
@@ -434,13 +451,33 @@ export function ReviewDesk({
   }
   const current = useMemo(() => (live ? orderedStates(override ?? states ?? []) : []), [live, override, states]);
   const resolved = live && allQuestionsResolved({ api_review_states: current });
-  const evidenceFinal = finalDecisions({ api_review_states: current }, "evidence")[0];
+  const viewFor = (item: string): ReviewView | undefined => (itemViews ? itemViews[item] : view);
+  /** A question is bound only when its own item has a view and that view established the exact context this question needs. */
+  const boundFor = (s: ReviewState): boolean => {
+    const v = viewFor(s.item);
+    return Boolean(v) && (!itemViews || (s.question === "link" ? v!.context.link : v!.context.evidence));
+  };
+  const contexts = [...new Set(current.map((s) => s.item))].flatMap((item) => {
+    const itemView = viewFor(item);
+    const own = { api_review_states: current.filter((s) => s.item === item) };
+    const evidenceFinal = finalDecisions(own, "evidence")[0];
+    return itemView
+      ? [{
+          item,
+          view: itemView,
+          link: own.api_review_states.some((s) => s.question === "link" && boundFor(s)),
+          evidence: own.api_review_states.some((s) => s.question === "evidence" && boundFor(s)),
+          linkAnswer: finalDecisions(own, "link")[0] as IdentityAnswer | undefined,
+          answerCell: evidenceFinal ? resolvedCell(evidenceFinal) : undefined,
+        }]
+      : [];
+  });
 
   const hasLink = Boolean(view.items.link);
   const hasEvidence = Boolean(view.items.evidence);
   const evidenceOptions: [ReportAnswer, string][] = [
     ...view.evidenceChoices.map((label) => {
-      const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
+      const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
       return [label, display] as [ReportAnswer, string];
     }),
     ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
@@ -624,11 +661,7 @@ export function ReviewDesk({
       ? "Not the same patient. There is no second question."
       : "";
   const progress = resolutionProgress({ api_review_states: current });
-  const answerCell = !live
-    ? outcome && { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` }
-    : evidenceFinal
-      ? resolvedCell(evidenceFinal)
-      : undefined;
+  const answerCell = outcome && { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -669,7 +702,8 @@ export function ReviewDesk({
                   <QuestionCard
                     key={`${state.item}:${state.question}`}
                     state={state}
-                    view={view}
+                    view={viewFor(state.item) ?? view}
+                    bound={boundFor(state)}
                     position={i}
                     total={current.length}
                     draft={drafts[key]?.decision}
@@ -705,7 +739,14 @@ export function ReviewDesk({
               )}
               {progress && (
                 <p className="m-0 text-small text-muted" data-testid="progress">
-                  {progress}. {resolved ? "Every question is resolved." : "The item stays open until every question is resolved."}
+                  {progress}.{" "}
+                  {view.items.scoped
+                    ? resolved
+                      ? "This question is resolved. Histology and other checks still decide the case."
+                      : "The item stays open until this question is resolved."
+                    : resolved
+                      ? "Every question is resolved."
+                      : "The item stays open until every question is resolved."}
                 </p>
               )}
               {resolved && (
@@ -754,7 +795,7 @@ export function ReviewDesk({
                       </legend>
                       <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
                         {view.disputed.length > 0
-                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}. `
+                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question; the other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
                           : "Use the exact programme evidence label. "}
                         Preview as clinician: {SIGNER.name}
                         {hasLink ? ", the same person as question 1" : ""}.
@@ -780,7 +821,7 @@ export function ReviewDesk({
               ) : (
                 <p className="m-0 text-small text-muted">
                   {draft.identity === "same" && hasEvidence
-                    ? view.programme === "crc" ? `Answer the colonoscopy report question to sign.` : `Answer the evidence question to sign.`
+                    ? view.programme === "crc" ? `Answer the ${view.pathology ? "pathology" : "colonoscopy"} report question to sign.` : `Answer the evidence question to sign.`
                     : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
                 </p>
               )}
@@ -843,7 +884,7 @@ export function ReviewDesk({
           <SealedChain
             nodes={
               live
-                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "Case data" : "Two independent reads", what: resolved ? "no downstream effect inferred" : "still being answered", when: resolved ? "resolved" : "waiting" }]
+                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "Case data" : "Two independent reads", what: resolved ? "no downstream effect inferred" : "still being answered", when: resolved ? (view.items.scoped ? "this question resolved" : "resolved") : "waiting" }]
                 : previewTrail(view, draft, done)
             }
             className="mt-3"
@@ -851,8 +892,24 @@ export function ReviewDesk({
         </aside>
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
-          {hasLink && <IdentityBridge view={view} answer={live ? (finalDecisions({ api_review_states: current }, "link")[0] as IdentityAnswer | undefined) : draft.identity} />}
-          {view.programme === "crc" ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+          {live ? (
+            <>
+              {contexts.map((ctx) => (
+                <div key={ctx.item} data-context-item={ctx.item} className="flex min-w-0 flex-col gap-3">
+                  {ctx.link && <IdentityBridge view={ctx.view} answer={ctx.linkAnswer} />}
+                  {ctx.view.imageBacked && <ReviewPhotos view={ctx.view} revealModel={imageModelRevealed(current, ctx.view.items.evidence)} />}
+                  {ctx.evidence && !ctx.view.pathology && <ReadersTable view={ctx.view} signed={ctx.answerCell} />}
+                </div>
+              ))}
+              {view.programme !== "crc" && sharedEvidence}
+            </>
+          ) : (
+            <>
+              {hasLink && <IdentityBridge view={view} answer={draft.identity} />}
+              {view.imageBacked && <ReviewPhotos view={view} revealModel={Boolean(done)} />}
+              {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+            </>
+          )}
         </div>
       </div>
     </MotionConfig>

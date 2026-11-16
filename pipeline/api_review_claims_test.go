@@ -133,7 +133,8 @@ func TestReviewClaimConcurrentAcquisition(t *testing.T) {
 }
 
 func TestReviewClaimPerQuestionAndSeniorIndependence(t *testing.T) {
-	e := newIR(t)
+	e, ids := newSourceBoundIR202(t, true)
+	irBoth := ids.Combined
 	link := e.claim(t, irRevA, irBoth, "link", "claim", "", 201)
 	evidence := e.claim(t, irClinA, irBoth, "evidence", "claim", "", 201)
 	r1link := e.must(t, irRevA, irBodyWithClaim(irBoth, "same", "r1", "", claimHead(link)), 201)

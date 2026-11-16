@@ -9,8 +9,9 @@ import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { atWords, ledgerWordsWithHistory } from "@/components/case/words";
-import { caseDeadlineDays, isNoAction, nextScreenDays } from "./days";
+import { atWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
+import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
+import { isActionable, obligationWords, openObligation } from "./obligation";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -176,6 +177,8 @@ export type WorkItem = {
   status: string;
   next: string;
   days: number;
+  /** Days from referral the case's own rule allows; null for a routine interval with no overdue clock. */
+  deadline: number | null;
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
@@ -204,6 +207,10 @@ export type WorkItem = {
   reserved?: boolean;
   /** The simulated reservation was cancelled (live API only). */
   cancelled?: boolean;
+  /** What the programme's procedure is called, e.g. "colonoscopy". */
+  procedure?: string;
+  /** A pending record retrieval after a completed-elsewhere report (live API only): chase and booking are suspended. */
+  retrieval?: { owner: string; due: string; overdue: boolean };
 };
 
 /** What happened to patient outreach for a confirmed recovery backfill; no message is ever dispatched. */
@@ -213,12 +220,22 @@ export const OUTREACH_WORDS: Record<NonNullable<NonNullable<CaseSummary["recover
   cancelled_consent: "outreach cancelled after consent withdrawal",
 };
 
+/** An open failed teach-back callback outranks contact outcomes: logging a call never resolves it. */
+export function teachBackCallbackWords(c: CaseSummary): string | null {
+  const cb = c.teach_back_callback;
+  if (!cb || cb.status !== "open") return null;
+  if (!cb.due_at) return "Teach-back failed · nurse callback open";
+  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${atWords(cb.due_at)}`;
+}
+
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
 export const DECLINED_STATUS = "Declined · GP to sign";
 export const DECLINED_RESERVED_NEXT = "GP to sign the decline · cancel the simulated reservation to release the slot";
 /** A decline recorded after the reservation was cancelled needs the GP's sign-off, not another booking. */
 export const DECLINED_CANCELLED_NEXT = "GP to sign the decline";
+/** A signed decline with a reservation still held: the GP prompt is gone, the slot still needs releasing. */
+export const SIGNED_RESERVED_NEXT = "Cancel the simulated reservation to release the slot";
 export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
 
 const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
@@ -238,7 +255,9 @@ export const HANDOFF_OWNER = "Dr Al Kaabi";
  */
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
-  const words = { ...statusWords(c) };
+  const recall = openObligation(c, now);
+  const due = isActionable(recall) ? recall : null;
+  const words = due ? obligationWords(due) : { ...statusWords(c) };
   if (c.api_patient?.slot_selection.status === "selected") {
     words.status = "Patient selected a simulated slot · coordinator review needed";
     words.next = "Review the preferred time; no appointment is reserved";
@@ -247,15 +266,19 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const ov = c.api_overlay;
   const owner = effectiveOwner(c);
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  if (due && view !== "none") view = "call";
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
   const lc = ov?.last_contact;
+  // A clinician disposition answers only the decline it names; a newer decline is unsigned again.
+  const signed = lc?.outcome === "declined" && !!ov?.decline_disposition && ov.decline_disposition.decline_event === lc.event ? dispositionWords(ov.decline_disposition) : undefined;
   let sinks = false;
   let awaitingNext = false;
   if (lc) {
     if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
       view = "waiting";
-      words.status = lc.outcome === "declined" ? DECLINED_STATUS : BOOKING_NEEDED;
+      words.status = lc.outcome === "declined" ? (signed?.status ?? DECLINED_STATUS) : BOOKING_NEEDED;
+      if (signed) words.next = signed.next;
     } else if (lc.outcome === "no_answer") {
       words.status = noAnswerStatus(Math.max(1, ov!.no_answer_streak));
       sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
@@ -285,7 +308,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   if (booking?.status === "reserved") {
     awaitingNext = false;
     if (declinedAfterBooking) {
-      words.next = DECLINED_RESERVED_NEXT;
+      words.next = signed ? SIGNED_RESERVED_NEXT : DECLINED_RESERVED_NEXT;
     } else {
       view = "waiting";
       words.status = `Simulated slot reserved · Day ${booking.slot?.day ?? "unknown"}`;
@@ -293,7 +316,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     }
   } else if (booking?.status === "cancelled" && declinedAfterBooking) {
     awaitingNext = false;
-    words.next = DECLINED_CANCELLED_NEXT;
+    words.next = signed?.next ?? DECLINED_CANCELLED_NEXT;
   } else if (booking?.status === "cancelled") {
     const agreement = ov?.last_appointment_agreement;
     const afterAgreement = !agreement || (!!booking.updated_at && compareInstants(booking.updated_at, agreement.at) >= 0);
@@ -303,6 +326,14 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.status = "Simulated reservation cancelled · rebook";
       words.next = "Choose another simulated slot";
     }
+  }
+  const reconciliation = ov?.reconciliation?.status === "pending" ? ov.reconciliation : undefined;
+  const retrieval = reconciliation && reconciliationWords(reconciliation, new Date(wallNow).toISOString().slice(0, 10));
+  if (retrieval) {
+    awaitingNext = false;
+    view = "waiting";
+    words.status = retrieval.status;
+    words.next = retrieval.next;
   }
   const backfill = c.recovery?.backfill;
   if (backfill) {
@@ -320,6 +351,13 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = "Patient contact is not permitted; the simulated slot has not been offered";
     }
   }
+  const callback = teachBackCallbackWords(c);
+  if (callback) {
+    awaitingNext = false;
+    view = "call";
+    words.status = callback;
+    words.next = "Call to explain the next step, then record the consultation outcome on the case page";
+  }
   return {
     id: c.id,
     short: shortId(c.id),
@@ -331,9 +369,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     view,
     status: words.status,
     next: words.next,
-    days: elapsedDays(c, now),
-    overdue: c.overdue,
+    days: due ? Math.floor(now - due.fromDay) : elapsedDays(c, now),
+    deadline: due ? Math.round(due.dueDay - due.fromDay) : overdueClockDays(c),
+    overdue: (due ? due.state === "overdue" : c.overdue) || (c.teach_back_callback?.status === "open" && c.teach_back_callback.overdue === true),
     referralDay: c.referral_day,
+    procedure: PROCEDURE[c.programme],
     textsAllowed: c.consent === "granted" && !contactBlocked,
     contactBlocked,
     textsStopped,
@@ -343,6 +383,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     dropoff: c.dropoff,
     hasRecord,
     ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
+    ...(reconciliation && retrieval ? { retrieval: { owner: reconciliation.retrieval_owner, due: reconciliation.retrieval_due, overdue: retrieval.overdue } } : {}),
   };
 }
 
@@ -467,7 +508,7 @@ const FIELD = {
 const word = (v: string | undefined) => (v ? (FIELD[v] ?? v) : "Not read");
 
 /** Lung, DR and breast evidence: each reader's label, and the first reader's quote. */
-export function readerLabels(ev: CaseDetail["evidence"][number]): { checks: Check[]; quote: string } {
+export function readerLabels(ev: Pick<CaseDetail["evidence"][number], "reader_a_regex" | "reader_a" | "reader_b" | "label" | "quote" | "reader_a_fields">): { checks: Check[]; quote: string } {
   const a = ev.reader_a_regex ?? ev.reader_a ?? ev.label;
   const b = ev.reader_b ?? ev.label;
   const words = (v: string) => v.replaceAll("_", " ");

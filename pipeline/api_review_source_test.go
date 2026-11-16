@@ -74,6 +74,9 @@ func seedReportSource(t *testing.T, s *apiServer, ref string) {
 // passes the source gate. It returns the item id to name in the write.
 func seedEvidenceSource(t *testing.T, s *apiServer, caseID string) string {
 	t.Helper()
+	if c := s.cases[caseID]; c != nil && c.Programme == "crc" {
+		return attachSourceBoundEvidence202(t, s, caseID)
+	}
 	prov, _, _ := strings.Cut(caseID, "/")
 	report := "SRC-" + strconv.Itoa(len(s.sources)+1)
 	seedReportSource(t, s, prov+"/DiagnosticReport/"+report)

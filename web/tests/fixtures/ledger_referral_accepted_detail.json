@@ -1,0 +1,201 @@
+{
+  "agent_investigations": [],
+  "agent_provenance": {
+    "cached": false,
+    "experimental": false
+  },
+  "api_overlay": {
+    "actions": 1,
+    "booking": {
+      "mode": "simulated",
+      "referral_constraints": [
+        {
+          "code": "arabic_interpreter",
+          "kind": "interpreter"
+        },
+        {
+          "code": "hold_anticoagulants",
+          "kind": "medication"
+        }
+      ],
+      "reservation_id": null,
+      "reservation_version": null,
+      "revision": 0,
+      "slot": null,
+      "status": "unreserved",
+      "updated_at": null,
+      "updated_event": null
+    },
+    "canonical_owner": "",
+    "contact_outcomes": [],
+    "head": "b94f013a08f760db8bc2cf9732deb71d14eddf3ea3c7d7b77666e22460519704",
+    "last_action_at": "2026-11-15T17:43:00.337371839Z",
+    "ledger_status": "ok",
+    "notes": [],
+    "owner": "",
+    "referral_response": {
+      "actor": "Dr Layla Haddad",
+      "at": "2026-11-15T17:43:00.337371839Z",
+      "conditions": [
+        "arabic_interpreter",
+        "hold_anticoagulants"
+      ],
+      "event": "b94f013a08f760db8bc2cf9732deb71d14eddf3ea3c7d7b77666e22460519704",
+      "requested_info": [],
+      "response": "accept_with_conditions",
+      "run_day": 110,
+      "unit": "skmc-endo"
+    }
+  },
+  "api_review_states": [],
+  "api_reviews": [
+    {
+      "action": "respond_referral",
+      "actor": "Dr Layla Haddad",
+      "at": "2026-11-15T17:43:00.337371839Z",
+      "case": "ahs-mushrif/ServiceRequest/AHS-sr-770",
+      "data": {
+        "conditions": [
+          "arabic_interpreter",
+          "hold_anticoagulants"
+        ],
+        "referral_id": "ahs-mushrif/ServiceRequest/AHS-sr-770",
+        "requested_info": [],
+        "response": "accept_with_conditions",
+        "run_day": 110,
+        "unit": "skmc-endo"
+      },
+      "hash": "b94f013a08f760db8bc2cf9732deb71d14eddf3ea3c7d7b77666e22460519704",
+      "head": "f1e32010a25461f0610fd2007056358d32ce98f5d1bc9d37f29dd526eda464d8",
+      "kind": "referral_response",
+      "mode": "demo",
+      "prev": "4c0ad59f230261dc2bc761d021e430beb1fc36f73b87c9c59c8bf3426be689f5",
+      "role": "clinician",
+      "seq": 1,
+      "type": "coordinator_action"
+    }
+  ],
+  "booking": {
+    "status": "not_generated"
+  },
+  "case": {
+    "api_overlay": {
+      "actions": 1,
+      "booking": {
+        "mode": "simulated",
+        "referral_constraints": [
+          {
+            "code": "arabic_interpreter",
+            "kind": "interpreter"
+          },
+          {
+            "code": "hold_anticoagulants",
+            "kind": "medication"
+          }
+        ],
+        "reservation_id": null,
+        "reservation_version": null,
+        "revision": 0,
+        "slot": null,
+        "status": "unreserved",
+        "updated_at": null,
+        "updated_event": null
+      },
+      "head": "b94f013a08f760db8bc2cf9732deb71d14eddf3ea3c7d7b77666e22460519704",
+      "last_action_at": "2026-11-15T17:43:00.337371839Z",
+      "ledger_status": "ok",
+      "owner": "",
+      "referral_response": {
+        "actor": "Dr Layla Haddad",
+        "at": "2026-11-15T17:43:00.337371839Z",
+        "conditions": [
+          "arabic_interpreter",
+          "hold_anticoagulants"
+        ],
+        "event": "b94f013a08f760db8bc2cf9732deb71d14eddf3ea3c7d7b77666e22460519704",
+        "requested_info": [],
+        "response": "accept_with_conditions",
+        "run_day": 110,
+        "unit": "skmc-endo"
+      }
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "granted",
+    "contact_state": {
+      "contact_blocked": false,
+      "status": "none"
+    },
+    "deadline_day": 0,
+    "decisions": 1,
+    "dropoff": "referral_unanswered",
+    "fixture": "",
+    "id": "ahs-mushrif/ServiceRequest/AHS-sr-770",
+    "overdue": false,
+    "owner": "",
+    "priority": "",
+    "programme": "crc",
+    "provider": "ahs-mushrif",
+    "referral_day": 100,
+    "review": "none",
+    "state": "open"
+  },
+  "current": {
+    "ack_day": 0,
+    "contact": "granted",
+    "dropoff": "referral_unanswered",
+    "id": "dec-ref-0",
+    "in_seq": 0,
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-770",
+    "notif_day": 0,
+    "now": 110,
+    "overdue": false,
+    "policy": "v6",
+    "proc_day": 0,
+    "prog": "crc",
+    "prov": "ahs-mushrif",
+    "ref_day": 0,
+    "ref_status": "",
+    "reported_closed": false,
+    "sig": "f1e32010a25461f0610fd2007056358d32ce98f5d1bc9d37f29dd526eda464d8",
+    "sr_day": 100,
+    "state": "open",
+    "unowned": false
+  },
+  "decisions": [
+    {
+      "consent_log": [],
+      "decision_id": "dec-ref-0",
+      "dropoff": "referral_unanswered",
+      "escalations": [],
+      "in_seq": 0,
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v6",
+      "sig": "f1e32010a25461f0610fd2007056358d32ce98f5d1bc9d37f29dd526eda464d8",
+      "state": "open"
+    }
+  ],
+  "evidence": [],
+  "holds": [],
+  "identities": [],
+  "links": [],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-15T17:43:00Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "unknown",
+    "run": "001"
+  },
+  "outreach": [],
+  "review_items": [],
+  "review_ledger": {
+    "events_applied": 4,
+    "status": "ok"
+  },
+  "signoffs": [],
+  "timeline": []
+}

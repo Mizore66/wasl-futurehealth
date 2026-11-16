@@ -101,6 +101,13 @@ Requirements and limits:
   defaults and separate `WASL_API_*_TOKEN` client variables. Override both together. CORS is off unless exact origins
   are listed in `WASL_API_ORIGINS`. See [`SECURITY.md`](SECURITY.md) before any non-demo use; this static-token API is
   not approved for real clinical data.
+- `WASL_RECEIVING_UNIT_CLINICIANS` and `WASL_REFERRING_CLINICIANS` name which token actors may answer a CRC referral.
+  Each is a comma-separated list of `scope:actor` entries, where `actor` is the actor a `WASL_API_TOKENS` entry binds.
+  `WASL_RECEIVING_UNIT_CLINICIANS` maps a receiving unit to a clinician (for example `skmc-endo:hosted-unit-clinician`),
+  who may accept or return referrals with `POST /referral-response`. `WASL_REFERRING_CLINICIANS` maps a referring
+  provider to its GP (for example `ahs-mushrif:hosted-referrer`), who may answer a returned referral with
+  `POST /referrer-response`. The two lists must not share an actor. Left empty, both endpoints refuse every answer with
+  403. `scripts/demo.sh` assigns its clinician token's actor (`smoke-clinician`) to `skmc-endo` and assigns no referrer.
 
 ## Pointing it at real HL7 feeds
 
@@ -236,15 +243,16 @@ reachable API must not use them, so generate fresh tokens for each role and inde
 
    ```bash
    umask 077
-   for r in reviewer reviewer-2 reviewer-3 clinician clinician-2 clinician-3 auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
-   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):senior_reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):senior_clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   for r in reviewer reviewer-2 reviewer-3 clinician clinician-2 clinician-3 auditor coordinator unit-clinician referrer; do openssl rand -hex 32 > "wasl-$r.token"; done
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):senior_reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):senior_clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator,$(cat wasl-unit-clinician.token):clinician:hosted-unit-clinician,$(cat wasl-referrer.token):clinician:hosted-referrer"
+   export WASL_RECEIVING_UNIT_CLINICIANS="skmc-endo:hosted-unit-clinician" WASL_REFERRING_CLINICIANS="ahs-mushrif:hosted-referrer"
    scripts/deploy_up.sh -d                            # detached: does not attach to the logs
    until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
    curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
    curl -s -H "Authorization: Bearer $(cat wasl-reviewer.token)" 127.0.0.1:8088/api/dashboard | head -c 200
    ```
 
-   `docker-compose.yml` passes `WASL_API_TOKENS` to the `api` service. Left unset or empty, `scripts/demo.sh serve`
+   `docker-compose.yml` passes `WASL_API_TOKENS`, `WASL_RECEIVING_UNIT_CLINICIANS` and `WASL_REFERRING_CLINICIANS` to the `api` service. Left unset or empty, `scripts/demo.sh serve`
    falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
    characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
    `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
@@ -267,11 +275,12 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | only the `postReview` helper, which no page calls; for review or governance, issue it to a person, who signs in with it |
    | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | not read by the web server; issue it to a person, who signs in with it |
    | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | not read by the web server; the senior_reviewer signs in with it for r3 and contest resolution |
-   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | only the `postReview` helper, which no page calls; for review or governance, issue it to a person, who signs in with it |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-unit-clinician.token`, whose actor the API lists in `WASL_RECEIVING_UNIT_CLINICIANS` | the receiving unit's Accept and Return answers on `/app/referrals` (`POST /referral-response`), and the `postReview` helper, which no page calls. Every visitor who can open the site answers as this actor, so bind it to a dedicated unit-clinician actor, not to a person's review credential; built, synthetic ledger only |
    | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | not read by the web server; issue it to a person, who signs in with it |
    | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | not read by the web server; the senior_clinician signs in with it for r3 and contest resolution |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
+   | `WASL_API_REFERRER_TOKEN` | contents of `wasl-referrer.token`, whose actor the API lists in `WASL_REFERRING_CLINICIANS` and not in `WASL_RECEIVING_UNIT_CLINICIANS` | the referring GP's answers on `/app/referrals/returned` (`POST /referrer-response`); built, synthetic ledger only |
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.

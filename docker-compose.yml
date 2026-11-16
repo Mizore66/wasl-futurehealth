@@ -88,6 +88,9 @@ services:
       WASL_RUNTIME_ADDR: 127.0.0.1:8090
       # token:role:actor entries (docs/DEPLOY.md, "Hosted frontend"). Empty = scripts/demo.sh's published loopback-demo tokens.
       WASL_API_TOKENS: ${WASL_API_TOKENS:-}
+      # unit:actor and provider:actor entries naming which token actors answer referrals (docs/DEPLOY.md, "Configuration").
+      WASL_RECEIVING_UNIT_CLINICIANS: ${WASL_RECEIVING_UNIT_CLINICIANS:-}
+      WASL_REFERRING_CLINICIANS: ${WASL_REFERRING_CLINICIANS:-}
     logging: *wasl-logging
     stop_grace_period: 10s
     volumes:

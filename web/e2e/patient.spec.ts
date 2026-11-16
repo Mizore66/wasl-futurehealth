@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
+import { DICTS } from "@/components/patient/i18n";
 
 const MOCK = "http://127.0.0.1:31987";
 let token = "";
@@ -131,29 +132,98 @@ test("notice: switch language, read rights, say who calls whom", async ({ page }
   await expectNoSeriousAxe(page);
 });
 
+const SHORT_VIEWPORTS = [
+  { name: "short landscape", width: 844, height: 390, closeBy: "keyboard" },
+  { name: "high zoom", width: 390, height: 280, closeBy: "pointer" },
+] as const;
+
+async function expectSheetReachable(page: Page, dialog: Locator, parts: Locator[], width: number, height: number) {
+  await dialog.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  const box = await dialog.boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(height + 0.5);
+  for (const part of parts) {
+    await part.scrollIntoViewIfNeeded();
+    const partBox = await part.boundingBox();
+    expect(partBox!.y).toBeGreaterThanOrEqual(box!.y - 0.5);
+    expect(partBox!.y + partBox!.height).toBeLessThanOrEqual(box!.y + box!.height + 0.5);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  expect(await dialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+}
+
+for (const viewport of SHORT_VIEWPORTS) {
+  for (const { lang } of LANGS) {
+    test(`rights and language sheets stay reachable at ${viewport.name}, ${lang}`, async ({ page }) => {
+      const t = DICTS[lang];
+      await open(page, "notice", lang);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const phoneWidth = await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width);
+
+      const trigger = page.getByRole("button", { name: t.notice.rights });
+      await trigger.click();
+      const rights = page.getByRole("dialog", { name: t.notice.rights });
+      const close = rights.getByRole("button", { name: t.close });
+      await expectSheetReachable(
+        page,
+        rights,
+        [rights.getByRole("heading", { name: t.notice.rights }), ...(await rights.getByRole("listitem").all()), rights.getByText(t.notice.rightsNote), close],
+        viewport.width,
+        viewport.height,
+      );
+      await expect(rights.getByRole("listitem")).toHaveCount(3);
+      await page.keyboard.press("Tab");
+      expect(await rights.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+      if (viewport.closeBy === "keyboard") {
+        await close.focus();
+        await page.keyboard.press("Enter");
+      } else {
+        await close.click();
+      }
+      await expect(rights).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+
+      await page.getByRole("button", { name: `${t.langTitle}: ${t.langName}` }).click();
+      const sheet = page.getByRole("dialog", { name: t.langTitle });
+      await expectSheetReachable(page, sheet, [...(await sheet.getByRole("link").all()), sheet.getByRole("button", { name: t.close })], viewport.width, viewport.height);
+      await expect(sheet.getByRole("link")).toHaveCount(LANGS.length);
+      await sheet.getByRole("button", { name: t.close }).click();
+      await expect(sheet).toHaveCount(0);
+      expect(await page.locator(`div[lang="${lang}"]`).evaluate((el) => el.getBoundingClientRect().width)).toBe(phoneWidth);
+    });
+  }
+}
+
 test("teach-back and grant persist exact events; opt-out survives reload", async ({ page }) => {
   await open(page, "check");
   const initialHead = (await journey()).head;
   await page.getByRole("button", { name: /Another blood test/ }).click();
   await expect(page.locator("h1")).toHaveText("Let us explain it another way");
-  expect(await bodies()).toHaveLength(0);
+  expect(await bodies()).toEqual([expect.objectContaining({ kind: "teach_back_answered", expected_head: initialHead, data: { question_id: "crc-next-step-v1", answer_id: "blood_test" } })]);
+  const receipt = page.getByRole("status").filter({ hasText: /Nurse Hessa will call you by/ });
+  await expect(receipt).toContainText("This is a demo: no call is placed.");
+  const callback = (await journey()).teach_back.callback!;
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  await page.reload();
+  await expect(page.locator("h1")).toHaveText("Let us explain it another way");
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  await page.getByRole("button", { name: "Ask me again" }).click();
+  await page.getByRole("button", { name: "I am not sure" }).click();
+  await expect(receipt).toContainText(`Reference ${callback.id.slice(0, 8)}`);
+  expect((await journey()).teach_back).toMatchObject({ status: "callback", understanding: "needs_human", attempts: 2, callback: { id: callback.id, status: "open" } });
   await page.getByRole("button", { name: "Ask me again" }).click();
   await page.getByRole("button", { name: /small camera/ }).click();
   await expect(page.locator("h1")).toHaveText("May we send you reminders by SMS?");
-  expect((await bodies())[0]).toMatchObject({
-    kind: "teach_back_completed",
-    expected_head: initialHead,
-    data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" },
-  });
+  expect((await bodies())[2]).toMatchObject({ kind: "teach_back_completed", data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } });
   await page.getByRole("button", { name: "Allow messages" }).click();
   await expect(page.locator("h1")).toHaveText("Thank you, Fatima");
-  expect((await bodies())[1]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "granted" } });
+  expect((await bodies())[3]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "granted" } });
   await expect(page.getByText("Your permission for SMS reminders is recorded. No SMS has been sent.")).toBeVisible();
   await page.reload();
   await expect(page.locator("h1")).toHaveText("Thank you, Fatima");
   await page.getByRole("button", { name: "Stop text messages" }).click();
   await expect(page.getByText("Text message permission is stopped. No SMS has been sent.")).toBeVisible();
-  expect((await bodies())[2]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "opted_out" } });
+  expect((await bodies())[4]).toMatchObject({ kind: "contact_permission_changed", data: { permission: "opted_out" } });
   await page.reload();
   await expect(page.getByRole("button", { name: "Stop text messages" })).toHaveCount(0);
   await expect(page.getByText("Text message permission is stopped. No SMS has been sent.")).toBeVisible();
@@ -296,4 +366,113 @@ test.describe("desktop", () => {
     expect(box && Math.round(box.x + box.width / 2)).toBe(720);
     expect(box?.width).toBeLessThanOrEqual(390);
   });
+});
+
+for (const { lang } of LANGS) {
+  test(`rights: verified contest shows a receipt and pending review after reload (${lang})`, async ({ page }) => {
+    const t = DICTS[lang];
+    await open(page, "notice", lang);
+    await page.getByRole("button", { name: t.notice.rights }).click();
+    const sheet = page.getByRole("dialog", { name: t.notice.rights });
+    await sheet.getByRole("button", { name: t.rights.contest }).click();
+    await sheet.getByRole("textbox", { name: t.rights.reasonLabel }).fill("This is not my record");
+    await sheet.getByRole("button", { name: t.rights.getCode }).click();
+    const status = await sheet.getByRole("status").innerText();
+    const code = status.match(/\d{6}/)![0];
+    await sheet.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
+    await sheet.getByRole("button", { name: t.rights.submit }).click();
+    const list = sheet.getByRole("region", { name: t.rights.listHead });
+    await expect(list).toContainText(t.rights.held);
+    await expect(list).toContainText(t.rights.receipt);
+    await expectNoSeriousAxe(page);
+
+    await page.reload();
+    await page.getByRole("button", { name: t.notice.rights }).click();
+    const reopened = page.getByRole("dialog", { name: t.notice.rights }).getByRole("region", { name: t.rights.listHead });
+    await expect(reopened).toContainText(t.rights.pending.split("{due}")[0].trim());
+  });
+}
+
+test("rights: an explanation request returns this case's provenance; a wrong code records nothing", async ({ page }) => {
+  await open(page, "notice", "en");
+  await page.getByRole("button", { name: "Your rights" }).click();
+  const sheet = page.getByRole("dialog", { name: "Your rights" });
+  await sheet.getByRole("button", { name: "Ask for a clearer explanation" }).click();
+  await sheet.getByRole("button", { name: "Get a one-time code" }).click();
+  await sheet.getByRole("textbox", { name: "One-time code" }).fill("000000");
+  await sheet.getByRole("button", { name: "Send request" }).click();
+  await expect(sheet.getByRole("alert")).toHaveText(DICTS.en.rights.failed);
+  const code = (await sheet.getByRole("status").innerText()).match(/\d{6}/)![0];
+  await sheet.getByRole("textbox", { name: "One-time code" }).fill(code);
+  await sheet.getByRole("button", { name: "Send request" }).click();
+  const explanation = sheet.getByRole("region", { name: "How this decision was made" });
+  await expect(explanation).toContainText("ahs/DiagnosticReport/COLO-1");
+  await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
+});
+
+for (const { lang, dir } of LANGS) {
+  test(`outcome: approved content, next step and safety net are acknowledged once (${lang})`, async ({ page }) => {
+    const t = DICTS[lang];
+    await control("/__mock/handoff", "pending_approval");
+    await open(page, "outcome", lang);
+    await expect(page.locator(`div[lang="${lang}"]`)).toHaveAttribute("dir", dir);
+    await expect(page.getByRole("status")).toHaveText(t.outcome.pending);
+    await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
+
+    await control("/__mock/handoff", "released");
+    await page.reload();
+    await expect(page.locator("h1")).toHaveText(t.outcome.title);
+    await expect(page.getByRole("region", { name: t.outcome.nextHead })).toContainText(t.outcome.next.routine_screening);
+    await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toContainText(t.outcome.safetyNet);
+    await expect(page.getByText(t.outcome.simulated)).toBeVisible();
+    await page.getByRole("button", { name: t.rights.getCode }).click();
+    const code = (await page.getByRole("status").innerText()).match(/\d{6}/)![0];
+    const submit = page.getByRole("button", { name: t.outcome.acknowledge });
+    await expect(submit).toBeDisabled();
+    await page.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
+    await submit.click();
+    await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
+    await expectNoSeriousAxe(page);
+
+    await page.reload();
+    await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
+  });
+}
+
+test("outcome: held and suppressed consent show no content", async ({ page }) => {
+  for (const [mode, line] of [["held_consent", DICTS.en.outcome.held], ["suppressed", DICTS.en.outcome.suppressed]] as const) {
+    await control("/__mock/handoff", mode);
+    await open(page, "outcome", "en");
+    await expect(page.getByRole("status")).toHaveText(line);
+    await expect(page.getByRole("region", { name: DICTS.en.outcome.safetyHead })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: DICTS.en.rights.getCode })).toHaveCount(0);
+  }
+});
+
+test("a breast case keeps its own programme through steps, languages and forged parameters", async ({ page }) => {
+  token = randomUUID();
+  await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "breast" }) });
+  await enter(page);
+  const crcWords = /colonoscopy|bowel|SKMC|Endoscopy|Fatima|Hessa|October/i;
+  for (const lang of ["en", "ar"] as const) {
+    for (const step of STEPS) {
+      await page.goto(`/patient/${step}?lang=${lang}&programme=crc&case=ahs/ServiceRequest/OTHER&next_step=colonoscopy`);
+      await expect(page.locator("main")).toContainText(/breast clinic|What is the next step after your result\?/);
+      await expect(page.locator("main")).not.toContainText(crcWords);
+      const nav = page.getByRole("navigation", { name: "Demo steps" });
+      await expect(nav.locator("a").first()).toHaveAttribute("href", `/patient/notice?lang=${lang}`);
+    }
+  }
+  await expect(page.getByText("until a reviewed translation is ready")).toBeVisible();
+  await page.goto("/patient/book?lang=en");
+  await expect(page.getByTestId("no-offer")).toContainText("The care coordinator will contact you");
+  await expect(page.getByTestId("slot-date")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save this preferred time" })).toHaveCount(0);
+  await expect(page.getByText("Before your appointment")).toHaveCount(0);
+
+  await page.goto("/patient/check?lang=en");
+  await page.getByRole("button", { name: /assessment appointment at the breast clinic/ }).click();
+  await expect(page.locator("h1")).toHaveText("May we send you reminders by SMS?");
+  expect(await bodies()).toEqual([expect.objectContaining({ kind: "teach_back_completed", data: { question_id: "breast-next-step-v1", answer_id: "recall" } })]);
+  await expectNoSeriousAxe(page);
 });

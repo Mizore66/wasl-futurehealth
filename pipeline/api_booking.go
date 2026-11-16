@@ -652,11 +652,15 @@ func (s *apiServer) bookingSummaryLocked(c *apiCase) map[string]interface{} {
 			}
 		}
 	}
-	return map[string]interface{}{
+	summary := map[string]interface{}{
 		"status": status, "mode": "simulated", "revision": state.revision,
 		"reservation_id": reservationID, "reservation_version": reservationVersion,
 		"slot": slot, "updated_at": updatedAt, "updated_event": updatedEvent,
 	}
+	if constraints := referralBookingConstraints(c); len(constraints) > 0 {
+		summary["referral_constraints"] = constraints
+	}
+	return summary
 }
 
 func (s *apiServer) bookingFor(id string) map[string]interface{} {

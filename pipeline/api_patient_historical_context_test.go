@@ -305,7 +305,7 @@ func TestPatientHistoricalContextSignedHeadsAndValidation(t *testing.T) {
 		{"missing signed head", 0, func(_ *apiCase, ev map[string]interface{}) { delete(ev, "head_signed") }, "head the case never had"},
 		{"unknown signed head", 0, func(_ *apiCase, ev map[string]interface{}) { ev["head_signed"] = "unknown" }, "head the case never had"},
 		{"foreign signed head", 0, func(_ *apiCase, ev map[string]interface{}) { ev["head_signed"] = s.cases[retainedCaseB].last.Sig }, "head the case never had"},
-		{"non-CRC signed context", 0, func(c *apiCase, _ map[string]interface{}) { c.decisions[0].Prog = "breast" }, "unsupported non-CRC"},
+		{"unsupported signed programme", 0, func(c *apiCase, _ map[string]interface{}) { c.decisions[0].Prog = "retired" }, "unsupported programme"},
 		{"ambiguous context last", 0, func(c *apiCase, _ map[string]interface{}) {
 			d := *c.decisions[0]
 			d.Prog = "breast"
@@ -340,7 +340,7 @@ func TestPatientHistoricalContextSignedHeadsAndValidation(t *testing.T) {
 		}, "event data"},
 		{"bad action", 0, func(_ *apiCase, ev map[string]interface{}) { ev["action"] = patientSelfService }, "action"},
 		{"wrong consent decision", 0, func(_ *apiCase, ev map[string]interface{}) { ev["decision"] = "consent_granted" }, "consent decision"},
-		{"receipt signed against non-CRC tombstone", 1, func(c *apiCase, ev map[string]interface{}) { ev["head_signed"] = c.last.Sig }, "unsupported non-CRC"},
+		{"receipt signed against programme-less tombstone", 1, func(c *apiCase, ev map[string]interface{}) { ev["head_signed"] = c.last.Sig }, "unsupported programme"},
 		{"receipt foreign signed head", 1, func(_ *apiCase, ev map[string]interface{}) { ev["head_signed"] = s.cases[retainedCaseB].last.Sig }, "head the case never had"},
 		{"receipt advancing sequence", 1, func(_ *apiCase, ev map[string]interface{}) { ev["seq"] = float64(2) }, "sequence"},
 		{"receipt changing patient head", 1, func(c *apiCase, ev map[string]interface{}) { ev["head"] = c.last.Sig }, "patient-only head"},

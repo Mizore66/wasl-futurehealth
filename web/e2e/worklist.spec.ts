@@ -66,7 +66,7 @@ test.describe("Today", () => {
 
     await open.getByRole("button", { name: "Reached" }).click();
     const next = open.getByRole("group", { name: "What next?" });
-    await expect(next.getByRole("button")).toHaveText(["Appointment agreed", "Call back on…", "Declined"]);
+    await expect(next.getByRole("button")).toHaveText(["Appointment agreed", "Call back on…", "Done elsewhere…", "Declined"]);
     await expect(open.getByRole("button", { name: /^Next patient/ })).toHaveCount(0);
 
     await next.getByRole("button", { name: "Call back on…" }).click();
