@@ -9,12 +9,14 @@ import (
 	"testing"
 )
 
-// One synthetic, source-backed evidence review per supported non-CRC programme (#162 acceptance 4). Each report text is
+// One synthetic, source-backed evidence review per supported non-CRC evidence programme (#162 acceptance 4): cervical,
+// lung_nodule, diabetic_retinopathy, breast, lung_ldct and ifhas. Each report text is
 // written for the test; no real patient data. first/second disagree so the senior resolution path is exercised, and
 // foreign is a label of another programme that this case must refuse.
 var programmeSourceReviews = []struct {
 	prog, report, text, first, second, senior, foreign string
 }{
+	{"cervical", "CVX-dr-1", "Synthetic colposcopy. Transformation zone type 1, fully visible. Punch biopsy at 6 o'clock: CIN1, margins not applicable. Adequate examination.", "adequate", "inadequate", "adequate", "B4"},
 	{"lung_nodule", "LNG-dr-1", "Synthetic PET-CT. The 9 mm solid right upper lobe nodule shows low FDG uptake (SUVmax 1.4). No nodal disease.", "pet_low", "pet_avid", "pet_low", "B4"},
 	{"diabetic_retinopathy", "DRS-dr-1", "Synthetic retinal screening. Right eye: background retinopathy with exudate within one disc diameter of the fovea. Left eye: no retinopathy.", "R1M1", "R1M0", "R1M1", "pet_low"},
 	{"breast", "BRS-dr-1", "Synthetic assessment clinic. Ultrasound-guided core biopsy of the left breast mass: B4, suspicious. Refer to the multidisciplinary meeting.", "B4", "B2", "B4", "wk_benign"},
@@ -136,8 +138,9 @@ func TestNonCRCEvidenceReviewWithheldWhenSourceMissing(t *testing.T) {
 }
 
 // #162 acceptance 1 on the live API path: the committed synthetic report behind the review_hold tissue disagreement
-// (MTSamples u35, data/evidence/reports43.json) is served whole for its item, and the clinician can then sign.
-func TestReviewHoldTissueSourceIsWholeBeforeSigning(t *testing.T) {
+// (MTSamples u35, data/evidence/reports43.json) is served whole for its item, and the source gate then no longer refuses
+// an evidence read for it. This does not post or sign a read: the signed path for the review_hold item is still open.
+func TestReviewHoldTissueSourceIsServedWholeAndUngated(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "data", "evidence", "reports43.json"))
 	if err != nil {
 		t.Fatal(err)
