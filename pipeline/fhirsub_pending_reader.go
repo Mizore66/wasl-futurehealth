@@ -27,6 +27,14 @@ var pendingReaderKeyRE = regexp.MustCompile(`^[-/_=.a-zA-Z0-9]+$`)
 var pendingReaderBucketRE = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func bindPendingLeaderKV(ctx context.Context, js jetstream.JetStream, kv jetstream.KeyValue) (jetstream.KeyValue, error) {
+	reader, err := bindLeaderKVTransport(ctx, js, kv)
+	if err != nil {
+		return nil, err
+	}
+	return reader, nil
+}
+
+func bindLeaderKVTransport(ctx context.Context, js jetstream.JetStream, kv jetstream.KeyValue) (*pendingLeaderKV, error) {
 	if js == nil || js.Conn() == nil || kv == nil {
 		return nil, errCanonicalUnavailable
 	}
@@ -76,6 +84,12 @@ func (k *pendingLeaderKV) Get(ctx context.Context, key string) (jetstream.KeyVal
 	if !strings.HasPrefix(key, "pending.") {
 		return k.KeyValue.Get(ctx, key)
 	}
+	return k.readLeader(ctx, key)
+}
+
+// readLeader is the common validated ordinary-read transport. Like the public
+// SDK Get, it maps a current deletion marker to nil/ErrKeyNotFound.
+func (k *pendingLeaderKV) readLeader(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
 	if key == "" || key[0] == '.' || key[len(key)-1] == '.' || strings.Contains(key, "..") || !pendingReaderKeyRE.MatchString(key) {
 		return nil, jetstream.ErrInvalidKey
 	}
