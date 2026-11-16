@@ -45,6 +45,9 @@ const (
 	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
 	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
 	ActCoordinateCase = "coordinate_case"
+	// ActRespondReferral: a receiving-unit clinician's accept / conditional accept / return of a referral. Unit
+	// membership is checked separately against server configuration.
+	ActRespondReferral = "respond_referral"
 	// ActResolvePatientContest: an independent senior clinician resolves a patient's contest of a decision.
 	ActResolvePatientContest = "resolve_patient_contest"
 	// ActResolveTeachBackCallback: a nurse navigator or clinician records the outcome of a failed teach-back callback.
@@ -61,7 +64,7 @@ const (
 
 var rbac = map[string]map[string]bool{
 	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActRecordDisposition: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActRecordDisposition: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true, ActRespondReferral: true},
 	RoleReferrer:    {ActViewOutcomeHandoff: true, ActAcknowledgeOutcomeHandoff: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CaseList } from "@/lib/api/schema";
-import { COORDINATOR_TOKEN_MISSING, getAudit, getDashboard, postAction, postReview } from "@/lib/api/source";
+import { CLINICIAN_TOKEN_MISSING, COORDINATOR_TOKEN_MISSING, getAudit, getDashboard, postAction, postReferralResponse, postReview } from "@/lib/api/source";
 import { HANDOFF_OWNER, workItem } from "@/components/worklist/model";
 import { loadSample } from "./samples";
 
@@ -136,5 +136,38 @@ describe("workItem with a ledger overlay", () => {
   it("ignores a snooze that has run out", () => {
     const overlay = { head: "h9", actions: 1, owner: "", last_action_at: "", ledger_status: "ok" as const, no_answer_streak: 0, snooze: { until: "2026-11-01T00:00:00Z" } };
     expect(workItem({ ...c, api_overlay: overlay }, 120, false, NOW).snoozed).toBe(false);
+  });
+});
+
+describe("postReferralResponse", () => {
+  const id = "ahs-mushrif/ServiceRequest/AHS-sr-9001";
+  const overlay = { head: "h2", actions: 1, owner: "", last_action_at: "", ledger_status: "ok" };
+
+  it("posts the structured answer bound to the case, referral and head with the clinician token", async () => {
+    live();
+    const fetchMock = vi.fn().mockResolvedValue(json(201, { meta, event: { hash: "h2", at: "2026-11-10T10:00:00Z", actor: "skmc-clinician" }, api_overlay: overlay }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await postReferralResponse(id, { response: "accept_with_conditions", conditions: ["female_endoscopist"] }, "h1");
+    expect(res.ok).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(id)}/referral-response`);
+    expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${TOKENS.WASL_API_CLINICIAN_TOKEN}`);
+    expect(JSON.parse(init.body)).toEqual({ response: "accept_with_conditions", conditions: ["female_endoscopist"], referral_id: id, expected_head: "h1" });
+  });
+
+  it("sends nothing for a malformed answer or without the clinician token", async () => {
+    live();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await postReferralResponse(id, { response: "accept_with_conditions", conditions: [] }, "h1")).toMatchObject({ ok: false, status: 400 });
+    vi.stubEnv("WASL_API_CLINICIAN_TOKEN", "");
+    expect(await postReferralResponse(id, { response: "accept" }, "h1")).toEqual({ ok: false, status: 401, error: CLINICIAN_TOKEN_MISSING });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reports a stale head as a conflict with the current head", async () => {
+    live();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(409, { meta, error: "stale expected_head", conflict: "head", current_head: "h9" })));
+    expect(await postReferralResponse(id, { response: "return", reason: "wrong_unit" }, "h1")).toEqual({ ok: false, status: 409, error: "stale expected_head", conflict: "head", currentHead: "h9" });
   });
 });

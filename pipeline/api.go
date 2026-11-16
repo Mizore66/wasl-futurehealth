@@ -92,6 +92,8 @@ type apiServer struct {
 	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
 	agentProv               map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu                      sync.Mutex
+	unitClinicians          map[string]string // verified actor -> receiving unit (WASL_RECEIVING_UNIT_CLINICIANS)
+	referrers               map[string]string // verified actor -> referring provider (WASL_REFERRING_CLINICIANS)
 	reviews                 []map[string]interface{}
 	rstates                 map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
 	claims                  map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
@@ -143,6 +145,12 @@ func runServe(run, data, addr string) {
 	s, err := loadAPIVerified(run, data)
 	if err != nil {
 		panic(err)
+	}
+	s.unitClinicians, s.referrers = actorAssignmentsFromEnv("WASL_RECEIVING_UNIT_CLINICIANS"), actorAssignmentsFromEnv("WASL_REFERRING_CLINICIANS")
+	for actor := range s.referrers {
+		if s.unitClinicians[actor] != "" {
+			panic(fmt.Sprintf("actor %q is both a receiving-unit clinician and a referring clinician", actor))
+		}
 	}
 	s.pixels = newPixelStore(os.Getenv("WASL_IMAGE_PIXELS_DIR"))
 	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
@@ -776,7 +784,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		rest, sub = strings.TrimSuffix(rest, "/review/claim"), "review/claim"
 	} else if strings.HasSuffix(rest, "/review/source") {
 		rest, sub = strings.TrimSuffix(rest, "/review/source"), "review/source"
-	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest") || strings.HasSuffix(rest, "/teach-back-callback") || strings.HasSuffix(rest, "/outcome-handoff")) {
+	} else if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions") || strings.HasSuffix(rest, "/patient-contest") || strings.HasSuffix(rest, "/teach-back-callback") || strings.HasSuffix(rest, "/outcome-handoff") || strings.HasSuffix(rest, "/referral-response") || strings.HasSuffix(rest, "/referrer-response")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -812,7 +820,11 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseTeachBackCallback(w, r, c)
 	case sub == "outcome-handoff" && (r.Method == http.MethodGet || r.Method == http.MethodPost):
 		s.caseOutcomeHandoff(w, r, c)
-	case sub == "actions":
+	case sub == "referral-response" && r.Method == http.MethodPost:
+		s.caseReferralResponse(w, r, c)
+	case sub == "referrer-response" && r.Method == http.MethodPost:
+		s.caseReferrerResponse(w, r, c)
+	case sub == "actions" || sub == "referral-response" || sub == "referrer-response":
 		w.Header().Set("Allow", "POST")
 		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	default:
@@ -1229,8 +1241,11 @@ const (
 
 // actionForKind is the RBAC action a case action kind needs; the ledger event records it as "action".
 func actionForKind(kind string) string {
-	if kind == dispositionKind || kind == declineDispositionKind {
+	switch kind {
+	case dispositionKind, declineDispositionKind:
 		return ActRecordDisposition
+	case referralResponseKind, referrerResponseKind:
+		return ActRespondReferral
 	}
 	return ActCoordinateCase
 }
@@ -1325,6 +1340,8 @@ type caseOverlay struct {
 	reconciliation map[string]interface{}
 	plans          []map[string]interface{}
 	booking        caseBookingState
+	referral       map[string]interface{}   // the receiving unit's referral response, if any
+	referrer       []map[string]interface{} // the responsible referrer's acknowledgement and response to a returned referral
 	lastAt         string
 }
 
@@ -1576,6 +1593,10 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		}
 	case "note":
 		c.ov.notes = append(c.ov.notes, entry)
+	case referralResponseKind:
+		c.ov.referral = entry
+	case referrerResponseKind:
+		c.ov.referrer = append(c.ov.referrer, entry)
 	case dispositionKind:
 		c.ov.plans = append(c.ov.plans, entry)
 	case declineDispositionKind:
@@ -1633,6 +1654,17 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			streak++
 		}
 		m["no_answer_streak"] = streak
+	}
+	if response, handoff := referralViewLocked(c); response != nil {
+		m["referral_response"] = response
+		if handoff != nil {
+			// Like notes, the referrer's free text (supplied information, a close or primary-care reason) is detail only.
+			if r, ok := handoff["referrer_response"].(map[string]interface{}); ok && !full {
+				delete(r, "supplied_info")
+				delete(r, "reason")
+			}
+			m["referral_handoff"] = handoff
+		}
 	}
 	if o.agreement != nil {
 		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
@@ -1913,6 +1945,30 @@ func (s *apiServer) actionErr(w http.ResponseWriter, code int, msg string, extra
 	writeJSONResp(w, code, s.envelope(body))
 }
 
+// decodeActionBody reads one bounded JSON object with no duplicate keys, answering 400 itself on failure.
+func (s *apiServer) decodeActionBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}, bool) {
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
+	if err != nil {
+		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
+		return nil, false
+	}
+	if err := rejectDuplicateKeys(raw); err != nil {
+		s.actionErr(w, 400, err.Error(), nil)
+		return nil, false
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	var fields map[string]interface{}
+	if err := dec.Decode(&fields); err != nil || fields == nil {
+		s.actionErr(w, 400, "body must be one JSON object", nil)
+		return nil, false
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		s.actionErr(w, 400, "body must contain exactly one JSON object", nil)
+		return nil, false
+	}
+	return fields, true
+}
+
 // currentDisposition is the latest plan recorded for the hold the case is still in; a cleared hold projects none.
 func currentDisposition(c *apiCase) map[string]interface{} {
 	hold := clinicianDecisionHold(c.last)
@@ -1934,23 +1990,8 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		s.actionErr(w, 400, "X-Wasl-Actor header "+err.Error(), nil)
 		return
 	}
-	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
-	if err != nil {
-		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
-		return
-	}
-	if err := rejectDuplicateKeys(raw); err != nil {
-		s.actionErr(w, 400, err.Error(), nil)
-		return
-	}
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	var fields map[string]interface{}
-	if err := dec.Decode(&fields); err != nil || fields == nil {
-		s.actionErr(w, 400, "body must be one JSON object", nil)
-		return
-	}
-	if _, err := dec.Token(); err != io.EOF {
-		s.actionErr(w, 400, "body must contain exactly one JSON object", nil)
+	fields, ok := s.decodeActionBody(w, r)
+	if !ok {
 		return
 	}
 	kindV, expV := fields["action"], fields["expected_head"]
@@ -2276,6 +2317,18 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	raw, ok := ev["data"].(map[string]interface{})
 	if !ok {
 		return errors.New("data must be an object")
+	}
+	if kind == referralResponseKind || kind == referrerResponseKind {
+		replay := replayReferralResponse
+		if kind == referrerResponseKind {
+			replay = replayReferrerResponse
+		}
+		if err := replay(c, raw); err != nil {
+			return fmt.Errorf("invalid %s: %v", kind, err)
+		}
+		s.reviews = append(s.reviews, ev)
+		c.applyOverlay(ev)
+		return nil
 	}
 	norm, err := validateActionData(kind, raw)
 	if err != nil || !reflect.DeepEqual(norm, raw) {

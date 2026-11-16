@@ -336,6 +336,71 @@ export const ContactState = z.looseObject({
   contact_blocked: z.boolean(),
 });
 
+export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
+
+/** Receiving-unit referral response codes (pipeline/api_referral.go). Conditions are booking constraints, not free text. */
+export const ReferralCondition = z.enum(["hold_anticoagulants", "arabic_interpreter", "female_endoscopist", "kidney_function_check"]);
+export const ReferralReturnReason = z.enum(["needs_clinic_visit", "anticoagulant_plan_missing", "wrong_unit", "not_fit_for_procedure"]);
+export const ReferralInfo = z.enum(["reason_for_referral", "relevant_clinical_information", "expected_outcome", "anticoagulant_plan", "kidney_function_result"]);
+
+/** The receiving unit's persisted answer, replayed from the ledger. Acceptance is not procedure completion or closure. */
+export const ReferralResponse = z.looseObject({
+  response: z.enum(["accept", "accept_with_conditions", "return"]),
+  conditions: z.array(ReferralCondition).default([]),
+  reason: ReferralReturnReason.optional(),
+  requested_info: z.array(ReferralInfo).default([]),
+  unit: z.string(),
+  run_day: z.number(),
+  at: z.string(),
+  actor: z.string(),
+  event: z.string(),
+});
+
+/** The responsible referrer's answers to a returned referral (pipeline/api_referrer.go). Only acknowledge leaves it open. */
+export const ReferrerResponseCode = z.enum(["acknowledge", "supply_info", "re_refer", "redirect", "manage_in_primary_care", "close"]);
+const ReferrerEntry = { at: z.string(), actor: z.string(), run_day: z.number(), event: z.string() };
+
+/** The hand-off packet a persisted return projects, on the canonical hand-off clock, with the referrer's answers. */
+export const ReferralHandoff = z.looseObject({
+  referral_id: z.string(),
+  reason_code: z.string(),
+  responsible_clinician: z.string(),
+  decided_by: z.string(),
+  decided_at: z.number(),
+  act_by: z.number(),
+  medical_director_day: z.number(),
+  status: HandoffStatus,
+  event: z.string().optional(),
+  info_requested: z.array(ReferralInfo).default([]),
+  destinations: z.array(z.string()).default([]),
+  acknowledgement: z.looseObject(ReferrerEntry).optional(),
+  referrer_response: z
+    .looseObject({
+      ...ReferrerEntry,
+      response: ReferrerResponseCode.exclude(["acknowledge"]),
+      supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
+      destination: z.string().optional(),
+      reason: z.string().optional(),
+    })
+    .optional(),
+  acted_at: z.number().optional(),
+});
+
+/** POST /api/cases/{id}/referral-response body. `referral_id` and `expected_head` are added by the caller. */
+export const ReferralResponseRequest = z.discriminatedUnion("response", [
+  z.object({ response: z.literal("accept") }),
+  z.object({ response: z.literal("accept_with_conditions"), conditions: z.array(ReferralCondition).min(1) }),
+  z.object({ response: z.literal("return"), reason: ReferralReturnReason, requested_info: z.array(ReferralInfo).optional() }),
+]);
+
+/** POST /api/cases/{id}/referrer-response body. `referral_id`, `packet` and `expected_head` are added by the caller. */
+export const ReferrerResponseRequest = z.discriminatedUnion("response", [
+  z.object({ response: z.literal("acknowledge") }),
+  z.object({ response: z.literal("supply_info"), supplied_info: z.partialRecord(ReferralInfo, z.string().trim().min(1).max(1000)) }),
+  z.object({ response: z.enum(["re_refer", "redirect"]), destination: z.string().min(1).max(64) }),
+  z.object({ response: z.enum(["manage_in_primary_care", "close"]), reason: z.string().trim().min(1).max(200) }),
+]);
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -357,6 +422,8 @@ export const ApiOverlay = z.looseObject({
   contact_outcomes: z.array(OverlayContact).optional(),
   notes: z.array(OverlayNote).optional(),
   canonical_owner: z.string().optional(),
+  referral_response: ReferralResponse.optional(),
+  referral_handoff: ReferralHandoff.optional(),
   /** A clinician's recorded plan for the hold the case is still in. A plan, not completed care: the loop stays open. */
   clinician_disposition: z.looseObject({
     at: z.string(),
@@ -734,7 +801,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -761,6 +828,13 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  // referral_response (the receiving unit) and referrer_response (the referring GP). Codes only, except supplied_info.
+  response: z.union([z.enum(["accept", "accept_with_conditions", "return"]), ReferrerResponseCode]).optional(),
+  conditions: z.array(ReferralCondition).optional(),
+  requested_info: z.array(ReferralInfo).optional(),
+  unit: z.string().optional(),
+  destination: z.string().optional(),
+  supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
   plan: z.string().optional(),
   follow_up_owner: z.string().optional(),
   next_review: z.string().optional(),
@@ -900,14 +974,20 @@ export const Booking = z.looseObject({
   reservation_explanation: z.string().optional(),
 });
 
-export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
-
 /** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
 export const Handoff = z.looseObject({
   clinical_priority: z.string(),
   decided_at: z.number(),
   act_by: z.number(),
   status: HandoffStatus,
+  recommendation: z.string().optional(),
+  reason_code: z.string().optional(),
+  advice_to_referrer: z.string().optional(),
+  info_requested: z.array(z.string()).default([]),
+  responsible_clinician: z.string().optional(),
+  decided_by: z.string().optional(),
+  suggested_alternative: z.string().optional(),
+  medical_director_day: z.number().optional(),
 });
 
 export const ActiveCurrentDecision = z.looseObject({
@@ -1506,6 +1586,10 @@ export type Meta = z.infer<typeof Meta>;
 export type CaseSummary = z.infer<typeof CaseSummary>;
 export type CurrentDecision = z.infer<typeof CurrentDecision>;
 export type HandoffStatus = z.infer<typeof HandoffStatus>;
+export type ReferralCondition = z.infer<typeof ReferralCondition>;
+export type ReferralReturnReason = z.infer<typeof ReferralReturnReason>;
+export type ReferralInfo = z.infer<typeof ReferralInfo>;
+export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type TeachBackCallback = z.infer<typeof TeachBackCallback>;

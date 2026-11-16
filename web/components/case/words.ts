@@ -1,10 +1,11 @@
-import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
+import type { Audit, CaseDetail, Programme, ReferralCondition } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
-import { noActionWords, statusWords } from "@/components/worklist/model";
+import { noActionWords, providerLabel, statusWords } from "@/components/worklist/model";
+import { CONDITION_LABELS, REASON_LABELS } from "@/components/worklist/referrals";
 
 /*
  * Plain words for what the case and audit endpoints return (issues #1 and #5).
@@ -286,7 +287,32 @@ export function outcomeWords(outcome: string | undefined, channel?: string): str
 }
 
 type LedgerLike =
-  | { ledger: "coordinator"; kind: string; hash?: string; data: { owner?: string; until?: string; outcome?: string; channel?: string; slot_id?: string; reservation_id?: string; plan?: string; follow_up_owner?: string; next_review?: string; review_date?: string; procedure?: string; provider?: string; retrieval_owner?: string; retrieval_due?: string } }
+  | {
+      ledger: "coordinator";
+      kind: string;
+      hash?: string;
+      data: {
+        owner?: string;
+        until?: string;
+        outcome?: string;
+        channel?: string;
+        slot_id?: string;
+        reservation_id?: string;
+        response?: string;
+        conditions?: ReferralCondition[];
+        reason?: string;
+        unit?: string;
+        destination?: string;
+        plan?: string;
+        follow_up_owner?: string;
+        next_review?: string;
+        review_date?: string;
+        procedure?: string;
+        provider?: string;
+        retrieval_owner?: string;
+        retrieval_due?: string;
+      };
+    }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "claim"; kind: string; action?: string }
   | { ledger: "review"; decision?: string; action?: string }
@@ -319,6 +345,32 @@ export function ledgerWordsWithHistory(e: LedgerLike, prior: LedgerLike[]): stri
   if (e.kind === "booking_reschedule") return `Simulated reservation moved · ${reservation ?? "previous slot"} → ${e.data.slot_id ?? "new slot not recorded"}`;
   if (e.kind === "booking_cancel") return `Simulated reservation cancelled · ${reservation ?? "last slot retained"}`;
   return `Simulated booking action: ${plain(e.kind)}`;
+}
+
+function referralResponseWords(d: { response?: string; conditions?: ReferralCondition[]; reason?: string; unit?: string }): string {
+  const unit = d.unit ? providerLabel(d.unit) : "Receiving unit";
+  if (d.response === "accept") return `${unit} accepted the referral`;
+  if (d.response === "accept_with_conditions") {
+    return d.conditions?.length ? `${unit} accepted the referral with conditions: ${d.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}` : `${unit} accepted the referral with conditions`;
+  }
+  if (d.response === "return") {
+    const reason = d.reason && d.reason in REASON_LABELS ? REASON_LABELS[d.reason as keyof typeof REASON_LABELS].toLowerCase() : "";
+    return reason ? `${unit} returned the referral to the GP: ${reason}` : `${unit} returned the referral to the GP`;
+  }
+  return `${unit} answered the referral`;
+}
+
+function referrerResponseWords(d: { response?: string; destination?: string }): string {
+  const to = d.destination ? ` to ${providerLabel(d.destination)}` : "";
+  const words: Record<string, string> = {
+    acknowledge: "Referring GP acknowledged the returned referral",
+    supply_info: "Referring GP sent the information the unit asked for",
+    re_refer: `Referring GP re-referred${to}`,
+    redirect: `Referring GP referred${to} instead`,
+    manage_in_primary_care: "Referring GP will manage this in primary care",
+    close: "Referring GP closed the referral",
+  };
+  return (d.response && words[d.response]) || "Referring GP answered the returned referral";
 }
 
 /**
@@ -363,6 +415,8 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "snooze") return d.until ? `Snoozed until ${atWords(d.until)}` : "Snoozed";
     if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
     if (e.kind === "note") return "Note added";
+    if (e.kind === "referral_response") return referralResponseWords(d);
+    if (e.kind === "referrer_response") return referrerResponseWords(d);
     if (e.kind === "clinician_disposition") {
       return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${d.review_date ?? "date not recorded"}`;
     }
