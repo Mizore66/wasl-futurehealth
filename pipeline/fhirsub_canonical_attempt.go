@@ -401,9 +401,10 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 	}
 	start := observer.phaseStart(diagCanonical)
 	defer observer.phaseEnd(diagCanonical, start)
-	var frame canonicalTurnDiagnostic
+	var frame *canonicalTurnDiagnostic
 	var sourceDiagnostic, cellDiagnostic *headPredicate
 	if observer != nil {
+		frame = new(canonicalTurnDiagnostic)
 		sourceDiagnostic = &frame.Source
 		cellDiagnostic = &frame.Cell
 		frame.AllowWire = allowWire
@@ -415,7 +416,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 		}
 		result := canonicalAttemptTurn{Result: canonicalCloneResult(r), Hole: err.Error()}
 		if observer != nil {
-			result.diagnostic = &frame
+			result.diagnostic = frame
 		}
 		return result
 	}
@@ -461,7 +462,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 					frame.Error = out.diagnostic.Error
 				}
 			}
-			out.diagnostic = &frame
+			out.diagnostic = frame
 		}
 	}()
 	if c == nil || c.kv == nil || c.js == nil {
@@ -469,6 +470,22 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 	}
 	if err := ctx.Err(); err != nil {
 		return blocked(headContext, w.result, err)
+	}
+	// Independent provider heads otherwise invalidate each other's captured
+	// prefix or submit the same expected-last fence. Queue only scheduling,
+	// within the caller's ORIGINAL context, before performing all fresh checks.
+	// Private work ownership remains reserved; no state lock spans the wait/RPCs.
+	c.mu.Lock()
+	if c.canonicalTurns == nil {
+		c.canonicalTurns = make(chan struct{}, 1)
+	}
+	turns := c.canonicalTurns
+	c.mu.Unlock()
+	select {
+	case turns <- struct{}{}:
+		defer func() { <-turns }()
+	case <-ctx.Done():
+		return blocked(headContext, w.result, ctx.Err())
 	}
 	if _, _, found, err := c.readCanonicalSource(ctx, w.input.Incarnation, w.input.Source, sourceDiagnostic); err != nil || !found {
 		if err == nil {

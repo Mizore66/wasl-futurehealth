@@ -156,16 +156,19 @@ type SubConsumer struct {
 	eofBusy             bool
 	eofControlsReturned bool
 
-	mu        sync.Mutex
-	replayMu  sync.Mutex // serializes pending writes and durable pending scans in this instance
-	scan      *pendingScan
-	paced     *sync.Cond // publishers wait on it to stay within PaceWindow events of the ack high-water mark
-	provCh    map[string]chan *subEvent
-	stats     map[string]int64
-	ptrs      map[string]*int64
-	pubDup    int64
-	published int64
-	start     time.Time
+	// Scheduling only: provider turns share one global stream fence. The gate
+	// never replaces a fresh history/read/CAS check or coordinates other instances.
+	canonicalTurns chan struct{} // initialized under mu
+	mu             sync.Mutex
+	replayMu       sync.Mutex // serializes pending writes and durable pending scans in this instance
+	scan           *pendingScan
+	paced          *sync.Cond // publishers wait on it to stay within PaceWindow events of the ack high-water mark
+	provCh         map[string]chan *subEvent
+	stats          map[string]int64
+	ptrs           map[string]*int64
+	pubDup         int64
+	published      int64
+	start          time.Time
 }
 
 var subscriptionInstanceSequence uint64

@@ -118,17 +118,8 @@ func (p canonicalHistoryProduction) Info(ctx context.Context) (*jetstream.Stream
 	if err != nil {
 		return nil, err
 	}
-	// Stream already fetched metadata during this invocation. Reuse only that
-	// local response: it postdates entry (and the caller's preceding Read), not
-	// a second request after lookup. Never retain a handle across operations.
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if cached := stream.CachedInfo(); cached != nil {
-		info := *cached
-		return &info, nil
-	}
-	return stream.Info(ctx)
+	// The lookup postdates this invocation and the caller's preceding Read.
+	return canonicalLookupInfo(ctx, stream)
 }
 
 func (p canonicalHistoryProduction) Read(ctx context.Context, seq uint64) (*jetstream.RawStreamMsg, error) {

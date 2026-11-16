@@ -1823,6 +1823,10 @@ func (j *pendingOwnerJS) Stream(ctx context.Context, name string) (jetstream.Str
 	}
 	return &pendingOwnerStream{js: j}, ctx.Err()
 }
+// This in-memory lookup has no retained metadata response. Model that optional
+// SDK method explicitly instead of forwarding through its nil embedded Stream.
+func (s *pendingOwnerStream) CachedInfo() *jetstream.StreamInfo { return nil }
+
 func (s *pendingOwnerStream) Info(ctx context.Context, _ ...jetstream.StreamInfoOpt) (*jetstream.StreamInfo, error) {
 	return (pendingOwnerHistory{js: s.js}).Info(ctx)
 }
@@ -1972,9 +1976,10 @@ func newPendingOwnerConsumer(t *testing.T) (*SubConsumer, *pendingOwnerKV, *pend
 func pendingOwnerStartPublisher(t *testing.T, c *SubConsumer, js *pendingOwnerJS) {
 	t.Helper()
 	done := make(chan struct{})
+	ch := c.provCh["p1"]
 	go func() {
 		defer close(done)
-		c.publisher("p1", c.provCh["p1"])
+		c.publisher("p1", ch)
 	}()
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -1986,10 +1991,24 @@ func pendingOwnerStartPublisher(t *testing.T, c *SubConsumer, js *pendingOwnerJS
 			c.mu.Unlock()
 		}
 		js.unblock()
-		close(c.provCh["p1"])
+		close(ch)
+		// A failed acceptance barrier must not abandon the goroutine or close
+		// its seen queue while it is still publishing. These joins extend only
+		// teardown; the original 1500ms barrier still fails the test on time.
+		defer c.seen.Flush()
+		defer func() { <-done }()
 		pendingOwnerBarrier(t, "publisher exit", done)
-		c.seen.Flush()
 	})
+}
+
+func pendingOwnerCleanupInbox(t *testing.T, js *pendingOwnerJS, unblockRead func(), inboxDone <-chan struct{}) {
+	t.Helper()
+	js.unblock()
+	unblockRead()
+	// Fatalf runs defers: finish joining even after the unchanged barrier
+	// fails, before the next cleanup closes the producer's dispatch queue.
+	defer func() { <-inboxDone }()
+	pendingOwnerBarrier(t, "inbox exit", inboxDone)
 }
 
 func pendingOwnerHeartbeat(t *testing.T, c *SubConsumer, total int64) {
@@ -2145,7 +2164,7 @@ func TestPendingOwnerStaleClaimAfterTombstoneConverges(t *testing.T) {
 	go func() { defer close(inboxDone); inboxErr = c.processInboxMessage(msg) }()
 	// On a failing barrier, release the scan before publisher cleanup closes
 	// its queue. No goroutine may send to a closed provider channel.
-	t.Cleanup(func() { js.unblock(); unblockRead(); pendingOwnerBarrier(t, "inbox exit", inboxDone) })
+	t.Cleanup(func() { pendingOwnerCleanupInbox(t, js, unblockRead, inboxDone) })
 	pendingOwnerBarrier(t, "stale revision-A read", staleRead)
 	pendingOwnerBarrier(t, "original canonical publish held", js.entered)
 	stale := kv.snapshot(key)

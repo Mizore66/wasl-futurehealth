@@ -14,6 +14,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -207,10 +209,14 @@ const (
 
 // canonicalLD encodes a domain/version tag then each part with an unsigned
 // 64-bit big-endian length prefix. Integers are fixed 8-byte big-endian parts.
-type canonicalLD struct{ b []byte }
+type canonicalLD struct {
+	b      []byte
+	inline [512]byte
+}
 
 func newCanonicalLD(domain string) *canonicalLD {
 	e := &canonicalLD{}
+	e.b = e.inline[:0]
 	return e.str(domain)
 }
 
@@ -831,6 +837,21 @@ func canonicalStrictDecode(raw []byte, v any, rejectUnknown bool) error {
 	if len(bytes.TrimSpace(raw)) == 0 {
 		return fmt.Errorf("%w: empty value", errCanonicalInvalid)
 	}
+	if rejectUnknown {
+		switch v.(type) {
+		case *canonicalCell, *canonicalSourceRecord, *subEvent, *subscriptionCheckpoint:
+			// These closed schemas contain only typed objects and the three
+			// exact-key header maps above. The decoder detects duplicate names
+			// (including folded aliases of struct fields) in the same pass that
+			// rejects unknown fields. Retain all other v1 value semantics.
+			// Generic/open-ended destinations still require the walker below.
+			if err := jsonv2.Unmarshal(raw, v, json.DefaultOptionsV1(),
+				jsontext.AllowDuplicateNames(false), jsonv2.RejectUnknownMembers(true)); err != nil {
+				return fmt.Errorf("%w: %v", errCanonicalInvalid, err)
+			}
+			return nil
+		}
+	}
 	if err := canonicalUniqueJSON(raw); err != nil {
 		return fmt.Errorf("%w: %v", errCanonicalInvalid, err)
 	}
@@ -1213,6 +1234,20 @@ func decodeCanonicalOrdinaryResponse(data []byte, seq uint64) (*jetstream.RawStr
 	return &jetstream.RawStreamMsg{Subject: m.Subject, Sequence: m.Seq, Header: hdr, Data: m.Data, Time: tm}, nil
 }
 
+// canonicalLookupInfo consumes only the metadata response from the Stream
+// lookup just performed by this invocation. Callers must never pass a retained
+// handle. Post-read incarnation/prefix observations remain independent reads.
+func canonicalLookupInfo(ctx context.Context, stream jetstream.Stream) (*jetstream.StreamInfo, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if cached := stream.CachedInfo(); cached != nil {
+		info := *cached
+		return &info, nil
+	}
+	return stream.Info(ctx)
+}
+
 // readCanonicalOrdinary reads one stored message through the ordinary message API,
 // whose headers are already the original stored headers. It changes no stream
 // configuration. Against a live broker it is a later matrix gate, not run here.
@@ -1227,7 +1262,7 @@ func (c *SubConsumer) readCanonicalOrdinary(ctx context.Context, seq uint64) (ca
 	if err != nil {
 		return canonicalRead{}, fmt.Errorf("%w: %v", errCanonicalUnavailable, err)
 	}
-	info, err := st.Info(ctx)
+	info, err := canonicalLookupInfo(ctx, st)
 	if err != nil || info == nil {
 		return canonicalRead{}, fmt.Errorf("%w: stream info: %v", errCanonicalUnavailable, err)
 	}

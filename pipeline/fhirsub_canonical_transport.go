@@ -91,7 +91,7 @@ func (c *SubConsumer) readCanonical(ctx context.Context, inc canonicalIncarnatio
 	if err != nil {
 		return canonicalRead{}, err
 	}
-	info, err := stream.Info(ctx)
+	info, err := canonicalLookupInfo(ctx, stream)
 	if err != nil {
 		return canonicalRead{}, err
 	}
@@ -238,7 +238,7 @@ func (c *SubConsumer) resolveCanonicalAck(ctx context.Context, inc canonicalInca
 			if err != nil {
 				return block(err)
 			}
-			info, err := stream.Info(ctx)
+			info, err := canonicalLookupInfo(ctx, stream)
 			if err != nil {
 				return block(err)
 			}

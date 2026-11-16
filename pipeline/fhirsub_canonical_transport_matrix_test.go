@@ -511,6 +511,22 @@ func (s *ctmFaultStream) GetMsg(ctx context.Context, q uint64, opts ...jetstream
 	s.owner.last = &copy
 	return &copy, nil
 }
+
+// The fault decorates metadata observations, including the fresh lookup's own
+// response. Otherwise invocation-local CachedInfo reuse bypasses the test's
+// first observation and its post-read fault is never injected.
+func (s *ctmFaultStream) CachedInfo() *jetstream.StreamInfo {
+	i := s.Stream.CachedInfo()
+	if i == nil {
+		return nil
+	}
+	copy := *i
+	if s.owner.info != nil {
+		s.owner.info(&copy)
+	}
+	return &copy
+}
+
 func (s *ctmFaultStream) Info(ctx context.Context, opts ...jetstream.StreamInfoOpt) (*jetstream.StreamInfo, error) {
 	i, e := s.Stream.Info(ctx, opts...)
 	if e != nil || i == nil {
@@ -608,6 +624,9 @@ func TestCanonicalTransportMatrixEnvelopeAndIncarnation(t *testing.T) {
 	}}
 	if _, err := (&SubConsumer{js: fault}).readCanonical(b.ctx, b.inc, ack.Sequence, id, a); err == nil {
 		t.Fatal("observed mid-read Created change accepted")
+	}
+	if infos != 2 {
+		t.Fatalf("metadata observations=%d, want lookup response and independent post-read Info", infos)
 	}
 	ctmUnchanged(t, b, before)
 	ctmRequests(t, b)
