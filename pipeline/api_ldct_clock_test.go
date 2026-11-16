@@ -39,6 +39,7 @@ func pr185ClockAPI(t *testing.T) (*irEnv, *Decision, string) {
 	if len(e.s.queue[c.ID]) != 1 {
 		t.Fatal("API harness did not receive the actual canonical pending item")
 	}
+	seedReportSource(t, e.s, unread.Provider+"/DiagnosticReport/"+unread.ReportID)
 	e.path = "/api/cases/" + url.PathEscape(c.ID)
 	return e, d, d.Pending[0]
 }
