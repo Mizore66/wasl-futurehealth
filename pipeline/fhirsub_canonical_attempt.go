@@ -76,11 +76,11 @@ func canonicalCloneResult(r canonicalResult) canonicalResult {
 	return r
 }
 
-func newCanonicalAttemptWork(input canonicalAttemptInput) (*canonicalAttemptWork, error) {
+func newCanonicalAttemptWork(input canonicalAttemptInput, validation ...*canonicalValidationMemo) (*canonicalAttemptWork, error) {
 	if err := input.Incarnation.validate(); err != nil {
 		return nil, err
 	}
-	if err := canonicalRealSource(input.Source); err != nil {
+	if err := canonicalRealSource(input.Source, validation...); err != nil {
 		return nil, err
 	}
 	if input.Source.EffectiveSub != canonicalSubscriptionRef(input.Source.EffectiveSub) {
@@ -112,14 +112,14 @@ func newCanonicalAttemptWork(input canonicalAttemptInput) (*canonicalAttemptWork
 	if !authority.valid() || authority.Key != canonicalSourceKey(input.Source) || (authority.Authority != canonicalAuthCreate && authority.Authority != canonicalAuthUpdate) {
 		return nil, fmt.Errorf("%w: source needs acknowledged exact metadata authority", errCanonicalInvalid)
 	}
-	record, err := parseCanonicalSourceRecord(authority.Key, authority.Value)
+	record, err := canonicalValidationSource(canonicalValidationArg(validation), authority.Key, authority.Revision, authority.Value)
 	if err != nil {
 		return nil, err
 	}
 	if !record.Incarnation.equal(input.Incarnation) {
 		return nil, canonicalConflictf("source authority incarnation")
 	}
-	if err := canonicalCompatibleSource(record.Source, input.Source); err != nil {
+	if err := canonicalCompatibleSourceValidated(canonicalValidationArg(validation), record.Source, input.Source); err != nil {
 		return nil, err
 	}
 	input.Message = &nats.Msg{Subject: input.Message.Subject, Header: canonicalCopyHeader(input.Message.Header), Data: bytes.Clone(input.Message.Data)}
@@ -141,7 +141,7 @@ func (c *SubConsumer) readCanonicalAttemptCell(ctx context.Context, w *canonical
 	if len(diagnostic) > 0 && diagnostic[0] != nil {
 		diagnostic[0].Present = entry != nil
 	}
-	meta, value, err := canonicalPositiveValue(key, entry)
+	meta, value, err := canonicalPositiveValue(key, entry, canonicalValidationFor(ctx))
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalCell{}, false, err
 	}
@@ -174,7 +174,7 @@ func (c *SubConsumer) canonicalAttemptSource(ctx context.Context, w *canonicalAt
 	if len(diagnostic) > 0 && diagnostic[0] != nil {
 		diagnostic[0].Present = entry != nil
 	}
-	_, value, err := canonicalPositiveValue(a.SourceKey, entry)
+	_, value, err := canonicalPositiveValue(a.SourceKey, entry, canonicalValidationFor(ctx))
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func (c *SubConsumer) canonicalAttemptSource(ctx context.Context, w *canonicalAt
 		return canonicalConflictf("original attempt source identity/incarnation")
 	}
 	headPredicateStep(diagnostic, 13)
-	if err := canonicalRealSource(source.Source); err != nil {
+	if err := canonicalRealSource(source.Source, canonicalValidationFor(ctx)); err != nil {
 		return err
 	}
 	headPredicateStep(diagnostic, 14)
@@ -340,9 +340,9 @@ func (c *SubConsumer) canonicalLegacySuppression(ctx context.Context, id canonic
 	return err == nil && entry != nil && entry.Key() == key && entry.Operation() == jetstream.KeyValuePut && entry.Revision() > 0 && bytes.Equal(entry.Value(), []byte("done"))
 }
 
-func canonicalAttemptLink(w *canonicalAttemptWork, receipt canonicalMetadataReceipt) *canonicalMetadataReceipt {
+func canonicalAttemptLink(w *canonicalAttemptWork, receipt canonicalMetadataReceipt, validation ...*canonicalValidationMemo) *canonicalMetadataReceipt {
 	if w.attemptMeta.valid() && w.attempt != nil && w.attempt.SourceKey == canonicalSourceKey(w.input.Source) && receipt.valid() && w.result.Proof != nil {
-		if _, err := canonicalSourceRelation(w.input.Source, receipt, *w.result.Proof, &w.attemptMeta); err == nil {
+		if _, err := canonicalSourceRelation(w.input.Source, receipt, *w.result.Proof, &w.attemptMeta, validation...); err == nil {
 			return &w.attemptMeta
 		}
 	}
@@ -375,7 +375,7 @@ func (c *SubConsumer) finishCanonicalAttempt(ctx context.Context, w *canonicalAt
 		if c.phaseDiagnostics != nil {
 			out.diagnostic.Finish = 3
 		}
-		out.Binding, err = c.bindCanonicalSource(ctx, w.input.Incarnation, w.input.Source, out.Receipt, canonicalAttemptLink(w, out.Receipt))
+		out.Binding, err = c.bindCanonicalSource(ctx, w.input.Incarnation, w.input.Source, out.Receipt, canonicalAttemptLink(w, out.Receipt, canonicalValidationFor(ctx)))
 	}
 	if err != nil {
 		if c.phaseDiagnostics != nil {
@@ -481,11 +481,29 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 	}
 	turns := c.canonicalTurns
 	c.mu.Unlock()
+	released := false
+	releaseTurn := func() {
+		if !released {
+			<-turns
+			released = true
+		}
+	}
 	select {
 	case turns <- struct{}{}:
-		defer func() { <-turns }()
+		defer releaseTurn()
 	case <-ctx.Done():
 		return blocked(headContext, w.result, ctx.Err())
+	}
+	// The shared fence ends once wire/history work has yielded a body proof.
+	// Receipt and source binding still finish synchronously under this work's
+	// token with all their fresh reads and CAS, but need not block another ID's
+	// independently fenced publication while those exact-key writes are pending.
+	finish := func(meta canonicalMetadataReceipt) canonicalAttemptTurn {
+		releaseTurn()
+		return c.finishCanonicalAttempt(ctx, w, meta)
+	}
+	if canonicalValidationFor(ctx) == nil {
+		ctx = canonicalValidationContext(ctx)
 	}
 	if _, _, found, err := c.readCanonicalSource(ctx, w.input.Incarnation, w.input.Source, sourceDiagnostic); err != nil || !found {
 		if err == nil {
@@ -516,13 +534,13 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 		if observer != nil {
 			frame.Site = headStoredReceipt
 		}
-		return c.finishCanonicalAttempt(ctx, w, meta)
+		return finish(meta)
 	}
 	if w.result.Proof != nil {
 		if observer != nil {
 			frame.Site = headRetainedProof
 		}
-		return c.finishCanonicalAttempt(ctx, w, meta)
+		return finish(meta)
 	}
 	if found && cell.Phase == canonicalPhaseAttempt {
 		if w.attempt == nil || !bytes.Equal(meta.Value, w.attemptMeta.Value) {
@@ -554,7 +572,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 			if observer != nil {
 				frame.Site = headACKRead
 			}
-			return c.finishCanonicalAttempt(ctx, w, meta)
+			return finish(meta)
 		}
 	}
 	h, historyErr := c.canonicalAttemptHistory(ctx, w.input.Source.Identity)
@@ -570,7 +588,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 			if observer != nil {
 				frame.Site = headHistoryRead
 			}
-			return c.finishCanonicalAttempt(ctx, w, meta)
+			return finish(meta)
 		}
 		if !w.wireUnknown && !w.result.Returned {
 			w.result = canonicalResult{Wire: canonicalWireNotSent, Returned: true, ReturnKind: canonicalReturnReplay, Blocked: recovered.Blocked}
@@ -694,7 +712,7 @@ func (c *SubConsumer) canonicalTurn(ctx context.Context, w *canonicalAttemptWork
 		if observer != nil {
 			frame.Site = headWireReturned
 		}
-		return c.finishCanonicalAttempt(ctx, w, w.attemptMeta)
+		return finish(w.attemptMeta)
 	}
 	return blocked(headWireUnknown, w.result, fmt.Errorf("%w: %s", errCanonicalUnknown, w.result.Blocked))
 }

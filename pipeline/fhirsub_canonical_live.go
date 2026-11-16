@@ -263,7 +263,7 @@ func (c *SubConsumer) protectedCanonicalIncarnation(ctx context.Context) (canoni
 	return idx.incarnation, nil
 }
 
-func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin, legacyBinding string) (canonicalSource, error) {
+func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin, legacyBinding string, validation ...*canonicalValidationMemo) (canonicalSource, error) {
 	ref := canonicalSubscriptionRef(e.Sub)
 	if s.positionRef != s.ref || ref != s.positionRef {
 		return canonicalSource{}, errCanonicalConflict
@@ -275,7 +275,7 @@ func pendingSource(s *subscriptionState, e subEvent, origin pendingOrigin, legac
 	if origin.Sub == "" && s.ref != "" && legacyBinding == s.ref && e.Key == pendingEventKey(e.Num) {
 		source.BindingRule = canonicalRuleLegacy
 	}
-	return source, canonicalRealSource(source)
+	return source, canonicalRealSource(source, validation...)
 }
 
 // The only payload comparison exception: the original default state has just
@@ -376,6 +376,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	allowWire := w.providerOwned && c.providerHeads[w.event.Provider] == w && !w.returnApplied
 	frame := c.headStartLocked(w)
 	c.mu.Unlock()
+	ctx = canonicalValidationContext(ctx)
 	defer func() {
 		c.mu.Lock()
 		if w.attempt == token {
@@ -394,7 +395,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 	if w.canonical == nil {
 		c.mu.Lock()
 		frame.Live = 1
-		source, sourceErr := pendingSource(w.state, w.event, w.origin, w.legacyBinding)
+		source, sourceErr := pendingSource(w.state, w.event, w.origin, w.legacyBinding, canonicalValidationFor(ctx))
 		c.mu.Unlock()
 		err = sourceErr
 		var inc canonicalIncarnation
@@ -418,7 +419,7 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 				w.message = canonicalEventMessage(&w.event)
 			}
 			frame.Live = 5
-			w.canonical, err = newCanonicalAttemptWork(canonicalAttemptInput{Message: w.message, Incarnation: inc, Source: source, SourceAuthority: authority})
+			w.canonical, err = newCanonicalAttemptWork(canonicalAttemptInput{Message: w.message, Incarnation: inc, Source: source, SourceAuthority: authority}, canonicalValidationFor(ctx))
 		}
 	}
 	if err == nil {
@@ -601,11 +602,11 @@ func (c *SubConsumer) retirePendingTurn(ctx context.Context, w *pendingWork) err
 	if !w.result.Receipt.valid() || !w.result.Binding.valid() || !w.floor.validFor(w.state.ref) {
 		return errCanonicalUnknown
 	}
-	record, err := parseCanonicalSourceRecord(w.result.Binding.Key, w.result.Binding.Value)
+	record, err := canonicalValidationSource(canonicalValidationFor(ctx), w.result.Binding.Key, w.result.Binding.Revision, w.result.Binding.Value)
 	if err != nil || record.Phase != canonicalPhaseBound || record.CellKey != w.result.Receipt.Key || record.CoreFingerprint != w.result.Receipt.CoreFingerprint {
 		return errCanonicalInvalid
 	}
-	if err := canonicalCompatibleSource(record.Source, w.canonical.input.Source); err != nil {
+	if err := canonicalCompatibleSourceValidated(canonicalValidationFor(ctx), record.Source, w.canonical.input.Source); err != nil {
 		return err
 	}
 	// Below-HWM observations may acquire ownership only AFTER independent proofs.

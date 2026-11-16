@@ -169,7 +169,9 @@ func (s *canonicalHistoryIndex) observeLocked(info *jetstream.StreamInfo, observ
 	if !s.initialized {
 		s.initialized = true
 		s.incarnation = inc
-		s.digest = newCanonicalLD("wasl.fhirsub.history.prefix.v1").str(inc.Stream).str(inc.Created.Format("2006-01-02T15:04:05.999999999Z07:00")).sum()
+		encoder := newCanonicalLD("wasl.fhirsub.history.prefix.v1").str(inc.Stream).str(inc.Created.Format("2006-01-02T15:04:05.999999999Z07:00"))
+		s.digest = encoder.sum()
+		encoder.release()
 	}
 	// A concurrent capture/retry may have observed a newer head while this
 	// request was in flight. Discard the older snapshot, not the newer index;
@@ -477,6 +479,7 @@ func (s *canonicalHistoryIndex) applySlotLocked(slot canonicalSlot, generation u
 			e.str(id)
 		}
 		s.digest = e.sum()
+		e.release()
 		s.covered++
 	}
 }

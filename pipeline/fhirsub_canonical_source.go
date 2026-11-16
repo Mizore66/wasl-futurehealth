@@ -23,7 +23,11 @@ import (
 
 // Keep the approved general schemas/encodings unchanged. This real-source API
 // additionally requires known literal provenance and an exact pending spelling.
-func canonicalRealSource(source canonicalSource) error {
+func canonicalRealSource(source canonicalSource, validation ...*canonicalValidationMemo) error {
+	memo := canonicalValidationArg(validation)
+	if memo.hasSource(source) {
+		return nil
+	}
 	if err := source.validate(); err != nil {
 		return err
 	}
@@ -46,6 +50,7 @@ func canonicalRealSource(source canonicalSource) error {
 	} else if source.PendingKey != pendingEventKeyFor(source.EffectiveSub, source.Num) && source.PendingKey != legacyKey {
 		return canonicalConflictf("source pending spelling does not match its subscription/position")
 	}
+	memo.rememberSource(source)
 	return nil
 }
 
@@ -54,12 +59,16 @@ func canonicalRealSource(source canonicalSource) error {
 // The one asymmetric exception permits a named observation ONLY when an actual
 // earlier empty-origin descriptor already records this exact legacy transition.
 func canonicalCompatibleSource(stored, observed canonicalSource, diagnostic ...*headPredicate) error {
+	return canonicalCompatibleSourceValidated(nil, stored, observed, diagnostic...)
+}
+
+func canonicalCompatibleSourceValidated(validation *canonicalValidationMemo, stored, observed canonicalSource, diagnostic ...*headPredicate) error {
 	headPredicateStep(diagnostic, 20)
-	if err := canonicalRealSource(stored); err != nil {
+	if err := canonicalRealSource(stored, validation); err != nil {
 		return err
 	}
 	headPredicateStep(diagnostic, 21)
-	if err := canonicalRealSource(observed); err != nil {
+	if err := canonicalRealSource(observed, validation); err != nil {
 		return err
 	}
 	headPredicateStep(diagnostic, 22)
@@ -117,7 +126,7 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 	if len(diagnostic) > 0 && diagnostic[0] != nil {
 		diagnostic[0].Present = entry != nil
 	}
-	meta, value, err := canonicalPositiveValue(key, entry)
+	meta, value, err := canonicalPositiveValue(key, entry, canonicalValidationFor(ctx))
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
@@ -130,7 +139,7 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 	if record.Source.PendingKey == pendingEventKey(record.Source.Num) && record.Source.BindingRule != canonicalRuleLegacy {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("stored unscoped source lacks explicit empty-origin binding provenance")
 	}
-	if err := canonicalCompatibleSource(record.Source, source, diagnostic...); err != nil {
+	if err := canonicalCompatibleSourceValidated(canonicalValidationFor(ctx), record.Source, source, diagnostic...); err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
 	headPredicateStep(diagnostic, 9)
@@ -176,7 +185,7 @@ func (c *SubConsumer) persistCanonicalSource(ctx context.Context, inc canonicalI
 	if err := inc.validate(); err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
-	if err := canonicalRealSource(source); err != nil {
+	if err := canonicalRealSource(source, canonicalValidationFor(ctx)); err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
 	meta, stored, found, err := c.readCanonicalSource(ctx, inc, source)
@@ -201,7 +210,7 @@ func (c *SubConsumer) canonicalDurableSourceProof(ctx context.Context, inc canon
 	if !proof.valid() || proof.Key != canonicalCellKey(source.Identity) {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, fmt.Errorf("%w: no exact positive canonical receipt authority", errCanonicalInvalid)
 	}
-	cell, err := parseCanonicalCell(proof.Key, proof.Value)
+	cell, err := canonicalValidationCell(canonicalValidationFor(ctx), proof.Key, proof.Revision, proof.Value)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, err
 	}
@@ -215,7 +224,7 @@ func (c *SubConsumer) canonicalDurableSourceProof(ctx context.Context, inc canon
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, fmt.Errorf("%w: durable canonical receipt read: %v", errCanonicalUnknown, err)
 	}
-	current, value, err := canonicalPositiveValue(proof.Key, entry)
+	current, value, err := canonicalPositiveValue(proof.Key, entry, canonicalValidationFor(ctx))
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalReceipt{}, err
 	}
@@ -234,7 +243,7 @@ func (c *SubConsumer) canonicalDurableSourceProof(ctx context.Context, inc canon
 // across attempt->receipt, not reconstructed or placed in a new durable archive.
 // A plain canonical receipt (even fresh evidence naming an AttemptID), incoming
 // replay headers, SEEN and checkpoints never identify an original subscription.
-func canonicalSourceRelation(source canonicalSource, durable canonicalMetadataReceipt, proof canonicalReceipt, link *canonicalMetadataReceipt) (string, error) {
+func canonicalSourceRelation(source canonicalSource, durable canonicalMetadataReceipt, proof canonicalReceipt, link *canonicalMetadataReceipt, validation ...*canonicalValidationMemo) (string, error) {
 	if link == nil {
 		return canonicalRelReplay, nil // original subscription remains UNKNOWN
 	}
@@ -242,7 +251,7 @@ func canonicalSourceRelation(source canonicalSource, durable canonicalMetadataRe
 		link.Key != durable.Key || link.Revision >= durable.Revision || link.CoreFingerprint != "" {
 		return "", fmt.Errorf("%w: original relation needs an acknowledged earlier persisted attempt", errCanonicalInvalid)
 	}
-	cell, err := parseCanonicalCell(link.Key, link.Value)
+	cell, err := canonicalValidationCell(canonicalValidationArg(validation), link.Key, link.Revision, link.Value)
 	if err != nil {
 		return "", err
 	}
@@ -286,7 +295,7 @@ func (c *SubConsumer) bindCanonicalSource(ctx context.Context, inc canonicalInca
 	if err := inc.validate(); err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
-	if err := canonicalRealSource(source); err != nil {
+	if err := canonicalRealSource(source, canonicalValidationFor(ctx)); err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
 	if err := ctx.Err(); err != nil {
@@ -300,7 +309,7 @@ func (c *SubConsumer) bindCanonicalSource(ctx context.Context, inc canonicalInca
 	if err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
-	relation, err := canonicalSourceRelation(source, durable, receipt, originalAttempt)
+	relation, err := canonicalSourceRelation(source, durable, receipt, originalAttempt, canonicalValidationFor(ctx))
 	if err != nil {
 		return canonicalMetadataReceipt{}, err
 	}

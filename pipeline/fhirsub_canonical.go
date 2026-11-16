@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -214,10 +215,20 @@ type canonicalLD struct {
 	inline [512]byte
 }
 
+// Scratch only, never a cached digest or proof. A caller owns the encoder until
+// release; all returned digest/key strings have independent storage.
+var canonicalLDScratch = sync.Pool{New: func() any { return &canonicalLD{} }}
+
 func newCanonicalLD(domain string) *canonicalLD {
-	e := &canonicalLD{}
+	e := canonicalLDScratch.Get().(*canonicalLD)
 	e.b = e.inline[:0]
 	return e.str(domain)
+}
+
+func (e *canonicalLD) release() {
+	// Do not retain an oversized temporary backing allocation in the pool.
+	e.b = e.inline[:0]
+	canonicalLDScratch.Put(e)
 }
 
 func (e *canonicalLD) str(s string) *canonicalLD {
@@ -234,21 +245,34 @@ func (e *canonicalLD) u64(v uint64) *canonicalLD {
 
 func (e *canonicalLD) sum() string {
 	h := sha256.Sum256(e.b)
-	return hex.EncodeToString(h[:])
+	var encoded [sha256.Size * 2]byte
+	hex.Encode(encoded[:], h[:])
+	return string(encoded[:])
 }
 
 func canonicalCellKey(id canonicalIdentity) string {
-	return canonicalCellPrefix + newCanonicalLD(canonicalDomainCell).str(id.Subject).str(id.FullID).sum()
+	e := newCanonicalLD(canonicalDomainCell)
+	defer e.release()
+	return canonicalCellPrefix + e.str(id.Subject).str(id.FullID).sum()
 }
 
 func canonicalSourceKey(s canonicalSource) string {
 	e := newCanonicalLD(canonicalDomainSource).str(s.EffectiveSub).u64(uint64(s.Num)).str(s.Provider).str(s.Focus).str(s.Occurred)
+	defer e.release()
 	return canonicalSourcePrefix + e.str(s.Identity.BodySHA256).u64(s.Identity.BodyLength).str(s.PendingKey).sum()
 }
 
 func canonicalIsHex64(s string) bool {
-	b, err := hex.DecodeString(s)
-	return err == nil && len(b) == 32 && s == strings.ToLower(s)
+	if len(s) != 64 {
+		return false
+	}
+	for i := range len(s) {
+		b := s[i]
+		if !(b >= '0' && b <= '9' || b >= 'a' && b <= 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func canonicalKeyHasHash(key, prefix string) bool {
@@ -320,6 +344,7 @@ func canonicalHeaderDigestV1(h nats.Header) (string, error) {
 	}
 	sort.Strings(keys)
 	e := newCanonicalLD(canonicalDomainHeader).u64(uint64(len(keys)))
+	defer e.release()
 	for _, k := range keys {
 		e.str(k).u64(uint64(len(h[k])))
 		for _, v := range h[k] {
@@ -464,6 +489,7 @@ func canonicalCoreFingerprint(c canonicalCore) (string, error) {
 		return "", err
 	}
 	e := newCanonicalLD(canonicalDomainCore).u64(uint64(c.Version)).u64(uint64(c.ProjectionVersion))
+	defer e.release()
 	e.str(c.Incarnation.Stream).u64(uint64(c.Incarnation.Created.UnixNano())).u64(c.Sequence)
 	e.str(c.Identity.Subject).str(c.Identity.FullID).str(c.Identity.BodySHA256).u64(c.Identity.BodyLength).str(c.HeaderSHA256)
 	keys := make([]string, 0, len(c.OriginalWsi))
@@ -910,10 +936,10 @@ func parseCanonicalSourceRecord(key string, raw []byte) (canonicalSourceRecord, 
 	return r, nil
 }
 
-// A parsed value is local to ONE operation, never cached across a Get, turn,
-// revision or generation. Validate each complete byte value against its exact key
-// once, then use that same decoded value for fingerprint/transition decisions.
-// This retains every independent positive read and operation acknowledgement.
+// A parsed value carries no operation authority. Each Get independently checks
+// its actual positive key/revision/operation and complete bytes. Within ONE owned
+// turn, immutable schema validation may reuse only that exact key/revision/byte
+// tuple; nothing is retained across invocations or replaces a read or ACK.
 type canonicalValue struct {
 	cell   canonicalCell
 	source canonicalSourceRecord
@@ -963,16 +989,17 @@ func canonicalPositiveRead(key string, e jetstream.KeyValueEntry) (canonicalMeta
 	return meta, err
 }
 
-func canonicalPositiveValue(key string, e jetstream.KeyValueEntry) (canonicalMetadataReceipt, canonicalValue, error) {
+func canonicalPositiveValue(key string, e jetstream.KeyValueEntry, validation ...*canonicalValidationMemo) (canonicalMetadataReceipt, canonicalValue, error) {
 	if e == nil || e.Key() != key || e.Revision() == 0 || e.Operation() != jetstream.KeyValuePut {
 		return canonicalMetadataReceipt{}, canonicalValue{}, fmt.Errorf("%w: entry is not a positive revision of %q", errCanonicalInvalid, key)
 	}
 	raw := bytes.Clone(e.Value())
-	value, err := parseCanonicalValue(key, raw)
+	revision := e.Revision()
+	value, err := canonicalValidationArg(validation).parse(key, revision, raw)
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalValue{}, err
 	}
-	return canonicalMetadataReceipt{Key: key, Revision: e.Revision(), Value: raw, CoreFingerprint: value.fingerprint(), Authority: canonicalAuthPositive}, value, nil
+	return canonicalMetadataReceipt{Key: key, Revision: revision, Value: raw, CoreFingerprint: value.fingerprint(), Authority: canonicalAuthPositive}, value, nil
 }
 
 // canonicalTransitionKind classifies a proposed replacement of a stored value.
@@ -1106,6 +1133,7 @@ func (c *SubConsumer) ensureCanonicalParsedValue(ctx context.Context, key string
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: %v", errCanonicalUnknown, err)
 	}
 	done := func(rev uint64, authority string) canonicalMetadataReceipt {
+		canonicalValidationFor(ctx).rememberBuilder(key, rev, desired, value)
 		return canonicalMetadataReceipt{Key: key, Revision: rev, Value: bytes.Clone(desired), CoreFingerprint: fp, Authority: authority}
 	}
 	if expected != 0 {
@@ -1117,7 +1145,7 @@ func (c *SubConsumer) ensureCanonicalParsedValue(ctx context.Context, key string
 		if old == nil || old.Key() != key || old.Revision() == 0 || old.Operation() != jetstream.KeyValuePut {
 			return canonicalMetadataReceipt{}, fmt.Errorf("%w: no exact positive revision to update", errCanonicalUnknown)
 		}
-		meta, stored, err := canonicalPositiveValue(key, old)
+		meta, stored, err := canonicalPositiveValue(key, old, canonicalValidationFor(ctx))
 		if err != nil {
 			return canonicalMetadataReceipt{}, canonicalConflictf("invalid stored canonical value: %v", err)
 		}
@@ -1151,7 +1179,7 @@ func (c *SubConsumer) ensureCanonicalParsedValue(ctx context.Context, key string
 	if entry == nil || entry.Key() != key || entry.Revision() == 0 || entry.Operation() != jetstream.KeyValuePut {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: write failed (%v) and no exact positive revision exists", errCanonicalUnknown, writeErr)
 	}
-	current, stored, readErr := canonicalPositiveValue(key, entry)
+	current, stored, readErr := canonicalPositiveValue(key, entry, canonicalValidationFor(ctx))
 	if readErr != nil {
 		return canonicalMetadataReceipt{}, canonicalConflictf("invalid stored canonical value: %v", readErr)
 	}

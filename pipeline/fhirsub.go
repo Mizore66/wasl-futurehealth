@@ -114,17 +114,24 @@ type subscriptionState struct {
 	pendingProvider map[int64]string
 	work            map[int64]*pendingWork
 	overflowPending bool
-	gapSince        time.Time
-	maxSeen         int64
-	feedOff         bool
-	eofSent         bool
-	filling         bool
-	acked           map[int64]bool
-	ackHWM          int64
-	floor           checkpointReceipt
-	holes           map[*pendingWork]bool
-	holeCounts      map[int64]int
-	holePositions   pendingPositions
+	// refillReady is only a scheduling hint that the last explicit full scan
+	// saw no foreign/unclaimed record. It does not assert continuing
+	// completeness and is never discovery/floor/absence authority: every
+	// targeted refill freshly re-reads each selected key and its alternate
+	// spelling, and falls back to the full scan on any alias.
+	refillReady   bool
+	refillUnclaim bool
+	gapSince      time.Time
+	maxSeen       int64
+	feedOff       bool
+	eofSent       bool
+	filling       bool
+	acked         map[int64]bool
+	ackHWM        int64
+	floor         checkpointReceipt
+	holes         map[*pendingWork]bool
+	holeCounts    map[int64]int
+	holePositions pendingPositions
 }
 
 type SubConsumer struct {
@@ -611,7 +618,7 @@ func (c *SubConsumer) processInboxMessage(msg jetstream.Msg) error {
 	}
 	// Scan only when overflow exists and dispatch freed reorder capacity; ordinary notifications do no backlog scan.
 	if c.replayNeeded(st.Sub) {
-		if err := c.recoverPendingFor(st.Sub); err != nil {
+		if err := c.refillOverflow(st.Sub); err != nil {
 			return err
 		}
 	}
@@ -837,6 +844,7 @@ func (c *SubConsumer) recoverPendingFor(ref string) error {
 	defer c.endPendingScan(epoch)
 	c.mu.Lock()
 	s := c.stateForLocked(ref)
+	s.refillReady, s.refillUnclaim = false, false
 	c.mu.Unlock()
 	entries, err := c.pendingEntries("pending." + subscriptionStorageID(s.ref) + ".>")
 	if err != nil {
@@ -857,7 +865,146 @@ func (c *SubConsumer) recoverPendingFor(ref string) error {
 			}
 		}
 	}
-	return c.recoverPendingEntries(s, entries)
+	if err := c.recoverPendingEntries(s, entries); err != nil {
+		return err
+	}
+	c.mu.Lock()
+	s.refillReady = !s.refillUnclaim && s.positionRef == s.ref
+	c.mu.Unlock()
+	return nil
+}
+
+// refillOverflow is the automatic reorder-capacity refill. After one successful
+// explicit full scan, known local overflow work serves only as exact-key locators:
+// each selected record is freshly Get, fully re-validated and CAS-claimed by
+// recoverPendingEntries. Anything unknown or ambiguous falls back to the full scan.
+// A targeted refill is never discovery: it does not set discoveryComplete,
+// refillReady or any floor, and it keeps overflowPending while eligible work remains.
+func (c *SubConsumer) refillOverflow(ref string) error {
+	ok, err := c.refillOverflowTargeted(ref)
+	if err != nil || ok {
+		return err
+	}
+	return c.recoverPendingFor(ref)
+}
+
+// Called under c.mu; bounded decision labels only, never keys or source data.
+func (c *SubConsumer) recordRefillDecisionLocked(reason string) {
+	if c.stats == nil {
+		c.stats = map[string]int64{}
+	}
+	c.stats["overflow_refill_"+reason]++
+}
+
+func (c *SubConsumer) refillOverflowTargeted(ref string) (bool, error) {
+	c.replayMu.Lock()
+	defer c.replayMu.Unlock()
+	c.mu.Lock()
+	s := c.stateForLocked(ref)
+	if !s.refillReady || s.refillUnclaim || s.positionRef != s.ref || !s.overflowPending || len(s.buf) >= maxSubscriptionReorder {
+		reason := "state"
+		if !s.refillReady {
+			reason = "not_ready"
+		} else if s.refillUnclaim {
+			reason = "unclaimed"
+		}
+		c.recordRefillDecisionLocked(reason)
+		c.mu.Unlock()
+		return false, nil
+	}
+	var nums []int64
+	for n, w := range s.work {
+		if n < s.next || s.buf[n] != nil || w.active || w.inflight || w.completed {
+			continue
+		}
+		reason := ""
+		switch {
+		case !w.local:
+			reason = "foreign"
+		case w.legacyBinding != "":
+			reason = "legacy"
+		case w.recovery:
+			reason = "recovery"
+		case w.canonical != nil:
+			reason = "canonical"
+		case w.queued:
+			reason = "queued"
+		case w.unknown.Token != 0 || w.reservation.Token != 0 || len(w.claimIntent) != 0:
+			reason = "unknown_write"
+		case s.holeCounts[n] != 1 || w.event.Key != pendingEventKeyFor(s.ref, n) || w.state != s:
+			reason = "association"
+		}
+		if reason != "" {
+			c.recordRefillDecisionLocked(reason)
+			c.mu.Unlock()
+			return false, nil // ambiguous/default/legacy/unknown-write work needs the full scan
+		}
+		nums = append(nums, n)
+	}
+	if len(nums) == 0 {
+		c.recordRefillDecisionLocked("no_locator")
+		c.mu.Unlock()
+		return false, nil // overflow of unknown provenance
+	}
+	sort.Slice(nums, func(i, j int) bool { return nums[i] < nums[j] })
+	limit := maxSubscriptionReorder - len(s.buf) + 1 // +1: the next event dispatches without a slot
+	more := len(nums) > limit
+	if more {
+		nums = nums[:limit]
+	}
+	keys := make([]string, len(nums))
+	for i, n := range nums {
+		keys[i] = s.work[n].event.Key
+	}
+	c.mu.Unlock()
+
+	epoch := c.beginPendingScan()
+	defer c.endPendingScan(epoch)
+	entries := make([]pendingEntry, 0, len(keys))
+	// Freshly observe the alternate (legacy unscoped) spelling of EVERY selected
+	// position before any claim. Any live alias, or any failed/unknown read,
+	// leaves the subset unclaimed: a present alias needs the full duplicate scan.
+	for i, n := range nums {
+		alias := pendingEventKey(n)
+		if alias == keys[i] {
+			continue // unscoped subscription: the selected key is the only spelling
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_, err := c.kv.Get(ctx, alias)
+		cancel()
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		return false, nil // alias present
+	}
+	for _, key := range keys {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		entry, err := c.kv.Get(ctx, key)
+		cancel()
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			return false, nil // locator vanished: do not reason from absence, rescan fully
+		}
+		if err != nil {
+			return false, err
+		}
+		entries = append(entries, pendingEntry{key: key, entry: entry})
+	}
+	if err := c.recoverPendingEntries(s, entries); err != nil {
+		return true, err
+	}
+	c.mu.Lock()
+	if s.refillUnclaim {
+		s.refillReady = false
+	}
+	if more {
+		s.overflowPending = true // eligible known overflow remains beyond this subset
+	}
+	c.recordRefillDecisionLocked("targeted")
+	c.mu.Unlock()
+	return true, nil
 }
 
 func (c *SubConsumer) claimPendingLocked(s *subscriptionState, e *subEvent, entry pendingEntry) (bool, error) {
@@ -1086,6 +1233,9 @@ func (c *SubConsumer) recoverPendingEntries(s *subscriptionState, entries []pend
 			}
 		}
 	}
+	if unclaimed {
+		s.refillUnclaim = true
+	}
 	if (len(s.buf) > 0 || unclaimed) && s.gapSince.IsZero() {
 		s.gapSince = time.Now()
 	}
@@ -1198,6 +1348,7 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) error {
 		s.pendingProvider[e.Num] = provider
 		if !owned {
 			c.stats["pending_ownership_conflicts"]++
+			s.refillUnclaim = true
 			if s.gapSince.IsZero() {
 				s.gapSince = time.Now()
 			}
@@ -1809,7 +1960,7 @@ func (c *SubConsumer) checkGapFor(s *subscriptionState) {
 			return
 		}
 		if c.replayNeeded(s.ref) {
-			if err := c.recoverPendingFor(s.ref); err != nil {
+			if err := c.refillOverflow(s.ref); err != nil {
 				atomic.AddInt64(c.stats_("gap_pending_errors"), 1)
 				return
 			}
