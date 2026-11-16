@@ -102,6 +102,11 @@ test.describe("review, fixtures mode", () => {
     await expect(q2).toContainText("the readers differ on whether tissue was taken: rules reader none, second reader yes");
     await expect(q2).toContainText("One answer covers all of them");
     await expect(r.getByRole("button", { name: /Close the case/ })).toHaveCount(0);
+    // #162: the complete synthetic report the evidence question judges, not only the reader's quote.
+    const source = r.getByTestId("source-report");
+    await expect(source).toHaveAttribute("data-source", "available");
+    await expect(source).toContainText("Source report skmc-endo/DiagnosticReport/SKM-dr-217, version 1");
+    await expect(source).toContainText("completely removed using multiple bites with cold biopsy forceps");
 
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
     await r.getByRole("button", { name: "Preview: Close the case" }).click();
@@ -154,6 +159,10 @@ test.describe("review, fixtures mode", () => {
     expect((await active()).label).toBe("Adequate");
     await page.keyboard.press("Space");
     await expect(r.getByRole("radio", { name: "Adequate", exact: true })).toBeChecked();
+    // The scrollable source report is reachable by keyboard before the preview (#162).
+    await page.keyboard.press("Tab");
+    expect((await active()).tag).toBe("PRE");
+    expect((await active()).text).toContain("cold biopsy forceps");
     await page.keyboard.press("Tab");
     expect((await active()).text).toBe("Preview: Close the case");
 
