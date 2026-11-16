@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Encrypted, authenticated file bundles and transactional, reversible file-generation migration.
 
-New bundles are always `wasl-file-backup-v2-aesgcm`: every payload is AES-256-GCM encrypted under a per-bundle data
-key that is wrapped by the active generation of a versioned keyring stored outside the bundle, and the manifest is
-HMAC-authenticated with that generation's independent key. Verification always completes before a migration renames
-or writes the destination. No plaintext or key material is included in the bundle. Legacy v1 (HMAC-only) bundles are
-read-only and are accepted solely with an explicit `legacy_hmac` opt-in.
+New bundles are `wasl-file-backup-v3-chunked`: every payload is split into fixed-size chunks, each AES-256-GCM
+encrypted and authenticated on its own under a per-bundle data key that is wrapped by the active generation of a
+versioned keyring stored outside the bundle, and the manifest is HMAC-authenticated with that generation's independent
+key. Backup, verify, extraction and restore stream one chunk at a time, so memory and scratch use are bounded by the
+chunk size, not by the payload. Existing `wasl-file-backup-v2-aesgcm` bundles (one AES-GCM blob per file) remain
+readable and restorable unchanged. Verification always completes before a migration renames or writes the destination.
+No plaintext or key material is included in the bundle. Legacy v1 (HMAC-only) bundles are read-only and are accepted
+solely with an explicit `legacy_hmac` opt-in.
 """
 from __future__ import annotations
 
@@ -17,8 +20,10 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 
@@ -32,6 +37,7 @@ from recovery_crypto import (  # noqa: E402
     _unb64,
     decrypt_payload,
     encrypt_payload,
+    encrypt_with_nonce,
     load_keyring,
     new_dek,
     rotate_keyring,
@@ -40,13 +46,21 @@ from recovery_crypto import (  # noqa: E402
 )
 
 SCHEMA = "wasl-file-backup-v1"  # legacy, read-only
-SCHEMA_V2 = "wasl-file-backup-v2-aesgcm"
+SCHEMA_V2 = "wasl-file-backup-v2-aesgcm"  # read and restore only; one AES-GCM blob per file
+SCHEMA_V3 = "wasl-file-backup-v3-chunked"
+ENCRYPTED_SCHEMAS = (SCHEMA_V2, SCHEMA_V3)
 FILE_AAD_PREFIX = SCHEMA_V2.encode() + b"|file|"
+CHUNK_AAD_PREFIX = SCHEMA_V3.encode() + b"|chunk|"
 TAG_BYTES = 16
+DEFAULT_CHUNK_SIZE = 1 << 20
+MAX_CHUNK_SIZE = 64 << 20
+NONCE_PREFIX_BYTES = 4
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 _MANIFEST_FIELDS = {"schema", "key_id", "created_at", "nondeterministic_fields", "wrapped_dek", "wrap_nonce",
                     "dirs", "files", "hmac_sha256"}
 _RECORD_FIELDS = {"path", "size", "mode", "sha256", "nonce", "ciphertext_sha256"}
+_MANIFEST_FIELDS_V3 = _MANIFEST_FIELDS | {"chunk_size"}
+_RECORD_FIELDS_V3 = {"path", "size", "mode", "sha256", "chunks", "nonce_prefix", "ciphertext_sha256"}
 _DIR_FIELDS = {"path", "mode"}
 
 
@@ -191,10 +205,110 @@ def _write_manifest(bundle: Path, manifest: dict) -> None:
     os.replace(temporary, bundle / "manifest.json")
 
 
+def _chunk_aad(key_id: str, path: str, chunk_size: int, index: int, final: bool) -> bytes:
+    """Binds schema, key id, path, chunk size, chunk position and the final-chunk flag (canonical JSON). Reordered,
+    duplicated, moved or truncated chunks therefore fail authentication on their own."""
+    return CHUNK_AAD_PREFIX + _canonical({"schema": SCHEMA_V3, "key_id": key_id, "path": path, "chunk_size": chunk_size,
+                                          "index": index, "final": final})
+
+
+def _chunk_nonce(prefix: bytes, index: int) -> bytes:
+    """A 4-byte per-file prefix (unique within the bundle) and a 64-bit chunk counter under a fresh per-bundle key."""
+    return prefix + index.to_bytes(8, "big")
+
+
+def _chunk_count(size: int, chunk_size: int) -> int:
+    return max(1, -(-size // chunk_size))  # an empty file is one empty final chunk
+
+
+def _read_full(handle, size: int) -> bytes:
+    """Read exactly `size` bytes unless EOF comes first (pipes return short reads)."""
+    parts, remaining = [], size
+    while remaining:
+        part = handle.read(remaining)
+        if not part:
+            break
+        parts.append(part)
+        remaining -= len(part)
+    return b"".join(parts)
+
+
+def _check_chunk_size(chunk_size) -> int:
+    if type(chunk_size) is not int or not 1 <= chunk_size <= MAX_CHUNK_SIZE:
+        raise ValueError(f"chunk size must be an integer from 1 to {MAX_CHUNK_SIZE} bytes")
+    return chunk_size
+
+
+def _encrypt_chunked(source, target, dek: bytes, key_id: str, path: str, chunk_size: int, prefix: bytes) -> dict:
+    """Encrypt `source` (a file or pipe) into `target` chunk by chunk; holds at most two chunks."""
+    plain_hash, cipher_hash = hashlib.sha256(), hashlib.sha256()
+    size, index = 0, 0
+    current = _read_full(source, chunk_size)
+    while True:
+        following = _read_full(source, chunk_size) if len(current) == chunk_size else b""
+        final = not following
+        ciphertext = encrypt_with_nonce(dek, _chunk_nonce(prefix, index),
+                                        _chunk_aad(key_id, path, chunk_size, index, final), current)
+        target.write(ciphertext)
+        plain_hash.update(current)
+        cipher_hash.update(ciphertext)
+        size += len(current)
+        index += 1
+        if final:
+            break
+        current = following
+    if index != _chunk_count(size, chunk_size):
+        raise ValueError(f"chunk accounting failed for {path}")
+    return {"size": size, "sha256": plain_hash.hexdigest(), "chunks": index,
+            "ciphertext_sha256": cipher_hash.hexdigest()}
+
+
+def _open_exclusive(path: Path, mode: int = 0o600):
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    return os.fdopen(os.open(path, flags, mode), "wb")
+
+
+def _run_nats_backup_command(argv: list[str], encrypt) -> dict:
+    """Run a NATS backup command that writes its stream to an inherited pipe (`/dev/fd/N` is appended) and encrypt the
+    stream as it arrives. Nothing is written in plaintext. A non-zero exit, or an encryption failure, fails the backup."""
+    read_fd, write_fd = os.pipe()
+    try:
+        process = subprocess.Popen(argv + [f"/dev/fd/{write_fd}"], pass_fds=(write_fd,))
+    except OSError:
+        os.close(read_fd)
+        raise ValueError("NATS backup command could not be started") from None
+    finally:
+        os.close(write_fd)
+    try:
+        with os.fdopen(read_fd, "rb") as source:
+            result = encrypt(source)
+    except BaseException:
+        process.kill()
+        process.wait()
+        raise
+    if process.wait() != 0:
+        raise ValueError("NATS backup command failed; no bundle was written")
+    return result
+
+
 def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | str,
-                      nats_json: Path | str | None = None) -> dict:
-    """Write a new encrypted v2 bundle. Reads the keyring's active generation only."""
+                      nats_json: Path | str | None = None, *, nats_command: list[str] | None = None,
+                      schema: str = SCHEMA_V3, chunk_size: int = DEFAULT_CHUNK_SIZE) -> dict:
+    """Write a new encrypted bundle (v3 chunked by default). Reads the keyring's active generation only.
+
+    `nats_json` encrypts an existing NATS payload file; `nats_command` (v3 only) runs a command that streams the NATS
+    payload into a pipe, so no plaintext NATS payload is ever written to scratch space. `schema=SCHEMA_V2` writes the
+    previous single-blob format and exists for compatibility tests and drills only.
+    """
     source, bundle = Path(source), Path(bundle)
+    if schema not in ENCRYPTED_SCHEMAS:
+        raise ValueError("unsupported backup bundle schema")
+    if nats_json is not None and nats_command is not None:
+        raise ValueError("pass either a NATS payload file or a NATS backup command, not both")
+    if nats_command is not None and schema != SCHEMA_V3:
+        raise ValueError("a streamed NATS backup command requires the chunked bundle format")
+    if schema == SCHEMA_V3:
+        _check_chunk_size(chunk_size)
     _, key_id, entry = load_keyring(Path(key_file))
     _, auth_key = _entry_keys(entry)
     if not source.is_dir():
@@ -207,11 +321,13 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
         nats_source = Path(nats_json)
         if nats_source.is_symlink() or not nats_source.is_file():
             raise ValueError(f"NATS backup payload is not a regular file: {nats_source}")
-        items.append(("nats/nats.json", nats_source))
+        items.append((NATS_PAYLOAD, nats_source))
+    elif nats_command is not None:
+        items.append((NATS_PAYLOAD, None))
     items.sort(key=lambda item: item[0])
     _check_path_set([relative for relative, _ in items])
     dir_modes = _source_dirs(source)
-    if nats_json is not None:
+    if nats_json is not None or nats_command is not None:
         dir_modes.setdefault("nats", 0o700)
     for relative, _ in items:  # every ancestor directory is recorded so restore never invents a mode
         parts = relative.split("/")
@@ -220,23 +336,45 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
     _check_dirs_and_files(list(dir_modes), [relative for relative, _ in items])
     bundle.parent.mkdir(parents=True, exist_ok=True)
     dek = new_dek()
-    wrap_nonce, wrapped = wrap_dek(entry, key_id, dek)
+    wrap_nonce, wrapped = wrap_dek(entry, key_id, dek, None if schema == SCHEMA_V2 else schema)
     staging = Path(tempfile.mkdtemp(prefix=f".{bundle.name}.staging-", dir=bundle.parent))
     try:
         (staging / "files").mkdir(mode=0o700)
-        records = []
+        records, prefixes = [], set()
         for relative, path in items:
-            plaintext = path.read_bytes()
-            mode = 0o600 if path is nats_source else stat.S_IMODE(path.lstat().st_mode) & 0o777
-            sha256 = hashlib.sha256(plaintext).hexdigest()
-            nonce, ciphertext = encrypt_payload(dek, _file_aad(key_id, relative, len(plaintext), sha256), plaintext)
+            from_command = path is None
+            mode = 0o600 if (from_command or path is nats_source) else stat.S_IMODE(path.lstat().st_mode) & 0o777
             target = staging / "files" / (relative + ".aead")
             target.parent.mkdir(parents=True, exist_ok=True)
-            _write_exclusive(target, ciphertext)
-            records.append({"path": relative, "size": len(plaintext), "mode": mode, "sha256": sha256, "nonce": _b64(nonce),
-                            "ciphertext_sha256": hashlib.sha256(ciphertext).hexdigest()})
+            if schema == SCHEMA_V2:
+                plaintext = path.read_bytes()
+                sha256 = hashlib.sha256(plaintext).hexdigest()
+                nonce, ciphertext = encrypt_payload(dek, _file_aad(key_id, relative, len(plaintext), sha256), plaintext)
+                _write_exclusive(target, ciphertext)
+                records.append({"path": relative, "size": len(plaintext), "mode": mode, "sha256": sha256,
+                                "nonce": _b64(nonce), "ciphertext_sha256": hashlib.sha256(ciphertext).hexdigest()})
+                continue
+            prefix = os.urandom(NONCE_PREFIX_BYTES)
+            while prefix in prefixes:
+                prefix = os.urandom(NONCE_PREFIX_BYTES)
+            prefixes.add(prefix)
+
+            def encrypt(handle, relative=relative, target=target, prefix=prefix):
+                with _open_exclusive(target) as out:
+                    result = _encrypt_chunked(handle, out, dek, key_id, relative, chunk_size, prefix)
+                    out.flush()
+                    os.fsync(out.fileno())
+                return result
+            if from_command:
+                info = _run_nats_backup_command(list(nats_command), encrypt)
+            else:
+                with path.open("rb") as handle:
+                    info = encrypt(handle)
+            records.append({"path": relative, "size": info["size"], "mode": mode, "sha256": info["sha256"],
+                            "chunks": info["chunks"], "nonce_prefix": _b64(prefix),
+                            "ciphertext_sha256": info["ciphertext_sha256"]})
         manifest = {
-            "schema": SCHEMA_V2,
+            "schema": schema,
             "key_id": key_id,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "nondeterministic_fields": NONDETERMINISTIC,
@@ -245,6 +383,8 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
             "dirs": [{"path": d, "mode": dir_modes[d]} for d in sorted(dir_modes)],
             "files": records,
         }
+        if schema == SCHEMA_V3:
+            manifest["chunk_size"] = chunk_size
         manifest["hmac_sha256"] = _manifest_mac(manifest, auth_key)
         _write_manifest(staging, manifest)
         _fsync_directory(staging)
@@ -252,7 +392,7 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
         _fsync_directory(bundle.parent)
         return manifest
     except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(staging, ignore_errors=True)  # an unfinished bundle is never published; the source is untouched
         raise
 
 
@@ -269,11 +409,11 @@ def _read_manifest(bundle: Path) -> dict:
     return doc
 
 
-def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
-    """Authenticate a v2 manifest against the keyring and return (data key, validated file records)."""
-    if not isinstance(manifest, dict) or set(manifest) != _MANIFEST_FIELDS:
+def _authenticate_manifest(keyring, manifest, fields: set, schema: str) -> tuple[str, dict]:
+    """Shared field-set, schema, key-generation and HMAC checks; returns (key id, keyring entry)."""
+    if not isinstance(manifest, dict) or set(manifest) != fields:
         raise ValueError("backup manifest is malformed")
-    if manifest["schema"] != SCHEMA_V2:
+    if manifest["schema"] != schema:
         raise ValueError("unsupported backup manifest schema")
     key_id = _check_key_id(manifest["key_id"])
     generations = keyring.get("keys") if isinstance(keyring, dict) else None
@@ -287,23 +427,23 @@ def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
         raise ValueError("backup authentication failed: wrong key or modified manifest")
     if not isinstance(manifest["created_at"], str) or manifest["nondeterministic_fields"] != NONDETERMINISTIC:
         raise ValueError("backup manifest is malformed")
-    records = manifest["files"]
-    if not isinstance(records, list):
+    if not isinstance(manifest["files"], list):
         raise ValueError("backup manifest is malformed")
-    nonces = set()
-    for record in records:
-        if not isinstance(record, dict) or set(record) != _RECORD_FIELDS:
+    return key_id, entry
+
+
+def _check_record_common(record, fields: set) -> None:
+    if not isinstance(record, dict) or set(record) != fields:
+        raise ValueError("backup manifest file record is malformed")
+    size = record["size"]
+    if type(size) is not int or size < 0 or type(record["mode"]) is not int or not 0 <= record["mode"] <= 0o777:
+        raise ValueError("backup manifest file record is malformed")
+    for name in ("sha256", "ciphertext_sha256"):
+        if not isinstance(record[name], str) or not _HEX64.fullmatch(record[name]):
             raise ValueError("backup manifest file record is malformed")
-        size = record["size"]
-        if type(size) is not int or size < 0 or type(record["mode"]) is not int or not 0 <= record["mode"] <= 0o777:
-            raise ValueError("backup manifest file record is malformed")
-        for name in ("sha256", "ciphertext_sha256"):
-            if not isinstance(record[name], str) or not _HEX64.fullmatch(record[name]):
-                raise ValueError("backup manifest file record is malformed")
-        nonce = _unb64(record["nonce"], 12, "file nonce")
-        if nonce in nonces:
-            raise ValueError("backup manifest reuses a file nonce")
-        nonces.add(nonce)
+
+
+def _check_manifest_layout(manifest: dict, records: list[dict]) -> None:
     dirs = manifest["dirs"]
     if not isinstance(dirs, list):
         raise ValueError("backup manifest is malformed")
@@ -320,8 +460,52 @@ def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
         parts = path.split("/")
         if any("/".join(parts[:i]) not in known for i in range(1, len(parts))):
             raise ValueError("backup manifest directory record is malformed")
+
+
+def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
+    """Authenticate a v2 manifest against the keyring and return (data key, validated file records)."""
+    key_id, entry = _authenticate_manifest(keyring, manifest, _MANIFEST_FIELDS, SCHEMA_V2)
+    records = manifest["files"]
+    nonces = set()
+    for record in records:
+        _check_record_common(record, _RECORD_FIELDS)
+        nonce = _unb64(record["nonce"], 12, "file nonce")
+        if nonce in nonces:
+            raise ValueError("backup manifest reuses a file nonce")
+        nonces.add(nonce)
+    _check_manifest_layout(manifest, records)
     dek = unwrap_dek(entry, key_id, manifest["wrap_nonce"], manifest["wrapped_dek"])
     return dek, records
+
+
+def _v3_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
+    """Authenticate a v3 manifest: chunk size bounds, per-file chunk counts consistent with explicit sizes, unique
+    nonce prefixes, and the same path/directory rules as v2."""
+    key_id, entry = _authenticate_manifest(keyring, manifest, _MANIFEST_FIELDS_V3, SCHEMA_V3)
+    chunk_size = manifest["chunk_size"]
+    if type(chunk_size) is not int or not 1 <= chunk_size <= MAX_CHUNK_SIZE:
+        raise ValueError("backup manifest chunk size is malformed")
+    records = manifest["files"]
+    prefixes = set()
+    for record in records:
+        _check_record_common(record, _RECORD_FIELDS_V3)
+        if type(record["chunks"]) is not int or record["chunks"] != _chunk_count(record["size"], chunk_size):
+            raise ValueError("backup manifest file record is malformed")
+        prefix = _unb64(record["nonce_prefix"], NONCE_PREFIX_BYTES, "file nonce prefix")
+        if prefix in prefixes:
+            raise ValueError("backup manifest reuses a file nonce")
+        prefixes.add(prefix)
+    _check_manifest_layout(manifest, records)
+    dek = unwrap_dek(entry, key_id, manifest["wrap_nonce"], manifest["wrapped_dek"], SCHEMA_V3)
+    return dek, records
+
+
+def check_encrypted_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
+    """Authenticate a v2 or v3 manifest and return (data key, validated file records)."""
+    schema = manifest.get("schema") if isinstance(manifest, dict) else None
+    if schema == SCHEMA_V3:
+        return _v3_check_manifest(keyring, manifest)
+    return _v2_check_manifest(keyring, manifest)
 
 
 def _v2_check_files(bundle: Path, records: list[dict]) -> None:
@@ -372,6 +556,76 @@ def _v2_read_payload(bundle: Path, dek: bytes, key_id: str, record: dict) -> byt
     return plaintext
 
 
+def _v3_iter_plaintext(bundle: Path, dek: bytes, manifest: dict, record: dict):
+    """Yield the authenticated plaintext of one v3 payload chunk by chunk (memory: one chunk).
+
+    Each chunk is AES-GCM authenticated on its own before it is yielded; its AAD binds its position and whether it is
+    the final chunk, so reordered, duplicated, moved or truncated chunks fail. After the last chunk the file length,
+    the whole-ciphertext hash and the whole-plaintext hash from the authenticated manifest are compared, and a
+    mismatch raises before the generator completes.
+    """
+    relative, size, chunks = record["path"], record["size"], record["chunks"]
+    chunk_size, key_id = manifest["chunk_size"], manifest["key_id"]
+    prefix = _unb64(record["nonce_prefix"], NONCE_PREFIX_BYTES, "file nonce prefix")
+    path = bundle / "files" / (relative + ".aead")
+    try:
+        handle = open(os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)), "rb")
+    except OSError:
+        raise ValueError(f"backup payload missing: {relative}") from None
+    with handle:
+        if os.fstat(handle.fileno()).st_size != size + chunks * TAG_BYTES:
+            raise ValueError(f"backup payload truncated or wrong size: {relative}")
+        plain_hash, cipher_hash = hashlib.sha256(), hashlib.sha256()
+        for index in range(chunks):
+            final = index == chunks - 1
+            length = (size - chunk_size * (chunks - 1) if final else chunk_size) + TAG_BYTES
+            ciphertext = _read_full(handle, length)
+            if len(ciphertext) != length:
+                raise ValueError(f"backup payload truncated or wrong size: {relative}")
+            cipher_hash.update(ciphertext)
+            try:
+                plaintext = decrypt_payload(dek, _chunk_aad(key_id, relative, chunk_size, index, final),
+                                            _chunk_nonce(prefix, index), ciphertext)
+            except ValueError:
+                raise ValueError(f"backup payload chunk {index} failed authentication: {relative}") from None
+            plain_hash.update(plaintext)
+            yield plaintext
+        if handle.read(1):
+            raise ValueError(f"backup payload truncated or wrong size: {relative}")
+    if not hmac.compare_digest(cipher_hash.hexdigest(), record["ciphertext_sha256"]):
+        raise ValueError(f"backup payload hash mismatch: {relative}")
+    if not hmac.compare_digest(plain_hash.hexdigest(), record["sha256"]):
+        raise ValueError(f"backup payload plaintext does not match its authenticated size or hash: {relative}")
+
+
+def _v3_copy_out(bundle: Path, dek: bytes, manifest: dict, record: dict, write) -> None:
+    """Write a v3 payload through `write`, holding back the last chunk until the whole-payload hashes have matched,
+    so a consumer never receives a complete stream that failed final verification."""
+    pending = None
+    for plaintext in _v3_iter_plaintext(bundle, dek, manifest, record):
+        if pending is not None:
+            write(pending)
+        pending = plaintext
+    if pending:
+        write(pending)
+
+
+def _v3_write_file(bundle: Path, dek: bytes, manifest: dict, record: dict, target: Path) -> None:
+    with _open_exclusive(target) as out:
+        _v3_copy_out(bundle, dek, manifest, record, out.write)
+        out.flush()
+        os.fsync(out.fileno())
+
+
+def _verify_payloads(bundle: Path, dek: bytes, manifest: dict, records: list[dict]) -> None:
+    for record in records:
+        if manifest["schema"] == SCHEMA_V3:
+            for _ in _v3_iter_plaintext(bundle, dek, manifest, record):
+                pass  # authenticate every chunk; no plaintext is kept or written
+        else:
+            _v2_read_payload(bundle, dek, manifest["key_id"], record)
+
+
 def _verify_v1(bundle: Path, key_file: Path, manifest: dict) -> dict:
     key = _read_key(key_file)
     if not isinstance(manifest.get("files"), list):
@@ -414,13 +668,12 @@ def verify_bundle(bundle: Path | str, key_file: Path | str, legacy_hmac: bool = 
         return _verify_v1(bundle, Path(key_file), manifest)
     if legacy_hmac:
         raise ValueError("--legacy-hmac only applies to legacy v1 bundles")
-    if schema != SCHEMA_V2:
+    if schema not in ENCRYPTED_SCHEMAS:
         raise ValueError("unsupported backup manifest schema")
     keyring, _, _ = load_keyring(Path(key_file))
-    dek, records = _v2_check_manifest(keyring, manifest)
+    dek, records = check_encrypted_manifest(keyring, manifest)
     _v2_check_files(bundle, records)
-    for record in records:
-        _v2_read_payload(bundle, dek, manifest["key_id"], record)
+    _verify_payloads(bundle, dek, manifest, records)
     return manifest
 
 
@@ -455,7 +708,7 @@ def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, dest
         raise ValueError("decryption staging directory must be owned by this user with mode 0700")
     if any(destination.iterdir()):
         raise ValueError("decryption staging directory must be empty")
-    dek, records = _v2_check_manifest(keyring, manifest)
+    dek, records = check_encrypted_manifest(keyring, manifest)
     _v2_check_files(bundle, records)
     try:
         modes = {destination: stat.S_IMODE(info.st_mode)}
@@ -471,9 +724,11 @@ def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, dest
         for record in records:
             if record["path"] in skip:
                 continue
-            plaintext = _v2_read_payload(bundle, dek, manifest["key_id"], record)
             target = destination / record["path"]
-            _write_exclusive(target, plaintext, 0o600)
+            if manifest["schema"] == SCHEMA_V3:
+                _v3_write_file(bundle, dek, manifest, record, target)  # streamed, one chunk at a time
+            else:
+                _write_exclusive(target, _v2_read_payload(bundle, dek, manifest["key_id"], record), 0o600)
             os.chmod(target, record["mode"])
         for directory in sorted(modes, key=lambda p: len(p.parts), reverse=True):
             _fsync_directory(directory)
@@ -585,7 +840,7 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
     if has_contents and not replace:
         raise ValueError(f"migration destination is not empty (use replace to retain a rollback): {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if manifest["schema"] == SCHEMA_V2:
+    if manifest["schema"] in ENCRYPTED_SCHEMAS:
         keyring, _, _ = load_keyring(Path(key_file))
         staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
         try:
@@ -618,19 +873,73 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
     return _write_journal(destination, installed["rollback_path"], manifest)
 
 
-def decrypt_nats_payload(bundle: Path | str, key_file: Path | str, output: Path | str) -> None:
-    """Authenticate a v2 bundle completely, then write only its NATS payload (mode 0600) to a new `output` path."""
-    bundle, output = Path(bundle), Path(output)
-    manifest = verify_bundle(bundle, key_file)
-    if manifest["schema"] != SCHEMA_V2:
-        raise ValueError("NATS payload extraction requires a v2 bundle")
+def _nats_record(bundle: Path, key_file: Path | str) -> tuple[dict, bytes, dict]:
+    """Authenticate an encrypted bundle's manifest and file set; return (manifest, data key, NATS payload record)."""
+    manifest = _read_manifest(bundle)
+    if manifest.get("schema") not in ENCRYPTED_SCHEMAS:
+        raise ValueError("NATS payload extraction requires an encrypted (v2 or v3) bundle")
     keyring, _, _ = load_keyring(Path(key_file))
-    dek, records = _v2_check_manifest(keyring, manifest)
+    dek, records = check_encrypted_manifest(keyring, manifest)
+    _v2_check_files(bundle, records)
     for record in records:
         if record["path"] == NATS_PAYLOAD:
-            _write_exclusive(output, _v2_read_payload(bundle, dek, manifest["key_id"], record))
-            return
+            return manifest, dek, record
     raise ValueError("bundle has no NATS payload")
+
+
+def decrypt_nats_payload(bundle: Path | str, key_file: Path | str, output: Path | str) -> None:
+    """Authenticate an encrypted bundle completely, then write only its NATS payload (mode 0600) to a new `output`
+    path, or stream it to standard output when `output` is "-". A v3 payload is streamed chunk by chunk."""
+    bundle = Path(bundle)
+    verify_bundle(bundle, key_file)
+    manifest, dek, record = _nats_record(bundle, key_file)
+    if str(output) == "-":
+        out = sys.stdout.buffer
+        if manifest["schema"] == SCHEMA_V3:
+            _v3_copy_out(bundle, dek, manifest, record, out.write)
+        else:
+            out.write(_v2_read_payload(bundle, dek, manifest["key_id"], record))
+        out.flush()
+        return
+    output = Path(output)
+    if manifest["schema"] == SCHEMA_V3:
+        _v3_write_file(bundle, dek, manifest, record, output)
+    else:
+        _write_exclusive(output, _v2_read_payload(bundle, dek, manifest["key_id"], record))
+
+
+def stream_nats_payload_to_command(bundle: Path | str, key_file: Path | str, argv: list[str],
+                                   after: tuple[str, ...] = ()) -> None:
+    """Decrypt a v3 bundle's NATS payload into a pipe read by `argv` (`/dev/fd/N`, then `after`, is appended).
+
+    No plaintext file is written. The last chunk is withheld until the whole payload has verified, so the command
+    cannot see a complete stream that failed authentication. Raises if decryption fails, the command stops reading
+    early, or it exits non-zero."""
+    bundle = Path(bundle)
+    manifest, dek, record = _nats_record(bundle, key_file)
+    if manifest["schema"] != SCHEMA_V3:
+        raise ValueError("streamed NATS restore requires a chunked v3 bundle")
+    read_fd, write_fd = os.pipe()
+    try:
+        process = subprocess.Popen(argv + [f"/dev/fd/{read_fd}", *after], pass_fds=(read_fd,))
+    except OSError:
+        os.close(write_fd)
+        raise ValueError("NATS command could not be started") from None
+    finally:
+        os.close(read_fd)
+    failure = None
+    try:
+        with os.fdopen(write_fd, "wb") as out:
+            _v3_copy_out(bundle, dek, manifest, record, out.write)
+    except BrokenPipeError:
+        failure = ValueError("NATS command stopped reading before the payload ended")
+    except BaseException as exc:  # closing the pipe early makes the command see a truncated stream and fail
+        process.wait()
+        raise exc
+    if process.wait() != 0:
+        raise ValueError("NATS command failed")
+    if failure is not None:
+        raise failure
 
 
 def rollback_files(journal: dict) -> None:
@@ -657,20 +966,37 @@ def rollback_files(journal: dict) -> None:
     _fsync_directory(destination.parent)
 
 
+_PURGE = "JetStream may be partly populated and needs a manual purge before this restore is retried"
+
+
 def _nats_hook(args):
-    import shlex
-    import subprocess
     argv = shlex.split(args.nats_restore_command)
+    check_argv = shlex.split(args.nats_check_command) if args.nats_check_command else None
 
     def call(extra: list[str]) -> None:
         if subprocess.run(argv + extra).returncode != 0:
-            raise ValueError("NATS restore command failed; JetStream may be partly populated and needs a manual "
-                             "purge before this restore is retried")
+            raise ValueError(f"NATS restore command failed; {_PURGE}")
 
     def run() -> None:
         legacy_payload = args.path / "files" / NATS_PAYLOAD
         if args.legacy_hmac:
             call([str(legacy_payload)])
+            return
+        if _read_manifest(args.path).get("schema") == SCHEMA_V3:
+            # Streamed: the payload never exists as a plaintext file. A pipe cannot be reread, so the complete
+            # authenticated stream is first validated offline (grammar, order, counts, original digests) by the check
+            # command, and only then streamed again into the restore command, which still re-validates every stream.
+            if check_argv is None:
+                raise ValueError("a chunked bundle restore needs --nats-check-command to validate the NATS payload "
+                                 "before JetStream is written")
+            try:
+                stream_nats_payload_to_command(args.path, args.key_file, check_argv)
+            except ValueError as exc:
+                raise ValueError(f"NATS payload validation failed before any JetStream write: {exc}") from None
+            try:
+                stream_nats_payload_to_command(args.path, args.key_file, argv, after=("-prechecked",))
+            except ValueError as exc:
+                raise ValueError(f"NATS restore command failed ({exc}); {_PURGE}") from None
             return
         private = Path(tempfile.mkdtemp(prefix=".wasl-nats-payload-"))
         try:
@@ -691,7 +1017,13 @@ def main() -> None:
         command.add_argument("--key-file", type=Path, required=True)
         if name == "backup":
             command.add_argument("bundle", type=Path)
-            command.add_argument("--nats-json", type=Path)
+            nats_source = command.add_mutually_exclusive_group()
+            nats_source.add_argument("--nats-json", type=Path, help="existing NATS payload file to encrypt")
+            nats_source.add_argument("--nats-command", help="shell-quoted command run with an inherited pipe path "
+                                     "(/dev/fd/N) appended; it streams the NATS payload, which is encrypted as it "
+                                     "arrives and never written to scratch in plaintext")
+            command.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE,
+                                 help=f"plaintext bytes per authenticated chunk (1..{MAX_CHUNK_SIZE})")
         if name in ("verify", "migrate"):
             command.add_argument("--legacy-hmac", action="store_true",
                                  help="explicitly accept a legacy HMAC-only v1 bundle (key file is the old HMAC key)")
@@ -699,18 +1031,25 @@ def main() -> None:
             command.add_argument("destination", type=Path)
             command.add_argument("--replace", action="store_true")
             command.add_argument("--nats-restore-command", help="shell-quoted command run, with the authenticated NATS "
-                                 "payload path appended, after files are staged and before they are installed")
+                                 "payload path appended, after files are staged and before they are installed; for "
+                                 "a chunked bundle the path is an inherited pipe and -prechecked is appended after it")
+            command.add_argument("--nats-check-command", help="shell-quoted offline validation command (for example "
+                                 "`wsi7 check-nats -bundle`) run on the streamed NATS payload of a chunked bundle "
+                                 "before the restore command; required for chunked bundles")
     rotate = sub.add_parser("rotate-key")
     rotate.add_argument("--key-file", type=Path, required=True)
     nats = sub.add_parser("extract-nats")
     nats.add_argument("bundle", type=Path)
-    nats.add_argument("output", type=Path)
+    nats.add_argument("output", help="new output file, or - to stream to standard output")
     nats.add_argument("--key-file", type=Path, required=True)
     rollback = sub.add_parser("rollback")
     rollback.add_argument("journal", type=Path)
     args = parser.parse_args()
+    report = sys.stdout
     if args.command == "backup":
-        result = write_file_bundle(args.path, args.bundle, args.key_file, args.nats_json)
+        result = write_file_bundle(args.path, args.bundle, args.key_file, args.nats_json,
+                                   nats_command=shlex.split(args.nats_command) if args.nats_command else None,
+                                   chunk_size=args.chunk_size)
     elif args.command == "verify":
         result = verify_bundle(args.path, args.key_file, args.legacy_hmac)
     elif args.command == "rotate-key":
@@ -718,13 +1057,18 @@ def main() -> None:
         return
     elif args.command == "extract-nats":
         decrypt_nats_payload(args.bundle, args.key_file, args.output)
-        result = {"output": str(args.output)}
+        result = {"output": args.output}
+        if args.output == "-":
+            report = sys.stderr  # standard output carries the payload
     elif args.command == "migrate":
+        if args.nats_check_command and not args.nats_restore_command:
+            raise ValueError("--nats-check-command requires --nats-restore-command")
         result = migrate_files(args.path, args.key_file, args.destination, args.replace, args.legacy_hmac,
                                _nats_hook(args) if args.nats_restore_command else None)
     else:
         result = rollback_files(json.loads(args.journal.read_text()))
-    print(json.dumps({"status": "ok", "command": args.command, "result": result}, sort_keys=True, default=str))
+    print(json.dumps({"status": "ok", "command": args.command, "result": result}, sort_keys=True, default=str),
+          file=report)
 
 
 if __name__ == "__main__":
