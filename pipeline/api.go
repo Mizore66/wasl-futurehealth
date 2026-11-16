@@ -87,6 +87,7 @@ type apiServer struct {
 	bookingCalendar         string
 	bookingSlots            map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
 	sawBookingStamp         bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
+	bookingStampRank        int                       // highest readiness policy accepted so far; a later stamp never downgrades
 	recovery                recoveryProjection
 	fixtures                map[string]string
 	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
@@ -2168,7 +2169,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		var booking *bookingTransition
 		if bookingActionName(kind) {
-			if failure := s.bookingReadinessGateLocked(c, kind, data); failure != nil {
+			if failure := s.bookingReadinessGateLocked(c, kind, bookingPolicyCurrent, data); failure != nil {
 				return failure.code, failure.body
 			}
 			var failure *bookingFailure
@@ -2183,7 +2184,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
 			"action": actionForKind(kind), "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
 		if bookingAcquisition(kind) {
-			ev["booking_policy"] = bookingPolicyReadiness1 // server-owned, included BEFORE append hashing
+			ev["booking_policy"] = bookingPolicyCurrent // server-owned, included BEFORE append hashing
 		}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
@@ -2357,7 +2358,8 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["type"] != coordEventType {
 		return fmt.Errorf("unknown event type %v", ev["type"])
 	}
-	stamped, err := coordinatorBookingPolicy(ev)
+	policy, err := coordinatorBookingPolicy(ev)
+	stamped := policy != ""
 	if err != nil {
 		return err
 	}
@@ -2422,8 +2424,11 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		if bookingAcquisition(kind) && !stamped && s.sawBookingStamp {
 			return errors.New("unstamped booking acquisition after the first readiness policy stamp")
 		}
+		if stamped && bookingPolicyRank(policy) < s.bookingStampRank {
+			return fmt.Errorf("booking policy %s after a later readiness policy stamp", policy)
+		}
 		if stamped {
-			if failure := s.bookingReadinessGateLocked(c, kind, norm); failure != nil {
+			if failure := s.bookingReadinessGateLocked(c, kind, policy, norm); failure != nil {
 				return fmt.Errorf("invalid stamped booking readiness: %v", failure.body["error"])
 			}
 		}
@@ -2439,6 +2444,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	if stamped {
 		s.sawBookingStamp = true // only after ALL guards accepted this acquisition
+		if rank := bookingPolicyRank(policy); rank > s.bookingStampRank {
+			s.bookingStampRank = rank
+		}
 	}
 	c.applyOverlay(ev)
 	return nil

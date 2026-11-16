@@ -451,6 +451,13 @@ func bookingReservationActive(c *apiCase) bool {
 // referral becomes eligible only when a canonical accepted re-referral moves the case out of referral_rejected, so a
 // hand-off reply or referrer_acted alone never counts. An inadequate case waits for its pending confirming review.
 func bookingReadiness(c *apiCase) string {
+	return bookingReadinessUnder(c, bookingPolicyCurrent)
+}
+
+// bookingReadinessUnder applies the readiness rule a given policy stamp was written under. readiness/1 predates the
+// receiving-unit answer checks (#168): replay of a readiness/1 acquisition must not fail because a later, stricter
+// rule would now refuse it, so the ledger-return hold applies only from readiness/2.
+func bookingReadinessUnder(c *apiCase, policy string) string {
 	if c == nil {
 		return ""
 	}
@@ -461,7 +468,7 @@ func bookingReadiness(c *apiCase) string {
 			reason += " (hand-off " + c.last.Handoff.Status + ")"
 		}
 		return reason
-	case referralReturned(c):
+	case policy != bookingPolicyReadiness1 && referralReturned(c):
 		return "the receiving unit returned this referral: the hand-off to the referrer is unresolved, and a referrer answer alone does not make the procedure bookable"
 	case c.State == "inadequate" && c.last != nil && len(c.last.Pending) > 0:
 		return "a pending review must confirm the repeat before a simulated reservation"
@@ -469,7 +476,27 @@ func bookingReadiness(c *apiCase) string {
 	return ""
 }
 
-const bookingPolicyReadiness1 = "readiness/1"
+// Booking readiness policy stamps. Live acquisitions are stamped bookingPolicyCurrent before append hashing; replay
+// re-checks each stamped acquisition under the rule its stamp names, never under a later stricter rule.
+//   - readiness/1: referral_rejected and pending-confirming-review holds.
+//   - readiness/2: readiness/1 plus the receiving-unit answer checks (#168): a ledger `return` holds readiness, and a
+//     slot must meet a conditional acceptance's slot-checkable conditions.
+const (
+	bookingPolicyReadiness1 = "readiness/1"
+	bookingPolicyReadiness2 = "readiness/2"
+	bookingPolicyCurrent    = bookingPolicyReadiness2
+)
+
+// bookingPolicyRank orders known stamps; 0 means unknown. A ledger never moves to a lower stamp.
+func bookingPolicyRank(policy string) int {
+	switch policy {
+	case bookingPolicyReadiness1:
+		return 1
+	case bookingPolicyReadiness2:
+		return 2
+	}
+	return 0
+}
 
 func bookingAcquisition(kind string) bool {
 	return kind == "booking_accept" || kind == "booking_choose_slot" || kind == "booking_reschedule"
@@ -477,43 +504,47 @@ func bookingAcquisition(kind string) bool {
 
 // coordinatorBookingPolicy validates ONLY coordinator_action envelopes. Other
 // protocols and untyped legacy review history retain their existing schemas.
-func coordinatorBookingPolicy(ev map[string]interface{}) (bool, error) {
+// It returns the validated stamp, or "" for an unstamped event.
+func coordinatorBookingPolicy(ev map[string]interface{}) (string, error) {
 	policy, stamped := ev["booking_policy"]
 	want := 13
 	if stamped {
 		want++
 	}
 	if len(ev) != want {
-		return false, errors.New("invalid coordinator envelope key set")
+		return "", errors.New("invalid coordinator envelope key set")
 	}
 	for _, key := range [...]string{"type", "kind", "case", "data", "role", "actor", "action", "at", "head", "seq", "mode", "prev", "hash"} {
 		if _, present := ev[key]; !present {
-			return false, fmt.Errorf("missing coordinator envelope key %s", key)
+			return "", fmt.Errorf("missing coordinator envelope key %s", key)
 		}
 	}
 	if stamped {
 		kind, _ := ev["kind"].(string)
 		if !bookingAcquisition(kind) {
-			return false, errors.New("booking_policy on a non-acquisition event")
+			return "", errors.New("booking_policy on a non-acquisition event")
 		}
-		if value, ok := policy.(string); !ok || value != bookingPolicyReadiness1 {
-			return false, errors.New("unknown or non-string booking_policy")
+		value, ok := policy.(string)
+		if !ok || bookingPolicyRank(value) == 0 {
+			return "", errors.New("unknown or non-string booking_policy")
 		}
+		return value, nil
 	}
-	return stamped, nil
+	return "", nil
 }
 
 // Admission policy, not historical occupancy validation. Call under s.mu after
 // ledger/head checks, immediately before preparing every LIVE booking transition;
 // replay calls it only for a validated stamped acquisition.
-// It also rejects a slot that misses a conditional acceptance's slot-checkable conditions (api_referral.go).
-func (s *apiServer) bookingReadinessGateLocked(c *apiCase, kind string, data map[string]interface{}) *bookingFailure {
+// policy is the stamp the acquisition carries (live: bookingPolicyCurrent). From readiness/2 it also rejects a slot
+// that misses a conditional acceptance's slot-checkable conditions (api_referral.go).
+func (s *apiServer) bookingReadinessGateLocked(c *apiCase, kind, policy string, data map[string]interface{}) *bookingFailure {
 	if bookingAcquisition(kind) {
-		if reason := bookingReadiness(c); reason != "" {
+		if reason := bookingReadinessUnder(c, policy); reason != "" {
 			return bookingFail(409, "not clinically ready for a simulated reservation: "+reason, "readiness", map[string]interface{}{"booking": s.bookingSummaryLocked(c)})
 		}
 		slotID, _ := data["slot_id"].(string)
-		if candidate := s.candidateByID(c.ID, slotID); candidate != nil {
+		if candidate := s.candidateByID(c.ID, slotID); policy != bookingPolicyReadiness1 && candidate != nil {
 			if unmet := referralSlotUnmet(c, candidate); len(unmet) > 0 {
 				return bookingFail(409, "the simulated slot does not meet the receiving unit's acceptance conditions: "+strings.Join(unmet, ", "),
 					"referral_conditions", map[string]interface{}{"unmet_conditions": unmet, "booking": s.bookingSummaryLocked(c)})
