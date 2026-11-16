@@ -152,6 +152,9 @@ func hasCommunicationRecord(c *apiCase) bool { return c.ov.notification != nil |
 
 // communicationPreconditionLocked holds the case-state rules of both actions, shared by the write path and replay.
 // `at` is the event's recording time: a communication cannot be recorded before it happened.
+// communicationClockSkew tolerates a browser clock slightly ahead of the API when it stamps occurred_at at the click.
+const communicationClockSkew = 2 * time.Minute
+
 func (s *apiServer) communicationPreconditionLocked(c *apiCase, kind string, data map[string]interface{}, at time.Time) *actionRefusal {
 	if c.last == nil {
 		return &actionRefusal{409, communicationConflict, "the case has no current decision"}
@@ -165,7 +168,7 @@ func (s *apiServer) communicationPreconditionLocked(c *apiCase, kind string, dat
 		}
 	}
 	occurred, _ := time.Parse(time.RFC3339, data["occurred_at"].(string))
-	if occurred.After(at) {
+	if occurred.After(at.Add(communicationClockSkew)) {
 		return &actionRefusal{400, "", "occurred_at must not be in the future"}
 	}
 	if occurred.Before(dayDate(c.SRDay)) {

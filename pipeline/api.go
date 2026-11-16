@@ -770,8 +770,9 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		m["dropoff"], m["canonical_dropoff"] = servedDropoffLocked(c), c.Dropoff
 		m["escalations"] = s.servedEscalationsLocked(c)
 	}
-	if servedDropoffLocked(c) == "never_notified" {
+	if servedDropoffLocked(c) == "never_notified" && s.contactGuardLocked(c).Allowed {
 		// The approved wording a staff-assisted notification must use (api_communication.go); read it, never improvise.
+		// Served only where the notification could be recorded: without contact permission the write is refused anyway.
 		if tpl := notificationTemplateFor(c, TemplateVersion); tpl != "" {
 			m["notification_template"] = tpl
 		}

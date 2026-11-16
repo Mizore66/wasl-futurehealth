@@ -58,6 +58,24 @@ func communicationRun(t *testing.T) string {
 
 func ago(d time.Duration) string { return time.Now().UTC().Add(-d).Format(time.RFC3339) }
 
+// The approved wording is served only where a notification could be recorded, and a browser clock a little
+// ahead of the API does not refuse a notification stamped at the click.
+func TestCommunicationTemplateServedOnlyWhenRecordableAndClockSkewTolerated(t *testing.T) {
+	run := communicationRun(t)
+	s, srv := serveAgent(t, run)
+	if tpl := servedSummary(s, agentLoop("1"))["notification_template"]; tpl != "fitfu-notify-v2/ar" {
+		t.Fatalf("granted never_notified case: notification_template %v", tpl)
+	}
+	if tpl, ok := servedSummary(s, agentLoop("3"))["notification_template"]; ok {
+		t.Fatalf("no contact permission: notification_template must not be served, got %v", tpl)
+	}
+	l := agentLoop("1")
+	early := strings.Replace(notifyBody(headOf(s, l), "fitfu-notify-v2/ar"), ago(time.Hour), time.Now().UTC().Add(30*time.Second).Format(time.RFC3339), 1)
+	if code, m := coord(t, srv, l, early); code != 201 {
+		t.Fatalf("occurred_at 30s ahead of the API clock: %d %v", code, m)
+	}
+}
+
 func notifyBody(head, tpl string, extra ...string) string {
 	fields := append([]string{`"action":"initial_notification"`, `"occurred_at":"` + ago(time.Hour) + `"`, `"channel":"phone"`,
 		`"template":"` + tpl + `"`, `"identity_check":"name_and_dob"`}, extra...)
