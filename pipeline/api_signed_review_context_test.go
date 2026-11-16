@@ -43,6 +43,7 @@ func TestAPIBreastReadSurvivesConflictingTrackingRetirement(t *testing.T) {
 	}
 	e := &irEnv{s: s, h: h, run: s.run, path: "/api/cases/" + url.PathEscape(c.ID)}
 	item := s.queue[c.ID][0].ItemID
+	seedReportSource(t, s, "ahs-mushrif/DiagnosticReport/signed-screen")
 	read := e.must(t, irClinA, irBody(item, "B4", "r1", ""), 201)
 	rd := read["review"].(map[string]interface{})
 	signed, hash := rd["head_signed"].(string), rd["hash"].(string)
@@ -172,13 +173,19 @@ func TestHistoricalReviewLabelsUseSignedProgramme(t *testing.T) {
 		for _, label := range labels {
 			t.Run(programme+"/"+label, func(t *testing.T) {
 				e := signedProgrammeIR(t, programme)
-				r1 := e.must(t, irClinA, irBody(irEvItem, label, "r1", ""), 201)
+				item := irEvItem
+				if programme == "crc" {
+					var ids sourceBoundIRIDs202
+					e, ids = newSourceBoundIR202(t, false)
+					item = ids.Evidence
+				}
+				r1 := e.must(t, irClinA, irBody(item, label, "r1", ""), 201)
 				second := "inadequate"
 				if label == second {
 					second = "adequate"
 				}
-				r2 := e.must(t, irClinB, irBody(irEvItem, second, "r2", stateOf(r1)["head"].(string)), 201)
-				e.must(t, irSC, irBody(irEvItem, label, "r3", stateOf(r2)["head"].(string)), 201)
+				r2 := e.must(t, irClinB, irBody(item, second, "r2", stateOf(r1)["head"].(string)), 201)
+				e.must(t, irSC, irBody(item, label, "r3", stateOf(r2)["head"].(string)), 201)
 				before := actRead(t, filepath.Join(e.run, "api_reviews.ndjson"))
 				retired := retiredReviewDecision(e.s)
 				retired.Prog, retired.RequestStatus, retired.RequestConflict = "", "conflict", true
@@ -188,7 +195,7 @@ func TestHistoricalReviewLabelsUseSignedProgramme(t *testing.T) {
 				if s.ledgerErr != "" {
 					t.Fatalf("historical %s label %q failed at signed head: %s", programme, label, s.ledgerErr)
 				}
-				st := s.rstates[reviewQuestionKey{irEvItem, "evidence"}]
+				st := s.rstates[reviewQuestionKey{item, "evidence"}]
 				if st == nil || st.State != rsResolvedSenior || len(st.Reads) != 3 || st.Reads[2].Decision != label {
 					t.Fatalf("r1/r2/r3 did not replay: %+v", st)
 				}

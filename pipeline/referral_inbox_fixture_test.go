@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-var writeReferralControls = flag.Bool("write-referral-controls-v2", false, "create version2 explicitly synthetic referral inbox controls; historical version1 is immutable")
+var writeReferralControls = flag.Bool("write-referral-controls-v3", false, "create version3 explicitly synthetic referral integration provenance; historical version1/version2 controls are immutable")
 
 // This fixture begins at the canonical facts seam, NOT the clinical ingest/linker/reader.
 // Its report verdict is an explicitly synthetic input; neither a real reader result nor
@@ -202,6 +202,9 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			if summary["state"] != "inadequate" || summary["dropoff"] != "inadequate" {
 				t.Fatalf("held control was not held: %v", summary)
 			}
+			if current["inadequate_day"] != float64(119) {
+				t.Fatalf("held control lost its clinical examination anchor: %v", current["inadequate_day"])
+			}
 			held = summary
 		case strings.HasSuffix(id, "9004"):
 			if summary["dropoff"] != "referral_rejected" || current["handoff"] != nil {
@@ -230,34 +233,63 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 		"kind":                      "explicitly synthetic facts-seam producer controls; not medical evidence",
 		"producer":                  "ClosureCore.Apply -> signed OutEnvelope/out_log -> loadAPI -> authenticated GET handler (httptest recorder, no socket)",
 		"source_head_at_generation": strings.TrimSpace(string(head)),
-		"accepted_main":             "ac815cb868f4fbbcea0b6ed2233c1296306d9b38",
-		"contract_version":          2,
-		"supersedes_record_sha256":  "9b7616a9a44e8cd65f9f17325255b301cc9a8d1f37e46d5ea2b4c7fb9d396200",
+		"accepted_main":             "80990f16af2a4ccb7472a824c77f86889c831775",
+		"contract_version":          3,
+		"supersedes_record_sha256":  "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25",
 		"generation_source_binding": "production_source_sha256 and helper_sha256 identify the actual integrated working source; generation HEAD is ancestry only",
 		"production_source_sha256":  referralSourceHashes(t), "helper_sha256": sha(helper),
 		"inputs": inputs, "input_sha256": sha(canon(inputs)), "out_log_sha256": sha(raw.Bytes()),
 		"cases_sha256": sha(canon(exposed)), "currents": details, "held_control": held,
 	}
-	if *writeReferralControls {
-		witnessPath := filepath.Join("testdata", "referral-inbox-generation-helper-v2.go.txt")
-		witness, err := os.OpenFile(witnessPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, writeErr := witness.Write(helper)
-		closeErr := witness.Close()
-		if writeErr != nil || closeErr != nil {
-			t.Fatalf("record generation helper: write=%v close=%v", writeErr, closeErr)
-		}
+	// Completed Communication revisions and inadequate_day compose into new
+	// signed bytes. Record a separate software-integration generation, never
+	// rewrite either historical branch's controls or claim clinical validation.
+	historical, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance.json"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	for name, value := range map[string]interface{}{"referral-inbox-synthetic-v2.json": exposed, "referral-inbox-provenance-v2.json": provenance} {
+	generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper.go.txt"))
+	if err != nil || !referralGenerationRecordIntact(historical, generationHelper) {
+		t.Fatal("immutable referral generation record or witness changed")
+	}
+	previous, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance-v2.json"))
+	if err != nil || sha(previous) != "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25" {
+		t.Fatal("immutable completed-Communication generation changed")
+	}
+	previousHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper-v2.go.txt"))
+	if err != nil || sha(previousHelper) != "b569fcf1cfce8450961529a7efa0393e8076acc84625ef9c91503dd5f5f4e4e1" {
+		t.Fatal("immutable completed-Communication generation witness changed")
+	}
+	clinicalDates, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-clinical-dates-provenance-v2.json"))
+	if err != nil || sha(clinicalDates) != "58b4900652c3ad9a148143b6393ba287bc8d908f49b69c61ef61cce00e20ec17" {
+		t.Fatal("immutable clinical-date generation changed")
+	}
+	provenance["schema"] = "wasl-referral-integration/3"
+	provenance["previous_generation_sha256"] = sha(previous)
+	provenance["clinical_dates_generation_sha256"] = sha(clinicalDates)
+	// Compare the unchanged exposed v2 cases before creating either v3 file.
+	for _, control := range []struct {
+		name  string
+		value interface{}
+	}{{"referral-inbox-synthetic-v2.json", exposed}, {"referral-inbox-provenance-v3.json", provenance}} {
+		name, value := control.name, control.value
 		path := filepath.Join("..", "web", "data", name)
 		encoded, err := json.MarshalIndent(value, "", "  ")
 		if err != nil {
 			t.Fatal(err)
 		}
 		encoded = append(encoded, '\n')
-		if *writeReferralControls {
+		if *writeReferralControls && name == "referral-inbox-provenance-v3.json" {
+			witnessPath := filepath.Join("testdata", "referral-inbox-generation-helper-v3.go.txt")
+			witness, err := os.OpenFile(witnessPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, witnessWriteErr := witness.Write(helper)
+			witnessCloseErr := witness.Close()
+			if witnessWriteErr != nil || witnessCloseErr != nil {
+				t.Fatalf("record generation helper: write=%v close=%v", witnessWriteErr, witnessCloseErr)
+			}
 			file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 			if err != nil {
 				t.Fatal(err)
@@ -265,7 +297,7 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			_, writeErr := file.Write(encoded)
 			closeErr := file.Close()
 			if writeErr != nil || closeErr != nil {
-				t.Fatalf("create version2 software control: write=%v close=%v", writeErr, closeErr)
+				t.Fatalf("create version3 integration control: write=%v close=%v", writeErr, closeErr)
 			}
 		} else {
 			saved, err := os.ReadFile(path)
@@ -279,14 +311,14 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			if err := json.Unmarshal(encoded, &want); err != nil {
 				t.Fatal(err)
 			}
-			if name == "referral-inbox-provenance-v2.json" {
-				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper-v2.go.txt"))
+			if name == "referral-inbox-provenance-v3.json" {
+				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper-v3.go.txt"))
 				if err != nil {
 					t.Fatal(err)
 				}
 				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
 				if got["helper_sha256"] != sha(generationHelper) {
-					t.Fatal("version2 generation helper differs from its recorded witness")
+					t.Fatal("version3 generation helper differs from its recorded witness")
 				}
 				t.Logf("current verification source manifest: %s; separate version1 generation record preserved", sha(canon(recomputed["production_source_sha256"])))
 				// Only generation-description fields vary across source revisions.
@@ -303,6 +335,69 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 		}
 	}
 	t.Logf("canonical synthetic controls: inputs=%s out_log=%s cases=%s; genuine signatures verified; held stays inadequate", sha(canon(inputs)), sha(raw.Bytes()), sha(canon(exposed)))
+}
+
+// The complete accepted-main to PR184 api.go delta: the documented owner query parameter, the effective-owner
+// predicate inside getCases, and the effectiveOwner helper. Each edit must appear exactly once.
+var referralOwnerDelta = [][2]string{
+	{"&owner=...&unowned=true&consent=", "&owner=...&consent="},
+	{"\t\towner := s.effectiveOwner(c)\n\t\teq := func", "\t\teq := func"},
+	{`eq("owner", owner) && (q.Get("unowned") != "true" || owner == "") && `, `eq("owner", c.Owner) && `},
+	{"// effectiveOwner is the saved coordinator owner when one exists, else the canonical owner.\nfunc (s *apiServer) effectiveOwner(c *apiCase) string {\n\ts.mu.Lock()\n\tdefer s.mu.Unlock()\n\tif c.ov.owner != \"\" {\n\t\treturn c.ov.owner\n\t}\n\treturn c.Owner\n}\n\n", ""},
+}
+
+// ownerDeltaOnly reports whether reversing the reviewed owner edits turns src into exactly the accepted api.go.
+func ownerDeltaOnly(src []byte, acceptedSHA string) bool {
+	s := string(src)
+	for _, e := range referralOwnerDelta {
+		if strings.Count(s, e[0]) != 1 {
+			return false
+		}
+		s = strings.Replace(s, e[0], e[1], 1)
+	}
+	return sha([]byte(s)) == acceptedSHA
+}
+
+// Keep the reviewed owner's four-edit transform and all adverse mutation controls
+// bound to their immutable source witness, not a whitelist for today's whole API.
+// Current behavior is exercised by the real API owner/filter/paging/reload tests.
+// Later unrelated API changes must not invalidate historical generation evidence.
+func TestReferralOwnerDeltaIsNarrow(t *testing.T) {
+	const acceptedAPI = "77abf1430a4e19631d323bf5e5650e53e7635d8537d351249cf68938f2ac818c"
+	const reviewedOwnerAPI = "93a64beca3ac87d8dba1f7faf8c9aaf704adff5385c30df31a742616dfc12272"
+	api, err := os.ReadFile(filepath.Join("testdata", "referral-owner-reviewed-api-1955.go.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha(api) != reviewedOwnerAPI || !ownerDeltaOnly(api, acceptedAPI) {
+		t.Fatal("reviewed owner source witness or its narrow accepted-main delta changed")
+	}
+	mutations := map[string]func(string) string{
+		"unrelated producer line": func(s string) string {
+			return strings.Replace(s, "func (s *apiServer) getCases(", "var _ = 1\nfunc (s *apiServer) getCases(", 1)
+		},
+		"closed predicate dropped": func(s string) string {
+			return strings.Replace(s, `(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(c.Closed)) &&`, "", 1)
+		},
+		"inactive guard dropped": func(s string) string { return strings.Replace(s, `q.Get("include_inactive") != "true"`, `false`, 1) },
+		"helper body changed": func(s string) string {
+			return strings.Replace(s, "return c.ov.owner\n\t}\n\treturn c.Owner", "return c.Owner\n\t}\n\treturn c.Owner", 1)
+		},
+		"extra predicate": func(s string) string {
+			return strings.Replace(s, `eq("dropoff", c.Dropoff)`, `eq("dropoff", c.Dropoff) && c.Consent != "x"`, 1)
+		},
+		"reviewed edit missing":    func(s string) string { return strings.Replace(s, "&unowned=true", "", 1) },
+		"reviewed edit duplicated": func(s string) string { return s + "\n// &owner=...&unowned=true&consent=\n" },
+	}
+	for name, mutate := range mutations {
+		m := mutate(string(api))
+		if m == string(api) {
+			t.Fatalf("%s: mutation did not apply", name)
+		}
+		if ownerDeltaOnly([]byte(m), acceptedAPI) {
+			t.Fatalf("%s: unrelated api.go change was accepted", name)
+		}
+	}
 }
 
 func referralGenerationRecordIntact(record, witness []byte) bool {

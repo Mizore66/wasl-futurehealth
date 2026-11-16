@@ -46,8 +46,9 @@ func TestAPICasesProgrammeIfhas(t *testing.T) {
 		t.Fatal("programme=crc must not return IFHAS cases")
 	}
 	// review labels
+	item := seedEvidenceSource(t, s, ifID)
 	post := func(decision string) int {
-		req := httptest.NewRequest("POST", "/api/cases/x/review", bytes.NewBufferString(`{"decision":"`+decision+`"}`))
+		req := httptest.NewRequest("POST", "/api/cases/x/review", bytes.NewBufferString(`{"item":"`+item+`","decision":"`+decision+`"}`))
 		req.Header.Set("X-Wasl-Role", "clinician")
 		req.Header.Set("X-Wasl-Actor", "dr-test")
 		w := httptest.NewRecorder()

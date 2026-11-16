@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { CaseSummary } from "@/lib/api/schema";
+import { CaseSummary, CurrentDecision } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
 
 /**
@@ -18,4 +18,18 @@ export async function syntheticReferrals(q: string): Promise<CaseSummary[]> {
   const file = path.join(process.cwd(), "data", "referral-inbox-synthetic-v2.json");
   const cases = z.array(CaseSummary).parse(JSON.parse(await readFile(file, "utf8")));
   return cases.filter((c) => c.id.includes(q));
+}
+
+const HandoffControl = z.object({ case: CaseSummary, current: CurrentDecision });
+export type HandoffControl = z.infer<typeof HandoffControl>;
+
+/**
+ * Fixtures mode only: lung work-up and DR referrals their single receiving unit returned (web/data/referral-handoff-synthetic.json),
+ * served by the canonical read handler in pipeline/referral_handoff_fixture_test.go. Synthetic controls, not medical evidence.
+ */
+export async function syntheticHandoffs(programme: string, provider: string, q: string): Promise<HandoffControl[]> {
+  if (apiMode() === "live") return [];
+  const file = path.join(process.cwd(), "data", "referral-handoff-synthetic.json");
+  const controls = z.array(HandoffControl).parse(JSON.parse(await readFile(file, "utf8")));
+  return controls.filter((x) => x.case.programme === programme && x.case.provider === provider && x.case.id.includes(q));
 }

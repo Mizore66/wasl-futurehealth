@@ -398,7 +398,7 @@ func (s *apiServer) caseReviewClaim(w http.ResponseWriter, r *http.Request, c *a
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}
-		if s.itemSigned(c.ID, req.Item) {
+		if s.questionSigned(c.ID, it, req.Question) {
 			return s.claimFailureLocked(c, viewer, key, cerr(http.StatusConflict, "review_state", "item already has a canonical sign-off; claims are closed"))
 		}
 		at := s.clock()

@@ -12,17 +12,20 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import { handoffActBy } from "@/lib/domain/handoff";
-import { handoffWords, type Handoff, type Referral, type ReferralState } from "./referrals";
+import type { ReferralAnswer, RespondResult } from "@/app/app/referrals/actions";
+import type { ReferralCondition, ReferralReturnReason } from "@/lib/api/schema";
+import { CONDITION_LABELS, REASON_LABELS, handoffOwner, handoffWords, type Handoff, type Referral, type ReferralState } from "./referrals";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { Pager } from "./pager";
 import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
 
-/* Every action here is session state: the API has no referral-inbox endpoint. */
+/* With `respond` (live API), answers are appended to the case ledger and the inbox shows the server's projection after
+   a refresh. Without it (fixtures), answers and prep grades are session state. Prep grading is always session state. */
 
 const ME = "Dr Layla Haddad";
-const CONDITIONS = ["Hold blood thinners as advised", "Arabic interpreter on the day", "Female endoscopist", "Kidney function before booking"];
-const REASONS = ["Needs a clinic visit first", "Blood thinner plan missing", "Wrong unit", "Not fit for colonoscopy"];
+const CONDITIONS = Object.entries(CONDITION_LABELS) as [ReferralCondition, string][];
+const REASONS = Object.entries(REASON_LABELS) as [ReferralReturnReason, string][];
 const GRADES: [string, string][] = [
   ["0", "Not seen"],
   ["1", "Partly seen"],
@@ -34,12 +37,19 @@ type Tab = "needs" | "all" | "returned" | "accepted";
 const TABS: [Tab, string, (r: Referral) => boolean][] = [
   ["needs", "Needs you", (r) => r.state === "new" || r.state === "grade"],
   ["all", "All", () => true],
-  ["returned", "Waiting on GP", (r) => r.state === "returned"],
+  ["returned", "Waiting on GP", (r) => r.state === "returned" && r.handoff?.status !== "referrer_acted"],
   ["accepted", "Accepted", (r) => r.state === "accepted" || r.state === "done"],
 ];
 const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, accepted: 3, done: 4 };
 
-type Override = { state: ReferralState; outcome: string; log: string[]; handoff?: Handoff };
+/** `saved`: appended to the ledger, so no local Undo and no session trail entry. */
+type Override = { state: ReferralState; outcome: string; log: { who: string; what: string }[]; handoff?: Handoff; saved?: boolean };
+const REFUSED: Record<number, string> = {
+  403: "your clinician account is not assigned to this referral's unit.",
+  404: "the API has no such referral.",
+  409: "the referral changed since this page loaded. Reload and answer again.",
+  500: "the case ledger could not be read.",
+};
 type Mode = null | "cond" | "ret";
 
 export function ReferralInbox({
@@ -48,14 +58,23 @@ export function ReferralInbox({
   now,
   q,
   aside,
+  respond,
+  scope = "",
+  referrer = "GP",
 }: {
   referrals: Referral[];
+  /** The server action that appends the receiving unit's answer; absent when there is no live API. */
+  respond?: (caseId: string, head: string, response: ReferralAnswer) => Promise<RespondResult>;
   /** Days the unit has to answer (dashboard `sla.referral_response_days`). */
   window: number;
   /** The run day: a return is decided on it. */
   now: number;
   q: string;
   aside: React.ReactNode;
+  /** The programme/provider query that a search keeps; empty for the CRC default. */
+  scope?: string;
+  /** Who returned referrals wait on, in words. */
+  referrer?: string;
 }) {
   const router = useRouter();
   /* The query is a navigation, not a reload, so the session decisions below outlive it. */
@@ -144,22 +163,53 @@ export function ReferralInbox({
     setMode(null);
     setPicked([]);
   };
-  const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff) => {
+  const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff, who = ME) => {
     setWant({ k: "undo" });
-    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), entry], handoff } }));
+    setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), { who, what: entry }], handoff } }));
     open(id);
   };
-  const accept = (x: Referral, conds: string[] = []) =>
-    act(
-      x.id,
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
+  /* Live: the answer is shown only once the ledger append succeeds, and the server's projection replaces it on refresh. */
+  const answer = (x: Referral, request: ReferralAnswer, state: ReferralState, outcome: string, entry: string, handoff?: Handoff) => {
+    setRefusal(null);
+    if (!respond) return act(x.id, state, outcome, entry, handoff);
+    if (busy) return;
+    if (!x.head) return setRefusal({ id: x.id, text: "Not saved: this referral is not in the API case ledger, so nothing was sent." });
+    setBusy(true);
+    respond(x.id, x.head, request)
+      .then((res) => {
+        if (!res.ok) return setRefusal({ id: x.id, text: `Not saved: ${REFUSED[res.status] ?? res.error}` });
+        setWant({ k: "heading" });
+        setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case ledger.`, log: [{ who: ME, what: entry }], saved: true } }));
+        open(x.id);
+        router.refresh();
+      })
+      .catch(() => setRefusal({ id: x.id, text: "Not saved: the API did not answer." }))
+      .finally(() => setBusy(false));
+  };
+  const accept = (x: Referral, conds: ReferralCondition[] = []) =>
+    answer(
+      x,
+      conds.length ? { response: "accept_with_conditions", conditions: conds } : { response: "accept" },
       "accepted",
-      conds.length ? `Accepted with conditions. ${conds.join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
+      conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
-  const returnToGp = (x: Referral, reason: string) => {
+  const returnToGp = (x: Referral, reason: ReferralReturnReason) => {
     const handoff: Handoff = { status: "awaiting_referrer", actBy: handoffActBy(now, x.urgent) };
-    act(x.id, "returned", `Returned to the ${x.clinic} GP. Reason: ${reason.toLowerCase()}. Act by ${formatDay(handoff.actBy)}.`, `Returned to the GP: ${reason.toLowerCase()}`, handoff);
+    const words = REASON_LABELS[reason].toLowerCase();
+    answer(x, { response: "return", reason }, "returned", `Returned to the ${x.clinic} GP. Reason: ${words}. Act by ${formatDay(handoff.actBy)}.`, `Returned to the GP: ${words}`, handoff);
   };
+  const reRefer = (x: Referral) =>
+    act(
+      x.id,
+      "returned",
+      `Re-referral to ${x.unit} recorded in this session only. The canonical packet is unchanged and nothing is sent.`,
+      `Re-referred to ${x.unit} (this session)`,
+      { status: "referrer_acted", actBy: x.handoff?.actBy ?? now },
+      x.referrer,
+    );
   const undo = (id: string) => {
     setWant({ k: "heading" });
     setOver((o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== id)));
@@ -168,17 +218,18 @@ export function ReferralInbox({
 
   const chain: ChainNode[] = r
     ? [
-        { id: "ref", kind: "human", who: `${r.clinic} GP`, what: "referred to SKMC endoscopy", when: r.sent },
-        ...(over[r.id]?.log ?? []).map((what, i) => ({ id: `log-${i}`, kind: "human" as const, who: ME, what, when: "This session" })),
+        { id: "ref", kind: "human", who: r.referrer, what: `referred to ${r.unit}`, when: r.sent },
+        ...(r.answer ? [{ id: "answer", kind: "human" as const, who: r.unit, what: r.answer, when: r.answerWhen }] : []),
+        ...(over[r.id]?.saved ? [] : (over[r.id]?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, kind: "human" as const, who, what, when: "This session" })),
         ...(r.state === "done"
           ? []
           : [
               {
                 id: "now",
                 kind: "current" as const,
-                who: r.state === "returned" ? `${r.clinic} GP` : r.state === "grade" ? "You" : "SKMC endoscopy",
-                what: r.state === "returned" ? handoffWords(r.handoff).what : { new: "Your answer", grade: over[r.id] ? "Complete the report" : "Review the incomplete report", accepted: "Book and do the colonoscopy", done: "", returned: "" }[r.state],
-                when: r.state === "returned" ? handoffWords(r.handoff).when : `${r.waiting} days since referral`,
+                who: r.state === "returned" ? handoffOwner(r.handoff, r.referrer) : r.state === "grade" ? "You" : r.unit,
+                what: r.state === "returned" ? handoffWords(r.handoff, referrer).what : { new: "Your answer", grade: over[r.id] ? "Complete the report" : "Review the incomplete report", accepted: "Book and do the colonoscopy", done: "", returned: "" }[r.state],
+                when: r.state === "returned" ? handoffWords(r.handoff, referrer).when : `${r.waiting} days since referral`,
               },
             ]),
       ]
@@ -201,7 +252,7 @@ export function ReferralInbox({
 
   return (
     <div ref={root}>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      <header data-open={pane === "detail" && !!r} className="group/inbox mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Referrals</h1>
           <p className="m-0 mt-1 text-muted" data-testid="finding">
@@ -220,7 +271,7 @@ export function ReferralInbox({
                 onClick={() => selectTab(id)}
                 className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", TAB_FOCUS, tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
               >
-                {label} <span className="text-small text-muted">{all.filter(t).length}</span>
+                {id === "returned" ? `Waiting on ${referrer}` : label} <span className="text-small text-muted">{all.filter(t).length}</span>
               </button>
             ))}
           </div>
@@ -229,10 +280,14 @@ export function ReferralInbox({
             onSubmit={(e) => {
               e.preventDefault();
               const next = text.trim();
-              router.push(next ? `/app/referrals?q=${encodeURIComponent(next)}` : "/app/referrals");
+              const query = [scope, next && `q=${encodeURIComponent(next)}`].filter(Boolean).join("&");
+              router.push(query ? `/app/referrals?${query}` : "/app/referrals");
             }}
             className="px-4 pb-2 pt-3"
           >
+            {[...new URLSearchParams(scope)].map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
             <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
           </form>
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
@@ -314,7 +369,7 @@ export function ReferralInbox({
                       </span>
                     )}
                   </div>
-                  <p className="m-0 mt-1 text-muted">{[r.age, `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}</p>
+                  <p className="m-0 mt-1 text-muted">{[r.age, r.kind === "packet" ? `from ${r.clinic}` : `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}</p>
                   {r.hasRecord && (
                     <Link href={caseHref("/app/patients", r.id)} className="inline-flex min-h-11 items-center underline">
                       Open record
@@ -357,14 +412,14 @@ export function ReferralInbox({
                     Accept on these conditions
                   </h3>
                   <div role="group" aria-label="Conditions" className="mt-2 flex flex-wrap gap-2">
-                    {CONDITIONS.map((c) => (
+                    {CONDITIONS.map(([c, label]) => (
                       <button key={c} aria-pressed={picked.includes(c)} className={chip(picked.includes(c))} onClick={() => setPicked((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]))}>
-                        {c}
+                        {label}
                       </button>
                     ))}
                   </div>
                   <div className="mt-3 flex gap-gap">
-                    <Button variant="cta" size="touch" onClick={() => accept(r, picked)}>
+                    <Button variant="cta" size="touch" onClick={() => accept(r, picked as ReferralCondition[])}>
                       {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
                     </Button>
                     <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-cond")}>Cancel</Button>
@@ -377,9 +432,9 @@ export function ReferralInbox({
                     Why return this referral?
                   </h3>
                   <div role="group" aria-label="Reason" className="mt-2 flex flex-wrap gap-2">
-                    {REASONS.map((c) => (
+                    {REASONS.map(([c, label]) => (
                       <button key={c} aria-pressed={picked[0] === c} className={chip(picked[0] === c)} onClick={() => setPicked([c])}>
-                        {c}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -389,7 +444,7 @@ export function ReferralInbox({
                       <Button
                         variant="cta"
                         size="touch"
-                        onClick={() => returnToGp(r, picked[0])}
+                        onClick={() => returnToGp(r, picked[0] as ReferralReturnReason)}
                       >
                         Return to GP
                       </Button>
@@ -398,6 +453,14 @@ export function ReferralInbox({
                     )}
                     <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-ret")}>Cancel</Button>
                   </div>
+                </div>
+              )}
+              {r.kind === "packet" && r.state === "returned" && r.handoff && r.handoff.status !== "referrer_acted" && !outcome && (
+                <div>
+                  <Button variant="quiet" size="touch" onClick={() => reRefer(r)}>
+                    Re-refer to {r.unit}
+                  </Button>
+                  <p className="m-0 mt-2 text-small text-muted">The network has no other unit for this, so the referrer re-refers to the same one. Recorded in this session only.</p>
                 </div>
               )}
               {r.state === "grade" && (
@@ -422,13 +485,20 @@ export function ReferralInbox({
                 {outcome && (
                   <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="flex flex-wrap items-center gap-gap">
                     <p className="m-0 flex-1">{outcome}</p>
-                    <Button variant="quiet" size="touch" data-focus="undo" onClick={() => undo(r.id)}>Undo</Button>
+                    {!over[r.id]?.saved && (
+                      <Button variant="quiet" size="touch" data-focus="undo" onClick={() => undo(r.id)}>Undo</Button>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
+              {refusal?.id === r.id && (
+                <p role="alert" className="m-0 mt-3 text-negative">
+                  {refusal.text}
+                </p>
+              )}
               {!outcome && (r.state === "accepted" || r.state === "done" || r.state === "returned") && (
                 <p className="m-0" role="status">
-                  {{ accepted: "Accepted. Nothing needed from you.", done: "Closed with evidence. Nothing needed from you.", returned: "Returned to the GP.", new: "", grade: "" }[r.state]}
+                  {{ accepted: r.answer ? `${r.answer}. Nothing needed from you.` : "Accepted. Nothing needed from you.", done: "Closed with evidence. Nothing needed from you.", returned: r.answer ? `${r.answer}.` : `Returned to the ${referrer}.`, new: "", grade: "" }[r.state]}
                 </p>
               )}
             </div>
@@ -438,7 +508,7 @@ export function ReferralInbox({
               <SealedChain nodes={chain} />
             </div>
 
-            <h3 className="m-0 mt-6 text-section font-medium">Referral details</h3>
+            <h3 className="m-0 mt-6 text-section font-medium">{r.kind === "packet" ? "Canonical hand-off packet" : "Referral details"}</h3>
             <dl className="m-0 mt-2 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
               {r.details.map(([k, v]) => (
                 <div key={k}>
@@ -459,19 +529,20 @@ export function ReferralInbox({
           </section>
         )}
       </div>
-      <p className="mt-6 text-small text-muted">Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the GP. Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
+      <p className="mt-6 text-small text-muted">{respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
     </div>
   );
 }
 
 function lineFor(x: Referral, o: Override | undefined): string {
-  if (o) return o.log.at(-1)!;
+  if (o) return o.log.at(-1)!.what;
   switch (x.state) {
     case "new":
       return x.flags.length ? x.flags.join(" · ") : "Ready to accept";
     case "grade":
       return "Report incomplete · grade the prep";
     case "returned":
+      if (x.kind === "packet") return `Returned by ${x.unit} · ${handoffWords(x.handoff, "referrer").what.toLowerCase()}`;
       return !x.handoff || x.handoff.status === "awaiting_referrer" ? "Returned to GP · waiting on the GP" : `Returned to GP · ${handoffWords(x.handoff).what.toLowerCase()}`;
     case "accepted":
       return "Accepted · in progress";

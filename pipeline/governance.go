@@ -25,6 +25,7 @@ const (
 	RoleReviewer    = "reviewer"    // identity reviewer (HIM / registration): merge / split
 	RoleAuditor     = "auditor"     // read-only: verifies the ledger, publishes anchors, no PHI writes
 	RoleSystem      = "system"      // linker / closure services
+	RoleReferrer    = "referrer"    // responsible referring clinician: acknowledges a case's approved outcome hand-off only
 
 	// Senior resolution roles (independent double review, r3): the discipline's sign capability, never the r1/r2 slots.
 	RoleSeniorReviewer  = "senior_reviewer"
@@ -44,17 +45,33 @@ const (
 	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
 	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
 	ActCoordinateCase = "coordinate_case"
+	// ActRespondReferral: a receiving-unit clinician's accept / conditional accept / return of a referral. Unit
+	// membership is checked separately against server configuration.
+	ActRespondReferral = "respond_referral"
+	// ActResolvePatientContest: an independent senior clinician resolves a patient's contest of a decision.
+	ActResolvePatientContest = "resolve_patient_contest"
+	// ActResolveTeachBackCallback: a nurse navigator or clinician records the outcome of a failed teach-back callback.
+	ActResolveTeachBackCallback = "resolve_teachback_callback"
+	// Post-closure outcome hand-off: a clinician approves patient-safe content; the case's responsible referrer acknowledges it.
+	ActViewOutcomeHandoff        = "view_outcome_handoff"
+	ActApproveOutcomeHandoff     = "approve_outcome_handoff"
+	ActAcknowledgeOutcomeHandoff = "acknowledge_outcome_handoff"
+	// ActRecordDisposition: a clinician's disposition, either a plan for a programme hold that names a clinician as the
+	// decider (clinician_disposition) or the informed-refusal answer to a coordinator-recorded decline
+	// (decline_disposition). It is overlay metadata: it never completes a procedure, closes a loop or signs evidence.
+	ActRecordDisposition = "record_clinician_disposition"
 )
 
 var rbac = map[string]map[string]bool{
-	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true},
-	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true},
+	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true},
+	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true, ActRecordDisposition: true, ActResolveTeachBackCallback: true, ActViewOutcomeHandoff: true, ActApproveOutcomeHandoff: true, ActRespondReferral: true},
+	RoleReferrer:    {ActViewOutcomeHandoff: true, ActAcknowledgeOutcomeHandoff: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},
 
 	RoleSeniorReviewer:  {ActSignLink: true, ActReadQueue: true},
-	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true},
+	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true, ActRecordDisposition: true, ActResolvePatientContest: true},
 }
 
 // RBACEnforce can be switched off only by the counterfactual audit replay ("what would forged events have done").

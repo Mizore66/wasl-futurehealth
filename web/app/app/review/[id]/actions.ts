@@ -2,24 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { apiMode, getCaseWithToken, postReviewClaimWithToken, postReviewWithToken } from "@/lib/api/source";
+import { apiMode, getCaseWithToken, getReviewSourceWithToken, postReviewClaimWithToken, postReviewWithToken, type ReviewSourceResult } from "@/lib/api/source";
 import * as session from "@/lib/api/reviewer-session";
 import { type SignInResult } from "@/components/review/auth";
-import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
+import { evidenceLabelsFor, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
 import type { SaveFailure, Signature } from "@/components/review/decision";
 
 /**
  * The API accepts any programme label on any raised item, so each answer is checked against the item it signs:
- * a link item takes same/different, an evidence item only its programme's evidence labels.
+ * a link item takes same/different, an evidence item only the labels of its programme and report kind.
  */
 function refusal(detail: CaseDetail | null, signature: Signature): SaveFailure | undefined {
   if (!detail) return { status: 404, error: "case not found" };
   const item = detail.review_items.find((r) => r.item === signature.item);
   if (!item) return { status: 404, error: "review item not raised for this case" };
-  const programme = detail.case.programme;
   const allowed = [
     ...(item.kinds.includes("link") ? ["same", "different"] : []),
-    ...(item.kinds.includes("evidence") && isGuided(programme) ?GUIDED_EVIDENCE_LABELS[programme] : []),
+    ...(item.kinds.includes("evidence") ? evidenceLabelsFor(detail, item.report) : []),
   ];
   if (!allowed.includes(signature.decision)) return { status: 400, error: `${signature.decision} does not answer this ${item.kinds.join("/")} item` };
 }
@@ -41,12 +40,22 @@ export type SubmitReadResult =
   | { ok: true; committed: true; read: string; states?: ReviewState[]; hash?: undefined }
   | { ok: false; failure: ReadFailure; states?: ReviewState[] };
 
+/** The report behind one raised evidence item, read with the signed-in reviewer's own token. */
+export async function readReviewSource(caseId: string, item: string): Promise<ReviewSourceResult> {
+  if (apiMode() !== "live") throw new Error("readReviewSource needs WASL_API_URL");
+  const token = await session.reviewerToken();
+  if (!token) return { ok: false, status: 401 };
+  return getReviewSourceWithToken(caseId, item, token);
+}
+
 const ReadInput = z.strictObject({
   item: z.string().min(1),
   question: z.enum(["link", "evidence"]),
   decision: ReviewDecision.refine((decision) => decision !== "confirm_contact", "confirm_contact is not a review-desk signature"),
   expectedHead: z.string(),
   claimHead: z.string().regex(/^[0-9a-f]{64}$/),
+  /* The API bounds a note in Unicode code points (maxNoteRunes), not UTF-16 units. */
+  note: z.string().refine((note) => [...note].length <= 1000, "a rationale is at most 1000 characters").default(""),
 });
 
 function refresh(caseId: string) {
@@ -70,7 +79,7 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const latest = await getCaseWithToken(caseId, token);
   if (!latest.ok) return { ok: false, failure: { status: latest.status, error: latest.status === 404 ? "case not found" : "sign in to review" } };
   const detail = latest.detail;
-  const { item, question, decision, expectedHead, claimHead } = parsed.data;
+  const { item, question, decision, expectedHead, claimHead, note } = parsed.data;
   const bad = refusal(detail, { item, decision });
   if (bad) return { ok: false, failure: { status: bad.status as 400 | 404, error: bad.error } };
   const raised = detail.review_items.find((r) => r.item === item)!;
@@ -88,10 +97,11 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   if (state.claim?.status !== "active" || state.claim.read !== state.next_read) {
     return { ok: false, failure: { status: 409, error: "an active claim is required before submitting a read" }, states };
   }
+  if (state.next_read === "r3" && !note.trim()) return { ok: false, failure: { status: 400, error: "a senior resolution needs a rationale" }, states };
 
   const res = await postReviewWithToken(
     caseId,
-    { item, decision, note: "", read: state.next_read, expected_head: expectedHead, claim_head: claimHead },
+    { item, decision, note, read: state.next_read, expected_head: expectedHead, claim_head: claimHead },
     token,
   );
   if (res.ok && res.response === null) {

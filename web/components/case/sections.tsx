@@ -6,14 +6,18 @@ import { closureChecks, linkScore, providerLabel, readerLabels } from "@/compone
 import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
 import { formatDay, formatDayYear } from "@/lib/domain/day";
+import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
 import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
+import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
-import { PatientJourneyCard } from "./patient-journey-card";
+import { PatientJourneyCard, PatientRequestsCard } from "./patient-journey-card";
+import { OutcomeHandoffCard } from "./outcome-handoff-card";
+import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
 import {
   atWords,
@@ -67,11 +71,12 @@ const Empty = ({ children }: { children: React.ReactNode }) => <p className="m-0
 
 const CLOSE_TONE = { closed: "positive", held: "negative", open: "neutral" } as const;
 
-/** Why the case is where it is: the closure reason when closed, the hold reasons when open. */
+/** Why the case is where it is: the closure reason when closed, the latest decision's hold reasons when open. */
 export function ReasonCard({ detail }: { detail: CaseDetail }) {
   if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each current CRC obligation below has its own evidence binding, clinician confirmation and tracking state. Completing one pathway does not discharge another.</p></Card>;
   const reason = closureReason(detail);
-  const tone = detail.case.closed ? CLOSE_TONE.closed : detail.holds.length ? CLOSE_TONE.held : CLOSE_TONE.open;
+  const holds = caseHolds(detail);
+  const tone = detail.case.closed ? CLOSE_TONE.closed : holds.current.length ? CLOSE_TONE.held : CLOSE_TONE.open;
   return (
     <Card id="why" title={detail.case.closed ? "Why it closed" : "Why it is still open"}>
       <p className="m-0 mt-3 flex flex-wrap items-center gap-2">
@@ -87,30 +92,49 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
         </span>
       </p>
       <p className="m-0 mt-2">{reason.body}</p>
-      {detail.holds.length > 0 && (
+      {holds.current.length > 0 && (
         <ul className="m-0 mt-3 list-none p-0" aria-label="Holds">
-          {detail.holds.map((h, i) => (
+          {holds.current.map((h, i) => (
             <li key={i} className="border-t border-rule py-3">
               <p className="m-0 font-medium">{holdWords(h)}</p>
               <p className="m-0 mt-1 text-small text-muted">{h.policy ?? "No policy text sent."}</p>
-              <details className="mt-1 text-small text-muted">
-                <summary className="min-h-6 cursor-pointer">Rule and system state</summary>
-                <p className="m-0 mt-1">Rule: {h.rule}</p>
-                <p className="m-0 mt-1">
-                  State: <code className="font-mono">{h.state}</code>
-                  {h.reason && (
-                    <>
-                      {" "}
-                      · reason <code className="font-mono">{h.reason}</code>
-                    </>
-                  )}
-                </p>
-              </details>
+              <HoldFacts h={h} />
             </li>
           ))}
         </ul>
       )}
+      {holds.earlier.length > 0 && (
+        <details className="mt-3 text-small text-muted">
+          <summary className="min-h-6 cursor-pointer">Earlier holds, no longer in force ({holds.earlier.length})</summary>
+          <p className="m-0 mt-1">Recorded by an earlier decision and absent from the latest one. Kept for the audit, not an instruction.</p>
+          <ul className="m-0 mt-1 list-none p-0" aria-label="Earlier holds">
+            {holds.earlier.map((h, i) => (
+              <li key={i} className="border-t border-rule py-2">
+                <HoldFacts h={h} />
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </Card>
+  );
+}
+
+function HoldFacts({ h }: { h: CaseDetail["holds"][number] }) {
+  return (
+    <details className="mt-1 text-small text-muted">
+      <summary className="min-h-6 cursor-pointer">Rule and system state</summary>
+      <p className="m-0 mt-1">Rule: {h.rule}</p>
+      <p className="m-0 mt-1">
+        State: <code className="font-mono">{h.state}</code>
+        {h.reason && (
+          <>
+            {" "}
+            · reason <code className="font-mono">{h.reason}</code>
+          </>
+        )}
+      </p>
+    </details>
   );
 }
 
@@ -565,7 +589,14 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
 
 /** Focused patient-link projection, deliberately outside canonical source events. */
 export function PatientJourneySection({ detail }: { detail: CaseDetail }) {
-  return <PatientJourneyCard detail={detail} />;
+  return (
+    <>
+      <PatientJourneyCard detail={detail} />
+      <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
+      <PatientRequestsCard detail={detail} />
+      {detail.outcome_handoff && <OutcomeHandoffCard handoff={detail.outcome_handoff} />}
+    </>
+  );
 }
 
 /** Consent history and the messages Wasl sent or held back. */
@@ -665,7 +696,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               {r.ledger === "review" ? (
                 <p className="m-0 font-medium">
                   {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                  {reviewWords(r.decision, detail.case.programme)}
+                  {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : reviewWords(r.decision, detail.case.programme)}
                 </p>
               ) : (
                 <div className="font-medium">
@@ -676,7 +707,10 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
                 {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
-              {r.ledger === "compensation" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+              {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
+                <p className="m-0 mt-1 text-small text-muted">Original recorded label: {reviewWords(r.decision, detail.case.programme)}; this history does not resolve a review item.</p>
+              )}
+              {(r.ledger === "review" || r.ledger === "compensation") && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>
           ))}
         </ul>

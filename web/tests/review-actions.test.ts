@@ -87,6 +87,58 @@ describe("submitReviewRead", async () => {
     expect(fetchMock.mock.calls.every((c) => c[1].method !== "POST")).toBe(true);
   });
 
+  it.each([
+    ["link", "same"],
+    ["link", "different"],
+    ["evidence", "adequate"],
+    ["evidence", "inadequate"],
+  ] as const)("accepts %s answer %s on a raised cervical item", async (question, decision) => {
+    const submit = await load();
+    const base = detail([state({ question })]);
+    const cervical = { ...base, case: { ...base.case, programme: "cervical" }, review_items: [{ ...base.review_items[0], kinds: [question] }] };
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, cervical)).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question, decision })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ item: "rv-1", decision, read: "r1" });
+  });
+
+  it("refuses a cervical decision that does not match the raised question without posting", async () => {
+    const submit = await load();
+    const base = detail([state({ question: "evidence" })]);
+    const cervical = { ...base, case: { ...base.case, programme: "cervical" }, review_items: [{ ...base.review_items[0], kinds: ["evidence"] }] };
+    const fetchMock = vi.fn().mockImplementation(async () => json(200, cervical));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question: "evidence", decision: "same" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(await submit("c1", { ...input, question: "evidence", decision: "histology" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock.mock.calls.every((c) => c[1].method !== "POST")).toBe(true);
+  });
+
+  describe("CRC evidence items are scoped to their report", () => {
+    const crc = (category: string) => {
+      const base = detail([state({ question: "evidence" })]);
+      const item = { ...base.review_items[0], kinds: ["evidence"], report: "lab/DiagnosticReport/R-1" };
+      const timeline = [{ ...(loadSample("case_evidence_closure.json") as { timeline: object[] }).timeline[0], id: "lab/DiagnosticReport/R-1", category }];
+      return { ...base, review_items: [item], timeline };
+    };
+    it.each([
+      ["pathology", "histology", true],
+      ["pathology", "no_histology", true],
+      ["pathology", "adequate", false],
+      ["pathology", "inadequate", false],
+      ["colonoscopy", "adequate", true],
+      ["colonoscopy", "inadequate", true],
+      ["colonoscopy", "histology", false],
+      ["colonoscopy", "no_histology", false],
+    ])("%s item, answer %s accepted: %s", async (category, decision, accepted) => {
+      const submit = await load();
+      const fetchMock = vi.fn().mockResolvedValueOnce(json(200, crc(category))).mockResolvedValueOnce(json(201, reviewBody));
+      vi.stubGlobal("fetch", fetchMock);
+      const result = await submit("c1", { ...input, question: "evidence", decision });
+      expect(result.ok).toBe(accepted);
+      expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(accepted ? 1 : 0);
+    });
+  });
+
   it("refuses a stale expected head without posting", async () => {
     const submit = await load();
     const fetchMock = vi.fn().mockResolvedValue(json(200, detail([state({ head: "newer" })])));
@@ -139,6 +191,56 @@ describe("submitReviewRead", async () => {
     vi.stubGlobal("fetch", fetchMock);
     expect(await submit("c1", input)).toMatchObject({ ok: false, failure: { status: 409 } });
     expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
+  });
+
+  it("refuses the fixture-only ask action as a malformed read before any request", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, question: "evidence", decision: "ask" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("posts the exact rationale for an initial read", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([state()]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, note: "  Same NHS number and date of birth. " })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).note).toBe("  Same NHS number and date of birth. ");
+  });
+
+  const senior = state({
+    state: "awaiting_r3", head: "h2", next_read: "r3",
+    claim: { owner: "Sen-A", role: "senior_reviewer", read: "r3", claimed_at: "2026-11-13T10:00:00Z", heartbeat_at: "2026-11-13T10:00:00Z", expires_at: "2026-11-13T10:05:00Z", status: "active" },
+    reads: [{ read: "r1", submitted: true, decision: "same", hash: "h1" }, { read: "r2", submitted: true, decision: "different", hash: "h2" }, { read: "r3", submitted: false }],
+    disagreement: true,
+  });
+
+  it.each(["", "   \n\t"])("refuses a senior resolution with rationale %j without posting", async (note) => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockImplementation(async () => json(200, detail([senior])));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, expectedHead: "h2", note })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(await submit("c1", { ...input, expectedHead: "h2" })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock.mock.calls.filter((c) => c[1].method === "POST")).toHaveLength(0);
+  });
+
+  it("posts a senior resolution with its rationale", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([senior]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, expectedHead: "h2", note: "The second read missed the matching address history." })).toMatchObject({ ok: true });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ read: "r3", note: "The second read missed the matching address history." });
+  });
+
+  it("accepts a 1000-character rationale and refuses 1001 without any request", async () => {
+    const submit = await load();
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, detail([state()]))).mockResolvedValueOnce(json(201, reviewBody));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await submit("c1", { ...input, note: "é".repeat(1000) })).toMatchObject({ ok: true });
+    fetchMock.mockClear();
+    expect(await submit("c1", { ...input, note: "n".repeat(1001) })).toMatchObject({ ok: false, failure: { status: 400 } });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns 401 without any request when signed out", async () => {

@@ -222,7 +222,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
                   {flag.intents.map((intent) => (
                     <li key={`${intent.case_id}-${intent.outreach.kind}-${intent.outreach.ev}`}>
                       <CaseLink caseID={intent.case_id}>{programmeLabels[intent.programme]}: {shortId(intent.case_id)}</CaseLink>
-                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}</div>
+                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? " · Not in the latest decision; history only, not actionable" : ""}</div>
                       <div className="text-small text-muted">Latest decision {intent.latest_decision_id}</div>
                     </li>
                   ))}

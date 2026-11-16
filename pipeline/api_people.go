@@ -584,6 +584,7 @@ type personIntent struct {
 	LatestDecisionSig string
 	Lifecycle         string
 	Historical        bool
+	Resolved          bool
 	Outreach          Outreach
 }
 
@@ -607,6 +608,12 @@ func intentLifecycle(outreach Outreach) string {
 func foldPersonIntents(c *apiCase) []personIntent {
 	latest := map[string]personIntent{}
 	order := []string{}
+	current := map[string]bool{}
+	if c.last != nil {
+		for _, outreach := range c.last.Outreach {
+			current[c.ID+"\x00"+outreach.Event+"\x00"+outreach.Kind] = true
+		}
+	}
 	for _, decision := range c.decisions {
 		for _, outreach := range decision.Outreach {
 			key := c.ID + "\x00" + outreach.Event + "\x00" + outreach.Kind
@@ -619,6 +626,7 @@ func foldPersonIntents(c *apiCase) []personIntent {
 			intent.Lifecycle, intent.Outreach = intentLifecycle(outreach), outreach
 			intent.Programme = decision.Prog
 			intent.Historical = c.last != nil && c.last.Inactive
+			intent.Resolved = !current[key]
 			latest[key] = intent
 		}
 	}
@@ -630,7 +638,7 @@ func foldPersonIntents(c *apiCase) []personIntent {
 }
 
 func actionableIntent(intent personIntent) bool {
-	return !intent.Historical && (intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded")
+	return !intent.Historical && !intent.Resolved && (intent.Lifecycle == "released" || intent.Lifecycle == "held" || intent.Lifecycle == "recorded")
 }
 
 func personFlagID(match string, intents []personIntent) string {
@@ -648,6 +656,8 @@ func intentBody(intent personIntent) map[string]interface{} {
 		"latest_decision_sig": intent.LatestDecisionSig, "lifecycle": intent.Lifecycle, "outreach": intent.Outreach}
 	if intent.Historical {
 		body["participation"] = "historical"
+	} else if intent.Resolved {
+		body["participation"] = "resolved"
 	}
 	return body
 }
@@ -758,6 +768,26 @@ func appendReasons(candidate *personActionCandidate, c *apiCase) {
 	}
 }
 
+// currentEvidenceReviewPending reports an unsigned evidence review listed by the
+// latest canonical decision: the drop-off is waiting on a clinician read, not a coordinator.
+func currentEvidenceReviewPending(s *apiServer, c *apiCase) bool {
+	pending := map[string]bool{}
+	for _, id := range c.last.Pending {
+		pending[id] = true
+	}
+	for _, item := range s.queue[c.ID] {
+		if !pending[item.ItemID] {
+			continue
+		}
+		for _, kind := range item.Kinds {
+			if kind == "evidence" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[string]interface{}, flags []map[string]interface{}) []personActionCandidate {
 	candidates := []personActionCandidate{}
 	caseByID := map[string]*apiCase{}
@@ -776,7 +806,7 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		}
 		anchor := ""
 		for _, intent := range intents {
-			if caseByID[intent["case_id"].(string)] != nil && intent["participation"] != "historical" {
+			if caseByID[intent["case_id"].(string)] != nil && intent["participation"] == nil {
 				anchor = intent["case_id"].(string)
 				break
 			}
@@ -817,6 +847,9 @@ func personActionCandidates(s *apiServer, cases []*apiCase, obligations []map[st
 		if !c.Closed && coordinatorDropoffs[c.Dropoff] {
 			patientFollowup = c.Dropoff != "referral_rejected" && c.Dropoff != "referral_unanswered"
 			reason = "dropoff_" + c.Dropoff
+			if patientFollowup && currentEvidenceReviewPending(s, c) {
+				continue
+			}
 		} else if c.last.DR != nil && c.last.DR.Next != nil && c.last.DR.Next.Overdue && !c.last.DR.Next.Seen {
 			patientFollowup, reason = true, "dr_next_recall_overdue"
 		}
@@ -1123,4 +1156,73 @@ func (s *apiServer) personJourney(projection *personProjection, cluster *personC
 		return nil, err
 	}
 	return pseudonymizeRegistrationFields(generic, "").(map[string]interface{}), nil
+}
+
+// personShowcase is the part of a journey that makes it a cross-programme demonstration.
+type personShowcase struct {
+	Person struct {
+		AnchorCaseID string   `json:"anchor_case_id"`
+		Programmes   []string `json:"programmes"`
+	} `json:"person"`
+	Obligations []struct {
+		Status string `json:"status"`
+	} `json:"obligations"`
+	OutreachFlags []struct {
+		Actionable bool `json:"actionable"`
+	} `json:"outreach_flags"`
+	NextAction struct {
+		Kind string `json:"kind"`
+	} `json:"next_action"`
+}
+
+func (p personShowcase) qualifies() bool {
+	open, actionable := false, false
+	for _, o := range p.Obligations {
+		open = open || o.Status == "open" || o.Status == "overdue"
+	}
+	for _, f := range p.OutreachFlags {
+		actionable = actionable || f.Actionable
+	}
+	return len(p.Person.Programmes) >= 3 && open && actionable && p.NextAction.Kind != "none"
+}
+
+// pickPersonFixture adds `person_journey`: the anchor case of the first trusted cluster (by canonical root) whose
+// journey spans at least three programmes with an open obligation, an actionable outreach group and a next action.
+// Like agent_review it never takes a case that already carries another fixture tag.
+func (s *apiServer) pickPersonFixture() {
+	if s.fixtures == nil {
+		s.fixtures = map[string]string{}
+	}
+	if id := s.fixtures["person_journey"]; id != "" && s.cases[id] != nil && s.cases[id].Fixture == "person_journey" {
+		s.cases[id].Fixture = ""
+	}
+	delete(s.fixtures, "person_journey")
+	projection, err := s.loadPersonProjection()
+	if err != nil {
+		return
+	}
+	for _, cluster := range projection.clusters {
+		programmes := map[string]bool{}
+		for _, id := range cluster.caseIDs {
+			programmes[s.cases[id].Programme] = true
+		}
+		if len(programmes) < 3 {
+			continue
+		}
+		body, err := s.personJourney(projection, cluster, apiPrincipal{role: "reviewer"})
+		if err != nil {
+			continue
+		}
+		raw, err := json.Marshal(body)
+		var showcase personShowcase
+		if err != nil || json.Unmarshal(raw, &showcase) != nil || !showcase.qualifies() {
+			continue
+		}
+		anchor := s.cases[showcase.Person.AnchorCaseID]
+		if anchor == nil || anchor.Fixture != "" {
+			continue
+		}
+		s.fixtures["person_journey"], anchor.Fixture = anchor.ID, "person_journey"
+		return
+	}
 }

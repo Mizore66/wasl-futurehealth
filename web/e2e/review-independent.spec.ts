@@ -161,6 +161,10 @@ test.describe("independent double review, live mock", () => {
       const principal = scheme === "Bearer" ? principals.get(token) : undefined;
       if (p.startsWith("/api/") && !principal) return send(401, { error: "authentication required" });
       const who = principal!;
+      if (req.method === "GET" && p.endsWith("/review/source")) {
+        const item = new URL(req.url ?? "/", "http://mock").searchParams.get("item") ?? "";
+        return send(200, { meta, item, source: { report: "SYN-SRC-1", report_version: 1, day: 0, text: "Synthetic source report for " + item + "." } });
+      }
       if (req.method === "POST" && p === "/mock/advance") {
         let raw = "";
         req.on("data", (c) => (raw += c));
@@ -461,6 +465,7 @@ test.describe("independent double review, live mock", () => {
 
     await acquire(page, "evidence", "senior");
     await card(page, "evidence").getByRole("radio", { name: "Not adequate", exact: true }).click();
+    await card(page, "evidence").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
     await card(page, "evidence").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(page, "evidence")).toContainText("Resolved by a senior");
     await expect(card(page, "evidence")).toContainText("Senior resolution: Report not adequate");
@@ -574,6 +579,7 @@ test.describe("independent double review, live mock", () => {
     const sr = await viewer(browser, "senior");
     await acquire(sr.page, "link", "senior");
     await card(sr.page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
+    await card(sr.page, "link").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
     await card(sr.page, "link").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(sr.page, "link")).toContainText("Resolved by a senior");
     await sr.page.goto(audit);

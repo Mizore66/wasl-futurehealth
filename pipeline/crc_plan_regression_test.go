@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func crcSignAllFacts(C *ClosureCore, f *LoopFacts, day float64) {
@@ -123,12 +124,37 @@ func TestCRCIntervalConflictOnlyBlocksSurveillance(t *testing.T) {
 }
 
 func TestAPICRCPlanProjectsOngoingCareAndRejectsCrossPathwaySignature(t *testing.T) {
-	f := crcSyntheticFacts("Diagnosis: ulcerative colitis. Increased-risk findings: specialist centre referral required.")
+	const pathText = "Diagnosis: ulcerative colitis. Increased-risk findings: specialist centre referral required."
+	f := crcSyntheticFacts(pathText)
 	f.Down[0].Ev.CRC = nil
 	C, _, d := crcRunFacts(f)
 	c := &apiCase{ID: "L", Programme: "crc", State: d.State, last: d, decisions: []*Decision{d}}
 	s, srv := drAPIServer(t, c)
 	defer srv.Close()
+	// This remains a synthetic facts-seam API control. The source-read gate
+	// additionally needs the matching, readable received report revisions.
+	s.sources = map[string][]sourcePointer{}
+	for i, down := range f.Down {
+		text, code := "Colonoscopy: caecum reached. Prep adequate. Suspicious mass biopsied.", "18746-8"
+		if down.RType == "Pathology" {
+			text, code = pathText, "11526-1"
+		}
+		message := sourceReportMsg(uint64(i+1), down.Provider, down.ReportID, down.Version, text)
+		var report map[string]interface{}
+		if err := json.Unmarshal(message.Data, &report); err != nil {
+			t.Fatal(err)
+		}
+		report["code"] = map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": code}}}
+		report["effectiveDateTime"] = baseTime.Add(time.Duration(down.Day * 24 * float64(time.Hour))).Format(time.RFC3339)
+		message.Data = canon(report)
+		appendLogMsgs(t, s.run, "fhir_log.ndjson", message)
+		event, _ := normalise(down.Provider, 0, message.Data)
+		if event == nil || event.ReportID != down.ReportID || event.Version != down.Version || event.Text != text {
+			t.Fatalf("synthetic source did not retain its exact report revision/text: %+v", event)
+		}
+		s.indexSource(down.Provider, event, message)
+		s.rememberReviewReportSource(event, message.Data)
+	}
 	s.queue["L"] = crcCurrentItems(C, "L")
 	it := s.queue["L"][0]
 	wrong := CRCSignGastro

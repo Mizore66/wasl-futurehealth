@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { shortId } from "@/lib/domain/ids";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -65,8 +66,11 @@ export const Dropoff = z.enum([
 
 export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
 export const ReviewStatus = z.enum(["none", "open", "signed"]);
-export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure"]);
-/** The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops. */
+export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure", "person_journey"]);
+/**
+ * The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops, and `person_journey` (the anchor
+ * case of an actionable cross-programme person, pipeline/api_people.go pickPersonFixture) only in runs that contain one.
+ */
 export const CRC_FIXTURES = ["evidence_closure", "false_closure_trap", "review_hold"] as const;
 export const Role = z.enum(["coordinator", "clinician", "reviewer", "auditor"]);
 
@@ -137,7 +141,13 @@ export const DrFinding = z.looseObject({
         "assumed_followup_91d",
         "assumed_treated_28d",
       ]),
+      from_day: z.number(),
+      interval_days: z.number(),
       due_day: z.number(),
+      seen: z.boolean().optional(),
+      seen_day: z.number().optional(),
+      seen_report: z.string().optional(),
+      recall_overdue: z.boolean().optional(),
     })
     .optional(),
 });
@@ -236,6 +246,44 @@ export const OverlayContact = z.looseObject({
   actor: z.string().optional(),
   note: z.string().optional(),
 });
+/**
+ * The clinician's informed-refusal disposition (`decline_disposition`, clinician roles only). `decline_event` is the
+ * contact-outcome event of the decline it answers. Overlay metadata: it never records a procedure or a canonical closure.
+ */
+export const OverlayDisposition = z.looseObject({
+  at: z.string(),
+  event: z.string().default(""),
+  role: z.string().default(""),
+  decline_event: z.string(),
+  plan: z.enum(["follow_up", "closed_declined"]),
+  reason: z.string().default(""),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
+  fit_reoffer: z.string().optional(),
+  actor: z.string().optional(),
+  counselling: z.string().optional(),
+  safety_net: z.string().optional(),
+});
+/**
+ * A report that the procedure was done at another provider (`completed_elsewhere`) and its owned record retrieval.
+ * `pending` suspends chase and booking; a `retrieval_outcome` ends it as `resumed`. Overlay metadata only: it never
+ * records a procedure, an appointment or a canonical closure, which only retrieved evidence through the pipeline can.
+ */
+export const RETRIEVAL_OUTCOMES = ["not_found", "not_matching", "non_closing"] as const;
+export const OverlayReconciliation = z.looseObject({
+  status: z.enum(["pending", "resumed"]),
+  at: z.string(),
+  event: z.string().default(""),
+  procedure: z.string(),
+  performed: z.string(),
+  provider: z.string(),
+  source: z.string(),
+  report_ref: z.string().optional(),
+  retrieval_owner: z.string(),
+  retrieval_due: z.string(),
+  actor: z.string().optional(),
+  retrieval: z.looseObject({ at: z.string(), event: z.string().default(""), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().optional() }).optional(),
+});
 export const OverlayNote = z.looseObject({ at: z.string(), event: z.string().default(""), actor: z.string().default(""), text: z.string() });
 
 export const BookingSummarySlot = z.looseObject({
@@ -293,6 +341,71 @@ export const ContactState = z.looseObject({
   contact_blocked: z.boolean(),
 });
 
+export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
+
+/** Receiving-unit referral response codes (pipeline/api_referral.go). Conditions are booking constraints, not free text. */
+export const ReferralCondition = z.enum(["hold_anticoagulants", "arabic_interpreter", "female_endoscopist", "kidney_function_check"]);
+export const ReferralReturnReason = z.enum(["needs_clinic_visit", "anticoagulant_plan_missing", "wrong_unit", "not_fit_for_procedure"]);
+export const ReferralInfo = z.enum(["reason_for_referral", "relevant_clinical_information", "expected_outcome", "anticoagulant_plan", "kidney_function_result"]);
+
+/** The receiving unit's persisted answer, replayed from the ledger. Acceptance is not procedure completion or closure. */
+export const ReferralResponse = z.looseObject({
+  response: z.enum(["accept", "accept_with_conditions", "return"]),
+  conditions: z.array(ReferralCondition).default([]),
+  reason: ReferralReturnReason.optional(),
+  requested_info: z.array(ReferralInfo).default([]),
+  unit: z.string(),
+  run_day: z.number(),
+  at: z.string(),
+  actor: z.string(),
+  event: z.string(),
+});
+
+/** The responsible referrer's answers to a returned referral (pipeline/api_referrer.go). Only acknowledge leaves it open. */
+export const ReferrerResponseCode = z.enum(["acknowledge", "supply_info", "re_refer", "redirect", "manage_in_primary_care", "close"]);
+const ReferrerEntry = { at: z.string(), actor: z.string(), run_day: z.number(), event: z.string() };
+
+/** The hand-off packet a persisted return projects, on the canonical hand-off clock, with the referrer's answers. */
+export const ReferralHandoff = z.looseObject({
+  referral_id: z.string(),
+  reason_code: z.string(),
+  responsible_clinician: z.string(),
+  decided_by: z.string(),
+  decided_at: z.number(),
+  act_by: z.number(),
+  medical_director_day: z.number(),
+  status: HandoffStatus,
+  event: z.string().optional(),
+  info_requested: z.array(ReferralInfo).default([]),
+  destinations: z.array(z.string()).default([]),
+  acknowledgement: z.looseObject(ReferrerEntry).optional(),
+  referrer_response: z
+    .looseObject({
+      ...ReferrerEntry,
+      response: ReferrerResponseCode.exclude(["acknowledge"]),
+      supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
+      destination: z.string().optional(),
+      reason: z.string().optional(),
+    })
+    .optional(),
+  acted_at: z.number().optional(),
+});
+
+/** POST /api/cases/{id}/referral-response body. `referral_id` and `expected_head` are added by the caller. */
+export const ReferralResponseRequest = z.discriminatedUnion("response", [
+  z.object({ response: z.literal("accept") }),
+  z.object({ response: z.literal("accept_with_conditions"), conditions: z.array(ReferralCondition).min(1) }),
+  z.object({ response: z.literal("return"), reason: ReferralReturnReason, requested_info: z.array(ReferralInfo).optional() }),
+]);
+
+/** POST /api/cases/{id}/referrer-response body. `referral_id`, `packet` and `expected_head` are added by the caller. */
+export const ReferrerResponseRequest = z.discriminatedUnion("response", [
+  z.object({ response: z.literal("acknowledge") }),
+  z.object({ response: z.literal("supply_info"), supplied_info: z.partialRecord(ReferralInfo, z.string().trim().min(1).max(1000)) }),
+  z.object({ response: z.enum(["re_refer", "redirect"]), destination: z.string().min(1).max(64) }),
+  z.object({ response: z.enum(["manage_in_primary_care", "close"]), reason: z.string().trim().min(1).max(200) }),
+]);
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -307,11 +420,27 @@ export const ApiOverlay = z.looseObject({
   snooze: z.looseObject({ until: z.string(), reason: z.string().optional(), at: z.string().optional(), actor: z.string().optional() }).optional(),
   last_contact: OverlayContact.optional(),
   last_appointment_agreement: z.looseObject({ at: z.string(), event: z.string().default("") }).optional(),
+  decline_disposition: OverlayDisposition.optional(),
+  reconciliation: OverlayReconciliation.optional(),
   booking: BookingSummary.optional(),
   no_answer_streak: z.number().default(0),
   contact_outcomes: z.array(OverlayContact).optional(),
   notes: z.array(OverlayNote).optional(),
   canonical_owner: z.string().optional(),
+  referral_response: ReferralResponse.optional(),
+  referral_handoff: ReferralHandoff.optional(),
+  /** A clinician's recorded plan for the hold the case is still in. A plan, not completed care: the loop stays open. */
+  clinician_disposition: z.looseObject({
+    at: z.string(),
+    event: z.string(),
+    hold: z.enum(["clinician_decision_no_fundal_view", "clinician_decision_outside_fleischner"]),
+    plan: z.enum(["repeat_diagnostic", "alternative_diagnostic", "specialist_pathway", "primary_care_pathway"]),
+    owner: z.string(),
+    review_date: z.string(),
+    actor: z.string().optional(),
+    reason: z.string().optional(),
+    details: z.string().optional(),
+  }).optional(),
 });
 
 /** Case detail `review_ledger`: whether the shared ledger replayed completely. */
@@ -323,12 +452,58 @@ export const ReviewLedger = z.looseObject({
 });
 
 /** Patient-link self-service projection. Summary rows omit timestamps/event ids; detail includes the full projection. */
+export const PatientRightsRequestStaff = z.looseObject({
+  receipt: z.string(),
+  kind: z.enum(["explanation_requested", "contest_submitted"]),
+  decision: z.string(),
+  submitted_at: z.string(),
+  status: z.enum(["answered", "open", "resolved"]),
+  owner: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  closure_held: z.boolean().optional(),
+});
+/** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
+/** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
+export const OutcomeHandoff = z.looseObject({
+  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  referrer_status: z.enum(["pending", "acknowledged"]),
+  responsible_referrer: z.string(),
+  consent: z.string(),
+  version: z.string().optional(),
+  approved_by: z.string().optional(),
+  approved_at: z.string().optional(),
+  acknowledged_at: z.string().optional(),
+  content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
+  history: z.array(z.looseObject({ kind: z.enum(["content_approved", "referrer_acknowledged", "patient_acknowledged"]), version: z.string(), actor: z.string(), role: z.string(), at: z.string(), event: z.string() })),
+});
+export type OutcomeHandoff = z.infer<typeof OutcomeHandoff>;
+
+export const TeachBackCallback = z.looseObject({
+  id: z.string(),
+  source: z.enum(["patient_link", "engine"]),
+  state: z.enum(["misunderstood", "needs_human", "unparsed"]),
+  owner: z.string(),
+  status: z.enum(["open", "resolved"]),
+  escalation: z.string(),
+  opened_at: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  consultations: z
+    .array(z.looseObject({ outcome: z.enum(["understood_on_call", "another_explanation"]), actor: z.string(), role: z.string(), at: z.string(), event: z.string() }))
+    .optional(),
+});
 export const CasePatient = z.looseObject({
   schema: z.literal("wasl-patient-journey/1"),
   head: z.string(),
   seq: z.number().int().nonnegative(),
   ledger_status: z.enum(["ok", "invalid"]),
-  teach_back: z.looseObject({ status: z.enum(["pending", "completed"]), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
+  teach_back: z.looseObject({ status: z.enum(["pending", "completed", "clarify", "callback"]), attempts: z.number().int().optional(), question_id: z.string().optional(), completed_at: z.string().optional(), event: z.string().optional() }),
   contact_permission: z.looseObject({ status: Consent, updated_at: z.string().optional(), event: z.string().optional() }),
   slot_selection: z.looseObject({
     status: z.enum(["unselected", "selected"]), slot_id: z.string(), offers_version: z.string().optional(), selected_at: z.string().optional(), event: z.string().optional(),
@@ -401,6 +576,9 @@ export const ActiveCaseSummary = z.looseObject({
   contact_state: ContactState.optional(),
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
+  teach_back_callback: TeachBackCallback.optional(),
+  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks. */
+  escalations: z.array(z.string()).optional(),
 });
 
 const RetainedRequest = {
@@ -447,7 +625,19 @@ export const Link = z.looseObject({
   weakest_edge: WeakestEdge,
 });
 
+/** The hold-only image reader's verdict. Provenance for the reviewer; it never answers the review item. */
+export const ImageReader = z.looseObject({
+  model: z.string(),
+  caecal_photo: z.string(),
+  prep: z.string(),
+  hint: z.string().default(""),
+});
+
+/** One photo filed on a review item's report at the station the item asks about. `available` is false when its pixels are not stored. */
+export const ReviewPhoto = z.strictObject({ sha: z.string(), station: z.string(), available: z.boolean() });
+
 export const Evidence = z.looseObject({
+  image_reader: ImageReader.optional(),
   report: z.string(),
   agree: z.boolean(),
   label: z.string(),
@@ -528,6 +718,7 @@ export const ReviewItem = z.looseObject({
   pair: z.array(z.string()),
   p: z.number(),
   report: z.string(),
+  report_version: z.number().optional(),
   verdict: z.string(),
   conf: z.number().optional(),
   quote: z.string(),
@@ -556,6 +747,7 @@ export const Signoff = z.looseObject({
 
 /** One appended demo review action (POST /review response and case detail api_reviews). */
 export const ApiReview = z.looseObject({
+  source_binding: z.literal("legacy_unbound_nonbinding").optional(),
   case: z.string(),
   item: z.string(),
   decision: z.string(),
@@ -613,6 +805,7 @@ export const ConsentError = withMeta({ error: z.string(), current_head: z.string
  * item of a review not tied to a queue item. Pinned by tests/fixtures/audit_signed_reviews.json.
  */
 export const AuditReview = z.looseObject({
+  source_binding: z.literal("legacy_unbound_nonbinding").optional(),
   case: z.string(),
   item: z.string().optional(),
   decision: z.string().optional(),
@@ -634,7 +827,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -661,6 +854,23 @@ export const CoordinatorData = z.looseObject({
   expected_slot_version: z.string().optional(),
   reservation_id: z.string().optional(),
   expected_reservation_version: z.string().optional(),
+  // referral_response (the receiving unit) and referrer_response (the referring GP). Codes only, except supplied_info.
+  response: z.union([z.enum(["accept", "accept_with_conditions", "return"]), ReferrerResponseCode]).optional(),
+  conditions: z.array(ReferralCondition).optional(),
+  requested_info: z.array(ReferralInfo).optional(),
+  unit: z.string().optional(),
+  destination: z.string().optional(),
+  supplied_info: z.partialRecord(ReferralInfo, z.string()).optional(),
+  plan: z.string().optional(),
+  follow_up_owner: z.string().optional(),
+  next_review: z.string().optional(),
+  procedure: z.string().optional(),
+  provider: z.string().optional(),
+  retrieval_owner: z.string().optional(),
+  retrieval_due: z.string().optional(),
+  details: z.string().optional(),
+  review_date: z.string().optional(),
+  hold: z.string().optional(),
 });
 
 const coordinatorShape = {
@@ -698,7 +908,7 @@ const patientShape = {
   /** viewerEvent omits prev when it chains onto a concealed independent read. */
   prev: z.string().optional(),
   type: z.literal("patient_journey"),
-  kind: z.enum(["teach_back_completed", "contact_permission_changed", "slot_selected", "preparation_changed"]),
+  kind: z.enum(["teach_back_completed", "teach_back_answered", "contact_permission_changed", "slot_selected", "preparation_changed"]),
   link_id: z.string(),
   request_id: z.string(),
   head: z.string(),
@@ -790,14 +1000,20 @@ export const Booking = z.looseObject({
   reservation_explanation: z.string().optional(),
 });
 
-export const HandoffStatus = z.enum(["awaiting_referrer", "referrer_acted", "coordinator", "medical_director"]);
-
 /** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
 export const Handoff = z.looseObject({
   clinical_priority: z.string(),
   decided_at: z.number(),
   act_by: z.number(),
   status: HandoffStatus,
+  recommendation: z.string().optional(),
+  reason_code: z.string().optional(),
+  advice_to_referrer: z.string().optional(),
+  info_requested: z.array(z.string()).default([]),
+  responsible_clinician: z.string().optional(),
+  decided_by: z.string().optional(),
+  suggested_alternative: z.string().optional(),
+  medical_director_day: z.number().optional(),
 });
 
 export const ActiveCurrentDecision = z.looseObject({
@@ -833,6 +1049,7 @@ export const ReviewRead = z.looseObject({
   submitted: z.boolean(),
   decision: z.string().optional(),
   hash: z.string().optional(),
+  note: z.string().optional(),
 });
 
 /** A server-owned five-minute lease for one independent-review question. */
@@ -853,6 +1070,46 @@ export const ReviewClaimRequest = z.object({
   operation: ReviewClaimOperation,
   expected_claim_head: z.string().regex(/^(?:[0-9a-f]{64})?$/),
 });
+
+export const IdentityField = z.looseObject({ state: z.enum(["present", "placeholder", "missing", "unknown", "invalid"]), value: z.string().default("") });
+export const IdentityVerdict = z.enum(["match", "differ", "missing", "placeholder", "unknown", "invalid"]);
+
+const IdentityVisibleChecks = z.object({ met: z.boolean(), failures: z.array(z.string()) }).transform(({ met, failures }) => ({
+  met,
+  failures: failures.filter((code) => code !== "name_or_shared_id_check"),
+}));
+
+// Old snapshots had only a partial met/failures result. Preserve its useful
+// diagnostics without inventing original guard authority or mutating the input.
+const IdentityGuard = z.preprocess((value) => {
+  if (value === undefined) return {};
+  if (typeof value === "object" && value !== null && !Array.isArray(value) && "met" in value && "failures" in value && !("visible_checks" in value)) {
+    return {
+      authoritative: "authoritative" in value ? value.authoritative : false,
+      reason: "original_guard_context_unavailable",
+      visible_checks: { met: value.met, failures: value.failures },
+    };
+  }
+  return value;
+}, z.object({
+  authoritative: z.literal(false).default(false),
+  reason: z.literal("original_guard_context_unavailable").default("original_guard_context_unavailable"),
+  visible_checks: IdentityVisibleChecks.optional(),
+}));
+
+/** Materialized identifiers for one link item's registrations, not original item-time facts. Reviewer-only; never in the auditor export. */
+export const IdentityReview = z.discriminatedUnion("available", [
+  z.looseObject({ item: z.string(), pair: z.array(z.string()), available: z.literal(false), reason: z.string() }),
+  z.looseObject({
+    item: z.string(),
+    pair: z.array(z.string()),
+    available: z.literal(true),
+    source_scope: z.literal("materialized_registration").optional(),
+    records: z.array(z.looseObject({ registration: z.string(), name: IdentityField, dob: IdentityField, sex: IdentityField, eid: IdentityField })),
+    comparison: z.array(z.looseObject({ field: z.string(), verdict: IdentityVerdict })),
+    guard: IdentityGuard,
+  }),
+]);
 
 /** One (item, question) independent-review state machine as the API projects it for the calling credential. */
 export const ReviewState = z.looseObject({
@@ -892,6 +1149,8 @@ export const CaseDetail = withMeta({
   outreach: z.array(z.looseObject({})),
   decisions: z.array(Decision),
   review_items: z.array(ReviewItem),
+  /** Per review item id: the photos behind an image-backed CRC item; absent from snapshots and older APIs. */
+  review_photos: z.record(z.string(), z.array(ReviewPhoto)).optional(),
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
   api_reviews: z.array(LedgerEvent),
@@ -901,9 +1160,16 @@ export const CaseDetail = withMeta({
   api_overlay: ApiOverlay.optional(),
   /** Separate patient-link projection; never merged into canonical timeline or booking. */
   api_patient: CasePatient.optional(),
+  /** Patient explanation requests and contests (pipeline/api_patient_request.go); separate from staff undo/contest. */
+  patient_requests: z.array(PatientRightsRequestStaff).optional(),
+  /** Failed teach-back nurse-callback tasks with their consultation outcomes (pipeline/api_teachback.go). */
+  teach_back_callbacks: z.array(TeachBackCallback).optional(),
+  /** Post-closure outcome hand-off: clinician approval, referrer and patient acknowledgements (pipeline/api_outcome_handoff.go). */
+  outcome_handoff: OutcomeHandoff.optional(),
   review_ledger: ReviewLedger.optional(),
   /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
   api_review_states: z.array(ReviewState).optional(),
+  identity_review: z.array(IdentityReview).optional(),
   current: CurrentDecision,
   booking: Booking,
 });
@@ -935,6 +1201,7 @@ export const Fixtures = withMeta({
     false_closure_trap: CaseSummary,
     review_hold: CaseSummary,
     dr_exam_closure: CaseSummary.optional(),
+    person_journey: CaseSummary.optional(),
   }),
 });
 
@@ -965,6 +1232,7 @@ export const Dashboard = withMeta({
     false_closure_trap: z.string(),
     review_hold: z.string(),
     dr_exam_closure: z.string().optional(),
+    person_journey: z.string().optional(),
   }),
   // --- Provider/origin breakdowns (issue #45) ---
   // The API copies these from the run's dashboard.json and serves null when the run has none (pipeline/api.go getDashboard),
@@ -1101,7 +1369,8 @@ export const Operations = z.strictObject({
   backup: OperationsBackup,
 });
 
-const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "confirm_contact"] as const;
+const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "histology", "no_histology", "confirm_contact"] as const;
+const CRC_PATHOLOGY_LABELS = ["histology", "no_histology"];
 const LUNG_OUTCOMES = [
   "stable",
   "resolved",
@@ -1155,8 +1424,9 @@ function ifhasFollowupLabels(): string[] {
 }
 
 /** Every evidence label the corresponding backend programme accepts, including procedure and structured-result labels. */
-export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas", string[]> = {
+export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "cervical" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas", string[]> = {
   crc: ["adequate", "inadequate"],
+  cervical: ["adequate", "inadequate"],
   lung_nodule: [...LUNG_OUTCOMES, ...lungIndexLabels],
   diabetic_retinopathy: [...drGradeLabels, "U", ...DR_OUTCOMES],
   breast: [...BREAST_LABELS],
@@ -1164,8 +1434,17 @@ export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_re
   ifhas: [...ifhasScreenLabels, ...ifhasFollowupLabels()],
 };
 
-/** Programmes the review desk can sign: each has evidence labels. Cervical has none, so its cases cannot be answered there. */
+/** Programmes the review desk can sign: each has evidence labels. */
 export const isGuided = (programme: string): programme is keyof typeof GUIDED_EVIDENCE_LABELS => Object.hasOwn(GUIDED_EVIDENCE_LABELS, programme);
+
+/** The labels a raised evidence item accepts: a CRC pathology report takes histology answers, every other report its programme's labels. */
+export function evidenceLabelsFor(detail: Pick<CaseDetail, "case" | "timeline">, report: string): string[] {
+  const programme = detail.case.programme;
+  if (!isGuided(programme)) return [];
+  const short = shortId(report);
+  if (programme === "crc" && detail.timeline.some((e) => shortId(e.id) === short && e.category === "pathology")) return CRC_PATHOLOGY_LABELS;
+  return GUIDED_EVIDENCE_LABELS[programme];
+}
 
 export const ReviewDecision = z.union([
   z.enum(CRC_DECISIONS),
@@ -1207,6 +1486,15 @@ export const ReviewClaimResponse = withMeta({
 });
 
 /** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
+/** GET /api/cases/{id}/review/source: the complete report revision one raised evidence item judges. */
+export const ReviewSourceResponse = withMeta({
+  item: z.string(),
+  source: z.object({ report: z.string(), report_version: z.number().int(), day: z.number(), category: z.string().optional(), text: z.string() }),
+});
+export type ReviewSource = z.infer<typeof ReviewSourceResponse>["source"];
+export const SourceStatus = z.enum(["missing", "ambiguous", "unreadable"]);
+export type SourceStatus = z.infer<typeof SourceStatus>;
+
 export const ReviewError = withMeta({
   error: z.string(),
   conflict: z.enum(["claim_active", "claim_required", "claim_expired", "claim_head", "review_state", "head"]).optional(),
@@ -1291,6 +1579,17 @@ export const CaseAction = z.discriminatedUnion("action", [
     note: z.string().max(1000).optional(),
   }),
   z.object({ action: z.literal("note"), text: z.string().min(1).max(1000) }),
+  z.object({
+    action: z.literal("completed_elsewhere"),
+    procedure: z.string().min(1).max(64),
+    performed: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/),
+    provider: z.string().min(1).max(120),
+    source: z.enum(["patient", "carer", "other_provider"]),
+    report_ref: z.string().min(1).max(64).optional(),
+    retrieval_owner: z.string().min(1).max(64),
+    retrieval_due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  z.object({ action: z.literal("retrieval_outcome"), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().min(1).max(1000).optional() }),
   ...BookingAction.options,
 ]);
 export const ActionResponse = withMeta({
@@ -1316,8 +1615,13 @@ export type Meta = z.infer<typeof Meta>;
 export type CaseSummary = z.infer<typeof CaseSummary>;
 export type CurrentDecision = z.infer<typeof CurrentDecision>;
 export type HandoffStatus = z.infer<typeof HandoffStatus>;
+export type ReferralCondition = z.infer<typeof ReferralCondition>;
+export type ReferralReturnReason = z.infer<typeof ReferralReturnReason>;
+export type ReferralInfo = z.infer<typeof ReferralInfo>;
+export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
+export type TeachBackCallback = z.infer<typeof TeachBackCallback>;
 export type Audit = z.infer<typeof Audit>;
 export type CaseList = z.infer<typeof CaseList>;
 export type Fixtures = z.infer<typeof Fixtures>;
@@ -1329,7 +1633,8 @@ export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ReviewRead = z.infer<typeof ReviewRead>;
 export type ReviewState = z.infer<typeof ReviewState>;
 export type ReviewSlot = z.infer<typeof ReviewSlot>;
-export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string };
+/** `note` is the reviewer's rationale; a senior resolution (r3) requires a non-blank one. */
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string; claimHead: string; note?: string };
 export type ReviewClaimInput = { item: string; question: "link" | "evidence"; operation: "claim" | "renew" | "release" | "takeover"; expectedClaimHead: string };
 export type ReviewClaim = z.infer<typeof ReviewClaim>;
 export type ReviewClaimActions = z.infer<typeof ReviewClaimActions>;

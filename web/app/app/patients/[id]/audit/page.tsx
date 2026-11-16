@@ -43,9 +43,25 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
       </header>
 
       <div className="mt-6 flex flex-col gap-gap">
-        <VerifiedCard audit={audit} />
+        {history.modelWithheld ? (
+          <section aria-labelledby="chain-withheld-h" className="rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="chain-withheld">
+            <h2 id="chain-withheld-h" className="m-0 text-section font-medium">
+              Ledger chain
+            </h2>
+            <p className="m-0 mt-3 max-w-[72ch] text-muted" role="status">
+              The chain carries the image reader&apos;s verdict, so it is withheld until you have completed your own independent read of the evidence question.
+            </p>
+            <p className="m-0 mt-3">
+              <Link href={caseHref("/app/review", detail.case.id)} className="inline-flex min-h-11 items-center">
+                Open the review page
+              </Link>
+            </p>
+          </section>
+        ) : (
+          <VerifiedCard audit={audit} />
+        )}
         <div className="grid items-start gap-gap lg:grid-cols-2">
-          <ChainCard audit={audit} />
+          {!history.modelWithheld && <ChainCard audit={audit} />}
           <div className="flex min-w-0 flex-col gap-gap">
             <SignaturesCard audit={audit} />
             {status === "ok" ? (
@@ -70,7 +86,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
             <AnchorsCard audit={audit} />
           </div>
         </div>
-        {status === "ok" && <ExportCard caseId={detail.case.id} />}
+        {status === "ok" && !history.modelWithheld && <ExportCard caseId={detail.case.id} />}
       </div>
     </>
   );

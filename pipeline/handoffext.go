@@ -56,7 +56,10 @@ func (c *ClosureCore) extReferrals(f *LoopFacts, prog string) ([]srFact, []row) 
 			ask = append(ask, row{d: d, pc: pc})
 			continue
 		}
-		st := map[string]string{"active": "accepted", "revoked": "rejected"}[d.Status]
+		st := referralIntakeStates[d.Status]
+		if st == "" {
+			continue
+		}
 		srs = append(srs, srFact{day: d.Day, status: st, prov: d.Provider, reason: d.Reason, ev: d.EventID})
 	}
 	sort.SliceStable(srs, func(i, j int) bool {

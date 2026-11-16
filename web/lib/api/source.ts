@@ -4,6 +4,8 @@ import type { z } from "zod";
 import {
   ActionError,
   ActionResponse,
+  ReferralResponseRequest,
+  ReferrerResponseRequest,
   ApiError,
   CaseAction,
   Audit,
@@ -26,6 +28,8 @@ import {
   ReviewError,
   ReviewRequest,
   ReviewResponse,
+  ReviewSourceResponse,
+  SourceStatus,
   UndoProjection,
   UndoRequest,
   type CaseSummary,
@@ -34,10 +38,13 @@ import {
   type ConsentRequest as ConsentRequestInput,
   type ContestRequest as ContestRequestBody,
   type ContestResolutionRequest as ContestResolutionRequestBody,
+  type ReviewSource,
   type Role,
+  type SourceStatus as SourceStatusValue,
   type UndoRequest as UndoRequestBody,
   type UndoProjection as UndoProjectionBody,
 } from "./schema";
+import { effectiveOwner } from "./owner";
 
 /*
  * The one data source for every screen.
@@ -56,9 +63,10 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 /**
  * `web_reviewer` is the credential for generic shared reads (dashboard, lists, case detail on shared pages). It is bound
  * to its own non-reader actor, so a first read concealed from everyone but its author is concealed from these pages too.
- * It never falls back to the assigned reviewer tokens, which are initial readers.
+ * It never falls back to the assigned reviewer tokens, which are initial readers. `referrer` is the referring GP's
+ * clinician credential for answering a returned referral, bound to a different actor from the receiving unit's clinician.
  */
-export type WebCredential = "web_reviewer";
+export type WebCredential = "web_reviewer" | "referrer";
 
 /** The web server has no token for this credential: a configuration fault here, not an API outage. */
 export class MissingCredentialError extends Error {
@@ -127,7 +135,7 @@ export type CaseQuery = Partial<{
   state: CaseSummary["state"];
   dropoff: CaseSummary["dropoff"];
   owner: string;
-  /** Cases with no owner. The API's `owner` filter cannot ask for an empty owner, so this is applied here. */
+  /** Cases with no effective owner: no saved assignment and no canonical owner. */
   unowned: boolean;
   provider: string;
   consent: CaseSummary["consent"];
@@ -143,7 +151,7 @@ export type CaseQuery = Partial<{
 function toSearch(q: CaseQuery): string {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(q)) {
-    if (v === undefined || k === "unowned") continue;
+    if (v === undefined) continue;
     params.set(k, k === "fixture" ? (v ? "1" : "") : String(v));
   }
   const s = params.toString();
@@ -155,8 +163,8 @@ export function matches(c: CaseSummary, q: CaseQuery): boolean {
     (q.programme === undefined || c.programme === q.programme) &&
     (q.state === undefined || c.state === q.state) &&
     (q.dropoff === undefined || c.dropoff === q.dropoff) &&
-    (q.owner === undefined || c.owner === q.owner) &&
-    (!q.unowned || c.owner === "") &&
+    (q.owner === undefined || effectiveOwner(c) === q.owner) &&
+    (!q.unowned || effectiveOwner(c) === "") &&
     (q.provider === undefined || c.provider === q.provider) &&
     (q.consent === undefined || c.consent === q.consent) &&
     (q.review === undefined || c.review === q.review) &&
@@ -170,19 +178,7 @@ export function matches(c: CaseSummary, q: CaseQuery): boolean {
 /** Fixtures mode filters each programme's 25-case sample page plus the fixtures; the live API filters all cases. */
 export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
   if (apiMode() === "live") {
-    if (!query.unowned) return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
-    // The API cannot filter on an empty owner: fetch every other match (500 a page) and keep the unowned ones.
-    const { limit: want = 100, offset: skip = 0, ...rest } = query;
-    const cases: CaseSummary[] = [];
-    let first: CaseList | undefined;
-    for (let offset = 0; ; offset += 500) {
-      const page = (await live(CaseList, `/api/cases${toSearch({ ...rest, limit: 500, offset })}`))!;
-      first ??= page;
-      cases.push(...page.cases.filter((c) => c.owner === ""));
-      if (offset + page.cases.length >= page.total || page.cases.length === 0) break;
-    }
-    const limit = Math.min(want, 500);
-    return { ...first, cases: cases.slice(skip, skip + limit), total: cases.length, limit, offset: skip };
+    return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
   }
   const pageFiles = (await readdir(FIXTURE_DIR)).filter((f) => /^cases_[a-z_]+_page1\.json$/.test(f)).sort();
   const [pages, fx] = await Promise.all([Promise.all(pageFiles.map((f) => fixture(CaseList, f))), getFixtures()]);
@@ -384,6 +380,74 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
   throw new Error(`POST actions: HTTP ${res.status}`);
 }
 
+/** Words for a 401 or a missing token on a referral response: the server's receiving-unit clinician credential. */
+export const CLINICIAN_TOKEN_REFUSED = "the API did not accept this server's clinician credential; an operator must fix the server configuration";
+export const CLINICIAN_TOKEN_MISSING = "this server has no clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+
+/** Words for a 401 or a missing token on a referrer's hand-off answer: the server's referring-clinician credential. */
+export const REFERRER_TOKEN_REFUSED = "the API did not accept this server's referring-clinician credential; an operator must fix the server configuration";
+export const REFERRER_TOKEN_MISSING = "this server has no referring-clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+
+/**
+ * The receiving unit's answer to a referral, appended to the API ledger with the server-side clinician credential
+ * (WASL_API_CLINICIAN_TOKEN). The API maps that token's actor to a receiving unit; nothing here asserts identity or unit.
+ */
+export async function postReferralResponse(id: string, response: z.input<typeof ReferralResponseRequest>, expectedHead: string): Promise<ActionResult> {
+  const body = ReferralResponseRequest.safeParse(response);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  return postAnswer(id, "referral-response", "clinician", { ...body.data, referral_id: id, expected_head: expectedHead }, [CLINICIAN_TOKEN_MISSING, CLINICIAN_TOKEN_REFUSED]);
+}
+
+/**
+ * The responsible referrer's answer to the returned packet `packet`, appended with the server-side referring-clinician
+ * credential (WASL_API_REFERRER_TOKEN). The API checks that token's actor belongs to the case's referring provider.
+ */
+export async function postReferrerResponse(id: string, packet: string, response: z.input<typeof ReferrerResponseRequest>, expectedHead: string): Promise<ActionResult> {
+  const body = ReferrerResponseRequest.safeParse(response);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  return postAnswer(id, "referrer-response", "referrer", { ...body.data, referral_id: id, packet, expected_head: expectedHead }, [REFERRER_TOKEN_MISSING, REFERRER_TOKEN_REFUSED]);
+}
+
+async function postAnswer(id: string, route: string, credential: Role | WebCredential, payload: object, [missing, refused]: [string, string]): Promise<ActionResult> {
+  if (apiMode() !== "live") throw new Error(`POST ${route} needs WASL_API_URL: fixtures mode cannot append referral answers`);
+  let init: RequestInit;
+  try {
+    init = authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }, credential);
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: missing };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/${route}`, init);
+  if (res.status === 401) return { ok: false, status: 401, error: refused };
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
+  const parsed = ActionError.safeParse(json);
+  if (parsed.success && (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409 || res.status === 500)) {
+    return { ok: false, status: res.status, error: parsed.data.error, conflict: parsed.data.conflict, currentHead: parsed.data.current_head };
+  }
+  throw new Error(`POST ${route}: HTTP ${res.status}`);
+}
+
+export type TeachBackOutcome = "understood_on_call" | "another_explanation";
+export type TeachBackCallbackResult = { ok: true } | { ok: false; status: number; error: string };
+
+/** Record a failed teach-back consultation outcome. The API binds the coordinator token to its role and actor. */
+export async function postTeachBackCallback(id: string, callback: string, outcome: TeachBackOutcome): Promise<TeachBackCallbackResult> {
+  if (apiMode() !== "live") throw new Error("postTeachBackCallback needs WASL_API_URL: fixtures mode cannot append callback outcomes");
+  let init: RequestInit;
+  try {
+    init = authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ callback, outcome }) }, "coordinator");
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/teach-back-callback`, init);
+  if (res.status === 201) return { ok: true };
+  if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  const e = ApiError.safeParse(await res.json().catch(() => undefined));
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
 export type BookingActionResult =
   /** A 201 means the append happened. An unreadable body is null, never a licence to retry blindly. */
   | { ok: true; status: 201; response: ActionResponse | null }
@@ -468,6 +532,37 @@ export async function getCaseWithToken(id: string, token: string): Promise<Revie
   if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return { ok: true, detail: CaseDetail.parse(await res.json()) };
+}
+
+export type ReviewPhotoResult = { ok: true; bytes: ArrayBuffer; type: "image/png" | "image/jpeg" } | { ok: false; status: 401 | 403 | 404 };
+
+/** One review-item photo as the holder of `token` may fetch it. Anything but a PNG or JPEG body counts as unavailable. */
+export async function getReviewPhotoWithToken(id: string, item: string, sha: string, token: string): Promise<ReviewPhotoResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}/review-photos/${encodeURIComponent(item)}/${sha}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  if (res.status === 401 || res.status === 403) return { ok: false, status: res.status };
+  const type = res.headers.get("content-type");
+  if (!res.ok || (type !== "image/png" && type !== "image/jpeg")) return { ok: false, status: 404 };
+  return { ok: true, bytes: await res.arrayBuffer(), type };
+}
+
+export type ReviewSourceResult =
+  | { ok: true; source: ReviewSource }
+  /** 409 names why the matching report cannot be opened; every other refusal carries no detail. */
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409; sourceStatus?: SourceStatusValue };
+
+/** The source report a raised evidence item judges, fetched with the signer's own token. Opening it records nothing. */
+export async function getReviewSourceWithToken(id: string, item: string, token: string): Promise<ReviewSourceResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}/review/source?item=${encodeURIComponent(item)}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  const json = await res.json().catch(() => undefined);
+  if (res.ok) return { ok: true, source: ReviewSourceResponse.parse(json).source };
+  if (res.status === 409) {
+    const status = SourceStatus.safeParse((json as { source_status?: unknown } | undefined)?.source_status);
+    return { ok: false, status: 409, sourceStatus: status.success ? status.data : undefined };
+  }
+  if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
+  throw new Error(`GET review source: HTTP ${res.status}`);
 }
 
 export type ReviewReadResult =

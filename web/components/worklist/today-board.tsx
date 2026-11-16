@@ -12,18 +12,19 @@ import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
-import { byUrgency, STANDARD_DAYS } from "./days";
+import { byUrgency, clockWords } from "./days";
 import { LedgerInvalidBanner, listLedgerInvalid } from "./ledger-banner";
 import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
 import { BOOKING_NEEDED, DECLINED_CANCELLED_NEXT, DECLINED_RESERVED_NEXT, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus, outcomeStatus, ownerLabel, workItem } from "./model";
-import { outcomeWords } from "@/components/case/words";
+import { outcomeWords, reconciliationWords, retrievalOutcomeWords } from "@/components/case/words";
+import { ElsewhereForm } from "./elsewhere-form";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
-import { ApiOverlay, Booking, CasePatient, CaseSummary, type CaseAction } from "@/lib/api/schema";
+import { ApiOverlay, Booking, CasePatient, CaseSummary, RETRIEVAL_OUTCOMES, type CaseAction } from "@/lib/api/schema";
 import { z } from "zod";
 import { Pager } from "./pager";
 import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
@@ -41,8 +42,8 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
 type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
-type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; log: Contact[] };
-type Stage = "reached" | "callback";
+type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; retrieval?: WorkItem["retrieval"]; log: Contact[] };
+type Stage = "reached" | "callback" | "elsewhere";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
   tab: View;
@@ -53,7 +54,7 @@ type State = {
   q: string;
   calling: string | null;
   stage: Stage | null;
-  /** Wall-clock ms when "Call back on…" was opened: the one instant every callback choice is computed from. */
+  /** Wall-clock ms when "Call back on…" or "Done elsewhere…" was opened: the one instant its dates are computed from. */
   callbackFrom: number;
   last: Logged | null;
   over: Record<string, Patch>;
@@ -78,7 +79,7 @@ const contactProjection = (item: WorkItem): ContactProjection => ({
 const bookingRowProjection = (item: WorkItem) => ({
   view: item.view, status: item.status, next: item.next, head: item.head,
   snoozed: item.snoozed, noAnswer: item.noAnswer, awaitingNext: item.awaitingNext,
-  reserved: item.reserved, cancelled: item.cancelled,
+  reserved: item.reserved, cancelled: item.cancelled, retrieval: item.retrieval,
 });
 const withoutRead = (reads: Record<string, LedgerRead>, id: string) => {
   const next = { ...reads };
@@ -95,6 +96,7 @@ const TABS: [View, string][] = [
 ];
 
 const OUTCOME_CHIP = { voicemail: "Voicemail", wrong_number: "Wrong number" } as const;
+const RETRIEVAL_CHIP = { not_found: "Record not found", not_matching: "Another patient or procedure", non_closing: "Report does not close the loop" } as const;
 
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -119,7 +121,7 @@ function useReadFence() {
   return { revisionFor, supersede };
 }
 
-export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
+export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushrif Healthcare Centre" }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean; scope?: string }) {
   const [s, setS] = useState<State>({ tab: "call", page: 1, mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
@@ -309,9 +311,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     : {
         name: top.name,
         rest:
-          (top.days > STANDARD_DAYS
-            ? `is ${top.days - STANDARD_DAYS} days over ${STANDARD_DAYS}: ${top.status.toLowerCase()}.`
-            : `has ${STANDARD_DAYS - top.days} days left of ${STANDARD_DAYS}: ${top.status.toLowerCase()}.`) +
+          `${clockWords(top).over ? `is ${clockWords(top).long}` : top.deadline === null ? "has no overdue clock" : `has ${clockWords(top).long}`}: ${top.status.toLowerCase()}.` +
           ` ${toCall.length - 1} more to call.`,
       };
 
@@ -352,6 +352,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           supersedeRead(row.id);
           apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
+        else if (res.conflict === "reconciliation") setRefusal({ id: row.id, text: `Not saved: ${res.error}` });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -384,14 +385,29 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     </div>
   );
   /* A persisted Reached outcome keeps its follow-up choices until a later outcome, snooze or booking replaces it. */
-  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" ? "callback" : null) : p?.awaitingNext ? "reached" : null;
+  const stage: Stage | null = last ? s.stage : s.calling === p?.id ? (s.stage === "callback" || s.stage === "elsewhere" ? s.stage : null) : p?.awaitingNext ? "reached" : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
 
   type Chip = [string, () => void];
   let chipsTitle = "";
   let chips: Chip[] = [];
-  if (p && !p.contactBlocked) {
+  if (p?.retrieval) {
+    const retrieval = p.retrieval;
+    chipsTitle = "Record retrieval outcome";
+    chips = RETRIEVAL_OUTCOMES.map((outcome): Chip => [
+      RETRIEVAL_CHIP[outcome],
+      () =>
+        log(
+          p,
+          `Record retrieval ended: ${retrievalOutcomeWords(outcome)}`,
+          { view: "call", status: "Record retrieval ended · follow-up resumes", next: "Call to arrange the procedure", retrieval: undefined, awaitingNext: false },
+          `Logged: ${RETRIEVAL_CHIP[outcome]}`,
+          `${first} moved to To call · ${retrieval.owner}'s retrieval task closed`,
+          { action: "retrieval_outcome", outcome },
+        ),
+    ]);
+  } else if (p && !p.contactBlocked) {
     if (!last && !stage) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
@@ -456,6 +472,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           },
         ],
         [
+          "Done elsewhere…",
+          () => {
+            setWant({ k: "chips" });
+            setS((prev) => ({ ...prev, calling: last ? prev.calling : p.id, stage: "elsewhere", callbackFrom: Date.now() }));
+          },
+        ],
+        [
           "Declined",
           () =>
             log(
@@ -512,7 +535,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
           <span className="text-small text-muted">
-            Al Mushrif Healthcare Centre · run day {Math.floor(now)}, {formatDay(now)}
+            {scope} · run day {Math.floor(now)}, {formatDay(now)}
           </span>
           {aside}
         </div>
@@ -550,7 +573,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(s.tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {paging.rows.map((r) => {
               const on = p?.id === r.id;
-              const over = r.days > STANDARD_DAYS;
+              const clock = clockWords(r);
               return (
                 <div key={r.id} className={cn("relative flex min-h-[68px] items-start gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
                   <div className="flex size-11 flex-none items-center justify-center">
@@ -574,8 +597,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                           {r.nameAr}
                         </span>
                       )}
-                      <span className={cn("ml-auto whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
-                        {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
+                      <span className={cn("ml-auto whitespace-nowrap text-small", clock.over ? "font-medium text-negative" : "text-muted")}>
+                        {r.days} days · {clock.short}
                       </span>
                     </span>
                     <span className="mt-0.5 block text-muted">{r.status}</span>
@@ -589,7 +612,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
           <div className="border-t border-rule px-4 py-3 text-small text-muted">
             {s.tab === "call"
-              ? `${list.length} to call · ${list.filter((r) => r.days > STANDARD_DAYS).length} over ${STANDARD_DAYS} days`
+              ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
               : s.tab === "waiting"
                 ? `${list.length} waiting on someone else`
                 : `${list.length} with no owner`}
@@ -635,13 +658,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", clockWords(p).over ? "text-negative" : "text-ink")}>
                     <NumberFlow value={p.days} />
                   </span>
                   <span className="text-muted">days since referral</span>
                 </div>
-                <div className={cn("mt-0.5 text-body sm:text-small", p.days > STANDARD_DAYS ? "text-negative" : "text-muted")}>
-                  {p.days > STANDARD_DAYS ? `${p.days - STANDARD_DAYS} days over ${STANDARD_DAYS}` : `${STANDARD_DAYS - p.days} days left of ${STANDARD_DAYS}`}
+                <div className={cn("mt-0.5 text-body sm:text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
+                  {clockWords(p).long}
                 </div>
               </div>
             </div>
@@ -650,7 +673,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               <Button
                 variant="cta"
                 size="touch"
-                disabled={p.contactBlocked || ledgerInvalid}
+                disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
                 className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
               >
@@ -781,7 +804,33 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               )}
             </AnimatePresence>
 
-            {chips.length > 0 && (
+            {p && stage === "elsewhere" && !p.retrieval && (
+              <div className="mt-4">
+                <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
+                  Done elsewhere
+                </h3>
+                <ElsewhereForm
+                  owner={p.owner === "No owner" ? "" : p.owner}
+                  procedure={p.procedure ?? ""}
+                  nowMs={s.callbackFrom}
+                  disabled={busy || ledgerInvalid}
+                  onCancel={() => setS((prev) => ({ ...prev, calling: null, stage: "reached" }))}
+                  onRecord={(action) => {
+                    const words = reconciliationWords(action, new Date().toISOString().slice(0, 10));
+                    log(
+                      p,
+                      `Reported done elsewhere: ${action.procedure} at ${action.provider}`,
+                      { view: "waiting", status: words.status, next: words.next, awaitingNext: false, retrieval: { owner: action.retrieval_owner, due: action.retrieval_due, overdue: words.overdue } },
+                      "Logged: Done elsewhere",
+                      `${first} moved to Waiting for the record`,
+                      action,
+                    );
+                  }}
+                />
+              </div>
+            )}
+
+            {chips.length > 0 && stage !== "elsewhere" && (
               <div className="mt-4">
                 <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
                   {chipsTitle}
@@ -803,7 +852,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               </div>
             )}
 
-            <Track days={p.days} referralDay={p.referralDay} />
+            <Track days={p.days} deadline={p.deadline} referralDay={p.referralDay} />
 
             <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
               <Field label="Texts" value={p.textsStopped ? "Stopped by patient" : p.contactBlocked ? "Contact blocked · denial or opt-out recorded" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
@@ -825,7 +874,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
 
             {live && ledgerRead?.bookingPanel && (
               <div className="mt-6" aria-label="Simulated booking">
-                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live onProjection={(projection) => bookingProjection(p.id, projection)} />
+                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live retrievalPending={!!p.retrieval} onProjection={(projection) => bookingProjection(p.id, projection)} />
               </div>
             )}
 
@@ -870,13 +919,16 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   );
 }
 
-function Track({ days, referralDay }: { days: number; referralDay: number }) {
-  const SCALE = 40;
-  const fill = (Math.min(days, STANDARD_DAYS) / SCALE) * 100;
-  const over = (Math.min(Math.max(0, days - STANDARD_DAYS), SCALE - STANDARD_DAYS) / SCALE) * 100;
-  const tick = (STANDARD_DAYS / SCALE) * 100;
+function Track({ days, deadline, referralDay }: { days: number; deadline: number | null; referralDay: number }) {
+  if (deadline === null) {
+    return <p className="m-0 mt-5 text-small text-muted">Referred {formatDay(referralDay)} · routine interval, no overdue clock</p>;
+  }
+  const SCALE = Math.round((deadline * 40) / 31);
+  const fill = (Math.min(days, deadline) / SCALE) * 100;
+  const over = (Math.min(Math.max(0, days - deadline), SCALE - deadline) / SCALE) * 100;
+  const tick = (deadline / SCALE) * 100;
   return (
-    <div role="img" aria-label={`Day ${days} of ${STANDARD_DAYS} since referral${days > STANDARD_DAYS ? `, ${days - STANDARD_DAYS} over` : ""}`} className="mt-5">
+    <div role="img" aria-label={`Day ${days} of ${deadline} since referral${days > deadline ? `, ${days - deadline} over` : ""}`} className="mt-5">
       <div className="relative h-4">
         <span className="absolute inset-x-0 top-1 h-2 rounded-chip bg-raised" />
         <span className="absolute left-0 top-1 h-2 rounded-l-chip bg-hue" style={{ width: `${fill}%` }} />
@@ -886,7 +938,7 @@ function Track({ days, referralDay }: { days: number; referralDay: number }) {
       <div className="relative mt-1.5 h-4 text-small tabular-nums text-muted">
         <span className="absolute left-0">Referred {formatDay(referralDay)}</span>
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${tick}%` }}>
-          Day {STANDARD_DAYS} · {formatDay(referralDay + STANDARD_DAYS)}
+          Day {deadline} · {formatDay(referralDay + deadline)}
         </span>
       </div>
     </div>

@@ -1,0 +1,947 @@
+[
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "6a0144077411f21e4fe756cb350b0c4628ad17312382d097e880b82173d42b42",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 91,
+      "decisions": 2,
+      "dropoff": "no_followup_ct",
+      "fixture": "",
+      "id": "rad-imaging/ServiceRequest/RAD-sr-9101",
+      "lung": {
+        "finding_label": "solid/\u003e8/single",
+        "finding_report": "RAD-ct-1",
+        "rec": {
+          "action": "ct_or_pet_or_tissue",
+          "cell": "solid/single/high/\u003e8",
+          "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+          "win_hi_days": 91,
+          "win_lo_days": 0
+        },
+        "risk": "high",
+        "risk_recorded": true,
+        "scope": "in_scope",
+        "window_end_day": 190,
+        "window_start_day": 99
+      },
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "lung_nodule",
+      "provider": "rad-imaging",
+      "referral_day": 99,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "solid/\u003e8/single",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "rad-imaging/DiagnosticReport/RAD-ct-1"
+          },
+          "hash": "7969639bb2030000a3908c4806fda0ebfdfcfbe366e3323325bc1135f9ce550a",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "ct_or_pet_or_tissue",
+            "age": 60,
+            "cell": "solid/single/high/\u003e8",
+            "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+            "optional": false,
+            "risk": "high",
+            "risk_recorded": true,
+            "rule": "fleischner2017",
+            "source": "MacMahon et al., Radiology 2017;284(1):228-243 (PMID 28240562)",
+            "window_days": [
+              0,
+              91
+            ]
+          },
+          "hash": "5227af5de0e544a115220fec6644b16091985f2f89466f29c1567ac0badbc18f",
+          "prev": "7969639bb2030000a3908c4806fda0ebfdfcfbe366e3323325bc1135f9ce550a",
+          "type": "recommendation"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 91,
+      "dropoff": "no_followup_ct",
+      "esc": [
+        "referral_rejected"
+      ],
+      "handoff": {
+        "act_by": 123,
+        "acted_at": -1,
+        "advice_to_referrer": "This unit does not take the patient's network. Refer to a unit in the patient's network.",
+        "clinical_priority": "urgent",
+        "decided_at": 119,
+        "decided_by": "mafraq-rad",
+        "decision": "reject",
+        "medical_director_day": 125,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "wrong_provider",
+        "received_at": 119,
+        "recommendation": "PET/CT or tissue sampling for a solid nodule \u003e 8 mm (Fleischner 2017)",
+        "referral_id": "MAF-intake-9101",
+        "responsible_clinician": "referring PCP, rad-imaging",
+        "status": "awaiting_referrer",
+        "suggested_alternative": ""
+      },
+      "id": "dec-rad-imaging/ServiceRequest/RAD-sr-9101@synthetic-clock",
+      "in_seq": 7,
+      "loop": "rad-imaging/ServiceRequest/RAD-sr-9101",
+      "lung": {
+        "finding_label": "solid/\u003e8/single",
+        "finding_report": "RAD-ct-1",
+        "rec": {
+          "action": "ct_or_pet_or_tissue",
+          "cell": "solid/single/high/\u003e8",
+          "next_step": "consider CT at 3 months, PET/CT or tissue sampling; manage by result",
+          "win_hi_days": 91,
+          "win_lo_days": 0
+        },
+        "risk": "high",
+        "risk_recorded": true,
+        "scope": "in_scope",
+        "window_end_day": 190,
+        "window_start_day": 99
+      },
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "lung_nodule",
+      "prov": "rad-imaging",
+      "ref_day": 119,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "6a0144077411f21e4fe756cb350b0c4628ad17312382d097e880b82173d42b42",
+      "sr_day": 99,
+      "state": "open",
+      "unowned": true
+    }
+  },
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "f72cfdd66482b0dbd09a3efc9a4cc0fa2d5925663e04d07777aa24b0b3e54b32",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 42,
+      "decisions": 2,
+      "dr": {
+        "deadline_day": 141,
+        "grade_day": 99,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9201"
+      },
+      "dropoff": "no_eye_exam",
+      "fixture": "",
+      "id": "phc-retina/ServiceRequest/PHC-sr-9201",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "diabetic_retinopathy",
+      "provider": "phc-retina",
+      "referral_day": 99,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "R3AM0",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "phc-retina/DiagnosticReport/PHC-dr-9201"
+          },
+          "hash": "26d749e7e18484f28efd74dabb8fe399b26d3692ad893f5f8884f887f952c4ef",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "refer",
+            "cell": "R3AM0",
+            "deadline_days": 42,
+            "grade_day": 99,
+            "rule": "doh2024dr",
+            "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+            "urgency": "urgent"
+          },
+          "hash": "d4e9fb93e1b25c19ad82fdd7e18080a45ec6c21608355d17d1dd144411fecaf1",
+          "prev": "26d749e7e18484f28efd74dabb8fe399b26d3692ad893f5f8884f887f952c4ef",
+          "type": "recommendation"
+        },
+        {
+          "body": {
+            "deadline_day": 141,
+            "loop": "phc-retina/ServiceRequest/PHC-sr-9201",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "diabetic_retinopathy",
+            "reason": "awaiting_eye_clinic_exam",
+            "rule": "doh2024dr",
+            "state": "review_hold"
+          },
+          "hash": "d77397d2c7280646d1dad6e38af03c53f14671b1b36ec53d2da1436fae08d3a3",
+          "prev": "d4e9fb93e1b25c19ad82fdd7e18080a45ec6c21608355d17d1dd144411fecaf1",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 42,
+      "dr": {
+        "deadline_day": 141,
+        "grade_day": 99,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9201"
+      },
+      "dropoff": "no_eye_exam",
+      "esc": [
+        "urgent_dr_referral_open",
+        "referral_rejected"
+      ],
+      "handoff": {
+        "act_by": 123,
+        "acted_at": -1,
+        "advice_to_referrer": "Referral returned incomplete. Resend with the information requested.",
+        "clinical_priority": "urgent",
+        "decided_at": 119,
+        "decided_by": "eye-hosp",
+        "decision": "reject",
+        "info_requested": [
+          "reason_for_referral",
+          "relevant_clinical_information",
+          "expected_outcome"
+        ],
+        "medical_director_day": 125,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "needs_more_info",
+        "received_at": 119,
+        "recommendation": "dilated eye examination at an eye clinic (doh2024dr)",
+        "referral_id": "EYE-intake-9201",
+        "responsible_clinician": "referring PCP, phc-retina",
+        "status": "awaiting_referrer",
+        "suggested_alternative": ""
+      },
+      "id": "dec-phc-retina/ServiceRequest/PHC-sr-9201@synthetic-clock",
+      "in_seq": 7,
+      "loop": "phc-retina/ServiceRequest/PHC-sr-9201",
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "diabetic_retinopathy",
+      "prov": "phc-retina",
+      "ref_day": 119,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "f72cfdd66482b0dbd09a3efc9a4cc0fa2d5925663e04d07777aa24b0b3e54b32",
+      "sr_day": 99,
+      "state": "open",
+      "unowned": true
+    }
+  },
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "ea6935d2d382a33d7112de94e78e84509ed7ba3b0946a349de8a29936beb5fd4",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 42,
+      "decisions": 2,
+      "dr": {
+        "deadline_day": 137,
+        "grade_day": 95,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9202"
+      },
+      "dropoff": "no_eye_exam",
+      "fixture": "",
+      "id": "phc-retina/ServiceRequest/PHC-sr-9202",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "diabetic_retinopathy",
+      "provider": "phc-retina",
+      "referral_day": 95,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "R3AM0",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "phc-retina/DiagnosticReport/PHC-dr-9202"
+          },
+          "hash": "1796c0d512a3ae96cca1fbbb15b08063dc02b2a0bfded74f92a004246fc5cf52",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "refer",
+            "cell": "R3AM0",
+            "deadline_days": 42,
+            "grade_day": 95,
+            "rule": "doh2024dr",
+            "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+            "urgency": "urgent"
+          },
+          "hash": "f73c94d5c4848c2182196f1759a0961e5b9863321dd4f77db2a8e1ba10e279e3",
+          "prev": "1796c0d512a3ae96cca1fbbb15b08063dc02b2a0bfded74f92a004246fc5cf52",
+          "type": "recommendation"
+        },
+        {
+          "body": {
+            "deadline_day": 137,
+            "loop": "phc-retina/ServiceRequest/PHC-sr-9202",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "diabetic_retinopathy",
+            "reason": "awaiting_eye_clinic_exam",
+            "rule": "doh2024dr",
+            "state": "review_hold"
+          },
+          "hash": "f2566e0af0ebb5f3e01296d4662933eeb65776827cf5467a43e9b4041d227038",
+          "prev": "f73c94d5c4848c2182196f1759a0961e5b9863321dd4f77db2a8e1ba10e279e3",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 42,
+      "dr": {
+        "deadline_day": 137,
+        "grade_day": 95,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9202"
+      },
+      "dropoff": "no_eye_exam",
+      "esc": [
+        "urgent_dr_referral_open",
+        "referral_rejected",
+        "handoff_coordinator"
+      ],
+      "handoff": {
+        "act_by": 117,
+        "acted_at": -1,
+        "advice_to_referrer": "No capacity for this procedure. Re-refer when the unit has capacity, or refer outside the network.",
+        "clinical_priority": "urgent",
+        "decided_at": 115,
+        "decided_by": "eye-hosp",
+        "decision": "reject",
+        "medical_director_day": 122,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "service_not_available",
+        "received_at": 115,
+        "recommendation": "dilated eye examination at an eye clinic (doh2024dr)",
+        "referral_id": "EYE-intake-9202",
+        "responsible_clinician": "referring PCP, phc-retina",
+        "status": "coordinator",
+        "suggested_alternative": ""
+      },
+      "id": "dec-phc-retina/ServiceRequest/PHC-sr-9202@synthetic-clock",
+      "in_seq": 7,
+      "loop": "phc-retina/ServiceRequest/PHC-sr-9202",
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "diabetic_retinopathy",
+      "prov": "phc-retina",
+      "ref_day": 115,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "ea6935d2d382a33d7112de94e78e84509ed7ba3b0946a349de8a29936beb5fd4",
+      "sr_day": 95,
+      "state": "open",
+      "unowned": true
+    }
+  },
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "0b464176dc389973b8552a6c5cf29e75171bee24c18185c8c37bf68f4b6cabb5",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 42,
+      "decisions": 2,
+      "dr": {
+        "deadline_day": 122,
+        "grade_day": 80,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9203"
+      },
+      "dropoff": "no_eye_exam",
+      "fixture": "",
+      "id": "phc-retina/ServiceRequest/PHC-sr-9203",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "diabetic_retinopathy",
+      "provider": "phc-retina",
+      "referral_day": 80,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "R3AM0",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "phc-retina/DiagnosticReport/PHC-dr-9203"
+          },
+          "hash": "fe12bc769fd7e5160840dcd60b0963bc051db6f4891e91060ab90f5f4a12af14",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "refer",
+            "cell": "R3AM0",
+            "deadline_days": 42,
+            "grade_day": 80,
+            "rule": "doh2024dr",
+            "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+            "urgency": "urgent"
+          },
+          "hash": "b159e94f7b459c104e4d5e6af63fe28e7cf276f9de5c54682b3e9b6d4b8c8df9",
+          "prev": "fe12bc769fd7e5160840dcd60b0963bc051db6f4891e91060ab90f5f4a12af14",
+          "type": "recommendation"
+        },
+        {
+          "body": {
+            "deadline_day": 122,
+            "loop": "phc-retina/ServiceRequest/PHC-sr-9203",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "diabetic_retinopathy",
+            "reason": "awaiting_eye_clinic_exam",
+            "rule": "doh2024dr",
+            "state": "review_hold"
+          },
+          "hash": "ef4de3b488da0bb1321d9a604b182497105b8e2b7363566d62b87e822b248d55",
+          "prev": "b159e94f7b459c104e4d5e6af63fe28e7cf276f9de5c54682b3e9b6d4b8c8df9",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 42,
+      "dr": {
+        "deadline_day": 122,
+        "grade_day": 80,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9203"
+      },
+      "dropoff": "no_eye_exam",
+      "esc": [
+        "urgent_dr_referral_open",
+        "referral_rejected",
+        "handoff_medical_director",
+        "handoff_urgent_14d"
+      ],
+      "handoff": {
+        "act_by": 102,
+        "acted_at": -1,
+        "advice_to_referrer": "Referral returned incomplete. Resend with the information requested.",
+        "clinical_priority": "urgent",
+        "decided_at": 100,
+        "decided_by": "eye-hosp",
+        "decision": "reject",
+        "info_requested": [
+          "reason_for_referral",
+          "relevant_clinical_information",
+          "expected_outcome"
+        ],
+        "medical_director_day": 104,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "needs_more_info",
+        "received_at": 100,
+        "recommendation": "dilated eye examination at an eye clinic (doh2024dr)",
+        "referral_id": "EYE-intake-9203",
+        "responsible_clinician": "referring PCP, phc-retina",
+        "status": "medical_director",
+        "suggested_alternative": ""
+      },
+      "id": "dec-phc-retina/ServiceRequest/PHC-sr-9203@synthetic-clock",
+      "in_seq": 7,
+      "loop": "phc-retina/ServiceRequest/PHC-sr-9203",
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "diabetic_retinopathy",
+      "prov": "phc-retina",
+      "ref_day": 100,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "0b464176dc389973b8552a6c5cf29e75171bee24c18185c8c37bf68f4b6cabb5",
+      "sr_day": 80,
+      "state": "open",
+      "unowned": true
+    }
+  },
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "1440d5f9fd8098af4cfe4f18cd057efcb6052e494fad3ce32a746906a25e1c87",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 91,
+      "decisions": 2,
+      "dr": {
+        "deadline_day": 188,
+        "grade_day": 97,
+        "rec": {
+          "action": "refer",
+          "cell": "R2M0",
+          "deadline_days": 91,
+          "urgency": "routine"
+        },
+        "screen_label": "R2M0",
+        "screen_report": "PHC-dr-9204"
+      },
+      "dropoff": "no_eye_exam",
+      "fixture": "",
+      "id": "phc-retina/ServiceRequest/PHC-sr-9204",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "diabetic_retinopathy",
+      "provider": "phc-retina",
+      "referral_day": 97,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "R2M0",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "phc-retina/DiagnosticReport/PHC-dr-9204"
+          },
+          "hash": "b0dc6f4fc5494141cea244f4cd4878b9bd1c010a1388c8b39f851bd9c250ef7b",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "refer",
+            "cell": "R2M0",
+            "deadline_days": 91,
+            "grade_day": 97,
+            "rule": "doh2024dr",
+            "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+            "urgency": "routine"
+          },
+          "hash": "1ea22cf351a9730cda89f0b2ed82096dba8df0294b37915c6d634f8e9ca3b1f7",
+          "prev": "b0dc6f4fc5494141cea244f4cd4878b9bd1c010a1388c8b39f851bd9c250ef7b",
+          "type": "recommendation"
+        },
+        {
+          "body": {
+            "deadline_day": 188,
+            "loop": "phc-retina/ServiceRequest/PHC-sr-9204",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "diabetic_retinopathy",
+            "reason": "awaiting_eye_clinic_exam",
+            "rule": "doh2024dr",
+            "state": "review_hold"
+          },
+          "hash": "97abf82b1a2a9fb154a93f5d9fdb0ca164fae22c9d2cbc102dc95b542fb4f36f",
+          "prev": "1ea22cf351a9730cda89f0b2ed82096dba8df0294b37915c6d634f8e9ca3b1f7",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 91,
+      "dr": {
+        "deadline_day": 188,
+        "grade_day": 97,
+        "rec": {
+          "action": "refer",
+          "cell": "R2M0",
+          "deadline_days": 91,
+          "urgency": "routine"
+        },
+        "screen_label": "R2M0",
+        "screen_report": "PHC-dr-9204"
+      },
+      "dropoff": "no_eye_exam",
+      "esc": [
+        "referral_rejected"
+      ],
+      "handoff": {
+        "act_by": 125,
+        "acted_at": -1,
+        "advice_to_referrer": "Referral returned incomplete. Resend with the information requested.",
+        "clinical_priority": "routine",
+        "decided_at": 117,
+        "decided_by": "eye-hosp",
+        "decision": "reject",
+        "info_requested": [
+          "reason_for_referral",
+          "relevant_clinical_information",
+          "expected_outcome"
+        ],
+        "medical_director_day": 132,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "needs_more_info",
+        "received_at": 117,
+        "recommendation": "dilated eye examination at an eye clinic (doh2024dr)",
+        "referral_id": "EYE-intake-9204",
+        "responsible_clinician": "referring PCP, phc-retina",
+        "status": "awaiting_referrer",
+        "suggested_alternative": ""
+      },
+      "id": "dec-phc-retina/ServiceRequest/PHC-sr-9204@synthetic-clock",
+      "in_seq": 7,
+      "loop": "phc-retina/ServiceRequest/PHC-sr-9204",
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "diabetic_retinopathy",
+      "prov": "phc-retina",
+      "ref_day": 117,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "1440d5f9fd8098af4cfe4f18cd057efcb6052e494fad3ce32a746906a25e1c87",
+      "sr_day": 97,
+      "state": "open",
+      "unowned": true
+    }
+  },
+  {
+    "case": {
+      "api_overlay": {
+        "actions": 0,
+        "booking": {
+          "mode": "simulated",
+          "reservation_id": null,
+          "reservation_version": null,
+          "revision": 0,
+          "slot": null,
+          "status": "unreserved",
+          "updated_at": null,
+          "updated_event": null
+        },
+        "head": "62a5f20db19edfb656292fa9e88dcd4bf7a5c485e0f6f3a7ecd83690359f3941",
+        "last_action_at": "",
+        "ledger_status": "ok",
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "contact_state": {
+        "contact_blocked": false,
+        "status": "none"
+      },
+      "deadline_day": 42,
+      "decisions": 2,
+      "dr": {
+        "deadline_day": 122,
+        "grade_day": 80,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9205"
+      },
+      "dropoff": "no_eye_exam",
+      "fixture": "",
+      "id": "phc-retina/ServiceRequest/PHC-sr-9205",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "diabetic_retinopathy",
+      "provider": "phc-retina",
+      "referral_day": 80,
+      "review": "none",
+      "state": "open"
+    },
+    "current": {
+      "ack_day": -1,
+      "chain": [
+        {
+          "body": {
+            "agree": true,
+            "human_override": "",
+            "label": "R3AM0",
+            "reader_a_regex": "",
+            "reader_b": "",
+            "reader_model": "",
+            "report": "phc-retina/DiagnosticReport/PHC-dr-9205"
+          },
+          "hash": "075749ef5cd055a1635063480a2a1128b7e481dd300f303aef4b2eb4765aedfc",
+          "prev": "genesis",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "action": "refer",
+            "cell": "R3AM0",
+            "deadline_days": 42,
+            "grade_day": 80,
+            "rule": "doh2024dr",
+            "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+            "urgency": "urgent"
+          },
+          "hash": "22d43cbec340a2d5b31d007c11e3014c05f9d5660c8e03120cb90e97b54c2313",
+          "prev": "075749ef5cd055a1635063480a2a1128b7e481dd300f303aef4b2eb4765aedfc",
+          "type": "recommendation"
+        },
+        {
+          "body": {
+            "deadline_day": 122,
+            "loop": "phc-retina/ServiceRequest/PHC-sr-9205",
+            "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+            "programme": "diabetic_retinopathy",
+            "reason": "awaiting_eye_clinic_exam",
+            "rule": "doh2024dr",
+            "state": "review_hold"
+          },
+          "hash": "0e5b93b6bab4ef0eb6cfb1036b1e0aa3d9dbc626eb136b2faa78ad29c19dc36f",
+          "prev": "22d43cbec340a2d5b31d007c11e3014c05f9d5660c8e03120cb90e97b54c2313",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 42,
+      "dr": {
+        "deadline_day": 122,
+        "grade_day": 80,
+        "rec": {
+          "action": "refer",
+          "cell": "R3AM0",
+          "deadline_days": 42,
+          "urgency": "urgent"
+        },
+        "screen_label": "R3AM0",
+        "screen_report": "PHC-dr-9205"
+      },
+      "dropoff": "no_eye_exam",
+      "esc": [
+        "urgent_dr_referral_open"
+      ],
+      "handoff": {
+        "act_by": 102,
+        "acted_at": 104,
+        "advice_to_referrer": "No capacity for this procedure. Re-refer when the unit has capacity, or refer outside the network.",
+        "clinical_priority": "urgent",
+        "decided_at": 100,
+        "decided_by": "eye-hosp",
+        "decision": "reject",
+        "medical_director_day": 104,
+        "outreach_consent_status": "granted",
+        "patient_informed": false,
+        "reason_code": "service_not_available",
+        "received_at": 100,
+        "recommendation": "dilated eye examination at an eye clinic (doh2024dr)",
+        "referral_id": "EYE-intake-9205",
+        "responsible_clinician": "referring PCP, phc-retina",
+        "status": "referrer_acted",
+        "suggested_alternative": ""
+      },
+      "id": "dec-phc-retina/ServiceRequest/PHC-sr-9205@synthetic-clock",
+      "in_seq": 7,
+      "loop": "phc-retina/ServiceRequest/PHC-sr-9205",
+      "notif_day": -1,
+      "now": 120,
+      "overdue": false,
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "diabetic_retinopathy",
+      "prov": "phc-retina",
+      "ref_day": 100,
+      "ref_status": "accepted",
+      "reported_closed": false,
+      "sig": "62a5f20db19edfb656292fa9e88dcd4bf7a5c485e0f6f3a7ecd83690359f3941",
+      "sr_day": 80,
+      "state": "open",
+      "unowned": true
+    }
+  }
+]

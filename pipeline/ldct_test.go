@@ -169,16 +169,18 @@ func TestLDCTFollowupRejectsUnrelatedAddendumAndEarlyReread(t *testing.T) {
 		addendum.Parent = "LCS-other-index"
 		d, _ := runLung(t, lcFacts(index, addendum), 120)
 		if d.State != "open" || lcHoldReason(d) != "followup_addendum_not_interval_ldct" {
-			t.Errorf("%s addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
+			t.Errorf("%s unlinked addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
 		}
+		addendum.Parent = index.ReportID
 		early := lcScan("LCS-ct-early", 10.5, "LR2")
 		d, _ = runLung(t, lcFacts(index, early), 120)
 		if d.State != "open" || lcHoldReason(d) != "followup_too_early" {
 			t.Errorf("%s same-day reread: want open, got %s %q", indexLabel, d.State, lcHoldReason(d))
 		}
-		// An ineligible addendum does not consume or block the later real interval LDCT.
+		// A confirming addendum is not an interval LDCT and does not block the later real one.
+		confirm := lcAddendum(index, "LCS-ct-add", 30, indexLabel)
 		actual := lcScan("LCS-ct-follow", 100, "LR2")
-		d, _ = runLung(t, lcFacts(index, addendum, actual), 120)
+		d, _ = runLung(t, lcCanonicalReclassificationFacts(t, index, confirm, actual), 120)
 		if d.State != "closed" || d.ClosingReport != actual.ReportID {
 			t.Errorf("%s addendum then interval LDCT: got %s closing %q", indexLabel, d.State, d.ClosingReport)
 		}
@@ -599,20 +601,22 @@ func TestLDCTLinkedRevisionReclassifiesFollowupIndex(t *testing.T) {
 		t.Run(indexLabel+"/annual_revision_not_interval_followup", func(t *testing.T) {
 			index := lcScan("LCS-ct-1", 10, indexLabel)
 			revision := lcScan("LCS-ct-revision", 10.5, "LR2")
-			revision.Parent = index.ReportID
-			d, _ := runLung(t, lcFacts(index, revision), 20)
+			revision.Parent, revision.Relation, revision.Version = index.ReportID, addendumRelation, 2
+			d, _ := runLung(t, lcCanonicalReclassificationFacts(t, index, revision), 20)
+			pr185RequireClock(t, d, "reclassified_index_exam", "lcs-centre/DiagnosticReport/LCS-ct-1", 10)
 			if d.State != "no_recall_needed" || d.ClosingReport != revision.ReportID || d.LDCT.Scan != revision.ReportID ||
-				d.LDCT.ScanDay != 10.5 || d.LDCT.DueDay != 375.5 || d.LDCT.FollowReport != "" || d.LDCT.Outcome == "followup_done" {
+				d.LDCT.ScanDay != 10.5 || d.LDCT.DueDay != 375 || d.LDCT.ClockAnchor.Provider != pr185ClockProvider || d.LDCT.ClockAnchor.Registration != lcSRRec || d.LDCT.FollowReport != "" || d.LDCT.Outcome == "followup_done" {
 				t.Fatalf("linked annual revision must reclassify the index even before an interval scan is eligible: %+v", d)
 			}
 		})
 		t.Run(indexLabel+"/authorized_revision", func(t *testing.T) {
 			index := lcScan("LCS-ct-1", 10, indexLabel)
 			revision := lcScan("LCS-ct-revision", 12, "LR4B")
-			revision.Parent = index.ReportID
-			d, _ := runLung(t, lcFacts(index, revision), 20)
+			revision.Parent, revision.Relation, revision.Version = index.ReportID, addendumRelation, 2
+			d, _ := runLung(t, lcCanonicalReclassificationFacts(t, index, revision), 20)
+			pr185RequireClock(t, d, "reclassified_index_exam", "lcs-centre/DiagnosticReport/LCS-ct-1", 10)
 			if d.State != "open" || d.ClosingReport != "" || d.LDCT.Scan != revision.ReportID || d.LDCT.ScanLabel != "LR4B" ||
-				d.LDCT.Rec == nil || d.LDCT.Rec.Action != LDCTWorkup || d.LDCT.ScanDay != 12 || d.LDCT.DeadlineDay != 42 ||
+				d.LDCT.Rec == nil || d.LDCT.Rec.Action != LDCTWorkup || d.LDCT.ScanDay != 12 || d.LDCT.DeadlineDay != 40 || d.LDCT.ClockAnchor.Provider != pr185ClockProvider || d.LDCT.ClockAnchor.Registration != lcSRRec ||
 				d.LDCT.FollowReport != "" || d.LDCT.Outcome == "followup_done" || !hasEsc(d, "urgent_ldct_workup_open") {
 				t.Fatalf("linked revision must reclassify %s as urgent work-up, not an interval follow-up: %+v", indexLabel, d)
 			}

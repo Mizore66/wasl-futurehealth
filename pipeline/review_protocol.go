@@ -337,7 +337,7 @@ func projectReviewStates(states map[reviewQuestionKey]*reviewProtocolState, clai
 			if i == 0 && hidden {
 				e["concealed"] = true
 			} else {
-				e["decision"], e["hash"] = r.Decision, r.Hash
+				e["decision"], e["hash"], e["note"] = r.Decision, r.Hash, r.Note
 			}
 			reads = append(reads, e)
 		}
@@ -391,13 +391,58 @@ func (s *apiServer) raisedReviewItem(caseID, item string) *ReviewItem {
 	return nil
 }
 
-func (s *apiServer) itemSigned(caseID, item string) bool {
+// signoffAnswers reports whether a canonical sign-off answers question q of the raised item. Report, version and
+// head are compared when the sign-off records them, so a sign-off of superseded evidence answers nothing current.
+// A sign-off that carries neither a link nor an evidence answer is a whole-item sign-off for the kinds it names.
+func signoffAnswers(r map[string]interface{}, it *ReviewItem, q string) bool {
+	str := func(k string) string { v, _ := r[k].(string); return v }
+	if str("item") != it.ItemID ||
+		(str("report") != "" && str("report") != it.ReportID) ||
+		(str("signed_head") != "" && it.Head != "" && str("signed_head") != it.Head) {
+		return false
+	}
+	if v, ok := r["report_version"].(float64); ok && !sameReportReviewVersion(int(v), it.ReportVersion) {
+		return false
+	}
+	switch link, evidence := str("link"), str("evidence"); {
+	case link == "" && evidence == "":
+		kinds, _ := r["kinds"].([]interface{})
+		for _, k := range kinds {
+			if k == q {
+				return true
+			}
+		}
+		return len(kinds) == 0
+	case q == "link":
+		return link != ""
+	case q == "evidence":
+		return evidence != ""
+	}
+	return true
+}
+
+func (s *apiServer) questionSigned(caseID string, it *ReviewItem, q string) bool {
 	for _, r := range s.signoffs[caseID] {
-		if fmt.Sprint(r["item"]) == item {
+		if signoffAnswers(r, it, q) {
 			return true
 		}
 	}
 	return false
+}
+
+// reviewStatusLocked is open while any raised question lacks a matching canonical sign-off.
+func (s *apiServer) reviewStatusLocked(caseID string) string {
+	for _, it := range s.queue[caseID] {
+		for _, q := range it.Kinds {
+			if !s.questionSigned(caseID, it, q) {
+				return "open"
+			}
+		}
+	}
+	if len(s.signoffs[caseID]) > 0 {
+		return "signed"
+	}
+	return "none"
 }
 
 func itemHasKind(it *ReviewItem, kind string) bool {
@@ -413,15 +458,15 @@ func itemHasKind(it *ReviewItem, kind string) bool {
 func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[string]interface{} {
 	states := s.protoStatesLocked()
 	view := map[reviewQuestionKey]*reviewProtocolState{}
-	frozen := map[string]bool{}
+	frozen := map[reviewQuestionKey]bool{}
 	for _, it := range s.queue[c.ID] {
-		signed := s.itemSigned(c.ID, it.ItemID)
-		frozen[it.ItemID] = signed
 		for _, q := range it.Kinds {
 			if q != "link" && q != "evidence" {
 				continue
 			}
 			key := reviewQuestionKey{it.ItemID, q}
+			signed := s.questionSigned(c.ID, it, q)
+			frozen[key] = signed
 			if st := states[key]; st != nil {
 				view[key] = st // existing history stays visible after a canonical sign-off (frozen)
 			} else if s.claimsLocked()[key] != nil || !signed {
@@ -431,9 +476,9 @@ func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[st
 	}
 	out := projectReviewStates(view, s.claimsLocked(), viewer, s.clock())
 	for _, m := range out {
-		// A canonical sign-off freezes the item: history stays, but no form is actionable.
-		m["frozen"] = frozen[m["item"].(string)]
+		// A canonical sign-off freezes the question it answers: history stays, but no form is actionable.
 		key := reviewQuestionKey{Item: m["item"].(string), Question: m["question"].(string)}
+		m["frozen"] = frozen[key]
 		addClaimProjection(m, view[key], s.claimsLocked()[key], viewer, s.clock(), m["frozen"] == true)
 	}
 	return out
@@ -510,7 +555,7 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 			continue
 		}
 		if v, ok := viewerEvent(r, conc); ok {
-			out = append(out, v)
+			out = append(out, s.reviewHistoryProjection(v))
 		}
 	}
 	return out
@@ -520,6 +565,9 @@ func (s *apiServer) reviewsForViewer(id string, viewer *apiPrincipal) []map[stri
 func reviewActFor(c *apiCase, decision string) string {
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
 		"confirm_contact": ActRecordConsent}[decision]
+	if act == "" && c.Programme == "crc" && isCRCPathologyLabel(decision) {
+		act = ActSignEvidence
+	}
 	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(decision) != nil {
 		act = ActSignEvidence
 	}
@@ -539,6 +587,32 @@ func reviewActFor(c *apiCase, decision string) string {
 		act = ActSignEvidence
 	}
 	return act
+}
+
+func isCRCPathologyLabel(decision string) bool {
+	return decision == "histology" || decision == "no_histology"
+}
+
+// itemReportCategory uses this raised item's original provider/version source,
+// not a current presentation row that can change after another link or revision.
+func (s *apiServer) itemReportCategory(caseID string, it *ReviewItem) string {
+	return s.raisedReportCategory(caseID, it)
+}
+
+// crcDecisionFitsItem keeps a CRC pathology item to histology/no_histology and every other CRC evidence item to
+// adequate/inadequate. Decisions outside those four labels are not scoped by report kind.
+func (s *apiServer) crcDecisionFitsItem(c *apiCase, it *ReviewItem, decision string) bool {
+	if c.Programme != "crc" || !(isCRCPathologyLabel(decision) || decision == "adequate" || decision == "inadequate") {
+		return true
+	}
+	switch s.itemReportCategory(c.ID, it) {
+	case "pathology":
+		return isCRCPathologyLabel(decision)
+	case "colonoscopy":
+		return decision == "adequate" || decision == "inadequate"
+	default:
+		return false // missing or ambiguous source is not implicit colonoscopy
+	}
 }
 
 // replayProtocol validates a protocol event found in the ledger at startup with the same rules as a live write.
@@ -576,6 +650,9 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 	act := reviewActFor(&apiCase{Programme: signed.Prog}, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
 		return fmt.Errorf("protocol read decision does not fit the item's question")
+	}
+	if !s.crcDecisionFitsItem(&apiCase{ID: id, Programme: signed.Prog}, it, sstr(ev, "decision")) {
+		return fmt.Errorf("protocol read decision does not fit the item's report")
 	}
 	if err := checkClaimedProtocolRead(s.claimsLocked(), ev, false); err != nil {
 		return err
@@ -620,7 +697,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}
-		if s.itemSigned(c.ID, it.ItemID) {
+		if s.questionSigned(c.ID, it, question) {
 			return 409, map[string]interface{}{"error": "item already has a canonical sign-off; independent reads are closed"}
 		}
 		states := s.protoStatesLocked()
@@ -668,7 +745,7 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 // read's hash is removed from every field that repeats it (prev, action_head, target, ...). The stored bytes are untouched.
 func (s *apiServer) shownEventLocked(stored map[string]interface{}, viewer apiPrincipal) map[string]interface{} {
 	if v, ok := viewerEvent(stored, s.concealedHashesLocked(viewer)); ok {
-		return v
+		return s.reviewHistoryProjection(v)
 	}
 	return map[string]interface{}{}
 }

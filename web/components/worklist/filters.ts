@@ -55,6 +55,18 @@ export function parseCaseFilters(sp: SearchParams): CaseFilters {
   };
 }
 
+export type TodaySelection = Pick<CaseFilters, "programme" | "provider">;
+
+/** The queue Today opens on when the URL chooses nothing. */
+export const TODAY_DEFAULT: TodaySelection = { programme: "crc", provider: "ahs-mushrif" };
+
+/** Today's `?programme=&provider=`. Only a URL with neither key gets the default; an empty value means all. */
+export function parseTodaySelection(sp: SearchParams): TodaySelection {
+  if (sp.programme === undefined && sp.provider === undefined) return TODAY_DEFAULT;
+  const { programme, provider } = parseCaseFilters(sp);
+  return { ...(programme && { programme }), ...(provider && { provider }) };
+}
+
 /** `?page=` as a 1-based whole number; anything else is page 1. */
 export function parsePage(sp: SearchParams): number {
   const n = Number(one(sp.page));

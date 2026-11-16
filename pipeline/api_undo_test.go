@@ -34,6 +34,11 @@ func newUndoRig(t *testing.T) *undoRig {
 		d := &Decision{ID: "dec-" + id, LoopID: id, Prog: "crc", State: "open", Sig: "head-" + id}
 		s.cases[id] = &apiCase{ID: id, Programme: "crc", State: "open", last: d, decisions: []*Decision{d}}
 		s.order = append(s.order, id)
+		seedEvidenceSource(t, s, id)
+	}
+	// Each case's evidence source is one more FHIR record; the run's report must still declare them all.
+	if err := os.WriteFile(filepath.Join(run, "report7.json"), []byte(`{"events":3,"programmes_live":{"crc":{"cases":1}}}`), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/cases/", s.undoRoutes(s.caseRoutes))
@@ -61,7 +66,15 @@ func (r *undoRig) do(method, path, role, actor, body string) (int, map[string]in
 // review appends an ordinary review event through the real handler and returns its hash.
 func (r *undoRig) review(caseID, role, actor, decision string) string {
 	r.t.Helper()
-	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, `{"decision":"`+decision+`"}`)
+	body := map[string]string{"decision": decision}
+	if decision == "adequate" || decision == "inadequate" {
+		body["item"] = attachSourceBoundEvidence202(r.t, r.s, caseID)
+	}
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	code, m := r.do("POST", "/api/cases/"+caseID+"/review", role, actor, string(encoded))
 	if code != 201 {
 		r.t.Fatalf("seed review: %d %v", code, m)
 	}
@@ -170,10 +183,12 @@ func TestUndoRejectsBadTargets(t *testing.T) {
 }
 
 func TestUndoSameActorAndUnauthorized(t *testing.T) {
-	r := newUndoRig(t)
+	r, evidenceItem := newSourceBoundUndoRig202(t)
 	link := r.review(undoCaseA, RoleReviewer, "r1", "same")
-	ev := r.review(undoCaseA, RoleClinician, "c1", "adequate")
-	code, m := r.undo(undoCaseA, RoleReviewer, "r1", `{"target":"`+link+`"}`)
+	code, m := r.do("POST", "/api/cases/"+undoCaseA+"/review", RoleClinician, "c1", legacyBody(evidenceItem, "adequate"))
+	r.wantCode(code, 201, m, "source-bound evidence seed")
+	ev := m["review"].(map[string]interface{})["hash"].(string)
+	code, m = r.undo(undoCaseA, RoleReviewer, "r1", `{"target":"`+link+`"}`)
 	r.wantCode(code, 403, m, "same actor")
 	code, m = r.undo(undoCaseA, RoleReviewer, " R1 ", `{"target":"`+link+`"}`)
 	r.wantCode(code, 403, m, "same actor, case/space variant")

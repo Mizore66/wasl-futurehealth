@@ -52,6 +52,9 @@ export WASL_API_CLINICIAN_TOKEN="${WASL_API_CLINICIAN_TOKEN:-wasl-demo-clinician
 export WASL_API_CLINICIAN_2_TOKEN="${WASL_API_CLINICIAN_2_TOKEN:-wasl-demo-clinician-2-token}"
 export WASL_API_CLINICIAN_3_TOKEN="${WASL_API_CLINICIAN_3_TOKEN:-wasl-demo-clinician-3-token}"
 export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_WEB_REVIEWER_TOKEN:reviewer:smoke-web-reviewer,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:senior_reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician,$WASL_API_CLINICIAN_2_TOKEN:clinician:smoke-clinician-2,$WASL_API_CLINICIAN_3_TOKEN:senior_clinician:smoke-clinician-3}"
+# The web server's clinician token answers the receiving unit's referral inbox, so its actor is the endoscopy unit's clinician.
+export WASL_RECEIVING_UNIT_CLINICIANS="${WASL_RECEIVING_UNIT_CLINICIANS:-skmc-endo:smoke-clinician}"
+export WASL_REFERRING_CLINICIANS="${WASL_REFERRING_CLINICIANS:-}"
 export WASL_API_ORIGINS="${WASL_API_ORIGINS:-}"
 COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
 LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop type); 0 = off
@@ -270,9 +273,20 @@ snapshot() {  # static API responses for frontend development (no backend needed
     curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" "http://$A/api/recovery/slots/$id" |
       python3 "$ROOT/scripts/redacted_snapshot.py" recovery-detail > "$S/recovery_slot.json" || { echo "snapshot: recovery detail failed" >&2; return 1; }
   fi
-  id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures']['evidence_closure']['id'])" "$S/fixtures.json")
-  curl -sfG --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" --data-urlencode "case_id=$id" "http://$A/api/people" |
-    python3 "$ROOT/scripts/redacted_snapshot.py" person > "$S/person_journey.json" || { echo "snapshot: person journey failed" >&2; return 1; }
+  # The published person is the API's person_journey fixture (pipeline/api_people.go pickPersonFixture). Only an explicit
+  # WASL_SNAPSHOT_PLAIN_PERSON=1 publishes the evidence_closure person instead, unchecked, for runs without one.
+  local check="$ROOT/scripts/person_showcase.py"
+  id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures'].get('person_journey', {}).get('id', ''))" "$S/fixtures.json")
+  if [ -z "$id" ]; then
+    [ "${WASL_SNAPSHOT_PLAIN_PERSON:-}" = 1 ] ||
+      { echo "snapshot: run has no actionable cross-programme person_journey fixture; samples not replaced (WASL_SNAPSHOT_PLAIN_PERSON=1 publishes the evidence_closure person)" >&2; return 1; }
+    echo "snapshot: WARNING: no person_journey fixture; publishing the evidence_closure person, which is not a cross-programme showcase" >&2
+    id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures']['evidence_closure']['id'])" "$S/fixtures.json")
+    check=""
+  fi
+  { curl -sfG --max-time "$MT" -H "Authorization: Bearer $WASL_API_WEB_REVIEWER_TOKEN" --data-urlencode "case_id=$id" "http://$A/api/people" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" person > "$S/person_journey.json" &&
+    { [ -z "$check" ] || python3 "$check" "$S/person_journey.json"; }; } || { echo "snapshot: person journey failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
     if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" |
       python3 "$ROOT/scripts/redacted_snapshot.py" cases > "$S/cases_${prog}_page1.json" &&
