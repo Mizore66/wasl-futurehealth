@@ -17,7 +17,7 @@ func TestAPIIntegrityIndividualDeclarations(t *testing.T) {
 		{`{"programmes_live":{"crc":{"loops":-1}}}`, "programmes_live.crc.loops"},
 		{`{"programmes_live":{"crc":{"loops":0.5}}}`, "programmes_live.crc.loops"},
 		{`{"programmes_live":{"crc":{"loops":1,"cases":"1"}}}`, "programmes_live.crc.cases"},
-		{`{"loops":1,"programmes_live":{"breast":{"loops":0}}}`, "programmes_live declared cases/loops"},
+		{`{"loops":1,"programmes_live":{"breast":{"loops":0}}}`, "programmes_live.crc"},
 		// A correct total does not make counts assigned to the wrong programme valid.
 		{`{"loops":1,"programmes_live":{"crc":{"loops":0},"breast":{"loops":1}}}`, "programmes_live.breast.loops"},
 	} {

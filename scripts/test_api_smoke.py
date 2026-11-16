@@ -10,6 +10,7 @@ import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -527,6 +528,66 @@ def run_smoke(fake):
         srv.server_close()
 
 
+class SoftwareSessionDiscoveryTests(unittest.TestCase):
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location("api_smoke_factory_test", SMOKE)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+
+    def client(self, advertised=None, response=None, status=201):
+        class DiscoveryClient:
+            base, timeout = "http://127.0.0.1:18088", 5
+            last_headers = {}
+            calls = []
+
+            def request(inner, method, path, *args, **kwargs):
+                inner.calls.append((method, path, kwargs))
+                if method == "GET":
+                    inner.last_headers = {} if advertised is None else {"Wasl-Software-Smoke-Factory": advertised}
+                    return 200, {}
+                return status, response or {}
+        return DiscoveryClient()
+
+    def test_absent_factory_preserves_direct_behavior(self):
+        c = self.client()
+        self.assertIsNone(self.module.discover_software_session(c))
+        self.assertEqual(len(c.calls), 1)
+
+    def test_unsafe_advertisement_never_receives_token(self):
+        for path in ("https://evil.example/factory", "//evil.example/factory", "/api/cases", "/api/software-smoke/sessions?x=1"):
+            with self.subTest(path=path):
+                c = self.client(path)
+                with self.assertRaisesRegex(self.module.SmokeFailure, "unsafe software factory"):
+                    self.module.discover_software_session(c)
+                self.assertEqual(len(c.calls), 1)
+
+    def test_session_requires_schema_synthetic_and_reserved_relative_path(self):
+        valid = {"schema": "wasl-software-smoke-session/1", "synthetic": True,
+                 "base_path": "/api/software-smoke/sessions/" + "a" * 32}
+        for changes in ({"schema": "wrong"}, {"synthetic": False},
+                        {"base_path": "https://evil.example/session"}, {"base_path": "//evil.example/session"},
+                        {"base_path": "/api/software-smoke/sessions/../cases"},
+                        {"base_path": valid["base_path"] + "?redirect=1"},
+                        {"base_path": "/api/software-smoke/sessions/%2e%2e"}):
+            with self.subTest(changes=changes):
+                c = self.client(self.module.SOFTWARE_FACTORY_PATH, dict(valid, **changes))
+                with self.assertRaises(self.module.SmokeFailure):
+                    self.module.discover_software_session(c)
+                self.assertEqual(len(c.calls), 2)
+        c = self.client(self.module.SOFTWARE_FACTORY_PATH, valid)
+        session = self.module.discover_software_session(c)
+        self.assertEqual(session.base, c.base + valid["base_path"])
+        self.assertEqual(c.calls[1][2]["role"], "coordinator")
+
+    def test_advertised_factory_failure_is_not_fallback(self):
+        c = self.client(self.module.SOFTWARE_FACTORY_PATH, status=500)
+        with self.assertRaisesRegex(self.module.SmokeFailure, "advertised software factory failed"):
+            self.module.discover_software_session(c)
+
+    def test_redirects_are_refused_before_credentials_can_leave_origin(self):
+        self.assertIsNone(self.module.NoSmokeRedirects().redirect_request(None, None, 302, "", {}, "https://evil.example"))
+
+
 class SmokeValidatorTests(unittest.TestCase):
     def assertFails(self, mutate, needle):
         r = run_smoke(Fake(mutate))
@@ -745,14 +806,44 @@ class SmokeValidatorTests(unittest.TestCase):
 
 FAKE_BIN = """#!/usr/bin/env python3
 import json, os, sys
+from pathlib import Path
 from http.server import HTTPServer
 sys.path.insert(0, os.environ["TEST_SCRIPTS"])
 import test_api_smoke as t
 open(os.environ["FAKE_LOG"], "a").write(" ".join(sys.argv[1:]) + "\\n")
+if sys.argv[1] == "smoke-fixture":
+    out = Path(sys.argv[sys.argv.index("-out") + 1])
+    out.mkdir()  # Match exclusive NEW-output semantics; never reuse source files.
+    (out / "fixture-sentinel").write_text("synthetic software fixture")
+    sys.exit(0)
 if os.environ.get("FAKE_DIE"):
     sys.exit(3)
+run = Path(sys.argv[sys.argv.index("-run") + 1])
+fake = t.Fake()
+if (run / "fixture-sentinel").exists():
+    original_fixture_route = fake.route
+    def fixture_route(method, path, query, body, role, actor):
+        if method == "GET" and path == "/api/cases" and query.get("programme", [""])[0] == "crc" and query.get("limit", [""])[0] == "1":
+            # Software workflow discovery must list an actual retrievable case,
+            # not the committed list sample's unrelated frontend case ID.
+            case = dict(fake.fix["fixtures"]["review_hold"])
+            return 200, {"total": 1, "offset": 0, "limit": 1, "cases": [case]}
+        return original_fixture_route(method, path, query, body, role, actor)
+    fake.route = fixture_route
+if (run / "source-sentinel").exists():
+    fake.raised = {}  # Actual completed run has no disposable independent slots.
+    (run / "overlay-sentinel").write_text("writes belong only to staged copy")
+    if (run / "historical-overlay").exists():
+        original_route = fake.route
+        def historical_route(method, path, query, body, role, actor):
+            if method == "POST" and path.endswith("/consent"):
+                return 409, {"error": "historical consent denial already exists"}
+            return original_route(method, path, query, body, role, actor)
+        fake.route = historical_route
 host, port = sys.argv[sys.argv.index("-addr") + 1].rsplit(":", 1)
-HTTPServer((host, int(port)), t.make_handler(t.Fake())).serve_forever()
+server = HTTPServer((host, int(port)), t.make_handler(fake))
+print(json.dumps({"msg": "api listener ready"}), flush=True)
+server.serve_forever()
 """
 
 
@@ -764,8 +855,23 @@ def free_port():
     return p
 
 
+def free_smoke_ports():
+    # Match the wrapper's adjacent-port contract without changing other tests.
+    for _ in range(100):
+        port = free_port()
+        if port == 65535:
+            continue
+        with socket.socket() as second:
+            try:
+                second.bind(("127.0.0.1", port + 1))
+            except OSError:
+                continue
+        return port
+    raise RuntimeError("no adjacent loopback ports available")
+
+
 class DemoShellTests(unittest.TestCase):
-    def run_demo(self, tmp, extra=None, die=False):
+    def run_demo(self, tmp, extra=None, die=False, readonly=False):
         tmp = Path(tmp)
         (tmp / "bin").mkdir()
         b = tmp / "bin" / "wsi7"
@@ -773,21 +879,64 @@ class DemoShellTests(unittest.TestCase):
         b.chmod(0o755)
         log = tmp / "serve.log"
         env = dict(os.environ, **TOKENS, WASL_BIN=str(tmp / "bin"), WASL_OUT=str(tmp / "out"), FAKE_LOG=str(log),
-                   TEST_SCRIPTS=str(ROOT / "scripts"), WASL_SMOKE_PORT=str(free_port()), WASL_SMOKE_WAIT="10")
+                   TEST_SCRIPTS=str(ROOT / "scripts"), WASL_SMOKE_PORT=str(free_smoke_ports()), WASL_SMOKE_WAIT="10")
         if die:
             env["FAKE_DIE"] = "1"
         env.update(extra or {})
+        source = Path(env.get("WASL_SERVE_RUN", tmp / "out" / "run" / "v7strict-cached-fhir"))
+        source.mkdir(parents=True)
+        (source / "source-sentinel").write_text("preserve original completed run")
+        entries_before = sorted(path.relative_to(source).as_posix() for path in source.rglob("*"))
+        if env.get("FAKE_ACTUAL_HISTORY"):
+            (source / "historical-overlay").write_text("retain prior denied consent")
+        if env.get("FAKE_INTERNAL_LINK"):
+            external = tmp / "external"
+            external.mkdir()
+            (external / "private").write_text("must not copy outside run")
+            (source / "external-link").symlink_to(external, target_is_directory=True)
+        if readonly:
+            (source / "source-sentinel").chmod(0o444)
+            source.chmod(0o555)
         r = subprocess.run(["bash", str(DEMO), "smoke"], capture_output=True, text=True, env=env, timeout=90)
+        if r.returncode:
+            # TemporaryDirectory teardown must not erase the listener failure.
+            retained = Path(tempfile.mkdtemp(prefix="wasl-smoke-test-failure-"))
+            for failure_log in tmp.rglob("*.log"):
+                target = retained / failure_log.relative_to(tmp)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(failure_log, target)
+            (retained / "stdout.txt").write_text(r.stdout)
+            (retained / "stderr.txt").write_text(r.stderr)
+            r.stderr += "\nretained failed shell evidence: " + str(retained) + "\n"
+        self.assertEqual((source / "source-sentinel").read_text(), "preserve original completed run")
+        self.assertFalse((source / "overlay-sentinel").exists(), "original run was served mutably")
+        if env.get("FAKE_ASSERT_NO_SOURCE_ENTRIES"):
+            entries_after = sorted(path.relative_to(source).as_posix() for path in source.rglob("*"))
+            self.assertEqual(entries_after, entries_before, "rejected staging created entries inside original run")
+        if readonly:
+            self.assertEqual((source / "source-sentinel").stat().st_mode & 0o777, 0o444)
+            self.assertEqual(source.stat().st_mode & 0o777, 0o555)
+            # Test teardown only; the wrapper must never modify original modes.
+            source.chmod(0o700)
         return r, log
+
+    def staged_lanes(self, tmp):
+        lanes = list((Path(tmp) / "out").glob("smoke-lanes.*"))
+        self.assertEqual(len(lanes), 1)
+        return lanes[0]
 
     def test_smoke_honours_serve_run_and_data_overrides(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r, log = self.run_demo(tmp, {"WASL_SERVE_RUN": "/tmp/lane-x", "WASL_SERVE_DATA": "/tmp/cohort-x"})
+            source, cohort = Path(tmp) / "lane-x", Path(tmp) / "cohort-x"
+            r, log = self.run_demo(tmp, {"WASL_SERVE_RUN": str(source), "WASL_SERVE_DATA": str(cohort)})
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             args = log.read_text()
+            staged = self.staged_lanes(tmp)
             self.assertIn("serve", args)
-            self.assertIn("-run /tmp/lane-x", args)
-            self.assertIn("-data /tmp/cohort-x", args)
+            self.assertIn("-run " + str(staged / "actual"), args)
+            self.assertNotIn("-run " + str(source), args)
+            self.assertEqual((staged / "actual" / "source-sentinel").read_bytes(), (source / "source-sentinel").read_bytes())
+            self.assertIn("-data " + str(cohort), args)
             self.assertIn("-addr 127.0.0.1:", args)
 
     def test_serve_defaults_to_the_run_and_cohort(self):
@@ -795,8 +944,57 @@ class DemoShellTests(unittest.TestCase):
             r, log = self.run_demo(tmp)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             args = log.read_text()
-            self.assertIn("/out/run/v7strict-cached-fhir", args)
+            staged = self.staged_lanes(tmp)
+            source = Path(tmp) / "out" / "run" / "v7strict-cached-fhir"
+            self.assertEqual((staged / "actual" / "source-sentinel").read_bytes(), (source / "source-sentinel").read_bytes())
+            self.assertTrue((staged / "actual" / "overlay-sentinel").exists())
+            self.assertIn("-run " + str(staged / "actual"), args)
             self.assertIn("-data " + str(Path(tmp) / "out" / "cohort"), args)
+            self.assertIn("smoke-fixture -out " + str(staged / "independent"), args)
+            self.assertIn("serve -run " + str(staged / "independent"), args)
+            self.assertTrue((staged / "independent" / "fixture-sentinel").exists())
+            self.assertTrue((staged / "actual-serve.log").exists())
+            self.assertTrue((staged / "independent-serve.log").exists())
+            self.assertIn("independent double review", (staged / "smoke.log").read_text())
+
+    def test_stage_rejects_internal_symlink_before_serving(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r, log = self.run_demo(tmp, {"FAKE_INTERNAL_LINK": "1"})
+            self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("symlink", (r.stdout + r.stderr).lower())
+            self.assertFalse(log.exists(), "unsafe source reached fixture generation or serving")
+            staged = self.staged_lanes(tmp)
+            self.assertFalse((staged / "actual" / "external-link" / "private").exists())
+
+    def test_stage_rejects_destination_inside_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # Source contains WASL_OUT; recursive staging must fail before copy.
+            source = Path(tmp) / "source"
+            r, log = self.run_demo(tmp, {"WASL_SERVE_RUN": str(source), "WASL_OUT": str(source / "out"),
+                                         "FAKE_ASSERT_NO_SOURCE_ENTRIES": "1"})
+            self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("inside source", (r.stdout + r.stderr).lower())
+            self.assertFalse(log.exists(), "recursive destination reached serving")
+
+    def test_mutating_workflow_uses_fresh_fixture_not_actual_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r, _ = self.run_demo(tmp, {"FAKE_ACTUAL_HISTORY": "1"})
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            staged = self.staged_lanes(tmp)
+            self.assertEqual((staged / "actual" / "historical-overlay").read_text(), "retain prior denied consent")
+            source = Path(tmp) / "out" / "run" / "v7strict-cached-fhir"
+            self.assertEqual((source / "historical-overlay").read_text(), "retain prior denied consent")
+            self.assertIn("independent double review", (staged / "smoke.log").read_text())
+
+    def test_readonly_source_becomes_private_writable_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r, _ = self.run_demo(tmp, readonly=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            actual = self.staged_lanes(tmp) / "actual"
+            self.assertEqual(actual.stat().st_mode & 0o777, 0o700)
+            self.assertEqual((actual / "source-sentinel").stat().st_mode & 0o777, 0o600)
+            self.assertEqual((actual / "source-sentinel").read_text(), "preserve original completed run")
+            self.assertTrue((actual / "overlay-sentinel").exists())
 
     def test_server_that_never_becomes_healthy_fails_boundedly(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -805,13 +1003,16 @@ class DemoShellTests(unittest.TestCase):
 
     def test_server_is_terminated_after_smoke(self):
         with tempfile.TemporaryDirectory() as tmp:
-            port = free_port()
+            port = free_smoke_ports()
             r, _ = self.run_demo(tmp, {"WASL_SMOKE_PORT": str(port)})
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-            s = socket.socket()
-            s.settimeout(1)
-            self.assertNotEqual(s.connect_ex(("127.0.0.1", port)), 0)
-            s.close()
+            for listener in (port, port + 1):
+                with socket.socket() as s:
+                    s.settimeout(1)
+                    self.assertNotEqual(s.connect_ex(("127.0.0.1", listener)), 0)
+            staged = self.staged_lanes(tmp)
+            self.assertTrue((staged / "actual").is_dir())
+            self.assertTrue((staged / "independent").is_dir())
 
     def test_all_runs_smoke_after_report_and_container_does_not(self):
         lines = DEMO.read_text().splitlines()

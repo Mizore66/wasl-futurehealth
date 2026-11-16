@@ -40,7 +40,7 @@ func TestBuildHandoffDirect(t *testing.T) {
 		t.Fatalf("re-referral to the same unit: %+v", p)
 	}
 	// a structured hand-off reply is also an action
-	f.Comms = []CommFact{{ID: "c1", Day: 33, Category: "handoff-reply", Action: "re_referred"}}
+	f.Comms = []CommFact{{ID: "c1", Day: 33, Category: "handoff-reply", Action: "re_referred", Status: "completed"}}
 	if p = buildHandoffDirect(f, "lung_nodule", srs, true, 40, ""); p.ActedAt != 33 || !strings.Contains(p.Recommendation, "PET") {
 		t.Fatalf("hand-off reply: %+v", p)
 	}

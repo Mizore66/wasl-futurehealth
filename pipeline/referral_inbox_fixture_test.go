@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-var writeReferralControls = flag.Bool("write-referral-controls", false, "regenerate explicitly synthetic referral inbox controls")
+var writeReferralControls = flag.Bool("write-referral-controls-v3", false, "create version3 explicitly synthetic referral integration provenance; historical version1/version2 controls are immutable")
 
 // This fixture begins at the canonical facts seam, NOT the clinical ingest/linker/reader.
 // Its report verdict is an explicitly synthetic input; neither a real reader result nor
@@ -44,6 +44,48 @@ func referralControlInputs(t *testing.T) []FactsMsg {
 		inputs = append(inputs, FactsMsg{ID: "synthetic-referral-" + itoa(i), InSeq: uint64(i + 2), Facts: facts})
 	}
 	return inputs
+}
+
+// Version1 inputs and their historical generation remain unchanged above. The
+// current reducer requires a completed Communication revision before an
+// acknowledgement can count; version2 supplies that explicit synthetic status.
+func referralControlInputsV2(t *testing.T) []FactsMsg {
+	inputs := referralControlInputs(t)
+	for i := range inputs {
+		for j := range inputs[i].Facts.Comms {
+			if inputs[i].Facts.Comms[j].Category == "acknowledgement" {
+				inputs[i].Facts.Comms[j].Status = "completed"
+			}
+		}
+	}
+	return inputs
+}
+
+func TestReferralInboxAcknowledgementRequiresCompletedStatus(t *testing.T) {
+	oldHandoff, oldOutreach := Handoff, OutreachOn
+	Handoff, OutreachOn = false, false
+	t.Cleanup(func() { Handoff, OutreachOn = oldHandoff, oldOutreach })
+	for _, status := range []string{"", "in-progress", "completed"} {
+		t.Run("status="+status, func(t *testing.T) {
+			input := referralControlInputsV2(t)[0]
+			input.Facts.Comms[1].Status = status
+			core := NewClosureCore(0, nil)
+			core.Apply(&FactsMsg{ID: "synthetic-clock", InSeq: 1, IsTick: true, TickDay: 120})
+			var current *Decision
+			for _, out := range core.Apply(&input) {
+				if out.Dec != nil {
+					current = out.Dec
+				}
+			}
+			want := "no_acknowledgement"
+			if status == "completed" {
+				want = "referral_unanswered"
+			}
+			if current == nil || current.Sig == "" || current.Sig != decSig(current) || current.Dropoff != want {
+				t.Fatalf("acknowledgement status %q did not preserve the canonical guard: want %s, got %+v", status, want, current)
+			}
+		})
+	}
 }
 
 func referralSourceHashes(t *testing.T) map[string]string {
@@ -77,7 +119,7 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 	oldHandoff, oldOutreach := Handoff, OutreachOn
 	Handoff, OutreachOn = false, false
 	defer func() { Handoff, OutreachOn = oldHandoff, oldOutreach }()
-	inputs := referralControlInputs(t)
+	inputs := referralControlInputsV2(t)
 	c := NewClosureCore(0, nil)
 	c.Apply(&FactsMsg{ID: "synthetic-clock", InSeq: 1, IsTick: true, TickDay: 120})
 	var logs []LogMsg
@@ -191,14 +233,17 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 		"kind":                      "explicitly synthetic facts-seam producer controls; not medical evidence",
 		"producer":                  "ClosureCore.Apply -> signed OutEnvelope/out_log -> loadAPI -> authenticated GET handler (httptest recorder, no socket)",
 		"source_head_at_generation": strings.TrimSpace(string(head)),
-		"accepted_main":             "e3129b7efc85adf85ef10cfb212031a4908dc8c2",
+		"accepted_main":             "80990f16af2a4ccb7472a824c77f86889c831775",
+		"contract_version":          3,
+		"supersedes_record_sha256":  "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25",
+		"generation_source_binding": "production_source_sha256 and helper_sha256 identify the actual integrated working source; generation HEAD is ancestry only",
 		"production_source_sha256":  referralSourceHashes(t), "helper_sha256": sha(helper),
 		"inputs": inputs, "input_sha256": sha(canon(inputs)), "out_log_sha256": sha(raw.Bytes()),
 		"cases_sha256": sha(canon(exposed)), "currents": details, "held_control": held,
 	}
-	// The inadequate_day extension changes the held decision's signed bytes.
-	// Preserve the complete original generation record and compare today's output
-	// against a separately generated version, never rewrite historical evidence.
+	// Completed Communication revisions and inadequate_day compose into new
+	// signed bytes. Record a separate software-integration generation, never
+	// rewrite either historical branch's controls or claim clinical validation.
 	historical, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -207,18 +252,52 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 	if err != nil || !referralGenerationRecordIntact(historical, generationHelper) {
 		t.Fatal("immutable referral generation record or witness changed")
 	}
-	provenance["schema"] = "wasl-referral-clinical-dates/2"
-	provenance["previous_generation_sha256"] = sha(historical)
-	for name, value := range map[string]interface{}{"referral-inbox-synthetic.json": exposed, "referral-inbox-clinical-dates-provenance-v2.json": provenance} {
+	previous, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-provenance-v2.json"))
+	if err != nil || sha(previous) != "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25" {
+		t.Fatal("immutable completed-Communication generation changed")
+	}
+	previousHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper-v2.go.txt"))
+	if err != nil || sha(previousHelper) != "b569fcf1cfce8450961529a7efa0393e8076acc84625ef9c91503dd5f5f4e4e1" {
+		t.Fatal("immutable completed-Communication generation witness changed")
+	}
+	clinicalDates, err := os.ReadFile(filepath.Join("..", "web", "data", "referral-inbox-clinical-dates-provenance-v2.json"))
+	if err != nil || sha(clinicalDates) != "58b4900652c3ad9a148143b6393ba287bc8d908f49b69c61ef61cce00e20ec17" {
+		t.Fatal("immutable clinical-date generation changed")
+	}
+	provenance["schema"] = "wasl-referral-integration/3"
+	provenance["previous_generation_sha256"] = sha(previous)
+	provenance["clinical_dates_generation_sha256"] = sha(clinicalDates)
+	// Compare the unchanged exposed v2 cases before creating either v3 file.
+	for _, control := range []struct {
+		name  string
+		value interface{}
+	}{{"referral-inbox-synthetic-v2.json", exposed}, {"referral-inbox-provenance-v3.json", provenance}} {
+		name, value := control.name, control.value
 		path := filepath.Join("..", "web", "data", name)
 		encoded, err := json.MarshalIndent(value, "", "  ")
 		if err != nil {
 			t.Fatal(err)
 		}
 		encoded = append(encoded, '\n')
-		if *writeReferralControls {
-			if err := os.WriteFile(path, encoded, 0644); err != nil {
+		if *writeReferralControls && name == "referral-inbox-provenance-v3.json" {
+			witnessPath := filepath.Join("testdata", "referral-inbox-generation-helper-v3.go.txt")
+			witness, err := os.OpenFile(witnessPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+			if err != nil {
 				t.Fatal(err)
+			}
+			_, witnessWriteErr := witness.Write(helper)
+			witnessCloseErr := witness.Close()
+			if witnessWriteErr != nil || witnessCloseErr != nil {
+				t.Fatalf("record generation helper: write=%v close=%v", witnessWriteErr, witnessCloseErr)
+			}
+			file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, writeErr := file.Write(encoded)
+			closeErr := file.Close()
+			if writeErr != nil || closeErr != nil {
+				t.Fatalf("create version3 integration control: write=%v close=%v", writeErr, closeErr)
 			}
 		} else {
 			saved, err := os.ReadFile(path)
@@ -232,14 +311,19 @@ func TestReferralInboxCanonicalControls(t *testing.T) {
 			if err := json.Unmarshal(encoded, &want); err != nil {
 				t.Fatal(err)
 			}
-			if name == "referral-inbox-clinical-dates-provenance-v2.json" {
-				// Historical v1 bytes and witness were checked above. Verify the
-				// separately versioned current signed outputs and complete inputs.
+			if name == "referral-inbox-provenance-v3.json" {
+				generationHelper, err := os.ReadFile(filepath.Join("testdata", "referral-inbox-generation-helper-v3.go.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
 				got, recomputed := actual.(map[string]interface{}), want.(map[string]interface{})
-				t.Logf("current verification source manifest: %s; historical generation record preserved", sha(canon(recomputed["production_source_sha256"])))
-				// These three fields describe when/how the saved fixture was generated,
-				// not its present behavioral contract. ALL inputs, signed OUT hashes,
-				// cases, currents, held control and other fields still compare below.
+				if got["helper_sha256"] != sha(generationHelper) {
+					t.Fatal("version3 generation helper differs from its recorded witness")
+				}
+				t.Logf("current verification source manifest: %s; separate version1 generation record preserved", sha(canon(recomputed["production_source_sha256"])))
+				// Only generation-description fields vary across source revisions.
+				// Inputs, signed OUT hash, cases, currents, held control and the
+				// version/superseded-record binding still compare exactly below.
 				for _, field := range []string{"source_head_at_generation", "production_source_sha256", "helper_sha256"} {
 					delete(got, field)
 					delete(recomputed, field)

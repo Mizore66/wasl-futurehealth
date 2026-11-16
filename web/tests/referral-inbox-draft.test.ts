@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseSummary } from "@/lib/api/schema";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { referralFrom, type Referral } from "@/components/worklist/referrals";
-import synthetic from "@/data/referral-inbox-synthetic.json";
+import synthetic from "@/data/referral-inbox-synthetic-v2.json";
 
 // Only the router is replaced (the inbox needs an app-router context); the inbox and its state are real.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));

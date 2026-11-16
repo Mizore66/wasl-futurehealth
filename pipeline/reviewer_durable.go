@@ -95,7 +95,11 @@ func openReviewerStore(js jetstream.JetStream) (*reviewerStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reviewer store: %w", err)
 	}
-	return &reviewerStore{kv: kv}, nil
+	reader, err := bindLeaderKVTransport(ctx, js, kv)
+	if err != nil {
+		return nil, fmt.Errorf("reviewer leader reads: %w", err)
+	}
+	return &reviewerStore{kv: &reviewerLeaderKV{KeyValue: kv, reader: reader}}, nil
 }
 
 func reviewerKey(itemID string) string {
@@ -337,12 +341,22 @@ func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint6
 	if err != nil {
 		return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
 	}
+	messages, err := cons.Messages()
+	if err != nil {
+		return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
+	}
+	defer messages.Stop()
 	want := "signoff/" + itemID
 	var found bool
 	var foundSeq, lastPending uint64
 	var gotAny bool
 	for {
-		msg, err := cons.Next(jetstream.FetchMaxWait(2 * time.Second))
+		// Consumer.Next resets/recreates an ordered consumer for each Fetch(1).
+		// Keep one iterator for the complete retained scan instead. Ordinary wait
+		// deadlines remain two seconds and are also bounded by the parent context.
+		nextCtx, nextCancel := context.WithTimeout(ctx, 2*time.Second)
+		msg, err := messages.Next(jetstream.NextContext(nextCtx))
+		nextCancel()
 		if errors.Is(err, nats.ErrTimeout) || errors.Is(err, context.DeadlineExceeded) {
 			if ctx.Err() != nil {
 				return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, ctx.Err())

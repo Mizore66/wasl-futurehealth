@@ -296,6 +296,30 @@ func integrityCheckMaterializedCounts(t *testing.T, src string) {
 				contents["report7.json"] = canon(map[string]interface{}{"programmes_live": nativeProgrammes})
 				want = "report7.json declares programmes_live." + programme + ".loops="
 			}
+			if want != "" {
+				// Keep the separate CRC-child metadata guard valid for the temporary
+				// OUT being tested. Only the native count named above stays stale;
+				// removing all metadata would mask that assertion on a derived-care run.
+				var logs []LogMsg
+				for _, line := range strings.Split(strings.TrimSpace(string(contents["out_log.ndjson"])), "\n") {
+					var row LogMsg
+					if err := json.Unmarshal([]byte(line), &row); err != nil {
+						t.Fatal(err)
+					}
+					logs = append(logs, row)
+				}
+				_, metadata, err := projectMaterializedDecisions(logs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				contents["dashboard.json"] = canon(map[string]interface{}{"materialization": metadata})
+				var native map[string]interface{}
+				if err := json.Unmarshal(contents["report7.json"], &native); err != nil {
+					t.Fatal(err)
+				}
+				native["materialization"] = metadata
+				contents["report7.json"] = canon(native)
+			}
 			for name, b := range contents {
 				if err := os.WriteFile(filepath.Join(run, name), b, 0600); err != nil {
 					t.Fatal(err)

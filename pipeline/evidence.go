@@ -7,10 +7,10 @@ package main
 // A report verdict is trusted only if both readers return the same (state, reason). Anything else -> review.
 // The judge runs in the stateless prep stage, so the live pipeline and the audit replay compute identical verdicts.
 import (
-	"fmt"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,15 +19,15 @@ import (
 )
 
 type ReaderVerdict struct {
-	State     string `json:"state"`
-	Reason    string `json:"reason"`
-	Caecum    string `json:"caecum,omitempty"`
-	Prep      string `json:"prep,omitempty"`
-	Polyps    string `json:"polyps,omitempty"`
-	Histology string `json:"histology,omitempty"`
-	Quote     string `json:"quote,omitempty"`
-	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
-	DR        *DRFields   `json:"dr,omitempty"`   // diabetic retinopathy loop: fields this reader extracted (drread.go)
+	State     string        `json:"state"`
+	Reason    string        `json:"reason"`
+	Caecum    string        `json:"caecum,omitempty"`
+	Prep      string        `json:"prep,omitempty"`
+	Polyps    string        `json:"polyps,omitempty"`
+	Histology string        `json:"histology,omitempty"`
+	Quote     string        `json:"quote,omitempty"`
+	Lung      *LungFields   `json:"lung,omitempty"`   // lung-nodule loop: fields this reader extracted (lungread.go)
+	DR        *DRFields     `json:"dr,omitempty"`     // diabetic retinopathy loop: fields this reader extracted (drread.go)
 	Breast    *BreastFields `json:"breast,omitempty"` // breast recall loop: fields this reader extracted (breastread.go)
 	LDCT      *LDCTFields   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop: fields this reader extracted (ldctread.go)
 }
@@ -41,35 +41,36 @@ type TwoVerdict struct {
 	Label    string        `json:"label"` // adequate|inadequate|awaiting_histology|histology|needs_human|disagree
 	// Ungraded prep (PrepQuery): both readers say prep is not stated and every other field agrees; GradedLabel is the label
 	// the report would get once prep is graded adequate. Closure then queries the endoscopy unit instead of a reviewer.
-	PrepUngraded bool   `json:"prep_ungraded,omitempty"`
-	GradedLabel  string `json:"graded_label,omitempty"`
-	R1Review     bool   `json:"r1_review,omitempty"`
-	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
-	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
-	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
-	ReaderLatencyMs int64  `json:"reader_ms,omitempty"`
-	Image      *ImageVerdict `json:"image,omitempty"`    // third (image) reader, hold-only (image.go)
-	PreImage   string        `json:"pre_image,omitempty"` // label before the image reader (hold-only audit)
-	ReviewHint string        `json:"hint,omitempty"`      // prep_grade_one_click | image_prep_inadequate | image_prep_conflict
+	PrepUngraded    bool          `json:"prep_ungraded,omitempty"`
+	GradedLabel     string        `json:"graded_label,omitempty"`
+	R1Review        bool          `json:"r1_review,omitempty"`
+	Rule            string        `json:"rule,omitempty"`  // v7: which per-field / DoH documentation rule resolved it
+	Flags           []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
+	Model           string        `json:"model,omitempty"` // second-reader model version (provenance)
+	ReaderLatencyMs int64         `json:"reader_ms,omitempty"`
+	Image           *ImageVerdict `json:"image,omitempty"`     // third (image) reader, hold-only (image.go)
+	PreImage        string        `json:"pre_image,omitempty"` // label before the image reader (hold-only audit)
+	ReviewHint      string        `json:"hint,omitempty"`      // prep_grade_one_click | image_prep_inadequate | image_prep_conflict
+	CRC             *CRCProposal  `json:"crc,omitempty"`       // deterministic post-procedure proposal; never reader agreement or a diagnosis
 }
 
 const seg = `(?:distal|proximal|mid)?\s*(?:descending|sigmoid|transverse|splenic|hepatic|ascending|rectosigmoid)`
 
 var (
-	reCaecNo   = regexp.MustCompile(`(?i)(?:unable to|could not|failed to|not able to) (?:reach|advance|intubate|pass)|aborted|incomplete (?:exam|colonoscopy|study)|(?:passed|advanced|inserted)[^.]{0,40}to the ` + seg)
-	reCaecYes  = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)|ileoc(?:a)?ecal|terminal ileum|appendiceal orifice`)
-	reScope    = regexp.MustCompile(`(?i)colonoscop|scope`)
-	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory|fair)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory|fair)`)
-	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|satisfactory)|well[- ]prep`)
-	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved|recovered)|(?:removed|resected|excised|excision|snared|snare)[^.]{0,60}polyp`)
+	reCaecNo  = regexp.MustCompile(`(?i)(?:unable to|could not|failed to|not able to) (?:reach|advance|intubate|pass)|aborted|incomplete (?:exam|colonoscopy|study)|(?:passed|advanced|inserted)[^.]{0,40}to the ` + seg)
+	reCaecYes = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)|ileoc(?:a)?ecal|terminal ileum|appendiceal orifice`)
+	reScope   = regexp.MustCompile(`(?i)colonoscop|scope`)
+	rePrepBad = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory|fair)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory|fair)`)
+	rePrepOK  = regexp.MustCompile(`(?i)(?:good|excellent|adequate|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|satisfactory)|well[- ]prep`)
+	rePolyps  = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved|recovered)|(?:removed|resected|excised|excision|snared|snare)[^.]{0,60}polyp`)
 	// v7.2 adds "biopsied" (unless negated earlier in its sentence), "excision/snare … polyp" and "polyp … recovered": colon tissue that v7.1 only caught by
 	// accident when a gastric biopsy in the same report matched (corpus 4 q275, corpus 8 v054).
 	// v3 (after the App 14 corpus, disclosed): "tissue taken" = a polyp removed OR any biopsy (DoH: if tissue was taken,
 	// histology must be back), and a Boston score is graded by its numbers (adequate = total >= 6 with every segment >= 2).
-	reBiopsy   = regexp.MustCompile(`(?i)biops(?:y|ies)[^.]{0,60}(?:taken|obtained|performed|sent|done)|(?:took|taken|obtained|performed)[^.]{0,40}biops`)
-	reBiopsied = regexp.MustCompile(`(?i)\bbiopsied\b`)
-	reNegBefore = regexp.MustCompile(`(?i)\b(?:no|not|never|nothing|none|neither|nor|without)\b[^.;]*$`)
-	reNoBiopsy = regexp.MustCompile(`(?i)\bno biops`)
+	reBiopsy     = regexp.MustCompile(`(?i)biops(?:y|ies)[^.]{0,60}(?:taken|obtained|performed|sent|done)|(?:took|taken|obtained|performed)[^.]{0,40}biops`)
+	reBiopsied   = regexp.MustCompile(`(?i)\bbiopsied\b`)
+	reNegBefore  = regexp.MustCompile(`(?i)\b(?:no|not|never|nothing|none|neither|nor|without)\b[^.;]*$`)
+	reNoBiopsy   = regexp.MustCompile(`(?i)\bno biops`)
 	reBBPS       = regexp.MustCompile(`(?i)boston bowel prep[a-z]* scale|\bbbps\b`)
 	reBBPSNamed  = regexp.MustCompile(`(?i)\b(right|transverse|left|r|t|l)\s*(?:colon\s*)?[:=]?\s*([0-3])\b`)
 	reBBPSTriple = regexp.MustCompile(`\b([0-3])\s*[-/+,]\s*([0-3])\s*[-/+,]\s*([0-3])\b`)
@@ -79,8 +80,8 @@ var (
 	// v6: this procedure's result is still pending (or only received, not reported). A tissue diagnosis elsewhere in such
 	// a text is not this procedure's result, so the report is not auto-closed.
 	reHistPending = regexp.MustCompile(`(?i)(?:histolog\w*|patholog\w*|result|specimen|accession)[^.\n]{0,50}\b(?:awaited|pending|to follow|not (?:yet )?(?:available|back|reported))|\b(?:awaiting|pending)\b[^.\n]{0,20}(?:histolog|patholog|result)|\bno (?:\w+ )?diagnosis (?:is )?(?:yet )?available|(?:laboratory|lab|patholog\w*)[^.\n]{0,40}\breceived\b|\breceived\b[^.\n]{0,20}(?:in|by) (?:the )?(?:lab|laboratory|pathology)|gross description`)
-	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
-	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
+	reGradeWd     = regexp.MustCompile(`(?i)excellent|good|adequate|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
+	reHisto       = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
 
 // v7: the caecum counts as reached only with an explicit caecum statement, the appendiceal orifice or the terminal ileum
@@ -372,11 +373,11 @@ func RegexReader(text, kind string) ReaderVerdict {
 }
 
 type gemmaEntry struct {
-	Caecum    string `json:"caecum"`
-	Prep      string `json:"prep"`
-	Polyps    string `json:"polyps"`
-	Histology string `json:"histology"`
-	Quote     string `json:"quote"`
+	Caecum    string            `json:"caecum"`
+	Prep      string            `json:"prep"`
+	Polyps    string            `json:"polyps"`
+	Histology string            `json:"histology"`
+	Quote     string            `json:"quote"`
 	Quotes    map[string]string `json:"quotes,omitempty"` // v7: per-field verbatim quotes (cached, no new calls)
 }
 
@@ -397,11 +398,11 @@ func LoadJudge2(path string) *Judge2 {
 	if err := json.Unmarshal(b, &j.cache); err != nil {
 		panic(err)
 	}
-	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
-	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
+	loadLungCache(filepath.Dir(path))   // lung-nodule reader B answers, if present (lungread.go)
+	loadDRCache(filepath.Dir(path))     // diabetic retinopathy reader B answers, if present (drread.go)
 	loadBreastCache(filepath.Dir(path)) // breast recall reader B answers, if present (breastread.go)
 	loadLDCTCache(filepath.Dir(path))   // lung cancer screening (LDCT) reader B answers, if present (ldctread.go)
-	loadIfhasCache(filepath.Dir(path)) // IFHAS follow-up reader B answers, if present (ifhasread.go)
+	loadIfhasCache(filepath.Dir(path))  // IFHAS follow-up reader B answers, if present (ifhasread.go)
 	return j
 }
 
@@ -410,7 +411,12 @@ func textSha(t string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func (j *Judge2) Judge(text, kind string) *TwoVerdict {
+func (j *Judge2) Judge(text, kind string) (result *TwoVerdict) {
+	defer func() {
+		if result != nil && (kind == "colonoscopy" || kind == "pathology") {
+			result.CRC = extractCRCProposal(text, kind)
+		}
+	}()
 	v := &TwoVerdict{Kind: kind, Regex: RegexReader(text, kind)}
 	var g gemmaEntry
 	var ok bool
@@ -497,8 +503,8 @@ var Templates = map[string]Template{
 	"drsfu-rebook-v1/ar": {"drsfu-rebook-v1/ar", "ar", "rebook", "مرحبًا. لم تتمكن من حضور موعد فحص العين الأخير، ويود {{provider}} حجز موعد جديد لك. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	// rejected referral (outreachgaps.go, -rejmsg: lung_referral_rejected / dr_referral_rejected): the unit could not
 	// take the referral and the referring clinic is responsible again; same wording rules, no test, finding or unit named
-	"lnfu-rejected-v1/en": {"lnfu-rejected-v1/en", "en", "rejected", "Hello. {{provider}} would like to talk with you about your next step, because the appointment you were referred for could not go ahead as planned. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
-	"lnfu-rejected-v1/ar": {"lnfu-rejected-v1/ar", "ar", "rejected", "مرحبًا. يود {{provider}} التحدث معك بخصوص خطوتك التالية، إذ تعذّر إتمام الموعد الذي أُحلت إليه كما كان مخططًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"lnfu-rejected-v1/en":  {"lnfu-rejected-v1/en", "en", "rejected", "Hello. {{provider}} would like to talk with you about your next step, because the appointment you were referred for could not go ahead as planned. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"lnfu-rejected-v1/ar":  {"lnfu-rejected-v1/ar", "ar", "rejected", "مرحبًا. يود {{provider}} التحدث معك بخصوص خطوتك التالية، إذ تعذّر إتمام الموعد الذي أُحلت إليه كما كان مخططًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	"drsfu-rejected-v1/en": {"drsfu-rejected-v1/en", "en", "rejected", "Hello. {{provider}} would like to talk with you about your next step, because the eye appointment you were referred for could not go ahead as planned. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
 	"drsfu-rejected-v1/ar": {"drsfu-rejected-v1/ar", "ar", "rejected", "مرحبًا. يود {{provider}} التحدث معك بخصوص خطوتك التالية، إذ تعذّر إتمام موعد فحص العين الذي أُحلت إليه كما كان مخططًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	// v6 teach-back (sent after the acknowledgement; the reply is parsed against the loop's expected next step)
@@ -681,13 +687,14 @@ func (j *Judge2) Judge6(text, kind, coded string) *TwoVerdict {
 // Per-field consensus: each field (caecum, prep, polyps, histology) is fixed where both readers agree; where they disagree
 // both values are kept and the report is decided only if every combination gives the same DoH state (else review).
 // Two documentation rules from the DoH CRC Programme Specifications (sources/doh-standards/crc.txt):
-//   R1 completion not documented: neither reader finds caecal intubation -> "inadequate" (loop stays open, escalated),
-//      App. 11 s2.1-2.2 (completion must be documented with landmark photo-documentation).
-//   R2 prep ungraded: caecum reached and prep not stated -> treated as the completed follow-up colonoscopy, ONLY if
-//      Gemma's caecum quote is verbatim in the report, names a caecal landmark (caecum / ileocaecal valve / appendiceal
-//      orifice / terminal ileum) and the regex reader independently finds caecum=yes. The missing prep grade is passed
-//      to the unit as a documentation flag (App. 3 item 4; App. 2 bowel-cleansing audit). The Specifications set no
-//      rule that an ungraded-prep colonoscopy fails the follow-up; prep quality is an audited unit indicator.
+//
+//	R1 completion not documented: neither reader finds caecal intubation -> "inadequate" (loop stays open, escalated),
+//	   App. 11 s2.1-2.2 (completion must be documented with landmark photo-documentation).
+//	R2 prep ungraded: caecum reached and prep not stated -> treated as the completed follow-up colonoscopy, ONLY if
+//	   Gemma's caecum quote is verbatim in the report, names a caecal landmark (caecum / ileocaecal valve / appendiceal
+//	   orifice / terminal ileum) and the regex reader independently finds caecum=yes. The missing prep grade is passed
+//	   to the unit as a documentation flag (App. 3 item 4; App. 2 bowel-cleansing audit). The Specifications set no
+//	   rule that an ungraded-prep colonoscopy fails the follow-up; prep quality is an audited unit indicator.
 var reLandmark = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)\b|ileo-?c(?:a)?ecal|appendiceal orifice|terminal ileum`)
 
 func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {

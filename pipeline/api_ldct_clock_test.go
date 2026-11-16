@@ -39,7 +39,11 @@ func pr185ClockAPI(t *testing.T) (*irEnv, *Decision, string) {
 	if len(e.s.queue[c.ID]) != 1 {
 		t.Fatal("API harness did not receive the actual canonical pending item")
 	}
-	seedReportSource(t, e.s, unread.Provider+"/DiagnosticReport/"+unread.ReportID)
+	// The original received workup was retained/indexed above. A second seeded
+	// body at the same report/version would correctly make the source ambiguous.
+	if received, reason := e.s.reviewSourceFor(e.s.queue[c.ID][0]); reason != "" || received.Report != unread.Provider+"/DiagnosticReport/"+unread.ReportID {
+		t.Fatalf("actual clock workup source unavailable: reason=%s source=%+v", reason, received)
+	}
 	e.path = "/api/cases/" + url.PathEscape(c.ID)
 	return e, d, d.Pending[0]
 }

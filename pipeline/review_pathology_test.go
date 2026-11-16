@@ -73,7 +73,13 @@ func pathologyRun(t *testing.T) string {
 			fact.Ev.Regex.State, fact.Ev.Gemma.State = spec.label, spec.label
 		}
 		if event.Category == "pathology" {
-			fact.RType, fact.Parent = "Pathology", event.Focus
+			// CRC pathology association requires an exact provider-qualified parent,
+			// and normalization only resolves parents at registered providers. The
+			// synthetic provider "p" is unregistered, so the normalizer leaves Focus
+			// empty (relation ambiguous). Supply the exact qualified reference for
+			// the real procedure report in the software DownFact; the raw FHIR
+			// addendum and all source bindings are unchanged.
+			fact.RType, fact.Parent = "Pathology", "p/DiagnosticReport/"+pathProcedure
 			fact.Ev = &TwoVerdict{Kind: "pathology", Agree: false, Label: "disagree",
 				Regex: ReaderVerdict{State: "histology"},
 				Gemma: ReaderVerdict{State: "no_histology", Quote: "Explicitly synthetic pathology reader input."}}

@@ -79,7 +79,7 @@ type prepState struct {
 func prepStates(comms []CommFact, now float64) map[string]*prepState {
 	m := map[string]*prepState{}
 	for _, cm := range comms {
-		if cm.Report == "" || cm.Day > now+1e-9 {
+		if cm.Status != "completed" || cm.Report == "" || cm.Day > now+1e-9 {
 			continue
 		}
 		key := reportVersionKey(cm.Report, cm.ReportVersion)

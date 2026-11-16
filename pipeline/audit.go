@@ -95,14 +95,14 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 			}
 			for _, o := range outs {
 				if o.Dec != nil {
-					context := factsContext[baseLoop(o.Dec.LoopID)]
+					context := factsContext[materializedParent(o.Dec)]
 					context.DecisionID, context.DecisionSig = o.Dec.ID, o.Dec.Sig
 					context.Transition = context.Association
-					if baseLoop(o.Dec.LoopID) != o.Dec.LoopID {
+					if materializedParent(o.Dec) != o.Dec.LoopID {
 						// A retirement is caused by the current root revision, but it
 						// is not new clinical evidence that the stored child belonged
 						// to that revision's subject. Keep both facts, without editing OUT.
-						if o.Dec.Inactive {
+						if o.Dec.Inactive || (o.Dec.CRC != nil && o.Dec.CRC.Withdrawn) {
 							origin := clinicalContext[o.Dec.LoopID]
 							context.Association = origin.Association
 							context.OriginDecisionID = origin.DecisionID
@@ -323,7 +323,8 @@ func audit(data, wasl, run string, P int) {
 	var orch map[string]interface{}
 	ob, _ := os.ReadFile(filepath.Join(run, "orchestrate.json"))
 	json.Unmarshal(ob, &orch)
-	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run)
+	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run, analysisLiveOUT)
+	res["identity_quarantines"] = rp.L.identityQuarantineSnapshot()
 	res["crash_recovery"] = crash
 	res["throughput_ev_s"], res["wall_s"], res["chaos"] = orch["throughput_ev_s"], orch["wall_s"], orch["chaos"]
 	res["latency_ms"] = map[string]float64{"n": float64(len(lat)), "p50": r3(pctl(lat, .5)), "p90": r3(pctl(lat, .9)), "p99": r3(pctl(lat, .99)), "max": r3(pctl(lat, 1))}

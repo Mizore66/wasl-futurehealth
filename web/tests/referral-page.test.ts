@@ -3,7 +3,7 @@ import { createElement, type ComponentProps } from "react";
 import Page from "@/app/app/referrals/page";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { CaseSummary, CurrentDecision } from "@/lib/api/schema";
-import synthetic from "@/data/referral-inbox-synthetic.json";
+import synthetic from "@/data/referral-inbox-synthetic-v2.json";
 import handoffs from "@/data/referral-handoff-synthetic.json";
 
 const mocks = vi.hoisted(() => ({ all: vi.fn(), detail: vi.fn(), extra: vi.fn(), handoffs: vi.fn() }));

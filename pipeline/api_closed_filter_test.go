@@ -68,8 +68,12 @@ func TestAPICasesClosedFilter(t *testing.T) {
 // the test, computes Closed for each programme's documented terminal state.
 func TestAPICasesClosedFilterMaterialized(t *testing.T) {
 	run := t.TempDir()
-	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), nil, 0600); err != nil {
-		t.Fatal(err)
+	// The composed append helper reads the existing output sequence before
+	// appending. Initialize an empty log, not an invented output/anchor/proof.
+	for _, name := range []string{"fhir_log.ndjson", "out_log.ndjson"} {
+		if err := os.WriteFile(filepath.Join(run, name), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	rows := []struct{ programme, state string }{
 		{"crc", "closed"},

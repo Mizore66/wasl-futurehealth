@@ -1,0 +1,671 @@
+{
+  "accepted_main": "80990f16af2a4ccb7472a824c77f86889c831775",
+  "cases_sha256": "4a2e6718730041127629ba6981cf8c353faf9e9dd077ef2fd4dfca7a7bfed746",
+  "clinical_dates_generation_sha256": "58b4900652c3ad9a148143b6393ba287bc8d908f49b69c61ef61cce00e20ec17",
+  "contract_version": 3,
+  "currents": {
+    "ahs-mushrif/ServiceRequest/AHS-sr-9001": {
+      "ack_day": 118.35,
+      "contact": "granted",
+      "deadline": 31,
+      "dropoff": "referral_unanswered",
+      "ec_state": "none",
+      "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-9001@synthetic-referral-0",
+      "in_seq": 2,
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9001",
+      "notif_day": 118.3,
+      "now": 120,
+      "overdue": false,
+      "owner": "Practitioner/ahs-mushrif-nurse-1",
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "crc",
+      "prov": "ahs-mushrif",
+      "ref_day": -1,
+      "ref_status": "none",
+      "reported_closed": false,
+      "sig": "621b2f157eeeccec9f85917b8f09eec6c7ea663bc5cd664551d0b55327036c18",
+      "sr_day": 118.25,
+      "state": "open",
+      "tb_state": "none",
+      "unowned": false
+    },
+    "ahs-mushrif/ServiceRequest/AHS-sr-9002": {
+      "ack_day": 117.6,
+      "contact": "granted",
+      "deadline": 31,
+      "dropoff": "referral_unanswered",
+      "ec_state": "none",
+      "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-9002@synthetic-referral-1",
+      "in_seq": 3,
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9002",
+      "notif_day": 117.55,
+      "now": 120,
+      "overdue": false,
+      "owner": "Practitioner/ahs-mushrif-nurse-1",
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "crc",
+      "prov": "ahs-mushrif",
+      "ref_day": -1,
+      "ref_status": "none",
+      "reported_closed": false,
+      "sig": "4dde3c7e8520a76d7708fd2709b742ff8de8cad045dbaf8a45d95b1c8b87ca4f",
+      "sr_day": 117.5,
+      "state": "open",
+      "tb_state": "none",
+      "unowned": false
+    },
+    "ahs-mushrif/ServiceRequest/AHS-sr-9003": {
+      "ack_day": 116.85,
+      "contact": "granted",
+      "deadline": 31,
+      "dropoff": "referral_unanswered",
+      "ec_state": "none",
+      "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-9003@synthetic-referral-2",
+      "in_seq": 4,
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9003",
+      "notif_day": 116.8,
+      "now": 120,
+      "overdue": false,
+      "owner": "Practitioner/ahs-mushrif-nurse-1",
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "crc",
+      "prov": "ahs-mushrif",
+      "ref_day": -1,
+      "ref_status": "none",
+      "reported_closed": false,
+      "sig": "bbd99d4bd5338c08ea6834ab8de7a3d2ed458d9e4ab2519c6aeca436175bdc59",
+      "sr_day": 116.75,
+      "state": "open",
+      "tb_state": "none",
+      "unowned": false
+    },
+    "ahs-mushrif/ServiceRequest/AHS-sr-9004": {
+      "ack_day": 110.6,
+      "contact": "granted",
+      "deadline": 31,
+      "dropoff": "referral_rejected",
+      "ec_state": "none",
+      "esc": [
+        "referral_rejected",
+        "open_econsult"
+      ],
+      "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-9004@synthetic-referral-3",
+      "in_seq": 5,
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9004",
+      "notif_day": 110.55,
+      "now": 120,
+      "overdue": false,
+      "owner": "Practitioner/ahs-mushrif-nurse-1",
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "crc",
+      "prov": "ahs-mushrif",
+      "ref_day": 111,
+      "ref_status": "rejected",
+      "reported_closed": false,
+      "sig": "473d87cdd778d6c317221e3f5b62015f39a9da21597e1e20cbb04f6527442bf6",
+      "sr_day": 110.5,
+      "state": "referral_rejected",
+      "tb_state": "none",
+      "unowned": false
+    },
+    "ahs-mushrif/ServiceRequest/AHS-sr-9005": {
+      "ack_day": 110.6,
+      "chain": [
+        {
+          "body": {
+            "downstream_event": "skmc/DiagnosticReport/ahs-mushrif/ServiceRequest/AHS-sr-9005-report",
+            "hops": 0,
+            "linker": "wasl-v3-retrained+iso+eid",
+            "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9005",
+            "near_miss": false,
+            "path_p_cal": 1,
+            "path_strength": 1,
+            "referral_patient": "",
+            "tau": 0.99,
+            "weakest_edge": {
+              "a": "",
+              "b": "",
+              "basis": "eid",
+              "p": 0
+            }
+          },
+          "hash": "bcf7fd0f96112c167971990d7eeb1cbd6589ccb8be2bbb3ac57b7d5ead9ba0a7",
+          "prev": "genesis",
+          "type": "link_decision"
+        },
+        {
+          "body": {
+            "agree": true,
+            "fields": {
+              "reader": "not_stated/not_stated//",
+              "regex": "not_stated/not_stated//"
+            },
+            "gemma": "/",
+            "human_override": "",
+            "label": "inadequate",
+            "quote": "",
+            "regex": "/",
+            "report": "skmc/DiagnosticReport/synthetic-incomplete-prep"
+          },
+          "hash": "5d9ffb1fb0b65ed3011742f8e413c845ba486b247c3e53a505906e0a114c09b9",
+          "prev": "bcf7fd0f96112c167971990d7eeb1cbd6589ccb8be2bbb3ac57b7d5ead9ba0a7",
+          "type": "evidence"
+        },
+        {
+          "body": {
+            "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9005",
+            "policy": "no closure without two-reader adequate evidence or authorised human decision",
+            "programme": "crc",
+            "report": "skmc/DiagnosticReport/synthetic-incomplete-prep",
+            "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
+            "state": "inadequate_evidence"
+          },
+          "hash": "1b2fd2c18e62b9553ee71a6d71b103788c257167144352b02228a6b56781a97a",
+          "prev": "5d9ffb1fb0b65ed3011742f8e413c845ba486b247c3e53a505906e0a114c09b9",
+          "type": "hold_decision"
+        }
+      ],
+      "contact": "granted",
+      "deadline": 31,
+      "dropoff": "inadequate",
+      "ec_state": "none",
+      "esc": [
+        "referral_unanswered_7d",
+        "rejected_inadequate",
+        "open_econsult"
+      ],
+      "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-9005@synthetic-referral-4",
+      "in_seq": 6,
+      "inadequate_day": 119,
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9005",
+      "notif_day": 110.55,
+      "now": 120,
+      "overdue": false,
+      "owner": "Practitioner/ahs-mushrif-nurse-1",
+      "policy": "v6",
+      "proc_day": -1,
+      "prog": "crc",
+      "prov": "ahs-mushrif",
+      "ref_day": -1,
+      "ref_status": "none",
+      "reported_closed": false,
+      "sig": "5f0be7ebe1e788d2d1a74163928f450f40ae7c944e48fee6244ad43095507dc4",
+      "sr_day": 110.5,
+      "state": "inadequate",
+      "tb_state": "none",
+      "unowned": false
+    }
+  },
+  "generation_source_binding": "production_source_sha256 and helper_sha256 identify the actual integrated working source; generation HEAD is ancestry only",
+  "held_control": {
+    "api_overlay": {
+      "actions": 0,
+      "booking": {
+        "mode": "simulated",
+        "reservation_id": null,
+        "reservation_version": null,
+        "revision": 0,
+        "slot": null,
+        "status": "unreserved",
+        "updated_at": null,
+        "updated_event": null
+      },
+      "head": "5f0be7ebe1e788d2d1a74163928f450f40ae7c944e48fee6244ad43095507dc4",
+      "last_action_at": "",
+      "ledger_status": "ok",
+      "owner": ""
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "granted",
+    "contact_state": {
+      "contact_blocked": false,
+      "status": "none"
+    },
+    "deadline_day": 31,
+    "decisions": 1,
+    "dropoff": "inadequate",
+    "fixture": "false_closure_trap",
+    "id": "ahs-mushrif/ServiceRequest/AHS-sr-9005",
+    "overdue": false,
+    "owner": "Practitioner/ahs-mushrif-nurse-1",
+    "priority": "",
+    "programme": "crc",
+    "provider": "ahs-mushrif",
+    "referral_day": 110.5,
+    "review": "none",
+    "state": "inadequate"
+  },
+  "helper_sha256": "2503bfe6134cedc38d32e2686f91fe5049e028784ce94525c5e87980f1ea1ef6",
+  "input_sha256": "babe707ad8c2147b62cd744037841e87a36c0d98d60c3699438ea056c3f0fb8b",
+  "inputs": [
+    {
+      "id": "synthetic-referral-0",
+      "in_seq": 2,
+      "facts": {
+        "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9001",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 118.25,
+        "sr_rec": "",
+        "sr_lang": "en",
+        "prog": "crc",
+        "comms": [
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9001-notify",
+            "day": 118.3,
+            "cat": "",
+            "tpl": "fitfu-notify-v1/en",
+            "lang": "en",
+            "text": "Hello. There is an update about your recent health screening at Al Mushrif Healthcare Centre. Please contact your care team or book through the app to discuss your next step. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message.",
+            "status": "completed"
+          },
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9001-ack",
+            "day": 118.35,
+            "cat": "acknowledgement",
+            "status": "completed"
+          }
+        ],
+        "tasks": [
+          {
+            "day": 0,
+            "status": "",
+            "owner": "Practitioner/ahs-mushrif-nurse-1"
+          }
+        ],
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-referral-1",
+      "in_seq": 3,
+      "facts": {
+        "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9002",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 117.5,
+        "sr_rec": "",
+        "sr_lang": "en",
+        "prog": "crc",
+        "comms": [
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9002-notify",
+            "day": 117.55,
+            "cat": "",
+            "tpl": "fitfu-notify-v1/en",
+            "lang": "en",
+            "text": "Hello. There is an update about your recent health screening at Al Mushrif Healthcare Centre. Please contact your care team or book through the app to discuss your next step. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message.",
+            "status": "completed"
+          },
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9002-ack",
+            "day": 117.6,
+            "cat": "acknowledgement",
+            "status": "completed"
+          }
+        ],
+        "tasks": [
+          {
+            "day": 0,
+            "status": "",
+            "owner": "Practitioner/ahs-mushrif-nurse-1"
+          }
+        ],
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-referral-2",
+      "in_seq": 4,
+      "facts": {
+        "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9003",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 116.75,
+        "sr_rec": "",
+        "sr_lang": "en",
+        "prog": "crc",
+        "comms": [
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9003-notify",
+            "day": 116.8,
+            "cat": "",
+            "tpl": "fitfu-notify-v1/en",
+            "lang": "en",
+            "text": "Hello. There is an update about your recent health screening at Al Mushrif Healthcare Centre. Please contact your care team or book through the app to discuss your next step. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message.",
+            "status": "completed"
+          },
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9003-ack",
+            "day": 116.85,
+            "cat": "acknowledgement",
+            "status": "completed"
+          }
+        ],
+        "tasks": [
+          {
+            "day": 0,
+            "status": "",
+            "owner": "Practitioner/ahs-mushrif-nurse-1"
+          }
+        ],
+        "down": null,
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-referral-3",
+      "in_seq": 5,
+      "facts": {
+        "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9004",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 110.5,
+        "sr_rec": "",
+        "sr_lang": "en",
+        "prog": "crc",
+        "comms": [
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9004-notify",
+            "day": 110.55,
+            "cat": "",
+            "tpl": "fitfu-notify-v1/en",
+            "lang": "en",
+            "text": "Hello. There is an update about your recent health screening at Al Mushrif Healthcare Centre. Please contact your care team or book through the app to discuss your next step. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message.",
+            "status": "completed"
+          },
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9004-ack",
+            "day": 110.6,
+            "cat": "acknowledgement",
+            "status": "completed"
+          }
+        ],
+        "tasks": [
+          {
+            "day": 0,
+            "status": "",
+            "owner": "Practitioner/ahs-mushrif-nurse-1"
+          }
+        ],
+        "down": [
+          {
+            "ev": "ahs-mushrif/ServiceRequest/AHS-sr-9004-reject",
+            "prov": "skmc",
+            "rtype": "ServiceRequest",
+            "status": "revoked",
+            "day": 111,
+            "strength": 1,
+            "weak": {
+              "a": "",
+              "b": "",
+              "p": 0,
+              "basis": "eid"
+            },
+            "hops": 0
+          }
+        ],
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    },
+    {
+      "id": "synthetic-referral-4",
+      "in_seq": 6,
+      "facts": {
+        "loop": "ahs-mushrif/ServiceRequest/AHS-sr-9005",
+        "in_seq": 0,
+        "prov": "ahs-mushrif",
+        "sr_day": 110.5,
+        "sr_rec": "",
+        "sr_lang": "en",
+        "prog": "crc",
+        "comms": [
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9005-notify",
+            "day": 110.55,
+            "cat": "",
+            "tpl": "fitfu-notify-v1/en",
+            "lang": "en",
+            "text": "Hello. There is an update about your recent health screening at Al Mushrif Healthcare Centre. Please contact your care team or book through the app to discuss your next step. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message.",
+            "status": "completed"
+          },
+          {
+            "id": "ahs-mushrif/ServiceRequest/AHS-sr-9005-ack",
+            "day": 110.6,
+            "cat": "acknowledgement",
+            "status": "completed"
+          }
+        ],
+        "tasks": [
+          {
+            "day": 0,
+            "status": "",
+            "owner": "Practitioner/ahs-mushrif-nurse-1"
+          }
+        ],
+        "down": [
+          {
+            "ev": "ahs-mushrif/ServiceRequest/AHS-sr-9005-report",
+            "prov": "skmc",
+            "rtype": "DiagnosticReport",
+            "status": "final",
+            "day": 119,
+            "report": "synthetic-incomplete-prep",
+            "evv": {
+              "kind": "colonoscopy",
+              "regex": {
+                "state": "",
+                "reason": "",
+                "caecum": "not_stated",
+                "prep": "not_stated"
+              },
+              "gemma": {
+                "state": "",
+                "reason": "",
+                "caecum": "not_stated",
+                "prep": "not_stated"
+              },
+              "gemma_hit": false,
+              "agree": true,
+              "label": "inadequate"
+            },
+            "strength": 1,
+            "weak": {
+              "a": "",
+              "b": "",
+              "p": 0,
+              "basis": "eid"
+            },
+            "hops": 0
+          }
+        ],
+        "contact": "granted"
+      },
+      "part": 0,
+      "pseq": 0,
+      "ots": 0
+    }
+  ],
+  "kind": "explicitly synthetic facts-seam producer controls; not medical evidence",
+  "out_log_sha256": "976094f93f72276f006d0a12f53424ac05a6c9f5e10e54dabd10c16e344dd6c5",
+  "previous_generation_sha256": "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25",
+  "producer": "ClosureCore.Apply -\u003e signed OutEnvelope/out_log -\u003e loadAPI -\u003e authenticated GET handler (httptest recorder, no socket)",
+  "production_source_sha256": {
+    "agentrecs.go": "c17972b58fa03231a8abbfee01fc930b4e3e66054ae5fa35c9a3b503ed1a93ae",
+    "agentreplay.go": "9fb11b82f0aef18e7d2dc5c51df60ceaa7a69d4966c3c7c7006ed2347a385a9f",
+    "agentshadow.go": "795b95305d1fe62f9df8c742096cc35c8b3444073abedf284f11bcf5a1d795ef",
+    "agentshadow_lane.go": "5f99b07307b90039bca3f1c832b46ae47b2d695186a0e185edd38712095429ea",
+    "agentshadow_run.go": "a039cb1cd55f21ba0c9185b8a653be2a595ca9e0e615558b6e65b43b0e9bf3b0",
+    "analysis_source.go": "6684dd555ca5f76fe29ea86e3b85125b0d89bc787b2c39e3ee1f98466a56525e",
+    "analyze.go": "7839554e54843b1c99ce814d0ccf69eacb7d035acac7abe9c6b3aafee4f9aa20",
+    "analyze6.go": "13112f5e96ea5c0da003c22478626618ffe36ca888adcad4a38e6c0a10583856",
+    "ann.go": "bca6dcbb7adef7cb3545e5cf5493e6efef30a597ccb6724ae9bf4590391e1535",
+    "api.go": "f54c2dcdee1a30efcaffa41d04cf8e551b44f56768aff27f2421e75ba0e68fe8",
+    "api_body.go": "0c86b97f865b48b854fca857a44945790108c17539ea69e4c33d44a998f9f687",
+    "api_booking.go": "c9004286f2824073658d5008c147a0a6fa98a3e660a57e12f128a2cb8b06efbe",
+    "api_consent.go": "059b557b9e01bc41da03eab898488b9305f2053336e608026aa8f6a477ddff02",
+    "api_export.go": "e727169a4c227a47638a55be1acda995f8a0734c2bd6f92e3111981c3de43c0b",
+    "api_identity_current.go": "763dbf8f8296d65846dd38b4d9a7fc4d5357b0b2b2ced52502b6641403c4daa5",
+    "api_operations.go": "44a286cac5f80c14847ec4cc7b4e3c49e1e49397cfa02f4c0cc243c67e7c8cd2",
+    "api_outcome_handoff.go": "02341c5d3184af9031d024d4cfb202b9b78a16812f4fff31da8505435ed7f7b0",
+    "api_patient.go": "c8c4627dae3e0d036653cee85546df77a5c92268255cc9300db884db95c211e7",
+    "api_patient_link.go": "b73734cfd1141b9c5b5ab1206f109029d8f46dab9f4be31804f3680445efadde",
+    "api_patient_request.go": "e8b74dedfa26cc50d2ee8bc15a3411c151cf5f8fb3e4d0ff05d2ba08df433a07",
+    "api_people.go": "d09dd5f63d3a5b20ee81cc5ba47332232bfd3fc17ef491c8a2db2f96adf76ee1",
+    "api_preflight.go": "a0081fac4e1775a8a14eac0d085408b3c5fadf38cf618faa8bc5a8f0e39f7495",
+    "api_recovery.go": "d1bbc008c22e6dd4d755b52bc87e5151349b9f7ae38fc324782b6b6ea4a277cc",
+    "api_referral.go": "1b02f8bd0c68a8ea27d6d736c5a4911e206b45479e18f8feeb3ceeddb4cb753e",
+    "api_referrer.go": "8f5befdfd97c72a49a15e22099a3247f2110f45b0c7828531e2818bfcdfe280f",
+    "api_review_source.go": "5776e5e67c7c0c67297ebd2393000622ec29aa44eb0aff724b557203efc2703a",
+    "api_security.go": "1fcc7bd0a676e50765e3676f56d395d09c96f3d0657df12a7fab6eedb3650003",
+    "api_shadow_status.go": "339b059ef1d2f9a8cb867641b677454f18ee21fb3836715aa5be4485bc2b523e",
+    "api_teachback.go": "156dbf3677e7c0e13b6a9b8a24348c880e90528415b8ed428c70d767b90e2b7a",
+    "api_undo.go": "df12b750eb1ebfc33fea54da7fcedb821e1563173993b1cd5b9d21a31811a7f6",
+    "appointment_revision.go": "d8286654991cd0376293f412f91b323155f088601c2714223149521ea34d2270",
+    "audit.go": "f3a71805257f84a974148081881ec6d5740e33486dfdb9c90a2e69c9ad5d7782",
+    "bench.go": "47e4d2553c7c312658ab9b65cb824b66cd3324e5ef88b8e6544f75e86d22be03",
+    "breast.go": "5b87a4b3ee97580fc21703da050578a9ca47e5e42d4a81ab19af45525755434c",
+    "breastmetrics.go": "117c05c58938482696901fdb1d171bf668a361fc48a64b599bd20f6fcf833196",
+    "breastread.go": "988a8da81919f8f0267e2b0ee8f9fe930cc00d3ebd489a4cf6c75ffc7f63e896",
+    "breastrule.go": "c897c6061379830e6b9e3a188ea1b6dacdf790c3ce7cf67f2b764c8c9388cd5e",
+    "closure.go": "2ecad4e08bbd4e543c6a8d959d64dc96f2a57cd7da3d5d37af155cd0293761ef",
+    "consent.go": "3c32a0cb02495663ec8df4546f29592b055e920805278b689376363dfaeea313",
+    "crc.go": "4af9a888f35c7d58bf6a9fc2127ae0b452f464bf9bc5664749f8b68cb97e1bcd",
+    "crc_assertion.go": "8d7a2c5ac0b4a32039df7b232fb4f46d354f13090115906a02b7b1a680c1ce63",
+    "crc_plan.go": "07b26b4bc96b4476c727471c282bbfe655d41e5908ba43ffb6c08e56c039aff4",
+    "crc_provenance.go": "6d967d0de991d20f0a0071f2106921f43d0ba8594fe841151ceebb3218dba162",
+    "crc_terminal.go": "8243fea27cf511006aadc64b0fc613ca87e0d2b2ff4cf14f474719fd94aa5513",
+    "demo.go": "3143f5608988b9c01d77edf8f1c0a335c7fac1474f23621112141f999e3adc0d",
+    "demoguard.go": "ea7a09616140619381a0a410c2dc9218ea5ebea6892728bed51639c2663f015f",
+    "dr.go": "ce8ab2d56a3eff63ca2a945f3751fd243821fbaf0e0ded4252e0f6bfff647f75",
+    "drmetrics.go": "ae3c8bc787c87740ef2c0e5787f8309d2d7220222c6bf71cc00cfdfc22912288",
+    "drnext.go": "077fa868b99b7960ac07eef5f249c774dee909e32659a585fbdfda4dd58dc49d",
+    "drread.go": "acffc0724ca3cdafc6af53419bb5a73ec5eb476dae8a735e800fbe30e7f8d459",
+    "drrule.go": "45c665847d486b453e05c6d7306d8cc089479bb7e7a2db82977a052ca64fe756",
+    "eidguard.go": "2dd3d5186b014cc09858b7898e6ff35ce4dcd5b93082409b59e558fd4806f8c6",
+    "encdev.go": "539cf1c430f952d9e0e2f6358eab0a08b08d6b951fa257cfcda8c5017ceb2673",
+    "episode.go": "430e3ef9d043025d0d676898b1c03913360b1e4faf465df1714c5050bbbcfec3",
+    "evidence.go": "909fe2422c71ff820cd9c4b361317554b52d5fe2babce8f7d16eb51239ee3d1d",
+    "fhir.go": "850462ddd1784fc537d9e5dfb8c7e4c61e3027a77b78ff738156af351da9a2af",
+    "fhirpoll.go": "2679453466493ad87515744216cd3efde81d57242c55ce9f3400de69463ebe5e",
+    "fhirsub.go": "83ad3f3ccad185b2bb3ff6e41e9e719659099a319f37e661c8fde53f38f35140",
+    "fhirsub_canonical.go": "9c8fb9b2b9770fd55cdf5910fb7c0146e1035c28bf492a1c924ea10d98f3d68f",
+    "fhirsub_canonical_attempt.go": "cf39956d778f19bea993f6afcce5f20a5b2b7c9ce940ba16e7727bb32b3f201b",
+    "fhirsub_canonical_history.go": "222eab47421910f6a44703afeb55c53ea0f3d5cb1f1b28a20f825c6b67f93799",
+    "fhirsub_canonical_live.go": "bf3b83a6cd45cba7a66f45ab7918ba6306a0706fc86855daa6339182420e1626",
+    "fhirsub_canonical_source.go": "e6fd4f89e010e1b24b68f2580e95084f5e9a12f5fdf0675f7d7147120d2b21ff",
+    "fhirsub_canonical_transport.go": "33d393cb0f7c0c26e1daf37a731d15b52eb8872d99d8a978784e1bd0e636cdda",
+    "fhirsub_head_probe.go": "548ea7244566c608afc493a64a2836a35ebcb233c8a5c99944e9139db05b360f",
+    "fhirsub_pending_reader.go": "ebab4192661e3ad4409802e9f93b3c3b8630d45a68258d5576f6762f6ca0d979",
+    "fhirsub_phase_diagnostics.go": "f06a2a25cbe8dec52b8b6c5c1a187b56adb0724c3c0514a99284339ba6af3505",
+    "fhirsub_types.go": "e3c2d99af1af48baad54183be12d40817e02be84b272bc7ee3c7919b1aa241eb",
+    "fleischner.go": "f053f3723d44f8cf2fb24da62e885bfd68a30054bd400fbe8ea5813594f44624",
+    "gen.go": "266e3000baf7b7d5a3b1e2b71f1bf15ba47eb53e9ee70c8046a12606761f6037",
+    "gen6.go": "9f3ce8edd5e0fd19d9bd7f5a01299052282cd90aa0a177a6cff6e7a4ab1e1b7b",
+    "genadv.go": "426bf66ee1369de7c2333016b1f6443471a2543c1d9205dee56f045ce0365e0b",
+    "genbreast.go": "675704dfa10eb9ac64af1a823ffb2329516d0bc01e5041c45fec161fb9d212c1",
+    "gendr.go": "e62d16582bfc9afa14d3d32097d65cb2f434a05125b36dcd5a41ee38c5b844de",
+    "genifhas.go": "ca5d08f55e73b082326e04854e8bfa6c98aa009889322dc8611745c3f0bd9e92",
+    "genldct.go": "383b1381ba1181d0abba3889246fabed289588db83f49f207f23ab30a05dcad4",
+    "genlung.go": "27807336be8feea09a5a372f9a8fb33c82ff23ca6db8df3041ae3c62949db6b6",
+    "go.mod": "2ec80b006c5fd8d92c5cf6ced4f0f3bcd9a9431392e6838a9360e4fcf6a20bd6",
+    "go.sum": "a8287da24bf8142baf364ed3b43a9b90381e44b51458d6fc1007e70e8594279e",
+    "governance.go": "2498ee696aecd1cea678e22eb340463fcb3830f33f9da4c5d639557ece7a9b78",
+    "handoff.go": "8233e2d1763a9f0f6797c54166ab377867cb8b92a309652eb127b9b23f357d62",
+    "handoffext.go": "a0a986f2beddefdfee1cd21605b6474571e619df6d645df2a37cdb8195832631",
+    "handoffref.go": "b0e4440b0fae56fe6f2c1015a9ec4b67ab1b96580aa3eb144a4aff1437626f86",
+    "hl7.go": "f194a8106cb89c86958a86daa67233ea8ef1e386b2c8fc2987bed67cb7541942",
+    "hl7breast.go": "d988729f1649691988a00621873208e8a2ef42301bca9c294464d7ae1a087a2c",
+    "hl7dr.go": "e8b3175168302b4092e96cd334bb8dc0c0b7b756918f41167173af2be9da2946",
+    "hl7lung.go": "3c4f8eefc00975afe5338eafa37d3f3ebc8a6bbe511ab9580e5ee37206cb1fb4",
+    "identity_clusters.go": "850f33fbabc8a06b765508b224f38e002ea2a1591657d005a492f7bf193f9d6a",
+    "identity_resource.go": "108b3e6a756800f80c64ae9757e315867bed2bdfbb0140862cf8a745555a1cca",
+    "identity_review.go": "f69ae96e8f63b812adc4ed5bbf24bb226dd82a2efae5e60f79420d05135de20d",
+    "ifhas.go": "18861390569c9a62056df1993c46fac4ea480ae5adbecebc0e050d915d379eb5",
+    "ifhasmetrics.go": "ef0a91def566f63c152c643471242ab40efe06655a3d388775e0e94097ec1a2f",
+    "ifhasread.go": "a73655aedeccaa6e1e6b9aa1eacd594c2ecad2732252930e95689f8bb60ba8b8",
+    "ifhasrule.go": "b861f373041fa89c7e2fe00ab9e50edc4a7880363d119add6ea4162b97338aa6",
+    "image.go": "39a409851f0231daff2d6f09bd43f5cb23b7f9abf2e7219c59bc2ff4edb13b01",
+    "imggen.go": "ebd9bce3a5697748946ecdeb4df00a493ca34a3cf8b9ecb0a17e5b8c9b7e54ac",
+    "iso.go": "2d0d4cb5b7ac945e456772361ee6b47335294a7aa001843757b70f13493454f4",
+    "ldct.go": "9970c3e8a459bb7f60b8acc7b40fb901f70e031d1f4ad8a371432f63a8241f9c",
+    "ldct_clock.go": "8d7c4032d94fcd92301192bba3f0e84906df77f27bc2c425393b51d48649fd47",
+    "ldctmetrics.go": "7c9f0db96eb98ad3a9f2bbd63f7e316134d5a6cbd18bb8ab149bb48c67e8a020",
+    "ldctread.go": "9c45d7c42e1b59bb41561f20fa6e227909942657b1f45b618f9e263b9f2ee67f",
+    "ldctrule.go": "51557915437810912e80ed81eaa527ac67b7e582aeb145b00fe521b5b82a9336",
+    "ledger_lock.go": "1dd5426670ecbb21043ffd49a1991cfe69224e4b9d076b28c7b1e83e3cf0afbc",
+    "ledger_read.go": "43ab4c0d68b109023e42d34c7218307229f94b5aa69df7444f0e01ff1b53838c",
+    "link_funnel.go": "42b614c7fee5028488fb29c55f29dcd5a92ecf7501694aa0deb4e389b5a1f30f",
+    "linker.go": "c51eb5e528e6004d35ea06c86e412ca4e29b198f9275bccc5c042b8744bbf257",
+    "linkfloor.go": "6911a3dee0082c1609773926a3e61829adaff350552145462a308041161c351b",
+    "local_endpoint.go": "fdc148e3ff5b35ade653760389afa97fd20c252b10aea9588f37f3e2a51c883a",
+    "ltt.go": "55c92bc213758aadf8846046dc0826645f1ad30079392c8c7c0249fc044cbf83",
+    "lung.go": "773ebae8786928e8841d2616779c0cb5e62ceb877a04b26c02f59c812167536e",
+    "lungmetrics.go": "f7a2cd11ebbdbafe87d9bd1e4c2debc143d37b9fc10d4760bc05e754f2dca779",
+    "lungread.go": "8cdc052c79e853def866369fa1cc99aa809f389342a0590767b8f95de48bd477",
+    "lungsurv.go": "01756ae6c1a3415e9bd87fdf4d3b6bb0ce754d0a0758d37e91fba5fb6ec2176b",
+    "lungworkup.go": "1a20ecd221de87769c48dd5521f2d78a64f64dcae43f27b68fda52790a11a8c9",
+    "main.go": "ddf3caf76e485fcfbd13489019e296f4361afbdefa82c91714e20193a6e15db9",
+    "malaffi.go": "4e2fc9860e9d4f121f08b311e34f474c2fbdb82296e3b79a126085c666be4aa7",
+    "malaffi_poll.go": "835f6e245b843b0653628a20600e965d3d356f9a56556a1f8d17abefb257179b",
+    "materialization.go": "0e805b28f8a430b829f6386c63b59e727890532b3e55d817ec20cfedc940090e",
+    "mcf.go": "1d4d78da5267c83a30b55e5d4752fa6291f2e4f34d114952f4c32e2c35a42933",
+    "model.go": "9d043ecafaf396d85156ffd3290923d4f3d471cac71ea66834f2129b10139ec9",
+    "namesake.go": "71bbec0e34a087f26f5e1f3cc6aa0557171a29f12407431819f5e5c9dd43fd24",
+    "noise2.go": "27a37e9b18f3a2e7f0c4edfc3b7211ca47b006899b26c4ad6c135f064f4daea4",
+    "noise3.go": "6063ffc39967e6edd58065fac08854ae5151be8b43aeb99a1d306409d82451fa",
+    "outreachgaps.go": "97c682eccb8af0d528c2a2d085d5efb960fa02082a63c94363e53bca4dbffa5d",
+    "pairfeat6.go": "8663c2b57fd80d9ed0511c3c3437c2b2a0861844cb1bc843c19047b92996430c",
+    "pairfeat7.go": "b8cbb307842333d3cfeab9402796b97d561b4af55cdf38fe4462a5ec637d3ba4",
+    "pairfeat9.go": "04b79507559314836c5cdab57fa7cf753dc2f36876ac685309433383b6e734b1",
+    "patient_side.go": "5c49487da07b4dd36011c052ddcad3aacbe53077cb993655c868fdeaa97d710c",
+    "pilot.go": "154cc5297f42e15e7b53689d97b4c7ddab535d786c7af37a136330c732d97da4",
+    "prepquery.go": "d919abdc75fba5523f48246ebb64901df845ea002e88caff0b9ba2a029d17066",
+    "r1review.go": "9092f2dff8879f947a770659afb903ff2664b4e3d9f52c411ff93e8be2841e37",
+    "reader.go": "97e85bccfa9cfaeb86ebbf838c7efddd7127401fb3706676c81618289ebbda66",
+    "readerscore.go": "53d1a75aa9efcdf9e2a99041390877b692f01482f2c2e587549e7c97ef4e272b",
+    "recovery.go": "c6e4a1e24fdefef4fe695e4092c838cf19303e87d007b87e1ae7a0e0dd22643d",
+    "recovery_projection.go": "b3d5670ac3e6465dc15ab3b3037392bb091127ec36f1bdc81201c61c13a0a9c7",
+    "report7.go": "70c23257e84f392571d7eb08d54dbfa3e54f81f0ca0415979144cfd8cd851833",
+    "review_claims.go": "9404d8c99636e32d6fa349e4a1edefda7c97ceeaf5e8c3f189897a4c401e8987",
+    "review_legacy_history.go": "2b7f5847d2f2cc3cd1a5ed8bf8f5966f0991e821d3686feda187b7db6a3d77e3",
+    "review_photos.go": "b8fbb310ae263d0a4ffec755a7c3d940bfde60de9f15f754d211dcc0882c0846",
+    "review_protocol.go": "2a7498eff955b4f1062c7254cff0c278a4ad5cc7fc45b187a2f2342875d18a89",
+    "review_report_source.go": "4b6a677a4f2054513c573d1264f6572ad0a966f42c503de6a588e304be1bc230",
+    "reviewer_durable.go": "96a451d1826a13c951fb7df7bab4220ff07110e0bb7d5e6adcb81a8aeea338ae",
+    "rules.go": "b54e7c0d8ba03ccfd8bce12ca6fe9343b9a96cc5046fb7374b4a6006c6842ef0",
+    "runtime_metrics.go": "2b09e29663e22eec267c732ae463be1d85776ee2524dd8b150ac816aa7b07855",
+    "scale.go": "460312c405749256a873b08905034ba67ddb8cbe9d3e1fc6a568b4d1118660a6",
+    "seen.go": "40ab2d2043da3d2b43ec2e2bded2af979a3471d6e3bbf3e731f2684320211f6f",
+    "services.go": "6c7020afa6cbce6998acc8e4e3ce3d38e550c5c1f1ed98a89cad7cd469a63998",
+    "structured_log.go": "703c9d3b45cbc509f868c13661c0184ec2b0520fbcd4a9c7f285bfc6b36ec5a0",
+    "sweep.go": "e5c191f4b713f94ed716d716ce1da9ba2b770ba6edf39e0bc7a941dad6f16905",
+    "tamper.go": "ef17049345dac32940b50c547c41eebe023b28cf557bfe8c6cbf59ed0951439e",
+    "text.go": "4d9a0c2710583ab6256fbe9909f146a428744cd3387bf37140b2f0a9bee9de2a",
+    "types.go": "97a4a24984f4cab574758f2b1259b513a4e9bf3f02c330743bdbd40d7ac71f03",
+    "v7.go": "b97b53fe4531238a2d6cd2d33f94ca0096aa8a1e654b2715841e1c4900717a42",
+    "xscript.go": "d775a18787692905237799fb5ca5a12e3360350ff41584403d1beb6343844f8a"
+  },
+  "schema": "wasl-referral-integration/3",
+  "source_head_at_generation": "1809b0c4dac116bc4e6e2d4fde51005e4fb0e75f",
+  "supersedes_record_sha256": "013a8a109f06e3ffbc40434eb2f95f9ebf1839318e2603bbbf79d5cc76f8bd25"
+}

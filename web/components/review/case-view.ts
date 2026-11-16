@@ -70,6 +70,7 @@ export type ReviewView = {
   /** The one check row a narrow answer settles; every other disputed row (histology included) stays open. */
   evidenceField?: string;
   evidenceChoices: string[];
+  crcItems?: Record<string, { title: string; choices: string[] }>;
   /** The evidence item was raised on photographic evidence: photos are shown, or their absence is said. */
   imageBacked: boolean;
   /** The photos the API filed on this item's report at the station the item asks about; never inferred from scores. */
@@ -406,6 +407,10 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     evidenceScope: crcPurpose && CRC_PURPOSES[crcPurpose].scope,
     evidenceField: crcPurpose && CRC_PURPOSES[crcPurpose].field,
     evidenceChoices: [...evidenceChoices],
+    crcItems: Object.fromEntries(c.review_items.filter((it) => it.reason === "crc_disposition").map((it) => {
+      const need = c.case.crc?.obligations.find((p) => p.review_item === it.item);
+      return [it.item, { title: need ? `${need.outcome.replaceAll("_", " ")} · ${need.source_report} v${need.source_version}` : "Superseded CRC obligation", choices: need && !need.confirmation && need.blockers.length === 0 && it.verdict ? [it.verdict] : [] }];
+    })),
     imageBacked,
     photos: imageBacked && evidenceItem
       ? (c.review_photos?.[evidenceItem.item] ?? []).map((p) => ({ ...p, src: `${caseHref("/app/review", c.case.id)}/photo/${encodeURIComponent(evidenceItem.item)}/${p.sha}` }))

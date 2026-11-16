@@ -43,7 +43,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
     <Link href={caseHref("/app/patients", id)}>Open the retained case and authorized audit history</Link>
   </section>;
   const view = reviewView(detail);
-  const sharedEvidence = view.programme !== "crc" && view.programme !== "cervical" ? (
+  const sharedEvidence = detail.case.crc || view.programme !== "crc" && view.programme !== "cervical" ? (
     <>
       <ProgrammeFindingCard detail={detail} />
       {detail.evidence.map((ev, i) => (

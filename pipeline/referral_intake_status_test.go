@@ -58,8 +58,8 @@ func TestNonActionableIntakeAfterRejectionKeepsPacketOpen(t *testing.T) {
 	defer func(h bool) { Handoff = h }(Handoff)
 	Handoff = true
 	rejected := extIntake(Providers[2].ID, "sr-1", 2, "revoked", "capacity", "eid", 1, "crc")
-	thread := []CommFact{{ID: "q1", Day: 3, Category: "econsult-question", Trigger: "rejected", Unit: Providers[2].ID},
-		{ID: "a1", Day: 4, Category: "econsult-reply", Parse: "reject"}}
+	thread := []CommFact{{ID: "q1", Day: 3, Status: "completed", Category: "econsult-question", Trigger: "rejected", Unit: Providers[2].ID},
+		{ID: "a1", Day: 4, Status: "completed", Category: "econsult-reply", Parse: "reject"}}
 	drRejected := extIntake("eye-hosp", "EYE-intake-1", 30, "revoked", "incomplete-referral", "eid", 1, "diabetic_retinopathy")
 	for _, replay := range []bool{false, true} {
 		for _, status := range append([]string{"active", "revoked"}, nonActionableIntakeStatuses...) {

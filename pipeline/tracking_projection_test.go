@@ -123,9 +123,11 @@ func loadTrackingOutputs(t *testing.T, outs []OutMsg) *apiServer {
 	t.Helper()
 	run := t.TempDir()
 	var lines []byte
-	for _, o := range outs {
-		m := LogMsg{Subject: "out.p0"}
-		encodeEnv(&m, OutEnvelope{Kind: o.Kind, Dec: o.Dec, Item: o.Item})
+	for i, o := range outs {
+		// Runtime-shaped independent stream/output sequences are mandatory for
+		// the shared highest-output-sequence materialization reducer.
+		m := LogMsg{Seq: uint64(i + 1), Subject: "out.p0"}
+		encodeEnv(&m, OutEnvelope{Kind: o.Kind, Dec: o.Dec, Item: o.Item, OSeq: o.OSeq, Prev: o.Prev, Hash: o.Hash})
 		b, err := json.Marshal(m)
 		if err != nil {
 			t.Fatal(err)

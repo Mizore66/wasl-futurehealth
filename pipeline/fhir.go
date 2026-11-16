@@ -151,6 +151,8 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 					e.Reason = gs(xm, "valueString")
 				case "urn:wsi:index-category":
 					e.Cat = gs(xm, "valueString")
+				case "urn:wsi:crc-follow-up":
+					e.FollowUp = gs(xm, "valueString")
 				case "urn:wsi:specimen-date":
 					day, err := tsToDay(gs(xm, "valueString"))
 					if err != nil {
@@ -205,6 +207,13 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			}
 		}
 	case "Communication":
+		if rawVersion := gs(res, "meta", "versionId"); rawVersion != "" {
+			version, err := strconv.Atoi(rawVersion)
+			if err != nil || version <= 0 {
+				return nil, nil, normalizationError(e.RType, e.ID, "invalid_communication_version", "meta.versionId", "versionId must be a positive integer")
+			}
+			e.Version = version
+		}
 		timestamp := "sent"
 		if _, present := res["received"]; present {
 			timestamp = "received"
@@ -272,6 +281,14 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if e.Prog == "" {
 			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "serviceType.text", "no explicit Wasl programme mapping")
 		}
+		if xs, ok := res["extension"].([]interface{}); ok {
+			for _, x := range xs {
+				xm := x.(map[string]interface{})
+				if gs(xm, "url") == "urn:wsi:crc-follow-up" {
+					e.FollowUp = gs(xm, "valueString")
+				}
+			}
+		}
 	case "DiagnosticReport":
 		if !diagnosticReportStatuses[e.Status] {
 			return nil, nil, normalizationError(e.RType, e.ID, "invalid_report_status", "status", "missing or unsupported DiagnosticReport status")
@@ -327,7 +344,12 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 					}
 					e.Relation = gs(xm, "url")
 					parent := gs(xm, "valueString")
-					if !strings.HasPrefix(parent, "DiagnosticReport/") || strings.Contains(strings.TrimPrefix(parent, "DiagnosticReport/"), "/") || parent == "DiagnosticReport/" {
+					if e.Category == "pathology" && e.Coded == "" && e.Relation == "urn:wsi:addendum-to" {
+						e.Focus = crcReportReference(prov, parent)
+						if e.Focus == "" {
+							e.Relation = "ambiguous"
+						}
+					} else if !strings.HasPrefix(parent, "DiagnosticReport/") || strings.Contains(strings.TrimPrefix(parent, "DiagnosticReport/"), "/") || parent == "DiagnosticReport/" {
 						e.Focus, e.Relation = "", "ambiguous"
 					} else {
 						e.Focus = strings.TrimPrefix(parent, "DiagnosticReport/")
@@ -430,4 +452,24 @@ func signoffResource(so *Signoff) []byte {
 		"extension": []interface{}{map[string]string{"url": "urn:wsi:signoff", "valueString": string(b)}}}
 	out, _ := json.Marshal(res)
 	return out
+}
+
+// CRC procedure lineage is an explicit provider-qualified resource identity.
+// Relative addenda resolve only in the source namespace; the supported explicit
+// extension spelling provider/DiagnosticReport/id can identify another configured
+// provider, never a guessed same-patient/local-ID association.
+func crcReportReference(provider, reference string) string {
+	parts := strings.Split(reference, "/")
+	if len(parts) == 2 && parts[0] == "DiagnosticReport" {
+		parts = []string{provider, parts[0], parts[1]}
+	}
+	if len(parts) != 3 || parts[1] != "DiagnosticReport" || parts[2] == "" || strings.TrimSpace(parts[2]) != parts[2] || strings.ContainsAny(parts[2], "?#") {
+		return ""
+	}
+	for _, p := range Providers {
+		if p.ID == parts[0] {
+			return strings.Join(parts, "/")
+		}
+	}
+	return ""
 }

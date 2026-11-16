@@ -507,7 +507,8 @@ func linkerStatus(L *LinkerCore, processed, present uint64, published, suppresse
 	}
 	return map[string]interface{}{"processed": processed, "present_at_start": present, "published": published, "suppressed": suppressed,
 		"records": len(L.recs), "first_new_output_s": recovered,
-		"pseq": append([]uint64{}, L.PSeq...), "inflight": inflight, "pub_retries": retries, "uptime": uptime, "stats": stats}
+		"pseq": append([]uint64{}, L.PSeq...), "inflight": inflight, "pub_retries": retries, "uptime": uptime, "stats": stats,
+		"identity_quarantines": L.identityQuarantineSnapshot()}
 }
 
 func runLinker(dataDir string, P int, runDir string) {

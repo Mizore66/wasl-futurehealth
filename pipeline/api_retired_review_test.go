@@ -13,8 +13,24 @@ import (
 
 func appendRetirementOutput(t *testing.T, run string, envelopes ...OutEnvelope) {
 	t.Helper()
+	var streamSeq, outputSeq uint64
+	for _, m := range readLog(filepath.Join(run, "out_log.ndjson")) {
+		if m.Seq > streamSeq {
+			streamSeq = m.Seq
+		}
+		seq := decodeEnv(m).OSeq
+		if seq == 0 {
+			seq = m.Seq
+		}
+		if seq > outputSeq {
+			outputSeq = seq
+		}
+	}
 	for _, env := range envelopes {
-		m := LogMsg{Subject: "out.p0"}
+		streamSeq++
+		outputSeq++
+		env.OSeq = outputSeq
+		m := LogMsg{Seq: streamSeq, Subject: "out.p0"}
 		encodeEnv(&m, env)
 		b, err := json.Marshal(m)
 		if err != nil {

@@ -46,13 +46,39 @@ func startTestNATS(t *testing.T) *natsEnv {
 	}
 	port := ln.Addr().(*net.TCPAddr).Port
 	ln.Close()
-	srv := exec.Command(bin, "-js", "-sd", t.TempDir(), "-p", fmt.Sprint(port), "-a", "127.0.0.1")
+	store := t.TempDir()
+	// testing.TempDir's leaf is 0777 subject to umask. Broker ownership must
+	// remain private under both ordinary CI 022 and restrictive local 077.
+	if err := os.Chmod(store, 0700); err != nil {
+		t.Fatal(err)
+	}
+	log, err := os.OpenFile(filepath.Join(store, "broker.log"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		log.Close()
+		if t.Failed() {
+			preserved, err := os.MkdirTemp("", "wasl-failed-nats-")
+			if err == nil {
+				err = os.Rename(store, filepath.Join(preserved, "store"))
+			}
+			if err != nil {
+				t.Errorf("preserve failed broker store: %v", err)
+			} else {
+				t.Logf("preserved failed broker store/logs: %s", preserved)
+			}
+		}
+	})
+	srv := exec.Command(bin, "-js", "-sd", store, "-p", fmt.Sprint(port), "-a", "127.0.0.1")
+	srv.Stdout, srv.Stderr = log, log
 	if err := srv.Start(); err != nil {
 		if override != "" {
 			t.Fatalf("WASL_TEST_NATS_SERVER %q failed to start: %v", override, err)
 		}
 		t.Skip(err)
 	}
+	t.Logf("test broker pid=%d binary=%s store=%s endpoint=127.0.0.1:%d", srv.Process.Pid, bin, store, port)
 	t.Cleanup(func() { srv.Process.Kill(); srv.Wait() })
 	oldURL, oldRep := NatsURL, SeenReplicas
 	NatsURL, SeenReplicas = fmt.Sprintf("nats://127.0.0.1:%d", port), 1

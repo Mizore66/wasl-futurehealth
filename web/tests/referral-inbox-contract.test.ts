@@ -6,8 +6,8 @@ import { CaseList, CaseSummary, CurrentDecision, Fixtures } from "@/lib/api/sche
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { handoffOf, referralFrom, type Referral } from "@/components/worklist/referrals";
 import { formatDay } from "@/lib/domain/day";
-import synthetic from "@/data/referral-inbox-synthetic.json";
-import provenance from "@/data/referral-inbox-provenance.json";
+import synthetic from "@/data/referral-inbox-synthetic-v2.json";
+import provenance from "@/data/referral-inbox-provenance-v2.json";
 import { loadSample } from "./samples";
 
 const push = vi.fn();

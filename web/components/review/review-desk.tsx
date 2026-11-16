@@ -156,14 +156,15 @@ function QuestionCard({
     ? `Comparing ${view.referralRegistration.split("|")[1] ?? "the referral record"} with ${view.reportRegistration.split("|")[1] ?? "the report record"}`
     : `Judging ${view.programme === "crc" ? "report" : "evidence from report"} ${view.report.id}${view.report.version ? `, version ${view.report.version}` : ""}`;
   const actions = state.claim_actions;
-  const needsNote = next === "r3" && !note.trim();
-  const [sourceOk, setSourceOk] = useState(false);
-  const withheld = !link && !sourceOk;
-  const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
+  const crcItem = view.crcItems?.[state.item];
+  const evidenceOptions: [ReportAnswer, string][] = (crcItem?.choices ?? view.evidenceChoices).map((label) => {
     const display = view.programme === "crc" ? CRC_CHOICE_LABELS[label] ?? label : label;
     return [label, display];
   });
-  const title = link ? "Is it the same patient?" : view.evidenceQuestion;
+  const title = link ? "Is it the same patient?" : crcItem?.title ?? view.evidenceQuestion;
+  const needsNote = next === "r3" && !note.trim();
+  const [sourceOk, setSourceOk] = useState(false);
+  const withheld = !link && !sourceOk;
   const scoped = !link && Boolean(view.items.scoped);
   return (
     <section
@@ -266,7 +267,8 @@ function QuestionCard({
         <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
       )}
 
-      {canAnswer && (
+      {crcItem && crcItem.choices.length === 0 && <p>This obligation is blocked, already signed or superseded. No generic adequacy answer can resolve it.</p>}
+      {canAnswer && (!crcItem || crcItem.choices.length > 0) && (
         <div className="mt-3">
           {!link && <SourceReport caseId={view.caseId} item={state.item} onAvailable={setSourceOk} />}
           <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${id}-help`}>
@@ -639,6 +641,9 @@ export function ReviewDesk({
   }, [current]);
 
 
+  if (!live && Object.keys(view.crcItems ?? {}).length > 0) {
+    return <div className="mt-6" role="status"><p>CRC care needs separate evidence-bound confirmations. This fixture preview cannot sign care obligations or declare them completed. Use an authenticated live review for each current item.</p>{sharedEvidence}</div>;
+  }
   if (live && current.length === 0) {
     return (
       <div className="mt-6 max-w-[72ch]" role="status">
