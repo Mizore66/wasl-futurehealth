@@ -1,0 +1,13 @@
+{
+ "ahs-mushrif/ServiceRequest/AHS-sr-1079": {
+  "rv-d55f7ccf9f12c409": {
+   "report": "skmc-endo/DiagnosticReport/SKM-dr-217",
+   "report_version": 1,
+   "day": 30.4762,
+   "category": "colonoscopy",
+   "text": "PREOPERATIVE DIAGNOSIS: , Screening. ,POSTOPERATIVE DIAGNOSIS:,  Tiny Polyps.,PROCEDURE PERFORMED:  , Colonoscopy.,PROCEDURE:  , The procedure, indications, and risks were explained to the patient, who understood and agreed.  He was sedated with Versed 3 mg, Demerol 25 mg during the examination.  ,A digital rectal exam was performed and the Pentax Video Colonoscope was advanced over the examiner's finger into the rectum.  It was passed to the level of the cecum.  The ileocecal valve was identified, as was the appendiceal orifice.  ,Slowly withdrawal through the colon revealed a small polyp in the transverse colon.  This was approximately 3 mm in size and was completely removed using multiple bites with cold biopsy forceps.  In addition, there was a 2 mm polyp versus lymphoid aggregate in the descending colon.  This was also removed using the cold biopsy forceps.  Further detail failed to reveal any other lesions with the exception of small hemorrhoids.  ,IMPRESSION:  , Tiny polyps.  ,PLAN:  , If adenomatous, repeat exam in five years.  Otherwise, repeat exam in 10 years.,",
+   "sha256": "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796",
+   "provenance": "data/evidence/reports43.json#u35 (MTSamples, synthetic case binding)"
+  }
+ }
+}

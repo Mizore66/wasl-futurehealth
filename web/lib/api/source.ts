@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import type { z } from "zod";
+import { z } from "zod";
 import {
   ActionError,
   ActionResponse,
@@ -550,6 +551,40 @@ export type ReviewSourceResult =
   | { ok: true; source: ReviewSource }
   /** 409 names why the matching report cannot be opened; every other refusal carries no detail. */
   | { ok: false; status: 400 | 401 | 403 | 404 | 409; sourceStatus?: SourceStatusValue };
+
+const FixtureSourceEntry = z.object({
+  report: z.string(),
+  report_version: z.number().int(),
+  day: z.number(),
+  category: z.string().optional(),
+  text: z.string(),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  provenance: z.string(),
+});
+const FixtureSources = z.record(z.string(), z.record(z.string(), FixtureSourceEntry));
+
+/**
+ * Fixtures mode only (simulated): the same contract as GET /review/source, served from data/review-sources.json
+ * (scripts/build-review-sources.ts). It binds to the raised item, its provider-qualified report and report_version
+ * exactly as the API does, and reports a missing, ambiguous or altered text as unavailable instead of guessing.
+ */
+export async function getFixtureReviewSource(id: string, item: string, file = path.join(process.cwd(), "data", "review-sources.json")): Promise<ReviewSourceResult> {
+  const detail = await getCase(id);
+  const raised = detail?.review_items.find((r) => r.item === item);
+  if (!detail || !raised) return { ok: false, status: 404 };
+  if (!raised.kinds.includes("evidence")) return { ok: false, status: 400 };
+  const refs = [...new Set(raised.chain.map((b) => b.body.report).filter((r): r is string => typeof r === "string" && Boolean(raised.report) && r.endsWith(`/DiagnosticReport/${raised.report}`)))];
+  if (refs.length > 1) return { ok: false, status: 409, sourceStatus: "ambiguous" };
+  const sources = FixtureSources.safeParse(JSON.parse(await readFile(file, "utf8").catch(() => "{}")));
+  if (!sources.success) return { ok: false, status: 409, sourceStatus: "unreadable" };
+  const entry = sources.data[id]?.[item];
+  if (refs.length === 0 || !entry || entry.report !== refs[0] || entry.report_version !== (raised.report_version ?? 1)) {
+    return { ok: false, status: 409, sourceStatus: "missing" };
+  }
+  if (createHash("sha256").update(entry.text).digest("hex") !== entry.sha256) return { ok: false, status: 409, sourceStatus: "unreadable" };
+  const { report, report_version, day, category, text } = entry;
+  return { ok: true, source: { report, report_version, day, ...(category ? { category } : {}), text } };
+}
 
 /** The source report a raised evidence item judges, fetched with the signer's own token. Opening it records nothing. */
 export async function getReviewSourceWithToken(id: string, item: string, token: string): Promise<ReviewSourceResult> {

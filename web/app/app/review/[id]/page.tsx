@@ -11,7 +11,7 @@ import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { gatedHistory } from "@/lib/api/protocol-history";
 import { getReviewCase } from "@/lib/api/reviewer-session";
-import { apiMode } from "@/lib/api/source";
+import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
 
@@ -43,6 +43,8 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
     <Link href={caseHref("/app/patients", id)}>Open the retained case and authorized audit history</Link>
   </section>;
   const view = reviewView(detail);
+  /* Fixtures (simulated): read the evidence item's committed synthetic report here, so the browser makes no request for it. */
+  const fixtureSource = !live && view.items.evidence ? await getFixtureReviewSource(id, view.items.evidence) : undefined;
   const sharedEvidence = detail.case.crc || view.programme !== "crc" && view.programme !== "cervical" ? (
     <>
       <ProgrammeFindingCard detail={detail} />
@@ -105,6 +107,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           view={view}
           itemViews={reviewItemViews(detail)}
           mode={apiMode()}
+          fixtureSource={fixtureSource}
           next={next}
           sharedEvidence={sharedEvidence}
           waiting={at >= 0}

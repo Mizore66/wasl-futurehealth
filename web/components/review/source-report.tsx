@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { readReviewSource } from "@/app/app/review/[id]/actions";
 import type { ReviewSource, SourceStatus } from "@/lib/api/schema";
+import type { ReviewSourceResult } from "@/lib/api/source";
 
 type Loaded = { status: "loading" } | { status: "available"; source: ReviewSource } | { status: "unavailable"; reason: string };
 
@@ -16,12 +17,23 @@ const UNAVAILABLE: Record<SourceStatus, string> = {
  * The complete report revision an evidence item judges. Signing stays withheld until it is on screen;
  * opening it records nothing and answers nothing.
  */
-export function SourceReport({ caseId, item, onAvailable }: { caseId: string; item: string; onAvailable: (available: boolean) => void }) {
+export function SourceReport({
+  caseId,
+  item,
+  onAvailable,
+  preloaded,
+}: {
+  caseId: string;
+  item: string;
+  onAvailable: (available: boolean) => void;
+  /** Fixtures mode: the page already read the report on the server, so no server action (and no POST) is made. */
+  preloaded?: ReviewSourceResult;
+}) {
   const [loaded, setLoaded] = useState<Loaded>({ status: "loading" });
   useEffect(() => {
     let current = true;
     onAvailable(false);
-    readReviewSource(caseId, item)
+    (preloaded ? Promise.resolve(preloaded) : readReviewSource(caseId, item))
       .then((res): Loaded => {
         if (res.ok) return { status: "available", source: res.source };
         if (res.sourceStatus) return { status: "unavailable", reason: UNAVAILABLE[res.sourceStatus] };
@@ -36,7 +48,7 @@ export function SourceReport({ caseId, item, onAvailable }: { caseId: string; it
     return () => {
       current = false;
     };
-  }, [caseId, item, onAvailable]);
+  }, [caseId, item, onAvailable, preloaded]);
 
   if (loaded.status === "loading") {
     return (
