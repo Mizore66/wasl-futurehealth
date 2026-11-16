@@ -1823,6 +1823,7 @@ func (j *pendingOwnerJS) Stream(ctx context.Context, name string) (jetstream.Str
 	}
 	return &pendingOwnerStream{js: j}, ctx.Err()
 }
+
 // This in-memory lookup has no retained metadata response. Model that optional
 // SDK method explicitly instead of forwarding through its nil embedded Stream.
 func (s *pendingOwnerStream) CachedInfo() *jetstream.StreamInfo { return nil }
@@ -1939,9 +1940,13 @@ func (m *pendingOwnerMsg) DoubleAck(ctx context.Context) error {
 	return nil
 }
 
-func pendingOwnerWait(t *testing.T, why string, ready func() bool) {
+func pendingOwnerWait(t *testing.T, why string, ready func() bool, observationBudget ...time.Duration) {
 	t.Helper()
-	deadline := time.Now().Add(1500 * time.Millisecond)
+	budget := 1500 * time.Millisecond
+	if len(observationBudget) > 0 {
+		budget = observationBudget[0]
+	}
+	deadline := time.Now().Add(budget)
 	for !ready() {
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for %s", why)
@@ -2057,7 +2062,7 @@ func pendingOwnerAssertPublished(t *testing.T, c *SubConsumer, js *pendingOwnerJ
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		return c.ackHWM == total
-	})
+	}, pendingOwnerPublicationBudget)
 	js.mu.Lock()
 	defer js.mu.Unlock()
 	if int64(len(js.stored)) != total {
@@ -2169,10 +2174,19 @@ func TestPendingOwnerStaleClaimAfterTombstoneConverges(t *testing.T) {
 	pendingOwnerBarrier(t, "original canonical publish held", js.entered)
 	stale := kv.snapshot(key)
 	js.unblock()
+	claimFence := total - 1
+	if pendingOwnerRaceInstrumentation {
+		// The race being exercised is revision A observed before event 1's
+		// publication/deletion, then claimed AFTER its tombstone. Do not hold
+		// a two-second read open for the unrelated instrumented bulk suffix.
+		// All 4,098 publications/bytes and final convergence are still checked.
+		claimFence = 1
+	}
 	pendingOwnerWait(t, "original publisher ACK before stale claim", func() bool {
+		observed := kv.snapshot(key)
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		return c.ackHWM == total-1
+		return c.ackHWM >= claimFence && observed.op == jetstream.KeyValueDelete && observed.revision > stale.revision && !c.pending[1]
 	})
 	tombstone := kv.snapshot(key)
 	c.mu.Lock()
