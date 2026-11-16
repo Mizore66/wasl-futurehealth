@@ -354,7 +354,9 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
         if (res.ok) {
           supersedeRead(row.id);
           // A recorded notification or receipt shows the obligation the API computed next, not one guessed here.
-          const next = res.obligation ? obligationAfterCommunication(res.obligation) : undefined;
+          // Only those two actions: any other action on a case with a recorded fact keeps its own view and status.
+          const communication = action.action === "initial_notification" || action.action === "receipt_acknowledgement";
+          const next = communication && res.obligation ? obligationAfterCommunication(res.obligation) : undefined;
           const served = next ? { ...next, communicationStep: res.obligation === "no_acknowledgement" ? ("receipt" as const) : undefined } : {};
           apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...served, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });

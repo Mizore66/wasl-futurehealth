@@ -29,6 +29,8 @@ export async function recordAction(caseId: string, head: string, action: z.input
   revalidatePath("/app/patients/[id]", "page");
   const { event, api_overlay } = res.response;
   // A recorded notification or receipt moves the case to the next obligation the API computed; the board shows that.
-  const obligation = api_overlay.communication?.obligation;
+  // Only for those two actions: every other action keeps the view and status the board chose for it.
+  const communication = args.data.action.action === "initial_notification" || args.data.action.action === "receipt_acknowledgement";
+  const obligation = communication ? api_overlay.communication?.obligation : undefined;
   return { ok: true, head: api_overlay.head, hash: event.hash, at: event.at, actor: event.actor, owner: api_overlay.owner, ...(obligation ? { obligation } : {}) };
 }

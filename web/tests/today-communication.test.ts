@@ -144,6 +144,19 @@ describe("Today board records notification then receipt (#197, live)", () => {
     expect(open().textContent).not.toMatch(/understood the/i);
   });
 
+  it("other actions on a notified case keep their own move even when the API echoes the obligation", async () => {
+    const fact = { at: "2026-11-19T09:00:00Z", event: "n".repeat(64), occurred_at: "2026-11-19T08:55:00Z", channel: "phone" as const, template: TEMPLATE };
+    const notified = item("no_acknowledgement", { canonical_dropoff: "never_notified", owner: "Practitioner/ahs-mushrif-nurse-1", api_overlay: overlay({ communication: { canonical_dropoff: "never_notified", obligation: "no_acknowledgement", understanding: "none", notification: fact } }) });
+    await mount([notified]);
+    expect(host.textContent).toContain("To call 1");
+    // The server action still carries the obligation for any action on a case with a recorded fact; the board must ignore it.
+    recordAction.mockResolvedValueOnce({ ...saved("h1", "no_acknowledgement"), owner: "Dr Al Kaabi" });
+    await act(async () => button("Hand to Dr Al Kaabi")!.click());
+    expect(recordAction.mock.calls[0][2].action).toBe("assign_owner");
+    expect(host.textContent).toContain("To call 0");
+    expect(host.textContent).toContain("Waiting 1");
+  });
+
   it("a refused record says why and changes nothing", async () => {
     await mount([item("never_notified", { notification_template: TEMPLATE, owner: "Practitioner/ahs-mushrif-nurse-1" })]);
     await choose("Identity confirmed with", "name_and_dob");
