@@ -49,7 +49,7 @@ Legacy active-only responses keep `wasl-person-journey/1` and the ordinary API `
 - per-case `contact`: canonical permission, separate demo-overlay status, combined contact-blocked display, and `canonical_unchanged: true`; contact is blocked unless canonical permission is `granted`, or when the overlay records denial/opt-out;
 - `obligations`, `outreach_flags`, and one `next_action`.
 
-The person projection excludes evidence, current full decisions, review items, sign-offs, API review events/states, coordinator notes, claims, audit history, review ledger data and review hashes. Full evidence and independently blinded review remain on the existing case routes. Responses are deep-copied and registration-pseudonymized; the raw identity artifact is never served.
+The person projection excludes evidence, current full decisions, the case summary's referral `handoff` marker, review items, sign-offs, API review events/states, coordinator notes, claims, audit history, review ledger data and review hashes. Full evidence and independently blinded review remain on the existing case routes. Responses are deep-copied and registration-pseudonymized; the raw identity artifact is never served.
 
 ### Retained `/2` response
 

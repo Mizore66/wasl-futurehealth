@@ -943,3 +943,22 @@ func TestPersonNextActionWaitsForCurrentEvidenceReview(t *testing.T) {
 		t.Fatalf("overdue post-closure recall was suppressed: %+v", got)
 	}
 }
+
+// The returned-referral list marker (#155) belongs to the referral workflow: the case detail carries it, the person
+// projection does not (docs/API-PEOPLE.md excludes current full decisions).
+func TestPersonJourneyOmitsReferralHandoffMarker(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	caseID := "provider/ServiceRequest/case-0"
+	s.cases[caseID].last.Handoff = &HandoffPacket{ReferralID: "provider/ServiceRequest/synthetic-returned", Decision: "reject",
+		ReasonCode: "needs_more_info", Priority: "routine", DecidedBy: "synthetic-unit", DecidedAt: 10, ActBy: 24, ActedAt: -1,
+		Status: "awaiting_referrer"}
+	h := secureTestHandler(t, s, "")
+	w := personRequest(t, h, http.MethodGet, "/api/cases/"+caseID, "reviewer-token-1234567890")
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"handoff"`) {
+		t.Fatalf("case detail should carry the hand-off marker: %d %s", w.Code, w.Body.String())
+	}
+	summary := personJourneyCase(t, personJourneyForCase(t, h, caseID), caseID)["detail"].(map[string]interface{})["case"].(map[string]interface{})
+	if _, present := summary["handoff"]; present {
+		t.Fatalf("person case summary exposed the referral hand-off marker: %v", summary["handoff"])
+	}
+}
