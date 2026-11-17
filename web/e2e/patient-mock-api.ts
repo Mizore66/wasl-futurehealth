@@ -12,7 +12,17 @@ const crcOffers = {
   ],
 };
 
-const noOffers = { procedure: "", version: "", slots: [] as typeof crcOffers.slots };
+/** A cervical case's own simulated booking candidates, as pipeline/api_patient_offers.go serves them: date only, region, no preparation. */
+const cervicalOffers = {
+  procedure: "colposcopy",
+  source: "simulated_booking",
+  version: createHash("sha256").update("simulated_booking\ncolposcopy\n\nsim:colposcopy:2:1\nsim:colposcopy:5:1").digest("hex"),
+  slots: [
+    { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
+    { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+  ],
+};
+const noOffers = { procedure: "", version: "", slots: [] as { slot_id: string; unit: string; starts_at: string }[] };
 /** The served next step and wrong answer per programme, as pipeline/api_patient.go patientPlanFor projects them. */
 const PLANS: Record<string, { next: string; distractor: string }> = {
   crc: { next: "colonoscopy", distractor: "blood_test" },
@@ -53,7 +63,7 @@ type Link = {
   failNext?: "empty201" | "500" | "network";
   otp?: string;
   rights: RightsRow[];
-  handoff: { status: string; acknowledged_at?: string };
+  handoff: { status: string; acknowledged_at?: string; verified?: boolean };
   elsewhere?: ElsewhereReport;
 };
 type ElsewhereReport = Record<string, string> & { status: "pending" | "resumed"; retrieval_status: string; request_id: string; fingerprint: string };
@@ -83,7 +93,7 @@ function fresh(token: string, expires: number, programme = "crc"): Link {
         status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
       },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : "", slot_id: "", selected_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : programme === "cervical" ? cervicalOffers.version : "", slot_id: "", selected_at: "", event: "" },
       preparation: crc
         ? {
             items: [
@@ -103,7 +113,7 @@ function send(res: ServerResponse, status: number, body?: unknown) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", "referrer-policy": "no-referrer" });
   res.end(body === undefined ? undefined : JSON.stringify(body));
 }
-const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : noOffers);
+const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : link.journey.programme === "cervical" ? cervicalOffers : noOffers);
 const payload = (link: Link) => ({ meta: { api: "wasl-api/1", data_mode: "simulated" }, journey: link.journey, offers: offersFor(link), expires_at: new Date(link.expires).toISOString() });
 const conflict = (link: Link, kind: string, error: string) => ({ error, conflict: kind, current_head: link.journey.head, journey: link.journey });
 
@@ -168,11 +178,13 @@ async function rights(req: IncomingMessage, res: ServerResponse, path: string) {
 
 const HANDOFF_VERSION = hash("outcome-handoff:routine_screening");
 function handoffView(link: Link) {
-  const { status, acknowledged_at } = link.handoff;
-  const shown = status === "released" || status === "acknowledged";
+  const { status, acknowledged_at, verified = false } = link.handoff;
+  const releasable = status === "released" || status === "acknowledged";
+  const shown = releasable && verified;
   return {
     status,
     delivery: "simulated",
+    ...(releasable && { verified }),
     ...(shown && {
       version: HANDOFF_VERSION,
       approved_at: "2026-10-01T08:00:00Z",
@@ -182,17 +194,31 @@ function handoffView(link: Link) {
   };
 }
 
-/** Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released; acknowledgement needs a one-time code. */
+/**
+ * Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released and the link's one-time code is
+ * verified ({otp}); acknowledgement ({version}) needs that verification or a fresh code.
+ */
 async function outcome(req: IncomingMessage, res: ServerResponse) {
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
   if (req.method === "GET") return send(res, 200, { meta: {}, handoff: handoffView(link) });
-  const input = JSON.parse(await body(req)) as { version: string; otp: string };
+  const input = JSON.parse(await body(req)) as { version?: string; otp?: string };
+  const releasable = link.handoff.status === "released" || link.handoff.status === "acknowledged";
+  const codeOK = () => {
+    const ok = !!link.otp && input.otp === link.otp;
+    if (ok) link.otp = undefined;
+    return ok;
+  };
+  if (!input.version) {
+    if (!releasable) return send(res, 409, { error: "there is no released outcome to show", handoff: handoffView(link) });
+    if (!codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+    link.handoff.verified = true;
+    return send(res, 200, { meta: {}, handoff: handoffView(link) });
+  }
   if (link.handoff.status === "acknowledged" && input.version === HANDOFF_VERSION) return send(res, 200, { meta: {}, replayed: true, handoff: handoffView(link) });
   if (link.handoff.status !== "released" || input.version !== HANDOFF_VERSION) return send(res, 409, { error: "there is no released outcome with that version to acknowledge" });
-  if (!link.otp || input.otp !== link.otp) return send(res, 403, { error: "a valid one-time code for this link is required" });
-  link.otp = undefined;
-  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString() };
+  if (!link.handoff.verified && !codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString(), verified: true };
   return send(res, 201, { meta: {}, replayed: false, handoff: handoffView(link) });
 }
 

@@ -8,7 +8,7 @@ import { slotLabel, type PhoneQuery } from "./journey";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
 import { GatedNote, scriptLang } from "./programme-copy";
-import { offerPlace, offerTitle, patientScript } from "./programme";
+import { offerCopy, offerPlace, patientScript, type OfferCopy } from "./programme";
 import { usePatientJourney } from "./use-patient-journey";
 
 type Mode = "proposed" | "choosing" | "confirmed";
@@ -36,12 +36,19 @@ function NoOffer({ query, initial }: { query: PhoneQuery; initial: PatientJourne
 
 /** Slot choices are preferences for coordinator review, never reservations. */
 export function BookFlow(props: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers }) {
-  const title = offerTitle(props.offers.procedure, props.query.lang);
-  if (!title || props.offers.slots.length === 0) return <NoOffer query={props.query} initial={props.initial} />;
-  return <OfferFlow {...props} title={title} />;
+  const copy = offerCopy(props.offers.procedure, props.query.lang);
+  // An offer is shown only for the procedure this case's own programme needs; anything else falls back to contact.
+  if (!copy || PROCEDURE[props.initial.programme] !== props.offers.procedure || props.offers.slots.length === 0) {
+    return <NoOffer query={props.query} initial={props.initial} />;
+  }
+  return <OfferFlow {...props} copy={copy} />;
 }
 
-function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; title: string }) {
+const PROCEDURE: Partial<Record<PatientJourney["programme"], PatientOffers["procedure"]>> = { crc: "colonoscopy", cervical: "colposcopy" };
+
+function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; copy: OfferCopy }) {
+  const title = copy.title;
+  const titleLang = copy.gated ? ({ lang: "en", dir: "ltr" } as const) : {};
   const t = DICTS[query.lang];
   const b = t.book;
   const ur = query.lang === "ur";
@@ -77,12 +84,12 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
     await save({ kind: "preparation_changed", data: { item_id, completed } });
   }
 
-  const place = offerPlace(offers.slots[confirmed ? savedIndex : current]?.unit ?? "", query.lang);
+  const place = offerPlace(offers.slots[confirmed ? savedIndex : current], query.lang);
 
   if (!slot) {
     return (
       <main className="flex-1 px-5 pt-4 pb-4">
-        <h1 className="m-0 text-[20px] font-semibold">{title}</h1>
+        <h1 className="m-0 text-[20px] font-semibold" {...titleLang}>{title}</h1>
         <p role="status" className="mt-4 text-muted">{t.common.unavailable}</p>
       </main>
     );
@@ -92,7 +99,7 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
     <>
       <main className="flex flex-1 flex-col gap-3 px-5 pt-2 pb-4" aria-busy={busy}>
         <section className="rounded-card border border-line bg-surface p-5">
-          <h1 className={cn("m-0 mb-2 text-[20px] font-semibold", ur ? "leading-[2]" : "leading-[1.45]")}>{title}</h1>
+          <h1 className={cn("m-0 mb-2 text-[20px] font-semibold", ur ? "leading-[2]" : "leading-[1.45]")} {...titleLang}>{title}</h1>
           <p className="m-0 mb-1 flex items-center gap-2" aria-live="polite">
             <span aria-hidden="true" className={cn("size-2.5 flex-none", confirmed ? "rounded-[2px] bg-positive" : "rounded-full bg-hue")} />
             <span className={cn("text-[15px] font-medium", confirmed ? "text-positive" : "text-hue")}>{confirmed ? b.confirmed : b.proposed}</span>
@@ -100,9 +107,9 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
           <p data-testid="slot-date" className="m-0 flex flex-wrap gap-x-1.5 text-[24px] leading-[1.5] font-semibold tabular-nums">
             <span>{slot.weekday}</span> <bdi dir="ltr">{slot.date}</bdi> <span>{slot.month}</span>
           </p>
-          <p data-testid="slot-time" className="m-0 flex flex-wrap gap-x-1.5 text-[17px] leading-[1.7] tabular-nums">
+          {slot.time && <p data-testid="slot-time" className="m-0 flex flex-wrap gap-x-1.5 text-[17px] leading-[1.7] tabular-nums">
             <span>{b.at}</span> <bdi dir="ltr">{slot.time}</bdi> <span>{slot.period}</span>
-          </p>
+          </p>}
 
           {place && <div className="mt-4 flex items-center gap-3">
             <div role="img" aria-label={b.mapLabel} className="relative size-16 flex-none overflow-hidden rounded-control bg-raised">
@@ -110,8 +117,8 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
               <span aria-hidden="true" className="absolute top-0 bottom-0 left-[38px] w-1.5 bg-surface" />
               <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="var(--color-ink)" className="absolute top-3 left-5"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
             </div>
-            <div>
-              <div className="text-[16px] leading-[1.6] font-medium">{place.place} <bdi dir="ltr" className="font-normal text-muted">({place.abbr})</bdi></div>
+            <div data-testid="slot-place" {...(place.gated ? { lang: "en", dir: "ltr" } : {})}>
+              <div className="text-[16px] leading-[1.6] font-medium">{place.place}{place.abbr && <> <bdi dir="ltr" className="font-normal text-muted">({place.abbr})</bdi></>}</div>
               <div className="text-[14px] leading-[1.6] text-muted">{place.address}</div>
             </div>
           </div>}
@@ -136,7 +143,7 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
                       onClick={() => { setCurrent(i); setMode("proposed"); }}
                       className="flex min-h-12 w-full cursor-pointer items-center gap-1.5 rounded-control border border-control bg-surface px-4 text-[16px] text-ink tabular-nums disabled:cursor-wait disabled:opacity-60"
                     >
-                      <span>{s.weekday}</span> <bdi dir="ltr">{s.date}</bdi> <span>{s.month}{b.sep}</span> <bdi dir="ltr">{s.time}</bdi> <span>{s.period}</span>
+                      <span>{s.weekday}</span> <bdi dir="ltr">{s.date}</bdi> <span>{s.month}{s.time && b.sep}</span> {s.time && <><bdi dir="ltr">{s.time}</bdi> <span>{s.period}</span></>}
                     </button>
                   ),
                 )}
@@ -146,7 +153,11 @@ function OfferFlow({ query, initial, offers, title }: { query: PhoneQuery; initi
 
           {confirmed && (
             <div className="m-0 mt-5 text-[15px] leading-[1.8] text-muted">
-              <p className="m-0">{contact === "granted" ? b.smsYes : contact === "opted_out" ? t.common.stopped : b.smsNo}</p>
+              {contact === "granted" || contact === "opted_out" ? (
+                <p className="m-0">{contact === "granted" ? b.smsYes : t.common.stopped}</p>
+              ) : (
+                <p className="m-0" {...titleLang}>{copy.smsNo}</p>
+              )}
               <button type="button" disabled={busy} onClick={() => setMode("choosing")} className="mt-2 inline min-h-11 cursor-pointer border-0 bg-transparent p-0 text-[15px] text-hue underline">{b.change}</button>
             </div>
           )}

@@ -489,8 +489,12 @@ export const PatientRightsRequestStaff = z.looseObject({
 /** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
 /** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
 export const OutcomeHandoff = z.looseObject({
-  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  status: z.enum(["not_eligible", "pending_approval", "pending_release", "held_consent", "suppressed", "released", "acknowledged"]),
   referrer_status: z.enum(["pending", "acknowledged"]),
+  /** True only after the patient's own acknowledgement; a referrer acknowledgement never sets it. */
+  patient_informed: z.boolean().optional(),
+  /** The latest simulated release record for the approved version and the consent gate found when it was recorded. */
+  release: z.looseObject({ gate: z.enum(["released", "held_consent", "suppressed"]), at: z.string(), actor: z.string(), event: z.string() }).optional(),
   responsible_referrer: z.string(),
   consent: z.string(),
   version: z.string().optional(),
@@ -498,7 +502,17 @@ export const OutcomeHandoff = z.looseObject({
   approved_at: z.string().optional(),
   acknowledged_at: z.string().optional(),
   content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
-  history: z.array(z.looseObject({ kind: z.enum(["content_approved", "referrer_acknowledged", "patient_acknowledged"]), version: z.string(), actor: z.string(), role: z.string(), at: z.string(), event: z.string() })),
+  history: z.array(
+    z.looseObject({
+      kind: z.enum(["content_approved", "release_recorded", "referrer_acknowledged", "patient_acknowledged"]),
+      gate: z.enum(["released", "held_consent", "suppressed"]).optional(),
+      version: z.string(),
+      actor: z.string(),
+      role: z.string(),
+      at: z.string(),
+      event: z.string(),
+    }),
+  ),
 });
 export type OutcomeHandoff = z.infer<typeof OutcomeHandoff>;
 

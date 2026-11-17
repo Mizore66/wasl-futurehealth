@@ -6,7 +6,17 @@ package main
 // responsible referrer and the patient acknowledge that version independently.
 // Every step is an outcome_handoff event on the review ledger; canonical
 // decisions, closure and outreach intents are never changed and nothing is
-// dispatched. Patient release is derived from current consent at read time.
+// dispatched.
+//
+// Patient release is two-gated. A coordinator records a simulated release
+// (release_recorded) for the approved version; the server evaluates consent at
+// that moment and records the gate it found: released (a simulated hand-off
+// intent), held_consent (consent unknown) or suppressed (denied/opted out). A
+// withdrawal before release therefore records a hold or suppression, never a
+// release, and the audit trail keeps both. After a release, current consent is
+// still applied at read time, so a later withdrawal suppresses the content
+// again. The patient then sees the content only after the link's simulated
+// one-time code (the second identifier) is verified.
 
 import (
 	"crypto/sha256"
@@ -25,7 +35,15 @@ const (
 	handoffApproved         = "content_approved"
 	handoffReferrerAck      = "referrer_acknowledged"
 	handoffPatientAck       = "patient_acknowledged"
+	handoffRelease          = "release_recorded"
+	gateReleased            = "released"
+	gateHeld                = "held_consent"
+	gateSuppressed          = "suppressed"
+	// outcomeViewTTL bounds how long a verified one-time code keeps the outcome content visible to a link.
+	outcomeViewTTL = 15 * time.Minute
 )
+
+var releaseGates = map[string]bool{gateReleased: true, gateHeld: true, gateSuppressed: true}
 
 // outcomeNextSteps is the closed list a clinician chooses from. Wasl never derives one from outcome codes.
 var outcomeNextSteps = []string{"routine_screening", "surveillance", "specialist_follow_up", "discuss_with_doctor"}
@@ -48,6 +66,7 @@ type outcomeHandoff struct {
 	Kind    string
 	Version string
 	Content outcomeContent
+	Gate    string // release_recorded only
 	Role    string
 	Actor   string
 	At      string
@@ -106,6 +125,28 @@ func (s *apiServer) handoffConsentLocked(c *apiCase) string {
 	return patientOr(c.Consent, "unknown")
 }
 
+// handoffGateLocked is what current consent allows for a patient release now.
+func (s *apiServer) handoffGateLocked(c *apiCase) string {
+	switch s.handoffConsentLocked(c) {
+	case "granted":
+		return gateReleased
+	case "denied", "opted_out":
+		return gateSuppressed
+	}
+	return gateHeld
+}
+
+// latestRelease is the most recent release record for one approved version.
+func (c *apiCase) latestRelease(version string) *outcomeHandoff {
+	var out *outcomeHandoff
+	for _, r := range c.handoff {
+		if r.Kind == handoffRelease && r.Version == version {
+			out = r
+		}
+	}
+	return out
+}
+
 // handoffStatusLocked is the patient-side state: whether approved content may be shown and acknowledged now.
 func (s *apiServer) handoffStatusLocked(c *apiCase) (string, *outcomeHandoff) {
 	if !s.handoffEligibleLocked(c) {
@@ -115,23 +156,42 @@ func (s *apiServer) handoffStatusLocked(c *apiCase) (string, *outcomeHandoff) {
 	if approved == nil {
 		return "pending_approval", nil
 	}
-	switch s.handoffConsentLocked(c) {
-	case "granted":
-	case "denied", "opted_out":
-		return "suppressed", approved
-	default:
-		return "held_consent", approved
-	}
-	if c.handoffRecord(handoffPatientAck, approved.Version) != nil {
+	if c.handoffRecord(handoffPatientAck, approved.Version) != nil && s.handoffGateLocked(c) == gateReleased {
 		return "acknowledged", approved
 	}
-	return "released", approved
+	release := c.latestRelease(approved.Version)
+	if release == nil {
+		return "pending_release", approved
+	}
+	// A hold or suppression recorded at release stays until a new release finds consent granted;
+	// a recorded release still yields to consent withdrawn since.
+	gate := release.Gate
+	if gate == gateReleased {
+		gate = s.handoffGateLocked(c)
+	}
+	return gate, approved
+}
+
+// Verified outcome views share the link's in-memory code store under their own key; they are never in the ledger.
+func outcomeViewKey(linkID string) string { return "outcome-view/" + linkID }
+
+func (s *apiServer) outcomeViewVerifiedLocked(link patientLink) bool {
+	grant, ok := s.patientOTPs[outcomeViewKey(link.LinkID)]
+	return ok && s.clock().Before(grant.expires)
 }
 
 func (s *apiServer) handoffViewLocked(c *apiCase, staff bool) map[string]interface{} {
+	return s.handoffViewForLocked(c, staff, true)
+}
+
+// handoffViewForLocked: verified is whether a patient link has passed the second-identifier check; staff views ignore it.
+func (s *apiServer) handoffViewForLocked(c *apiCase, staff, verified bool) map[string]interface{} {
 	status, approved := s.handoffStatusLocked(c)
 	out := map[string]interface{}{"status": status, "delivery": "simulated"}
-	if approved != nil && (staff || status == "released" || status == "acknowledged") {
+	if !staff && (status == "released" || status == "acknowledged") {
+		out["verified"] = verified
+	}
+	if approved != nil && (staff || (verified && (status == "released" || status == "acknowledged"))) {
 		out["version"], out["approved_at"] = approved.Version, approved.At
 		content := map[string]interface{}{"outcome": outcomePatientOutcome, "next_step": approved.Content.NextStep, "safety_net": approved.Content.SafetyNet}
 		if staff {
@@ -155,17 +215,26 @@ func (s *apiServer) handoffViewLocked(c *apiCase, staff bool) map[string]interfa
 		if c.handoffRecord(handoffReferrerAck, approved.Version) != nil {
 			out["referrer_status"] = "acknowledged"
 		}
+		// patient_informed is true only on the patient's own acknowledgement, never the referrer's.
+		out["patient_informed"] = c.handoffRecord(handoffPatientAck, approved.Version) != nil
+		if release := c.latestRelease(approved.Version); release != nil {
+			out["release"] = map[string]interface{}{"gate": release.Gate, "at": release.At, "actor": release.Actor, "event": release.Event}
+		}
 	}
 	history := []map[string]interface{}{}
 	for _, r := range c.handoff {
-		history = append(history, map[string]interface{}{"kind": r.Kind, "version": r.Version, "role": r.Role, "actor": r.Actor, "at": r.At, "event": r.Event})
+		row := map[string]interface{}{"kind": r.Kind, "version": r.Version, "role": r.Role, "actor": r.Actor, "at": r.At, "event": r.Event}
+		if r.Gate != "" {
+			row["gate"] = r.Gate
+		}
+		history = append(history, row)
 	}
 	out["history"] = history
 	return out
 }
 
 func (c *apiCase) applyHandoffEvent(ev map[string]interface{}, content outcomeContent) {
-	c.handoff = append(c.handoff, &outcomeHandoff{Kind: sstr(ev, "kind"), Version: sstr(ev, "version"), Content: content,
+	c.handoff = append(c.handoff, &outcomeHandoff{Kind: sstr(ev, "kind"), Version: sstr(ev, "version"), Content: content, Gate: sstr(ev, "gate"),
 		Role: sstr(ev, "role"), Actor: sstr(ev, "actor"), At: sstr(ev, "at"), Event: sstr(ev, "hash")})
 }
 
@@ -214,8 +283,22 @@ func (s *apiServer) staffHandoffError(c *apiCase, kind, role, actor, sig, nextSt
 			return http.StatusConflict, "version is not the current approved content", outcomeContent{}, false
 		}
 		return 0, "", approved.Content, c.handoffRecord(handoffReferrerAck, version) != nil
+	case handoffRelease:
+		if err := Authorize(role, ActDispatch); err != nil {
+			return http.StatusForbidden, err.Error(), outcomeContent{}, false
+		}
+		approved := s.approvedHandoffLocked(c)
+		if approved == nil {
+			return http.StatusConflict, "the outcome hand-off is pending clinician approval; nothing can be released", outcomeContent{}, false
+		}
+		if version != approved.Version {
+			return http.StatusConflict, "version is not the current approved content", outcomeContent{}, false
+		}
+		// The same gate already recorded for this version is a replay; a changed consent records a new gate.
+		latest := c.latestRelease(version)
+		return 0, "", approved.Content, latest != nil && latest.Gate == s.handoffGateLocked(c)
 	}
-	return http.StatusBadRequest, "kind must be content_approved|referrer_acknowledged", outcomeContent{}, false
+	return http.StatusBadRequest, "kind must be content_approved|referrer_acknowledged|release_recorded", outcomeContent{}, false
 }
 
 // GET|POST /api/cases/{id}/outcome-handoff
@@ -260,13 +343,19 @@ func (s *apiServer) caseOutcomeHandoff(w http.ResponseWriter, r *http.Request, c
 			return http.StatusInternalServerError, map[string]interface{}{"error": "review ledger failed validation; writes refused"}
 		}
 		action := ActApproveOutcomeHandoff
-		if req.Kind == handoffReferrerAck {
+		switch req.Kind {
+		case handoffReferrerAck:
 			action = ActAcknowledgeOutcomeHandoff
+		case handoffRelease:
+			action = ActDispatch
 		}
 		ev := map[string]interface{}{
 			"type": outcomeHandoffEventType, "kind": req.Kind, "case": c.ID, "decision": content.Decision, "next_step": content.NextStep,
 			"version": content.version(), "role": role, "actor": actor, "action": action,
 			"at": s.clock().Format(time.RFC3339Nano), "mode": "demo", "prev": s.lastHashLocked(),
+		}
+		if req.Kind == handoffRelease {
+			ev["gate"] = s.handoffGateLocked(c)
 		}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
@@ -279,8 +368,10 @@ func (s *apiServer) caseOutcomeHandoff(w http.ResponseWriter, r *http.Request, c
 	writeJSONResp(w, code, s.envelope(body))
 }
 
-// GET|POST /api/patient/outcome. GET shows approved content only while consent releases it;
-// POST acknowledges that version after a simulated one-time code.
+// GET|POST /api/patient/outcome. GET reports the status; approved content is included only while
+// a release and current consent allow it AND this link has verified its simulated one-time code.
+// POST {otp} verifies that second identifier (no ledger write) and returns the content;
+// POST {version, otp?} acknowledges that version, with a fresh code or a still-valid verification.
 func (s *apiServer) patientOutcomeRoute(w http.ResponseWriter, r *http.Request) {
 	link, ok := s.patientAuthorized(w, r, http.MethodGet, http.MethodPost)
 	if !ok {
@@ -289,7 +380,7 @@ func (s *apiServer) patientOutcomeRoute(w http.ResponseWriter, r *http.Request) 
 	c := s.cases[link.Case]
 	if r.Method == http.MethodGet {
 		s.mu.Lock()
-		body := s.envelope(map[string]interface{}{"handoff": s.handoffViewLocked(c, false)})
+		body := s.envelope(map[string]interface{}{"handoff": s.handoffViewForLocked(c, false, s.outcomeViewVerifiedLocked(link))})
 		s.mu.Unlock()
 		writeJSONResp(w, http.StatusOK, body)
 		return
@@ -298,21 +389,33 @@ func (s *apiServer) patientOutcomeRoute(w http.ResponseWriter, r *http.Request) 
 		Version string `json:"version"`
 		OTP     string `json:"otp"`
 	}
-	if err := decodeAPIBody(w, r, maxPatientBodyBytes, &req); err != nil || req.Version == "" || len(req.Version) > 128 || len(req.OTP) > 16 {
-		writeJSONResp(w, http.StatusBadRequest, map[string]interface{}{"error": "body must be {version, otp}"})
+	if err := decodeAPIBody(w, r, maxPatientBodyBytes, &req); err != nil || (req.Version == "" && req.OTP == "") || len(req.Version) > 128 || len(req.OTP) > 16 {
+		writeJSONResp(w, http.StatusBadRequest, map[string]interface{}{"error": "body must be {otp} to verify or {version, otp} to acknowledge"})
 		return
 	}
 	code, body := func() (int, map[string]interface{}) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		status, approved := s.handoffStatusLocked(c)
+		verified := s.outcomeViewVerifiedLocked(link)
+		if req.Version == "" {
+			// Verify the second identifier. Nothing is disclosed or granted unless content is releasable now.
+			if status != "released" && status != "acknowledged" {
+				return http.StatusConflict, map[string]interface{}{"error": "there is no released outcome to show", "handoff": s.handoffViewForLocked(c, false, false)}
+			}
+			if !s.consumeOTPLocked(link, req.OTP) {
+				return http.StatusForbidden, map[string]interface{}{"error": "a valid one-time code for this link is required"}
+			}
+			s.patientOTPs[outcomeViewKey(link.LinkID)] = patientOTP{expires: s.clock().Add(outcomeViewTTL)}
+			return http.StatusOK, map[string]interface{}{"handoff": s.handoffViewForLocked(c, false, true)}
+		}
 		if status == "acknowledged" && approved.Version == req.Version {
-			return http.StatusOK, map[string]interface{}{"replayed": true, "handoff": s.handoffViewLocked(c, false)}
+			return http.StatusOK, map[string]interface{}{"replayed": true, "handoff": s.handoffViewForLocked(c, false, verified)}
 		}
 		if status != "released" || approved.Version != req.Version {
-			return http.StatusConflict, map[string]interface{}{"error": "there is no released outcome with that version to acknowledge", "handoff": s.handoffViewLocked(c, false)}
+			return http.StatusConflict, map[string]interface{}{"error": "there is no released outcome with that version to acknowledge", "handoff": s.handoffViewForLocked(c, false, verified)}
 		}
-		if !s.consumeOTPLocked(link, req.OTP) {
+		if !verified && !s.consumeOTPLocked(link, req.OTP) {
 			return http.StatusForbidden, map[string]interface{}{"error": "a valid one-time code for this link is required"}
 		}
 		if s.ledgerErr != "" {
@@ -329,13 +432,17 @@ func (s *apiServer) patientOutcomeRoute(w http.ResponseWriter, r *http.Request) 
 			return http.StatusInternalServerError, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
 		c.applyHandoffEvent(stored, approved.Content)
-		return http.StatusCreated, map[string]interface{}{"replayed": false, "handoff": s.handoffViewLocked(c, false)}
+		if s.patientOTPs == nil {
+			s.patientOTPs = map[string]patientOTP{}
+		}
+		s.patientOTPs[outcomeViewKey(link.LinkID)] = patientOTP{expires: s.clock().Add(outcomeViewTTL)}
+		return http.StatusCreated, map[string]interface{}{"replayed": false, "handoff": s.handoffViewForLocked(c, false, true)}
 	}()
 	writeJSONResp(w, code, s.envelope(body))
 }
 
 var outcomeHandoffFields = map[string]bool{"type": true, "kind": true, "case": true, "decision": true, "next_step": true, "version": true,
-	"link_id": true, "role": true, "actor": true, "action": true, "verification": true, "consent": true, "at": true, "mode": true, "prev": true, "hash": true}
+	"link_id": true, "role": true, "actor": true, "action": true, "verification": true, "consent": true, "gate": true, "at": true, "mode": true, "prev": true, "hash": true}
 
 // replayOutcomeHandoff validates history, not today's gates: closure, consent and link expiry
 // were checked when the event was written and may have changed since.
@@ -358,7 +465,21 @@ func (s *apiServer) replayOutcomeHandoff(ev map[string]interface{}) error {
 	}
 	kind, role, actor, version := sstr(ev, "kind"), sstr(ev, "role"), sstr(ev, "actor"), sstr(ev, "version")
 	patientFields := ev["link_id"] != nil || ev["verification"] != nil || ev["consent"] != nil
+	if (kind == handoffRelease) != (ev["gate"] != nil) {
+		return errors.New("gate belongs to release records only")
+	}
 	switch kind {
+	case handoffRelease:
+		// The gate was evaluated against consent when it was written; history keeps it, today's consent does not re-judge it.
+		if patientFields || Authorize(role, ActDispatch) != nil || sstr(ev, "action") != ActDispatch || !releaseGates[sstr(ev, "gate")] {
+			return errors.New("release by a role that may not release, or an unknown gate")
+		}
+		if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
+			return errors.New("invalid actor")
+		}
+		if latest := c.latestRelease(version); latest != nil && latest.Gate == sstr(ev, "gate") {
+			return errors.New("duplicate release record")
+		}
 	case handoffApproved:
 		if patientFields || Authorize(role, ActApproveOutcomeHandoff) != nil || sstr(ev, "action") != ActApproveOutcomeHandoff {
 			return errors.New("approval by a role that may not approve")
@@ -380,9 +501,9 @@ func (s *apiServer) replayOutcomeHandoff(ev map[string]interface{}) error {
 		return errors.New("unknown kind")
 	}
 	if kind != handoffApproved && c.handoffRecord(handoffApproved, version) == nil {
-		return errors.New("acknowledgement of content no clinician approved")
+		return errors.New("acknowledgement or release of content no clinician approved")
 	}
-	if c.handoffRecord(kind, version) != nil && kind != handoffApproved {
+	if c.handoffRecord(kind, version) != nil && kind != handoffApproved && kind != handoffRelease {
 		return errors.New("duplicate acknowledgement")
 	}
 	s.reviews = append(s.reviews, ev)

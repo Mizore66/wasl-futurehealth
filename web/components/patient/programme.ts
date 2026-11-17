@@ -1,4 +1,4 @@
-import type { PatientJourney, PatientProgramme } from "@/lib/api/patient-schema";
+import type { PatientJourney, PatientOffer, PatientProgramme } from "@/lib/api/patient-schema";
 import { DICTS, type Lang } from "./i18n";
 
 type OtherProgramme = Exclude<PatientProgramme, "crc">;
@@ -192,14 +192,48 @@ export function patientScript(journey: Pick<PatientJourney, "programme" | "next_
   };
 }
 
-/** Patient-facing places for simulated offer units. An unknown unit shows no place rather than a guessed one. */
-export function offerPlace(unit: string, lang: Lang): { place: string; address: string; abbr: string } | null {
-  if (unit !== "skmc-endo") return null;
-  const b = DICTS[lang].book;
-  return { place: b.place, address: b.address, abbr: "SKMC" };
+/** Simulated booking regions (booking/booking/model.py REGIONS). Place names only, in English until translation review (#133). */
+const REGIONS: Record<string, string> = { AD: "Abu Dhabi city", AA: "Al Ain", DH: "Al Dhafra" };
+
+export interface OfferPlace {
+  place: string;
+  address: string;
+  abbr?: string;
+  /** English copy shown inside a translated phone; render with lang="en". */
+  gated: boolean;
 }
 
-/** Patient-facing procedure title for simulated offers. */
-export function offerTitle(procedure: string, lang: Lang): string | null {
-  return procedure === "colonoscopy" ? DICTS[lang].book.title : null;
+/**
+ * Patient-facing place for one simulated offer. The fixed CRC demo unit keeps its reviewed SKMC wording; a booking
+ * catalogue slot names only its region, never a staff unit code. An unknown unit or region shows no place.
+ */
+export function offerPlace(slot: Pick<PatientOffer, "unit" | "region"> | undefined, lang: Lang): OfferPlace | null {
+  if (!slot) return null;
+  if (slot.unit === "skmc-endo") {
+    const b = DICTS[lang].book;
+    return { place: b.place, address: b.address, abbr: "SKMC", gated: false };
+  }
+  const region = REGIONS[slot.region ?? ""];
+  if (!region) return null;
+  return { place: `${region} region`, address: "The care coordinator confirms the exact clinic with you.", gated: lang !== "en" };
+}
+
+export interface OfferCopy {
+  title: string;
+  /** What happens when the patient does not allow SMS. */
+  smsNo: string;
+  gated: boolean;
+}
+
+/** Patient-facing words for a simulated offer's procedure. Colposcopy copy is English until translation review (#133). */
+export function offerCopy(procedure: string, lang: Lang): OfferCopy | null {
+  if (procedure === "colonoscopy") return { title: DICTS[lang].book.title, smsNo: DICTS[lang].book.smsNo, gated: false };
+  if (procedure === "colposcopy") {
+    return {
+      title: "Your colposcopy appointment",
+      smsNo: "The care coordinator will call you before the appointment to remind you.",
+      gated: lang !== "en",
+    };
+  }
+  return null;
 }
