@@ -1502,25 +1502,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		if e.RType == "Communication" {
 			loop := e.Provider + "/" + e.Focus
-			cf := CommFact{ID: e.ID, Version: e.Version, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
-			revision := *e
-			revision.Version = 0 // legacy missing version and explicit v1 share a revision identity
-			cf.RevisionSha = sha(canon(&revision))
-			if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
-				cf.Report = e.ReportID
-				if e.Category == "prep-reply" {
-					cf.Grade = e.Reason
-				}
-			}
-			if e.Category == "econsult-question" { // why the e-consult was asked and which unit (handoff.go: no identity link needed)
-				cf.Trigger, cf.Unit = e.Reason, e.Recipient
-			}
-			if e.Category == "handoff-reply" { // referrer's structured answer to a hand-off packet (handoff.go)
-				cf.Action = e.Reason
-			}
-			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
-				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
-			}
+			cf := commFactFromEvent(e)
 			for _, affected := range L.foldCommunication(loop, cf) {
 				if _, ok := L.loops[affected]; ok {
 					affLoops[affected] = true
@@ -1904,4 +1886,30 @@ func (L *LinkerCore) emitUnlinked(a, b int) {
 		return
 	}
 	L.emitLink(LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: L.pscore[pk2(a, b)], Stage: "unlinked"})
+}
+
+// commFactFromEvent is the communication fact the linker folds for one normalized Communication: the single projection
+// from a FHIR Communication to the closure engine's communication layer, shared by source ingest and the export of
+// staff-recorded communications (staff_communications.go).
+func commFactFromEvent(e *Event) CommFact {
+	cf := CommFact{ID: e.ID, Version: e.Version, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
+	revision := *e
+	revision.Version = 0 // legacy missing version and explicit v1 share a revision identity
+	cf.RevisionSha = sha(canon(&revision))
+	if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
+		cf.Report = e.ReportID
+		if e.Category == "prep-reply" {
+			cf.Grade = e.Reason
+		}
+	}
+	if e.Category == "econsult-question" { // why the e-consult was asked and which unit (handoff.go: no identity link needed)
+		cf.Trigger, cf.Unit = e.Reason, e.Recipient
+	}
+	if e.Category == "handoff-reply" { // referrer's structured answer to a hand-off packet (handoff.go)
+		cf.Action = e.Reason
+	}
+	if e.Category == "result-notification" || e.Category == "teachback-prompt" {
+		cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
+	}
+	return cf
 }

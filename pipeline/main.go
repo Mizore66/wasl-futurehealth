@@ -53,6 +53,22 @@ func main() {
 		fmt.Println("built synthetic software fixture; not clinical evidence:", *out)
 		return
 	}
+	if cmd == "staffcomms" { // staff-recorded notification/receipt facts -> FHIR Communications in a NEW cohort (staff_communications.go)
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		run := fs.String("run", "", "run dir whose verified review ledger holds the staff facts")
+		data := fs.String("data", "", "source cohort dir (read only)")
+		out := fs.String("out", "", "NEW cohort directory (must not exist)")
+		fs.Parse(os.Args[2:])
+		if *run == "" || *data == "" || *out == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "staffcomms requires -run <run> -data <cohort> -out <new directory>")
+			os.Exit(2)
+		}
+		if err := runStaffComms(*run, *data, *out); err != nil {
+			fmt.Fprintln(os.Stderr, "staffcomms:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
 		runMCF(os.Stdin, os.Stdout)
 		return
