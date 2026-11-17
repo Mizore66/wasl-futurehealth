@@ -62,9 +62,19 @@ export const PatientJourney = z.strictObject({
   preparation: PatientPreparation,
   last_action_at: z.string(),
 });
-export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), starts_at: z.string() });
-/** Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback. */
-export const PatientOffers = z.strictObject({ version: z.string(), procedure: z.enum(["", "colonoscopy"]), slots: z.array(PatientOffer) });
+/** One simulated slot. Catalogue slots carry a `region` and a date-only `starts_at` (the booking data has no time of day). */
+export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), region: z.string().optional(), starts_at: z.string() });
+/**
+ * Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback.
+ * `source` is `simulated_booking` (the case's own generated booking candidates) or `demo_fixed` (the CRC demo offers that a
+ * run without a booking catalogue keeps); see pipeline/api_patient_offers.go.
+ */
+export const PatientOffers = z.strictObject({
+  version: z.string(),
+  procedure: z.enum(["", "colonoscopy", "colposcopy"]),
+  slots: z.array(PatientOffer),
+  source: z.enum(["simulated_booking", "demo_fixed"]).optional(),
+});
 export const PatientJourneyResponse = z.looseObject({
   meta: z.looseObject({ api: z.string(), data_mode: z.string() }),
   journey: PatientJourney,

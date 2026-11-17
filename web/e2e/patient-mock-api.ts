@@ -12,7 +12,17 @@ const crcOffers = {
   ],
 };
 
-const noOffers = { procedure: "", version: "", slots: [] as typeof crcOffers.slots };
+/** A cervical case's own simulated booking candidates, as pipeline/api_patient_offers.go serves them: date only, region, no preparation. */
+const cervicalOffers = {
+  procedure: "colposcopy",
+  source: "simulated_booking",
+  version: createHash("sha256").update("simulated_booking\ncolposcopy\n\nsim:colposcopy:2:1\nsim:colposcopy:5:1").digest("hex"),
+  slots: [
+    { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
+    { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+  ],
+};
+const noOffers = { procedure: "", version: "", slots: [] as { slot_id: string; unit: string; starts_at: string }[] };
 /** The served next step and wrong answer per programme, as pipeline/api_patient.go patientPlanFor projects them. */
 const PLANS: Record<string, { next: string; distractor: string }> = {
   crc: { next: "colonoscopy", distractor: "blood_test" },
@@ -81,7 +91,7 @@ function fresh(token: string, expires: number, programme = "crc"): Link {
         status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
       },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : "", slot_id: "", selected_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : programme === "cervical" ? cervicalOffers.version : "", slot_id: "", selected_at: "", event: "" },
       preparation: crc
         ? {
             items: [
@@ -101,7 +111,7 @@ function send(res: ServerResponse, status: number, body?: unknown) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", "referrer-policy": "no-referrer" });
   res.end(body === undefined ? undefined : JSON.stringify(body));
 }
-const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : noOffers);
+const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : link.journey.programme === "cervical" ? cervicalOffers : noOffers);
 const payload = (link: Link) => ({ meta: { api: "wasl-api/1", data_mode: "simulated" }, journey: link.journey, offers: offersFor(link), expires_at: new Date(link.expires).toISOString() });
 const conflict = (link: Link, kind: string, error: string) => ({ error, conflict: kind, current_head: link.journey.head, journey: link.journey });
 

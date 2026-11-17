@@ -476,3 +476,28 @@ test("a breast case keeps its own programme through steps, languages and forged 
   expect(await bodies()).toEqual([expect.objectContaining({ kind: "teach_back_completed", data: { question_id: "breast-next-step-v1", answer_id: "recall" } })]);
   await expectNoSeriousAxe(page);
 });
+
+test("a cervical case books from its own simulated colposcopy slots, with no CRC slot or preparation", async ({ page }) => {
+  token = randomUUID();
+  await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "cervical" }) });
+  await enter(page);
+  await page.goto("/patient/book?lang=en&programme=crc&procedure=colonoscopy");
+  await expect(page.locator("h1")).toHaveText("Your colposcopy appointment");
+  await expect(page.getByTestId("slot-date")).toHaveText(/Thursday\s+25\s+June/);
+  await expect(page.getByTestId("slot-time")).toHaveCount(0);
+  await expect(page.getByTestId("slot-place")).toContainText("Abu Dhabi city region");
+  await expect(page.locator("main")).not.toContainText(/colonoscopy|bowel|SKMC|Endoscopy|Hessa|October|Before your appointment/i);
+
+  await page.getByRole("button", { name: "Another time" }).click();
+  await page.getByRole("button", { name: /1\s+July/ }).click();
+  await page.getByRole("button", { name: "Save this preferred time" }).click();
+  await expect(page.getByText(/saved for coordinator review/)).toBeVisible();
+  await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");
+  expect((await bodies()).at(-1)).toEqual(expect.objectContaining({ kind: "slot_selected", data: expect.objectContaining({ slot_id: "sim:colposcopy:5:1" }) }));
+
+  await page.goto("/patient/book?lang=ar");
+  await expect(page.locator("h1")).toHaveAttribute("lang", "en");
+  await expect(page.getByTestId("slot-date")).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/colonoscopy|SKMC/i);
+  await expectNoSeriousAxe(page);
+});
