@@ -45,7 +45,10 @@ type patientOTP struct {
 
 // patientRequest is one explanation request or contest, keyed by its receipt
 // (the ledger event hash). Resolution fields are set only on contests.
+// A contest carries a shared staffTask; an explanation request is answered at
+// once and opens no staff work.
 type patientRequest struct {
+	staffTask
 	Receipt     string
 	Kind        string
 	RequestID   string
@@ -53,15 +56,11 @@ type patientRequest struct {
 	Reason      string
 	Requester   string
 	SubmittedAt string
-	DueAt       string
-	Owner       string
 	Excluded    []string
 	Outcome     string
-	ResolvedBy  string
-	ResolvedAt  string
 }
 
-func (r *patientRequest) open() bool { return r.Kind == kindContestSubmitted && r.Outcome == "" }
+func (r *patientRequest) open() bool { return r.Kind == kindContestSubmitted && r.taskOpen() }
 
 // holds reports whether this contest still prevents served closure: open, or
 // revised while the questioned decision is still the case's current decision.
@@ -134,19 +133,14 @@ func (s *apiServer) patientRequestRowLocked(c *apiCase, r *patientRequest, staff
 		row["status"] = "answered"
 		return row
 	}
-	row["status"], row["owner"], row["due_at"] = "open", r.Owner, r.DueAt
-	if due, err := time.Parse(time.RFC3339, r.DueAt); err == nil && r.open() {
-		row["overdue"] = !s.clock().Before(due)
-	}
+	r.taskFields(row, s.clock(), staff)
+	delete(row, "opened_at") // submitted_at already names the opening instant
 	if !r.open() {
-		row["status"], row["outcome"], row["resolved_at"] = "resolved", r.Outcome, r.ResolvedAt
+		row["outcome"] = r.Outcome
 	}
 	row["closure_held"] = r.holds(c)
 	if staff {
 		row["requester"], row["excluded_reviewers"] = r.Requester, r.Excluded
-		if r.ResolvedBy != "" {
-			row["resolved_by"] = r.ResolvedBy
-		}
 	}
 	return row
 }
@@ -355,7 +349,8 @@ func (c *apiCase) applyPatientRequest(ev map[string]interface{}) {
 	case kindContestResolved:
 		for _, r := range c.requests {
 			if r.Receipt == sstr(ev, "contest") {
-				r.Outcome, r.ResolvedBy, r.ResolvedAt = sstr(ev, "outcome"), sstr(ev, "actor"), sstr(ev, "at")
+				r.Outcome = sstr(ev, "outcome")
+				r.resolve(sstr(ev, "actor"), sstr(ev, "at"))
 			}
 		}
 	default:
@@ -365,11 +360,15 @@ func (c *apiCase) applyPatientRequest(ev map[string]interface{}) {
 				excluded = append(excluded, fmt.Sprint(v))
 			}
 		}
-		c.requests = append(c.requests, &patientRequest{
+		r := &patientRequest{
 			Receipt: sstr(ev, "hash"), Kind: sstr(ev, "kind"), RequestID: sstr(ev, "request_id"), Decision: sstr(ev, "decision"),
-			Reason: sstr(ev, "reason"), Requester: sstr(ev, "actor"), SubmittedAt: sstr(ev, "at"), DueAt: sstr(ev, "due_at"),
-			Owner: sstr(ev, "owner"), Excluded: excluded,
-		})
+			Reason: sstr(ev, "reason"), Requester: sstr(ev, "actor"), SubmittedAt: sstr(ev, "at"), Excluded: excluded,
+		}
+		if r.Kind == kindContestSubmitted {
+			// The stored due date is authoritative; replay already proved it matches the working-day rule.
+			r.staffTask = staffTask{Owner: sstr(ev, "owner"), OpenedAt: sstr(ev, "at"), DueAt: sstr(ev, "due_at")}
+		}
+		c.requests = append(c.requests, r)
 	}
 }
 

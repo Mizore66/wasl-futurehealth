@@ -7,7 +7,8 @@ var (
 	// ChaosSpan: seconds over which the kill/restart cycles are spread; 0 keeps the default (15 s, the normal
 	// cohort's full-speed feed). A 10x cohort feeds for minutes, so its chaos would otherwise all land early.
 	ChaosSpan float64
-	// QuietTimeout: how long the orchestrator waits for quiescence before giving up.
+	// QuietTimeout: base quiescence budget from ingest start. Past it the orchestrator keeps waiting only while the
+	// pipeline streams advance, up to snapshotCeilingFactor times this budget (snapshot_budget.go).
 	QuietTimeout = 5 * time.Minute
 )
 

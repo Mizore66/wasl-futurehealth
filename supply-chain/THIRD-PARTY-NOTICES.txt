@@ -960,13 +960,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-darwin-x64@16.4.3
+@next/swc-darwin-x64@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -993,13 +993,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-linux-arm64-gnu@16.4.3
+@next/swc-linux-arm64-gnu@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -1026,13 +1026,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-linux-arm64-musl@16.4.3
+@next/swc-linux-arm64-musl@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -1059,13 +1059,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-linux-x64-gnu@16.4.3
+@next/swc-linux-x64-gnu@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -1092,13 +1092,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-linux-x64-musl@16.4.3
+@next/swc-linux-x64-musl@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -1125,13 +1125,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-win32-arm64-msvc@16.4.3
+@next/swc-win32-arm64-msvc@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 
@@ -1158,13 +1158,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-@next/swc-win32-x64-msvc@16.4.3
+@next/swc-win32-x64-msvc@16.4.5
 Declaration: MIT
 Evidence class: tag-candidate
-Source: https://raw.githubusercontent.com/vercel/next.js/29bbeab09981148ade186e8599ecdede15abc281/license.md
-Tag: v16.4.3
-Resolved commit: 29bbeab09981148ade186e8599ecdede15abc281
-Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.3 (resolved by git ls-remote to 29bbeab09981148ade186e8599ecdede15abc281) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
+Source: https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md
+Tag: v16.4.5
+Resolved commit: 4e5335a00314be7fbb2aace5e9be56a88e64e5a8
+Qualification: Tag-based candidate: npm omits gitHead, so tag v16.4.5 (resolved by git ls-remote to 4e5335a00314be7fbb2aace5e9be56a88e64e5a8) is source context, not a direct artifact-to-commit binding. Upstream text does not prove the text shipped in the npm tarball. Review finding: Full root MIT copyright/permission notice: absent. No LICENSE/LICENCE/COPYING/NOTICE member and no full MIT notice in plausible text members; package.json supplies only the declaration. PACKAGING CONCERN: full root MIT notice is missing. Upstream MIT text is tag-based contextual evidence only because npm omits gitHead and source platform manifests use placeholder version 0.0.0; native/third-party binary contents were not exhaustively audited.
 
 Notice notices/nextjs-mit.txt (SHA-256 ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224):
 

@@ -23,7 +23,7 @@ python3 -I scripts/test_supply_chain.py
 
 Without `web/node_modules`, Trivy can still inventory pnpm packages but cannot discover most of their license identifiers. This is a completeness limitation, not a clean license result.
 
-The tracked macOS arm64 report inventories 760 language packages: 632 have at least one discovered license identifier and **128 have none**. The missing entries are predominantly platform-specific optional npm packages that are not installed on this host; 32 are non-development packages and 96 are development packages. They remain explicitly listed with empty license arrays and require review before any license-clearance claim. A Linux scan discovers a different optional-package subset, so its fresh CI artifact can have a different count.
+The tracked report (regenerated on linux/x86_64 for the Next.js 16.4.5 update) inventories 790 language packages: 661 have at least one discovered license identifier and **129 have none**. The missing entries are predominantly platform-specific optional npm packages that are not installed on the scanning host. They remain explicitly listed with empty license arrays and require review before any license-clearance claim. Scans on another OS or architecture discover a different optional-package subset, so counts can differ.
 
 ## Generate tracked source evidence
 

@@ -216,12 +216,12 @@ func setupStreams(replicas, P int) {
 		panic(fmt.Sprintf("FHIRIN: %v", err))
 	}
 	_, err = js.CreateOrUpdateConsumer(ctx, "FHIRIN", jetstream.ConsumerConfig{Durable: "notifications", AckPolicy: jetstream.AckExplicitPolicy,
-		AckWait: 30 * time.Second, MaxAckPending: 128, MaxDeliver: -1, DeliverPolicy: jetstream.DeliverAllPolicy})
+		AckWait: consumerAckWait, MaxAckPending: 128, MaxDeliver: -1, DeliverPolicy: jetstream.DeliverAllPolicy})
 	if err != nil {
 		panic(fmt.Sprintf("FHIRIN consumer: %v", err))
 	}
 	_, err = js.CreateOrUpdateConsumer(ctx, "FHIR", jetstream.ConsumerConfig{Durable: "prep", AckPolicy: jetstream.AckExplicitPolicy,
-		AckWait: 30 * time.Second, MaxAckPending: 4000, DeliverPolicy: jetstream.DeliverAllPolicy})
+		AckWait: consumerAckWait, MaxAckPending: 4000, DeliverPolicy: jetstream.DeliverAllPolicy})
 	if err != nil {
 		panic(err)
 	}
