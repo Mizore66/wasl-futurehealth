@@ -529,6 +529,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
+	holdForPatientContest(f, d) // patient_contest_hold.go: automatic closure never overrides an open patient contest
 	d.Sig = sha(canon(d))
 	if ls.last == nil || ls.last.Sig != d.Sig {
 		d.Now, d.InSeq = now, inSeq
@@ -543,7 +544,11 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	if LungStableSurv {
 		fu = stableChild
 	} else {
-		fu = c.surveillanceLoop(f, ld, state, closedDay, fus, now)
+		parentHead := ""
+		if len(d.Chain) > 0 {
+			parentHead = d.Chain[len(d.Chain)-1].Hash
+		}
+		fu = c.surveillanceLoop(f, ld, state, closedDay, parentHead, fus, now)
 	}
 	if petChild != nil {
 		fu = petChild
@@ -571,8 +576,8 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 // surveillanceLoop: a stable follow-up whose Fleischner cell recommends a further CT opens a new loop (<loop>#surv) with
 // its own window and overdue clock. A later trusted, agreed follow-up CT inside the window closes it; growth or a
 // suspicious solid component escalates it. It carries the parent's chain head, so the hand-off is provenance-linked.
-func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentState string, parentClosed float64, fus []row, now float64) *Decision {
-	if parentState != "closed" || ld.Rec == nil || ld.Rec.NextHi == 0 || ld.Outcome != "stable" {
+func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentState string, parentClosed float64, parentHead string, fus []row, now float64) *Decision {
+	if parentState != "closed" || ld.Rec == nil || ld.Rec.NextHi == 0 || ld.Outcome != "stable" || parentHead == "" {
 		return nil
 	}
 	from := f.SRDay
@@ -594,7 +599,7 @@ func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentSta
 		break
 	}
 	id := f.LoopID + "#surv"
-	chain := appendBlock(nil, "surveillance_opened", map[string]interface{}{"loop": id, "parent": f.LoopID, "parent_closing_report": ld.FollowUp,
+	chain := appendBlock(nil, "surveillance_opened", map[string]interface{}{"loop": id, "parent": f.LoopID, "parent_head": parentHead, "parent_closing_report": ld.FollowUp,
 		"rule": "fleischner2017", "cell": ld.Rec.Cell, "next_step": ld.Rec.Next, "optional": ld.Rec.NextOpt, "from": ld.Rec.NextFrom,
 		"window": []float64{round4(lo), round4(hi)}})
 	if state == "closed" {

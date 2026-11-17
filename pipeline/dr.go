@@ -465,6 +465,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
+	holdForPatientContest(f, d) // patient_contest_hold.go: automatic closure never overrides an open patient contest
 	d.Sig = sha(canon(d))
 	if ls.last == nil || ls.last.Sig != d.Sig {
 		d.Now, d.InSeq = now, inSeq

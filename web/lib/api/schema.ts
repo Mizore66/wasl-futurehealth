@@ -212,6 +212,24 @@ export const LdctFinding = z.looseObject({
   within_deadline: z.boolean().optional(),
 });
 
+/**
+ * A closed LDCT parent whose follow-up scan needs its own tracking request (`followup_needs_tracking`), linked to the
+ * child case that tracks it (`tracked`), or `untracked` until that request exists. The parent stays closed; the
+ * obligation, its next step and its clock belong to the child.
+ */
+export const LdctTracking = z.looseObject({
+  status: z.enum(["tracked", "untracked"]),
+  followup_report: z.string(),
+  followup_label: z.enum(LDCT_LABELS),
+  followup_next_step: z.string().optional(),
+  child_case_id: z.string().optional(),
+  child_state: z.string().optional(),
+  child_closed: z.boolean().optional(),
+  child_overdue: z.boolean().optional(),
+  child_due_day: z.number().optional(),
+  child_deadline_day: z.number().optional(),
+});
+
 export const IfhasFinding = z.looseObject({
   screen_report: z.string().optional(),
   screen_label: z.string().regex(IFHAS_SCREEN_LABEL).optional(),
@@ -281,6 +299,8 @@ export const OverlayReconciliation = z.looseObject({
   report_ref: z.string().optional(),
   retrieval_owner: z.string(),
   retrieval_due: z.string(),
+  /** Server-clock task status: `due` until retrieval_due has passed (UTC), then `overdue`; `ended` once resumed. */
+  retrieval_status: z.enum(["due", "overdue", "ended", "evidence_closed"]).optional(),
   actor: z.string().optional(),
   retrieval: z.looseObject({ at: z.string(), event: z.string().default(""), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().optional() }).optional(),
 });
@@ -469,8 +489,12 @@ export const PatientRightsRequestStaff = z.looseObject({
 /** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
 /** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
 export const OutcomeHandoff = z.looseObject({
-  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  status: z.enum(["not_eligible", "pending_approval", "pending_release", "held_consent", "suppressed", "released", "acknowledged"]),
   referrer_status: z.enum(["pending", "acknowledged"]),
+  /** True only after the patient's own acknowledgement; a referrer acknowledgement never sets it. */
+  patient_informed: z.boolean().optional(),
+  /** The latest simulated release record for the approved version and the consent gate found when it was recorded. */
+  release: z.looseObject({ gate: z.enum(["released", "held_consent", "suppressed"]), at: z.string(), actor: z.string(), event: z.string() }).optional(),
   responsible_referrer: z.string(),
   consent: z.string(),
   version: z.string().optional(),
@@ -478,7 +502,17 @@ export const OutcomeHandoff = z.looseObject({
   approved_at: z.string().optional(),
   acknowledged_at: z.string().optional(),
   content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
-  history: z.array(z.looseObject({ kind: z.enum(["content_approved", "referrer_acknowledged", "patient_acknowledged"]), version: z.string(), actor: z.string(), role: z.string(), at: z.string(), event: z.string() })),
+  history: z.array(
+    z.looseObject({
+      kind: z.enum(["content_approved", "release_recorded", "referrer_acknowledged", "patient_acknowledged"]),
+      gate: z.enum(["released", "held_consent", "suppressed"]).optional(),
+      version: z.string(),
+      actor: z.string(),
+      role: z.string(),
+      at: z.string(),
+      event: z.string(),
+    }),
+  ),
 });
 export type OutcomeHandoff = z.infer<typeof OutcomeHandoff>;
 
@@ -497,6 +531,22 @@ export const TeachBackCallback = z.looseObject({
   consultations: z
     .array(z.looseObject({ outcome: z.enum(["understood_on_call", "another_explanation"]), actor: z.string(), role: z.string(), at: z.string(), event: z.string() }))
     .optional(),
+});
+/** One staff task a verified patient request opened (pipeline/patient_task.go patientTasksLocked); open tasks first, earliest due first. */
+export const PatientTask = z.looseObject({
+  kind: z.enum(["teach_back_callback", "patient_contest"]),
+  id: z.string(),
+  owner: z.string(),
+  status: z.enum(["open", "resolved"]),
+  escalation: z.string(),
+  source: z.enum(["patient_link", "engine"]).optional(),
+  opened_at: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  closure_held: z.boolean().optional(),
 });
 export const CasePatient = z.looseObject({
   schema: z.literal("wasl-patient-journey/1"),
@@ -570,6 +620,7 @@ export const ActiveCaseSummary = z.looseObject({
   dr: DrFinding.optional(),
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
+  ldct_tracking: LdctTracking.optional(),
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
   api_overlay: ApiOverlay.optional(),
@@ -577,7 +628,9 @@ export const ActiveCaseSummary = z.looseObject({
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
   teach_back_callback: TeachBackCallback.optional(),
-  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks. */
+  /** Failed teach-back callbacks and patient contests as one owned, due-dated task list (docs/API-PATIENT-REQUESTS.md). */
+  patient_tasks: z.array(PatientTask).optional(),
+  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks and contests. */
   escalations: z.array(z.string()).optional(),
 });
 
@@ -1664,6 +1717,7 @@ export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type TeachBackCallback = z.infer<typeof TeachBackCallback>;
+export type PatientTask = z.infer<typeof PatientTask>;
 export type Audit = z.infer<typeof Audit>;
 export type CaseList = z.infer<typeof CaseList>;
 export type Fixtures = z.infer<typeof Fixtures>;

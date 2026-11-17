@@ -1,0 +1,32 @@
+import type { CaseSummary, PatientTask } from "@/lib/api/schema";
+import { atWords } from "@/components/case/words";
+
+/**
+ * Staff tasks opened by verified patient requests (pipeline/patient_task.go): a failed teach-back callback or a
+ * patient contest. The API sorts open tasks first, earliest due first. Older APIs without `patient_tasks` still
+ * expose an open teach-back callback through `teach_back_callback`.
+ */
+export function openPatientTasks(c: CaseSummary): PatientTask[] {
+  if (c.patient_tasks) return c.patient_tasks.filter((t) => t.status === "open");
+  const cb = c.teach_back_callback;
+  return cb && cb.status === "open" ? [{ ...cb, kind: "teach_back_callback" }] : [];
+}
+
+/** True while any patient-opened task is past its due time. */
+export function patientTaskOverdue(c: CaseSummary): boolean {
+  return openPatientTasks(c).some((t) => t.overdue === true);
+}
+
+/**
+ * An open patient contest waits on a senior clinician who did not sign the case; closure is held meanwhile. The
+ * coordinator cannot resolve it, so the row waits rather than asking for a call.
+ */
+export function patientContestWords(c: CaseSummary): { status: string; next: string } | null {
+  const contest = openPatientTasks(c).find((t) => t.kind === "patient_contest");
+  if (!contest) return null;
+  const due = contest.due_at ? ` ${contest.overdue ? "overdue since" : "due"} ${atWords(contest.due_at)}` : "";
+  return {
+    status: `Patient contest · independent review${due}`,
+    next: "A senior clinician who did not sign this case reviews the contest; automatic closure is held until then",
+  };
+}
