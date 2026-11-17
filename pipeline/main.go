@@ -34,7 +34,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|backup-nats|restore-nats|verify-nats|check-nats")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|staffcomms|backup-nats|restore-nats|verify-nats|check-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
