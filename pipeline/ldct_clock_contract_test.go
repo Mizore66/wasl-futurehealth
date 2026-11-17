@@ -376,3 +376,33 @@ func TestLDCTClockLR0CompletionAndUnrelatedSources(t *testing.T) {
 		})
 	}
 }
+
+// A decision carrying a clock anchor must keep a valid signature and provenance chain after the JSON round trip that
+// the OUT stream and snapshot export apply (the anchor in the recommendation block was hashed in struct field order).
+func TestLDCTClockAnchorDecisionSurvivesJSONRoundTrip(t *testing.T) {
+	sr := pr185ClockRequest(t)
+	root := pr185ClockReport(t, pr185ClockReportInput{ID: "clock-index", Label: "LR0", Day: 10})
+	completion := pr185ClockReport(t, pr185ClockReportInput{ID: "clock-completion", Label: "LR4B", Day: 50, Parent: "clock-index", Relation: "urn:wsi:addendum-to"})
+	d, _ := replayLungRevisions(t, sr, root, completion)
+	if d.LDCT == nil || d.LDCT.ClockAnchor == nil {
+		t.Fatal("control decision has no clock anchor")
+	}
+	anchored := false
+	for _, b := range d.Chain {
+		_, ok := b.Body["clock_anchor"]
+		anchored = anchored || ok
+	}
+	if !anchored {
+		t.Fatal("control decision has no clock anchor in its provenance chain")
+	}
+	if d.Sig != decSig(d) || !verifyChain(d.Chain) {
+		t.Fatal("in-process decision signature or chain invalid")
+	}
+	var decoded Decision
+	if err := json.Unmarshal(canon(d), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Sig != decSig(&decoded) || !verifyChain(decoded.Chain) {
+		t.Fatal("decoded clock-anchored decision fails signature or chain verification")
+	}
+}

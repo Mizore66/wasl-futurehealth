@@ -63,7 +63,7 @@ func parseAPIOrigins(config string) (map[string]bool, error) {
 }
 
 // patientRoutes authenticate with a case-bound patient link, never a staff token or browser CORS grant.
-var patientRoutes = map[string]bool{"/api/patient/journey": true, "/api/patient/verification": true, "/api/patient/requests": true, "/api/patient/outcome": true}
+var patientRoutes = map[string]bool{"/api/patient/journey": true, "/api/patient/verification": true, "/api/patient/requests": true, "/api/patient/outcome": true, "/api/patient/completed-elsewhere": true}
 
 func apiReadAction(path string) string {
 	if strings.HasPrefix(path, "/api/cases/") && (strings.HasSuffix(path, "/audit") || strings.HasSuffix(path, "/export")) {
@@ -177,6 +177,7 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	mux.HandleFunc("/api/patient/verification", s.patientVerification)
 	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
 	mux.HandleFunc("/api/patient/outcome", s.patientOutcomeRoute)
+	mux.HandleFunc("/api/patient/completed-elsewhere", s.patientElsewhereRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)

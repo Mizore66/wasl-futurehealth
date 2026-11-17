@@ -196,6 +196,42 @@ func TestLungStableFollowUpOpensSurveillanceLoop(t *testing.T) {
 	}
 }
 
+// The Fleischner surveillance child must carry its parent's signed chain head, or the canonical identity projection
+// (retainedSignedParent) refuses it and report7 cannot materialise any run with lung surveillance.
+func TestLungSurveillanceChildBindsSignedParentHead(t *testing.T) {
+	g := lungFacts(60, "none", "high", "solid/6-8/single", lungFU("MAF-ct-1", 50, "stable", "eid", 1, false))
+	savedCal := V7Cal
+	V7Cal = nil
+	defer func() { V7Cal = savedCal }()
+	c := NewClosureCore(0, nil)
+	var out []OutMsg
+	out = append(out, c.Apply(&FactsMsg{ID: "f1", InSeq: 1, Facts: g})...)
+	out = append(out, c.Apply(&FactsMsg{ID: "tick", InSeq: 2, IsTick: true, TickDay: 120})...)
+	cases := map[string][]*Decision{}
+	for _, o := range out {
+		if o.Dec != nil {
+			raw, _ := json.Marshal(o.Dec)
+			var d Decision
+			if err := json.Unmarshal(raw, &d); err != nil {
+				t.Fatal(err)
+			}
+			cases[d.LoopID] = append(cases[d.LoopID], &d)
+		}
+	}
+	child := cases[g.LoopID+"#surv"]
+	if len(child) == 0 {
+		t.Fatal("control produced no surveillance child")
+	}
+	head, _ := child[len(child)-1].Chain[0].Body["parent_head"].(string)
+	if head == "" {
+		t.Fatal("surveillance_opened lacks the parent's chain head")
+	}
+	parent, err := retainedSignedParent(child[len(child)-1], cases)
+	if err != nil || parent.LoopID != g.LoopID {
+		t.Fatalf("surveillance child does not resolve its signed parent: %v %+v", err, parent)
+	}
+}
+
 func lungIndexFinding(id string, day float64, label string) DownFact {
 	return DownFact{EventID: id, Provider: "rad-imaging", RType: "LungFinding", Day: day, ReportID: id,
 		Prog: "lung_nodule", Strength: 1, Weak: Edge{A: "rad-imaging|RAD-MRN000001", B: "rad-imaging|RAD-MRN000001", P: 1, Basis: "self"},

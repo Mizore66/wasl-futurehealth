@@ -143,3 +143,60 @@ describe("CRC booking reads the served offer", () => {
     expect(book).toContain("Save this preferred time");
   });
 });
+
+describe("offers from the case's simulated booking data", () => {
+  const cervicalOffers: PatientOffers = {
+    version: "catalogue-v1",
+    procedure: "colposcopy",
+    source: "simulated_booking",
+    slots: [
+      { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
+      { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+    ],
+  };
+
+  it("cervical: shows the catalogue's colposcopy date and region, no time, no bowel preparation, no CRC words", () => {
+    const { journey } = journeyFor("cervical", "colposcopy", "wait_for_symptoms");
+    const { book } = render(journey, cervicalOffers);
+    expect(book).toContain("Your colposcopy appointment");
+    expect(book).toContain("Thursday");
+    expect(book).toContain("June");
+    expect(book).toContain("Abu Dhabi city region");
+    expect(book).not.toContain('data-testid="slot-time"');
+    expect(book).not.toContain("AD-2");
+    for (const absent of ["colonoscopy", "bowel", "Before your appointment", "SKMC", "Sheikh Khalifa", "Hessa", "October"]) expect(book).not.toContain(absent);
+  });
+
+  it("cervical colposcopy words stay English and marked in a translated phone", () => {
+    const { journey } = journeyFor("cervical", "colposcopy", "wait_for_symptoms");
+    const { book } = render(journey, cervicalOffers, "ar");
+    expect(book).toMatch(/<h1[^>]*lang="en"[^>]*>Your colposcopy appointment<\/h1>/);
+    expect(book).toMatch(/data-testid="slot-place" lang="en"/);
+  });
+
+  it("CRC: a catalogue colonoscopy offer keeps the served preparation and drops SKMC", () => {
+    const { journey } = journeyFor("crc", "colonoscopy", "blood_test");
+    const offers: PatientOffers = {
+      version: "catalogue-v2",
+      procedure: "colonoscopy",
+      source: "simulated_booking",
+      slots: [{ slot_id: "sim:colonoscopy:4:1", unit: "AA-2", region: "AA", starts_at: "2026-07-13" }],
+    };
+    const { book } = render(journey, offers);
+    expect(book).toContain("Monday");
+    expect(book).toContain("July");
+    expect(book).toContain("Al Ain region");
+    expect(book).toContain("Before your appointment");
+    expect(book).not.toContain("SKMC");
+    expect(book).not.toContain("October");
+  });
+
+  it("an offer for another programme's procedure is never shown", () => {
+    const { journey } = journeyFor("crc", "colonoscopy", "blood_test");
+    const { book } = render(journey, cervicalOffers);
+    expect(book).toContain('data-testid="no-offer"');
+    expect(book).not.toContain("colposcopy appointment");
+    const breast = journeyFor("breast", "recall", "wait_for_symptoms").journey;
+    expect(render(breast, patientOffers).book).toContain('data-testid="no-offer"');
+  });
+});

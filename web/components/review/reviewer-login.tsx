@@ -14,7 +14,7 @@ const INDEPENDENCE = {
 } as const;
 
 /** Explicitly selected demo token entry or OIDC redirect. OIDC renders no token input or identity picker. */
-export function ReviewerLogin({ caseId, mode = "demo", authError = false }: { caseId: string; mode?: ReviewAuthMode; authError?: boolean }) {
+export function ReviewerLogin({ caseId, mode = "demo", authError = false, returnTo }: { caseId: string; mode?: ReviewAuthMode; authError?: boolean; returnTo?: string }) {
   const id = useId();
   const router = useRouter();
   const field = useRef<HTMLInputElement>(null);
@@ -58,7 +58,7 @@ export function ReviewerLogin({ caseId, mode = "demo", authError = false }: { ca
       )}
       {mode === "oidc" ? (
         <Link
-          href={oidcStartHref(caseId)}
+          href={oidcStartHref(caseId, returnTo)}
           className="mt-4 inline-flex min-h-11 items-center self-start rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
         >
           Sign in with OIDC

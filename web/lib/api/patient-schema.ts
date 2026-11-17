@@ -62,9 +62,19 @@ export const PatientJourney = z.strictObject({
   preparation: PatientPreparation,
   last_action_at: z.string(),
 });
-export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), starts_at: z.string() });
-/** Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback. */
-export const PatientOffers = z.strictObject({ version: z.string(), procedure: z.enum(["", "colonoscopy"]), slots: z.array(PatientOffer) });
+/** One simulated slot. Catalogue slots carry a `region` and a date-only `starts_at` (the booking data has no time of day). */
+export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), region: z.string().optional(), starts_at: z.string() });
+/**
+ * Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback.
+ * `source` is `simulated_booking` (the case's own generated booking candidates) or `demo_fixed` (the CRC demo offers that a
+ * run without a booking catalogue keeps); see pipeline/api_patient_offers.go.
+ */
+export const PatientOffers = z.strictObject({
+  version: z.string(),
+  procedure: z.enum(["", "colonoscopy", "colposcopy"]),
+  slots: z.array(PatientOffer),
+  source: z.enum(["simulated_booking", "demo_fixed"]).optional(),
+});
 export const PatientJourneyResponse = z.looseObject({
   meta: z.looseObject({ api: z.string(), data_mode: z.string() }),
   journey: PatientJourney,
@@ -171,10 +181,14 @@ export const PatientRightsSubmission = z.strictObject({
 });
 
 export const OUTCOME_NEXT_STEPS = ["routine_screening", "surveillance", "specialist_follow_up", "discuss_with_doctor"] as const;
-/** The post-closure hand-off as the patient link sees it (pipeline/api_outcome_handoff.go handoffViewLocked). Content appears only once consent releases it. */
+/**
+ * The post-closure hand-off as the patient link sees it (pipeline/api_outcome_handoff.go handoffViewForLocked). Content
+ * appears only once a release and current consent allow it and the link has verified its one-time code (`verified`).
+ */
 export const PatientOutcomeHandoff = z.looseObject({
-  status: z.enum(["not_eligible", "pending_approval", "held_consent", "suppressed", "released", "acknowledged"]),
+  status: z.enum(["not_eligible", "pending_approval", "pending_release", "held_consent", "suppressed", "released", "acknowledged"]),
   delivery: z.literal("simulated"),
+  verified: z.boolean().optional(),
   version: z.string().optional(),
   approved_at: z.string().optional(),
   acknowledged_at: z.string().optional(),
@@ -184,6 +198,9 @@ export const PatientOutcomeHandoff = z.looseObject({
 });
 export const PatientOutcomeResponse = z.looseObject({ handoff: PatientOutcomeHandoff });
 export const PatientOutcomeAck = z.strictObject({ version: z.string().min(1).max(128), otp: z.string().max(6) });
+/** Verifies the link's one-time code (the second identifier) before any outcome content is shown. */
+export const PatientOutcomeVerify = z.strictObject({ otp: z.string().length(6) });
+export type PatientOutcomeVerify = z.infer<typeof PatientOutcomeVerify>;
 
 export type PatientOutcomeHandoff = z.infer<typeof PatientOutcomeHandoff>;
 export type PatientOutcomeAck = z.infer<typeof PatientOutcomeAck>;

@@ -53,17 +53,18 @@ export interface SlotLabel {
 
 /** Format the offer's own unit-local wall time; never substitute a browser timezone or a hard-coded slot list. */
 export function slotLabel(slot: PatientOffer, t: PatientDict["book"], lang: Lang): SlotLabel {
-  const match = /:(\d{4})-(\d{2})-(\d{2}):(\d{2}):(\d{2})$/.exec(slot.slot_id);
+  // Simulated booking catalogue slots carry a date only: show that date and no invented time of day.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(slot.starts_at);
+  const match = /:(\d{4})-(\d{2})-(\d{2}):(\d{2}):(\d{2})$/.exec(slot.slot_id) ?? (dateOnly ? [...dateOnly, "", ""] : null);
   if (!match) return { weekday: "", date: slot.starts_at, month: "", time: "", period: "" };
   const [, y, month, day, hour, minute] = match;
   const utc = new Date(Date.UTC(Number(y), Number(month) - 1, Number(day)));
-  const weekday = utc.getUTCDay();
   const h = Number(hour);
   return {
-    weekday: t.weekdays[weekday],
+    weekday: t.weekdays[utc.getUTCDay()],
     date: String(Number(day)),
     month: month === "10" ? t.october : new Intl.DateTimeFormat(lang, { month: "long", timeZone: "UTC" }).format(utc),
-    time: `${h % 12 || 12}:${minute}`,
-    period: h < 12 ? t.am : t.pm,
+    time: hour === "" ? "" : `${h % 12 || 12}:${minute}`,
+    period: hour === "" ? "" : h < 12 ? t.am : t.pm,
   };
 }

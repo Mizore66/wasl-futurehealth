@@ -75,7 +75,7 @@ func main() {
 	chaos := fs.Int("chaos", 0, "kill/restart cycles")
 	natsKill := fs.Bool("natskill", false, "also kill+restart one NATS node during the run")
 	chaosSpan := fs.Float64("chaosspan", 0, "orchestrate: seconds over which the kill/restart cycles are spread (0 = default, 15 s; larger cohorts have a longer feed)")
-	quietTO := fs.Duration("quiettimeout", 5*time.Minute, "orchestrate: stop waiting for quiescence after this long (larger cohorts need more)")
+	quietTO := fs.Duration("quiettimeout", 5*time.Minute, "orchestrate: base quiescence budget from ingest start; extended only while the pipeline streams advance, never past 2x (larger cohorts need more)")
 	seed := fs.Int64("seed", 2026, "")
 	loops := fs.Int("loops", 1500, "")
 	distract := fs.Int("distract", 700, "")
@@ -1045,11 +1045,11 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		done <- true
 	}()
 	// A timeout is an incomplete run, never permission to export an advancing
-	// graph. The budget still starts at ingest start; it is not extended here.
+	// graph. The budget starts at ingest start; past it the wait continues only
+	// while the pipeline streams still advance, up to a hard ceiling
+	// (snapshot_budget.go).
 	nc, js := connect("orchestrator")
 	defer nc.Close()
-	ctx, cancel := context.WithDeadline(context.Background(), t0.Add(QuietTimeout))
-	defer cancel()
 	sources := []string{}
 	switch SrcCfg.Source {
 	case "fhir":
@@ -1085,7 +1085,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		evidence.observe(b, err)
 		return b, err
 	}
-	boundary, err := waitSnapshotBoundary(ctx, 500*time.Millisecond, 7, observe)
+	boundary, err := waitSnapshotQuiescence(t0, QuietTimeout, snapshotStallWindow, snapshotProgressPoll, snapshotStreamProgress(js), 500*time.Millisecond, 7, observe)
 	if err != nil {
 		writeStatus(run, "snapshot", map[string]any{"status": "incomplete", "error": err.Error()})
 		emitSnapshotFailure(js, run, &evidence)
@@ -1577,8 +1577,10 @@ func waitSnapshotBoundary(ctx context.Context, interval time.Duration, samples i
 	stable := 0
 	lastErr := errors.New("no drained observation")
 	for {
-		if err := ctx.Err(); err != nil {
-			return snapshotBoundary{}, fmt.Errorf("snapshot incomplete: bounded quiescence wait: %w (last observation: %v)", err, lastErr)
+		if ctx.Err() != nil {
+			// Cause, not Err: a progress-leased budget expires by cancellation
+			// with cause context.DeadlineExceeded (snapshot_budget.go).
+			return snapshotBoundary{}, fmt.Errorf("snapshot incomplete: bounded quiescence wait: %w (last observation: %v)", context.Cause(ctx), lastErr)
 		}
 		b, err := observe(ctx)
 		if ctx.Err() != nil {
