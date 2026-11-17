@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DICTS, LANGS, PATIENT_DEFAULT_LANG, PATIENT_LANGS, patientApproved, REVIEW_LANGS, TRANSLATION_REVIEW } from "@/components/patient/i18n";
+import { approvedWith, DICTS, LANGS, PATIENT_DEFAULT_LANG, PATIENT_LANGS, patientApproved, REVIEW_LANGS, SOURCE_SIGN_OFF, TRANSLATION_REVIEW } from "@/components/patient/i18n";
 import { parsePhoneQuery, phoneHref, STEPS } from "@/components/patient/journey";
 import { translationReviewEnabled } from "@/components/patient/translation-review";
 
@@ -72,10 +72,45 @@ describe("refusal wording (#157)", () => {
     expect(DICTS.en.notice.next).toContain("book a colonoscopy");
   });
 
-  it("flags each draft's stale refusal line until it is retranslated and reviewed", () => {
+  it("flags each draft's redrafted refusal line as awaiting qualified review", () => {
     for (const lang of REVIEW_LANGS) {
       const review = TRANSLATION_REVIEW[lang];
       expect(review.status === "unreviewed" && review.note).toContain("#157");
+      expect(dictSource(lang)).toContain("redrafted from the revised English refusal wording");
     }
+  });
+
+  // The withdrawn unchanged-care promise, word for word, as each draft carried it before #157.
+  const WITHDRAWN: Record<string, string[]> = {
+    ar: ["ولن يؤثر ذلك في رعايتكِ"],
+    ur: ["اس سے آپ کی دیکھ بھال پر اثر نہیں پڑے گا"],
+    fil: ["Hindi magbabago ang pangangalaga sa iyo"],
+  };
+  // Each draft's words for: decline, respect, other care, talk to the doctor (the revised English meaning).
+  const REVISED: Record<string, string[]> = {
+    ar: ["ترفضي المتابعة", "باحترام", "الرعاية الأخرى", "طبيبكِ"],
+    ur: ["انکار", "عزت", "دوسری ضروری دیکھ بھال", "ڈاکٹر"],
+    fil: ["tumanggi sa follow-up", "igagalang", "ibang pangangalaga", "doktor"],
+  };
+
+  it.each(["ar", "ur", "fil"] as const)("%s draft no longer promises unchanged care and carries the revised meaning", (lang) => {
+    const items = DICTS[lang].notice.rightsItems.join(" ");
+    for (const phrase of WITHDRAWN[lang]) expect(items).not.toContain(phrase);
+    for (const phrase of REVISED[lang]) expect(DICTS[lang].notice.rightsItems[2]).toContain(phrase);
+  });
+
+  it("records the revised English meaning as awaiting clinical sign-off", () => {
+    const entry = SOURCE_SIGN_OFF.find((s) => s.copy === "notice.rightsItems[2]");
+    expect(entry?.status).toBe("pending");
+  });
+
+  it("will not patient-approve a reviewed translation while a changed source meaning is unsigned", () => {
+    const reviewed = { status: "reviewed", reviewer: "x", reviewedOn: "2026-11-17", record: "y" } as const;
+    expect(approvedWith(reviewed, SOURCE_SIGN_OFF)).toBe(false);
+    const signed = SOURCE_SIGN_OFF.map((s) => ({ status: "signed_off", copy: s.copy, clinician: "c", signedOn: "2026-11-17", record: "r" }) as const);
+    expect(approvedWith(reviewed, signed)).toBe(true);
+    // The corrected English source stays served while its sign-off is pending; the withdrawn promise would be worse.
+    expect(approvedWith(TRANSLATION_REVIEW.en, SOURCE_SIGN_OFF)).toBe(true);
+    expect(approvedWith(TRANSLATION_REVIEW.ar, signed)).toBe(false);
   });
 });
