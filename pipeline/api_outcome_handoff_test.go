@@ -403,3 +403,67 @@ func TestOutcomeHandoffReplayRejectsForgedReleases(t *testing.T) {
 		})
 	}
 }
+
+// A ledger written before release_recorded existed (main before #112's release gate) holds approvals and
+// acknowledgements with no release record. It must still replay; its patient acknowledgement stays history,
+// and an approved version that was never acknowledged waits for a new release instead of reaching the patient.
+func TestOutcomeHandoffLegacyLedgerWithoutReleaseRecordStillReplays(t *testing.T) {
+	h := newHandoffTestAPI(t)
+	b := h.s.cases[patientTestCaseB]
+	b.last.State, b.last.ReportedClosed, b.last.ClosedDay = "closed_normal", true, 41
+	b.State, b.Closed, b.ClosedDay = "closed_normal", true, 41
+	linkID := strings.Repeat("a", 32)
+	h.s.mu.Lock()
+	// The exact event shapes the pre-release writer (4cd59b8) appended: no gate field and no release_recorded event.
+	legacy := func(caseID, kind, nextStep string, extra map[string]interface{}) {
+		content, ok := outcomeContentFor(handoffDecision(h.s.cases[caseID], patientTestSignature(caseID)), nextStep)
+		if !ok {
+			t.Fatalf("no content for %s", caseID)
+		}
+		ev := map[string]interface{}{
+			"type": outcomeHandoffEventType, "kind": kind, "case": caseID, "decision": content.Decision, "next_step": content.NextStep,
+			"version": content.version(), "at": h.now.Format(time.RFC3339Nano), "mode": "demo", "prev": h.s.lastHashLocked(),
+		}
+		for k, v := range extra {
+			ev[k] = v
+		}
+		if _, err := h.s.appendEventLocked(ev); err != nil {
+			t.Fatal(err)
+		}
+	}
+	clinician := map[string]interface{}{"role": RoleClinician, "actor": "dr-gp", "action": ActApproveOutcomeHandoff}
+	legacy(patientTestCaseA, handoffApproved, "routine_screening", clinician)
+	legacy(patientTestCaseA, handoffReferrerAck, "routine_screening", map[string]interface{}{"role": RoleReferrer, "actor": "referrer/ahs", "action": ActAcknowledgeOutcomeHandoff})
+	legacy(patientTestCaseA, handoffPatientAck, "routine_screening", map[string]interface{}{"link_id": linkID, "role": patientRole,
+		"actor": "patient-link/" + linkID, "action": patientSelfService, "verification": patientOTPVerification, "consent": "granted"})
+	legacy(patientTestCaseB, handoffApproved, "surveillance", clinician)
+	h.s.mu.Unlock()
+
+	reloaded := reloadPatientAPI(t, h.patientTestAPI) // fails the test on any replay error
+	reloaded.mu.Lock()
+	acked := reloaded.handoffViewLocked(reloaded.cases[patientTestCaseA], true)
+	unreleased := reloaded.handoffViewLocked(reloaded.cases[patientTestCaseB], true)
+	reloaded.mu.Unlock()
+	if acked["status"] != "acknowledged" || acked["patient_informed"] != true || acked["referrer_status"] != "acknowledged" || acked["release"] != nil {
+		t.Fatalf("legacy acknowledged hand-off after replay: %v", acked)
+	}
+	if unreleased["status"] != "pending_release" || unreleased["release"] != nil {
+		t.Fatalf("legacy approval without a release must wait for a release record: %v", unreleased)
+	}
+
+	// A server restarted on that ledger keeps writing: the legacy approval can now be released.
+	handler, err := reloaded.handler("staff-token-123456:coordinator:coordinator-one", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+	live := &handoffTestAPI{patientTestAPI: h.patientTestAPI, staff: &patientTestAPI{s: reloaded, srv: srv}}
+	_, body := live.staffCall(t, http.MethodGet, handoffCoordinatorToken, patientTestCaseB, nil)
+	version, _ := handoffView(body)["version"].(string)
+	code, released := live.staffCall(t, http.MethodPost, handoffCoordinatorToken, patientTestCaseB, map[string]interface{}{"kind": handoffRelease, "version": version})
+	if code != http.StatusCreated || handoffView(released)["release"].(map[string]interface{})["gate"] != gateReleased {
+		t.Fatalf("release of a legacy approval: %d %v", code, released)
+	}
+	reloadPatientAPI(t, h.patientTestAPI)
+}
