@@ -277,7 +277,7 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | not read by the web server; the senior_reviewer signs in with it for r3 and contest resolution |
    | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-unit-clinician.token`, whose actor the API lists in `WASL_RECEIVING_UNIT_CLINICIANS` | the receiving unit's Accept and Return answers on `/app/referrals` (`POST /referral-response`), and the `postReview` helper, which no page calls. Every visitor who can open the site answers as this actor, so bind it to a dedicated unit-clinician actor, not to a person's review credential; built, synthetic ledger only |
    | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | not read by the web server; issue it to a person, who signs in with it |
-   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | not read by the web server; the senior_clinician signs in with it for r3 and contest resolution |
+   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | not read by the web server; the senior_clinician signs in with it for r3, contest resolution and patient-contest resolution on the case page (#167) |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
    | `WASL_API_REFERRER_TOKEN` | contents of `wasl-referrer.token`, whose actor the API lists in `WASL_REFERRING_CLINICIANS` and not in `WASL_RECEIVING_UNIT_CLINICIANS` | the referring GP's answers on `/app/referrals/returned` (`POST /referrer-response`); built, synthetic ledger only |

@@ -508,6 +508,28 @@ test("rights: an explanation request returns this case's provenance; a wrong cod
   await expect(sheet.getByRole("region", { name: "Your requests" })).toContainText("Explanation ready.");
 });
 
+test("rights: an independently resolved contest shows its outcome after reload and releases the hold", async ({ page }) => {
+  const t = DICTS.en.rights;
+  await open(page, "notice", "en");
+  await page.getByRole("button", { name: "Your rights" }).click();
+  const sheet = page.getByRole("dialog", { name: "Your rights" });
+  await sheet.getByRole("button", { name: t.contest }).click();
+  await sheet.getByRole("textbox", { name: t.reasonLabel }).fill("The report is from another visit");
+  await sheet.getByRole("button", { name: t.getCode }).click();
+  const code = (await sheet.getByRole("status").innerText()).match(/\d{6}/)![0];
+  await sheet.getByRole("textbox", { name: t.codeLabel }).fill(code);
+  await sheet.getByRole("button", { name: t.submit }).click();
+  await expect(sheet.getByRole("region", { name: t.listHead })).toContainText(t.held);
+
+  await control("/__mock/resolve-contest", "decision_upheld");
+  await page.reload();
+  await page.getByRole("button", { name: "Your rights" }).click();
+  const list = page.getByRole("dialog", { name: "Your rights" }).getByRole("region", { name: t.listHead });
+  await expect(list).toContainText(t.upheld);
+  await expect(list).not.toContainText(t.held);
+  await expectNoSeriousAxe(page);
+});
+
 for (const { lang, dir, surface } of PHONES) {
   test(`outcome: approved content, next step and safety net are acknowledged once (${lang})`, async ({ page }) => {
     const t = DICTS[lang];
