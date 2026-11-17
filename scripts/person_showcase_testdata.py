@@ -1,4 +1,4 @@
-"""A committed-sample person journey widened into an actionable cross-programme showcase, for snapshot tests."""
+"""A single-programme sample person journey widened into an actionable cross-programme showcase, for snapshot tests."""
 import json
 from pathlib import Path
 
@@ -6,8 +6,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def showcase_person():
-    """The committed journey widened to three trusted programmes with an open obligation and an actionable group."""
-    person = json.loads((ROOT / "docs/api-samples/person_journey.json").read_text())
+    """The single-programme no-action journey (the evidence_closure person, kept as web test data) widened to three trusted
+    programmes with an open obligation and an actionable group, so the fake API can serve its anchor case."""
+    person = json.loads((ROOT / "web/tests/fixtures/person-journey-no-action.json").read_text())
     first = person["cases"][0]
     ids = [first["case_id"], "provider-b/ServiceRequest/sr-2", "provider-c/ServiceRequest/sr-3"]
     for case_id, programme in zip(ids[1:], ("cervical", "breast")):

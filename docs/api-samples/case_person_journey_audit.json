@@ -1,0 +1,76 @@
+{
+ "anchor_note": "Local anchors for this materialised run: OUT stream ledger heads and a FHIR log hash; `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
+ "anchors": {
+  "fhir": "8e462a5db8eab069685c7c8e055c121313db0630b727e3fb27ed928783152b57",
+  "out.p0": "c34de844ef7adec7d6632a968cf19d4644a7b2e6d7f34cb7f962359746c9d776",
+  "out.p1": "761877c38a87596c72400b5b467351cc6c434301e1e13f7cc246e8845336a188",
+  "out.p2": "bb88570796ce8313faa34d1f35004aafd32f94dd402bfef5a756c7f3b43b26d7",
+  "out.p3": "44a94b3d6b02f136cefcefff8d006bdab6baf963b688a650d0052dcfeffda4e9"
+ },
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+ "chain": [],
+ "chain_length": 0,
+ "chain_note": "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted current chain and covers that chain only.",
+ "chain_scope": "current",
+ "chain_verified": true,
+ "decision_signatures": [
+  {
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "413c4dada6c28ec6874bf7db1e2061b5c7cab14b4e66f51aa41cf7f8aeabd42d",
+   "sig": "413c4dada6c28ec6874bf7db1e2061b5c7cab14b4e66f51aa41cf7f8aeabd42d",
+   "decision_id": "redacted-decision-1"
+  },
+  {
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "b9c5c71431aa634884d789b6f1b24fc169ab87a30a3bdcb7567970965144abfb",
+   "sig": "b9c5c71431aa634884d789b6f1b24fc169ab87a30a3bdcb7567970965144abfb",
+   "decision_id": "redacted-decision-2"
+  },
+  {
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "1e873f3752555f7f3b72e5925eb7f6791a27f8c30f831b1b3a5e6cc9f9cafda5",
+   "sig": "1e873f3752555f7f3b72e5925eb7f6791a27f8c30f831b1b3a5e6cc9f9cafda5",
+   "decision_id": "redacted-decision-3"
+  },
+  {
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "88e3228b15fed055d0d8805cbc9219af6efc51773a7b6c7014066e37bdde4181",
+   "sig": "88e3228b15fed055d0d8805cbc9219af6efc51773a7b6c7014066e37bdde4181",
+   "decision_id": "redacted-decision-4"
+  },
+  {
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "459bef72dec19d3ce6cd8745f53bd344260523ac27c60b2b0d04c3f2d7a6f811",
+   "sig": "459bef72dec19d3ce6cd8745f53bd344260523ac27c60b2b0d04c3f2d7a6f811",
+   "decision_id": "redacted-decision-5"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d91-p1",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "f46942a1701fc11ccbe146f2e5f215a7675c15d195f9e15a68e7849dc394cae3",
+   "sig": "f46942a1701fc11ccbe146f2e5f215a7675c15d195f9e15a68e7849dc394cae3"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d93-p1",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "96f7a6c61bc3a8323cc36fed6ff92406de3d0d46f1efcfc14191e10b695be8aa",
+   "sig": "96f7a6c61bc3a8323cc36fed6ff92406de3d0d46f1efcfc14191e10b695be8aa"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d95-p1",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3",
+   "sig": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3"
+  }
+ ],
+ "history": [],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-17T09:31:47Z",
+  "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
+  "policy": "redacted-internal-audit",
+  "reader_model": "not-disclosed",
+  "run": "redacted-internal-audit"
+ }
+}
