@@ -378,7 +378,7 @@ function referrerResponseWords(d: { response?: string; destination?: string }): 
  * non-procedure end state. Never worded as a completed procedure.
  */
 export function dispositionWords(d: { plan?: string; follow_up_owner?: string; next_review?: string }): { status: string; next: string } {
-  if (d.plan === "closed_declined") return { status: "Declined · closed without the procedure", next: "GP documented informed refusal; no procedure" };
+  if (d.plan === "closed_declined") return { status: "Declined · informed refusal recorded, no procedure", next: "GP documented informed refusal; no procedure was done and no screening result exists" };
   const on = d.next_review ?? "a date not recorded";
   return { status: `Declined · GP review ${on}`, next: `${d.follow_up_owner ?? "The GP"} reviews on ${on}` };
 }
@@ -389,15 +389,16 @@ const RETRIEVAL_OUTCOME_WORDS: Record<string, string> = {
   non_closing: "record does not close the loop",
 };
 
-type Reconciliation = { procedure?: string; provider?: string; retrieval_owner?: string; retrieval_due?: string };
+type Reconciliation = { procedure?: string; provider?: string; retrieval_owner?: string; retrieval_due?: string; retrieval_status?: string };
 
 /**
- * A patient's report that the procedure was done elsewhere, as an owned retrieval task. `today` (YYYY-MM-DD) decides
- * due or overdue. Never worded as a completed procedure: only retrieved, reviewed evidence can say that.
+ * A patient's report that the procedure was done elsewhere, as an owned retrieval task. The served `retrieval_status`
+ * decides due or overdue, else `today` (YYYY-MM-DD). Never worded as a completed procedure: only retrieved, reviewed evidence can say that.
  */
 export function reconciliationWords(r: Reconciliation, today: string): { status: string; next: string; overdue: boolean } {
   const due = r.retrieval_due ?? "a date not recorded";
-  const overdue = !!r.retrieval_due && today > r.retrieval_due;
+  // The server's status (its clock) wins; `today` covers a report recorded in this view before the next read.
+  const overdue = r.retrieval_status ? r.retrieval_status === "overdue" : !!r.retrieval_due && today > r.retrieval_due;
   return {
     status: overdue ? `Reported done elsewhere · record retrieval overdue since ${due}` : `Reported done elsewhere · record due ${due}`,
     next: `${r.retrieval_owner ?? "The coordinator"} retrieves the ${r.procedure ?? "procedure"} report from ${r.provider ?? "the provider"} by ${due}`,

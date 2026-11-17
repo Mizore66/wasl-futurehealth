@@ -370,7 +370,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			"due_days": rec.Due, "deadline_days": rec.Deadline, "urgency": rec.Urgency, "next_step": rec.Next, "scan_day": round4(ld.ScanDay),
 			"source": ldctSource}
 		if clock != nil {
-			recBody["clock_anchor"] = clock
+			recBody["clock_anchor"] = clock.blockBody()
 			if clock.Kind == "reclassified_index_exam" {
 				recBody["reclassified_by"] = dec.d.ReportID
 			}
@@ -552,6 +552,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
+	holdForPatientContest(f, d) // patient_contest_hold.go: automatic closure never overrides an open patient contest
 	d.Sig = sha(canon(d))
 	if ls.last == nil || ls.last.Sig != d.Sig {
 		d.Now, d.InSeq = now, inSeq
