@@ -498,6 +498,22 @@ export const TeachBackCallback = z.looseObject({
     .array(z.looseObject({ outcome: z.enum(["understood_on_call", "another_explanation"]), actor: z.string(), role: z.string(), at: z.string(), event: z.string() }))
     .optional(),
 });
+/** One staff task a verified patient request opened (pipeline/patient_task.go patientTasksLocked); open tasks first, earliest due first. */
+export const PatientTask = z.looseObject({
+  kind: z.enum(["teach_back_callback", "patient_contest"]),
+  id: z.string(),
+  owner: z.string(),
+  status: z.enum(["open", "resolved"]),
+  escalation: z.string(),
+  source: z.enum(["patient_link", "engine"]).optional(),
+  opened_at: z.string().optional(),
+  due_at: z.string().optional(),
+  overdue: z.boolean().optional(),
+  resolved_at: z.string().optional(),
+  resolved_by: z.string().optional(),
+  outcome: z.enum(["decision_upheld", "decision_revised"]).optional(),
+  closure_held: z.boolean().optional(),
+});
 export const CasePatient = z.looseObject({
   schema: z.literal("wasl-patient-journey/1"),
   head: z.string(),
@@ -577,7 +593,9 @@ export const ActiveCaseSummary = z.looseObject({
   api_patient: CasePatient.optional(),
   recovery: RecoveryCase.optional(),
   teach_back_callback: TeachBackCallback.optional(),
-  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks. */
+  /** Failed teach-back callbacks and patient contests as one owned, due-dated task list (docs/API-PATIENT-REQUESTS.md). */
+  patient_tasks: z.array(PatientTask).optional(),
+  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks and contests. */
   escalations: z.array(z.string()).optional(),
 });
 
@@ -1622,6 +1640,7 @@ export type ReferrerResponseCode = z.infer<typeof ReferrerResponseCode>;
 export type ChainEntry = z.infer<typeof ChainEntry>;
 export type CaseDetail = z.infer<typeof CaseDetail>;
 export type TeachBackCallback = z.infer<typeof TeachBackCallback>;
+export type PatientTask = z.infer<typeof PatientTask>;
 export type Audit = z.infer<typeof Audit>;
 export type CaseList = z.infer<typeof CaseList>;
 export type Fixtures = z.infer<typeof Fixtures>;

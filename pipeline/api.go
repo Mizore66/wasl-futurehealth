@@ -763,6 +763,9 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	}
 	if cb := s.teachBackCallbackSummaryLocked(c); cb != nil {
 		m["teach_back_callback"] = cb
+	}
+	if tasks := s.patientTasksLocked(c); len(tasks) > 0 {
+		m["patient_tasks"] = tasks // patient_task.go: failed teach-back callbacks and patient contests, one shape
 		m["escalations"] = s.servedEscalationsLocked(c)
 	}
 	s.mu.Unlock()
