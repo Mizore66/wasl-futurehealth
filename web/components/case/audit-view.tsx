@@ -119,7 +119,7 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
           {rows.map((s, i) => {
             const ok = s.sig === s.recomputed;
             return (
-              <li key={s.decision_id} className="border-t border-rule py-3" data-match={ok}>
+              <li key={s.decision_id ?? `decision-${i}`} className="border-t border-rule py-3" data-match={ok}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-muted">Decision {i + 1}</span>
                   {ok ? (
