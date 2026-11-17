@@ -25,9 +25,13 @@ async function enter(page: Page, lang = "en") {
 }
 
 for (const lang of ["en", "ar"] as const) {
-  test(`completed elsewhere: an accessible structured report, a receipt that survives reload, no closure claim (${lang})`, async ({ page }) => {
-    const t = ELSEWHERE_COPY[lang];
+  test(`completed elsewhere: an accessible structured report, a receipt that survives reload, no closure claim (${lang} phone)`, async ({ page }) => {
+    const t = ELSEWHERE_COPY;
     await enter(page, lang);
+    // No reviewed translation exists: every phone language shows the English copy, marked lang="en", with the gated note.
+    const block = page.getByRole("region", { name: t.title });
+    if (lang !== "en") await expect(block).toHaveAttribute("lang", "en");
+    await expect(block.getByRole("note")).toHaveCount(lang === "en" ? 0 : 1);
     await page.getByRole("button", { name: t.open }).click();
     const form = page.getByRole("form", { name: t.title });
     await expect(form.getByRole("textbox", { name: t.procedure })).toHaveValue("colonoscopy");
@@ -55,7 +59,7 @@ for (const lang of ["en", "ar"] as const) {
 }
 
 test("completed elsewhere: a not-found retrieval resumes follow-up and the patient can report again", async ({ page }) => {
-  const t = ELSEWHERE_COPY.en;
+  const t = ELSEWHERE_COPY;
   await enter(page);
   await page.getByRole("button", { name: t.open }).click();
   const form = page.getByRole("form", { name: t.title });
@@ -71,7 +75,7 @@ test("completed elsewhere: a not-found retrieval resumes follow-up and the patie
 });
 
 test("completed elsewhere: a required field missing sends nothing", async ({ page }) => {
-  const t = ELSEWHERE_COPY.en;
+  const t = ELSEWHERE_COPY;
   await enter(page);
   await page.getByRole("button", { name: t.open }).click();
   const form = page.getByRole("form", { name: t.title });

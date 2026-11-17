@@ -29,25 +29,23 @@ describe("patient completed-elsewhere contract", () => {
 });
 
 describe("patient status line", () => {
-  const t = ELSEWHERE_COPY.en;
+  const t = ELSEWHERE_COPY;
   it("pending, overdue, resumed and evidence-closed read from the server status, never as a result", () => {
-    expect(elsewhereStatusLine({ ...report }, t, "en")).toBe("We are asking Synthetic Private Hospital for the report. Your care team aims to have it by 15 October.");
-    expect(elsewhereStatusLine({ ...report, retrieval_status: "overdue" }, t, "en")).toContain("still waiting");
-    expect(elsewhereStatusLine({ ...report, status: "resumed", retrieval_status: "ended", outcome: "not_found" }, t, "en")).toBe(
+    expect(elsewhereStatusLine({ ...report }, t)).toBe("We are asking Synthetic Private Hospital for the report. Your care team aims to have it by 15 October.");
+    expect(elsewhereStatusLine({ ...report, retrieval_status: "overdue" }, t)).toContain("still waiting");
+    expect(elsewhereStatusLine({ ...report, status: "resumed", retrieval_status: "ended", outcome: "not_found" }, t)).toBe(
       "Synthetic Private Hospital could not find the report, so your care team will contact you about the next step.",
     );
-    expect(elsewhereStatusLine({ ...report, status: "resumed", retrieval_status: "ended", outcome: "non_closing" }, t, "en")).toContain("not enough");
-    expect(elsewhereStatusLine({ ...report, retrieval_status: "evidence_closed" }, t, "en")).toBe(t.evidenceClosed);
+    expect(elsewhereStatusLine({ ...report, status: "resumed", retrieval_status: "ended", outcome: "non_closing" }, t)).toContain("not enough");
+    expect(elsewhereStatusLine({ ...report, retrieval_status: "evidence_closed" }, t)).toBe(t.evidenceClosed);
+    // Any canonical closure sets evidence_closed, so the words do not claim the retrieved report closed it.
+    expect(t.evidenceClosed).not.toMatch(/report/i);
   });
 
-  it("every language has every string", () => {
-    const keys = Object.keys(ELSEWHERE_COPY.en).sort();
-    for (const copy of Object.values(ELSEWHERE_COPY)) {
-      expect(Object.keys(copy).sort()).toEqual(keys);
-      expect(Object.keys(copy.resumed).sort()).toEqual(["non_closing", "not_found", "not_matching"]);
-      expect(copy.pending).toContain("{provider}");
-      expect(copy.pending).toContain("{due}");
-    }
+  it("is English only: no unreviewed translation is shipped (gated copy policy, #133/#165)", () => {
+    expect(Object.keys(ELSEWHERE_COPY)).not.toContain("ar");
+    expect(t.pending).toContain("{provider}");
+    expect(t.pending).toContain("{due}");
   });
 });
 

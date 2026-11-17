@@ -9,21 +9,21 @@ import {
 } from "@/lib/api/patient-elsewhere-schema";
 import { ELSEWHERE_COPY, type ElsewhereCopy } from "./elsewhere-copy";
 import type { Lang } from "./i18n";
+import { GatedNote, scriptLang } from "./programme-copy";
 
 /*
  * The patient's "already done elsewhere" report (issue #177). It records a report for the care team to check and shows
  * where that check stands. It never says the screening is complete: only a retrieved report that passes the normal
- * identity-link, two-reader and human-review gates can close the case.
+ * identity-link, two-reader and human-review gates can close the case. The copy is English only; every other phone
+ * language shows it marked as English with the shared gated note until a reviewed translation exists.
  */
 
-const LOCALE: Record<Lang, string> = { ar: "ar-AE", en: "en-AE", ur: "ur-PK", fil: "fil-PH" };
-
-const dayWords = (day: string, lang: Lang) =>
-  new Intl.DateTimeFormat(LOCALE[lang], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${day}T00:00:00Z`));
+const dayWords = (day: string) =>
+  new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${day}T00:00:00Z`));
 
 /** The one status sentence the patient sees for a report, from the server's retrieval status. */
-export function elsewhereStatusLine(r: PatientElsewhereReport, t: ElsewhereCopy, lang: Lang): string {
-  const fill = (s: string) => s.replace("{provider}", r.provider).replace("{due}", dayWords(r.retrieval_due, lang));
+export function elsewhereStatusLine(r: PatientElsewhereReport, t: ElsewhereCopy = ELSEWHERE_COPY): string {
+  const fill = (s: string) => s.replace("{provider}", r.provider).replace("{due}", dayWords(r.retrieval_due));
   if (r.status === "resumed" && r.outcome) return fill(t.resumed[r.outcome]);
   if (r.retrieval_status === "evidence_closed") return t.evidenceClosed;
   return fill(r.retrieval_status === "overdue" ? t.overdue : t.pending);
@@ -38,7 +38,8 @@ async function load(): Promise<PatientElsewhereView | null> {
 type Draft = { requestId: string; phase: "editing" | "sending" | "failed" };
 
 export function ElsewhereReport({ lang, procedure }: { lang: Lang; procedure: string }) {
-  const t = ELSEWHERE_COPY[lang];
+  const t = ELSEWHERE_COPY;
+  const gate = { gated: lang !== "en" };
   const id = useId();
   const [view, setView] = useState<PatientElsewhereView | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -75,13 +76,14 @@ export function ElsewhereReport({ lang, procedure }: { lang: Lang; procedure: st
   const thisMonth = new Date().toISOString().slice(0, 7);
 
   return (
-    <section aria-labelledby={`${id}-head`} className="flex flex-col gap-3">
+    <section aria-labelledby={`${id}-head`} className="flex flex-col gap-3" {...scriptLang(gate)}>
       <h2 id={`${id}-head`} className="sr-only">
         {t.title}
       </h2>
+      {view && (report || view.can_report || view.limit_reached) && <GatedNote script={gate} />}
       {report && (
         <div role="status" data-testid="elsewhere-status" className="rounded-card border border-line bg-surface p-4">
-          <p className="m-0 text-[16px] leading-[1.7]">{elsewhereStatusLine(report, t, lang)}</p>
+          <p className="m-0 text-[16px] leading-[1.7]">{elsewhereStatusLine(report, t)}</p>
           {report.reported_by === "care_team" && <p className="m-0 mt-1 text-[14px] text-muted">{t.byCareTeam}</p>}
           <p className="m-0 mt-1 text-[14px] text-muted">{t.notResult}</p>
           <p className="m-0 mt-1 text-[13px] text-muted">
@@ -92,6 +94,7 @@ export function ElsewhereReport({ lang, procedure }: { lang: Lang; procedure: st
           </p>
         </div>
       )}
+      {view && !view.can_report && view.limit_reached && <p className="m-0 text-[14px] text-muted">{t.limit}</p>}
       {view?.can_report && !draft && (
         <button type="button" className={button} onClick={() => setDraft({ requestId: crypto.randomUUID(), phase: "editing" })}>
           {t.open}

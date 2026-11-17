@@ -32,10 +32,12 @@ export function openObligation(c: CaseSummary, now: number, children: ReadonlyMa
     const state: RecallState = next.recall_overdue || day > due ? "overdue" : day === due ? "due" : "upcoming";
     return { kind: "dr_recall", state, contact: next.kind, fromDay: next.from_day, dueDay: next.due_day };
   }
-  // The API links the closed parent to its child tracking request (`ldct_tracking`); older payloads fall back to the list.
+  // The API links the closed parent to its child tracking request (`ldct_tracking`, matched on provider and scan). When
+  // it is served, it is the whole answer: an untracked parent never borrows a report-id-only match from the list, which
+  // could be another provider's loop. Only payloads without the field fall back to the list.
   const served = c.ldct_tracking;
   if (served) {
-    const child = served.child_case_id ?? children.get(served.followup_report) ?? null;
+    const child = served.child_case_id ?? null;
     return { kind: "ldct_tracking", followupReport: served.followup_report, child, ...(served.child_due_day !== undefined ? { childDueDay: served.child_due_day } : {}) };
   }
   const { followup_report: report, followup_label: label } = c.ldct ?? {};

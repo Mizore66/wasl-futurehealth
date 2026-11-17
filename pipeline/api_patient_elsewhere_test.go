@@ -202,6 +202,38 @@ func TestPatientCompletedElsewhereRefusedOnClosedCase(t *testing.T) {
 	}
 }
 
+// A link holder cannot keep suspending chase: after maxPatientElsewhereReports reports (each answered by a failed
+// retrieval) the patient path refuses without an event and points to the care team.
+func TestPatientCompletedElsewhereCapsReReports(t *testing.T) {
+	p := newPatientTestAPI(t)
+	a := p.s.cases[patientTestCaseA]
+	for i := 1; i <= maxPatientElsewhereReports; i++ {
+		if code, body, _ := p.request(t, http.MethodPost, elsewherePath, p.token, patientElsewhereBody(patientUUID(byte(i)))); code != http.StatusCreated {
+			t.Fatalf("report %d: %d %v", i, code, body)
+		}
+		head := p.s.overlayView(a, false)["head"]
+		if code, body := staffAction(t, p, map[string]interface{}{"action": "retrieval_outcome", "outcome": "not_found", "expected_head": head}); code != http.StatusCreated {
+			t.Fatalf("outcome %d: %d %v", i, code, body)
+		}
+	}
+	lines := ledgerLines(t, p)
+	if v := elsewhereView(t, p); v["can_report"] != false || v["limit_reached"] != true {
+		t.Fatalf("view after the cap: %v", v)
+	}
+	if code, body, _ := p.request(t, http.MethodPost, elsewherePath, p.token, patientElsewhereBody(patientUUID(9))); code != http.StatusConflict || body["conflict"] != "limit" {
+		t.Fatalf("report past the cap: %d %v", code, body)
+	}
+	if code, body, _ := p.request(t, http.MethodPost, elsewherePath, p.token, patientElsewhereBody(patientUUID(1))); code != http.StatusOK || body["replayed"] != true {
+		t.Fatalf("exact retry after the cap: %d %v", code, body)
+	}
+	if ledgerLines(t, p) != lines {
+		t.Fatal("a capped report appended")
+	}
+	if reloaded := reloadPatientConsent(p); reloaded.ledgerErr != "" {
+		t.Fatalf("capped history replay: %s", reloaded.ledgerErr)
+	}
+}
+
 // Replay applies the handler's rules: a stored report with a client-chosen owner, due date or source, an unknown field,
 // a stale head, or a duplicate request id is rejected.
 func TestPatientCompletedElsewhereReplayRejectsForgedReports(t *testing.T) {

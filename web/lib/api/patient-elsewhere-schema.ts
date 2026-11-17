@@ -25,7 +25,12 @@ export const PatientElsewhereReport = z.looseObject({
   ended_at: z.string().optional(),
 });
 
-export const PatientElsewhereView = z.looseObject({ report: PatientElsewhereReport.nullable(), can_report: z.boolean() });
+export const PatientElsewhereView = z.looseObject({
+  report: PatientElsewhereReport.nullable(),
+  can_report: z.boolean(),
+  /** This case has used its patient reports; another report goes through the care team. */
+  limit_reached: z.boolean().optional(),
+});
 
 export const PatientElsewhereReceipt = z.looseObject({ receipt: z.string(), replayed: z.boolean(), completed_elsewhere: PatientElsewhereView });
 

@@ -26,10 +26,24 @@ const (
 	patientElsewhereRetrievalDays = 14
 	// patientElsewhereDefaultOwner owns a retrieval on a case with no coordinator or canonical owner.
 	patientElsewhereDefaultOwner = "coordinator"
+	// maxPatientElsewhereReports caps patient-link reports per case, so a link holder cannot keep suspending chase by
+	// re-reporting after each failed retrieval; a further report goes through the care team (the coordinator action).
+	maxPatientElsewhereReports = 2
 )
 
 var patientElsewhereFields = map[string]bool{"type": true, "kind": true, "case": true, "link_id": true, "role": true, "actor": true,
 	"action": true, "request_id": true, "data": true, "head": true, "seq": true, "at": true, "mode": true, "prev": true, "hash": true}
+
+// patientElsewhereCountLocked is how many patient-link completed-elsewhere reports the case's ledger holds.
+func (s *apiServer) patientElsewhereCountLocked(c *apiCase) int {
+	n := 0
+	for _, ev := range s.reviews {
+		if ev["type"] == patientElsewhereEventType && ev["case"] == c.ID {
+			n++
+		}
+	}
+	return n
+}
 
 // retrievalOwnerLocked is who owns a patient-reported retrieval: the case's coordinator owner, else its canonical owner.
 func retrievalOwnerLocked(c *apiCase) string {
@@ -65,7 +79,8 @@ func retrievalStatus(r map[string]interface{}, now time.Time, canonicalClosed bo
 // patientElsewhereViewLocked is what the patient sees of the case's latest completed-elsewhere report, whoever recorded
 // it: no owner, actor or retrieval note.
 func (s *apiServer) patientElsewhereViewLocked(c *apiCase) map[string]interface{} {
-	out := map[string]interface{}{"report": nil, "can_report": c.ov.pendingRetrieval() == "" && !c.Closed && s.ledgerErr == ""}
+	limit := s.patientElsewhereCountLocked(c) >= maxPatientElsewhereReports
+	out := map[string]interface{}{"report": nil, "can_report": c.ov.pendingRetrieval() == "" && !c.Closed && s.ledgerErr == "" && !limit, "limit_reached": limit}
 	r := c.ov.reconciliation
 	if r == nil {
 		return out
@@ -132,6 +147,10 @@ func (s *apiServer) patientElsewhereRoute(w http.ResponseWriter, r *http.Request
 		}
 		if s.ledgerErr != "" {
 			return http.StatusInternalServerError, map[string]interface{}{"error": "review ledger failed validation; writes refused"}
+		}
+		if s.patientElsewhereCountLocked(c) >= maxPatientElsewhereReports {
+			return http.StatusConflict, map[string]interface{}{"error": "this case has used its patient reports; please call the care team", "conflict": "limit",
+				"completed_elsewhere": s.patientElsewhereViewLocked(c)}
 		}
 		if c.Closed {
 			return http.StatusConflict, map[string]interface{}{"error": "this check is already closed", "conflict": "closed"}
@@ -205,6 +224,9 @@ func (s *apiServer) replayPatientElsewhere(ev map[string]interface{}) error {
 	}
 	if performed, _ := approxDate(raw["performed"].(string)); performed.After(at) {
 		return errors.New("performed after the report")
+	}
+	if s.patientElsewhereCountLocked(c) >= maxPatientElsewhereReports {
+		return errors.New("patient report limit exceeded")
 	}
 	if refusal := actionPreconditionLocked(c, elsewhereKind, norm); refusal != nil {
 		return errors.New(refusal.msg)

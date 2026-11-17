@@ -37,6 +37,14 @@ describe("the served LDCT tracking link", () => {
     expect(isActionable(ob)).toBe(false);
     expect(obligationWords(ob!).next).toBe("Open a tracking request for the follow-up scan");
   });
+
+  it("an untracked parent never borrows a scan-id-only match from the list (another provider's loop)", () => {
+    const collision = new Map([["LCS-ct-2", "other-centre/ServiceRequest/LCS-sr-5"]]);
+    const ob = openObligation(parent({ status: "untracked", followup_report: "LCS-ct-2", followup_label: "LR3" }), 120, collision);
+    expect(ob).toEqual({ kind: "ldct_tracking", followupReport: "LCS-ct-2", child: null });
+    // Only a payload without ldct_tracking falls back to the list.
+    expect(openObligation(parent(undefined), 120, collision)).toMatchObject({ child: "other-centre/ServiceRequest/LCS-sr-5" });
+  });
 });
 
 describe("the served retrieval task status (issue #177)", () => {
