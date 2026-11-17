@@ -82,7 +82,8 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
             {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
           </span>
           {view?.programme !== "crc" ? (
-            <HonestyLabel kind="designed">
+            // The longest label on the page: let it wrap so a phone does not scroll sideways (#155).
+            <HonestyLabel kind="designed" className="h-auto min-h-6 max-w-full whitespace-normal py-0.5">
               Returned packets: canonical, synthetic. Referrer answers: {live ? "built, on the referrer's page" : "need the live synthetic API"}. Re-referral here: designed, session only
             </HonestyLabel>
           ) : live ? (
