@@ -298,7 +298,7 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 		var kv jetstream.KeyValue
 		kv, err = js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 3, Storage: jetstream.FileStorage})
 		if err == nil {
-			c.kv, err = bindPendingLeaderKV(ctx, js, kv)
+			c.kv, err = bindCanonicalMetadataLeaderKV(ctx, js, kv)
 		}
 		return
 	})
