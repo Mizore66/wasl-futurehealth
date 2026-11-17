@@ -100,7 +100,9 @@ azd deploy wasl-audit-explainer
 azd ai agent show wasl-audit-explainer        # instance_identity.principal_id
 ```
 
-Grant that principal `Key Vault Secrets User` on the vault and `Foundry User` on the Foundry account. Then:
+Grant that principal `Key Vault Secrets User` on the vault. The working deployment also granted it both
+`Foundry User` and `Cognitive Services OpenAI User` on the Foundry account. Which of the two the model call needs is
+untested. If a new agent version still fails with `AuthenticationError` after the grants, redeploy it. Then:
 
 ```bash
 azd ai agent invoke wasl-audit-explainer "Explain the audit trail for ahs-mushrif/ServiceRequest/AHS-sr-1001"
@@ -110,5 +112,6 @@ The agent makes one GET to `/api/cases/{id}/audit` and one model call. It sends 
 
 ## Cost and teardown
 
-The API runs one always-on replica (1 vCPU, 2 GiB). The model and the agent bill per use. Delete everything with
-`az group delete -n rg-wasl-demo`.
+The API runs one always-on replica (1 vCPU, 2 GiB). That is the largest cost: roughly USD 1.5 to 2 a day at list
+consumption prices, which is an estimate, not a measured bill. ACR Basic, the storage account and the Key Vault cost
+cents a day. The model and the agent bill per use. Delete everything with `az group delete -n rg-wasl-demo`.

@@ -313,7 +313,9 @@ makes the old ledger invalid (see `API.md`). To rotate a credential, change both
 
 ## Azure
 
-Observed on 17 Nov 2026 in one Azure for Students subscription, region `japaneast`, from commit `4bfd661`. The runbook
+Observed on 17 Nov 2026 in one Azure for Students subscription, region `japaneast`. The image was built locally from
+a checkout of commit `4bfd661` with LF line endings, and tagged `4bfd661c-lf`. The live API returned 401 for every
+published `wasl-demo-*` token. The runbook
 is [`deploy/azure/README.md`](../deploy/azure/README.md). Synthetic data only.
 
 | Part | Label | What was verified |
