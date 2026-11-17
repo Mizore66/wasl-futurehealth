@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2",
-    "committed_at": "2026-11-16T17:04:05Z"
+    "revision": "b2c070f1bb87388aa4ad3bdb0b68f5c8df4a89d1",
+    "committed_at": "2026-11-17T04:08:47Z"
   },
   "scanner": {
     "name": "trivy",
@@ -1353,8 +1353,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/env",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/env@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/env@16.4.5",
       "development": false,
       "licenses": [
         "MIT"
@@ -1363,8 +1363,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/eslint-plugin-next",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.5",
       "development": true,
       "licenses": [
         "MIT"
@@ -1373,8 +1373,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-darwin-arm64",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
       "development": false,
       "licenses": [
         "MIT"
@@ -1383,56 +1383,56 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-darwin-x64",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-arm64-gnu",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-arm64-musl",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-x64-gnu",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-x64-musl",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-win32-arm64-msvc",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-win32-x64-msvc",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
       "development": false,
       "licenses": []
     },
@@ -3965,8 +3965,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "eslint-config-next",
-      "version": "16.4.3",
-      "purl": "pkg:npm/eslint-config-next@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/eslint-config-next@16.4.5",
       "development": true,
       "licenses": [
         "MIT"
@@ -5925,8 +5925,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "next",
-      "version": "16.4.3",
-      "purl": "pkg:npm/next@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/next@16.4.5",
       "development": false,
       "licenses": [
         "MIT"
