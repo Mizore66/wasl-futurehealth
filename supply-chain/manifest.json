@@ -11,14 +11,14 @@
       "Version": 2,
       "NextUpdate": "2026-11-18T01:05:25.260481302Z",
       "UpdatedAt": "2026-11-17T01:05:25.260481643Z",
-      "DownloadedAt": "2026-11-17T02:38:16.541080868Z"
+      "DownloadedAt": "2026-11-17T02:50:11.261697359Z"
     }
   },
   "scan_mode": "online database refresh permitted",
   "artifacts": [
     {
       "path": "repository.cdx.json",
-      "sha256": "0ee51ab0b0624cb59096c535b1eb8584a4cbf1d6e51b30afca8aee6f5c369ad2"
+      "sha256": "8af68e8d10eae7d1b35d3ee7c6c6fae5f2cee851b8dd67c94d1e6cfc17d5e764"
     },
     {
       "path": "vulnerabilities.json",
