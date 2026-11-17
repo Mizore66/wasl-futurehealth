@@ -16,9 +16,11 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const outcome = new FormData(event.currentTarget).get("outcome");
+    const data = new FormData(event.currentTarget);
+    const outcome = data.get("outcome");
+    const reason = String(data.get("reason") ?? "");
     startTransition(async () => {
-      const response = await resolvePatientContest({ caseId, contest, outcome });
+      const response = await resolvePatientContest({ caseId, contest, outcome, reason });
       if (!response.ok && response.signIn) {
         setResult({ ok: false, message: SESSION_REJECTED });
         setSignedOutNotice(caseId, SESSION_REJECTED);
@@ -48,6 +50,11 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
             <option value="decision_upheld">Uphold the decision: release the closure hold</option>
             <option value="decision_revised">Revise the decision: keep closure held until the decision changes</option>
           </select>
+        </label>
+        <label className="flex flex-col gap-1 text-small font-medium">
+          Reason for your decision (required)
+          <textarea name="reason" required maxLength={500} disabled={pending} className="min-h-20 rounded-control border border-control bg-surface px-3 py-2 font-normal" />
+          <span className="font-normal text-muted">Recorded with your sign-in, the outcome and the time. Staff see it; the patient sees the outcome.</span>
         </label>
         <button type="submit" disabled={pending} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink disabled:opacity-60">
           {pending ? "Appending…" : "Record contest outcome"}

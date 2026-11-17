@@ -44,7 +44,7 @@ func TestEngineHoldsAutomaticClosureWhileAPatientContestIsUnresolved(t *testing.
 	questioned := base.Sig
 
 	held := runContestClosure(closingCRCFacts(PatientContestFact{Receipt: "r1", Decision: questioned}))
-	if held.State != "contested" || held.ClosedDay != 0 || held.HumanAssisted || !commTestContains(held.Escalations, patientContestEscalation) ||
+	if held.State != "contested" || held.ClosedDay != 0 || held.HumanAssisted != base.HumanAssisted || !commTestContains(held.Escalations, patientContestEscalation) ||
 		!hasContestBlock(held, "patient_contest_hold") || !verifyChain(held.Chain) {
 		t.Fatalf("automatic closure completed a case with an unresolved patient contest: %+v", held)
 	}

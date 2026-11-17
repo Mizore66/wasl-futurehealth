@@ -109,6 +109,7 @@ export function PatientRequestsCard({ detail, review }: { detail: CaseDetail; re
             <p className="m-0 mt-1 text-small text-muted">
               Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)} · questioned decision {row.decision.slice(0, 8)}
             </p>
+            {row.resolution_reason && <p className="m-0 mt-1 [overflow-wrap:anywhere]">Reviewer&apos;s reason: {row.resolution_reason}</p>}
             {row.kind === "contest_submitted" && row.status === "open" && review?.live && review.controls?.(row.receipt, row.excluded_reviewers ?? [])}
           </li>
         ))}

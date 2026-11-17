@@ -44,13 +44,13 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 describe("resolvePatientContest acts only as the signed-in senior clinician (#167)", () => {
   it("posts the receipt and chosen outcome with the session token and revalidates the case", async () => {
     fetchMock.mockResolvedValue(json(201, { event: { hash: "resolution-hash-0123456789" }, note: "resolution appended" }));
-    const result = await resolvePatientContest({ caseId: "LOOP/1", contest: "receipt-abc", outcome: "decision_upheld" });
+    const result = await resolvePatientContest({ caseId: "LOOP/1", contest: "receipt-abc", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." });
     expect(result).toMatchObject({ ok: true, hash: "resolution-hash-0123456789" });
     expect(result.ok && result.message).toContain("signed-in credential");
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://127.0.0.1:8088/api/cases/LOOP%2F1/patient-contest");
     expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${SESSION}`);
-    expect(JSON.parse(init.body)).toEqual({ contest: "receipt-abc", outcome: "decision_upheld" });
+    expect(JSON.parse(init.body)).toEqual({ contest: "receipt-abc", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." });
     expect(revalidatePath).toHaveBeenCalledWith("/app/patients/LOOP%2F1");
     expect(revalidatePath).toHaveBeenCalledWith("/app/patients");
   });
@@ -61,40 +61,46 @@ describe("resolvePatientContest acts only as the signed-in senior clinician (#16
     ["role", { role: "senior_clinician" }],
     ["actor", { actor: "clinician-three" }],
   ])("refuses a client-supplied %s and sends nothing", async (_name, identity) => {
-    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_revised", ...identity });
+    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_revised", reason: "Matched report verified independently (synthetic).", ...identity });
     expect(result.ok).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it.each([undefined, "", "upheld", "closed"])("has no default outcome: %j is refused before any request", async (outcome) => {
-    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome });
+    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome, reason: "Matched report verified independently (synthetic)." });
+    expect(result.ok).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "", "   "])("requires the reviewer's reason: %j is refused before any request", async (reason) => {
+    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld", reason });
     expect(result.ok).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("without a session sends nothing and asks for a sign-in, although server tokens are configured", async () => {
     vi.mocked(reviewerToken).mockResolvedValue(undefined);
-    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld" });
+    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." });
     expect(result).toMatchObject({ ok: false, signIn: true });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("surfaces the API's refusal of an original reviewer without claiming a resolution", async () => {
     fetchMock.mockResolvedValue(json(403, { error: "the original decision reviewer may not resolve this contest" }));
-    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld" });
+    const result = await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." });
     expect(result).toEqual({ ok: false, error: "the original decision reviewer may not resolve this contest" });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("treats a 401 as signed out", async () => {
     fetchMock.mockResolvedValue(json(401, { error: "authentication required" }));
-    expect(await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld" })).toMatchObject({ ok: false, signIn: true });
+    expect(await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." })).toMatchObject({ ok: false, signIn: true });
   });
 
   it("refuses in fixtures mode without reading the session", async () => {
     vi.stubEnv("WASL_API_URL", "");
-    expect((await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld" })).ok).toBe(false);
+    expect((await resolvePatientContest({ caseId: "c1", contest: "r1", outcome: "decision_upheld", reason: "Matched report verified independently (synthetic)." })).ok).toBe(false);
     expect(reviewerToken).not.toHaveBeenCalled();
     expect(postPatientContestResolutionWithToken).not.toHaveBeenCalled();
   });
@@ -156,5 +162,12 @@ describe("staff patient-contest card", () => {
     expect(select?.[0]).toMatch(/required/);
     const options = [...(select?.[1] ?? "").matchAll(/<option([^>]*)>/g)].map((m) => m[1]);
     expect(options.filter((o) => o.includes("selected"))).toEqual([expect.stringContaining('value=""')]);
+  });
+
+  it("asks for a required reason and shows the recorded reason to staff after resolution", () => {
+    const out = renderToStaticMarkup(createElement(PatientContestControls, { caseId: "c1", contest: "r1", excluded: [] }));
+    expect(out).toMatch(/<textarea[^>]*name="reason"[^>]*required/);
+    const resolved = { ...contest, status: "resolved", outcome: "decision_upheld", resolution_reason: "Matched report verified (synthetic)." };
+    expect(html([resolved], { live: true, signedIn: true, mode: "demo" })).toContain("Reviewer&#x27;s reason: Matched report verified (synthetic).");
   });
 });

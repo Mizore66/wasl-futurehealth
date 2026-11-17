@@ -156,7 +156,7 @@ func TestPatientContestHoldsClosureUntilAnIndependentHumanResolvesIt(t *testing.
 	resolve := func(token, outcome string) (int, string) {
 		t.Helper()
 		ph := &patientTestAPI{s: p.s, srv: staff}
-		code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", token, map[string]interface{}{"contest": receipt, "outcome": outcome})
+		code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", token, map[string]interface{}{"contest": receipt, "outcome": outcome, "reason": "Reviewed the matched report and closure (synthetic)."})
 		return code, string(raw)
 	}
 	if code, raw := resolve("staff-token-123456", "decision_upheld"); code != 403 {
@@ -190,7 +190,7 @@ func TestPatientContestRevisedKeepsHoldUntilTheDecisionIsReplaced(t *testing.T) 
 	_, resp, _ := p.request(t, "POST", "/api/patient/requests", p.token, patientRequestBody("contest_submitted", patientUUID(1), issueCode(t, p, p.token)))
 	receipt := resp["request"].(map[string]interface{})["receipt"]
 	ph := &patientTestAPI{s: p.s, srv: staff}
-	if code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", "indep-token-12345678", map[string]interface{}{"contest": receipt, "outcome": "decision_revised"}); code != 201 {
+	if code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", "indep-token-12345678", map[string]interface{}{"contest": receipt, "outcome": "decision_revised", "reason": "The closing report belongs to another episode (synthetic)."}); code != 201 {
 		t.Fatalf("revise: %d %s", code, raw)
 	}
 	c := p.s.cases[patientTestCaseA]

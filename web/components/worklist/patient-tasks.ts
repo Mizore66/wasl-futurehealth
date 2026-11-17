@@ -22,7 +22,16 @@ export function patientTaskOverdue(c: CaseSummary): boolean {
  * coordinator cannot resolve it, so the row waits rather than asking for a call.
  */
 export function patientContestWords(c: CaseSummary): { status: string; next: string } | null {
-  const contest = openPatientTasks(c).find((t) => t.kind === "patient_contest");
+  const open = openPatientTasks(c);
+  const contest = open.find((t) => t.kind === "patient_contest");
+  const revision = open.find((t) => t.kind === "patient_contest_revision");
+  if (!contest && revision) {
+    const due = revision.due_at ? ` ${revision.overdue ? "overdue since" : "due"} ${atWords(revision.due_at)}` : "";
+    return {
+      status: `Patient contest · decision to be revised${due}`,
+      next: "A senior clinician replaces the questioned decision; automatic closure stays held until then",
+    };
+  }
   if (!contest) return null;
   const due = contest.due_at ? ` ${contest.overdue ? "overdue since" : "due"} ${atWords(contest.due_at)}` : "";
   return {

@@ -319,6 +319,7 @@ func (c *ClosureCore) reconcileCRCPlan(f *LoopFacts, ls *loopState, obligations 
 							cd.CareState = "ongoing"
 						}
 					}
+					holdForPatientContest(f, child) // a contest of this follow-up holds only this child (patient_contest_hold.go)
 					child.Sig = decSig(child)
 					kids[child.LoopID] = child
 					p.ChildLoop = child.LoopID

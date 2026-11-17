@@ -212,6 +212,13 @@ func validateFHIRRecord(m LogMsg) error {
 	if m.Subject == "fhir.review" && rt != "Provenance" {
 		return fmt.Errorf("invalid FHIR review: resourceType must be Provenance")
 	}
+	if m.Subject == "fhir.review" && isPatientContestResource(m.Data) {
+		// The linker re-checks identity and RBAC; validate the shape only (patient_contest_feed.go).
+		if _, err := patientContestFromResource(m.Data); err != nil {
+			return fmt.Errorf("invalid FHIR patient contest: %w", err)
+		}
+		return nil
+	}
 	prov := strings.Split(m.Subject, ".")[1]
 	event, signoff, normErr := normaliseChecked(prov, 0, m.Data)
 	if normErr != nil {
