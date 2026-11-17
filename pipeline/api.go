@@ -88,6 +88,7 @@ type apiServer struct {
 	bookingSlots            map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
 	sawBookingStamp         bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
 	bookingStampRank        int                       // highest readiness policy accepted so far; a later stamp never downgrades
+	sawRecoveryStamp        bool                      // GLOBAL ledger-order barrier for recovery_policy; set only by a valid stamped confirmation
 	recovery                recoveryProjection
 	fixtures                map[string]string
 	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
@@ -237,11 +238,13 @@ func loadAPI(run, data string) *apiServer {
 	readJSON("report7.json", &s.report)
 	readJSON("anchors.json", &s.anchors)
 	// Preserve generated booking-number spellings (notably Python's 2.0) for exact cross-language version hashes.
-	if b, err := os.ReadFile(filepath.Join(run, "booking.json")); err == nil {
-		dec := json.NewDecoder(bytes.NewReader(b))
-		dec.UseNumber()
-		_ = dec.Decode(&s.booking)
+	// loadAPIVerified rejects a present but malformed booking.json before reaching here; a direct loadAPI caller
+	// gets the same rejection as a panic instead of a silently absent booking stage.
+	booking, err := readBookingArtifact(filepath.Join(run, "booking.json"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		panic(err)
 	}
+	s.booking = booking
 	// Preserve timeline order even if dump lines were reordered. Current state
 	// uses the same highest-output-sequence reducer as report7 and preflight.
 	outLog := readLog(filepath.Join(run, "out_log.ndjson"))

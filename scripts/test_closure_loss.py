@@ -61,6 +61,37 @@ def run_final_aggregate(seeds):
         return json.load(open(os.path.join(d, "summary.json")))["by_noise"]["v1"], res.stderr
 
 
+def sweep_row(mit, rho, seed, false, unsafe, foreign=0):
+    row = {"mitigation": mit, "err": 0.04, "rho": rho, "double": "merge+close", "seed": seed, "effective_rho": rho,
+           "false_closures": false, "closed_pred": 100, "recall": 0.9, "reads": 10, "reviewer_hours_per_1k_loops": 20.0,
+           "audit": {k: 0 for k in ("audited", "wrong_before", "disagreed", "fixed", "introduced", "missed")}}
+    if unsafe is not None:
+        row.update(unsafe_closures=unsafe, foreign_evidence_closures=foreign, unverified_evidence_closures=0,
+                   closure_loss=closure_loss.V2)
+    return row
+
+
+def run_h7(*sweeps):
+    with tempfile.TemporaryDirectory() as d:
+        paths = []
+        for i, rows in enumerate(sweeps):
+            paths.append(os.path.join(d, "sweep_%d.json" % i))
+            json.dump(rows, open(paths[-1], "w"))
+        out = os.path.join(d, "summary.json")
+        res = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "h7_mitigations.py"), out] + paths,
+                             capture_output=True, text=True, env=dict(os.environ, PYTHONUTF8="1"))
+        if res.returncode:
+            return None, res.stderr
+        return json.load(open(out)), res.stderr
+
+
+def no_review(false, unsafe):
+    row = {"err": -1, "double": "no_review", "false_closures": false, "closed_pred": 100, "recall": 0.9}
+    if unsafe is not None:
+        row.update(unsafe_closures=unsafe, foreign_evidence_closures=unsafe - false, unverified_evidence_closures=0)
+    return row
+
+
 class ClosureLossTests(unittest.TestCase):
     def test_v2_artifact_uses_ownership_aware_loss(self):
         self.assertEqual(closure_loss.pooled([{"false_closures": 0, "unsafe_closures": 2}, {"false_closures": 1, "unsafe_closures": 1}]),
@@ -109,6 +140,38 @@ class ClosureLossTests(unittest.TestCase):
         out, err = run_final_aggregate({1: report7(0, {"crc": 1, "cervical": 0}), 2: report7(0, None)})
         self.assertIsNone(out)
         self.assertIn("closure-loss definitions differ", err)
+
+    # #218: the H7 mitigation sweep reports the ownership-aware loss beside the outcome-only count.
+    def test_h7_reports_unsafe_closures_alongside_false_closures(self):
+        sweep = [sweep_row("double", 0.25, 1, 0, 1, foreign=1), sweep_row("double", 0.25, 2, 1, 1),
+                 sweep_row("double", 0, 1, 0, 0), sweep_row("blind", 0, 1, 0, 0), no_review(2, 3)]
+        out, err = run_h7(sweep)
+        self.assertIsNotNone(out, err)
+        self.assertEqual(out["closure_loss"], closure_loss.V2)
+        cell = next(r for r in out["rows"] if r["mitigation"] == "double" and r["rho"] == 0.25)
+        self.assertEqual((cell["false_closures"], cell["unsafe_closures"], cell["foreign_evidence_closures"]), (1, 2, 1))
+        self.assertEqual(cell["unsafe_closures_by_seed"], [1, 1])
+        self.assertEqual((out["no_review_reference"]["false_closures"], out["no_review_reference"]["unsafe_closures"]), (2, 3))
+        self.assertTrue(out["check_rho0_blind_rotate_equal_double"])
+
+    def test_h7_rho0_check_fails_when_only_unsafe_closures_differ(self):
+        sweep = [sweep_row("double", 0, 1, 0, 0), sweep_row("blind", 0, 1, 0, 1, foreign=1), no_review(0, 0)]
+        out, err = run_h7(sweep)
+        self.assertIsNotNone(out, err)
+        self.assertFalse(out["check_rho0_blind_rotate_equal_double"])
+
+    def test_h7_labels_historical_sweeps_outcome_only(self):
+        out, err = run_h7([sweep_row("double", 0.25, 1, 1, None), no_review(2, None)])
+        self.assertIsNotNone(out, err)
+        self.assertEqual(out["closure_loss"], closure_loss.V1)
+        self.assertNotIn("unsafe_closures", out["rows"][0])
+        self.assertNotIn("unsafe_closures", out["no_review_reference"])
+
+    def test_h7_refuses_mixed_loss_sweeps(self):
+        out, err = run_h7([sweep_row("double", 0.25, 1, 0, 0), no_review(0, 0)], [sweep_row("blind", 0.25, 1, 0, None)])
+        self.assertIsNone(out)
+        self.assertIn("closure-loss definitions differ", err)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -415,13 +415,16 @@ func recoveryReviewEvidenceFromEvent(ev map[string]interface{}) (recoveryReviewE
 }
 
 func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitlistCase) map[string]interface{} {
-	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "", nil)
+	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "", nil, false)
 }
 
 // A non-nil guardDecision reconstructs the candidate at a historical ledger
 // event. Source staleness and review holds are checked against stored event-time
 // evidence, not against later canonical decisions, review items or sign-offs.
-func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string, eventReview *recoveryReviewEvidence) map[string]interface{} {
+// waiveReadiness is set ONLY when replaying a legacy confirmation written before
+// the recovery readiness policy existed (no recovery_policy stamp, and no stamp
+// earlier in the ledger); every live candidate and every stamped event enforces it.
+func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string, eventReview *recoveryReviewEvidence, waiveReadiness bool) map[string]interface{} {
 	c := s.cases[w.CaseID]
 	review := recoveryReviewEvidence{}
 	if eventReview != nil {
@@ -456,6 +459,13 @@ func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *rec
 	add("procedure_match", "procedure_mismatch", procedure != slot.Procedure)
 	active := c != nil && !c.Closed && c.Review != "open" && !review.canonicalHold && (c.State == "open" || c.State == "no_show" || c.State == "inadequate" || c.State == "referral_rejected")
 	add("case_active", "case_closed_inactive_or_held", !active)
+	// Same returned-referral rule as simulated booking (#151, #173), evaluated on
+	// the event-time decision during replay. Like the reservation check below, it
+	// is appended only when it fails, so eligibility hashes of unaffected
+	// candidates stay byte-compatible with ledgers written before this policy.
+	if !waiveReadiness && returnedReferralReadiness(c, "recovery capacity") != "" {
+		add("procedure_ready", "returned_referral_unresolved", true)
+	}
 	add("not_source_case", "source_case_for_own_release", w.CaseID == slot.SourceCase)
 	add("not_already_backfilled", "case_already_backfilled", s.recovery.ByCase[w.CaseID] != nil)
 	// Keep unaffected eligibility hashes compatible with ledgers written before
@@ -790,7 +800,14 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead, &reviewEvidence)
+	stamped, err := recoveryPolicyStamp(ev)
+	if err != nil {
+		return err
+	}
+	if !stamped && s.sawRecoveryStamp {
+		return errors.New("unstamped recovery confirmation after the first readiness policy stamp")
+	}
+	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead, &reviewEvidence, !stamped)
 	if candidate["eligible"] != true || ev["eligibility_hash"] != candidate["eligibility_hash"] {
 		return errors.New("recovery candidate does not match event-time eligibility evidence")
 	}
@@ -822,7 +839,27 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	s.recovery.Fills[slot.SlotID], s.recovery.ByCase[c.ID], s.recovery.Requests[requestID] = fill, fill, *fill
 	c.ov.head, c.ov.lastAt = fmt.Sprint(ev["hash"]), fmt.Sprint(ev["at"])
 	c.ov.n++
+	if stamped {
+		s.sawRecoveryStamp = true // only after ALL guards accepted this confirmation
+	}
 	return nil
+}
+
+// recoveryPolicyReadiness1 marks confirmations written under the returned-referral
+// readiness policy. It is server-owned and hashed with the event.
+const recoveryPolicyReadiness1 = "readiness/1"
+
+// recoveryPolicyStamp reports whether a confirmation carries the readiness
+// policy stamp. A present stamp must be exactly recoveryPolicyReadiness1.
+func recoveryPolicyStamp(ev map[string]interface{}) (bool, error) {
+	policy, stamped := ev["recovery_policy"]
+	if !stamped {
+		return false, nil
+	}
+	if value, ok := policy.(string); !ok || value != recoveryPolicyReadiness1 {
+		return false, errors.New("unknown or non-string recovery_policy")
+	}
+	return true, nil
 }
 
 // releaseRecoveryLocked applies an appended cancellation: the confirmation stays
