@@ -34,7 +34,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|backup-nats|restore-nats|verify-nats")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|backup-nats|restore-nats|verify-nats|check-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -61,7 +61,9 @@ func main() {
 	data := fs.String("data", "../cohort", "cohort dir")
 	wasl := fs.String("wasl", "../../wasl/data", "wasl data dir (persons, encoder, scorer)")
 	out := fs.String("out", "../cohort", "")
-	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats input JSON")
+	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats/check-nats input (- is stdin/stdout)")
+	natsStream := fs.Bool("stream", false, "backup-nats: write the bounded-memory wasl-nats-backup-v2-stream format")
+	natsPrechecked := fs.Bool("prechecked", false, "restore-nats: accept a non-rereadable v2 stream already validated by check-nats")
 	run := fs.String("run", "../run/default", "run dir")
 	patientCase := fs.String("case", "", "patient-link: existing synthetic CRC case id")
 	patientTTL := fs.Duration("ttl", defaultPatientTTL, "patient-link: lifetime (maximum 24h)")
@@ -522,23 +524,31 @@ func main() {
 		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
-	case "backup-nats", "restore-nats", "verify-nats":
+	case "backup-nats", "restore-nats", "verify-nats", "check-nats":
 		if *bundle == "" {
 			panic(cmd + " requires -bundle")
 		}
-		nc, js := connect(cmd)
-		defer nc.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
-		defer cancel()
 		var summary recoverySummary
 		var err error
-		switch cmd {
-		case "backup-nats":
-			summary, err = backupNATS(ctx, js, *bundle)
-		case "restore-nats":
-			summary, err = restoreNATS(ctx, js, *bundle)
-		case "verify-nats":
-			summary, err = verifyNATS(ctx, js, *bundle)
+		if cmd == "check-nats" { // offline: validates a payload without connecting to NATS
+			summary, err = checkNATS(*bundle)
+		} else {
+			nc, js := connect(cmd)
+			defer nc.Close()
+			ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+			defer cancel()
+			switch cmd {
+			case "backup-nats":
+				if *natsStream {
+					summary, err = backupNATSStreamToPath(ctx, js, *bundle)
+				} else {
+					summary, err = backupNATS(ctx, js, *bundle)
+				}
+			case "restore-nats":
+				summary, err = restoreNATSPayload(ctx, js, *bundle, *natsPrechecked)
+			case "verify-nats":
+				summary, err = verifyNATS(ctx, js, *bundle)
+			}
 		}
 		if err != nil {
 			writeStructuredLog("error", "NATS recovery operation failed", "operation", cmd, "error", err.Error())

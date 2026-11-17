@@ -15,6 +15,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from recovery import (  # noqa: E402
+    SCHEMA_V2,
     _canonical,
     _decrypt_v2_payloads,
     _manifest_mac,
@@ -83,7 +84,7 @@ class RecoveryFileTests(unittest.TestCase):
             manifest = verify_bundle(bundle, key)
             self.assertIn("nats/nats.json", {r["path"] for r in manifest["files"]})
             flip_last_byte(bundle / "files" / "nats" / "nats.json.aead")
-            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+            with self.assertRaisesRegex(ValueError, "hash mismatch|failed authentication"):
                 verify_bundle(bundle, key)
 
     def test_tampered_bundle_and_wrong_key_fail_before_destination_changes(self):
@@ -101,7 +102,7 @@ class RecoveryFileTests(unittest.TestCase):
             (destination / "do-not-touch").write_text("unrelated")
 
             flip_last_byte(bundle / "files" / "run.ndjson.aead")
-            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+            with self.assertRaisesRegex(ValueError, "hash mismatch|failed authentication"):
                 verify_bundle(bundle, key)
             self.assertEqual((destination / "do-not-touch").read_text(), "unrelated")
             with self.assertRaises(ValueError):
@@ -139,7 +140,7 @@ class RecoveryFileTests(unittest.TestCase):
             result = subprocess.run([str(Path(__file__).resolve().parent / "demo.sh"), "recovery-restore"], env=env,
                                     text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.assertNotEqual(result.returncode, 0, result.stdout)
-            self.assertIn("hash mismatch", result.stdout)
+            self.assertRegex(result.stdout, "hash mismatch|failed authentication")
             self.assertFalse(calls.exists(), "tampered bundle reached NATS restore")
             self.assertFalse(destination.exists(), "tampered bundle created destination files")
 
@@ -217,7 +218,7 @@ class RecoveryV2Tests(unittest.TestCase):
         if not source.exists():
             source, nats = make_source_with_nats(self.root)
         bundle = self.root / name
-        return bundle, write_file_bundle(source, bundle, self.keyring, nats_json=nats)
+        return bundle, write_file_bundle(source, bundle, self.keyring, nats_json=nats, schema=SCHEMA_V2)
 
     def resign(self, bundle, mutate):
         """Mutate the manifest and re-authenticate it, to reach the checks behind the HMAC."""
@@ -242,7 +243,7 @@ class RecoveryV2Tests(unittest.TestCase):
     def test_v2_payloads_are_encrypted_and_authenticated(self):
         source, nats = make_source_with_nats(self.root)
         bundle = self.root / "bundle"
-        manifest = write_file_bundle(source, bundle, self.keyring, nats_json=nats)
+        manifest = write_file_bundle(source, bundle, self.keyring, nats_json=nats, schema=SCHEMA_V2)
         self.assertEqual(manifest["schema"], "wasl-file-backup-v2-aesgcm")
         raw = b"".join(path.read_bytes() for path in bundle.rglob("*") if path.is_file())
         self.assertNotIn(b"synthetic", raw)
@@ -500,7 +501,7 @@ class RecoveryV2Tests(unittest.TestCase):
             (source / f"f{i}.txt").write_text("same plaintext")
         nonces, wrapped, cipher_hashes = [], [], []
         for i in range(8):
-            manifest = write_file_bundle(source, self.root / f"n{i}", self.keyring)
+            manifest = write_file_bundle(source, self.root / f"n{i}", self.keyring, schema=SCHEMA_V2)
             nonces += [r["nonce"] for r in manifest["files"]] + [manifest["wrap_nonce"]]
             wrapped.append(manifest["wrapped_dek"])
             cipher_hashes.append(manifest["files"][0]["ciphertext_sha256"])

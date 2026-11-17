@@ -248,6 +248,15 @@ describe("operations contract", () => {
     expect(Operations.parse(value).backup).not.toHaveProperty("age_seconds");
   });
 
+  it("parses chunked v3 backup metadata and still rejects unknown bundle schemas", () => {
+    const value = structuredClone(operationsHealthy);
+    value.backup = { ...operationsHealthy.backup, bundle_schema: "wasl-file-backup-v3-chunked" } as typeof value.backup;
+    expect(Operations.parse(value).backup).toMatchObject({ bundle_schema: "wasl-file-backup-v3-chunked" });
+    const unknown = structuredClone(operationsHealthy) as unknown as { backup: Record<string, unknown> };
+    unknown.backup.bundle_schema = "wasl-file-backup-v9";
+    expect(Operations.safeParse(unknown).success).toBe(false);
+  });
+
   it.each([
     ["nats", "unreachable"],
     ["queue", "unavailable"],

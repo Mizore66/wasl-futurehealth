@@ -162,6 +162,14 @@ def _aead(key, label: str) -> AESGCM:
     return AESGCM(key)
 
 
+def encrypt_with_nonce(dek: bytes, nonce: bytes, aad: bytes, plaintext: bytes) -> bytes:
+    """Encrypt under a caller-derived nonce. Only for a fresh per-bundle data key with nonces unique within it."""
+    aead = _aead(dek, "data key")
+    if not isinstance(nonce, bytes) or len(nonce) != NONCE_BYTES:
+        raise ValueError("encryption nonce is malformed")
+    return aead.encrypt(nonce, plaintext, aad)
+
+
 def encrypt_payload(dek: bytes, aad: bytes, plaintext: bytes) -> tuple[bytes, bytes]:
     aead = _aead(dek, "data key")
     nonce = os.urandom(NONCE_BYTES)
@@ -178,21 +186,28 @@ def decrypt_payload(dek: bytes, aad: bytes, nonce: bytes, ciphertext: bytes) -> 
         raise ValueError("payload authentication failed: wrong key or modified data") from None
 
 
-def wrap_dek(entry: dict, key_id: str, dek: bytes) -> tuple[str, str]:
+def _wrap_aad(key_id: str, schema: str | None) -> bytes:
+    """v2 keeps its original wrap AAD; later schemas bind their own name so a wrapped key cannot cross formats."""
+    if schema is None:
+        return WRAP_AAD_PREFIX + key_id.encode()
+    return schema.encode() + b"|" + key_id.encode()
+
+
+def wrap_dek(entry: dict, key_id: str, dek: bytes, schema: str | None = None) -> tuple[str, str]:
     wrap_key, _ = _entry_keys(entry)
     _check_key_id(key_id)
     _aead(dek, "data key")
     nonce = os.urandom(NONCE_BYTES)
-    wrapped = AESGCM(wrap_key).encrypt(nonce, dek, WRAP_AAD_PREFIX + key_id.encode())
+    wrapped = AESGCM(wrap_key).encrypt(nonce, dek, _wrap_aad(key_id, schema))
     return _b64(nonce), _b64(wrapped)
 
 
-def unwrap_dek(entry: dict, key_id: str, wrap_nonce: str, wrapped: str) -> bytes:
+def unwrap_dek(entry: dict, key_id: str, wrap_nonce: str, wrapped: str, schema: str | None = None) -> bytes:
     wrap_key, _ = _entry_keys(entry)
     _check_key_id(key_id)
     nonce = _unb64(wrap_nonce, NONCE_BYTES, "wrap nonce")
     blob = _unb64(wrapped, KEY_BYTES + 16, "wrapped data key")
     try:
-        return AESGCM(wrap_key).decrypt(nonce, blob, WRAP_AAD_PREFIX + key_id.encode())
+        return AESGCM(wrap_key).decrypt(nonce, blob, _wrap_aad(key_id, schema))
     except InvalidTag:
         raise ValueError("data key unwrap failed: wrong key or modified bundle") from None
