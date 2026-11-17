@@ -437,6 +437,7 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "decline_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
     if (e.kind === "completed_elsewhere") return `Reported done elsewhere: ${d.procedure ?? "procedure"} at ${d.provider ?? "another provider"} · ${d.retrieval_owner ?? "coordinator"} to retrieve the record by ${d.retrieval_due ?? "a date not recorded"}`;
     if (e.kind === "retrieval_outcome") return `Record retrieval ended: ${retrievalOutcomeWords(d.outcome)} · follow-up resumes`;
+    if (e.kind === "retrieved_report") return `Retrieved report from ${d.provider ?? "another provider"} sent for identity and evidence review · not a closure`;
     if (e.kind === "initial_notification" || e.kind === "receipt_acknowledgement") return communicationWords(e.kind, d);
     return `Coordinator action: ${plain(e.kind)}`;
   }
