@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"time"
 )
@@ -58,18 +59,14 @@ type teachBackConsultation struct {
 // teachBackCallback is one nurse-callback task. Patient-sourced tasks are keyed
 // by the attempt event that opened them; engine-sourced tasks by their escalation.
 type teachBackCallback struct {
+	staffTask
 	ID            string
 	Source        string
 	State         string
-	Owner         string
-	OpenedAt      string
-	DueAt         string
 	Consultations []teachBackConsultation
-	ResolvedBy    string
-	ResolvedAt    string
 }
 
-func (cb *teachBackCallback) open() bool { return cb.ResolvedAt == "" }
+func (cb *teachBackCallback) open() bool { return cb.taskOpen() }
 
 func (cb *teachBackCallback) escalation() string { return "teachback_" + cb.State + "_callback" }
 
@@ -119,10 +116,8 @@ func (c *apiCase) recordTeachBackAttempt(answerID, state, at, hash string) {
 	if !effect.Callback || c.openPatientCallback() != nil {
 		return
 	}
-	opened, _ := time.Parse(time.RFC3339Nano, at)
 	c.callbacks = append(c.callbacks, &teachBackCallback{
-		ID: hash, Source: teachBackSourcePatient, State: state, Owner: RoleCoordinator, OpenedAt: at,
-		DueAt: workingDaysAfter(opened, teachBackCallbackWorkDays).Format(time.RFC3339),
+		ID: hash, Source: teachBackSourcePatient, State: state, staffTask: newStaffTask(RoleCoordinator, at, teachBackCallbackWorkDays),
 	})
 }
 
@@ -153,7 +148,7 @@ func (s *apiServer) callbacksLocked(c *apiCase) []*teachBackCallback {
 func engineCallback(id string) *teachBackCallback {
 	for state, effect := range teachBackEffects {
 		if effect.Callback && id == teachBackSourceEngine+"/teachback_"+state+"_callback" {
-			return &teachBackCallback{ID: id, Source: teachBackSourceEngine, State: state, Owner: RoleCoordinator}
+			return &teachBackCallback{ID: id, Source: teachBackSourceEngine, State: state, staffTask: staffTask{Owner: RoleCoordinator}}
 		}
 	}
 	return nil
@@ -169,19 +164,8 @@ func (c *apiCase) callback(id string) *teachBackCallback {
 }
 
 func (s *apiServer) callbackRowLocked(cb *teachBackCallback, staff bool) map[string]interface{} {
-	row := map[string]interface{}{"id": cb.ID, "source": cb.Source, "state": cb.State, "owner": cb.Owner, "status": "open"}
-	if cb.OpenedAt != "" {
-		row["opened_at"] = cb.OpenedAt
-	}
-	if cb.DueAt != "" {
-		row["due_at"] = cb.DueAt
-		if due, err := time.Parse(time.RFC3339, cb.DueAt); err == nil && cb.open() {
-			row["overdue"] = !s.clock().Before(due)
-		}
-	}
-	if !cb.open() {
-		row["status"], row["resolved_at"] = "resolved", cb.ResolvedAt
-	}
+	row := map[string]interface{}{"id": cb.ID, "source": cb.Source, "state": cb.State}
+	cb.taskFields(row, s.clock(), staff)
 	if staff {
 		row["escalation"] = cb.escalation()
 		consultations := []map[string]interface{}{}
@@ -189,9 +173,6 @@ func (s *apiServer) callbackRowLocked(cb *teachBackCallback, staff bool) map[str
 			consultations = append(consultations, map[string]interface{}{"outcome": k.Outcome, "actor": k.Actor, "role": k.Role, "at": k.At, "event": k.Event})
 		}
 		row["consultations"] = consultations
-		if cb.ResolvedBy != "" {
-			row["resolved_by"] = cb.ResolvedBy
-		}
 	}
 	return row
 }
@@ -205,7 +186,8 @@ func (s *apiServer) callbacksViewLocked(c *apiCase) []map[string]interface{} {
 }
 
 // servedEscalationsLocked is the canonical list without teach-back callback
-// escalations that a coordinator resolved, plus any open patient callback.
+// escalations that a coordinator resolved, plus any open patient callback or
+// patient contest (patient_task.go).
 func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 	out := []string{}
 	if c.last != nil {
@@ -219,6 +201,11 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 	for _, cb := range c.callbacks {
 		if cb.Source == teachBackSourcePatient && cb.open() {
 			out = append(out, cb.escalation())
+		}
+	}
+	for _, r := range c.requests {
+		if r.open() && !slices.Contains(out, patientContestEscalation) {
+			out = append(out, patientContestEscalation)
 		}
 	}
 	sort.Strings(out)
@@ -276,7 +263,7 @@ func (s *apiServer) applyTeachBackConsultationLocked(c *apiCase, ev map[string]i
 	}
 	cb.Consultations = append(cb.Consultations, teachBackConsultation{Outcome: sstr(ev, "outcome"), Actor: sstr(ev, "actor"), Role: sstr(ev, "role"), At: sstr(ev, "at"), Event: sstr(ev, "hash")})
 	if sstr(ev, "outcome") == outcomeUnderstoodOnCall {
-		cb.ResolvedBy, cb.ResolvedAt = sstr(ev, "actor"), sstr(ev, "at")
+		cb.resolve(sstr(ev, "actor"), sstr(ev, "at"))
 	}
 }
 

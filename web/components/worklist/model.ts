@@ -12,6 +12,7 @@ import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
 import { isActionable, obligationWords, openObligation } from "./obligation";
+import { patientContestWords, patientTaskOverdue } from "./patient-tasks";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -363,6 +364,13 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     words.status = callback;
     words.next = "Call to explain the next step, then record the consultation outcome on the case page";
   }
+  const contest = callback ? null : patientContestWords(c);
+  if (contest) {
+    awaitingNext = false;
+    view = "waiting";
+    words.status = contest.status;
+    words.next = contest.next;
+  }
   return {
     id: c.id,
     short: shortId(c.id),
@@ -376,7 +384,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     next: words.next,
     days: due ? Math.floor(now - due.fromDay) : elapsedDays(c, now),
     deadline: due ? Math.round(due.dueDay - due.fromDay) : overdueClockDays(c),
-    overdue: (due ? due.state === "overdue" : c.overdue) || (c.teach_back_callback?.status === "open" && c.teach_back_callback.overdue === true),
+    overdue: (due ? due.state === "overdue" : c.overdue) || patientTaskOverdue(c),
     referralDay: c.referral_day,
     procedure: PROCEDURE[c.programme],
     textsAllowed: c.consent === "granted" && !contactBlocked,

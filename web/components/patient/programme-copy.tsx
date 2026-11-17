@@ -1,11 +1,11 @@
 import type { PatientScript } from "./programme";
 
 /** Marks gated English programme copy so screen readers and fonts treat it as English inside a translated phone. */
-export function scriptLang(script: PatientScript): { lang?: "en"; dir?: "ltr" } {
+export function scriptLang(script: Pick<PatientScript, "gated">): { lang?: "en"; dir?: "ltr" } {
   return script.gated ? { lang: "en", dir: "ltr" } : {};
 }
 
-export function GatedNote({ script }: { script: PatientScript }) {
+export function GatedNote({ script }: { script: Pick<PatientScript, "gated"> }) {
   if (!script.gated) return null;
   return (
     <p role="note" lang="en" dir="ltr" className="m-0 rounded-control bg-raised p-3 text-[14px] leading-[1.6] text-muted">

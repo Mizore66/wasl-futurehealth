@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySection, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { RecoveryCard } from "@/components/case/recovery-card";
+import { DispositionCard } from "@/components/disposition/disposition-card";
+import { dispositionContext } from "@/components/disposition/model";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
@@ -202,6 +204,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
 
         <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-gap">
           <ReasonCard detail={detail} />
+          <DispositionCard ctx={dispositionContext(detail)} />
           <ProgrammeFindingCard detail={detail} />
           <IdentitiesCard detail={detail} />
           {latest && <ReadersCard detail={detail} ev={latest} id="readers" />}

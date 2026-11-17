@@ -768,6 +768,43 @@ func TestPersonOverlapRequiresActionableIntentsAcrossProgrammes(t *testing.T) {
 	}
 }
 
+// A real run stamps the canonical policy (v7.go policyName), whose key=value segments the export op-code pattern
+// rejects; the projection must still load so /api/people and the person_journey fixture work on materialised runs.
+func TestPersonProjectionAcceptsCanonicalPolicyStamp(t *testing.T) {
+	s, _ := newPersonTestAPI(t)
+	path := filepath.Join(s.run, "identity_clusters.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, policy := range []string{"v7strict+cal=true+guard=true+tau=0.99", "v7strict+cal=true+guard=true+tau=0.99+ltt+linkfloor=0.5+autoaudit=0.1"} {
+		var doc map[string]interface{}
+		if err := json.Unmarshal(raw, &doc); err != nil {
+			t.Fatal(err)
+		}
+		doc["policy"] = policy
+		b, _ := json.Marshal(doc)
+		if err := os.WriteFile(path, b, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.loadPersonProjection(); err != nil {
+			t.Fatalf("canonical policy %q rejected: %v", policy, err)
+		}
+	}
+	for _, policy := range []string{"v7strict+cal=true <script>", "v7strict+x=../../etc", "V7STRICT"} {
+		var doc map[string]interface{}
+		json.Unmarshal(raw, &doc)
+		doc["policy"] = policy
+		b, _ := json.Marshal(doc)
+		if err := os.WriteFile(path, b, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.loadPersonProjection(); err == nil {
+			t.Fatalf("malformed policy %q accepted", policy)
+		}
+	}
+}
+
 func TestPersonFixtureSelectsActionableCrossProgrammePerson(t *testing.T) {
 	s, _ := newPersonTestAPI(t)
 	s.fixtures = map[string]string{}
