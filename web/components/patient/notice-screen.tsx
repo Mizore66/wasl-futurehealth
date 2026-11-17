@@ -5,6 +5,7 @@ import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { GatedNote, scriptLang } from "./programme-copy";
 import { patientScript } from "./programme";
 import { RightsRequests } from "./rights-requests";
+import { ElsewhereReport } from "./elsewhere-report";
 
 export function NoticeScreen({ lang, journey }: { lang: Lang; journey: PatientJourney }) {
   const t = DICTS[lang];
@@ -45,6 +46,8 @@ export function NoticeScreen({ lang, journey }: { lang: Lang; journey: PatientJo
             </div>
           </div>
         </section>
+
+        <ElsewhereReport lang={lang} procedure={journey.next_step === "colonoscopy" ? "colonoscopy" : ""} />
 
         <BottomSheet
           title={n.rights}

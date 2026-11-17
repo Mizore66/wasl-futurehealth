@@ -212,6 +212,24 @@ export const LdctFinding = z.looseObject({
   within_deadline: z.boolean().optional(),
 });
 
+/**
+ * A closed LDCT parent whose follow-up scan needs its own tracking request (`followup_needs_tracking`), linked to the
+ * child case that tracks it (`tracked`), or `untracked` until that request exists. The parent stays closed; the
+ * obligation, its next step and its clock belong to the child.
+ */
+export const LdctTracking = z.looseObject({
+  status: z.enum(["tracked", "untracked"]),
+  followup_report: z.string(),
+  followup_label: z.enum(LDCT_LABELS),
+  followup_next_step: z.string().optional(),
+  child_case_id: z.string().optional(),
+  child_state: z.string().optional(),
+  child_closed: z.boolean().optional(),
+  child_overdue: z.boolean().optional(),
+  child_due_day: z.number().optional(),
+  child_deadline_day: z.number().optional(),
+});
+
 export const IfhasFinding = z.looseObject({
   screen_report: z.string().optional(),
   screen_label: z.string().regex(IFHAS_SCREEN_LABEL).optional(),
@@ -281,6 +299,8 @@ export const OverlayReconciliation = z.looseObject({
   report_ref: z.string().optional(),
   retrieval_owner: z.string(),
   retrieval_due: z.string(),
+  /** Server-clock task status: `due` until retrieval_due has passed (UTC), then `overdue`; `ended` once resumed. */
+  retrieval_status: z.enum(["due", "overdue", "ended", "evidence_closed"]).optional(),
   actor: z.string().optional(),
   retrieval: z.looseObject({ at: z.string(), event: z.string().default(""), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().optional() }).optional(),
 });
@@ -586,6 +606,7 @@ export const ActiveCaseSummary = z.looseObject({
   dr: DrFinding.optional(),
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
+  ldct_tracking: LdctTracking.optional(),
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
   api_overlay: ApiOverlay.optional(),

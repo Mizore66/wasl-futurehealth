@@ -54,7 +54,9 @@ type Link = {
   otp?: string;
   rights: RightsRow[];
   handoff: { status: string; acknowledged_at?: string };
+  elsewhere?: ElsewhereReport;
 };
+type ElsewhereReport = Record<string, string> & { status: "pending" | "resumed"; retrieval_status: string; request_id: string; fingerprint: string };
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
@@ -194,6 +196,41 @@ async function outcome(req: IncomingMessage, res: ServerResponse) {
   return send(res, 201, { meta: {}, replayed: false, handoff: handoffView(link) });
 }
 
+const ELSEWHERE_FIELDS = new Set(["request_id", "procedure", "performed", "provider", "report_ref"]);
+const elsewhereView = (link: Link) => {
+  const r = link.elsewhere;
+  const report = r && Object.fromEntries(Object.entries(r).filter(([k]) => k !== "request_id" && k !== "fingerprint"));
+  return { meta: {}, report: report ?? null, can_report: !r || r.status === "resumed" };
+};
+
+/** Mirrors pipeline/api_patient_elsewhere.go: strict fields, server-set source and due date, idempotent by request_id. */
+async function elsewhere(req: IncomingMessage, res: ServerResponse) {
+  const link = authorized(req);
+  if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
+  if (Date.now() >= link.expires) return send(res, 410, { error: "patient link has expired" });
+  if (req.method === "GET") return send(res, 200, elsewhereView(link));
+  const input = JSON.parse(await body(req)) as Record<string, string>;
+  link.bodies.push(input);
+  if (Object.keys(input).some((k) => !ELSEWHERE_FIELDS.has(k)) || !input.procedure || !input.provider || !/^\d{4}-\d{2}(-\d{2})?$/.test(input.performed ?? "")) {
+    return send(res, 400, { error: "body must be {request_id, procedure, performed, provider, report_ref?}" });
+  }
+  const fingerprint = JSON.stringify([input.procedure, input.performed, input.provider, input.report_ref ?? ""]);
+  const r = link.elsewhere;
+  if (r && r.request_id === input.request_id) {
+    if (r.fingerprint !== fingerprint) return send(res, 409, { error: "request_id was already used for a different patient request" });
+    return send(res, 200, { meta: {}, receipt: r.receipt, replayed: true, completed_elsewhere: elsewhereView(link) });
+  }
+  if (r?.status === "pending") return send(res, 409, { error: "already being checked", conflict: "reconciliation", completed_elsewhere: elsewhereView(link) });
+  const at = new Date().toISOString();
+  const due = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+  link.elsewhere = {
+    receipt: hash(`${link.token}:elsewhere:${randomUUID()}`), submitted_at: at, status: "pending", reported_by: "patient", source: "patient",
+    procedure: input.procedure, performed: input.performed, provider: input.provider, ...(input.report_ref ? { report_ref: input.report_ref } : {}),
+    retrieval_due: due, retrieval_status: "due", request_id: input.request_id, fingerprint,
+  };
+  return send(res, 201, { meta: {}, receipt: link.elsewhere.receipt, replayed: false, completed_elsewhere: elsewhereView(link) });
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
   if (url.pathname === "/__health") return send(res, 200, { ok: true });
@@ -235,6 +272,14 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     link.handoff = { status: input.mode };
     return send(res, 200, { ok: true });
   }
+  if (url.pathname === "/__mock/elsewhere-outcome" && req.method === "POST") {
+    // The coordinator's retrieval_outcome on the staff API, simulated here.
+    const input = JSON.parse(await body(req)) as { token: string; mode: string };
+    const link = links.get(input.token);
+    if (!link?.elsewhere) return send(res, 404, { error: "no report on this link" });
+    link.elsewhere = { ...link.elsewhere, status: "resumed", retrieval_status: "ended", outcome: input.mode, ended_at: new Date().toISOString() };
+    return send(res, 200, { ok: true });
+  }
   if (url.pathname === "/__mock/stale" && req.method === "POST") {
     const input = JSON.parse(await body(req)) as { token: string };
     const link = links.get(input.token);
@@ -245,6 +290,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   }
   if (url.pathname === "/api/patient/verification" || url.pathname === "/api/patient/requests") return rights(req, res, url.pathname);
   if (url.pathname === "/api/patient/outcome") return outcome(req, res);
+  if (url.pathname === "/api/patient/completed-elsewhere") return elsewhere(req, res);
   if (url.pathname !== "/api/patient/journey") return send(res, 404, { error: "not found" });
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });

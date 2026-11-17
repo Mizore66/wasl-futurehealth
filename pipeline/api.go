@@ -116,6 +116,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/patient/verification", s.patientVerification)
 	mux.HandleFunc("/api/patient/requests", s.patientRequestsRoute)
 	mux.HandleFunc("/api/patient/outcome", s.patientOutcomeRoute)
+	mux.HandleFunc("/api/patient/completed-elsewhere", s.patientElsewhereRoute)
 	mux.HandleFunc("/api/operations", s.getOperations)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
@@ -710,6 +711,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 			ld.ClockAnchor = &clock
 		}
 		m["ldct"] = &ld // list/fixture routes also need aliases; never mutate the signed decision
+	}
+	if tracking := s.ldctTracking(c); tracking != nil { // closed parent -> child tracking request (issue #113)
+		m["ldct_tracking"] = tracking
 	}
 	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
 		m["ifhas"] = c.last.Ifhas
@@ -1773,6 +1777,7 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 		if full {
 			summary["actor"] = r["actor"]
 		}
+		summary["retrieval_status"] = retrievalStatus(r, s.clock(), c.Closed)
 		if ended, ok := r["retrieval"].(map[string]interface{}); ok {
 			summary["status"] = "resumed"
 			retrieval := map[string]interface{}{"at": ended["at"], "event": ended["event"], "outcome": ended["outcome"]}
@@ -2292,6 +2297,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["type"] == teachBackCallbackEventType {
 		if err := s.replayTeachBackCallback(ev); err != nil {
 			return fmt.Errorf("teach-back callback: %v", err)
+		}
+		return nil
+	}
+	if ev["type"] == patientElsewhereEventType {
+		if err := s.replayPatientElsewhere(ev); err != nil {
+			return fmt.Errorf("patient completion report: %v", err)
 		}
 		return nil
 	}
