@@ -35,8 +35,8 @@ export async function GET(request: Request): Promise<Response> {
     /* Consume only the transaction bound to this browser before discovery or token exchange. */
     const correlation = correlationCookie(request);
     if (!correlation) return oidcFailureRedirect(request);
-    const store = defaultSessionStore(config.sessionDb);
-    const transaction = store.consumeLogin(state, correlation);
+    const store = await defaultSessionStore(config.sessionStore);
+    const transaction = await store.consumeLogin(state, correlation);
     if (!transaction) return oidcFailureRedirect(request);
     returnTo = transaction.returnTo;
     const nonce = nonceForVerifier(transaction.pkceVerifier);
@@ -48,7 +48,7 @@ export async function GET(request: Request): Promise<Response> {
     const identity = await exchangeAuthorizationCode(provider, config, callback, transaction, state, nonce);
     if (identity.issuer !== config.issuer || !mappedCredentialToken(config, identity.subject)) return oidcFailureRedirect(request, returnTo);
     const credential = config.subjectMap.get(identity.subject)!;
-    const { sessionId, session } = store.createSession({ issuer: identity.issuer, subject: identity.subject, credential });
+    const { sessionId, session } = await store.createSession({ issuer: identity.issuer, subject: identity.subject, credential });
 
     const destination = new URL(returnTo, config.redirectUri);
     const response = NextResponse.redirect(destination, 303);
