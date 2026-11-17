@@ -67,7 +67,14 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
  * It never falls back to the assigned reviewer tokens, which are initial readers. `referrer` is the referring GP's
  * clinician credential for answering a returned referral, bound to a different actor from the receiving unit's clinician.
  */
-export type WebCredential = "web_reviewer" | "referrer";
+export type WebCredential = "web_reviewer" | ReferrerCredential;
+
+/**
+ * The referring clinician credential per referring provider: one verified actor answers for one provider's returned
+ * referrals (WASL_REFERRING_CLINICIANS maps each actor to one provider). `referrer` is the Al Mushrif GP (CRC),
+ * `referrer_lung` the outpatient imaging centre (lung work-up), `referrer_dr` primary-care eye screening (DR).
+ */
+export type ReferrerCredential = "referrer" | "referrer_lung" | "referrer_dr";
 
 /** The web server has no token for this credential: a configuration fault here, not an API outage. */
 export class MissingCredentialError extends Error {
@@ -401,12 +408,18 @@ export async function postReferralResponse(id: string, response: z.input<typeof 
 
 /**
  * The responsible referrer's answer to the returned packet `packet`, appended with the server-side referring-clinician
- * credential (WASL_API_REFERRER_TOKEN). The API checks that token's actor belongs to the case's referring provider.
+ * credential of the referring provider (WASL_API_REFERRER_TOKEN, WASL_API_REFERRER_LUNG_TOKEN or WASL_API_REFERRER_DR_TOKEN). The API checks that token's actor belongs to the case's referring provider.
  */
-export async function postReferrerResponse(id: string, packet: string, response: z.input<typeof ReferrerResponseRequest>, expectedHead: string): Promise<ActionResult> {
+export async function postReferrerResponse(
+  id: string,
+  packet: string,
+  response: z.input<typeof ReferrerResponseRequest>,
+  expectedHead: string,
+  credential: ReferrerCredential = "referrer",
+): Promise<ActionResult> {
   const body = ReferrerResponseRequest.safeParse(response);
   if (!body.success) return { ok: false, status: 400, error: body.error.message };
-  return postAnswer(id, "referrer-response", "referrer", { ...body.data, referral_id: id, packet, expected_head: expectedHead }, [REFERRER_TOKEN_MISSING, REFERRER_TOKEN_REFUSED]);
+  return postAnswer(id, "referrer-response", credential, { ...body.data, referral_id: id, packet, expected_head: expectedHead }, [REFERRER_TOKEN_MISSING, REFERRER_TOKEN_REFUSED]);
 }
 
 async function postAnswer(id: string, route: string, credential: Role | WebCredential, payload: object, [missing, refused]: [string, string]): Promise<ActionResult> {
@@ -446,6 +459,28 @@ export async function postTeachBackCallback(id: string, callback: string, outcom
   if (res.status === 201) return { ok: true };
   if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
   const e = ApiError.safeParse(await res.json().catch(() => undefined));
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
+export type PatientContestOutcome = "decision_upheld" | "decision_revised";
+export type PatientContestResult = { ok: true; hash: string } | { ok: false; status: number; error: string };
+
+/**
+ * Resolve a patient contest (#167) as the signed-in credential only, never a server-held token. The API binds the token
+ * to its role and actor, allows only `senior_clinician`, and refuses every reviewer who signed the case.
+ */
+export async function postPatientContestResolutionWithToken(id: string, contest: string, outcome: PatientContestOutcome, token: string): Promise<PatientContestResult> {
+  if (apiMode() !== "live") throw new Error("postPatientContestResolutionWithToken needs WASL_API_URL: fixtures mode cannot append contest resolutions");
+  const res = await fetch(
+    `${liveBase()}/api/cases/${encodeURIComponent(id)}/patient-contest`,
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contest, outcome }) }, token),
+  );
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) {
+    const event = z.looseObject({ event: z.looseObject({ hash: z.string() }) }).safeParse(json);
+    return { ok: true, hash: event.success ? event.data.event.hash : "" };
+  }
+  const e = z.looseObject({ error: z.string() }).safeParse(json);
   return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
 }
 

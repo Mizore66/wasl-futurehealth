@@ -1,5 +1,6 @@
 """The published person journey must demonstrate an actionable cross-programme workflow (issue #161)."""
 import copy
+import json
 import pathlib
 import sys
 import unittest
@@ -53,6 +54,14 @@ class ShowcaseErrors(unittest.TestCase):
         other = copy.deepcopy(journey())
         other["person"]["id"] = "person_" + "d" * 64
         self.assertTrue(any("same person" in e for e in showcase_errors(journey(), other)))
+
+
+class PublishedJourney(unittest.TestCase):
+    def test_committed_copies_are_one_actionable_cross_programme_person(self):
+        root = pathlib.Path(__file__).resolve().parent.parent
+        docs, web = (json.loads((root / p).read_text()) for p in ("docs/api-samples/person_journey.json", "web/data/api/person_journey.json"))
+        self.assertEqual(showcase_errors(docs, web), [])
+        self.assertEqual(docs, web)
 
 
 if __name__ == "__main__":

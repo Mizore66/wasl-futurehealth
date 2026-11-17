@@ -13,23 +13,48 @@ export type TranslationReview =
   | { status: "unreviewed"; note: string }
   | { status: "reviewed"; reviewer: string; reviewedOn: string; record: string };
 
-/** Copy whose meaning changed after the drafts were written; each draft must be retranslated from it before review. */
-const STALE_SINCE_157 =
-  "notice.rightsItems[2] still carries the withdrawn unchanged-care promise (#157) and must be retranslated from the revised English.";
+/**
+ * English source copy whose meaning changed and still needs clinical sign-off (#157). A translation of copy whose
+ * source meaning is unsigned cannot be patient-approved, whatever its own review says: record the sign-off here
+ * (who, when, where it is filed) before any draft's `reviewed` entry can take effect.
+ */
+export type SourceSignOff =
+  | { status: "pending"; copy: string; note: string }
+  | { status: "signed_off"; copy: string; clinician: string; signedOn: string; record: string };
+
+export const SOURCE_SIGN_OFF: readonly SourceSignOff[] = [
+  {
+    status: "pending",
+    copy: "notice.rightsItems[2]",
+    note: "Revised refusal wording (#157): may decline and question; respectful treatment and other care; consequences and alternatives with the doctor. Its meaning needs clinical review.",
+  },
+];
+
+/** Each draft's refusal line was redrafted from the revised English by the development team, not a qualified translator. */
+const REDRAFTED_157 =
+  "notice.rightsItems[2] was redrafted from the revised English refusal wording (#157) without qualified translator review; it needs that review after the English meaning is clinically signed off.";
 
 export const TRANSLATION_REVIEW: Record<Lang, TranslationReview> = {
   en: {
     status: "source",
     note: "English is the source copy the translations are made from. Its revised refusal wording (#157) still needs clinical sign-off; see docs/FRONTEND-PLAN.md.",
   },
-  ar: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${STALE_SINCE_157}` },
-  ur: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${STALE_SINCE_157}` },
-  fil: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${STALE_SINCE_157}` },
+  ar: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${REDRAFTED_157}` },
+  ur: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${REDRAFTED_157}` },
+  fil: { status: "unreviewed", note: `Drafted for the design; no qualified medical translation review. ${REDRAFTED_157}` },
 };
 
+/**
+ * The English source is served (it is the corrected copy). A translation is served only with a documented qualified
+ * review AND once every changed source meaning it translates is clinically signed off.
+ */
+export function approvedWith(review: TranslationReview, signOffs: readonly SourceSignOff[]): boolean {
+  if (review.status === "source") return true;
+  return review.status === "reviewed" && signOffs.every((s) => s.status === "signed_off");
+}
+
 export function patientApproved(lang: Lang): boolean {
-  const review = TRANSLATION_REVIEW[lang];
-  return review.status === "source" || review.status === "reviewed";
+  return approvedWith(TRANSLATION_REVIEW[lang], SOURCE_SIGN_OFF);
 }
 
 /** Languages patient routes may serve, in selector order. */

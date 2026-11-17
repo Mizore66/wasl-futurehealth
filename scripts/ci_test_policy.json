@@ -7,7 +7,8 @@
       "TestAPIBookingSupport",
       "TestHL7RoundTripCohort",
       "TestAPIIntegrityMaterializedRunCounts",
-      "TestAPIIntegrityMaterializedRunCounts/copied_materialized_run"
+      "TestAPIIntegrityMaterializedRunCounts/copied_materialized_run",
+      "TestAPIReviewHoldSourceOpensWholeWithoutAddingASignature"
     ]
   },
   "allowed_skips": {
@@ -23,14 +24,16 @@
       "TestAPIReviewRBACAndAppendOnly": "Materialized API fixtures are generated only in the integration lane.",
       "TestAPIBookingSupport": "Materialized booking output is generated only in the integration lane.",
       "TestHL7RoundTripCohort": "Materialized HL7 cohort is generated only in the integration lane.",
-      "TestRecoveryPythonGeneratorContract": "NumPy is installed only in Python-equipped lanes; the cross-language generator contract skips when it is unavailable."
+      "TestRecoveryPythonGeneratorContract": "NumPy is installed only in Python-equipped lanes; the cross-language generator contract skips when it is unavailable.",
+      "TestAPIReviewHoldSourceOpensWholeWithoutAddingASignature": "Materialized API fixtures are generated only in the integration lane."
     },
     "go-race": {
       "TestAPIFixturesAndContracts": "Materialized API fixtures are generated only in the integration lane.",
       "TestAPIReviewRBACAndAppendOnly": "Materialized API fixtures are generated only in the integration lane.",
       "TestAPIBookingSupport": "Materialized booking output is generated only in the integration lane.",
       "TestHL7RoundTripCohort": "Materialized HL7 cohort is generated only in the integration lane.",
-      "TestRecoveryPythonGeneratorContract": "NumPy is installed only in Python-equipped lanes; the cross-language generator contract skips when it is unavailable."
+      "TestRecoveryPythonGeneratorContract": "NumPy is installed only in Python-equipped lanes; the cross-language generator contract skips when it is unavailable.",
+      "TestAPIReviewHoldSourceOpensWholeWithoutAddingASignature": "Materialized API fixtures are generated only in the integration lane."
     }
   },
   "owner_doc": "docs/CI.md"

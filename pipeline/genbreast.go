@@ -38,6 +38,14 @@ const breastSeedOffset = 0x0b2e
 // breastShareSeedOffset: the order in which women who already hold another loop are drawn (-breastshare).
 const breastShareSeedOffset = 0x0b5e
 
+// breastShowcaseSeedOffset: the RNG stream of the extra -breastshowcase loops.
+const breastShowcaseSeedOffset = 0x0b5c
+
+// BreastShowcase (-breastshowcase N, gen): after every other breast draw, add one breast loop for each of the first N
+// women (by Qid, aged 40-90) whose CRC and cervical loops both end open at an outreach-raising step. It exists so the
+// published cross-programme person journey (docs/api-samples/person_journey.json) has a deterministic source; 0 = off.
+var BreastShowcase int
+
 // BreastShare (-breastshare, gen): when the women with no other loop run out, breast loops continue with women who
 // already hold a loop of another programme. Off by default.
 var BreastShare bool
@@ -78,6 +86,7 @@ type BreastTruth struct {
 	Notes      []string  `json:"notes,omitempty"`   // assessment document ids in time order
 	Within     bool      `json:"within_deadline,omitempty"`
 	SharedWith []string  `json:"shared_with,omitempty"` // -breastshare: the woman's other programmes (her other loops)
+	Showcase   bool      `json:"showcase,omitempty"`    // -breastshowcase: an extra loop for the published cross-programme journey
 }
 
 type breastGen struct {
@@ -248,8 +257,7 @@ func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Tru
 		id := g.report(hosp.ID, y, t, arr, "breast-assess", d.Text, d.ID, label, "")
 		return id, arr <= TEnd
 	}
-	for k := 0; k < nBreast; k++ {
-		p := pick()
+	breastLoop := func(p *Person, showcase bool) {
 		S := -120 + 210*r.Float64()
 		label := g.drawCat(true)
 		coded := label != "TR" && r.Float64() < .7
@@ -261,7 +269,7 @@ func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Tru
 			"category": []interface{}{map[string]string{"text": "breast-screening"}}, "authoredOn": dayToTS(S),
 			"code":           map[string]interface{}{"text": "Breast screening mammogram: recall to the diagnostic breast assessment unit if BI-RADS 0, 3, 4 or 5 (DoH 3.8.3)"},
 			"supportingInfo": []interface{}{map[string]string{"reference": "DiagnosticReport/" + sid}}}, x)
-		bt := &BreastTruth{Label: label, FirstLabel: label, Coded: coded, Screen: sid, Screens: []string{sid}, GradeDay: S, Adherence: "n/a", SharedWith: sharedWith(p)}
+		bt := &BreastTruth{Label: label, FirstLabel: label, Coded: coded, Screen: sid, Screens: []string{sid}, GradeDay: S, Adherence: "n/a", SharedWith: sharedWith(p), Showcase: showcase}
 		lt := &LoopTruth{Loop: loop, Qid: p.Qid, Cc: p.Cc, Origin: p.Origin, ArSrc: p.ArSrc, Prov: src.ID, Hosp: hosp.ID, SRDay: S,
 			ScriptSR: x.script, NotifDay: -1, AckDay: -1, RefDay: -1, RefStatus: "none", Prog: "breast", IndexDay: S,
 			ProcDay: -1, EcState: "none", TBState: "none", Unowned: TEnd-S > OwnerGrace, Breast: bt}
@@ -351,6 +359,9 @@ func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Tru
 		lt.Dropoff = breastDropoff(state, rec.Action, false)
 		lt.Pathway = "breast_" + bt.Adherence + "_" + state
 	}
+	for k := 0; k < nBreast; k++ {
+		breastLoop(pick(), false)
+	}
 	// distractors: other women's assessment documents at the hospital (a document for the wrong woman must never close a loop)
 	for k := 0; k < nBreast/8; k++ {
 		p := pick()
@@ -359,6 +370,50 @@ func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Tru
 		id, _ := note(p, t, lab)
 		tr.Distract[id] = true
 	}
+	if BreastShowcase > 0 { // -breastshowcase: extra loops, own RNG stream, after every draw above (which it leaves unchanged)
+		r = rand.New(rand.NewSource(seed + breastShowcaseSeedOffset))
+		g.r = r
+		for _, p := range breastShowcaseWomen(all, tr, BreastShowcase) {
+			breastLoop(p, true)
+		}
+	}
+}
+
+// breastShowcaseWomen picks, by Qid, the first n women aged 40-90 with no breast loop whose CRC and cervical loops both
+// end the window open at a step that raises a patient outreach intent (booked, no-show, rejected referral; for CRC also an
+// inadequate colonoscopy). The selection reads only the generator's own truth: whether the pipeline later links her
+// registrations, records the intents as actionable and lets her consent through is decided by the run, not here.
+func breastShowcaseWomen(all []*Person, tr *Truth, n int) []*Person {
+	outreach := map[string]map[string]bool{
+		"crc":      {"booked": true, "no_show": true, "referral_rejected": true, "inadequate": true},
+		"cervical": {"booked": true, "no_show": true, "referral_rejected": true},
+	}
+	ready, breast := map[string]map[string]bool{}, map[string]bool{}
+	for _, lt := range tr.Loops {
+		if lt.Prog == "breast" {
+			breast[lt.Qid] = true
+		}
+		if outreach[lt.Prog][lt.State] {
+			if ready[lt.Qid] == nil {
+				ready[lt.Qid] = map[string]bool{}
+			}
+			ready[lt.Qid][lt.Prog] = true
+		}
+	}
+	var out []*Person
+	seen := map[string]bool{}
+	for _, p := range all {
+		if a := personAge(p, 0); p.Sex != "F" || a < 40 || a > 90 || seen[p.Qid] || breast[p.Qid] || !ready[p.Qid]["crc"] || !ready[p.Qid]["cervical"] {
+			continue
+		}
+		seen[p.Qid] = true
+		out = append(out, p)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Qid < out[j].Qid })
+	if len(out) > n {
+		out = out[:n]
+	}
+	return out
 }
 
 func breastDirFor(brDir, reportsPath string) string {

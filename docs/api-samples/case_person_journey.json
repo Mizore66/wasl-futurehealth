@@ -1,0 +1,530 @@
+{
+ "agent_investigations": [],
+ "agent_provenance": {
+  "cached": false,
+  "experimental": false,
+  "prompt_ver": ""
+ },
+ "api_contact": {
+  "history": [],
+  "overlay": {
+   "canonical_consent": "granted",
+   "canonical_unchanged": true,
+   "contact_blocked": false,
+   "events": 0,
+   "mode": "demo",
+   "status": "none",
+   "demo_pending_consent": "",
+   "last_event_hash": "",
+   "note": "",
+   "revision": "redacted"
+  }
+ },
+ "api_overlay": {
+  "actions": 0,
+  "booking": {
+   "mode": "simulated",
+   "reservation_id": null,
+   "reservation_version": null,
+   "revision": 0,
+   "status": "unreserved",
+   "updated_at": null,
+   "updated_event": null
+  },
+  "contact_outcomes": [],
+  "head": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3",
+  "ledger_status": "ok"
+ },
+ "api_reviews": [],
+ "booking": {
+  "data_mode": "simulated",
+  "reason": "case does not need a colonoscopy slot at the end of the run",
+  "status": "not_applicable"
+ },
+ "case": {
+  "api_overlay": {
+   "actions": 0,
+   "booking": {
+    "mode": "simulated",
+    "reservation_id": null,
+    "reservation_version": null,
+    "revision": 0,
+    "status": "unreserved",
+    "updated_at": null,
+    "updated_event": null
+   },
+   "head": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3",
+   "ledger_status": "ok"
+  },
+  "closed": false,
+  "closed_day": 0,
+  "consent": "granted",
+  "deadline_day": 31,
+  "decisions": 8,
+  "dropoff": "in_progress",
+  "fixture": "person_journey",
+  "id": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+  "overdue": false,
+  "programme": "crc",
+  "provider": "ahs-mushrif",
+  "referral_day": 90.162,
+  "review": "signed",
+  "state": "booked"
+ },
+ "current": {
+  "ack_day": 94.4822337962963,
+  "contact": "granted",
+  "deadline": 31,
+  "dropoff": "in_progress",
+  "ec_state": "none",
+  "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d95-p1",
+  "in_seq": 45029,
+  "loop": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+  "notif_day": 92.4702662037037,
+  "now": 95,
+  "outreach": [
+   {
+    "basis": "eid",
+    "ev": "skmc-endo/Appointment/SKM-appt-173",
+    "guard": "human_confirmed",
+    "kind": "appointment_reminder",
+    "p_cal": 1,
+    "pair": [
+     "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+     "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+    ],
+    "released": true
+   }
+  ],
+  "overdue": false,
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "proc_day": -1,
+  "prog": "crc",
+  "prov": "ahs-mushrif",
+  "ref_day": 95.72796296296296,
+  "ref_status": "accepted",
+  "reported_closed": false,
+  "sig": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3",
+  "sr_day": 90.16199074074073,
+  "state": "booked",
+  "tb_state": "understood",
+  "unowned": false
+ },
+ "decisions": [
+  {
+   "consent_log": [],
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 37873,
+   "outreach": [],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "413c4dada6c28ec6874bf7db1e2061b5c7cab14b4e66f51aa41cf7f8aeabd42d",
+   "state": "open",
+   "decision_id": "redacted-decision-1",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 37886,
+   "outreach": [],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "b9c5c71431aa634884d789b6f1b24fc169ab87a30a3bdcb7567970965144abfb",
+   "state": "open",
+   "decision_id": "redacted-decision-2",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 39890,
+   "outreach": [],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "1e873f3752555f7f3b72e5925eb7f6791a27f8c30f831b1b3a5e6cc9f9cafda5",
+   "state": "open",
+   "decision_id": "redacted-decision-3",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 42499,
+   "outreach": [
+    {
+     "basis": "eid",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "guard": "held",
+     "kind": "appointment_reminder",
+     "p_cal": 1,
+     "pair": [
+      "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+      "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+     ],
+     "released": false,
+     "suppress": "second_identifier_unconfirmed"
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "88e3228b15fed055d0d8805cbc9219af6efc51773a7b6c7014066e37bdde4181",
+   "state": "booked",
+   "decision_id": "redacted-decision-4",
+   "owner": ""
+  },
+  {
+   "consent_log": [
+    {
+     "contact": "granted",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "from": "other",
+     "kind": "appointment_reminder",
+     "to": "released"
+    }
+   ],
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 42502,
+   "outreach": [
+    {
+     "basis": "eid",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "guard": "human_confirmed",
+     "kind": "appointment_reminder",
+     "p_cal": 1,
+     "pair": [
+      "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+      "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+     ],
+     "released": true
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "459bef72dec19d3ce6cd8745f53bd344260523ac27c60b2b0d04c3f2d7a6f811",
+   "state": "booked",
+   "decision_id": "redacted-decision-5",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d91-p1",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 45025,
+   "outreach": [
+    {
+     "basis": "eid",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "guard": "human_confirmed",
+     "kind": "appointment_reminder",
+     "p_cal": 1,
+     "pair": [
+      "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+      "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+     ],
+     "released": true
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "f46942a1701fc11ccbe146f2e5f215a7675c15d195f9e15a68e7849dc394cae3",
+   "state": "booked",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d93-p1",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 45029,
+   "outreach": [
+    {
+     "basis": "eid",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "guard": "human_confirmed",
+     "kind": "appointment_reminder",
+     "p_cal": 1,
+     "pair": [
+      "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+      "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+     ],
+     "released": true
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "96f7a6c61bc3a8323cc36fed6ff92406de3d0d46f1efcfc14191e10b695be8aa",
+   "state": "booked",
+   "owner": ""
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-930@tick-d95-p1",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 45029,
+   "outreach": [
+    {
+     "basis": "eid",
+     "ev": "skmc-endo/Appointment/SKM-appt-173",
+     "guard": "human_confirmed",
+     "kind": "appointment_reminder",
+     "p_cal": 1,
+     "pair": [
+      "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+      "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+     ],
+     "released": true
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "428f1c7c41d5bb69999bc249fdffd38dafe3a989566fb4fa1420ca9306b130e3",
+   "state": "booked",
+   "owner": ""
+  }
+ ],
+ "evidence": [],
+ "holds": [],
+ "identities": [
+  {
+   "provider": "ahs-mushrif",
+   "role": "referral",
+   "registration": ""
+  },
+  {
+   "provider": "bsu-screen",
+   "role": "downstream",
+   "registration": ""
+  },
+  {
+   "provider": "noor-endo",
+   "role": "downstream",
+   "registration": ""
+  },
+  {
+   "provider": "skmc-endo",
+   "role": "downstream",
+   "registration": ""
+  }
+ ],
+ "links": [],
+ "outreach": [
+  {
+   "basis": "eid",
+   "ev": "skmc-endo/Appointment/SKM-appt-173",
+   "guard": "human_confirmed",
+   "kind": "appointment_reminder",
+   "p_cal": 1,
+   "pair": [
+    "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+    "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+   ],
+   "released": true
+  }
+ ],
+ "review_items": [
+  {
+   "chain": [
+    {
+     "body": {
+      "basis": "eid",
+      "event": "skmc-endo/Appointment/SKM-appt-173",
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+      "p_cal": 1,
+      "pair": [
+       "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+       "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+      ]
+     },
+     "hash": "30ef9b247f3a0ca41c96e4516dac2dc6abc334f3de3ac54b8dd941b1476a8359",
+     "prev": "genesis",
+     "type": "outreach_guard"
+    }
+   ],
+   "conf": 0,
+   "head": "30ef9b247f3a0ca41c96e4516dac2dc6abc334f3de3ac54b8dd941b1476a8359",
+   "in_seq": 42499,
+   "item": "rv-cb612f5ded99ee6d",
+   "kinds": [
+    "link"
+   ],
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+   "overdue": false,
+   "p": 1,
+   "pair": [
+    "reg_2c4008336ae84c64fe1825145b7a6bad7657cd7f173d3d68d55e2da4462a3260",
+    "reg_bc9173dd41bab0479fcc3c6ce91057b68cb09e53e6c803c8accb71a6a56deedf"
+   ],
+   "reason": "second_identifier",
+   "quote": "",
+   "report": "",
+   "verdict": ""
+  }
+ ],
+ "review_ledger": {
+  "events_applied": 0,
+  "status": "ok"
+ },
+ "signoffs": [
+  {
+   "item": "rv-cb612f5ded99ee6d",
+   "kinds": [
+    "link"
+   ],
+   "link": "same",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+   "reads": [
+    "r1",
+    "r2"
+   ],
+   "role": "reviewer",
+   "wrong": false,
+   "verdict": "",
+   "reviewer": "",
+   "evidence": ""
+  }
+ ],
+ "timeline": [
+  {
+   "arrival_day": 29.7667,
+   "day": 29.7499,
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-500",
+   "provider": "ahs-mushrif",
+   "raw_sha": "0b4999b2758845fc",
+   "seq": 15487,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 29.9171,
+   "day": 29.9171,
+   "id": "ahs-mushrif/Consent/consent-1096",
+   "provider": "ahs-mushrif",
+   "raw_sha": "7d8e2635d0b0be6a",
+   "seq": 15567,
+   "source": "fhir",
+   "status": "permit",
+   "type": "Consent"
+  },
+  {
+   "arrival_day": 36.3827,
+   "category": "referral-intake",
+   "day": 36.3627,
+   "id": "noor-endo/ServiceRequest/NOO-intake-176",
+   "provider": "noor-endo",
+   "raw_sha": "9d5fc29cc185a3c0",
+   "seq": 17607,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 42.9178,
+   "day": 59.4707,
+   "id": "noor-endo/Appointment/NOO-appt-126",
+   "provider": "noor-endo",
+   "raw_sha": "4bcbf3cab5ac9b7f",
+   "seq": 19862,
+   "source": "fhir",
+   "status": "booked",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 49.4262,
+   "category": "breast-screen",
+   "day": 48.8264,
+   "id": "bsu-screen/DiagnosticReport/BSU-br-77",
+   "provider": "bsu-screen",
+   "raw_sha": "ecbc577ccc9d90e9",
+   "seq": 22331,
+   "source": "fhir",
+   "status": "final",
+   "type": "DiagnosticReport"
+  },
+  {
+   "arrival_day": 49.4534,
+   "category": "breast-screening",
+   "day": 48.8264,
+   "id": "bsu-screen/ServiceRequest/BSU-sr-74",
+   "provider": "bsu-screen",
+   "raw_sha": "c5d7d9652702361d",
+   "seq": 22337,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 49.7522,
+   "day": 49.7522,
+   "id": "bsu-screen/Consent/breast-consent-BSU-sr-74",
+   "provider": "bsu-screen",
+   "raw_sha": "a664f5dd9e06725d",
+   "seq": 22423,
+   "source": "fhir",
+   "status": "permit",
+   "type": "Consent"
+  },
+  {
+   "arrival_day": 60.0527,
+   "day": 59.4707,
+   "id": "noor-endo/Appointment/NOO-appt-126",
+   "provider": "noor-endo",
+   "raw_sha": "0737cc2c2b81e100",
+   "seq": 26136,
+   "source": "fhir",
+   "status": "noshow",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 90.1648,
+   "day": 90.162,
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-930",
+   "provider": "ahs-mushrif",
+   "raw_sha": "9b9a8d4448357b0f",
+   "seq": 37873,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 95.748,
+   "category": "referral-intake",
+   "day": 95.728,
+   "id": "skmc-endo/ServiceRequest/SKM-intake-289",
+   "provider": "skmc-endo",
+   "raw_sha": "0af43494c6970373",
+   "seq": 39890,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 105.0569,
+   "day": 120.5328,
+   "id": "skmc-endo/Appointment/SKM-appt-173",
+   "provider": "skmc-endo",
+   "raw_sha": "93f8276fa4b4b48e",
+   "seq": 42499,
+   "source": "fhir",
+   "status": "booked",
+   "type": "Appointment"
+  }
+ ],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-17T09:31:47Z",
+  "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
+  "policy": "redacted-internal-audit",
+  "reader_model": "not-disclosed",
+  "run": "redacted-internal-audit"
+ }
+}

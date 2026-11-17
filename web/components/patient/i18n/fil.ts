@@ -3,8 +3,9 @@
  * This Filipino copy was drafted for the design and has not been reviewed by a
  * qualified medical translator. Do not show it to patients until it has been.
  * Patient routes are gated by TRANSLATION_REVIEW in ./review.ts (#133).
- * notice.rightsItems[2] predates the revised English refusal wording (#157) and
- * must be retranslated from it before review.
+ * notice.rightsItems[2] was redrafted from the revised English refusal wording
+ * (#157) by the development team, not a qualified medical translator. It needs
+ * that review, and the English meaning needs clinical sign-off, before patients.
  */
 import type { PatientDict } from "./types";
 
@@ -40,7 +41,8 @@ export const fil: PatientDict = {
     rightsItems: [
       "Protektado ang iyong privacy. Ikaw at ang iyong care team lang ang nakakakita ng resulta mo.",
       "Puwede kang humingi ng mas malinaw na paliwanag, sa telepono o sa sarili mong wika.",
-      "Puwede kang tumanggi sa follow-up o kuwestiyunin ang anumang desisyon. Hindi magbabago ang pangangalaga sa iyo.",
+      // #157: redrafted from the revised English; not translator-reviewed.
+      "Puwede kang tumanggi sa follow-up o kuwestiyunin ang anumang desisyon. Kung tatanggi ka, igagalang ka pa rin at makakakuha ka pa rin ng ibang pangangalagang kailangan mo. Kausapin ang iyong doktor tungkol sa maaaring kahulugan ng pagtanggi para sa iyo at kung ano pa ang ibang pagpipilian mo.",
     ],
     rightsNote: "Isang tao mula sa care team ang tumitingin sa bawat hiling mo, hindi awtomatikong sistema.",
   },

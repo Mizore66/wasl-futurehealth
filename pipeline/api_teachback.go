@@ -199,8 +199,14 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 			if communicationAnswers(c, e) { // a staff-recorded notification or receipt answers it (api_communication.go)
 				continue
 			}
+			if referrerAnswers(c, e) { // the responsible referrer's resolving answer to the hand-off packet (api_referrer.go)
+				continue
+			}
 			out = append(out, e)
 		}
+	}
+	if s.staffAckOverdueLocked(c) && !slices.Contains(out, "no_ack_7d") {
+		out = append(out, "no_ack_7d") // the engine's acknowledgement SLA, counted from the staff-recorded notification
 	}
 	for _, cb := range c.callbacks {
 		if cb.Source == teachBackSourcePatient && cb.open() {

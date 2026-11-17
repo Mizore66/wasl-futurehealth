@@ -104,6 +104,9 @@ WRONGEID="${WASL_WRONGEID:-0}"; WRONGREF="${WASL_WRONGREF:-0}"
 [ "$WRONGREF" = 0 ] || { GARGS+=(-wrongref "$WRONGREF"); RUN="$RUN-wrongref$WRONGREF"; }
 # WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women with another loop
 [ "${WASL_BREASTSHARE:-0}" = 0 ] || GARGS+=(-breastshare)
+# WASL_SHOWCASE=N (gen, default 0): after the other breast loops, one breast loop each for the first N women whose CRC and
+# cervical loops both end open at an outreach step: the deterministic source of the published cross-programme person journey
+[ "${WASL_SHOWCASE:-0}" = 0 ] || { GARGS+=(-breastshowcase "$WASL_SHOWCASE"); RUN="$RUN-showcase$WASL_SHOWCASE"; }
 [ "$LUNGSURV2" = 0 ] || [ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv2)
 [ "$LUNGSURVSTABLE" = 0 ] || GARGS+=(-lungsurvstable)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,

@@ -34,7 +34,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|backup-nats|restore-nats|verify-nats|check-nats")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|staffcomms|backup-nats|restore-nats|verify-nats|check-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -51,6 +51,22 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("built synthetic software fixture; not clinical evidence:", *out)
+		return
+	}
+	if cmd == "staffcomms" { // staff-recorded notification/receipt facts -> FHIR Communications in a NEW cohort (staff_communications.go)
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		run := fs.String("run", "", "run dir whose verified review ledger holds the staff facts")
+		data := fs.String("data", "", "source cohort dir (read only)")
+		out := fs.String("out", "", "NEW cohort directory (must not exist)")
+		fs.Parse(os.Args[2:])
+		if *run == "" || *data == "" || *out == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "staffcomms requires -run <run> -data <cohort> -out <new directory>")
+			os.Exit(2)
+		}
+		if err := runStaffComms(*run, *data, *out); err != nil {
+			fmt.Fprintln(os.Stderr, "staffcomms:", err)
+			os.Exit(1)
+		}
 		return
 	}
 	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
@@ -204,6 +220,7 @@ func main() {
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	breastShowcase := fs.Int("breastshowcase", 0, "gen: after the other breast loops, add one for each of the first N women whose CRC and cervical loops both end open at an outreach step (genbreast.go; published person journey)")
 	breastShare := fs.Bool("breastshare", false, "gen: when women with no other loop run out, breast loops continue with women who hold another programme's loop (genbreast.go)")
 	ldctN := fs.Int("ldct", 0, "gen: lung cancer screening LDCT loops (acr2022lungrads); 0 = no LDCT loops (other feeds byte-identical)")
 	ldctData := fs.String("ldctdata", "", "gen/ldctcache: LDCT corpus dir(s), comma-separated for ldctcache (default <reports dir>/../ldct)")
@@ -286,7 +303,7 @@ func main() {
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
-	BreastShare = *breastShare
+	BreastShare, BreastShowcase = *breastShare, *breastShowcase
 	DRRecallMsg, RejectedMsg, DRSeenLinkAsk = *drRecallMsg, *rejMsg, *drSeenLink
 	LinkContradictionDOB = *linkConfirmDOB
 	SecondIDContradictionConfirm = *secondIDConfirm
