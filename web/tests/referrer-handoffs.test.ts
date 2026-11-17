@@ -3,7 +3,9 @@ import { createElement, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
-import type { ReturnedPacket } from "@/components/worklist/returned-packets";
+import { returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
+import { CaseSummary, CurrentDecision } from "@/lib/api/schema";
+import handoffs from "@/data/referral-handoff-synthetic.json";
 import type { RespondResult } from "@/app/app/referrals/actions";
 
 const refresh = vi.fn();
@@ -16,9 +18,13 @@ const packet: ReturnedPacket = {
   short: "sr-1",
   head: "h3",
   packet: "ret-1",
+  source: "unit_return",
   unit: "SKMC endoscopy",
   unitId: "skmc-endo",
   reason: "Blood thinner plan missing",
+  recommendation: null,
+  advice: null,
+  urgent: true,
   infoRequested: ["anticoagulant_plan"],
   others: [{ id: "noor-endo", label: "Noor endoscopy" }],
   actBy: 112,
@@ -78,7 +84,7 @@ describe("ReferrerHandoffs", () => {
     await act(async () => radio("Re-refer to the same unit").click());
     await act(async () => button("Send answer").click());
     expect(answer).toHaveBeenCalledWith("case-1", "h3", "ret-1", { response: "re_refer", destination: "skmc-endo" });
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain("not this patient's referring GP");
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain("not this patient's referring clinician");
     expect(refresh).not.toHaveBeenCalled();
   });
 
@@ -89,5 +95,33 @@ describe("ReferrerHandoffs", () => {
     render([packet], false);
     expect(button("Send answer")).toBeUndefined();
     expect(host.textContent).toContain("need the live synthetic API");
+  });
+
+  it("answers a canonical lung work-up packet: same-unit re-referral only, no CRC copy", async () => {
+    const x = handoffs.find((h) => h.case.id.endsWith("RAD-sr-9101"))!;
+    const lung = returnedPacket(CaseSummary.parse(x.case), CurrentDecision.parse(x.current))!;
+    expect(lung).toMatchObject({ source: "canonical", unitId: "mafraq-rad", urgent: true, others: [], status: "awaiting_referrer", answer: null });
+    answer.mockResolvedValue({ ok: true });
+    act(() => root.render(createElement(ReferrerHandoffs, { packets: [lung], answer, referrer: "referrer" })));
+    expect(host.textContent).toContain("PET/CT or tissue sampling");
+    expect(host.textContent).toContain("Urgent");
+    expect(host.textContent).not.toMatch(/FIT|Day 31|SKMC|colonoscopy|endoscopy|\bGP\b/);
+    expect([...host.querySelectorAll("label")].some((l) => l.textContent?.startsWith("Refer to another unit"))).toBe(false);
+    expect([...host.querySelectorAll("label")].some((l) => l.textContent?.startsWith("Send the information requested"))).toBe(false);
+    await act(async () => radio("Re-refer to the same unit").click());
+    await act(async () => button("Send answer").click());
+    expect(answer).toHaveBeenCalledWith(x.case.id, lung.head, lung.packet, { response: "re_refer", destination: "mafraq-rad" });
+  });
+
+  it("asks for every item a canonical DR packet requested before sending", async () => {
+    const x = handoffs.find((h) => h.case.id.endsWith("PHC-sr-9203"))!;
+    const dr = returnedPacket(CaseSummary.parse(x.case), CurrentDecision.parse(x.current))!;
+    expect(dr).toMatchObject({ source: "canonical", unitId: "eye-hosp", status: "medical_director", infoRequested: ["reason_for_referral", "relevant_clinical_information", "expected_outcome"] });
+    act(() => root.render(createElement(ReferrerHandoffs, { packets: [dr], answer, referrer: "referrer" })));
+    expect(host.textContent).toContain("Escalated to the medical director");
+    await act(async () => radio("Send the information requested").click());
+    await act(async () => button("Send answer").click());
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe("Fill in: Reason for referral, Relevant clinical information, Expected outcome.");
+    expect(answer).not.toHaveBeenCalled();
   });
 });

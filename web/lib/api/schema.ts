@@ -391,6 +391,8 @@ const ReferrerEntry = { at: z.string(), actor: z.string(), run_day: z.number(), 
 /** The hand-off packet a persisted return projects, on the canonical hand-off clock, with the referrer's answers. */
 export const ReferralHandoff = z.looseObject({
   referral_id: z.string(),
+  /** unit_return: the receiving unit's persisted return; canonical: the engine packet of the latest decision. */
+  source: z.enum(["unit_return", "canonical"]).optional(),
   reason_code: z.string(),
   responsible_clinician: z.string(),
   decided_by: z.string(),
@@ -649,7 +651,9 @@ export const ActiveCaseSummary = z.looseObject({
   ifhas: IfhasFinding.optional(),
   crc: CRCPlan.optional(),
   /** List marker of the canonical returned-referral packet: codes and days only; the packet itself is in the case detail. */
-  handoff: z.looseObject({ referral_id: z.string(), status: HandoffStatus, clinical_priority: z.string(), act_by: z.number() }).optional(),
+  handoff: z
+    .looseObject({ referral_id: z.string(), status: HandoffStatus, clinical_priority: z.string(), act_by: z.number(), referrer_answered: z.boolean().optional() })
+    .optional(),
   api_overlay: ApiOverlay.optional(),
   contact_state: ContactState.optional(),
   api_patient: CasePatient.optional(),
@@ -1098,6 +1102,7 @@ export const Booking = z.looseObject({
 
 /** The hand-off packet of a finally rejected referral (pipeline `HandoffPacket`); only the fields the referral inbox reads. */
 export const Handoff = z.looseObject({
+  referral_id: z.string().optional(),
   clinical_priority: z.string(),
   decided_at: z.number(),
   act_by: z.number(),

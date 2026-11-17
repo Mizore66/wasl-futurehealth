@@ -19,6 +19,7 @@ const SHARED = {
   WASL_API_WEB_REVIEWER_TOKEN: "synthetic-web-reviewer-00001",
   WASL_API_CLINICIAN_TOKEN: "synthetic-unit-clinician-0001",
   WASL_API_REFERRER_TOKEN: "synthetic-referrer-gp-000001",
+  WASL_API_REFERRER_DR_TOKEN: "synthetic-referrer-eye-00001",
   WASL_API_AUDITOR_TOKEN: "synthetic-shared-auditor-00001",
   WASL_API_COORDINATOR_TOKEN: "synthetic-shared-coord-000001",
 };
@@ -36,12 +37,51 @@ let cases: Record<string, CaseState>;
 let failNext: number | null;
 let posts: number;
 
+/*
+ * #154/#155: a canonical DR packet the eye clinic returned (the engine's packet, not a unit answer through the API), from
+ * the synthetic controls pipeline/referral_handoff_fixture_test.go serves. The mock projects the referrer's answers onto
+ * api_overlay.referral_handoff as pipeline/api_referrer.go does and leaves `current.handoff` untouched.
+ */
+const handoffControls = JSON.parse(readFileSync(path.join(process.cwd(), "data", "referral-handoff-synthetic.json"), "utf8")) as { case: Entry; current: Entry }[];
+const drControl = handoffControls.find((x) => (x.case.id as string).endsWith("PHC-sr-9203"))!;
+const drId = drControl.case.id as string;
+const drPacket = (drControl.current.handoff as Entry).referral_id as string;
+let dr: { head: string; events: Entry[]; ack: Entry | null; resolved: Entry | null };
+
 function reset() {
   cases = Object.fromEntries(ids.map((id, i) => [id, { head: hex(String(i + 1)), events: [], referral: null, ack: null, resolved: null }]));
+  dr = { head: hex("d"), events: [], ack: null, resolved: null };
   failNext = null;
   posts = 0;
 }
 reset();
+
+function drSummary() {
+  const ov = drControl.case.api_overlay as Entry;
+  const h: Entry = { ...(ov.referral_handoff as Entry) };
+  if (dr.ack) h.acknowledgement = dr.ack;
+  if (dr.resolved) Object.assign(h, { referrer_response: { ...dr.resolved, supplied_info: undefined }, acted_at: 120, status: "referrer_acted" });
+  return { ...drControl.case, api_overlay: { ...ov, head: dr.head, actions: dr.events.length, referral_handoff: h } };
+}
+
+function drResponse(body: Entry) {
+  if (body.expected_head !== dr.head) return { status: 409, body: { meta, error: "stale expected_head: the case changed since it was read", conflict: "head", current_head: dr.head } };
+  if (body.referral_id !== drId || body.packet !== drPacket) return { status: 400, body: { meta, error: "packet must be this case's returned referral packet" } };
+  if (dr.resolved || (body.response === "acknowledge" && dr.ack)) return { status: 409, body: { meta, error: "the referrer has already answered", conflict: "handoff_state" } };
+  const requested = (drControl.current.handoff as Entry).info_requested as string[];
+  const given = (body.supplied_info ?? {}) as Record<string, string>;
+  if (body.response === "supply_info" && (Object.keys(given).length !== requested.length || requested.some((k) => !given[k]?.trim()))) return { status: 400, body: { meta, error: "supplied_info must answer every requested item" } };
+  const at = new Date(Date.parse("2026-11-16T10:00:00Z") + ++posts * 1000).toISOString();
+  const data: Entry = { referral_id: drId, packet: drPacket, response: body.response, provider: "phc-retina", run_day: 120, ...(body.response === "supply_info" && { supplied_info: given }) };
+  const event: Entry = { type: "coordinator_action", kind: "referrer_response", case: drId, data, role: "clinician", actor: "Dr Khalid Al Shamsi", action: "respond_referral", at, head: dr.head, seq: dr.events.length + 1, mode: "demo" };
+  event.hash = createHash("sha256").update(JSON.stringify(event)).digest("hex");
+  dr.events.push(event);
+  dr.head = event.hash as string;
+  const entry = { response: body.response, at, actor: event.actor, run_day: 120, event: event.hash };
+  if (body.response === "acknowledge") dr.ack = entry;
+  else dr.resolved = entry;
+  return { status: 201, body: { meta, event, api_overlay: { ...drSummary().api_overlay, contact_outcomes: [], notes: [] }, note: "recorded in the review ledger" } };
+}
 
 function handoff(id: string) {
   const c = cases[id];
@@ -153,6 +193,17 @@ test.describe("referral answers, live mock", () => {
         return send(200, { failNext });
       }
       if (route === "/mock/state") return send(200, cases);
+      if (route === "/mock/dr") return send(200, dr);
+      if (route === "/api/cases" && url.searchParams.get("programme") === "diabetic_retinopathy") {
+        const list = url.searchParams.get("provider") === "phc-retina" && drId.includes(url.searchParams.get("q") ?? "") ? [drSummary()] : [];
+        return send(200, { meta, cases: list, total: list.length, limit: 500, offset: 0 });
+      }
+      if (route === `/api/cases/${drId}`) return send(200, { ...base, case: drSummary(), current: drControl.current, api_reviews: dr.events, api_overlay: { ...drSummary().api_overlay, contact_outcomes: [], notes: [] } });
+      if (route === `/api/cases/${drId}/referrer-response` && req.method === "POST") {
+        if (req.headers.authorization !== `Bearer ${SHARED.WASL_API_REFERRER_DR_TOKEN}`) return send(403, { meta, error: "only the case's responsible referring clinician may answer this hand-off" });
+        const result = drResponse(JSON.parse(raw));
+        return send(result.status, result.body);
+      }
       if (route === "/api/dashboard") return send(200, dashboard);
       if (route === "/api/fixtures") return send(200, { meta, fixtures: { evidence_closure: summary(ids[0]), false_closure_trap: summary(ids[1]), review_hold: summary(ids[2]) } });
       if (route === "/api/cases") {
@@ -255,7 +306,7 @@ test.describe("referral answers, live mock", () => {
 
     // The responsible referrer's view of the same packet.
     await page.goto(`${NEXT_URL}/app/referrals/returned`);
-    await expect(page.locator("[data-honesty=built]")).toContainText("GP answers: built");
+    await expect(page.locator("[data-honesty=built]")).toContainText("Referrer answers: built");
     const card = page.getByRole("article");
     await expect(card).toContainText("Returned bySKMC endoscopy");
     await expect(card).toContainText("ReasonBlood thinner plan missing");
@@ -278,6 +329,48 @@ test.describe("referral answers, live mock", () => {
 
     pane = await open(page, "772");
     await expect(page.getByRole("tab", { name: /^Waiting on GP 0/ })).toBeVisible();
+    await noSeriousAxe(page);
+  });
+
+  test("the eye-screening referrer answers a canonical DR packet; the inbox stops escalating it", async ({ page }) => {
+    const scope = "programme=diabetic_retinopathy&provider=phc-retina";
+    await page.goto(`${NEXT_URL}/app/referrals/returned?${scope}`);
+    await expect(page.getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
+    const card = page.getByRole("article");
+    await expect(card).toContainText("dilated eye examination at an eye clinic");
+    await expect(card).toContainText("Returned byEye clinic, regional hospital");
+    await expect(card).toContainText("Escalated to the medical director");
+    await expect(card).not.toContainText(/FIT|Day 31|SKMC|colonoscopy|endoscopy/);
+    await expect(card.getByRole("radio", { name: "Refer to another unit" })).toHaveCount(0);
+
+    await card.getByRole("button", { name: "Acknowledge the returned referral" }).click();
+    await expect(card.getByRole("status")).toContainText("Acknowledged");
+    await page.reload();
+    await expect(page.getByRole("article")).toContainText("AcknowledgedYes");
+    await expect(page.getByRole("article")).toContainText("Escalated to the medical director");
+
+    await page.getByRole("radio", { name: "Send the information requested" }).check();
+    await page.getByRole("article").getByRole("textbox").first().fill("R3A, new vessels on both eyes");
+    await page.getByRole("button", { name: "Send answer" }).click();
+    await expect(page.getByRole("article").getByRole("alert")).toContainText("Fill in: Relevant clinical information, Expected outcome.");
+    expect((await fetch(`http://127.0.0.1:${MOCK_PORT}/mock/dr`).then((r) => r.json())).resolved).toBeNull();
+    const boxes = page.getByRole("article").getByRole("textbox");
+    await boxes.nth(1).fill("HbA1c 9.1%, on insulin");
+    await boxes.nth(2).fill("Eye-clinic assessment and treatment plan");
+    await page.getByRole("button", { name: "Send answer" }).click();
+    await expect(page.getByRole("article").getByRole("status").first()).toContainText(/no longer waits on you|Nothing else is needed/);
+    await page.reload();
+    await expect(page.getByRole("article").getByRole("status")).toContainText("Send the information requested");
+    expect((await fetch(`http://127.0.0.1:${MOCK_PORT}/mock/dr`).then((r) => r.json())).events).toHaveLength(2);
+
+    // The receiving unit's view of the same packet: the referrer has acted, the canonical packet stays as it was.
+    await page.goto(`${NEXT_URL}/app/referrals?${scope}`);
+    await expect(page.getByRole("tab", { name: /^Waiting on referrer 0/ })).toBeVisible();
+    await page.getByRole("tab", { name: /^All 1/ }).click();
+    await page.getByText(/Returned by Eye clinic, regional hospital · the referrer has acted/).click();
+    const pane = page.getByRole("region", { name: "Open referral" });
+    await expect(pane).toContainText("The referrer has acted");
+    await expect(pane).toContainText("Send the information requested. Answered");
     await noSeriousAxe(page);
   });
 });

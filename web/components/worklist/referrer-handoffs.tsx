@@ -11,40 +11,51 @@ import { DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, typ
 
 const DISPOSITIONS = Object.entries(DISPOSITION_LABELS) as [Disposition, string][];
 const REFUSED: Record<number, string> = {
-  403: "your clinician account is not this patient's referring GP.",
+  403: "your clinician account is not this patient's referring clinician.",
   409: "the referral changed since this page loaded. Reload and answer again.",
   500: "the case ledger could not be read.",
 };
 const field = "w-full rounded-control border border-control bg-surface px-3 py-2 text-body text-ink";
 
-/** The referring GP's returned referrals: acknowledge the exact packet, then resolve it with one structured answer. */
+/** The referrer's returned referrals: acknowledge the exact packet, then resolve it with one structured answer. */
 export function ReferrerHandoffs({
   packets,
   answer,
+  referrer = "GP",
 }: {
   packets: ReturnedPacket[];
   answer?: (caseId: string, head: string, packet: string, response: ReferrerAnswer) => Promise<RespondResult>;
+  /** Who the packet waits on, in words: "GP" for CRC, "referrer" for lung work-up and DR. */
+  referrer?: string;
 }) {
   if (!packets.length) return <p className="m-0 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">No returned referrals are waiting on you.</p>;
   return (
     <ul className="m-0 flex list-none flex-col gap-gap p-0">
       {packets.map((p) => (
         <li key={p.id}>
-          <PacketCard p={p} answer={answer} />
+          <PacketCard p={p} answer={answer} referrer={referrer} />
         </li>
       ))}
     </ul>
   );
 }
 
-function PacketCard({ p, answer }: { p: ReturnedPacket; answer?: (caseId: string, head: string, packet: string, response: ReferrerAnswer) => Promise<RespondResult> }) {
+function PacketCard({
+  p,
+  answer,
+  referrer,
+}: {
+  p: ReturnedPacket;
+  answer?: (caseId: string, head: string, packet: string, response: ReferrerAnswer) => Promise<RespondResult>;
+  referrer: string;
+}) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
-  const words = handoffWords({ status: p.status, actBy: p.actBy });
+  const words = handoffWords({ status: p.status, actBy: p.actBy }, referrer);
   const built = referrerRequest(p, draft);
   const titleId = `packet-${p.short}`;
 
@@ -74,8 +85,15 @@ function PacketCard({ p, answer }: { p: ReturnedPacket; answer?: (caseId: string
       <dl className="m-0 mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
         {(
           [
+            ...(p.source === "canonical"
+              ? ([
+                  ["Recommendation", p.recommendation ?? "Not in the packet"],
+                  ["Priority", p.urgent ? "Urgent" : "Routine"],
+                ] as const)
+              : []),
             ["Returned by", p.unit],
             ["Reason", p.reason],
+            ...(p.source === "canonical" ? ([["Advice from the unit", p.advice ?? "Not in the packet"]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
             ["Acknowledged", p.acknowledged ? "Yes" : "Not yet"],
