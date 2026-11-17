@@ -55,3 +55,14 @@ func TestClosureSafetyChecksEvidenceOwnershipIndependentlyOfOutcome(t *testing.T
 		}
 	}
 }
+
+// #218: an H7 sweep row carries the ownership-aware loss next to the outcome-only false_closures, so a truth-closed
+// loop closed on another patient's report is visible to the H7 aggregation.
+func TestSweepRowReportsUnsafeClosuresAlongsideFalseClosures(t *testing.T) {
+	for _, prog := range []string{"crc", "cervical"} {
+		tr, final, repPK := evidenceFixture(prog)
+		acc := evalDecisions(final, tr, repPK)
+		row := withClosureLoss(map[string]interface{}{"false_closures": acc["false_closures"]}, acc)
+		wantSafety(t, prog+" sweep row", row, 1, 3, 2, 1)
+	}
+}
