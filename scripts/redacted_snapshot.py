@@ -374,7 +374,16 @@ _OPERATIONS_RECOVERY = _strict_read({key: None for key in (
     "generated_resources", "fhir_msgs", "expected_outputs", "live_outputs",
     "ingest_lost", "ingest_duplicates", "lost_outputs", "duplicate_outputs",
 )})
-_OPERATIONS_UNMEASURED = _strict_read({"status": None, "reason": None})
+_OPERATIONS_API_WINDOW = _strict_read({key: None for key in (
+    "scope", "source", "process_started_at", "start", "end", "start_bound", "length_seconds", "capacity", "samples",
+    "latest_sample_at",
+)}, optional=("latest_sample_at",))
+_OPERATIONS_API_LATENCY = _strict_read({key: None for key in ("status", "reason", "unit", "samples", "p50", "p90", "p99", "max")},
+                                       optional=("reason", "unit", "samples", "p50", "p90", "p99", "max"))
+_OPERATIONS_API_ERROR_RATE = _strict_read({key: None for key in (
+    "status", "reason", "definition", "samples", "server_errors", "client_errors", "rate",
+)}, optional=("reason", "definition", "samples", "server_errors", "client_errors", "rate"))
+_OPERATIONS_API_ROUTE = _strict_read({key: None for key in ("route", "requests", "server_errors", "client_errors")})
 
 
 _OPERATIONS_SCHEMA = {
@@ -393,7 +402,10 @@ _OPERATIONS_SCHEMA = {
         "latency_ms": _strict_read({key: None for key in ("n", "p50", "p90", "p99", "max")}),
         "recovery": _OPERATIONS_RECOVERY,
     }, optional=("reason", "latency_ms", "recovery")),
-    "api_measurements": _strict_read({"latency": _OPERATIONS_UNMEASURED, "error_rate": _OPERATIONS_UNMEASURED}),
+    "api_measurements": _strict_read({
+        "window": _OPERATIONS_API_WINDOW, "latency": _OPERATIONS_API_LATENCY, "error_rate": _OPERATIONS_API_ERROR_RATE,
+        "routes": _read_list(_OPERATIONS_API_ROUTE),
+    }, optional=("window", "routes")),
     "backup": _strict_read({
         "status": None, "source": None, "bundle_schema": None, "created_at": None,
         "age_seconds": None, "verification_status": None, "reason": None,

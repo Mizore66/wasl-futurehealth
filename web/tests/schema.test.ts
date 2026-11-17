@@ -193,6 +193,55 @@ describe("operations contract", () => {
     expect(parsed.backup).not.toHaveProperty("age_seconds");
   });
 
+  const measuredAPI: Required<z.input<typeof Operations>["api_measurements"]> & { window: { samples: number } } = {
+    window: {
+      scope: "current_api_process", source: "in_memory_request_observer", process_started_at: "2026-11-13T11:58:00Z",
+      start: "2026-11-13T11:58:00Z", end: "2026-11-13T12:00:00.5Z", start_bound: "process_start", length_seconds: 300, capacity: 4096,
+      samples: 11, latest_sample_at: "2026-11-13T11:59:59.25Z",
+    },
+    latency: { status: "measured", unit: "ms", samples: 11, p50: 50, p90: 90, p99: 100, max: 100 },
+    error_rate: { status: "measured", definition: "http_5xx_responses_per_request", samples: 11, server_errors: 2, client_errors: 2, rate: 0.181818 },
+    routes: [
+      { route: "/api/cases/:case", requests: 10, server_errors: 2, client_errors: 1 },
+      { route: "/api/operations", requests: 1, server_errors: 0, client_errors: 1 },
+    ],
+  };
+
+  it("parses a measured current API window with consistent sample counts", () => {
+    const value = structuredClone(operationsHealthy);
+    value.api_measurements = structuredClone(measuredAPI);
+    const parsed = Operations.parse(value);
+    expect(parsed.api_measurements.latency).toMatchObject({ status: "measured", p50: 50, p99: 100 });
+    expect(parsed.api_measurements.error_rate).toMatchObject({ status: "measured", rate: 0.181818 });
+  });
+
+  it("keeps an empty observed window unmeasured and rejects zero-filled metrics", () => {
+    const empty = structuredClone(operationsHealthy);
+    empty.api_measurements = {
+      window: { ...measuredAPI.window, samples: 0, latest_sample_at: undefined },
+      latency: { status: "unmeasured", reason: "no_requests_in_window" },
+      error_rate: { status: "unmeasured", reason: "no_requests_in_window" },
+      routes: [],
+    };
+    expect(Operations.safeParse(empty).success).toBe(true);
+    const zeroFilled = structuredClone(empty);
+    zeroFilled.api_measurements.latency = { status: "measured", unit: "ms", samples: 1, p50: 0, p90: 0, p99: 0, max: 0 };
+    expect(Operations.safeParse(zeroFilled).success).toBe(false);
+  });
+
+  it("rejects measured values without a window, mismatched counts and out-of-range rates", () => {
+    const noWindow = structuredClone(operationsHealthy);
+    noWindow.api_measurements = { latency: measuredAPI.latency, error_rate: measuredAPI.error_rate };
+    expect(Operations.safeParse(noWindow).success).toBe(false);
+    const mismatch = structuredClone(operationsHealthy);
+    mismatch.api_measurements = { ...structuredClone(measuredAPI), routes: [{ route: "/api/cases/:case", requests: 3, server_errors: 0, client_errors: 0 }] };
+    expect(Operations.safeParse(mismatch).success).toBe(false);
+    const rate = structuredClone(operationsHealthy);
+    rate.api_measurements = structuredClone(measuredAPI);
+    rate.api_measurements.error_rate = { status: "measured", definition: "http_5xx_responses_per_request", samples: 11, server_errors: 2, client_errors: 2, rate: 1.5 };
+    expect(Operations.safeParse(rate).success).toBe(false);
+  });
+
   it("parses unavailable backup metadata without an age", () => {
     const value = structuredClone(operationsHealthy);
     value.backup = { status: "unavailable", source: "recovery_bundle_manifest", reason: "backup_manifest_unreadable" };

@@ -38,8 +38,17 @@ const healthy = {
     recovery: { generated_resources: 100, fhir_msgs: 120, expected_outputs: 80, live_outputs: 79, ingest_lost: 1, ingest_duplicates: 2, lost_outputs: 3, duplicate_outputs: 4 },
   },
   api_measurements: {
-    latency: { status: "unmeasured", reason: "api_request_latency_not_recorded" },
-    error_rate: { status: "unmeasured", reason: "api_request_outcomes_not_recorded" },
+    window: {
+      scope: "current_api_process", source: "in_memory_request_observer", process_started_at: "2026-11-13T11:58:00Z",
+      start: "2026-11-13T11:58:00Z", end: "2026-11-13T12:00:00Z", start_bound: "process_start", length_seconds: 300, capacity: 4096,
+      samples: 11, latest_sample_at: "2026-11-13T11:59:59Z",
+    },
+    latency: { status: "measured", unit: "ms", samples: 11, p50: 50, p90: 90, p99: 100, max: 100 },
+    error_rate: { status: "measured", definition: "http_5xx_responses_per_request", samples: 11, server_errors: 2, client_errors: 2, rate: 0.181818 },
+    routes: [
+      { route: "/api/cases/:case", requests: 10, server_errors: 2, client_errors: 1 },
+      { route: "/api/operations", requests: 1, server_errors: 0, client_errors: 1 },
+    ],
   },
   backup: { status: "available", source: "recovery_bundle_manifest", bundle_schema: "wasl-file-backup-v2-aesgcm", created_at: "2026-11-13T11:59:57Z", age_seconds: 3, verification_status: "not_verified_by_api" },
 };
@@ -49,6 +58,12 @@ const degraded = {
   nats: { status: "unreachable", source: "nats_jetstream_consumer_info", reason: "jetstream_probe_failed" },
   queue: { status: "unavailable", source: "nats_jetstream_consumer_info", coverage: "known_durable_consumers", reason: "nats_unreachable", consumers: [] },
   run: { status: "unmeasured", scope: "completed_synthetic_run", source: "report7.json", reason: "run_metrics_not_recorded" },
+  api_measurements: {
+    window: { ...healthy.api_measurements.window, start_bound: "rolling_window", samples: 0, latest_sample_at: undefined },
+    latency: { status: "unmeasured", reason: "no_requests_in_window" },
+    error_rate: { status: "unmeasured", reason: "no_requests_in_window" },
+    routes: [],
+  },
   backup: { status: "unavailable", source: "recovery_bundle_manifest", reason: "backup_manifest_invalid" },
 };
 
@@ -62,6 +77,10 @@ const missing = {
     ],
   },
   run: { status: "unmeasured", scope: "completed_synthetic_run", source: "report7.json", reason: "run_metrics_not_recorded" },
+  api_measurements: {
+    latency: { status: "unmeasured", reason: "api_request_latency_not_recorded" },
+    error_rate: { status: "unmeasured", reason: "api_request_outcomes_not_recorded" },
+  },
   backup: { status: "unmeasured", source: "recovery_bundle_manifest", reason: "backup_manifest_not_configured" },
 };
 
@@ -155,8 +174,12 @@ test.describe("synthetic operational readiness, live mock", () => {
     await expect(panel.getByTestId("queue-FHIRIN-notifications")).toHaveText("2 pending, 1 unacknowledged");
     await expect(panel.getByTestId("queue-FHIR-prep")).toHaveText("3 pending, 0 unacknowledged");
     await expect(panel.getByTestId("queue-OUT-reviewer")).toHaveText("4 pending, 1 unacknowledged");
-    await expect(panel.getByTestId("api-latency")).toHaveText("Unmeasured");
-    await expect(panel.getByTestId("api-error-rate")).toHaveText("Unmeasured");
+    await expect(panel.getByTestId("api-latency")).toHaveText("p50 50 ms, p90 90 ms, p99 100 ms, max 100 ms");
+    await expect(panel.getByTestId("api-error-rate")).toHaveText("18.18% (2 of 11 requests returned a server error)");
+    await expect(panel.getByTestId("api-window-samples")).toHaveText("11");
+    await expect(panel.getByTestId("api-latest-sample").locator("time")).toHaveAttribute("datetime", "2026-11-13T11:59:59Z");
+    await expect(panel).toContainText("Shortened by an API restart");
+    await expect(panel.getByTestId("api-routes")).toContainText("/api/cases/:case");
     await expect(panel.getByTestId("run-latency-p50")).toHaveText("12.5 ms");
     await expect(panel.getByTestId("run-latency-p90")).toHaveText("30.25 ms");
     await expect(panel.getByTestId("run-source")).toHaveText(healthy.run.source);
@@ -180,6 +203,10 @@ test.describe("synthetic operational readiness, live mock", () => {
     await expect(panel.getByTestId("queue-FHIR-prep")).toHaveCount(0);
     await expect(panel.getByTestId("run-unmeasured")).toHaveText("Unmeasured");
     await expect(panel.getByTestId("run-latency-p50")).toHaveCount(0);
+    await expect(panel.getByTestId("api-window-samples")).toHaveText("0");
+    await expect(panel.getByTestId("api-latency")).toHaveText("Unmeasured");
+    await expect(panel.getByTestId("api-error-rate")).toHaveText("Unmeasured");
+    await expect(panel.getByTestId("api-latest-sample")).toHaveText("None in window");
     await expect(panel.getByTestId("backup-status")).toHaveText("unavailable");
     await expect(panel.getByTestId("backup-age")).toHaveText("Unavailable");
     await expect(panel).not.toContainText("0 pending");
@@ -209,6 +236,8 @@ test.describe("synthetic operational readiness, live mock", () => {
     await expect(panel.getByTestId("queue-FHIR-prep")).not.toContainText("0 pending");
     await expect(panel.getByTestId("run-unmeasured")).toHaveText("Unmeasured");
     await expect(panel.getByTestId("backup-age")).toHaveText("Unmeasured");
+    await expect(panel.getByTestId("api-latency")).toHaveText("Unmeasured");
+    await expect(panel.getByTestId("api-window-samples")).toHaveCount(0);
     await checkAccessibleAndNarrow(page, "missing");
   });
 

@@ -108,6 +108,7 @@ type apiServer struct {
 	pixels                  *pixelStore                                // content-verified synthetic photos; never serialized paths
 	sources                 map[string][]sourcePointer                 // exact source-log references; no report text cached
 	patientOTPs             map[string]patientOTP                      // link id -> simulated one-time code; memory only, never in the ledger
+	requests                *apiRequestObserver                        // in-memory request observations; nil when no observer wraps the handler
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -181,11 +182,14 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
-	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// Every served request, including authentication refusals, is observed for /api/operations. The observer is
+	// memory-only and created per process, so a restart begins with an empty window.
+	s.requests = newAPIRequestObserver(time.Now)
+	srv.Handler = s.requests.observe(auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		handler.ServeHTTP(w, r)
 		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
-	}))
+	})))
 	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
 	if (certFile == "") != (keyFile == "") {
 		panic("WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE must be set together")

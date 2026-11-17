@@ -1401,7 +1401,52 @@ const OperationsRun = z.discriminatedUnion("status", [
     reason: z.literal("run_metrics_not_recorded"),
   }),
 ]);
-const OperationsUnmeasured = z.strictObject({ status: z.literal("unmeasured"), reason: z.string() });
+const OperationsCount = z.number().int().nonnegative();
+const OperationsMS = z.number().nonnegative();
+/** Present only when the serving process wraps its handler in the in-memory request observer (issue #91). */
+const OperationsAPIWindow = z.strictObject({
+  scope: z.literal("current_api_process"), source: z.literal("in_memory_request_observer"),
+  process_started_at: OperationsInstant, start: OperationsInstant, end: OperationsInstant,
+  start_bound: z.enum(["rolling_window", "process_start", "capacity"]),
+  length_seconds: OperationsCount, capacity: OperationsCount, samples: OperationsCount,
+  latest_sample_at: OperationsInstant.optional(),
+});
+const OperationsAPILatency = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("measured"), unit: z.literal("ms"), samples: OperationsCount.positive(), p50: OperationsMS, p90: OperationsMS, p99: OperationsMS, max: OperationsMS }),
+  z.strictObject({ status: z.literal("unmeasured"), reason: z.enum(["api_request_latency_not_recorded", "no_requests_in_window"]) }),
+]);
+const OperationsAPIErrorRate = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("measured"), definition: z.literal("http_5xx_responses_per_request"), samples: OperationsCount.positive(),
+    server_errors: OperationsCount, client_errors: OperationsCount, rate: z.number().min(0).max(1),
+  }),
+  z.strictObject({ status: z.literal("unmeasured"), reason: z.enum(["api_request_outcomes_not_recorded", "no_requests_in_window"]) }),
+]);
+const OperationsAPIRoute = z.strictObject({ route: z.string(), requests: OperationsCount.positive(), server_errors: OperationsCount, client_errors: OperationsCount });
+const OperationsAPIMeasurements = z.strictObject({
+  window: OperationsAPIWindow.optional(), latency: OperationsAPILatency, error_rate: OperationsAPIErrorRate, routes: z.array(OperationsAPIRoute).optional(),
+}).superRefine((value, ctx) => {
+  const measured = value.latency.status === "measured" || value.error_rate.status === "measured";
+  const reasons = [value.latency, value.error_rate].flatMap((m) => (m.status === "unmeasured" ? [m.reason] : []));
+  if (!value.window) {
+    // Without an observer nothing can be measured, and only the "not recorded" reasons are truthful.
+    if (measured || value.routes || reasons.includes("no_requests_in_window")) ctx.addIssue({ code: "custom", message: "API measurements require an observation window" });
+    return;
+  }
+  if (reasons.some((reason) => reason !== "no_requests_in_window")) ctx.addIssue({ code: "custom", message: "an observed window reports no_requests_in_window when empty" });
+  if (value.window.samples === 0) {
+    if (measured || value.window.latest_sample_at || (value.routes?.length ?? 0) > 0) ctx.addIssue({ code: "custom", message: "an empty window must stay unmeasured" });
+    return;
+  }
+  if (value.latency.status !== "measured" || value.error_rate.status !== "measured" || !value.window.latest_sample_at) {
+    ctx.addIssue({ code: "custom", message: "a non-empty window must be measured" });
+    return;
+  }
+  const routed = (value.routes ?? []).reduce((sum, route) => sum + route.requests, 0);
+  if (value.latency.samples !== value.window.samples || value.error_rate.samples !== value.window.samples || routed !== value.window.samples) {
+    ctx.addIssue({ code: "custom", message: "API measurement sample counts disagree" });
+  }
+});
 const OperationsBackup = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("available"), source: z.literal("recovery_bundle_manifest"),
@@ -1425,10 +1470,7 @@ export const Operations = z.strictObject({
   nats: OperationsNATS,
   queue: OperationsQueue,
   run: OperationsRun,
-  api_measurements: z.strictObject({
-    latency: OperationsUnmeasured.extend({ reason: z.literal("api_request_latency_not_recorded") }),
-    error_rate: OperationsUnmeasured.extend({ reason: z.literal("api_request_outcomes_not_recorded") }),
-  }),
+  api_measurements: OperationsAPIMeasurements,
   backup: OperationsBackup,
 });
 
