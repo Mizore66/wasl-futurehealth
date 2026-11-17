@@ -449,6 +449,28 @@ export async function postTeachBackCallback(id: string, callback: string, outcom
   return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
 }
 
+export type PatientContestOutcome = "decision_upheld" | "decision_revised";
+export type PatientContestResult = { ok: true; hash: string } | { ok: false; status: number; error: string };
+
+/**
+ * Resolve a patient contest (#167) as the signed-in credential only, never a server-held token. The API binds the token
+ * to its role and actor, allows only `senior_clinician`, and refuses every reviewer who signed the case.
+ */
+export async function postPatientContestResolutionWithToken(id: string, contest: string, outcome: PatientContestOutcome, token: string): Promise<PatientContestResult> {
+  if (apiMode() !== "live") throw new Error("postPatientContestResolutionWithToken needs WASL_API_URL: fixtures mode cannot append contest resolutions");
+  const res = await fetch(
+    `${liveBase()}/api/cases/${encodeURIComponent(id)}/patient-contest`,
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contest, outcome }) }, token),
+  );
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) {
+    const event = z.looseObject({ event: z.looseObject({ hash: z.string() }) }).safeParse(json);
+    return { ok: true, hash: event.success ? event.data.event.hash : "" };
+  }
+  const e = z.looseObject({ error: z.string() }).safeParse(json);
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
 export type BookingActionResult =
   /** A 201 means the append happened. An unreadable body is null, never a licence to retry blindly. */
   | { ok: true; status: 201; response: ActionResponse | null }

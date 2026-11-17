@@ -1,4 +1,5 @@
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import type { ReactNode } from "react";
 import type { CaseDetail, PatientJourneyEvent } from "@/lib/api/schema";
 import { atWords } from "./words";
 
@@ -68,16 +69,29 @@ export function PatientJourneyCard({ detail }: { detail: CaseDetail }) {
   );
 }
 
-function requestState(row: NonNullable<CaseDetail["patient_requests"]>[number]): string {
+export function requestState(row: NonNullable<CaseDetail["patient_requests"]>[number]): string {
   if (row.kind === "explanation_requested") return "Explanation returned to the patient";
-  if (row.status === "resolved") return `Resolved: ${row.outcome === "decision_revised" ? "decision to be revised" : "decision upheld"}${row.resolved_by ? ` by ${row.resolved_by}` : ""}`;
-  return `${row.overdue ? "Overdue" : "Pending"} · ${row.owner ?? ""} review due ${row.due_at ? atWords(row.due_at) : ""}`;
+  if (row.status === "resolved") {
+    const by = row.resolved_by ? ` by ${row.resolved_by}` : "";
+    const at = row.resolved_at ? ` ${atWords(row.resolved_at)}` : "";
+    return `Resolved: ${row.outcome === "decision_revised" ? "decision to be revised" : "decision upheld"}${by}${at}`;
+  }
+  const due = row.due_at ? ` review ${row.overdue ? "overdue since" : "due"} ${atWords(row.due_at)}` : " review";
+  return `${row.overdue ? "Overdue" : "Pending"} · ${row.owner ?? "senior_clinician"}${due}`;
 }
 
+/**
+ * Live resolution slots for open patient contests, built server-side by `patient-contest-review.tsx` from the viewer's
+ * own reviewer session. `identity` is the sign-in prompt or the signed-in identity; `controls` exists only when someone
+ * is signed in. Snapshots pass `live: false` and get no controls. The shared web credential never resolves a contest.
+ */
+export type PatientContestReview = { live: boolean; identity?: ReactNode; controls?: (receipt: string, excluded: string[]) => ReactNode };
+
 /** Patient-submitted explanation requests and contests; distinct from staff undo/contest compensation events. */
-export function PatientRequestsCard({ detail }: { detail: CaseDetail }) {
+export function PatientRequestsCard({ detail, review }: { detail: CaseDetail; review?: PatientContestReview }) {
   const requests = detail.patient_requests ?? [];
   if (requests.length === 0) return null;
+  const anyOpen = requests.some((row) => row.kind === "contest_submitted" && row.status === "open");
   return (
     <section id="patient-requests" aria-labelledby="patient-requests-h" className="min-w-0 scroll-mt-4 rounded-card border border-line bg-surface p-4 md:p-pad">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -85,15 +99,21 @@ export function PatientRequestsCard({ detail }: { detail: CaseDetail }) {
         <HonestyLabel kind="simulated">Simulated one-time code</HonestyLabel>
       </div>
       {requests.some((row) => row.closure_held) && <p className="m-0 mt-1 text-small">Closure is held: an unresolved patient contest is open on the current decision.</p>}
+      {anyOpen && review?.live && review.identity}
       <ol className="m-0 mt-2 list-none p-0" aria-label="Patient requests">
         {requests.map((row) => (
           <li key={row.receipt} className="border-t border-rule py-3">
             <p className="m-0 font-medium">{row.kind === "contest_submitted" ? "Contest" : "Explanation request"}</p>
             <p className="m-0 mt-1">{requestState(row)}</p>
-            <p className="m-0 mt-1 text-small text-muted">Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)}</p>
+            {row.kind === "contest_submitted" && row.reason && <p className="m-0 mt-1 [overflow-wrap:anywhere]">Patient&apos;s reason: {row.reason}</p>}
+            <p className="m-0 mt-1 text-small text-muted">
+              Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)} · questioned decision {row.decision.slice(0, 8)}
+            </p>
+            {row.kind === "contest_submitted" && row.status === "open" && review?.live && review.controls?.(row.receipt, row.excluded_reviewers ?? [])}
           </li>
         ))}
       </ol>
+      {anyOpen && !review?.live && <p className="m-0 mt-2 text-small text-muted">Resolving a contest needs the live API and a signed-in senior clinician. This snapshot is read-only.</p>}
     </section>
   );
 }
