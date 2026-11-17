@@ -271,27 +271,66 @@ func integrityCheckMaterializedCounts(t *testing.T, src string) {
 				contents["report7.json"] = canon(map[string]interface{}{"fhir_msgs": fhirCount})
 				want = "report7.json declares fhir_msgs="
 			case "truncated_programme_loops":
-				var kept []string
-				removedLoop, programme := "", ""
-				for _, line := range strings.Split(strings.TrimSpace(string(original["out_log.ndjson"])), "\n") {
+				// Keep original record bytes: only whole decision records in the
+				// selected typed family may disappear from this temporary copy.
+				var lines []string
+				var logs []LogMsg
+				for _, line := range strings.SplitAfter(string(original["out_log.ndjson"]), "\n") {
+					if line == "" {
+						continue
+					}
 					var row LogMsg
 					if err := json.Unmarshal([]byte(line), &row); err != nil {
 						t.Fatal(err)
 					}
+					lines = append(lines, line)
+					logs = append(logs, row)
+				}
+				projection, _, err := projectMaterializedDecisions(logs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				removedLoop, programme := "", ""
+				for _, row := range logs {
 					if d := decodeEnv(row).Dec; d != nil {
-						if removedLoop == "" {
-							removedLoop, programme = d.LoopID, firstNonEmpty(d.Prog, "crc")
+						// Physical history order must not choose a care child or
+						// an obsolete programme instead of the highest-OSeq root.
+						current := projection.final[d.LoopID]
+						kind, err := materializedCaseKind(current)
+						if err != nil {
+							t.Fatal(err)
 						}
-						if d.LoopID == removedLoop {
-							continue // remove all history for one loop, not just its latest decision
+						if kind == "root_screening" {
+							removedLoop, programme = current.LoopID, firstNonEmpty(current.Prog, "crc")
+							break
 						}
 					}
-					kept = append(kept, line)
 				}
-				if removedLoop == "" || len(kept) == 0 {
-					t.Fatal("control needs another OUT record after removing one loop")
+				if removedLoop == "" {
+					t.Fatal("control needs a root screening loop")
 				}
-				contents["out_log.ndjson"] = []byte(strings.Join(kept, "\n") + "\n")
+				family := map[string]bool{removedLoop: true}
+				// Include every historical typed parent relationship, not only
+				// active/current children. Retired care still needs its lineage.
+				for changed := true; changed; {
+					changed = false
+					for _, row := range logs {
+						if d := decodeEnv(row).Dec; d != nil && d.CRC != nil && d.CRC.Parent != "" && family[d.CRC.Parent] && !family[d.LoopID] {
+							family[d.LoopID], changed = true, true
+						}
+					}
+				}
+				var kept []string
+				for i, row := range logs {
+					if d := decodeEnv(row).Dec; d != nil && family[d.LoopID] {
+						continue // remove every decision for the family, retaining other records verbatim
+					}
+					kept = append(kept, lines[i])
+				}
+				if len(kept) == 0 {
+					t.Fatal("control needs another OUT record after removing one root family")
+				}
+				contents["out_log.ndjson"] = []byte(strings.Join(kept, ""))
 				contents["dashboard.json"] = []byte(`{}`)
 				contents["report7.json"] = canon(map[string]interface{}{"programmes_live": nativeProgrammes})
 				want = "report7.json declares programmes_live." + programme + ".loops="
