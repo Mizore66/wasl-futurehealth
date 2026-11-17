@@ -350,6 +350,8 @@ type LoopFacts struct {
 	ReqVersion   int               `json:"request_version,omitempty"`
 	ReqConflict  bool              `json:"request_conflict,omitempty"`
 	EpisodeError string            `json:"episode_error,omitempty"` // missing/ambiguous/withdrawn index evidence; fail closed
+	// Verified patient contests of this loop's decision (patient_contest_hold.go); absent keeps facts byte-identical.
+	PatientContests []PatientContestFact `json:"patient_contests,omitempty"`
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.

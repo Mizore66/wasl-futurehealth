@@ -12,6 +12,14 @@ type LDCTClockAnchor struct {
 	Day          float64 `json:"day"`
 }
 
+// blockBody is the anchor as a provenance block value. Block bodies are generic maps, so a struct
+// value would be hashed in field order but re-verified after JSON decoding in sorted-key order,
+// breaking the decision signature and chain at snapshot export. A plain map hashes identically both ways.
+func (a *LDCTClockAnchor) blockBody() map[string]interface{} {
+	return map[string]interface{}{"kind": a.Kind, "provider": a.Provider, "registration": a.Registration,
+		"report": a.Report, "version": a.Version, "day": a.Day}
+}
+
 type ldctClockSource struct {
 	provider, registration, report string
 }

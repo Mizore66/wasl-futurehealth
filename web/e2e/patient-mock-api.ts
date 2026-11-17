@@ -12,7 +12,17 @@ const crcOffers = {
   ],
 };
 
-const noOffers = { procedure: "", version: "", slots: [] as typeof crcOffers.slots };
+/** A cervical case's own simulated booking candidates, as pipeline/api_patient_offers.go serves them: date only, region, no preparation. */
+const cervicalOffers = {
+  procedure: "colposcopy",
+  source: "simulated_booking",
+  version: createHash("sha256").update("simulated_booking\ncolposcopy\n\nsim:colposcopy:2:1\nsim:colposcopy:5:1").digest("hex"),
+  slots: [
+    { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
+    { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+  ],
+};
+const noOffers = { procedure: "", version: "", slots: [] as { slot_id: string; unit: string; starts_at: string }[] };
 /** The served next step and wrong answer per programme, as pipeline/api_patient.go patientPlanFor projects them. */
 const PLANS: Record<string, { next: string; distractor: string }> = {
   crc: { next: "colonoscopy", distractor: "blood_test" },
@@ -53,8 +63,10 @@ type Link = {
   failNext?: "empty201" | "500" | "network";
   otp?: string;
   rights: RightsRow[];
-  handoff: { status: string; acknowledged_at?: string };
+  handoff: { status: string; acknowledged_at?: string; verified?: boolean };
+  elsewhere?: ElsewhereReport;
 };
+type ElsewhereReport = Record<string, string> & { status: "pending" | "resumed"; retrieval_status: string; request_id: string; fingerprint: string };
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
@@ -81,7 +93,7 @@ function fresh(token: string, expires: number, programme = "crc"): Link {
         status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
       },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : "", slot_id: "", selected_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : programme === "cervical" ? cervicalOffers.version : "", slot_id: "", selected_at: "", event: "" },
       preparation: crc
         ? {
             items: [
@@ -101,7 +113,7 @@ function send(res: ServerResponse, status: number, body?: unknown) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", "referrer-policy": "no-referrer" });
   res.end(body === undefined ? undefined : JSON.stringify(body));
 }
-const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : noOffers);
+const offersFor = (link: Link) => (link.journey.programme === "crc" ? crcOffers : link.journey.programme === "cervical" ? cervicalOffers : noOffers);
 const payload = (link: Link) => ({ meta: { api: "wasl-api/1", data_mode: "simulated" }, journey: link.journey, offers: offersFor(link), expires_at: new Date(link.expires).toISOString() });
 const conflict = (link: Link, kind: string, error: string) => ({ error, conflict: kind, current_head: link.journey.head, journey: link.journey });
 
@@ -166,11 +178,13 @@ async function rights(req: IncomingMessage, res: ServerResponse, path: string) {
 
 const HANDOFF_VERSION = hash("outcome-handoff:routine_screening");
 function handoffView(link: Link) {
-  const { status, acknowledged_at } = link.handoff;
-  const shown = status === "released" || status === "acknowledged";
+  const { status, acknowledged_at, verified = false } = link.handoff;
+  const releasable = status === "released" || status === "acknowledged";
+  const shown = releasable && verified;
   return {
     status,
     delivery: "simulated",
+    ...(releasable && { verified }),
     ...(shown && {
       version: HANDOFF_VERSION,
       approved_at: "2026-10-01T08:00:00Z",
@@ -180,18 +194,67 @@ function handoffView(link: Link) {
   };
 }
 
-/** Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released; acknowledgement needs a one-time code. */
+/**
+ * Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released and the link's one-time code is
+ * verified ({otp}); acknowledgement ({version}) needs that verification or a fresh code.
+ */
 async function outcome(req: IncomingMessage, res: ServerResponse) {
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
   if (req.method === "GET") return send(res, 200, { meta: {}, handoff: handoffView(link) });
-  const input = JSON.parse(await body(req)) as { version: string; otp: string };
+  const input = JSON.parse(await body(req)) as { version?: string; otp?: string };
+  const releasable = link.handoff.status === "released" || link.handoff.status === "acknowledged";
+  const codeOK = () => {
+    const ok = !!link.otp && input.otp === link.otp;
+    if (ok) link.otp = undefined;
+    return ok;
+  };
+  if (!input.version) {
+    if (!releasable) return send(res, 409, { error: "there is no released outcome to show", handoff: handoffView(link) });
+    if (!codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+    link.handoff.verified = true;
+    return send(res, 200, { meta: {}, handoff: handoffView(link) });
+  }
   if (link.handoff.status === "acknowledged" && input.version === HANDOFF_VERSION) return send(res, 200, { meta: {}, replayed: true, handoff: handoffView(link) });
   if (link.handoff.status !== "released" || input.version !== HANDOFF_VERSION) return send(res, 409, { error: "there is no released outcome with that version to acknowledge" });
-  if (!link.otp || input.otp !== link.otp) return send(res, 403, { error: "a valid one-time code for this link is required" });
-  link.otp = undefined;
-  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString() };
+  if (!link.handoff.verified && !codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString(), verified: true };
   return send(res, 201, { meta: {}, replayed: false, handoff: handoffView(link) });
+}
+
+const ELSEWHERE_FIELDS = new Set(["request_id", "procedure", "performed", "provider", "report_ref"]);
+const elsewhereView = (link: Link) => {
+  const r = link.elsewhere;
+  const report = r && Object.fromEntries(Object.entries(r).filter(([k]) => k !== "request_id" && k !== "fingerprint"));
+  return { meta: {}, report: report ?? null, can_report: !r || r.status === "resumed" };
+};
+
+/** Mirrors pipeline/api_patient_elsewhere.go: strict fields, server-set source and due date, idempotent by request_id. */
+async function elsewhere(req: IncomingMessage, res: ServerResponse) {
+  const link = authorized(req);
+  if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
+  if (Date.now() >= link.expires) return send(res, 410, { error: "patient link has expired" });
+  if (req.method === "GET") return send(res, 200, elsewhereView(link));
+  const input = JSON.parse(await body(req)) as Record<string, string>;
+  link.bodies.push(input);
+  if (Object.keys(input).some((k) => !ELSEWHERE_FIELDS.has(k)) || !input.procedure || !input.provider || !/^\d{4}-\d{2}(-\d{2})?$/.test(input.performed ?? "")) {
+    return send(res, 400, { error: "body must be {request_id, procedure, performed, provider, report_ref?}" });
+  }
+  const fingerprint = JSON.stringify([input.procedure, input.performed, input.provider, input.report_ref ?? ""]);
+  const r = link.elsewhere;
+  if (r && r.request_id === input.request_id) {
+    if (r.fingerprint !== fingerprint) return send(res, 409, { error: "request_id was already used for a different patient request" });
+    return send(res, 200, { meta: {}, receipt: r.receipt, replayed: true, completed_elsewhere: elsewhereView(link) });
+  }
+  if (r?.status === "pending") return send(res, 409, { error: "already being checked", conflict: "reconciliation", completed_elsewhere: elsewhereView(link) });
+  const at = new Date().toISOString();
+  const due = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+  link.elsewhere = {
+    receipt: hash(`${link.token}:elsewhere:${randomUUID()}`), submitted_at: at, status: "pending", reported_by: "patient", source: "patient",
+    procedure: input.procedure, performed: input.performed, provider: input.provider, ...(input.report_ref ? { report_ref: input.report_ref } : {}),
+    retrieval_due: due, retrieval_status: "due", request_id: input.request_id, fingerprint,
+  };
+  return send(res, 201, { meta: {}, receipt: link.elsewhere.receipt, replayed: false, completed_elsewhere: elsewhereView(link) });
 }
 
 async function handle(req: IncomingMessage, res: ServerResponse) {
@@ -235,6 +298,14 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     link.handoff = { status: input.mode };
     return send(res, 200, { ok: true });
   }
+  if (url.pathname === "/__mock/elsewhere-outcome" && req.method === "POST") {
+    // The coordinator's retrieval_outcome on the staff API, simulated here.
+    const input = JSON.parse(await body(req)) as { token: string; mode: string };
+    const link = links.get(input.token);
+    if (!link?.elsewhere) return send(res, 404, { error: "no report on this link" });
+    link.elsewhere = { ...link.elsewhere, status: "resumed", retrieval_status: "ended", outcome: input.mode, ended_at: new Date().toISOString() };
+    return send(res, 200, { ok: true });
+  }
   if (url.pathname === "/__mock/stale" && req.method === "POST") {
     const input = JSON.parse(await body(req)) as { token: string };
     const link = links.get(input.token);
@@ -245,6 +316,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   }
   if (url.pathname === "/api/patient/verification" || url.pathname === "/api/patient/requests") return rights(req, res, url.pathname);
   if (url.pathname === "/api/patient/outcome") return outcome(req, res);
+  if (url.pathname === "/api/patient/completed-elsewhere") return elsewhere(req, res);
   if (url.pathname !== "/api/patient/journey") return send(res, 404, { error: "not found" });
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });

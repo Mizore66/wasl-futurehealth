@@ -1,21 +1,21 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "b2c070f1bb87388aa4ad3bdb0b68f5c8df4a89d1",
-    "committed_at": "2026-11-17T04:08:47Z"
+    "revision": "c91bf4727951c58905878a30436acac39dbf9cee",
+    "committed_at": "2026-11-17T02:48:13Z"
   },
   "scanner": {
     "name": "trivy",
     "version": "0.76.2"
   },
   "scan_environment": {
-    "system": "darwin",
-    "machine": "arm64"
+    "system": "linux",
+    "machine": "x86_64"
   },
   "summary": {
     "packages": 790,
-    "with_discovered_license": 662,
-    "without_discovered_license": 128,
+    "with_discovered_license": 661,
+    "without_discovered_license": 129,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
       "0BSD": 1,
@@ -27,7 +27,7 @@
       "CC0-1.0": 1,
       "ISC": 20,
       "LGPL-3.0-or-later": 1,
-      "MIT": 554,
+      "MIT": 553,
       "MPL-2.0": 6,
       "Python-2.0": 1,
       "Unlicense": 1
@@ -618,9 +618,7 @@
       "version": "0.28.2",
       "purl": "pkg:npm/%40esbuild/darwin-arm64@0.28.2",
       "development": true,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -716,7 +714,9 @@
       "version": "0.28.2",
       "purl": "pkg:npm/%40esbuild/linux-x64@0.28.2",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MIT"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -996,9 +996,7 @@
       "version": "0.35.5",
       "purl": "pkg:npm/%40img/sharp-darwin-arm64@0.35.5",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1022,9 +1020,7 @@
       "version": "1.3.4",
       "purl": "pkg:npm/%40img/sharp-libvips-darwin-arm64@1.3.4",
       "development": false,
-      "licenses": [
-        "LGPL-3.0-or-later"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1080,7 +1076,9 @@
       "version": "1.3.4",
       "purl": "pkg:npm/%40img/sharp-libvips-linux-x64@1.3.4",
       "development": false,
-      "licenses": []
+      "licenses": [
+        "LGPL-3.0-or-later"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1144,7 +1142,9 @@
       "version": "0.35.5",
       "purl": "pkg:npm/%40img/sharp-linux-x64@0.35.5",
       "development": false,
-      "licenses": []
+      "licenses": [
+        "Apache-2.0"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1376,9 +1376,7 @@
       "version": "16.4.5",
       "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
       "development": false,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1410,7 +1408,9 @@
       "version": "16.4.5",
       "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
       "development": false,
-      "licenses": []
+      "licenses": [
+        "MIT"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2128,9 +2128,7 @@
       "version": "1.2.16",
       "purl": "pkg:npm/%40rolldown/binding-darwin-arm64@1.2.16",
       "development": true,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2194,7 +2192,9 @@
       "version": "1.2.16",
       "purl": "pkg:npm/%40rolldown/binding-linux-x64-gnu@1.2.16",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MIT"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2322,9 +2322,7 @@
       "version": "4.3.3",
       "purl": "pkg:npm/%40tailwindcss/oxide-darwin-arm64@4.3.3",
       "development": true,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2372,7 +2370,9 @@
       "version": "4.3.3",
       "purl": "pkg:npm/%40tailwindcss/oxide-linux-x64-gnu@4.3.3",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MIT"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2716,9 +2716,7 @@
       "version": "1.12.2",
       "purl": "pkg:npm/%40unrs/resolver-binding-darwin-arm64@1.12.2",
       "development": true,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -2822,7 +2820,9 @@
       "version": "1.12.2",
       "purl": "pkg:npm/%40unrs/resolver-binding-linux-x64-gnu@1.12.2",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MIT"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -4388,9 +4388,7 @@
       "version": "2.3.3",
       "purl": "pkg:npm/fsevents@2.3.3",
       "development": true,
-      "licenses": [
-        "MIT"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -5494,9 +5492,7 @@
       "version": "1.32.0",
       "purl": "pkg:npm/lightningcss-darwin-arm64@1.32.0",
       "development": true,
-      "licenses": [
-        "MPL-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -5504,9 +5500,7 @@
       "version": "1.33.0",
       "purl": "pkg:npm/lightningcss-darwin-arm64@1.33.0",
       "development": true,
-      "licenses": [
-        "MPL-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -5594,7 +5588,9 @@
       "version": "1.32.0",
       "purl": "pkg:npm/lightningcss-linux-x64-gnu@1.32.0",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MPL-2.0"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -5602,7 +5598,9 @@
       "version": "1.33.0",
       "purl": "pkg:npm/lightningcss-linux-x64-gnu@1.33.0",
       "development": true,
-      "licenses": []
+      "licenses": [
+        "MPL-2.0"
+      ]
     },
     {
       "target": "web/pnpm-lock.yaml",
