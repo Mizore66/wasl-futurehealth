@@ -378,7 +378,7 @@ function referrerResponseWords(d: { response?: string; destination?: string }): 
  * non-procedure end state. Never worded as a completed procedure.
  */
 export function dispositionWords(d: { plan?: string; follow_up_owner?: string; next_review?: string }): { status: string; next: string } {
-  if (d.plan === "closed_declined") return { status: "Declined · closed without the procedure", next: "GP documented informed refusal; no procedure" };
+  if (d.plan === "closed_declined") return { status: "Declined · informed refusal recorded, no procedure", next: "GP documented informed refusal; no procedure was done and no screening result exists" };
   const on = d.next_review ?? "a date not recorded";
   return { status: `Declined · GP review ${on}`, next: `${d.follow_up_owner ?? "The GP"} reviews on ${on}` };
 }
