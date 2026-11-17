@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "c91bf4727951c58905878a30436acac39dbf9cee",
-    "committed_at": "2026-11-17T02:48:13Z"
+    "revision": "0cfeec7f0535b29f41e4bee572c0ad37667baaa3",
+    "committed_at": "2026-11-17T05:34:19Z"
   },
   "scanner": {
     "name": "trivy",
     "version": "0.76.2",
     "vulnerability_database": {
       "Version": 2,
-      "NextUpdate": "2026-11-18T01:05:25.260481302Z",
-      "UpdatedAt": "2026-11-17T01:05:25.260481643Z",
-      "DownloadedAt": "2026-11-17T02:50:11.261697359Z"
+      "NextUpdate": "2026-11-17T13:03:44.830426014Z",
+      "UpdatedAt": "2026-11-16T13:03:44.830426244Z",
+      "DownloadedAt": "2026-11-16T17:04:46.694077Z"
     }
   },
   "scan_mode": "online database refresh permitted",
   "artifacts": [
     {
       "path": "repository.cdx.json",
-      "sha256": "8af68e8d10eae7d1b35d3ee7c6c6fae5f2cee851b8dd67c94d1e6cfc17d5e764"
+      "sha256": "b3fba924240a635dd70b018f3b5b5dab48eeaf874f7e8d911cb43156eba7a8c7"
     },
     {
       "path": "vulnerabilities.json",
-      "sha256": "994e2a84eb1bb1660d14d7665c18c92ea8d18ce40642b2519f685a21c0f8bf5d"
+      "sha256": "aee484ddb7ee2cdd7e29a547b100e178a3c4fa0b3582333a7569de7da9c82b43"
     },
     {
       "path": "licenses.json",
-      "sha256": "aa58b7b1ec313effba481a1993809a2583944a5fb71521bc73ccc262df3257c0"
+      "sha256": "1a1b4b1df61e257857933799446e01008d057b16833fd80d619010ea42fd69cf"
     }
   ],
   "notes": [
