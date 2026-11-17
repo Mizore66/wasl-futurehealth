@@ -201,3 +201,37 @@ func TestUnavailableSourceWithholdsEvidenceReads(t *testing.T) {
 	}
 	e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201)
 }
+
+// #162 acceptance 2, cross-case: an evidence item raised on another case is not retrievable through this case's route,
+// even though it is real and its report is received, and the refusal carries none of its content.
+func TestReviewSourceRefusesAnotherCasesItem(t *testing.T) {
+	const other, report, text = "exp-prov/ServiceRequest/EXP-sr-2", "EXP-dr-2", "another case's report: sessile polyp removed by snare"
+	run := irRun(t)
+	d := &Decision{ID: "dec-2", LoopID: other, InSeq: 8, Prog: "crc", Provider: "exp-prov", SRDay: 3, Now: 40, State: "open", Dropoff: "not_booked",
+		Policy: "v7strict", Contact: "granted", Chain: sourceChain("exp-prov", report), NotifDay: -1, AckDay: -1, ProcDay: -1}
+	d.Sig = decSig(d)
+	m := LogMsg{Seq: 50, Subject: "out.p0", Hdr: map[string]string{}}
+	encodeEnv(&m, OutEnvelope{Kind: "decision", Dec: d})
+	appendLogMsgs(t, run, "out_log.ndjson", m)
+	appendReviewItems(t, run, &ReviewItem{ItemID: "rv-other", LoopID: other, Kinds: []string{"evidence"}, ReportID: report, ReportVersion: 1, Chain: sourceChain("exp-prov", report)})
+	appendLogMsgs(t, run, "fhir_log.ndjson", sourceReportMsg(260, "exp-prov", report, 1, text))
+	s := loadAPI(run, "")
+	if s.cases[other] == nil || s.queueItem(other, "rv-other") == nil {
+		t.Fatal("the second case or its evidence item did not load")
+	}
+	h, err := s.handler(irTokens, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	here := &irEnv{s: s, h: h, run: run, path: "/api/cases/" + url.PathEscape(ledgerLoop)}
+	there := &irEnv{s: s, h: h, run: run, path: "/api/cases/" + url.PathEscape(other)}
+	if code, _, body := here.source(t, irClinA, "rv-other"); code != 404 || strings.Contains(body, "snare") || strings.Contains(body, report) || strings.Contains(body, run) {
+		t.Fatalf("another case's item through this case: %d %s", code, body)
+	}
+	if code, _, body := there.source(t, irClinA, irEvItem); code != 404 || strings.Contains(body, "caecum") {
+		t.Fatalf("this case's item through another case: %d %s", code, body)
+	}
+	if code, m, _ := there.source(t, irClinA, "rv-other"); code != 200 || m["source"].(map[string]interface{})["text"] != text {
+		t.Fatalf("the other case's own item: %d %v", code, m)
+	}
+}
