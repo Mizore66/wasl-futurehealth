@@ -24,4 +24,19 @@ func TestPhaseTraceComparisonPreservesExactOperationsAndMutationOrder(t *testing
 			t.Fatal("trace normalization hid an actual read, response, operation count or mutation-order change")
 		}
 	}
+	info := "history-info exact-bootstrap-info-bytes <nil>"
+	bootstrap := []string{source, info, write}
+	if !reflect.DeepEqual(phaseTraceObservationOrder(bootstrap), phaseTraceObservationOrder([]string{info, source, write})) {
+		t.Fatal("independent bootstrap Info/source observations retained accidental completion order")
+	}
+	for _, changed := range [][]string{
+		{source, info + "changed", write},
+		{source, write, info},
+		{source, info, info, write},
+		{source, write},
+	} {
+		if reflect.DeepEqual(phaseTraceObservationOrder(bootstrap), phaseTraceObservationOrder(changed)) {
+			t.Fatal("bootstrap normalization hid a response, operation count or mutation-order change")
+		}
+	}
 }
