@@ -383,6 +383,12 @@ func TestCanonicalLiveMetadataAndFloorFaultsCountOnlyRealReturns(t *testing.T) {
 type canonicalLiveLostAckJS struct {
 	jetstream.JetStream
 	lost atomic.Bool
+	// Optional fault interval: withhold independent positive stream observations
+	// after losing the actual ACK, including the publisher's one assistance pass.
+	// A nil release preserves this adapter's other existing fixtures.
+	recoveryRelease <-chan struct{}
+	recoveryBlocked chan struct{}
+	recoveryOnce    sync.Once
 }
 
 func (j *canonicalLiveLostAckJS) PublishMsg(ctx context.Context, m *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
@@ -392,6 +398,20 @@ func (j *canonicalLiveLostAckJS) PublishMsg(ctx context.Context, m *nats.Msg, op
 	}
 	return ack, err
 }
+
+func (j *canonicalLiveLostAckJS) Stream(ctx context.Context, name string) (jetstream.Stream, error) {
+	if name == canonicalStream && j.lost.Load() && j.recoveryRelease != nil {
+		select {
+		case <-j.recoveryRelease:
+			// Release permits the actual broker read, never a supplied positive.
+		default:
+			j.recoveryOnce.Do(func() { close(j.recoveryBlocked) })
+			return nil, errors.New("independent stream observation withheld after lost ACK")
+		}
+	}
+	return j.JetStream.Stream(ctx, name)
+}
+
 func TestCanonicalLiveUnknownWireHoldsProviderUntilPositiveRecovery(t *testing.T) {
 	env := startTestNATS(t)
 	c := durableHookTestConsumer(t, env)
@@ -401,7 +421,11 @@ func TestCanonicalLiveUnknownWireHoldsProviderUntilPositiveRecovery(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.js = &canonicalLiveLostAckJS{JetStream: env.js}
+	recoveryRelease := make(chan struct{})
+	held := &canonicalLiveLostAckJS{JetStream: env.js, recoveryRelease: recoveryRelease, recoveryBlocked: make(chan struct{})}
+	c.js = held
+	var releaseOnce sync.Once
+	releaseRecovery := func() { releaseOnce.Do(func() { close(recoveryRelease) }) }
 	c.seen = openSeen(env.js)
 	for n := int64(1); n <= 2; n++ {
 		pendingRepairAdmit(t, c, "pending-owner", n)
@@ -410,18 +434,22 @@ func TestCanonicalLiveUnknownWireHoldsProviderUntilPositiveRecovery(t *testing.T
 	done := make(chan struct{})
 	go func() { defer close(done); c.publisher("p1", c.provCh["p1"]) }()
 	t.Cleanup(func() {
+		releaseRecovery()
+		_ = c.serviceKnownWork(env.ctx)
 		close(c.provCh["p1"])
 		pendingOwnerBarrier(t, "real provider publisher exit", done)
 		c.seen.Flush()
 	})
-	pendingOwnerWait(t, "actual applied send with lost reply", func() bool {
+	pendingOwnerBarrier(t, "independent positive observation explicitly withheld after actual lost ACK", held.recoveryBlocked)
+	pendingOwnerWait(t, "actual applied send remains unknown after one assistance snapshot", func() bool {
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		return first.attempt > 0 && !first.inflight && first.blocker != ""
+		return first.attempt == 2 && !first.inflight && !c.serviceActive && first.blocker != ""
 	})
 	if fhirMessageCount(t, env) != 1 || atomic.LoadInt64(&c.published) != 0 || c.ackHWM != 0 || c.providerHeads["p1"] != first {
 		t.Fatal("wire-unknown head let later work overtake or invented an ACK")
 	}
+	releaseRecovery()
 	c.checkGap()
 	pendingOwnerWait(t, "positive canonical read then next provider event", func() bool { c.mu.Lock(); defer c.mu.Unlock(); return c.ackHWM == 2 })
 	if fhirMessageCount(t, env) != 2 || atomic.LoadInt64(&c.published) != 2 || atomic.LoadInt64(&c.replays) != 1 || first.result.Result.ObservedAck != nil {
