@@ -72,9 +72,9 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
                 );
               })}
             </nav>
-            {view?.programme === "crc" && (
-              <Link href="/app/referrals/returned" className="inline-flex min-h-11 items-center text-small underline">
-                Returned referrals, referring GP view
+            {view && (
+              <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center text-small underline">
+                Returned referrals, referring {view.referrer === "GP" ? "GP" : "clinician"} view
               </Link>
             )}
           </div>
@@ -82,7 +82,9 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
             {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
           </span>
           {view?.programme !== "crc" ? (
-            <HonestyLabel kind="designed">Returned packets: canonical, synthetic. Re-referral: designed, session only</HonestyLabel>
+            <HonestyLabel kind="designed">
+              Returned packets: canonical, synthetic. Referrer answers: {live ? "built, on the referrer's page" : "need the live synthetic API"}. Re-referral here: designed, session only
+            </HonestyLabel>
           ) : live ? (
             <HonestyLabel kind="built">Referral answers: built, saved to the synthetic case ledger</HonestyLabel>
           ) : (

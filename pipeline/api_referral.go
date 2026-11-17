@@ -301,11 +301,11 @@ func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 	case now > actBy:
 		status = "coordinator"
 	}
-	handoff = map[string]interface{}{"referral_id": c.ID, "decision": "reject", "reason": e["reason"],
+	handoff = map[string]interface{}{"referral_id": c.ID, "source": packetUnitReturn, "decision": "reject", "reason": e["reason"],
 		"reason_code": referralReturnReasons[fmt.Sprint(e["reason"])], "info_requested": e["requested_info"],
 		"clinical_priority": map[bool]string{true: "urgent", false: "routine"}[urgent], "responsible_clinician": "referring PCP, " + c.Provider,
 		"decided_by": e["unit"], "decided_at": decided, "act_by": round4(actBy), "medical_director_day": round4(medDir), "status": status, "event": e["event"]}
-	referrerView(c, handoff)
+	referrerView(c, currentReferrerPacketLocked(c), handoff)
 	return response, handoff
 }
 

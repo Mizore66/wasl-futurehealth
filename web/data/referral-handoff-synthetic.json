@@ -16,7 +16,25 @@
         "head": "6a0144077411f21e4fe756cb350b0c4628ad17312382d097e880b82173d42b42",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 123,
+          "clinical_priority": "urgent",
+          "decided_at": 119,
+          "decided_by": "mafraq-rad",
+          "decision": "reject",
+          "destinations": [
+            "mafraq-rad"
+          ],
+          "event": "MAF-intake-9101",
+          "info_requested": [],
+          "medical_director_day": 125,
+          "reason_code": "wrong_provider",
+          "referral_id": "rad-imaging/ServiceRequest/RAD-sr-9101",
+          "responsible_clinician": "referring PCP, rad-imaging",
+          "source": "canonical",
+          "status": "awaiting_referrer"
+        }
       },
       "closed": false,
       "closed_day": 0,
@@ -178,7 +196,29 @@
         "head": "f72cfdd66482b0dbd09a3efc9a4cc0fa2d5925663e04d07777aa24b0b3e54b32",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 123,
+          "clinical_priority": "urgent",
+          "decided_at": 119,
+          "decided_by": "eye-hosp",
+          "decision": "reject",
+          "destinations": [
+            "eye-hosp"
+          ],
+          "event": "EYE-intake-9201",
+          "info_requested": [
+            "reason_for_referral",
+            "relevant_clinical_information",
+            "expected_outcome"
+          ],
+          "medical_director_day": 125,
+          "reason_code": "needs_more_info",
+          "referral_id": "phc-retina/ServiceRequest/PHC-sr-9201",
+          "responsible_clinician": "referring PCP, phc-retina",
+          "source": "canonical",
+          "status": "awaiting_referrer"
+        }
       },
       "closed": false,
       "closed_day": 0,
@@ -346,7 +386,25 @@
         "head": "ea6935d2d382a33d7112de94e78e84509ed7ba3b0946a349de8a29936beb5fd4",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 117,
+          "clinical_priority": "urgent",
+          "decided_at": 115,
+          "decided_by": "eye-hosp",
+          "decision": "reject",
+          "destinations": [
+            "eye-hosp"
+          ],
+          "event": "EYE-intake-9202",
+          "info_requested": [],
+          "medical_director_day": 122,
+          "reason_code": "service_not_available",
+          "referral_id": "phc-retina/ServiceRequest/PHC-sr-9202",
+          "responsible_clinician": "referring PCP, phc-retina",
+          "source": "canonical",
+          "status": "coordinator"
+        }
       },
       "closed": false,
       "closed_day": 0,
@@ -510,7 +568,29 @@
         "head": "0b464176dc389973b8552a6c5cf29e75171bee24c18185c8c37bf68f4b6cabb5",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 102,
+          "clinical_priority": "urgent",
+          "decided_at": 100,
+          "decided_by": "eye-hosp",
+          "decision": "reject",
+          "destinations": [
+            "eye-hosp"
+          ],
+          "event": "EYE-intake-9203",
+          "info_requested": [
+            "reason_for_referral",
+            "relevant_clinical_information",
+            "expected_outcome"
+          ],
+          "medical_director_day": 104,
+          "reason_code": "needs_more_info",
+          "referral_id": "phc-retina/ServiceRequest/PHC-sr-9203",
+          "responsible_clinician": "referring PCP, phc-retina",
+          "source": "canonical",
+          "status": "medical_director"
+        }
       },
       "closed": false,
       "closed_day": 0,
@@ -680,7 +760,29 @@
         "head": "1440d5f9fd8098af4cfe4f18cd057efcb6052e494fad3ce32a746906a25e1c87",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 125,
+          "clinical_priority": "routine",
+          "decided_at": 117,
+          "decided_by": "eye-hosp",
+          "decision": "reject",
+          "destinations": [
+            "eye-hosp"
+          ],
+          "event": "EYE-intake-9204",
+          "info_requested": [
+            "reason_for_referral",
+            "relevant_clinical_information",
+            "expected_outcome"
+          ],
+          "medical_director_day": 132,
+          "reason_code": "needs_more_info",
+          "referral_id": "phc-retina/ServiceRequest/PHC-sr-9204",
+          "responsible_clinician": "referring PCP, phc-retina",
+          "source": "canonical",
+          "status": "awaiting_referrer"
+        }
       },
       "closed": false,
       "closed_day": 0,
@@ -847,7 +949,26 @@
         "head": "62a5f20db19edfb656292fa9e88dcd4bf7a5c485e0f6f3a7ecd83690359f3941",
         "last_action_at": "",
         "ledger_status": "ok",
-        "owner": ""
+        "owner": "",
+        "referral_handoff": {
+          "act_by": 102,
+          "acted_at": 104,
+          "clinical_priority": "urgent",
+          "decided_at": 100,
+          "decided_by": "eye-hosp",
+          "decision": "reject",
+          "destinations": [
+            "eye-hosp"
+          ],
+          "event": "EYE-intake-9205",
+          "info_requested": [],
+          "medical_director_day": 104,
+          "reason_code": "service_not_available",
+          "referral_id": "phc-retina/ServiceRequest/PHC-sr-9205",
+          "responsible_clinician": "referring PCP, phc-retina",
+          "source": "canonical",
+          "status": "referrer_acted"
+        }
       },
       "closed": false,
       "closed_day": 0,

@@ -199,6 +199,9 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 			if communicationAnswers(c, e) { // a staff-recorded notification or receipt answers it (api_communication.go)
 				continue
 			}
+			if referrerAnswers(c, e) { // the responsible referrer's resolving answer to the hand-off packet (api_referrer.go)
+				continue
+			}
 			out = append(out, e)
 		}
 	}

@@ -158,4 +158,24 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     expect(viewScope()).toBe("");
     expect(viewScope("lung_nodule", "rad-imaging")).toBe("programme=lung_nodule&provider=rad-imaging");
   });
+
+  it("follows the referrer's ledger answer to the canonical packet without rewriting it (#154)", () => {
+    const x = control("PHC-sr-9203");
+    const h = x.case.api_overlay!.referral_handoff!;
+    expect(h).toMatchObject({ source: "canonical", event: x.current.handoff!.referral_id, status: "medical_director" });
+    const answered = CaseSummary.parse({
+      ...x.case,
+      api_overlay: {
+        ...x.case.api_overlay,
+        referral_handoff: { ...h, status: "referrer_acted", acted_at: 120, referrer_response: { response: "re_refer", destination: "eye-hosp", at: "2026-11-17T10:00:00Z", actor: "Dr K", run_day: 120, event: "e1" } },
+      },
+    });
+    const r = packetReferral(answered, x.current, 120, false)!;
+    expect(r.handoff?.status).toBe("referrer_acted");
+    expect(r.details).toContainEqual(["Referrer's answer", expect.stringMatching(/^Re-refer to the same unit: Eye clinic, regional hospital\. Answered/)]);
+    expect(x.current.handoff!.status).toBe("medical_director");
+    // An answer bound to another packet is not this packet's answer.
+    const other = CaseSummary.parse({ ...answered, api_overlay: { ...answered.api_overlay, referral_handoff: { ...answered.api_overlay!.referral_handoff!, event: "other-packet" } } });
+    expect(packetReferral(other, x.current, 120, false)!.handoff?.status).toBe("medical_director");
+  });
 });

@@ -667,7 +667,7 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 // referrer's free text (supplied information, close or primary-care reasons).
 var exportReferralResponseAllow = exportObject(exportKeys("response", "conditions", "reason", "requested_info", "unit", "run_day", "at", "event"))
 var exportReferralHandoffAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("decision", "reason_code", "info_requested", "clinical_priority", "decided_by", "decided_at", "act_by", "medical_director_day",
+	m := exportKeys("source", "decision", "reason_code", "info_requested", "clinical_priority", "decided_by", "decided_at", "act_by", "medical_director_day",
 		"status", "event", "destinations", "acted_at")
 	m["acknowledgement"] = exportObject(exportKeys("at", "run_day", "event"))
 	m["referrer_response"] = exportObject(exportKeys("response", "destination", "at", "run_day", "event"))

@@ -106,7 +106,10 @@ Requirements and limits:
   `WASL_RECEIVING_UNIT_CLINICIANS` maps a receiving unit to a clinician (for example `skmc-endo:hosted-unit-clinician`),
   who may accept or return referrals with `POST /referral-response`. `WASL_REFERRING_CLINICIANS` maps a referring
   provider to its GP (for example `ahs-mushrif:hosted-referrer`), who may answer a returned referral with
-  `POST /referrer-response`. The two lists must not share an actor. Left empty, both endpoints refuse every answer with
+  `POST /referrer-response`. A referrer answers every returned packet of its provider, including the canonical lung
+  work-up packets of `rad-imaging` and DR eye-clinic packets of `phc-retina` (for example
+  `ahs-mushrif:hosted-referrer,rad-imaging:hosted-lung-referrer,phc-retina:hosted-eye-referrer`); one actor maps to one
+  provider. The two lists must not share an actor. Left empty, both endpoints refuse every answer with
   403. `scripts/demo.sh` assigns its clinician token's actor (`smoke-clinician`) to `skmc-endo` and assigns no referrer.
 
 ## Pointing it at real HL7 feeds
@@ -281,6 +284,8 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
    | `WASL_API_REFERRER_TOKEN` | contents of `wasl-referrer.token`, whose actor the API lists in `WASL_REFERRING_CLINICIANS` and not in `WASL_RECEIVING_UNIT_CLINICIANS` | the referring GP's answers on `/app/referrals/returned` (`POST /referrer-response`); built, synthetic ledger only |
+   | `WASL_API_REFERRER_LUNG_TOKEN` | optional; a token whose actor `WASL_REFERRING_CLINICIANS` assigns to `rad-imaging` | the lung work-up referrer's answers on `/app/referrals/returned?programme=lung_nodule&provider=rad-imaging`; without it those answers are refused with a configuration message; built, synthetic ledger only |
+   | `WASL_API_REFERRER_DR_TOKEN` | optional; a token whose actor `WASL_REFERRING_CLINICIANS` assigns to `phc-retina` | the eye-screening referrer's answers on `/app/referrals/returned?programme=diabetic_retinopathy&provider=phc-retina`; built, synthetic ledger only |
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
