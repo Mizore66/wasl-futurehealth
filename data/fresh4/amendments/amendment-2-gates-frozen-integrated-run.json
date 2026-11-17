@@ -1,0 +1,162 @@
+{
+ "amendment": {
+  "amends": "PROTOCOL.md section 6, integrated gate I1",
+  "approved_by": "Anas (protocol owner; repository owner Mizore66)",
+  "approved_on": "2026-11-17",
+  "document": "scripts/fresh4_eval/AMENDMENT-2.md",
+  "id": "fresh4-amendment-2",
+  "issues": [
+   193,
+   218
+  ],
+  "version": 2
+ },
+ "gates": [
+  {
+   "expected_lanes": 10,
+   "id": "I0_all_10_lanes_complete",
+   "observed_lanes": 10,
+   "protocol_version": "fresh4-original",
+   "seeds": [
+    1103,
+    1109,
+    1117,
+    1121,
+    1123
+   ],
+   "status": "pass"
+  },
+  {
+   "denominator": 18984,
+   "failures": [],
+   "id": "I1_v1_zero_listed_false_closures",
+   "noise": "v1",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "closure_loss": "outcome_only_v1",
+   "denominator": 18984,
+   "failures": [
+    {
+     "denominator": null,
+     "error": "missing",
+     "metric": "crc_unsafe_closures",
+     "numerator": null
+    },
+    {
+     "denominator": null,
+     "error": "missing",
+     "metric": "cervical_unsafe_closures",
+     "numerator": null
+    }
+   ],
+   "id": "I1a2_v1_zero_listed_false_or_unsafe_closures",
+   "noise": "v1",
+   "numerator": 0,
+   "protocol_version": "fresh4-amendment-2",
+   "reason": "aggregate closure_loss is outcome_only_v1 (outcome-only); ownership-checked unsafe closures were not computed, so the amended gate cannot pass on this evidence",
+   "status": "not_evaluable",
+   "threshold": 0
+  },
+  {
+   "denominator": 29371,
+   "failures": [],
+   "id": "I2_v1_zero_wrong_patient_or_unconsented_releases",
+   "noise": "v1",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 496126,
+   "failures": [],
+   "id": "I3_v1_zero_duplicate_loss_or_state_mismatch",
+   "noise": "v1",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 114,
+   "failures": [],
+   "id": "I4_v1_zero_forged_with_effect",
+   "noise": "v1",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 18354,
+   "failures": [],
+   "id": "I1_v2_zero_listed_false_closures",
+   "noise": "v2",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "closure_loss": "outcome_only_v1",
+   "denominator": 18354,
+   "failures": [
+    {
+     "denominator": null,
+     "error": "missing",
+     "metric": "crc_unsafe_closures",
+     "numerator": null
+    },
+    {
+     "denominator": null,
+     "error": "missing",
+     "metric": "cervical_unsafe_closures",
+     "numerator": null
+    }
+   ],
+   "id": "I1a2_v2_zero_listed_false_or_unsafe_closures",
+   "noise": "v2",
+   "numerator": 0,
+   "protocol_version": "fresh4-amendment-2",
+   "reason": "aggregate closure_loss is outcome_only_v1 (outcome-only); ownership-checked unsafe closures were not computed, so the amended gate cannot pass on this evidence",
+   "status": "not_evaluable",
+   "threshold": 0
+  },
+  {
+   "denominator": 27913,
+   "failures": [],
+   "id": "I2_v2_zero_wrong_patient_or_unconsented_releases",
+   "noise": "v2",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 488736,
+   "failures": [],
+   "id": "I3_v2_zero_duplicate_loss_or_state_mismatch",
+   "noise": "v2",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 108,
+   "failures": [],
+   "id": "I4_v2_zero_forged_with_effect",
+   "noise": "v2",
+   "numerator": 0,
+   "protocol_version": "fresh4-original",
+   "status": "pass",
+   "threshold": 0
+  }
+ ],
+ "schema": "fresh4-integrated-gates/amendment-2",
+ "summary": "data/fresh4/results/integrated/summary.json"
+}

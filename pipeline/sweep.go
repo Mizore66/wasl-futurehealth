@@ -481,6 +481,7 @@ func sweep(data, wasl string, P int, out string) {
 			"link_hours_per_1k_loops": 1000 * linkS / 3600 / loops, "evidence_hours_per_1k_loops": 1000 * evS / 3600 / loops,
 			"guard_items": guardN, "guard_hours_per_1k_loops": 1000 * guardS / 3600 / loops, "closed_auto": acc["closed_auto"], "closed_human_assisted": acc["closed_human_assisted"],
 			"gov": govMetrics(o, rp)}
+		withClosureLoss(res[i], acc)
 		if j.mit != "" { // keys only in mitigation sweeps, so the pre-mitigation sweep output is unchanged
 			res[i]["mitigation"], res[i]["effective_rho"], res[i]["audit"] = j.mit, cfg.effRho(), auditStats(sos, o.tr)
 			fmt.Fprintf(os.Stderr, "mit=%-6s ", j.mit)
@@ -504,11 +505,21 @@ func sweep(data, wasl string, P int, out string) {
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		res[len(jobs)] = map[string]interface{}{"err": -1, "double": "no_review", "precision": acc["precision"], "recall": acc["recall"],
 			"false_closures": acc["false_closures"], "closed_pred": acc["closed_pred"], "fc_upper95": acc["false_closure_rate_upper95"], "items_raised": len(rp.items), "attribution": acc["attribution"], "gov": govMetrics(o, rp)}
+		withClosureLoss(res[len(jobs)], acc)
 	}()
 	wg.Wait()
 	os.MkdirAll(filepath.Dir(out), 0700)
 	b, _ := json.MarshalIndent(res, "", " ")
 	os.WriteFile(out, b, 0600)
+}
+
+// withClosureLoss copies evalDecisions' ownership-aware closure loss into a sweep row next to the outcome-only
+// false_closures, so H7 consumers can score a closure made on another patient's (or unmapped) evidence as unsafe.
+func withClosureLoss(row, acc map[string]interface{}) map[string]interface{} {
+	for _, k := range []string{"unsafe_closures", "foreign_evidence_closures", "unverified_evidence_closures", "closure_loss"} {
+		row[k] = acc[k]
+	}
+	return row
 }
 
 // auditStats scores the senior audits against the truth (analysis only; the reviewer never sees the truth):
