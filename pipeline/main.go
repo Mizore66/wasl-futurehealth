@@ -220,6 +220,7 @@ func main() {
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	breastShowcase := fs.Int("breastshowcase", 0, "gen: after the other breast loops, add one for each of the first N women whose CRC and cervical loops both end open at an outreach step (genbreast.go; published person journey)")
 	breastShare := fs.Bool("breastshare", false, "gen: when women with no other loop run out, breast loops continue with women who hold another programme's loop (genbreast.go)")
 	ldctN := fs.Int("ldct", 0, "gen: lung cancer screening LDCT loops (acr2022lungrads); 0 = no LDCT loops (other feeds byte-identical)")
 	ldctData := fs.String("ldctdata", "", "gen/ldctcache: LDCT corpus dir(s), comma-separated for ldctcache (default <reports dir>/../ldct)")
@@ -302,7 +303,7 @@ func main() {
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
-	BreastShare = *breastShare
+	BreastShare, BreastShowcase = *breastShare, *breastShowcase
 	DRRecallMsg, RejectedMsg, DRSeenLinkAsk = *drRecallMsg, *rejMsg, *drSeenLink
 	LinkContradictionDOB = *linkConfirmDOB
 	SecondIDContradictionConfirm = *secondIDConfirm

@@ -775,6 +775,26 @@ class SmokeValidatorTests(unittest.TestCase):
         f.audit[cid] = a
         f.agent = d
 
+    def open_person_anchor(self, f, closed=False, signatures=None):
+        src = f.fix["fixtures"]["evidence_closure"]
+        cid = "ahs-mushrif/ServiceRequest/PERSON-sr-1"
+        d = copy.deepcopy(f.detail[src["id"]])
+        d["case"]["id"], d["case"]["closed"] = cid, closed
+        f.detail[cid] = d
+        f.fix["fixtures"]["person_journey"] = dict(src, id=cid, fixture="person_journey", closed=closed, decisions=len(d["decisions"]))
+        a = copy.deepcopy(f.audit[src["id"]])
+        a["case"], a["chain"], a["chain_length"] = cid, [], 0
+        a["decision_signatures"] = [{"sig": str(i)} for i in range(len(d["decisions"]) if signatures is None else signatures)]
+        f.audit[cid] = a
+
+    def test_open_person_anchor_may_have_an_empty_current_chain(self):
+        r = run_smoke(Fake(self.open_person_anchor))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_empty_chain_still_fails_for_a_closed_anchor_or_missing_signatures(self):
+        self.assertFails(lambda f: self.open_person_anchor(f, closed=True), "audit chain is empty")
+        self.assertFails(lambda f: self.open_person_anchor(f, signatures=0), "decision signature")
+
     def test_agent_review_fixture_passes_when_consistent(self):
         r = run_smoke(Fake(self.with_agent))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

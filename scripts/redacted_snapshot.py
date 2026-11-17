@@ -146,6 +146,13 @@ def _review_defaults(events):
             event["note"] = ""
 
 
+def _redacted_decision_ids(decisions):
+    """The redacted export drops decision ids; label each in order so views can key them, without inventing a real id."""
+    for index, decision in enumerate(decisions if isinstance(decisions, list) else []):
+        if isinstance(decision, dict):
+            decision.setdefault("decision_id", f"redacted-decision-{index + 1}")
+
+
 def detail_snapshot(export):
     _checked_export(export)
     detail = copy.deepcopy(export["detail"])
@@ -153,10 +160,22 @@ def detail_snapshot(export):
     detail["meta"] = copy.deepcopy(export["meta"])
     for identity in detail.get("identities", []):
         identity["registration"] = ""
+    _redacted_decision_ids(detail.get("decisions"))
+    for decision in detail.get("decisions", []):
+        decision.setdefault("owner", "")
     for item in detail.get("review_items", []):
         item["quote"] = ""
+        item.setdefault("report", "")
+        item.setdefault("verdict", "")
     for signoff in detail.get("signoffs", []):
         signoff.setdefault("verdict", "")
+        signoff.setdefault("reviewer", "")
+        signoff.setdefault("evidence", "")
+    overlay = (detail.get("api_contact") or {}).get("overlay")
+    if isinstance(overlay, dict):  # consent-overlay fields the web schema requires and the redacted export leaves out
+        for key in ("demo_pending_consent", "last_event_hash", "note"):
+            overlay.setdefault(key, "")
+        overlay.setdefault("revision", "redacted")  # nonempty in the web schema; fixtures mode never posts a revision
     _review_defaults(detail.get("api_reviews"))
     for investigation in detail.get("agent_investigations", []):
         for citation in investigation.get("citations", []):
@@ -173,6 +192,7 @@ def audit_snapshot(export):
     _pseudonymize_registration_fields(audit)
     audit["meta"] = copy.deepcopy(export["meta"])
     _review_defaults(audit.get("history"))
+    _redacted_decision_ids(audit.get("decision_signatures"))
     return audit
 
 

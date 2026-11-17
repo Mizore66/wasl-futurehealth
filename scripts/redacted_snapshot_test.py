@@ -155,11 +155,26 @@ class RedactedSnapshotTest(unittest.TestCase):
         self.assertEqual(detail["identities"][0]["registration"], "")
         self.assertEqual(detail["review_items"][0]["quote"], "")
         self.assertEqual(detail["signoffs"][0]["verdict"], "")
+        self.assertEqual((detail["signoffs"][0]["reviewer"], detail["signoffs"][0]["evidence"]), ("", ""))
+        self.assertEqual((detail["review_items"][0]["report"], detail["review_items"][0]["verdict"]), ("", ""))
         self.assertEqual(detail["api_reviews"][0]["actor"], "")
         self.assertEqual(detail["api_reviews"][0]["note"], "")
         self.assertEqual(detail["agent_investigations"][0]["citations"][0]["arg"], "")
         self.assertEqual(detail["agent_investigations"][0]["citations"][0]["value"], "")
         self.assertEqual(detail["agent_provenance"]["prompt_ver"], "")
+
+    def test_detail_fills_web_required_fields_the_export_leaves_out(self):
+        source = copy.deepcopy(self.export)
+        source["detail"]["decisions"] = [{"sig": "s", "state": "open"}]
+        source["detail"]["api_contact"] = {"overlay": {"status": "none", "mode": "demo"}}
+        detail = detail_snapshot(source)
+        self.assertEqual((detail["decisions"][0]["decision_id"], detail["decisions"][0]["owner"]), ("redacted-decision-1", ""))
+        keys = ("demo_pending_consent", "last_event_hash", "note")
+        self.assertEqual({k: detail["api_contact"]["overlay"][k] for k in keys}, dict.fromkeys(keys, ""))
+        self.assertEqual(detail["api_contact"]["overlay"]["revision"], "redacted")
+        source["audit"]["decision_signatures"] = [{"sig": "a"}, {"sig": "b", "decision_id": "kept"}]
+        audit = audit_snapshot(source)
+        self.assertEqual([s["decision_id"] for s in audit["decision_signatures"]], ["redacted-decision-1", "kept"])
 
     def test_audit_adds_only_empty_identity_defaults(self):
         audit = audit_snapshot(self.export)
