@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
 import { DICTS } from "@/components/patient/i18n";
+import { OUTCOME_GATE_COPY } from "@/components/patient/outcome-copy";
 
 const MOCK = "http://127.0.0.1:31987";
 let token = "";
@@ -419,18 +420,28 @@ for (const { lang, dir } of LANGS) {
     await expect(page.getByRole("status")).toHaveText(t.outcome.pending);
     await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
 
+    await control("/__mock/handoff", "pending_release");
+    await page.reload();
+    await expect(page.getByRole("status")).toHaveText(OUTCOME_GATE_COPY.pendingRelease);
+    if (lang !== "en") await expect(page.getByRole("status")).toHaveAttribute("lang", "en");
+    await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
+
     await control("/__mock/handoff", "released");
     await page.reload();
     await expect(page.locator("h1")).toHaveText(t.outcome.title);
-    await expect(page.getByRole("region", { name: t.outcome.nextHead })).toContainText(t.outcome.next.routine_screening);
-    await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toContainText(t.outcome.safetyNet);
+    // The second identifier comes first: no outcome, next step or safety net before the one-time code is verified.
+    await expect(page.getByText(OUTCOME_GATE_COPY.verifyIntro)).toBeVisible();
+    await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toHaveCount(0);
     await expect(page.getByText(t.outcome.simulated)).toBeVisible();
     await page.getByRole("button", { name: t.rights.getCode }).click();
     const code = (await page.getByRole("status").innerText()).match(/\d{6}/)![0];
-    const submit = page.getByRole("button", { name: t.outcome.acknowledge });
-    await expect(submit).toBeDisabled();
+    const show = page.getByRole("button", { name: OUTCOME_GATE_COPY.show });
+    await expect(show).toBeDisabled();
     await page.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
-    await submit.click();
+    await show.click();
+    await expect(page.getByRole("region", { name: t.outcome.nextHead })).toContainText(t.outcome.next.routine_screening);
+    await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toContainText(t.outcome.safetyNet);
+    await page.getByRole("button", { name: t.outcome.acknowledge }).click();
     await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
     await expectNoSeriousAxe(page);
 
@@ -438,6 +449,17 @@ for (const { lang, dir } of LANGS) {
     await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
   });
 }
+
+test("outcome: a wrong one-time code shows nothing and is announced", async ({ page }) => {
+  await control("/__mock/handoff", "released");
+  await open(page, "outcome", "en");
+  await page.getByRole("button", { name: DICTS.en.rights.getCode }).click();
+  await page.getByRole("textbox", { name: DICTS.en.rights.codeLabel }).fill("000000");
+  await page.getByRole("button", { name: OUTCOME_GATE_COPY.show }).click();
+  await expect(page.locator("main").getByRole("alert")).toHaveText(DICTS.en.rights.failed);
+  await expect(page.getByRole("region", { name: DICTS.en.outcome.safetyHead })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: DICTS.en.outcome.acknowledge })).toHaveCount(0);
+});
 
 test("outcome: held and suppressed consent show no content", async ({ page }) => {
   for (const [mode, line] of [["held_consent", DICTS.en.outcome.held], ["suppressed", DICTS.en.outcome.suppressed]] as const) {

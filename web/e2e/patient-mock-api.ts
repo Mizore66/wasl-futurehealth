@@ -63,7 +63,7 @@ type Link = {
   failNext?: "empty201" | "500" | "network";
   otp?: string;
   rights: RightsRow[];
-  handoff: { status: string; acknowledged_at?: string };
+  handoff: { status: string; acknowledged_at?: string; verified?: boolean };
 };
 const links = new Map<string, Link>();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -176,11 +176,13 @@ async function rights(req: IncomingMessage, res: ServerResponse, path: string) {
 
 const HANDOFF_VERSION = hash("outcome-handoff:routine_screening");
 function handoffView(link: Link) {
-  const { status, acknowledged_at } = link.handoff;
-  const shown = status === "released" || status === "acknowledged";
+  const { status, acknowledged_at, verified = false } = link.handoff;
+  const releasable = status === "released" || status === "acknowledged";
+  const shown = releasable && verified;
   return {
     status,
     delivery: "simulated",
+    ...(releasable && { verified }),
     ...(shown && {
       version: HANDOFF_VERSION,
       approved_at: "2026-10-01T08:00:00Z",
@@ -190,17 +192,31 @@ function handoffView(link: Link) {
   };
 }
 
-/** Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released; acknowledgement needs a one-time code. */
+/**
+ * Mirrors pipeline/api_outcome_handoff.go patientOutcomeRoute: content only once released and the link's one-time code is
+ * verified ({otp}); acknowledgement ({version}) needs that verification or a fresh code.
+ */
 async function outcome(req: IncomingMessage, res: ServerResponse) {
   const link = authorized(req);
   if (!link) return send(res, 401, { error: "patient link is missing or invalid" });
   if (req.method === "GET") return send(res, 200, { meta: {}, handoff: handoffView(link) });
-  const input = JSON.parse(await body(req)) as { version: string; otp: string };
+  const input = JSON.parse(await body(req)) as { version?: string; otp?: string };
+  const releasable = link.handoff.status === "released" || link.handoff.status === "acknowledged";
+  const codeOK = () => {
+    const ok = !!link.otp && input.otp === link.otp;
+    if (ok) link.otp = undefined;
+    return ok;
+  };
+  if (!input.version) {
+    if (!releasable) return send(res, 409, { error: "there is no released outcome to show", handoff: handoffView(link) });
+    if (!codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+    link.handoff.verified = true;
+    return send(res, 200, { meta: {}, handoff: handoffView(link) });
+  }
   if (link.handoff.status === "acknowledged" && input.version === HANDOFF_VERSION) return send(res, 200, { meta: {}, replayed: true, handoff: handoffView(link) });
   if (link.handoff.status !== "released" || input.version !== HANDOFF_VERSION) return send(res, 409, { error: "there is no released outcome with that version to acknowledge" });
-  if (!link.otp || input.otp !== link.otp) return send(res, 403, { error: "a valid one-time code for this link is required" });
-  link.otp = undefined;
-  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString() };
+  if (!link.handoff.verified && !codeOK()) return send(res, 403, { error: "a valid one-time code for this link is required" });
+  link.handoff = { status: "acknowledged", acknowledged_at: new Date().toISOString(), verified: true };
   return send(res, 201, { meta: {}, replayed: false, handoff: handoffView(link) });
 }
 
