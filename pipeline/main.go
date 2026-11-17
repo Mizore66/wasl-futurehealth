@@ -34,7 +34,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|staffcomms|backup-nats|restore-nats|verify-nats|check-nats")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|patient-link|staffcomms|retrievedreports|backup-nats|restore-nats|verify-nats|check-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -65,6 +65,22 @@ func main() {
 		}
 		if err := runStaffComms(*run, *data, *out); err != nil {
 			fmt.Fprintln(os.Stderr, "staffcomms:", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if cmd == "retrievedreports" { // coordinator-delivered retrieved reports -> source DiagnosticReports in a NEW cohort (api_retrieved_report.go)
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		run := fs.String("run", "", "run dir whose verified review ledger holds the delivered reports")
+		data := fs.String("data", "", "source cohort dir (read only)")
+		out := fs.String("out", "", "NEW cohort directory (must not exist)")
+		fs.Parse(os.Args[2:])
+		if *run == "" || *data == "" || *out == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "retrievedreports requires -run <run> -data <cohort> -out <new directory>")
+			os.Exit(2)
+		}
+		if err := runRetrievedReports(*run, *data, *out); err != nil {
+			fmt.Fprintln(os.Stderr, "retrievedreports:", err)
 			os.Exit(1)
 		}
 		return

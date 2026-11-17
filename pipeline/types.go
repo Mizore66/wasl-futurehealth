@@ -97,7 +97,8 @@ type Event struct {
 	Reason        string      `json:"reason,omitempty"` // Task.statusReason (referral response)
 	Recipient     string      `json:"rcpt,omitempty"`   // Communication recipient unit (e-consult question: the unit asked)
 	TextSha       string      `json:"tsha,omitempty"`
-	Ev            *TwoVerdict `json:"evv,omitempty"` // two-reader evidence verdict, computed in the stateless prep stage
+	Ev            *TwoVerdict `json:"evv,omitempty"`       // two-reader evidence verdict, computed in the stateless prep stage
+	Retrieved     string      `json:"retrieved,omitempty"` // DiagnosticReport delivered from a retrieved completed-elsewhere record: its ledger event (api_retrieved_report.go)
 	// v6
 	Prog     string    `json:"prog,omitempty"`   // crc|cervical (ServiceRequest code, Appointment serviceType, report kind)
 	Priority string    `json:"prio,omitempty"`   // cervical App. 5 priority from the index cytology/HPV category
