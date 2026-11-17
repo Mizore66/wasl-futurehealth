@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { apiMode, getCaseWithToken, getReviewSourceWithToken, postReviewClaimWithToken, postReviewWithToken, type ReviewSourceResult } from "@/lib/api/source";
+import { apiMode, getCaseWithToken, getFixtureReviewSource, getReviewSourceWithToken, postReviewClaimWithToken, postReviewWithToken, type ReviewSourceResult } from "@/lib/api/source";
 import * as session from "@/lib/api/reviewer-session";
 import { type SignInResult } from "@/components/review/auth";
 import { evidenceLabelsFor, ReviewDecision, type CaseDetail, type ReviewClaimInput, type ReviewReadInput, type ReviewState } from "@/lib/api/schema";
@@ -40,9 +40,12 @@ export type SubmitReadResult =
   | { ok: true; committed: true; read: string; states?: ReviewState[]; hash?: undefined }
   | { ok: false; failure: ReadFailure; states?: ReviewState[] };
 
-/** The report behind one raised evidence item, read with the signed-in reviewer's own token. */
+/**
+ * The report behind one raised evidence item, read with the signed-in reviewer's own token. In fixtures mode it is the
+ * committed synthetic report bound to the fixture item (simulated: nothing is signed there either).
+ */
 export async function readReviewSource(caseId: string, item: string): Promise<ReviewSourceResult> {
-  if (apiMode() !== "live") throw new Error("readReviewSource needs WASL_API_URL");
+  if (apiMode() !== "live") return getFixtureReviewSource(caseId, item);
   const token = await session.reviewerToken();
   if (!token) return { ok: false, status: 401 };
   return getReviewSourceWithToken(caseId, item, token);

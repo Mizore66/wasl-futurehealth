@@ -25,6 +25,7 @@ const (
 	operationsProbeTimeout   = 3 * time.Second
 	operationsBackupV1       = "wasl-file-backup-v1"
 	operationsBackupV2AESGCM = "wasl-file-backup-v2-aesgcm"
+	operationsBackupV3Chunk  = "wasl-file-backup-v3-chunked"
 )
 
 type operationsAPI struct {
@@ -82,16 +83,6 @@ type operationsRun struct {
 	Reason    string              `json:"reason,omitempty"`
 	LatencyMS *operationsLatency  `json:"latency_ms,omitempty"`
 	Recovery  *operationsRecovery `json:"recovery,omitempty"`
-}
-
-type operationsUnmeasured struct {
-	Status string `json:"status"`
-	Reason string `json:"reason"`
-}
-
-type operationsAPIMeasurements struct {
-	Latency   operationsUnmeasured `json:"latency"`
-	ErrorRate operationsUnmeasured `json:"error_rate"`
 }
 
 type operationsBackup struct {
@@ -402,6 +393,86 @@ func operationsBackupV2Valid(raw []byte, fields map[string]json.RawMessage) bool
 	return operationsBackupPathSet(files, true) && operationsBackupDirsAndFilesValid(dirs, files)
 }
 
+type operationsBackupFileV3 struct {
+	Path             string `json:"path"`
+	Size             *int64 `json:"size"`
+	Mode             *int   `json:"mode"`
+	SHA256           string `json:"sha256"`
+	Chunks           *int64 `json:"chunks"`
+	NoncePrefix      string `json:"nonce_prefix"`
+	CiphertextSHA256 string `json:"ciphertext_sha256"`
+}
+
+type operationsBackupManifestV3 struct {
+	Schema                string                      `json:"schema"`
+	CreatedAt             string                      `json:"created_at"`
+	KeyID                 string                      `json:"key_id"`
+	NondeterministicField []string                    `json:"nondeterministic_fields"`
+	WrappedDEK            string                      `json:"wrapped_dek"`
+	WrapNonce             string                      `json:"wrap_nonce"`
+	ChunkSize             *int64                      `json:"chunk_size"`
+	Dirs                  []operationsBackupDirectory `json:"dirs"`
+	Files                 []operationsBackupFileV3    `json:"files"`
+	HMAC                  string                      `json:"hmac_sha256"`
+}
+
+const operationsBackupMaxChunkSize = 64 << 20
+
+// operationsBackupV3Valid mirrors recovery.py's structural v3 checks: chunk size bounds, chunk counts consistent with
+// explicit sizes, and unique 4-byte nonce prefixes, plus the v2 path and directory rules.
+func operationsBackupV3Valid(raw []byte, fields map[string]json.RawMessage) bool {
+	required := map[string]bool{"schema": true, "key_id": true, "created_at": true, "nondeterministic_fields": true, "wrapped_dek": true,
+		"wrap_nonce": true, "chunk_size": true, "dirs": true, "files": true, "hmac_sha256": true}
+	if len(fields) != len(required) {
+		return false
+	}
+	for field := range fields {
+		if !required[field] {
+			return false
+		}
+	}
+	var manifest operationsBackupManifestV3
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&manifest); err != nil || manifest.Files == nil || manifest.Dirs == nil || manifest.ChunkSize == nil {
+		return false
+	}
+	chunkSize := *manifest.ChunkSize
+	if chunkSize < 1 || chunkSize > operationsBackupMaxChunkSize ||
+		!operationsBackupKeyIDPattern.MatchString(manifest.KeyID) || !operationsBackupSHA256Pattern.MatchString(manifest.HMAC) ||
+		!operationsBackupBase64(manifest.WrappedDEK, 48) || !operationsBackupBase64(manifest.WrapNonce, 12) {
+		return false
+	}
+	if strings.Join(manifest.NondeterministicField, ",") != "created_at,file_mtime,nats_sequence,nats_time" {
+		return false
+	}
+	files, dirs, prefixes := []string{}, []string{}, map[string]bool{}
+	for _, record := range manifest.Files {
+		if record.Size == nil || *record.Size < 0 || record.Mode == nil || *record.Mode < 0 || *record.Mode > 0o777 ||
+			record.Chunks == nil || !operationsBackupSHA256Pattern.MatchString(record.SHA256) ||
+			!operationsBackupSHA256Pattern.MatchString(record.CiphertextSHA256) ||
+			!operationsBackupBase64(record.NoncePrefix, 4) || prefixes[record.NoncePrefix] {
+			return false
+		}
+		wantChunks := (*record.Size + chunkSize - 1) / chunkSize
+		if wantChunks < 1 {
+			wantChunks = 1
+		}
+		if *record.Chunks != wantChunks {
+			return false
+		}
+		prefixes[record.NoncePrefix] = true
+		files = append(files, record.Path)
+	}
+	for _, directory := range manifest.Dirs {
+		if directory.Mode == nil || *directory.Mode < 0 || *directory.Mode > 0o777 {
+			return false
+		}
+		dirs = append(dirs, directory.Path)
+	}
+	return operationsBackupPathSet(files, true) && operationsBackupDirsAndFilesValid(dirs, files)
+}
+
 func operationsBackupV1Valid(raw []byte, fields map[string]json.RawMessage) bool {
 	if _, ok := fields["files"]; !ok {
 		return false
@@ -445,6 +516,10 @@ func parseOperationsBackupManifest(raw []byte) (string, string, bool) {
 	switch schema {
 	case operationsBackupV2AESGCM:
 		if !operationsBackupV2Valid(raw, fields) {
+			return "", "", false
+		}
+	case operationsBackupV3Chunk:
+		if !operationsBackupV3Valid(raw, fields) {
 			return "", "", false
 		}
 	case operationsBackupV1:
@@ -517,11 +592,11 @@ func (s *apiServer) getOperations(w http.ResponseWriter, r *http.Request) {
 		Schema: "wasl-operations/1", Meta: s.meta, ObservedAt: observedAt.Format(time.RFC3339Nano),
 		API:  operationsAPI{Status: health["status"].(string), Source: "/healthz", Dependencies: dependencies},
 		NATS: natsObservation, Queue: queue, Run: operationsRunFromReport(s.report),
-		APIMeasurements: operationsAPIMeasurements{
-			Latency:   operationsUnmeasured{Status: "unmeasured", Reason: "api_request_latency_not_recorded"},
-			ErrorRate: operationsUnmeasured{Status: "unmeasured", Reason: "api_request_outcomes_not_recorded"},
-		},
-		Backup: operationsBackupFromManifest(os.Getenv("WASL_BACKUP_MANIFEST"), observedAt),
+		APIMeasurements: unrecordedAPIMeasurements(),
+		Backup:          operationsBackupFromManifest(os.Getenv("WASL_BACKUP_MANIFEST"), observedAt),
+	}
+	if s.requests != nil {
+		response.APIMeasurements = s.requests.snapshot(observedAt)
 	}
 	writeJSONResp(w, http.StatusOK, response)
 }

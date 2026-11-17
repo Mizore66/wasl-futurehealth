@@ -88,12 +88,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	for _, s := range f.Signoffs {
 		signed[s.ItemID] = s
 	}
-	owner := ""
-	for _, t := range f.Tasks {
-		if t.Owner != "" {
-			owner = t.Owner
-		}
-	}
+	owner := canonicalTaskOwner(f.Tasks)
 	dd := &DRDecision{GradeDay: f.SRDay}
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import socket
 import stat
@@ -29,7 +30,8 @@ from recovery import migrate_files, rollback_files, write_file_bundle  # noqa: E
 from recovery_crypto import load_keyring, new_keyring, rotate_keyring  # noqa: E402
 from test_recovery import write_v1_bundle  # noqa: E402
 
-NATS_SERVER = shutil.which("nats-server")
+NATS_SERVER = shutil.which("nats-server") or next(
+    (str(path) for path in (ROOT / "bin/nats-server",) if path.is_file() and os.access(path, os.X_OK)), None)
 
 
 def make_tree(root: Path) -> Path:
@@ -214,14 +216,23 @@ class TransactionalRestoreTests(unittest.TestCase):
         stub = self.root / "stub.sh"
         stub.write_text("#!/bin/sh\nexit 3\n")
         stub.chmod(0o755)
+        check = self.root / "check.sh"
+        check.write_text('#!/bin/sh\ncat "$1" >/dev/null\n')  # consumes the streamed payload and accepts it
+        check.chmod(0o755)
         destination = self.work / "live"
         before = {str(p) for p in Path(tempfile.gettempdir()).glob(".wasl-nats-payload-*")}
-        result = cli("migrate", bundle, "--key-file", self.keys, destination, "--nats-restore-command", stub)
+        result = cli("migrate", bundle, "--key-file", self.keys, destination, "--nats-restore-command", stub,
+                     "--nats-check-command", check)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("manual purge", result.stdout)
         self.assertFalse(destination.exists())
         self.assertEqual(self.leftovers(), [])
         self.assertEqual({str(p) for p in Path(tempfile.gettempdir()).glob(".wasl-nats-payload-*")}, before)
+        # Without a check command a chunked bundle never reaches the restore command.
+        result = cli("migrate", bundle, "--key-file", self.keys, destination, "--nats-restore-command", stub)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--nats-check-command", result.stdout)
+        self.assertFalse(destination.exists())
 
     def test_legacy_bundle_requires_explicit_opt_in_for_restore(self):
         key = self.root / "backup_key"
@@ -336,11 +347,13 @@ class ShellRestoreOrderTests(unittest.TestCase):
         shim.chmod(0o755)
         self.stub(0)
 
-    def stub(self, code):
+    def stub(self, code, only=None):
         wsi = self.bin / "wsi7"
-        # records the call, whether the destination holds files yet, and whether a staging dir exists right now
+        # records the call, whether the destination holds files yet, and whether a staging dir exists right now;
+        # exits with `code` for every command, or only for the command named by `only`
+        fail = f'[ "$1" = "{only}" ] && exit {code}\nexit 0\n' if only else f'exit {code}\n'
         wsi.write_text(f'#!/bin/sh\necho "$1 out=$(ls "{self.out}" 2>/dev/null | wc -l | tr -d " ") '
-                       f'staged=$(ls -a "{self.out.parent}" | grep -c restore-)" >> "{self.calls}"\nexit {code}\n')
+                       f'staged=$(ls -a "{self.out.parent}" | grep -c restore-)" >> "{self.calls}"\n{fail}')
         wsi.chmod(0o755)
 
     def run_restore(self, key=None, **extra):
@@ -357,7 +370,7 @@ class ShellRestoreOrderTests(unittest.TestCase):
     def test_success_order_is_stage_then_nats_then_install(self):
         result = self.run_restore()
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertEqual(self.recorded(), ["restore-nats out=0 staged=1"])
+        self.assertEqual(self.recorded(), ["check-nats out=0 staged=1", "restore-nats out=0 staged=1"])
         self.assertEqual((self.out / "top.txt").read_text(), "top")
         self.assertEqual(sorted(p.name for p in self.out.parent.iterdir()), [".out.migration.json", "out"])
 
@@ -382,11 +395,23 @@ class ShellRestoreOrderTests(unittest.TestCase):
     def test_nats_failure_installs_nothing_and_names_the_manual_purge(self):
         self.out.mkdir()
         (self.out / "old").write_text("old")
-        self.stub(3)
+        self.stub(3, only="restore-nats")
         result = self.run_restore(WASL_RECOVERY_REPLACE="1")
         self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(len(self.recorded()), 1)
+        self.assertEqual([line.split()[0] for line in self.recorded()], ["check-nats", "restore-nats"])
         self.assertIn("manual", result.stdout)
+        self.assertEqual(os.listdir(self.out), ["old"])
+        self.assertEqual([p.name for p in self.out.parent.iterdir() if "restore-" in p.name], [])
+
+    def test_nats_payload_validation_failure_never_reaches_restore(self):
+        self.out.mkdir()
+        (self.out / "old").write_text("old")
+        self.stub(3, only="check-nats")
+        result = self.run_restore(WASL_RECOVERY_REPLACE="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual([line.split()[0] for line in self.recorded()], ["check-nats"])
+        self.assertIn("before any JetStream write", result.stdout)
+        self.assertNotIn("manual purge", result.stdout)
         self.assertEqual(os.listdir(self.out), ["old"])
         self.assertEqual([p.name for p in self.out.parent.iterdir() if "restore-" in p.name], [])
 
@@ -506,6 +531,101 @@ class NatsReplayTests(unittest.TestCase):
         # The real restore evidence in this test is the per-stream logical hashes compared above.
         self.assertTrue(soak.compare_exports({"f": self.export("c" * 64)}, {"f": self.export("c" * 64)})["matched"])
         self.assertFalse(soak.compare_exports({"f": self.export("c" * 64)}, {"f": self.export("d" * 64)})["matched"])
+
+    def run_cli(self, url, *args, stdin=None, tmpdir=None):
+        env = dict(os.environ, WASL_NATS_URL=url, WASL_NATS_EXTERNAL="1")
+        if tmpdir is not None:
+            env["TMPDIR"] = str(tmpdir)
+        result = subprocess.run([sys.executable, str(SCRIPTS / "recovery.py"), *map(str, args)], env=env, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.root, stdin=stdin)
+        return result
+
+    @staticmethod
+    def summaries(stdout, operation):
+        return [json.loads(line)["summary"] for line in stdout.splitlines()
+                if line.startswith("{") and json.loads(line).get("operation") == operation]
+
+    def test_streamed_chunked_bundle_round_trip_without_plaintext_scratch(self):
+        source_url, target_url = self.start_nats("stream-source"), self.start_nats("stream-target")
+        self.seed(source_url)
+        work = self.root / "streamed"
+        work.mkdir()
+        scratch = work / "tmp"
+        scratch.mkdir()
+        keys = work / "recovery_keys.json"
+        new_keyring(keys)
+        files = make_tree(work)
+        bundle = work / "bundle"
+        wsi = shlex.quote(str(self.binary))
+        backup = self.run_cli(source_url, "backup", files, bundle, "--key-file", keys, "--chunk-size", "97",
+                              "--nats-command", f"{wsi} backup-nats -stream -bundle", tmpdir=scratch)
+        self.assertEqual(backup.returncode, 0, backup.stderr[-2000:])
+        source_summary = self.summaries(backup.stdout, "backup-nats")[0]
+        self.assertGreaterEqual(source_summary["messages"], 4)
+        manifest = json.loads((bundle / "manifest.json").read_text())
+        self.assertEqual(manifest["schema"], recovery.SCHEMA_V3)
+        nats_record = next(r for r in manifest["files"] if r["path"] == "nats/nats.json")
+        self.assertGreater(nats_record["chunks"], 4, "tiny chunks must split the NATS payload")
+        self.assertEqual(list(scratch.iterdir()), [], "no plaintext NATS payload may be staged in TMPDIR")
+        restore = self.run_cli(target_url, "migrate", bundle, "--key-file", keys, work / "live",
+                               "--nats-check-command", f"{wsi} check-nats -bundle",
+                               "--nats-restore-command", f"{wsi} restore-nats -bundle", tmpdir=scratch)
+        self.assertEqual(restore.returncode, 0, restore.stderr[-2000:])
+        checked = self.summaries(restore.stdout, "check-nats")[0]
+        restored = self.summaries(restore.stdout, "restore-nats")[0]
+        self.assertEqual(checked["logical_sha256_by_stream"], source_summary["logical_sha256_by_stream"])
+        self.assertEqual(restored["logical_sha256_by_stream"], source_summary["logical_sha256_by_stream"])
+        self.assertEqual(tree_state(work / "live"), tree_state(files))
+        self.assertEqual(list(scratch.iterdir()), [])
+        extract = subprocess.Popen([sys.executable, str(SCRIPTS / "recovery.py"), "extract-nats", str(bundle), "-",
+                                    "--key-file", str(keys)], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        verify = subprocess.run([str(self.binary), "verify-nats", "-bundle", "-"], stdin=extract.stdout, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.root,
+                                env=dict(os.environ, WASL_NATS_URL=target_url, WASL_NATS_EXTERNAL="1"))
+        extract.stdout.close()
+        self.assertEqual(extract.wait(), 0)
+        self.assertEqual(verify.returncode, 0, verify.stderr[-2000:])
+        verified = json.loads(verify.stdout.strip().splitlines()[-1])["summary"]
+        self.assertEqual(verified["logical_sha256_by_stream"], source_summary["logical_sha256_by_stream"])
+        # A second restore into the now-populated target is refused, after offline validation, without writes.
+        again = self.run_cli(target_url, "migrate", bundle, "--key-file", keys, work / "live2",
+                             "--nats-check-command", f"{wsi} check-nats -bundle",
+                             "--nats-restore-command", f"{wsi} restore-nats -bundle")
+        self.assertNotEqual(again.returncode, 0)
+        self.assertFalse((work / "live2").exists())
+        # A ciphertext chunk tamper in the NATS payload fails during the offline check, before any JetStream write.
+        third_url = self.start_nats("stream-third")
+        cipher = bundle / "files/nats/nats.json.aead"
+        data = bytearray(cipher.read_bytes())
+        data[len(data) // 2] ^= 1
+        cipher.write_bytes(bytes(data))
+        tampered = self.run_cli(third_url, "migrate", bundle, "--key-file", keys, work / "live3",
+                                "--nats-check-command", f"{wsi} check-nats -bundle",
+                                "--nats-restore-command", f"{wsi} restore-nats -bundle")
+        self.assertNotEqual(tampered.returncode, 0)
+        self.assertFalse((work / "live3").exists())
+        self.assertEqual(self.wsi(third_url, "backup-nats", "-stream", "-bundle", str(work / "third.ndjson"))
+                         ["summary"]["streams"], 0, "a refused restore must not write to JetStream")
+
+    def test_existing_v2_bundle_restores_through_the_streamed_restore_path(self):
+        source_url, target_url = self.start_nats("v2-source"), self.start_nats("v2-target")
+        self.seed(source_url)
+        work = self.root / "v2compat"
+        work.mkdir()
+        plain = work / "nats.json"
+        source_summary = self.wsi(source_url, "backup-nats", "-bundle", str(plain))["summary"]
+        keys = work / "recovery_keys.json"
+        new_keyring(keys)
+        files = make_tree(work)
+        write_file_bundle(files, work / "bundle", keys, nats_json=plain, schema=recovery.SCHEMA_V2)
+        wsi = shlex.quote(str(self.binary))
+        restore = self.run_cli(target_url, "migrate", work / "bundle", "--key-file", keys, work / "live",
+                               "--nats-check-command", f"{wsi} check-nats -bundle",
+                               "--nats-restore-command", f"{wsi} restore-nats -bundle")
+        self.assertEqual(restore.returncode, 0, restore.stderr[-2000:])
+        restored = self.summaries(restore.stdout, "restore-nats")[0]
+        self.assertEqual(restored["logical_sha256_by_stream"], source_summary["logical_sha256_by_stream"])
+        self.assertEqual(tree_state(work / "live"), tree_state(files))
 
 
 if __name__ == "__main__":

@@ -9,7 +9,11 @@ import { ReviewDesk } from "@/components/review/review-desk";
 import { GUIDED_EVIDENCE_LABELS, type CaseDetail } from "@/lib/api/schema";
 import { programmeDetail } from "./programme-cases";
 
-vi.mock("@/app/app/review/[id]/actions", () => ({ submitReviewRead: vi.fn() }));
+/* The fixture desk previews an evidence label only with its source report on screen (#162). */
+vi.mock("@/app/app/review/[id]/actions", () => ({
+  submitReviewRead: vi.fn(),
+  readReviewSource: vi.fn().mockResolvedValue({ ok: true, source: { report: "p/DiagnosticReport/IFH-1", report_version: 1, day: 1, text: "Synthetic IFHAS report." } }),
+}));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

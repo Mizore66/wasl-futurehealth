@@ -32,7 +32,8 @@ export const en: PatientDict = {
     rightsItems: [
       "Your privacy is protected. Only you and your care team see your result.",
       "You can ask for a clearer explanation, by phone or in your language.",
-      "You can say no to follow-up or question any decision. Your care will not change.",
+      // #157: never promise that saying no leaves care unchanged. Revised meaning awaits clinical sign-off.
+      "You can say no to follow-up or question any decision. If you say no, you will still be treated with respect and can still get other care you need. Talk to your doctor about what saying no could mean for you and what other choices you have.",
     ],
     rightsNote: "A person on the care team reviews every request, not an automated system.",
   },

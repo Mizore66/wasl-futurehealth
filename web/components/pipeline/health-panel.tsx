@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { formatUtcInstant as utc } from "@/lib/domain/day";
 import type { Operations } from "@/lib/api/schema";
-import { completedRunRate, DEPENDENCY_GLOSS, DEPENDENCY_ORDER, type OperationsState } from "./health";
+import { apiErrorRateText, apiLatencyText, completedRunRate, DEPENDENCY_GLOSS, DEPENDENCY_ORDER, WINDOW_BOUND_GLOSS, type OperationsState } from "./health";
 
 /** Point-in-time synthetic observations and separately labelled completed-run measurements (issue #81). */
 export function HealthPanel({ state }: { state: OperationsState }) {
@@ -77,10 +77,7 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
       <p className="m-0 mt-2 text-small text-muted">Source: {o.queue.source}. Ordered ephemeral consumers are not continuously measured.</p>
 
       <h3 className="m-0 mt-5 text-body font-medium">Current API measurements</h3>
-      <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-        <Fact label="Current API latency" value="Unmeasured" note={o.api_measurements.latency.reason} testid="api-latency" />
-        <Fact label="Current API error rate" value="Unmeasured" note={o.api_measurements.error_rate.reason} testid="api-error-rate" />
-      </dl>
+      <APIMeasurements measurements={o.api_measurements} />
 
       <h3 className="m-0 mt-5 text-body font-medium">Completed synthetic run</h3>
       <p className="m-0 mt-1 text-small text-muted">
@@ -113,6 +110,49 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
         The API reads only the configured manifest&apos;s schema and creation time. It does not authenticate or mount the bundle, read keys,
         decrypt payloads, or verify a restore. Bundle age is not proof of a successful backup or restore.
       </p>
+    </>
+  );
+}
+
+function APIMeasurements({ measurements: m }: { measurements: Operations["api_measurements"] }) {
+  const observed = m.window;
+  return (
+    <>
+      <p className="m-0 mt-1 text-small text-muted">
+        {observed
+          ? `Requests completed by this API process in a rolling window of at most ${observed.length_seconds / 60} minutes and ${observed.capacity.toLocaleString("en-US")} requests, kept in memory only. A restart starts an empty window. Route labels are fixed templates; no case, person, actor or credential is recorded. This is a point-in-time observation of synthetic traffic, not an SLO.`
+          : "This response was not produced by an API process that records requests, so current latency and error rate are not measured."}
+      </p>
+      <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+        {observed && (
+          <>
+            <Fact label="Requests in window" value={observed.samples.toLocaleString("en-US")} testid="api-window-samples" />
+            <Fact label="Window" value={<><Instant value={observed.start} /> to <Instant value={observed.end} /></>} note={WINDOW_BOUND_GLOSS[observed.start_bound]} testid="api-window" />
+            <Fact label="API process started" value={<Instant value={observed.process_started_at} />} testid="api-process-started" />
+            <Fact label="Latest request completed" value={observed.latest_sample_at ? <Instant value={observed.latest_sample_at} /> : "None in window"} testid="api-latest-sample" />
+          </>
+        )}
+        <Fact label="Current API latency" value={apiLatencyText(m.latency)} note={m.latency.status === "unmeasured" ? m.latency.reason : `Nearest-rank percentiles over ${m.latency.samples} requests.`} testid="api-latency" />
+        <Fact
+          label="Current API error rate"
+          value={apiErrorRateText(m.error_rate)}
+          note={m.error_rate.status === "unmeasured" ? m.error_rate.reason : `Server errors (HTTP 5xx) per request. ${m.error_rate.client_errors} client errors (HTTP 4xx, including refused authentication) are counted separately.`}
+          testid="api-error-rate"
+        />
+      </dl>
+      {m.routes && m.routes.length > 0 && (
+        <table data-testid="api-routes" className="mt-3 w-full max-w-xl text-left text-small">
+          <caption className="sr-only">Requests in the current window by route</caption>
+          <thead>
+            <tr className="text-muted"><th scope="col" className="font-normal">Route</th><th scope="col" className="font-normal">Requests</th><th scope="col" className="font-normal">Server errors</th><th scope="col" className="font-normal">Client errors</th></tr>
+          </thead>
+          <tbody>
+            {m.routes.map((route) => (
+              <tr key={route.route}><td className="break-all">{route.route}</td><td>{route.requests}</td><td>{route.server_errors}</td><td>{route.client_errors}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   );
 }

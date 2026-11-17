@@ -91,12 +91,7 @@ func (c *ClosureCore) evalBreast(ls *loopState, inSeq uint64, mid string) []OutM
 	for _, s := range f.Signoffs {
 		signed[s.ItemID] = s
 	}
-	owner := ""
-	for _, t := range f.Tasks {
-		if t.Owner != "" {
-			owner = t.Owner
-		}
-	}
+	owner := canonicalTaskOwner(f.Tasks)
 	bd := &BreastDecision{GradeDay: f.SRDay}
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row

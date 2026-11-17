@@ -24,10 +24,13 @@ Built controls:
   tell such shapes apart from a different header split. Only then does it drop broker headers for publish and readback.
   Built and tested with Go unit tests and local single-node NATS 2.12.6 only.
 - The file bundle contains the materialised run, cohort, anchors, and API review ledger. New bundles are
-  `wasl-file-backup-v2-aesgcm`: each payload (including the NATS payload) is AES-256-GCM encrypted under a fresh
-  per-bundle data key, which is wrapped by the active generation of a versioned keyring (`recovery_keys.json`) held
-  outside the bundle; the manifest is HMAC-SHA-256 authenticated with that generation's independent key. Verification
-  finishes before restore contacts NATS or creates run files.
+  `wasl-file-backup-v3-chunked`: each payload (including the NATS payload) is split into fixed-size chunks (1 MiB by
+  default), and every chunk is AES-256-GCM encrypted and authenticated on its own under a fresh per-bundle data key,
+  which is wrapped by the active generation of a versioned keyring (`recovery_keys.json`) held outside the bundle; the
+  manifest is HMAC-SHA-256 authenticated with that generation's independent key. Backup, verification, extraction and
+  restore stream one chunk at a time (see [Chunked bundles and streamed NATS payloads](#chunked-bundles-and-streamed-nats-payloads)).
+  Existing `wasl-file-backup-v2-aesgcm` bundles remain verifiable and restorable unchanged. Verification finishes
+  before restore contacts NATS or creates run files.
 - File replacement stages and fsyncs a complete generation, retains the previous generation, and writes a rollback
   journal. `rollback` swaps the previous generation back without deleting the rejected generation.
 - NATS clients and routes use authenticated mutual TLS. The API uses HTTPS and Basic credentials from a file-backed
@@ -40,7 +43,7 @@ Built controls:
 - Destructive cohort generation exists only behind the explicit `seed` profile. Ordinary `up`, `restart`, and recovery
   commands never regenerate the cohort or delete streams/run files.
 
-Remaining boundaries are listed at the end. v2 bundles are encrypted and authenticated, but the keyring is the single
+Remaining boundaries are listed at the end. v2 and v3 bundles are encrypted and authenticated, but the keyring is the single
 secret that unlocks them: keep the backup and secret volumes in separate protected storage. `comparison_sha256` excludes `meta.loaded_at`;
 `content_sha256`, load times, broker physical metadata, and consumer positions are not expected to be restart-stable.
 
@@ -77,7 +80,7 @@ podman compose -f "$COMPOSE_FILE" config --quiet
 `production_secrets.sh` refuses to overwrite an existing path. `production_volume_load.sh` creates a new external secret
 volume and copies files with `podman cp`; it does not depend on the Podman VM sharing host paths. Preserve that volume
 and a separately protected copy of its recovery keys. Losing the JetStream key makes encrypted retained stores
-unreadable; losing the recovery keyring (`recovery_keys.json`, v2 bundles) or the legacy `backup_key` (v1 bundles) prevents bundle authentication and decryption.
+unreadable; losing the recovery keyring (`recovery_keys.json`, v2 and v3 bundles) or the legacy `backup_key` (v1 bundles) prevents bundle authentication and decryption.
 
 ## Optional explicit synthetic seed
 
@@ -109,7 +112,9 @@ podman compose -f "$COMPOSE_FILE" --profile recovery run --rm recovery recovery-
 
 The output records stream/message counts and per-stream logical hashes. The bundle is at `/backup/bundle` in the
 external backup volume and contains `manifest.json` and one `files/<path>.aead` ciphertext per run file plus the NATS
-payload. Neither the keyring nor any data key is included.
+payload. Neither the keyring nor any data key is included. `recovery-backup` streams the NATS payload from
+`wsi7 backup-nats -stream` through an inherited pipe straight into chunk encryption; no plaintext NATS file is written.
+`WASL_RECOVERY_CHUNK_BYTES` overrides the 1 MiB chunk size (1 byte to 64 MiB).
 
 ### Key custody, rotation and legacy bundles
 
@@ -120,7 +125,7 @@ payload. Neither the keyring nor any data key is included.
 - Back up the keyring separately from the bundles. Losing it, or the generation a bundle names, loses that bundle.
 - Legacy v1 (HMAC-only, unencrypted) bundles are read-only and are accepted only with an explicit opt-in:
   `--legacy-hmac` on `verify`/`migrate`, or `WASL_RECOVERY_LEGACY_HMAC=1` with `WASL_RECOVERY_KEY_FILE` pointing at the
-  old `backup_key`. It is never a default; `backup` always writes v2.
+  old `backup_key`. It is never a default; `backup` always writes chunked v3.
 - Adding or rotating the keyring on an existing deployment: **in-place change of an existing secrets volume is not
   supported.** `production_secrets.sh` refuses an existing directory, `production_volume_load.sh` refuses an existing
   volume, and the `recovery` service mounts the secrets volume read-only. The working path is to create a **new**
@@ -131,19 +136,100 @@ payload. Neither the keyring nor any data key is included.
   `WASL_SECRETS_VOLUME` at it. Keep the same `js_key` and TLS/password files if the retained JetStream stores and
   clients must keep working; replacing only the recovery files means copying the old values for those too. This
   procedure is documented, not exercised in a container drill.
-- Both **backup** (`recovery-backup` writes the plaintext `wsi7 backup-nats` output to a mode-0700 `mktemp` directory
-  before encrypting it) and **restore** (the decrypted NATS payload handed to `restore-nats`) place a plaintext NATS
-  file under `${TMPDIR:-/tmp}`. Restore also decrypts the run files into a private mode-0700 staging directory beside the
-  destination, so the destination filesystem needs room for one full decrypted copy. **The temp filesystem must hold the
-  plaintext NATS payload for both operations.** In `deploy/production.compose.yml` the
-  `recovery` service is `read_only: true` with `tmpfs: ["/tmp:size=64m,mode=1777"]`, so the cap is **64 MB** for both operations and `/tmp` is
-  the default writable scratch path there (the staging copy goes to the writable `wasl-run:/var/lib` volume beside
-  `/var/lib/wasl`). Keep `TMPDIR` unset or `/tmp` in that container: any path not backed by a writable mount (the root filesystem is
-  read-only; `/var/lib` and `/backup` are writable volumes) makes the operation fail. For a payload larger than 64 MB raise the `size=` on that tmpfs, or mount a larger writable volume (for
-  example at `/scratch`) and set `TMPDIR=/scratch`. The size of the decrypted NATS payload in the 9 Nov drill (6 streams,
-  5,868 messages) was **not recorded** in any artifact, so whether it fits 64 MB is unproven; measure it before relying
-  on the cap (`python3 scripts/recovery.py extract-nats <bundle> <out> --key-file <keyring>; wc -c <out>`).
+- **Scratch space.** For chunked v3 bundles neither backup nor restore nor `recovery-verify` writes a plaintext NATS
+  file: the payload moves through pipes, so the 64 MB `/tmp` tmpfs of the `recovery` service
+  (`tmpfs: ["/tmp:size=64m,mode=1777"]` in `deploy/production.compose.yml`) no longer limits the NATS payload size.
+  Restore still decrypts the **run files** into a private mode-0700 staging directory beside the destination (the
+  writable `wasl-run:/var/lib` volume), so that filesystem needs room for one full decrypted copy of the run files; the
+  NATS payload is never part of that copy. Restoring an **existing v2 bundle** still decrypts its NATS payload, whole and
+  in memory, into a private file under `${TMPDIR:-/tmp}`, so for v2 bundles the 64 MB tmpfs remains the cap: raise its
+  `size=` or mount a larger writable volume and set `TMPDIR` if a v2 payload exceeds it (`python3
+  scripts/recovery.py extract-nats <bundle> - --key-file <keyring> | wc -c` measures it without writing plaintext).
   Temporary plaintext is removed logically (unlink), which is **not physical secure erasure**.
+
+## Chunked bundles and streamed NATS payloads
+
+**Built and tested locally (Go unit tests, Python unit tests, and single-node NATS 2.12.6 drills); not yet run in a
+container drill or on a second machine.**
+
+### Formats
+
+- **File bundle `wasl-file-backup-v3-chunked`.** The manifest adds `chunk_size` (1 byte to 64 MiB, 1 MiB by default)
+  and records, per file, the explicit plaintext `size`, `chunks` (which must equal `max(1, ceil(size / chunk_size))`),
+  the whole-plaintext `sha256`, the whole-ciphertext `ciphertext_sha256`, and a 4-byte `nonce_prefix` unique within the
+  bundle. `files/<path>.aead` is the concatenation of the chunks; each is `ciphertext || 16-byte tag`, so the file is
+  exactly `size + 16 * chunks` bytes. Chunk `i` uses nonce `nonce_prefix || i` (64-bit big-endian) under the fresh
+  per-bundle data key, and its AES-GCM associated data binds the schema, key id, path, chunk size, chunk index and a
+  final-chunk flag. The data key is wrapped with associated data `wasl-file-backup-v3-chunked|<key id>`.
+- **NATS payload `wasl-nats-backup-v2-stream`.** Newline-delimited JSON: a header with the stream count; per stream a
+  `stream` record (configuration and durable consumers), one `message` record per retained message, and a
+  `stream_end` record with its explicit message count, data byte total and v1 logical digest of the headers exactly as
+  stored; and a final `end` trailer with the stream and message totals. Streams appear in strictly ascending name
+  order, messages in strictly increasing sequence order. One record is limited to 96 MiB (a 64 MiB NATS
+  `max_payload` message encoded); backup refuses to write a larger record.
+
+### Fail-closed behaviour (tested)
+
+- Each chunk is authenticated before any of its plaintext is used. A bit flip, a reordered, duplicated or appended
+  chunk, a truncation inside a chunk, and a truncation exactly at a chunk boundary (caught by the final-chunk flag even
+  when an attacker with the authentication key rewrites the manifest consistently), a wrong or missing key generation,
+  a swapped nonce prefix, an inconsistent chunk size or count, and an unauthenticated manifest edit all fail closed.
+- When plaintext is delivered to a consumer (a restored file, `extract-nats`, or a pipe into `check-nats` or
+  `restore-nats`), the final chunk is held back until the whole-ciphertext and whole-plaintext hashes have matched, so
+  a consumer never receives a complete stream that failed final verification.
+- The NATS stream reader refuses a missing trailer, data after the trailer, truncation anywhere, reordered or
+  duplicated messages or streams, a misnumbered stream, count/size/total mismatches, unknown fields, malformed headers
+  and oversized records. The **original digest of each stream is validated before its normalised content is used**,
+  exactly as for v1 payloads; broker headers are dropped only for publish and readback.
+- A pipe cannot be reread, so restore validates the complete authenticated payload offline with
+  `wsi7 check-nats -bundle <pipe>` first, then streams it a second time into `wsi7 restore-nats -bundle <pipe>
+  -prechecked`. Without `-prechecked` a non-rereadable stream is refused before JetStream is touched; a regular file is
+  scanned completely before the first write. The restore pass re-validates every stream's digest and reads every
+  restored stream back. `recovery.py migrate` refuses a chunked bundle unless `--nats-check-command` is given.
+- Restore creates each stream with the shortest accepted 100 ms deduplication window, waits only when a
+  `Nats-Msg-Id` was republished within the last 200 ms (tracked for that long only, so memory stays bounded), fails if
+  any message is suppressed as a duplicate, and then restores the stream's own configuration.
+
+### Interrupted transfers and partial restores
+
+- A NATS backup command that exits non-zero, or a stream that cannot be encrypted, leaves no bundle: the staging
+  directory beside the destination is removed and nothing is published; existing bundles and the source are untouched.
+- A restore never deletes or overwrites the bundle, refuses a non-empty destination unless `WASL_RECOVERY_REPLACE=1`
+  (which retains the previous generation for rollback), and refuses a JetStream that already has streams.
+- A validation failure (`check-nats`) happens before any JetStream write and installs no files. A failure while
+  `restore-nats` runs (including an interrupted pipe, which it reports as truncation) leaves whatever it already
+  created in JetStream **in place as evidence**; the run files are not installed, and a retry is refused until an
+  operator purges JetStream manually. Automatic purge is deliberately not implemented.
+
+### Measured resource use (synthetic, local)
+
+Measured on macOS/arm64 with Python 3.13 and Go 1.27.4 by `scripts/test_recovery_chunked.py` and
+`pipeline/recovery_stream_test.go`, using a synthetic 75,497,472-byte (72 MiB) NATS payload, larger than the old
+64 MB scratch cap, with chunks forced to 64 KiB:
+
+| Path | Measured |
+| --- | --- |
+| Python heap peak (`tracemalloc`): streamed backup / verify / extraction / pipe into a reader | 0.29 / 0.21 / 0.21 / 0.22 MB |
+| Whole-process max RSS, `recovery.py backup` with the streamed generator / `recovery.py verify` | about 32 / 32 MB (interpreter and OpenSSL baseline) |
+| Plaintext written to `TMPDIR` during backup, extraction and streamed restore input | none |
+| Go retained (post-GC) heap growth while validating a 100,784,621-byte `wasl-nats-backup-v2-stream` payload (`scanNATSStream`, 64 KiB messages) | about 1.3 MB |
+| Clean extraction and streamed-pipe SHA-256 vs the source stream | equal |
+
+These are single-run observations on one developer machine, not a sizing guarantee. Peak memory is bounded by the
+chunk size (Python) and the largest single NATS message record (Go); the Go bound therefore grows with the configured
+NATS `max_payload`, up to the 96 MiB record limit.
+
+### Remaining unknowns
+
+- **RPO and RTO are unmeasured.** No production-sized stream has been backed up or restored; restore throughput is
+  bounded by synchronous republishing of one message at a time and was not timed against a target. No RPO/RTO claim is
+  made.
+- Restore decrypts and parses the NATS payload three times (bundle verification, `check-nats`, `restore-nats`), which
+  trades CPU time for bounded memory; its cost on a large payload is unmeasured.
+- The new path has not been exercised in the Compose/Podman container drill, on Linux, or on a second machine; the
+  11 Nov Linux evidence below is for v2 bundles.
+- Restoring an existing v2 bundle keeps the previous whole-payload memory and `TMPDIR` requirements; re-creating a new
+  v3 backup from the restored deployment is the migration path to bounded resources.
 
 ## Restore into empty volumes from a clean checkout
 
@@ -183,8 +269,9 @@ print("clean restore and restart comparison hashes match")
 PY
 ```
 
-`recovery-restore` authenticates the bundle, stages and decrypts the run files, refuses a nonempty JetStream, restores
-and reads each message, and only then installs the run generation. A file-side failure (wrong key, tamper, populated
+`recovery-restore` authenticates the bundle, stages and decrypts the run files, validates the streamed NATS payload
+offline with `wsi7 check-nats` (grammar, ordering, counts, sizes and original digests, before any JetStream write),
+refuses a nonempty JetStream, restores and reads each message, and only then installs the run generation. A file-side failure (wrong key, tamper, populated
 destination without `WASL_RECOVERY_REPLACE=1`) therefore leaves NATS untouched. If `restore-nats` itself fails, JetStream
 may be partly populated. **Any failure after the NATS step begins (a `restore-nats` error, a readback error, or a file
 install error after NATS was restored) requires a manual JetStream purge before the restore is retried**, because the
@@ -349,7 +436,7 @@ This observation is **not restore verification**. The API does not authenticate 
 
 **Built:** `scripts/recovery_schedule.py` and `scripts/recovery_catalog.py` provide UTC-slot scheduling, immutable generation
 publication, isolated clean-target verification, crash classification, and explicitly applied ciphertext retention. The
-implementation uses the existing encrypted v2 `recovery-backup`, `recovery-restore`, and `recovery-verify` paths and the
+implementation uses the existing encrypted (chunked v3 since this change; v2 generations remain verifiable) `recovery-backup`, `recovery-restore`, and `recovery-verify` paths and the
 authenticated reviewer/auditor HTTPS probe. The scheduler never invokes the `seed` profile, never sets
 `WASL_RECOVERY_REPLACE`, does not install cron/systemd timers, and does not change deployment workflows.
 
@@ -379,7 +466,7 @@ safe project/volume identifiers, positive intervals/timeouts, and `keep_newest_v
 ### Backup generations and source availability
 
 Each scheduled backup first requires the pipeline/workflow writer to be stopped. It records whether the source API was
-running and stops a running API to exclude review-ledger writes. After encrypted backup and complete v2 authentication,
+running and stops a running API to exclude review-ledger writes. After encrypted backup and complete bundle authentication,
 the API is returned to its prior state. An initially running API is restarted; an initially stopped API is started only
 for the authenticated source evidence probe and then stopped again. **The source API therefore has a deliberate temporary
 outage during backup.** If its prior state cannot be restored, `halted.json` prevents later scheduled operations until an
@@ -404,7 +491,7 @@ Configured intervals are scheduling controls, **not measured RPO or RTO**.
 
 ### Clean-target verification
 
-Verification resolves and authenticates the selected encrypted v2 generation before creating target resources. It then:
+Verification resolves and authenticates the selected encrypted v2 or v3 generation before creating target resources. It then:
 
 1. clones the resolved revision into an attempt-private checkout;
 2. generates a unique target project and requires its `nats-0`, `nats-1`, `nats-2`, and `wasl-run` volumes and Compose
@@ -473,7 +560,7 @@ production RPO/RTO.
 
 ## Unresolved hardening and verification limits
 
-- v2 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
+- v2 and v3 bundles are encrypted (AES-256-GCM) and HMAC-authenticated, but there is no signature/KMS identity and the
   keyring is a local file. Use protected, access-controlled backup storage and managed keys for real data. Rotation adds
   generations but does not re-encrypt old bundles. Temporary plaintext cleanup is logical, not physical erasure.
 - **Not run:** a physical second-machine restore, an offline build on a host without preloaded base images (the Podman/arm64 clean build assumes them), or a 24-hour soak.

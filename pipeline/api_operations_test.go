@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -345,5 +346,54 @@ func TestOperationsOnlyGET(t *testing.T) {
 		if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Allow") != http.MethodGet {
 			t.Errorf("%s operations = %d Allow=%q", method, rec.Code, rec.Header().Get("Allow"))
 		}
+	}
+}
+
+func validOperationsBackupManifestV3(chunkSize, size, chunks int, prefixes ...string) string {
+	files := []string{}
+	for i, prefix := range prefixes {
+		files = append(files, fmt.Sprintf(`{"path":"private/run%d","size":%d,"mode":384,"sha256":"%s","chunks":%d,"nonce_prefix":"%s","ciphertext_sha256":"%s"}`,
+			i, size, strings.Repeat("0", 64), chunks, prefix, strings.Repeat("0", 64)))
+	}
+	return `{"schema":"wasl-file-backup-v3-chunked","created_at":"2026-11-13T11:59:57Z","key_id":"secret-key-id",` +
+		`"nondeterministic_fields":["created_at","file_mtime","nats_sequence","nats_time"],` +
+		`"wrapped_dek":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","wrap_nonce":"AAAAAAAAAAAAAAAA",` +
+		fmt.Sprintf(`"chunk_size":%d,`, chunkSize) + `"dirs":[{"path":"private","mode":448}],` +
+		`"files":[` + strings.Join(files, ",") + `],"hmac_sha256":"` + strings.Repeat("0", 64) + `"}`
+}
+
+func TestOperationsBackupAcceptsChunkedV3ManifestStructure(t *testing.T) {
+	observedAt := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		name     string
+		contents string
+		valid    bool
+	}{
+		{name: "valid", contents: validOperationsBackupManifestV3(5, 23, 5, "AAAAAA==", "AAAAAQ=="), valid: true},
+		{name: "empty file is one chunk", contents: validOperationsBackupManifestV3(5, 0, 1, "AAAAAA=="), valid: true},
+		{name: "chunk count inconsistent", contents: validOperationsBackupManifestV3(5, 23, 4, "AAAAAA==")},
+		{name: "zero chunk size", contents: validOperationsBackupManifestV3(0, 0, 1, "AAAAAA==")},
+		{name: "oversized chunk size", contents: validOperationsBackupManifestV3(64<<20+1, 1, 1, "AAAAAA==")},
+		{name: "duplicate nonce prefix", contents: validOperationsBackupManifestV3(5, 5, 1, "AAAAAA==", "AAAAAA==")},
+		{name: "short nonce prefix", contents: validOperationsBackupManifestV3(5, 5, 1, "AAA=")},
+		{name: "v2 nonce field", contents: strings.Replace(validOperationsBackupManifestV3(5, 5, 1, "AAAAAA=="), `"nonce_prefix":"AAAAAA=="`, `"nonce":"AAAAAAAAAAAAAAAA"`, 1)},
+		{name: "missing chunk size", contents: strings.Replace(validOperationsBackupManifestV3(5, 5, 1, "AAAAAA=="), `"chunk_size":5,`, "", 1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "manifest.json")
+			if err := os.WriteFile(path, []byte(tc.contents), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			backup := operationsBackupFromManifest(path, observedAt)
+			if tc.valid {
+				if backup.Status != "available" || backup.BundleSchema != "wasl-file-backup-v3-chunked" || backup.AgeSeconds == nil {
+					t.Fatalf("valid v3 manifest: %+v", backup)
+				}
+				return
+			}
+			if backup.Status != "unavailable" || backup.Reason != "backup_manifest_invalid" {
+				t.Fatalf("invalid v3 manifest accepted: %+v", backup)
+			}
+		})
 	}
 }

@@ -19,7 +19,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from recovery import SCHEMA_V2, _v2_check_manifest, verify_bundle  # noqa: E402
+from recovery import ENCRYPTED_SCHEMAS, check_encrypted_manifest, verify_bundle  # noqa: E402
 from recovery_crypto import load_keyring  # noqa: E402
 
 SCHEMA = "wasl-recovery-generation-v1"
@@ -328,8 +328,8 @@ class Catalog:
             raise ValueError("a recovery keyring is required")
         bundle = self.bundle(generation)
         manifest = verify_bundle(bundle, self.key_file)
-        if manifest.get("schema") != SCHEMA_V2:
-            raise ValueError("only encrypted v2 generations are supported")
+        if manifest.get("schema") not in ENCRYPTED_SCHEMAS:
+            raise ValueError("only encrypted (v2 or chunked v3) generations are supported")
         manifest_path = bundle / "manifest.json"
         digest = sha256(manifest_path)
         record_path = self.generation_dir(generation) / "generation.json"
@@ -356,7 +356,7 @@ class Catalog:
             "backup_attempt_id": attempt_id,
             "created_at": manifest["created_at"],
             "manifest_sha256": digest,
-            "bundle_schema": SCHEMA_V2,
+            "bundle_schema": manifest["schema"],
         }
         write_exclusive(directory / "generation.json", record)
         fsync_dir(directory)
@@ -368,7 +368,7 @@ class Catalog:
         required = {"schema", "generation", "slot", "source_revision", "backup_attempt_id", "created_at",
                     "manifest_sha256", "bundle_schema"}
         if (set(record) != required or record["schema"] != SCHEMA or record["generation"] != generation
-                or record["bundle_schema"] != SCHEMA_V2 or not HEX64.fullmatch(record["manifest_sha256"])
+                or record["bundle_schema"] not in ENCRYPTED_SCHEMAS or not HEX64.fullmatch(record["manifest_sha256"])
                 or not HEX40.fullmatch(record["source_revision"])):
             raise ValueError("invalid generation catalog record")
         check_id(record["backup_attempt_id"], "attempt")
@@ -635,7 +635,7 @@ class Catalog:
             if self.key_file is None:
                 raise ValueError("a recovery keyring is required")
             keyring, _, _ = load_keyring(self.key_file)
-            _, records = _v2_check_manifest(keyring, manifest)  # authenticates the manifest even after a partial prune
+            _, records = check_encrypted_manifest(keyring, manifest)  # authenticates the manifest even after a partial prune
             expected_files = {item["path"] + ".aead" for item in records}
             expected_dirs = {"/".join(path.split("/")[:index]) for path in expected_files
                              for index in range(1, len(path.split("/")))}

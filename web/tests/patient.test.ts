@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DICTS, LANGS } from "@/components/patient/i18n";
-import { parsePhoneQuery, phoneHref, slotLabel } from "@/components/patient/journey";
+import { parsePhoneQuery, phoneHref, slotLabel, surfaceLangs } from "@/components/patient/journey";
 import { getPatientJourney, postPatientJourney } from "@/lib/api/patient-source";
 import { PatientJourneyResponse, PatientMutation } from "@/lib/api/patient-schema";
 import { patientFixture, patientOffers } from "./patient-fixture";
@@ -10,20 +10,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("phone query", () => {
-  it("defaults to Arabic without browser-held consent", () => {
-    expect(parsePhoneQuery({})).toEqual({ lang: "ar" });
+  it("defaults to the reviewed English source without browser-held consent", () => {
+    expect(parsePhoneQuery({})).toEqual({ lang: "en", surface: "patient" });
   });
 
   it("rejects an unknown language instead of rendering a missing dictionary", () => {
-    expect(parsePhoneQuery({ lang: "fr" }).lang).toBe("ar");
+    expect(parsePhoneQuery({ lang: "fr" }).lang).toBe("en");
   });
 
   it("round-trips only language through step links, never consent", () => {
-    for (const lang of LANGS) {
-      const href = phoneHref("book", { lang });
-      const search = Object.fromEntries(new URL(href, "http://x").searchParams);
-      expect(parsePhoneQuery(search)).toEqual({ lang });
-      expect(href).not.toContain("consent");
+    for (const surface of ["patient", "review"] as const) {
+      for (const lang of surfaceLangs(surface)) {
+        const href = phoneHref("book", { lang, surface });
+        const search = Object.fromEntries(new URL(href, "http://x").searchParams);
+        expect(parsePhoneQuery(search, surface)).toEqual({ lang, surface });
+        expect(href).not.toContain("consent");
+      }
     }
   });
 });

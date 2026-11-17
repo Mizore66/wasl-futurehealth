@@ -10,7 +10,7 @@ import { CaseAction } from "@/lib/api/schema";
  * never a name the frontend chose.
  */
 export type RecordResult =
-  | { ok: true; head: string; hash: string; at: string; actor: string; owner: string }
+  | { ok: true; head: string; hash: string; at: string; actor: string; owner: string; obligation?: string }
   | { ok: false; status: number; error: string; conflict?: string; currentHead?: string };
 
 const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min(1).max(128), action: CaseAction });
@@ -28,5 +28,9 @@ export async function recordAction(caseId: string, head: string, action: z.input
   revalidatePath("/app/today");
   revalidatePath("/app/patients/[id]", "page");
   const { event, api_overlay } = res.response;
-  return { ok: true, head: api_overlay.head, hash: event.hash, at: event.at, actor: event.actor, owner: api_overlay.owner };
+  // A recorded notification or receipt moves the case to the next obligation the API computed; the board shows that.
+  // Only for those two actions: every other action keeps the view and status the board chose for it.
+  const communication = args.data.action.action === "initial_notification" || args.data.action.action === "receipt_acknowledgement";
+  const obligation = communication ? api_overlay.communication?.obligation : undefined;
+  return { ok: true, head: api_overlay.head, hash: event.hash, at: event.at, actor: event.actor, owner: api_overlay.owner, ...(obligation ? { obligation } : {}) };
 }

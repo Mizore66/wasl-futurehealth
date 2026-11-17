@@ -7,7 +7,7 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
-import type { ApiMode } from "@/lib/api/source";
+import type { ApiMode, ReviewSourceResult } from "@/lib/api/source";
 import type { ReviewState } from "@/lib/api/schema";
 import { allQuestionsResolved, finalDecisions, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
 import type { ReviewView } from "./case-view";
@@ -401,7 +401,10 @@ export function ReviewDesk({
   settled,
   sharedEvidence,
   states,
+  fixtureSource,
 }: {
+  /** Fixtures only: the evidence item's source report, read on the server by the page. Omitted, the desk reads it itself. */
+  fixtureSource?: ReviewSourceResult;
   view: ReviewView;
   /** One view per raised item. When given, a question is answerable only if its own item is in here; otherwise `view` serves every item. */
   itemViews?: Record<string, ReviewView>;
@@ -485,6 +488,10 @@ export function ReviewDesk({
     ...(view.programme === "crc" && hasLink && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
   ];
   const pending = outcomeOf(draft, view.items);
+  /* An evidence label is previewed only once the report it judges is on screen; identity-only outcomes need no source. */
+  const [fixtureSourceOk, setFixtureSourceOk] = useState(false);
+  const signsEvidence = Boolean(view.items.evidence && draft.report && draft.report !== "ask" && pending && pending !== "notSame");
+  const sourceWithheld = signsEvidence && !fixtureSourceOk;
   const outcome = done && outcomeFor(done.outcome, view.purpose);
 
   /*
@@ -812,10 +819,15 @@ export function ReviewDesk({
                       )}
                       <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
                     </fieldset>
+                    {view.items.evidence && <SourceReport caseId={view.caseId} item={view.items.evidence} onAvailable={setFixtureSourceOk} preloaded={fixtureSource} />}
                   </motion.div>
                 )}
               </AnimatePresence>
-              {pending ? (
+              {pending && sourceWithheld ? (
+                <p className="m-0 text-small text-muted" data-testid="source-withheld">
+                  The evidence answer cannot be previewed until the source report it judges is shown.
+                </p>
+              ) : pending ? (
                 <button
                   type="button"
                   onClick={preview}

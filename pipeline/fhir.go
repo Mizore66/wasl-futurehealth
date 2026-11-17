@@ -259,6 +259,18 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 		if normErr := setClinicalDay(e, res, "lastModified"); normErr != nil {
 			return nil, nil, normErr
 		}
+		// Same-ID Task revisions fold by meta.versionId (linker.go foldTask). A
+		// missing version stays zero and is read as the legacy first version.
+		if meta, ok := res["meta"].(map[string]interface{}); ok {
+			if supplied, present := meta["versionId"]; present {
+				rawVersion, ok := supplied.(string)
+				version, err := strconv.Atoi(rawVersion)
+				if !ok || err != nil || version <= 0 {
+					return nil, nil, normalizationError(e.RType, e.ID, "invalid_task_version", "meta.versionId", "versionId must be a positive integer")
+				}
+				e.Version = version
+			}
+		}
 		e.Focus = gs(res, "focus", "reference")
 		e.Owner = gs(res, "owner", "reference")
 	case "Appointment":

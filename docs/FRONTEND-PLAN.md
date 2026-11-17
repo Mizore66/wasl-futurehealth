@@ -48,7 +48,23 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 | `/app/pipeline` | V2-proof | `replay.json` |
 | `/app/pipeline/matching`, `/app/pipeline/reading` | V2-linker, V2-reader | `replay.json` + fixture cases |
 | `/app/results` | V2-results | `results.json` |
-| `/patient/[step]?lang=ar` | phones | static dictionaries |
+| `/patient/[step]?lang=en` | phones | static dictionaries, patient-approved only (see Patient languages) |
+| `/translation-review/[step]?lang=ar` | internal translation-review preview of draft dictionaries | static dictionaries; 404 unless `WASL_TRANSLATION_REVIEW_PREVIEW=1` |
+
+## Patient languages (#133, #157)
+
+Patient routes serve only a dictionary that is the clinical source copy or has a documented qualified medical-translation review. `web/components/patient/i18n/review.ts` (`TRANSLATION_REVIEW`) is the one register; `PATIENT_LANGS` is derived from it and `parsePhoneQuery` replaces any missing, unknown or unreviewed `lang` with English before anything renders, so direct `lang` requests and propagated step links cannot select a draft. **Built.**
+
+| Language | Status | Patient routes |
+|---|---|---|
+| English | source copy | yes (default) |
+| Arabic, Urdu, Filipino | unreviewed design drafts | no; internal preview only |
+
+This reverses the Arabic-default, four-language patient journey from #142. Re-enabling a draft is a deliberate change: replace its register entry with a `reviewed` record (reviewer, date, where the review is filed) and remove the "Needs medical translation review" header from its file; a unit test fails if the two disagree. Browser tests are not evidence of translation quality.
+
+The internal preview `/translation-review/[step]` renders the drafts for design and translation review only. It is off unless the deployment sets `WASL_TRANSLATION_REVIEW_PREVIEW=1` (Playwright does), is `noindex`/`no-store`, uses the same synthetic patient link cookie, and shows on every step, in English: "Internal translation review preview. Not for patients." and that the copy has not been reviewed by a qualified medical translator. **Built.**
+
+Refusal wording (#157): the English rights dialog keeps the right to decline follow-up and question decisions, no longer promises "Your care will not change", assures respectful treatment and continued access to other care, and sends the patient to their doctor for what declining means and what other choices exist. **Built** as copy; **not yet clinically signed off** — the revised meaning needs clinical review, and each draft's `notice.rightsItems[2]` still carries the old promise and must be retranslated from the revised English and pass qualified medical-translation review before any draft is patient-approved. Neither review can be done by code; both are human steps.
 
 ## Gaps to fill (internal)
 
@@ -59,7 +75,7 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 | G3 | No replay or event stream endpoint. | `build-replay.ts` turns the showcase run files into `replay.json`. Later: `GET /api/stream` (SSE) over the same log. | simulated replay of a recorded run |
 | G4 | No results endpoint. | `results.json` generated from the frozen evaluation. | built (frozen) |
 | G5 | `api-samples` are stale (τ 0.98, 27 Oct). | Regenerate with `scripts/demo.sh snapshot` on a machine with `nats-server`. Schemas must accept both. | — |
-| G6 | Today (calls, outcomes, owner, snooze). | Live API: each action is appended through `POST /api/cases/{id}/actions` (contact outcome, snooze, assign owner) and shown only after a 201; no Undo because the ledger is append-only. Fixtures: browser session state with Undo. | built (live) / illustrative (fixtures) |
+| G6 | Today (calls, outcomes, owner, snooze). | Live API: each action is appended through `POST /api/cases/{id}/actions` (contact outcome, snooze, assign owner) and shown only after a 201; no Undo because the ledger is append-only. Fixtures: browser session state with Undo. `?programme=&provider=` selects any programme and provider (default CRC at Al Mushrif); a mixed-programme queue names each row's programme and provider, and every case uses its own deadline. Explicit staff actions record an initial result notification (with the API-served approved wording and a two-identifier check) and, separately, receipt acknowledgement (#197); a Reached outcome records neither, and receipt never claims understanding. | built (live, unit-tested) / illustrative (fixtures; no notification can be recorded without the served wording) |
 | G7 | Linker runner-up candidates are not in the API. | Shown from `replay.json`, labelled illustrative. | illustrative |
 | G8 | Referrals search was not wired in the canvas. | Wire `q` to `/api/cases?q=`. | built |
 | G9 | Two "0 lost" figures (201,285 in PITCH.md vs 136,669 in SUMMARY.md v2; v1 + v2 sum to 276,133). | Both recorded in `results.json` `conflicts`; no screen shows an exactly-once denominator until the backend owner picks one. | — |
