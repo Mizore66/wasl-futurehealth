@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:3d40a85c-6ef3-59c4-b0ee-f479d13e261d",
+  "serialNumber": "urn:uuid:62245f36-9e08-5ed0-ba3a-69d92f2b3ebc",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-16T17:04:05Z",
+    "timestamp": "2026-11-17T03:30:21Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
+      "version": "429b465a3547f10af2d89edcafc718702127ed30"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
+        "value": "429b465a3547f10af2d89edcafc718702127ed30"
       },
       {
         "name": "wasl:source-tree",
@@ -3713,13 +3713,6 @@
       "group": "@nats-io",
       "name": "jetstream",
       "version": "3.4.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/jetstream@3.4.0",
       "properties": [
         {
@@ -3744,13 +3737,6 @@
       "group": "@nats-io",
       "name": "kv",
       "version": "3.4.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/kv@3.4.0",
       "properties": [
         {
@@ -3775,13 +3761,6 @@
       "group": "@nats-io",
       "name": "nats-core",
       "version": "3.4.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/nats-core@3.4.0",
       "properties": [
         {
@@ -3806,13 +3785,6 @@
       "group": "@nats-io",
       "name": "nkeys",
       "version": "2.0.3",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/nkeys@2.0.3",
       "properties": [
         {
@@ -3837,13 +3809,6 @@
       "group": "@nats-io",
       "name": "nuid",
       "version": "3.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/nuid@3.0.0",
       "properties": [
         {
@@ -3868,13 +3833,6 @@
       "group": "@nats-io",
       "name": "transport-node",
       "version": "3.4.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
       "purl": "pkg:npm/%40nats-io/transport-node@3.4.0",
       "properties": [
         {
@@ -21755,13 +21713,6 @@
       "type": "library",
       "name": "tweetnacl",
       "version": "1.0.3",
-      "licenses": [
-        {
-          "license": {
-            "id": "Unlicense"
-          }
-        }
-      ],
       "purl": "pkg:npm/tweetnacl@1.0.3",
       "properties": [
         {

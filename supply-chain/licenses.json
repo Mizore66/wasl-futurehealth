@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2",
-    "committed_at": "2026-11-16T17:04:05Z"
+    "revision": "429b465a3547f10af2d89edcafc718702127ed30",
+    "committed_at": "2026-11-17T03:30:21Z"
   },
   "scanner": {
     "name": "trivy",
@@ -14,12 +14,12 @@
   },
   "summary": {
     "packages": 790,
-    "with_discovered_license": 662,
-    "without_discovered_license": 128,
+    "with_discovered_license": 655,
+    "without_discovered_license": 135,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
       "0BSD": 1,
-      "Apache-2.0": 49,
+      "Apache-2.0": 43,
       "BSD-2-Clause": 12,
       "BSD-3-Clause": 15,
       "BlueOak-1.0.0": 3,
@@ -29,8 +29,7 @@
       "LGPL-3.0-or-later": 1,
       "MIT": 554,
       "MPL-2.0": 6,
-      "Python-2.0": 1,
-      "Unlicense": 1
+      "Python-2.0": 1
     }
   },
   "packages": [
@@ -1296,9 +1295,7 @@
       "version": "3.4.0",
       "purl": "pkg:npm/%40nats-io/jetstream@3.4.0",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1306,9 +1303,7 @@
       "version": "3.4.0",
       "purl": "pkg:npm/%40nats-io/kv@3.4.0",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1316,9 +1311,7 @@
       "version": "3.4.0",
       "purl": "pkg:npm/%40nats-io/nats-core@3.4.0",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1326,9 +1319,7 @@
       "version": "2.0.3",
       "purl": "pkg:npm/%40nats-io/nkeys@2.0.3",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1336,9 +1327,7 @@
       "version": "3.0.0",
       "purl": "pkg:npm/%40nats-io/nuid@3.0.0",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -1346,9 +1335,7 @@
       "version": "3.4.0",
       "purl": "pkg:npm/%40nats-io/transport-node@3.4.0",
       "development": false,
-      "licenses": [
-        "Apache-2.0"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
@@ -7278,9 +7265,7 @@
       "version": "1.0.3",
       "purl": "pkg:npm/tweetnacl@1.0.3",
       "development": false,
-      "licenses": [
-        "Unlicense"
-      ]
+      "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
