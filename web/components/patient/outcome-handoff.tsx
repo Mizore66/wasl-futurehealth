@@ -12,6 +12,7 @@ import { DICTS, type Lang } from "./i18n";
 import type { PatientDict } from "./i18n/types";
 import { OUTCOME_GATE_COPY, outcomeGateCopy } from "./outcome-copy";
 import { phoneType } from "./parts";
+import { GatedNote } from "./programme-copy";
 
 type Code = { code: string; issued: string | null; phase: "idle" | "sending" | "failed" };
 
@@ -88,10 +89,17 @@ export function OutcomeHandoff({ lang }: { lang: Lang }) {
   const releasable = handoff?.status === "released" || handoff?.status === "acknowledged";
   const button = "min-h-11 w-full cursor-pointer rounded-control border border-line bg-surface px-4 text-[16px] font-medium text-ink disabled:cursor-not-allowed disabled:opacity-50";
   const cta = "min-h-12 w-full cursor-pointer rounded-control border-0 bg-cta text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50";
+  // The release and one-time-code wording is English until translation review (#133); say so where it shows.
+  const gateShown = handoff?.status === "pending_release" || (withheld === null && releasable && !handoff?.content);
 
   return (
     <main className="flex-1 px-5 pt-5 pb-8">
       <h1 className={type.h1}>{t.title}</h1>
+      {gateShown && gate.gated && (
+        <div className="mt-2">
+          <GatedNote script={{ gated: gate.gated }} />
+        </div>
+      )}
       {withheld !== null || !releasable ? (
         <p role="status" className={type.body} {...(handoff?.status === "pending_release" ? gateLang : {})}>
           {withheld ?? t.notReady}

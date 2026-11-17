@@ -126,7 +126,7 @@ describe("CRC booking reads the served offer", () => {
     const offers: PatientOffers = {
       version: "v2",
       procedure: "colonoscopy",
-      slots: [{ slot_id: "other-unit:2026-11-17:10:00", unit: "other-unit", starts_at: "2026-11-17T10:00:00+04:00" }],
+      slots: [{ offer_id: "offer-other", starts_at: "2026-11-17T10:00:00+04:00" }],
     };
     const { book } = render(journey, offers);
     expect(book).toContain("Tuesday");
@@ -150,8 +150,8 @@ describe("offers from the case's simulated booking data", () => {
     procedure: "colposcopy",
     source: "simulated_booking",
     slots: [
-      { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
-      { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+      { offer_id: "offer-cx-0625", region: "AD", starts_at: "2026-06-25" },
+      { offer_id: "offer-cx-0701", region: "DH", starts_at: "2026-07-01" },
     ],
   };
 
@@ -164,6 +164,7 @@ describe("offers from the case's simulated booking data", () => {
     expect(book).toContain("Abu Dhabi city region");
     expect(book).not.toContain('data-testid="slot-time"');
     expect(book).not.toContain("AD-2");
+    expect(book).not.toContain("sim:colposcopy");
     for (const absent of ["colonoscopy", "bowel", "Before your appointment", "SKMC", "Sheikh Khalifa", "Hessa", "October"]) expect(book).not.toContain(absent);
   });
 
@@ -182,7 +183,7 @@ describe("offers from the case's simulated booking data", () => {
       version: "catalogue-v2",
       procedure: "colonoscopy",
       source: "simulated_booking",
-      slots: [{ slot_id: "sim:colonoscopy:4:1", unit: "AA-2", region: "AA", starts_at: "2026-07-13" }],
+      slots: [{ offer_id: "offer-aa", region: "AA", starts_at: "2026-07-13" }],
     };
     const { book } = render(journey, offers);
     expect(book).toContain("Monday");

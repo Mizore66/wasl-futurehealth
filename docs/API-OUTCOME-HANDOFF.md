@@ -76,7 +76,8 @@ unknown gate, a release repeating the previous gate for the same version, referr
 responsible referrer, malformed patient acknowledgement identities, any acknowledgement or release of unapproved content,
 and duplicate acknowledgements. Replay validates the history as written; it does not re-judge recorded gates against
 today's consent. Ledgers written before release records existed still replay: their patient acknowledgements remain
-valid history.
+valid history, and an approval that no patient acknowledged waits as `pending_release` until a coordinator records a
+release (`TestOutcomeHandoffLegacyLedgerWithoutReleaseRecordStillReplays`).
 
 ## Not built
 

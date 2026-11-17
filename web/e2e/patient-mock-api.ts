@@ -2,13 +2,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
 const port = Number(process.env.PATIENT_MOCK_PORT ?? 31987);
+/** Offers carry an opaque offer_id, the date and (catalogue slots) the region; slot IDs and unit codes stay server-side. */
 const crcOffers = {
   procedure: "colonoscopy",
+  source: "demo_fixed",
   version: createHash("sha256").update(["skmc-endo:2026-10-08:11:00", "skmc-endo:2026-10-09:09:30", "skmc-endo:2026-10-12:13:00"].join("\n")).digest("hex"),
   slots: [
-    { slot_id: "skmc-endo:2026-10-09:09:30", unit: "skmc-endo", starts_at: "2026-10-09T09:30:00+04:00" },
-    { slot_id: "skmc-endo:2026-10-08:11:00", unit: "skmc-endo", starts_at: "2026-10-08T11:00:00+04:00" },
-    { slot_id: "skmc-endo:2026-10-12:13:00", unit: "skmc-endo", starts_at: "2026-10-12T13:00:00+04:00" },
+    { offer_id: "offer-crc-1009", starts_at: "2026-10-09T09:30:00+04:00" },
+    { offer_id: "offer-crc-1008", starts_at: "2026-10-08T11:00:00+04:00" },
+    { offer_id: "offer-crc-1012", starts_at: "2026-10-12T13:00:00+04:00" },
   ],
 };
 
@@ -18,11 +20,11 @@ const cervicalOffers = {
   source: "simulated_booking",
   version: createHash("sha256").update("simulated_booking\ncolposcopy\n\nsim:colposcopy:2:1\nsim:colposcopy:5:1").digest("hex"),
   slots: [
-    { slot_id: "sim:colposcopy:2:1", unit: "AD-2", region: "AD", starts_at: "2026-06-25" },
-    { slot_id: "sim:colposcopy:5:1", unit: "DH-1", region: "DH", starts_at: "2026-07-01" },
+    { offer_id: "offer-cx-0625", region: "AD", starts_at: "2026-06-25" },
+    { offer_id: "offer-cx-0701", region: "DH", starts_at: "2026-07-01" },
   ],
 };
-const noOffers = { procedure: "", version: "", slots: [] as { slot_id: string; unit: string; starts_at: string }[] };
+const noOffers = { procedure: "", version: "", slots: [] as { offer_id: string; starts_at: string }[] };
 /** The served next step and wrong answer per programme, as pipeline/api_patient.go patientPlanFor projects them. */
 const PLANS: Record<string, { next: string; distractor: string }> = {
   crc: { next: "colonoscopy", distractor: "blood_test" },
@@ -49,7 +51,7 @@ type Journey = {
     callback?: { id: string; source: "patient_link"; state: string; owner: string; status: "open" | "resolved"; opened_at: string; due_at: string; overdue: boolean };
   };
   contact_permission: { status: string; updated_at: string; event: string };
-  slot_selection: { status: string; offers_version: string; slot_id: string; selected_at: string; event: string };
+  slot_selection: { status: string; offers_version: string; offer_id: string; selected_at: string; event: string };
   preparation: { items: { item_id: string; completed: boolean; updated_at: string; event: string }[]; completed: number; total: 0 | 2 };
   last_action_at: string;
 };
@@ -93,7 +95,7 @@ function fresh(token: string, expires: number, programme = "crc"): Link {
         status: "pending", completed_at: "", event: "", understanding: "not_answered", attempts: 0,
       },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : programme === "cervical" ? cervicalOffers.version : "", slot_id: "", selected_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: crc ? crcOffers.version : programme === "cervical" ? cervicalOffers.version : "", offer_id: "", selected_at: "", event: "" },
       preparation: crc
         ? {
             items: [
@@ -136,7 +138,7 @@ function append(link: Link, kind: string, data: Record<string, unknown>) {
     j.teach_back = { ...j.teach_back, status: "callback", event, understanding: state, attempts: j.teach_back.attempts + 1, callback };
   }
   if (kind === "contact_permission_changed") j.contact_permission = { status: String(data.permission), updated_at: at, event };
-  if (kind === "slot_selected") j.slot_selection = { status: "selected", offers_version: String(data.offers_version), slot_id: String(data.slot_id), selected_at: at, event };
+  if (kind === "slot_selected") j.slot_selection = { status: "selected", offers_version: String(data.offers_version), offer_id: String(data.offer_id), selected_at: at, event };
   if (kind === "preparation_changed") {
     const item = j.preparation.items.find((candidate) => candidate.item_id === data.item_id)!;
     item.completed = Boolean(data.completed);
@@ -354,14 +356,14 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   if ((input.kind === "slot_selected" || input.kind === "preparation_changed") && offers.slots.length === 0) return send(res, 400, { error: "no patient offers" });
   if (input.kind === "slot_selected") {
     if (input.data.offers_version !== offers.version) return send(res, 409, conflict(link, "offers", "stale offers"));
-    if (!offers.slots.some((slot) => slot.slot_id === input.data.slot_id)) return send(res, 400, { error: "unoffered slot" });
+    if (!offers.slots.some((slot) => slot.offer_id === input.data.offer_id)) return send(res, 400, { error: "unoffered slot" });
   }
   if (input.kind === "contact_permission_changed" && link.journey.contact_permission.status === "opted_out" && input.data.permission !== "opted_out") return send(res, 409, conflict(link, "consent", "terminal opt-out"));
   const j = link.journey;
   const noop =
     ((input.kind === "teach_back_completed" || input.kind === "teach_back_answered") && j.teach_back.status === "completed") ||
     (input.kind === "contact_permission_changed" && j.contact_permission.status === input.data.permission) ||
-    (input.kind === "slot_selected" && j.slot_selection.slot_id === input.data.slot_id) ||
+    (input.kind === "slot_selected" && j.slot_selection.offer_id === input.data.offer_id) ||
     (input.kind === "preparation_changed" && j.preparation.items.find((item) => item.item_id === input.data.item_id)?.completed === input.data.completed);
   if (noop) return send(res, 200, { event: null, journey: j, replayed: true });
   if (!["teach_back_completed", "teach_back_answered", "contact_permission_changed", "slot_selected", "preparation_changed"].includes(input.kind)) return send(res, 400, { error: "unknown kind" });

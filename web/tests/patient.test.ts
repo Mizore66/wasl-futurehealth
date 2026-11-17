@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DICTS, LANGS } from "@/components/patient/i18n";
 import { parsePhoneQuery, phoneHref, slotLabel, surfaceLangs } from "@/components/patient/journey";
 import { getPatientJourney, postPatientJourney } from "@/lib/api/patient-source";
-import { PatientJourneyResponse, PatientMutation } from "@/lib/api/patient-schema";
+import { PatientJourneyResponse, PatientMutation, PatientOffer } from "@/lib/api/patient-schema";
 import { patientFixture, patientOffers } from "./patient-fixture";
 
 afterEach(() => {
@@ -61,10 +61,19 @@ describe("patient API contract", () => {
     const variants = [
       { kind: "teach_back_completed", data: { question_id: "crc-next-step-v1", answer_id: "colonoscopy" } },
       { kind: "contact_permission_changed", data: { permission: "opted_out" } },
-      { kind: "slot_selected", data: { slot_id: patientOffers.slots[0].slot_id, offers_version: patientOffers.version } },
+      { kind: "slot_selected", data: { offer_id: patientOffers.slots[0].offer_id, offers_version: patientOffers.version } },
       { kind: "preparation_changed", data: { item_id: "escort_home", completed: false } },
     ];
     for (const variant of variants) expect(PatientMutation.parse({ ...base, ...variant })).toEqual({ ...base, ...variant });
+  });
+
+  it("offers carry only an offer id, the date and the region: no unit code or slot id (#165)", () => {
+    const offer = { offer_id: "offer-cx-0625", region: "AD", starts_at: "2026-06-25" };
+    expect(PatientOffer.parse(offer)).toEqual(offer);
+    expect(PatientOffer.safeParse({ ...offer, unit: "AD-2" }).success).toBe(false);
+    expect(PatientOffer.safeParse({ ...offer, slot_id: "sim:colposcopy:2:1" }).success).toBe(false);
+    const base = { expected_head: "canonical-signature", request_id: crypto.randomUUID(), kind: "slot_selected" };
+    expect(PatientMutation.safeParse({ ...base, data: { slot_id: "sim:colposcopy:2:1", offers_version: "v" } }).success).toBe(false);
   });
 
   it("rejects case, role, actor and unknown data assertions", () => {
