@@ -587,6 +587,8 @@ func main() {
 		fmt.Println("/patient/access?link=" + token)
 	case "serve":
 		runServe(absRun, *data, *apiAddr)
+	case "patient-contest-feed": // publish the served run's verified patient contests to fhir.review (patient_contest_feed.go)
+		runPatientContestFeed(absRun, *data)
 	case "lungcache": // ask local Gemma 3 4B once per unique lung corpus text; write the replayable cache + reader scores
 		runLungCache(*lungData, *readerURL, *out)
 	case "drcache": // ask local Gemma 3 4B once per unique DR corpus text; write the replayable cache + reader scores

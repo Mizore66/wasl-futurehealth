@@ -342,6 +342,7 @@ func finishSurvChild(ls *loopState, f *LoopFacts, d *Decision, pending []string,
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
+	holdForPatientContest(f, d) // a contest of this surveillance child holds only it (patient_contest_hold.go)
 	d.Sig = sha(canon(d))
 }
 

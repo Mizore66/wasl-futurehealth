@@ -139,9 +139,34 @@ func engineTeachBackEscalation(c *apiCase) (string, string) {
 func (s *apiServer) callbacksLocked(c *apiCase) []*teachBackCallback {
 	out := append([]*teachBackCallback{}, c.callbacks...)
 	if esc, _ := engineTeachBackEscalation(c); esc != "" && c.callback(teachBackSourceEngine+"/"+esc) == nil {
-		out = append(out, engineCallback(teachBackSourceEngine+"/"+esc))
+		out = append(out, c.engineCallbackTask(teachBackSourceEngine+"/"+esc))
 	}
 	return out
+}
+
+// engineCallbackTask is the engine-raised callback with its opening instant: the simulated time of the first
+// decision in the latest uninterrupted run of decisions carrying the escalation, due two working days later
+// (the documented target for a misunderstood reply). A case with no such decision keeps an undated task.
+func (c *apiCase) engineCallbackTask(id string) *teachBackCallback {
+	cb := engineCallback(id)
+	if cb == nil {
+		return nil
+	}
+	esc := cb.escalation()
+	opened, streak := -1.0, false
+	for _, d := range c.decisions {
+		if slices.Contains(d.Escalations, esc) {
+			if !streak {
+				opened, streak = d.Now, true
+			}
+		} else {
+			streak = false
+		}
+	}
+	if opened >= 0 {
+		cb.staffTask = newStaffTask(RoleCoordinator, dayDate(opened).UTC().Format(time.RFC3339Nano), teachBackCallbackWorkDays)
+	}
+	return cb
 }
 
 // engineCallback parses an engine task id, "engine/teachback_<state>_callback".
@@ -199,6 +224,9 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 			if communicationAnswers(c, e) { // a staff-recorded notification or receipt answers it (api_communication.go)
 				continue
 			}
+			if (e == patientContestEscalation || e == patientContestRevisionEscalation) && slices.ContainsFunc(c.requests, func(r *patientRequest) bool { return r.Kind == kindContestSubmitted }) {
+				continue // the ledger's contests decide these below, including a resolution newer than the run
+			}
 			out = append(out, e)
 		}
 	}
@@ -210,6 +238,9 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 	for _, r := range c.requests {
 		if r.open() && !slices.Contains(out, patientContestEscalation) {
 			out = append(out, patientContestEscalation)
+		}
+		if r.revisionPending(c) && !slices.Contains(out, patientContestRevisionEscalation) {
+			out = append(out, patientContestRevisionEscalation)
 		}
 	}
 	sort.Strings(out)
@@ -331,7 +362,7 @@ func (s *apiServer) replayTeachBackCallback(ev map[string]interface{}) error {
 	}
 	// The engine may have stopped raising an escalation a coordinator already handled;
 	// history stays valid, so replay restores that task from its id.
-	if cb := engineCallback(sstr(ev, "callback")); cb != nil && c.callback(cb.ID) == nil {
+	if cb := c.engineCallbackTask(sstr(ev, "callback")); cb != nil && c.callback(cb.ID) == nil {
 		c.callbacks = append(c.callbacks, cb)
 	}
 	if code, msg := teachBackCallbackError(c, s, sstr(ev, "callback"), sstr(ev, "role"), sstr(ev, "outcome")); code != 0 {

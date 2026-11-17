@@ -167,15 +167,16 @@ type Signoff struct {
 
 // Prep is the output of the stateless normalise+embed stage; keyed by FHIR stream sequence.
 type Prep struct {
-	Seq      uint64              `json:"seq"`
-	Skip     bool                `json:"skip,omitempty"`
-	Reject   *NormalizationError `json:"reject,omitempty"`
-	Kind     string              `json:"kind"` // event|tick|signoff
-	Ev       *Event              `json:"ev,omitempty"`
-	Tick     float64             `json:"tick,omitempty"`
-	So       *Signoff            `json:"so,omitempty"`
-	Emb      []float32           `json:"emb,omitempty"`
-	OriginTs int64               `json:"ots"`
+	Seq      uint64               `json:"seq"`
+	Skip     bool                 `json:"skip,omitempty"`
+	Reject   *NormalizationError  `json:"reject,omitempty"`
+	Kind     string               `json:"kind"` // event|tick|signoff|patient_contest
+	Ev       *Event               `json:"ev,omitempty"`
+	Tick     float64              `json:"tick,omitempty"`
+	So       *Signoff             `json:"so,omitempty"`
+	PC       *PatientContestEvent `json:"pc,omitempty"` // kind patient_contest (patient_contest_feed.go)
+	Emb      []float32            `json:"emb,omitempty"`
+	OriginTs int64                `json:"ots"`
 }
 
 type Edge struct {

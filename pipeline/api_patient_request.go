@@ -58,17 +58,55 @@ type patientRequest struct {
 	SubmittedAt string
 	Excluded    []string
 	Outcome     string
+	// Resolution: the senior clinician's recorded reason (absent on ledgers written before it was required) and the
+	// resolution event hash, which identifies the revision task a decision_revised outcome opens.
+	ResolutionReason string
+	ResolutionEvent  string
 }
 
 func (r *patientRequest) open() bool { return r.Kind == kindContestSubmitted && r.taskOpen() }
 
 // holds reports whether this contest still prevents served closure: open, or
-// revised while the questioned decision is still the case's current decision.
+// revised while the questioned decision is still the case's current decision
+// (or the engine itself still holds it for this contest).
 func (r *patientRequest) holds(c *apiCase) bool {
 	if r.Kind != kindContestSubmitted {
 		return false
 	}
-	return r.open() || (r.Outcome == outcomeDecisionRevised && c.last != nil && c.last.Sig == r.Decision)
+	return r.open() || r.revisionPending(c)
+}
+
+// revisionPending: resolved decision_revised, and the questioned decision has not been replaced yet. It is owned
+// work (patient_contest_revision), never a silent indefinite hold.
+func (r *patientRequest) revisionPending(c *apiCase) bool {
+	return r.Kind == kindContestSubmitted && !r.open() && r.Outcome == outcomeDecisionRevised && c.last != nil &&
+		(c.last.Sig == r.Decision || engineHeldBy(c.last, r.Receipt))
+}
+
+// revisionTask is the owned follow-up of a decision_revised resolution: a senior clinician replaces the questioned
+// decision within five working days of the resolution.
+func (r *patientRequest) revisionTask() staffTask {
+	return newStaffTask(RoleSeniorClinician, r.ResolvedAt, patientContestWorkingDay)
+}
+
+// engineHeldBy reports whether the canonical decision is the engine's patient-contest hold for this receipt
+// (patient_contest_hold.go), which happens once the contest was fed through the linker (patient_contest_feed.go).
+func engineHeldBy(d *Decision, receipt string) bool {
+	if d == nil || d.State != "contested" {
+		return false
+	}
+	for _, b := range d.Chain {
+		if b.Type != "patient_contest_hold" {
+			continue
+		}
+		list, _ := b.Body["contests"].([]interface{})
+		for _, v := range list {
+			if fmt.Sprint(v) == receipt {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func patientContestDue(at time.Time) time.Time {
@@ -141,6 +179,9 @@ func (s *apiServer) patientRequestRowLocked(c *apiCase, r *patientRequest, staff
 	row["closure_held"] = r.holds(c)
 	if staff {
 		row["requester"], row["excluded_reviewers"] = r.Requester, r.Excluded
+		if r.ResolutionReason != "" {
+			row["resolution_reason"] = r.ResolutionReason
+		}
 	}
 	return row
 }
@@ -349,7 +390,7 @@ func (c *apiCase) applyPatientRequest(ev map[string]interface{}) {
 	case kindContestResolved:
 		for _, r := range c.requests {
 			if r.Receipt == sstr(ev, "contest") {
-				r.Outcome = sstr(ev, "outcome")
+				r.Outcome, r.ResolutionReason, r.ResolutionEvent = sstr(ev, "outcome"), sstr(ev, "reason"), sstr(ev, "hash")
 				r.resolve(sstr(ev, "actor"), sstr(ev, "at"))
 			}
 		}
@@ -397,15 +438,21 @@ func resolvePatientContestError(c *apiCase, receipt, role, actor, outcome string
 	return http.StatusNotFound, "no patient contest with that receipt on this case"
 }
 
-// POST /api/cases/{id}/patient-contest {"contest": receipt, "outcome": "decision_upheld|decision_revised"}
+// POST /api/cases/{id}/patient-contest {"contest": receipt, "outcome": "decision_upheld|decision_revised", "reason": text}
 func (s *apiServer) casePatientContest(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	var req struct {
 		Contest string `json:"contest"`
 		Outcome string `json:"outcome"`
+		Reason  string `json:"reason"`
 	}
 	if err := decodeAPIBody(w, r, maxActionBody, &req); err != nil || req.Contest == "" {
-		writeJSONResp(w, http.StatusBadRequest, s.envelope(map[string]interface{}{"error": "body must be {contest, outcome}"}))
+		writeJSONResp(w, http.StatusBadRequest, s.envelope(map[string]interface{}{"error": "body must be {contest, outcome, reason}"}))
+		return
+	}
+	reason, err := cleanText(req.Reason, maxPatientReasonRunes, true, true)
+	if err != nil {
+		writeJSONResp(w, http.StatusBadRequest, s.envelope(map[string]interface{}{"error": "reason " + err.Error()}))
 		return
 	}
 	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
@@ -422,7 +469,7 @@ func (s *apiServer) casePatientContest(w http.ResponseWriter, r *http.Request, c
 			return http.StatusInternalServerError, map[string]interface{}{"error": "review ledger failed validation; writes refused"}
 		}
 		ev := map[string]interface{}{
-			"type": patientRequestEventType, "kind": kindContestResolved, "case": c.ID, "contest": req.Contest, "outcome": req.Outcome,
+			"type": patientRequestEventType, "kind": kindContestResolved, "case": c.ID, "contest": req.Contest, "outcome": req.Outcome, "reason": reason,
 			"role": role, "actor": actor, "action": ActResolvePatientContest, "at": s.clock().Format(time.RFC3339Nano), "mode": "demo", "prev": s.lastHashLocked(),
 		}
 		stored, err := s.appendEventLocked(ev)
@@ -440,7 +487,8 @@ var (
 	patientRequestFields = map[string]bool{"type": true, "kind": true, "case": true, "link_id": true, "role": true, "actor": true, "action": true,
 		"verification": true, "request_id": true, "decision": true, "reason": true, "at": true, "mode": true, "prev": true, "hash": true,
 		"owner": true, "due_at": true, "excluded_reviewers": true}
-	patientResolutionFields = map[string]bool{"type": true, "kind": true, "case": true, "contest": true, "outcome": true, "role": true,
+	// reason is optional on replay: resolutions appended before it was required stay valid history.
+	patientResolutionFields = map[string]bool{"type": true, "kind": true, "case": true, "contest": true, "outcome": true, "reason": true, "role": true,
 		"actor": true, "action": true, "at": true, "mode": true, "prev": true, "hash": true}
 )
 
@@ -465,6 +513,11 @@ func (s *apiServer) replayPatientRequest(ev map[string]interface{}) error {
 		}
 		if sstr(ev, "action") != ActResolvePatientContest {
 			return errors.New("resolution action mismatch")
+		}
+		if raw, present := ev["reason"]; present {
+			if reason, err := cleanText(raw, maxPatientReasonRunes, true, true); err != nil || reason != raw {
+				return errors.New("invalid resolution reason")
+			}
 		}
 		if code, msg := resolvePatientContestError(c, sstr(ev, "contest"), sstr(ev, "role"), sstr(ev, "actor"), sstr(ev, "outcome")); code != 0 {
 			return errors.New(msg)

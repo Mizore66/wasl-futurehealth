@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { caseHref } from "@/lib/domain/ids";
 import type { CaseDetail, PatientJourneyEvent } from "@/lib/api/schema";
 import { atWords } from "./words";
 
@@ -91,9 +93,17 @@ export function PatientRequestsCard({ detail }: { detail: CaseDetail }) {
             <p className="m-0 font-medium">{row.kind === "contest_submitted" ? "Contest" : "Explanation request"}</p>
             <p className="m-0 mt-1">{requestState(row)}</p>
             <p className="m-0 mt-1 text-small text-muted">Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)}</p>
+            {row.resolution_reason && <p className="m-0 mt-1">Reviewer&apos;s reason: {row.resolution_reason}</p>}
           </li>
         ))}
       </ol>
+      {requests.some((row) => row.kind === "contest_submitted") && (
+        <p className="m-0 mt-2">
+          <Link href={`${caseHref("/app/patients", detail.case.id)}/patient-contest`} className="inline-flex min-h-11 items-center font-medium">
+            {requests.some((row) => row.kind === "contest_submitted" && row.status === "open") ? "Review the patient contest" : "View patient contest reviews"}
+          </Link>
+        </p>
+      )}
     </section>
   );
 }

@@ -56,7 +56,7 @@ func TestPatientTasksShareOneOwnedDueDatedProjection(t *testing.T) {
 	}
 
 	ph := &patientTestAPI{s: p.s, srv: staff}
-	if code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", "indep-token-12345678", map[string]interface{}{"contest": receipt, "outcome": outcomeDecisionUpheld}); code != 201 {
+	if code, _, raw := ph.request(t, "POST", "/api/cases/"+patientTestCaseA+"/patient-contest", "indep-token-12345678", map[string]interface{}{"contest": receipt, "outcome": outcomeDecisionUpheld, "reason": "Upheld after independent review (synthetic)."}); code != 201 {
 		t.Fatalf("resolve contest: %d %s", code, raw)
 	}
 	check(p.s, "contest resolved", []string{patientTaskTeachBack, patientTaskContest}, []string{"open", "resolved"}, []string{"teachback_misunderstood_callback"})
