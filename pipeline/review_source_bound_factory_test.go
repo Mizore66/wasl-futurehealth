@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,6 +14,26 @@ import (
 
 type sourceBoundIRIDs202 struct {
 	Link, Evidence, Combined string
+}
+
+// sourceBoundEvidenceText, when set (only through withSourceBoundEvidenceText), is the complete report text the
+// IR-EVIDENCE-1 source carries as its presentedForm, as a received report would. Empty keeps the default fixture.
+var sourceBoundEvidenceText string
+
+func withSourceBoundEvidenceText(t *testing.T, text string) {
+	t.Helper()
+	sourceBoundEvidenceText = text
+	t.Cleanup(func() { sourceBoundEvidenceText = "" })
+}
+
+func withPresentedForm(t *testing.T, data []byte, text string) []byte {
+	t.Helper()
+	var resource map[string]interface{}
+	if err := json.Unmarshal(data, &resource); err != nil {
+		t.Fatal(err)
+	}
+	resource["presentedForm"] = []interface{}{map[string]interface{}{"contentType": "text/plain", "data": base64.StdEncoding.EncodeToString([]byte(text))}}
+	return canon(resource)
 }
 
 // sourceBoundIRRun202 is an ephemeral software fixture, not an inference or
@@ -31,6 +53,9 @@ func sourceBoundIRRun202(t *testing.T, loop string, combined bool) (string, sour
 			continue
 		}
 		message := rawReviewReport202(t, "p", report, false, 1, uint64(i+1))
+		if report == "IR-EVIDENCE-1" && sourceBoundEvidenceText != "" {
+			message.Data = withPresentedForm(t, message.Data, sourceBoundEvidenceText)
+		}
 		event, signoff, rejected := normaliseChecked("p", 1, message.Data)
 		if event == nil || signoff != nil || rejected != nil {
 			t.Fatalf("source-bound fixture normalization failed: %v", rejected)
