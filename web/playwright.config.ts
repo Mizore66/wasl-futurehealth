@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PORT ?? 3100);
 const external = process.env.PLAYWRIGHT_BASE_URL;
+// The patient mock's port; overridable so parallel checkouts can run patient specs at once.
+const mock = `http://127.0.0.1:${process.env.PATIENT_MOCK_PORT ?? 31987}`;
 
 const chrome = { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } };
 
@@ -31,13 +33,14 @@ export default defineConfig({
   webServer: external
     ? undefined
     : [
-        { command: "corepack pnpm exec tsx e2e/patient-mock-api.ts", url: "http://127.0.0.1:31987/__health", reuseExistingServer: false, timeout: 30_000 },
+        { command: "corepack pnpm exec tsx e2e/patient-mock-api.ts", url: `${mock}/__health`, reuseExistingServer: false, timeout: 30_000 },
         {
           command: `corepack pnpm exec next start -p ${port}`,
           url: `http://localhost:${port}/app`,
           reuseExistingServer: false,
           timeout: 120_000,
-          env: { WASL_PATIENT_API_URL: "http://127.0.0.1:31987" },
+          // The translation-review preview (#133) is opt-in; tests enable it to keep RTL and draft coverage.
+          env: { WASL_PATIENT_API_URL: mock, WASL_TRANSLATION_REVIEW_PREVIEW: "1" },
         },
       ],
 });

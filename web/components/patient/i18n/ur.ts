@@ -2,6 +2,9 @@
  * Needs medical translation review.
  * This Urdu copy was drafted for the design and has not been reviewed by a
  * qualified medical translator. Do not show it to patients until it has been.
+ * Patient routes are gated by TRANSLATION_REVIEW in ./review.ts (#133).
+ * notice.rightsItems[2] predates the revised English refusal wording (#157) and
+ * must be retranslated from it before review.
  */
 import type { PatientDict } from "./types";
 

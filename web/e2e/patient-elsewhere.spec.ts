@@ -18,19 +18,30 @@ async function bodies(): Promise<Record<string, unknown>[]> {
   return (await fetch(`${MOCK}/__mock/requests?token=${token}`)).json();
 }
 
-async function enter(page: Page, lang = "en") {
+async function enter(page: Page, lang = "en", surface: "patient" | "translation-review" = "patient") {
   await page.goto(`/patient/access?link=${token}`);
   await expect(page).toHaveURL(/\/patient\/notice$/);
-  await page.goto(`/patient/notice?lang=${lang}`);
+  await page.goto(`/${surface}/notice?lang=${lang}`);
 }
 
-for (const lang of ["en", "ar"] as const) {
-  test(`completed elsewhere: an accessible structured report, a receipt that survives reload, no closure claim (${lang} phone)`, async ({ page }) => {
+for (const { lang, surface, dir } of [
+  { lang: "en", surface: "patient", dir: "ltr" },
+  { lang: "ar", surface: "translation-review", dir: "rtl" },
+] as const) {
+  test(`completed elsewhere: an accessible structured report, a receipt that survives reload, no closure claim (${surface}/${lang} phone)`, async ({ page }) => {
     const t = ELSEWHERE_COPY;
-    await enter(page, lang);
-    // No reviewed translation exists: every phone language shows the English copy, marked lang="en", with the gated note.
+    await enter(page, lang, surface);
+    await expect(page.locator(`div[lang="${lang}"]`)).toHaveAttribute("dir", dir);
+    if (surface === "translation-review") {
+      await expect(page.getByText("It has not been reviewed by a qualified medical translator and is not approved for patients.")).toBeVisible();
+    }
+    // Unreviewed Arabic belongs only to the internal preview. Its English-only
+    // report retains an explicit language/direction boundary and gated note.
     const block = page.getByRole("region", { name: t.title });
-    if (lang !== "en") await expect(block).toHaveAttribute("lang", "en");
+    if (lang !== "en") {
+      await expect(block).toHaveAttribute("lang", "en");
+      await expect(block).toHaveAttribute("dir", "ltr");
+    }
     await expect(block.getByRole("note")).toHaveCount(lang === "en" ? 0 : 1);
     await page.getByRole("button", { name: t.open }).click();
     const form = page.getByRole("form", { name: t.title });
@@ -57,6 +68,16 @@ for (const lang of ["en", "ar"] as const) {
     await expect(page.getByRole("button", { name: t.open })).toHaveCount(0);
   });
 }
+
+test("completed elsewhere: an unreviewed public Arabic request stays in the English source phone", async ({ page }) => {
+  await enter(page, "ar");
+  await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+  await expect(page.locator('div[lang="ar"]')).toHaveCount(0);
+  const block = page.getByRole("region", { name: ELSEWHERE_COPY.title });
+  await expect(block).toBeVisible();
+  await expect(block.getByRole("note")).toHaveCount(0);
+  await expect(block.getByRole("button", { name: ELSEWHERE_COPY.open })).toBeVisible();
+});
 
 test("completed elsewhere: a not-found retrieval resumes follow-up and the patient can report again", async ({ page }) => {
   const t = ELSEWHERE_COPY;

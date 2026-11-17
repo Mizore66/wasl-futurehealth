@@ -1,14 +1,27 @@
 import type { PatientOffer } from "@/lib/api/patient-schema";
-import { LANGS, type Lang, type PatientDict } from "./i18n";
+import { PATIENT_DEFAULT_LANG, PATIENT_LANGS, REVIEW_LANGS, type Lang, type PatientDict } from "./i18n";
 
 export const STEPS = ["notice", "check", "book", "outcome"] as const;
 export type Step = (typeof STEPS)[number];
 
 export const CLINIC_PHONE = { display: "02 555 0142", tel: "+97125550142" } as const;
 
+/**
+ * `patient` is the patient-facing journey and serves only patient-approved dictionaries; `review` is the internal
+ * translation-review preview of unreviewed drafts (#133). The route decides the surface, never a URL parameter.
+ */
+export type Surface = "patient" | "review";
+
 /** Only language belongs in patient URLs. Consent and every other journey value come from the server. */
 export interface PhoneQuery {
   lang: Lang;
+  surface: Surface;
+}
+
+const BASE: Record<Surface, string> = { patient: "/patient", review: "/translation-review" };
+
+export function surfaceLangs(surface: Surface): readonly Lang[] {
+  return surface === "patient" ? PATIENT_LANGS : REVIEW_LANGS;
 }
 
 type Search = Record<string, string | string[] | undefined>;
@@ -18,13 +31,16 @@ export function isStep(v: string): v is Step {
   return (STEPS as readonly string[]).includes(v);
 }
 
-export function parsePhoneQuery(search: Search): PhoneQuery {
+/** A missing, unknown or (on the patient surface) unreviewed language falls back to the surface's default. */
+export function parsePhoneQuery(search: Search, surface: Surface = "patient"): PhoneQuery {
+  const allowed = surfaceLangs(surface);
   const lang = first(search.lang);
-  return { lang: (LANGS as readonly string[]).includes(lang ?? "") ? (lang as Lang) : "ar" };
+  const fallback = surface === "patient" ? PATIENT_DEFAULT_LANG : (allowed[0] ?? PATIENT_DEFAULT_LANG);
+  return { lang: (allowed as readonly string[]).includes(lang ?? "") ? (lang as Lang) : fallback, surface };
 }
 
-export function phoneHref(step: Step, { lang }: PhoneQuery): string {
-  return `/patient/${step}?${new URLSearchParams({ lang })}`;
+export function phoneHref(step: Step, { lang, surface }: PhoneQuery): string {
+  return `${BASE[surface]}/${step}?${new URLSearchParams({ lang })}`;
 }
 
 export interface SlotLabel {

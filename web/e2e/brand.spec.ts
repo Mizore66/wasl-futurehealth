@@ -63,10 +63,11 @@ test("the site header shows the logo without the typed Arabic name", async ({ pa
   await expectBrandAndAxe(page, 'nav[aria-label="Primary"]', "header");
 });
 
-for (const lang of ["en", "ar"] as const) {
+// Arabic is an unreviewed draft (#133), so its RTL header is checked on the internal translation-review preview.
+for (const [lang, path] of [["en", "/patient"], ["ar", "/translation-review"]] as const) {
   test(`the patient phone header shows the tile (${lang})`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto(`/patient/notice?lang=${lang}`);
+    await page.goto(`${path}/notice?lang=${lang}`);
     await expectBrandAndAxe(page, "header", `phone-${lang}`);
   });
 }
