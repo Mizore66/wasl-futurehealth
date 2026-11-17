@@ -1361,6 +1361,8 @@ func actionPreconditionLocked(c *apiCase, kind string, data map[string]interface
 	}
 	if _, given := data["fit_reoffer"]; c.Programme == "crc" && !given {
 		return &actionRefusal{400, "", "fit_reoffer is required for a CRC decline (offered_accepted|offered_declined|not_appropriate)"}
+	} else if given && c.Programme != "crc" {
+		return &actionRefusal{400, "", "fit_reoffer applies only to a CRC decline; other programmes have no FIT re-offer rule"}
 	}
 	return nil
 }
