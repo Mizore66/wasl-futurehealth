@@ -11,7 +11,7 @@ export type RecallState = "upcoming" | "due" | "overdue";
 
 export type Obligation =
   | { kind: "dr_recall"; state: RecallState; contact: "rescreen" | "clinic_review"; fromDay: number; dueDay: number }
-  | { kind: "ldct_tracking"; followupReport: string; child: string | null };
+  | { kind: "ldct_tracking"; followupReport: string; child: string | null; childDueDay?: number };
 
 /** Follow-up Lung-RADS categories that need no action of their own (ACR 2022: return to annual screening). */
 const LDCT_ANNUAL = new Set(["LR1", "LR2"]);
@@ -32,6 +32,12 @@ export function openObligation(c: CaseSummary, now: number, children: ReadonlyMa
     const state: RecallState = next.recall_overdue || day > due ? "overdue" : day === due ? "due" : "upcoming";
     return { kind: "dr_recall", state, contact: next.kind, fromDay: next.from_day, dueDay: next.due_day };
   }
+  // The API links the closed parent to its child tracking request (`ldct_tracking`); older payloads fall back to the list.
+  const served = c.ldct_tracking;
+  if (served) {
+    const child = served.child_case_id ?? children.get(served.followup_report) ?? null;
+    return { kind: "ldct_tracking", followupReport: served.followup_report, child, ...(served.child_due_day !== undefined ? { childDueDay: served.child_due_day } : {}) };
+  }
   const { followup_report: report, followup_label: label } = c.ldct ?? {};
   if (report && label && !LDCT_ANNUAL.has(label)) return { kind: "ldct_tracking", followupReport: report, child: children.get(report) ?? null };
   return null;
@@ -46,7 +52,10 @@ const DUE_LABEL = { rescreen: "Next screen", clinic_review: "Clinic review" } as
 export function obligationWords(o: Obligation): { status: string; next: string } {
   if (o.kind === "ldct_tracking") {
     return o.child
-      ? { status: `Closed · follow-up tracked as ${shortId(o.child)}`, next: `Act on ${shortId(o.child)}, not this case` }
+      ? {
+          status: `Closed · follow-up tracked as ${shortId(o.child)}`,
+          next: `Act on ${shortId(o.child)}${o.childDueDay !== undefined ? ` (due ${formatDay(o.childDueDay)})` : ""}, not this case`,
+        }
       : { status: "Closed · follow-up needs its own tracking request", next: "Open a tracking request for the follow-up scan" };
   }
   const what = CONTACT[o.contact];
