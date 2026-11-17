@@ -1,0 +1,452 @@
+{
+  "review_date": "2026-11-17",
+  "tag": "v16.4.5",
+  "resolved_commit": "4e5335a00314be7fbb2aace5e9be56a88e64e5a8",
+  "tag_ref": {
+    "url": "https://api.github.com/repos/vercel/next.js/git/ref/tags/v16.4.5",
+    "final_url": "https://api.github.com/repos/vercel/next.js/git/ref/tags/v16.4.5",
+    "sha256": "10dbee999ae2db28291ac6c87ed0b2c65522575965e90c7cfa4547208006c1b8",
+    "bytes": 339
+  },
+  "tag_objects": [],
+  "commit": {
+    "url": "https://api.github.com/repos/vercel/next.js/git/commits/4e5335a00314be7fbb2aace5e9be56a88e64e5a8",
+    "final_url": "https://api.github.com/repos/vercel/next.js/git/commits/4e5335a00314be7fbb2aace5e9be56a88e64e5a8",
+    "sha256": "560200cdd4a0e5a2d002a91ea5a43d4c745d509b3892b3db35b015b28c3689ee",
+    "bytes": 2183
+  },
+  "license": {
+    "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md",
+    "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/license.md",
+    "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
+    "bytes": 1079
+  },
+  "existing_notice_sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
+  "license_identical_to_existing_notice": true,
+  "packages": [
+    {
+      "name": "@next/swc-darwin-x64",
+      "version": "16.4.5",
+      "review_row": 55,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-darwin-x64/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-darwin-x64/16.4.5",
+        "sha256": "52298bc4489055bb0137a338a8383ce8442a495efa45442ce669c4dff1bf6c2f",
+        "bytes": 2107
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-uWq4qkHapBDS1oFltWS4YxTb9pLHAtLNcpbuK6SmRsebLYZqpBML/j/C0op+50JYGTpZgVL/DWNt/6oWlamrrw==",
+      "shasum": "db669b5e3ced4b78575db727672783d787fc495f",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-16.4.5.tgz",
+        "sha256": "e2b5416b0c3bb0820f53a8d304f066d6836f975cdb467c90851404f164845cff",
+        "bytes": 33451262
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-darwin-x64-175d62as",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 410,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 85,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.darwin-x64.node",
+          "size": 89918056,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "0658f5315ecb60183a57d77cec3a1aefff70f0658c7a5d6351ba092926dfc6a1",
+          "text": "{\n  \"name\": \"@next/swc-darwin-x64\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/darwin-x64\"\n  },\n  \"os\": [\n    \"darwin\"\n  ],\n  \"cpu\": [\n    \"x64\"\n  ],\n  \"main\": \"next-swc.darwin-x64.node\",\n  \"files\": [\n    \"next-swc.darwin-x64.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "240b321450f839719b09ef1a01fb860a1bb8dbd2d4c85e1065b5621cafe573ae",
+          "text": "# `@next/swc-darwin-x64`\n\nThis is the **x86_64-apple-darwin** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/darwin-x64/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/darwin-x64/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/darwin-x64/package.json",
+        "sha256": "f1f2e3940e75f5b2e6171384578b7a0f3bc8d70bf273d17cebff363ab678710f",
+        "bytes": 410
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-linux-arm64-gnu",
+      "version": "16.4.5",
+      "review_row": 56,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-linux-arm64-gnu/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-linux-arm64-gnu/16.4.5",
+        "sha256": "af8ddc961d726bf987605d08dda710333e5869c7929db69c9d2216b555e244f6",
+        "bytes": 2171
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-FdRcyOx5u5P51mlAqLB9EXdd8jZO5fsdHtk4BAQSkqOywCsbTNN/rmw+jO7pnmjNdAtu2AG46NzbCL2FPDrrgw==",
+      "shasum": "6a513795b97fe6e76a9f255c8784a3ab5209f490",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-16.4.5.tgz",
+        "sha256": "072340019c1fcaa040f88eef2d670616cedb028d55419af260dd9606119fd019",
+        "bytes": 32760574
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-linux-arm64-gnu-2ehvkk_4",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 460,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 86,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.linux-arm64-gnu.node",
+          "size": 92790456,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "bef57c64e3e1afb087f1d85e53ad10e530123692cc0ae60b763e6911bde2e7eb",
+          "text": "{\n  \"name\": \"@next/swc-linux-arm64-gnu\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/linux-arm64-gnu\"\n  },\n  \"os\": [\n    \"linux\"\n  ],\n  \"cpu\": [\n    \"arm64\"\n  ],\n  \"libc\": [\n    \"glibc\"\n  ],\n  \"main\": \"next-swc.linux-arm64-gnu.node\",\n  \"files\": [\n    \"next-swc.linux-arm64-gnu.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "0e11596ccb496c263c1092ea17780fc8aa3804580a21a2cdab625154bf8c5e53",
+          "text": "# `@next/swc-linux-arm64-gnu`\n\nThis is the **linux-arm64-gnu** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/linux-arm64-gnu/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-arm64-gnu/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-arm64-gnu/package.json",
+        "sha256": "58f0bad40fc234983cd80e550288487e2ca635b2a64946d3da6f41db7309cc0d",
+        "bytes": 460
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-linux-arm64-musl",
+      "version": "16.4.5",
+      "review_row": 57,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-linux-arm64-musl/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-linux-arm64-musl/16.4.5",
+        "sha256": "11f250b7ba725ccc8bdd7c7952b16a4a20ad7f37cc1defaa8600e23bf80d12da",
+        "bytes": 2183
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-cyvmmgtRXR8aGVT86wi9Py53IlfyCx7P2fZxuAXAoTummDnhKtUyjrMeXfapqp4qgD+gT5RqyGD/VfA16jEK7Q==",
+      "shasum": "6d2da5ed837105d32c9c0bacf117b491de5bd446",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-16.4.5.tgz",
+        "sha256": "1593b8a41a5f091df4a7653bd3316728ffe33cc5e440ea7521cab45e1d4aae52",
+        "bytes": 32134775
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-linux-arm64-musl-tbi67t7z",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 463,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 88,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.linux-arm64-musl.node",
+          "size": 90417856,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "ee5451013bbf83df8d5081f79a176e8ab3510763a6cfda919043941c95336637",
+          "text": "{\n  \"name\": \"@next/swc-linux-arm64-musl\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/linux-arm64-musl\"\n  },\n  \"os\": [\n    \"linux\"\n  ],\n  \"cpu\": [\n    \"arm64\"\n  ],\n  \"libc\": [\n    \"musl\"\n  ],\n  \"main\": \"next-swc.linux-arm64-musl.node\",\n  \"files\": [\n    \"next-swc.linux-arm64-musl.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "1dd8bcb8a53cb170d4ee107887af37abedc0008209a48a8a2bb41644f638f29b",
+          "text": "# `@next/swc-linux-arm64-musl`\n\nThis is the **linux-arm64-musl** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/linux-arm64-musl/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-arm64-musl/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-arm64-musl/package.json",
+        "sha256": "ca8682b168dd6876b1284dd24dc0311e400d437ddb52cf6a7260f21e87649ccd",
+        "bytes": 463
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-linux-x64-gnu",
+      "version": "16.4.5",
+      "review_row": 58,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-linux-x64-gnu/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-linux-x64-gnu/16.4.5",
+        "sha256": "b7d1fa09a533246361e66b1620f02fad2acdeb5e6fee7bec5a113c0227dfb267",
+        "bytes": 2160
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-hPc+Fl+N22DAvqZHq559NmamXboOX5Lu8I5Wl0DezfrhTk1Zz21NQeYoZDmNI/NjTcrdsVxM72Fzn2lI+Q+vAw==",
+      "shasum": "245cd35b4d93670abc112e22873c57d3a56e6491",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.4.5.tgz",
+        "sha256": "01e56b1d3607d068f8f96601256264f73baaf1a5f5fd4c9e2fc8f7f7e9c2ea99",
+        "bytes": 35235225
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-linux-x64-gnu-4fvxsxc1",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 450,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 93,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.linux-x64-gnu.node",
+          "size": 100915240,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "fc2484f8405dc16f859e1dbc0f03beb9dbe88c71ff4026569554b76bccde4b32",
+          "text": "{\n  \"name\": \"@next/swc-linux-x64-gnu\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/linux-x64-gnu\"\n  },\n  \"os\": [\n    \"linux\"\n  ],\n  \"cpu\": [\n    \"x64\"\n  ],\n  \"libc\": [\n    \"glibc\"\n  ],\n  \"main\": \"next-swc.linux-x64-gnu.node\",\n  \"files\": [\n    \"next-swc.linux-x64-gnu.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "51237b67abf6f129819a5159e50722e3cd6e7cd172544ee31ca57ae7bc9b2eeb",
+          "text": "# `@next/swc-linux-x64-gnu`\n\nThis is the **x86_64-unknown-linux-gnu** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/linux-x64-gnu/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-x64-gnu/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-x64-gnu/package.json",
+        "sha256": "c076a22429e775724819c7f11c631842a9b1cbfe23750093875a67c44406f83c",
+        "bytes": 450
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-linux-x64-musl",
+      "version": "16.4.5",
+      "review_row": 59,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-linux-x64-musl/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-linux-x64-musl/16.4.5",
+        "sha256": "ea3fb049eb879536a15c049dc05fe2bd940bfb6f107de41128ca1f656fb9424b",
+        "bytes": 2157
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-gbACYE8IP/jlprNTpiWXHb8N9CofOzpnEwH2SrIz1dUbiJf1FbDssDupCAPeP1Taxe8mgG20sGZamJI7KFOdZw==",
+      "shasum": "2c569f00e8d27b5fc312c7e190216ce96cbaa102",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-16.4.5.tgz",
+        "sha256": "9ff0c4c364df044540780609a31ec51c729d5cec839807bbad6ecdf68397c93f",
+        "bytes": 34538700
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-linux-x64-musl-f2pttf34",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 453,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 84,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.linux-x64-musl.node",
+          "size": 98441832,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "770f720207ebf62d0c38b39ec45885419d95fdad1e2008f628b355776aafbede",
+          "text": "{\n  \"name\": \"@next/swc-linux-x64-musl\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/linux-x64-musl\"\n  },\n  \"os\": [\n    \"linux\"\n  ],\n  \"cpu\": [\n    \"x64\"\n  ],\n  \"libc\": [\n    \"musl\"\n  ],\n  \"main\": \"next-swc.linux-x64-musl.node\",\n  \"files\": [\n    \"next-swc.linux-x64-musl.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "a6afa209378b43bc3d6d572f9929a2cb2c49bf320dbfbaeb21ce9d5f19ca569c",
+          "text": "# `@next/swc-linux-x64-musl`\n\nThis is the **linux-x64-musl** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/linux-x64-musl/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-x64-musl/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/linux-x64-musl/package.json",
+        "sha256": "0fd8b4614328ed10b992aebfb77c1e91484da8dbf3f27c07cf3b373f4a4c0799",
+        "bytes": 453
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-win32-arm64-msvc",
+      "version": "16.4.5",
+      "review_row": 60,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-win32-arm64-msvc/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-win32-arm64-msvc/16.4.5",
+        "sha256": "2ab93ce77c253366d7861bba7c2eb10f9b187b07422b1aa173423df6b9f70e57",
+        "bytes": 2165
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-+8gj++ZMo8H20Xh2ijjNqyFk5LPLw0AC4Fs4Tq/G94rjjQXhOjN4jgSWsWKPFsyY26hfIeemJIwKtMxOsp5GBA==",
+      "shasum": "f124f394808ebb9fd4571f11ef59adffdaa1c0e7",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-16.4.5.tgz",
+        "sha256": "a2ca2278b852b08954e980fe963ced759fa88d6fef2b248b11ab61c33a461119",
+        "bytes": 33327601
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-win32-arm64-msvc-euoon404",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 435,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 88,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.win32-arm64-msvc.node",
+          "size": 96970752,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "f885770efbab732c0de203df3c3b4c3a76e9fff279f92f9a8fe8002a64bf2742",
+          "text": "{\n  \"name\": \"@next/swc-win32-arm64-msvc\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/win32-arm64-msvc\"\n  },\n  \"os\": [\n    \"win32\"\n  ],\n  \"cpu\": [\n    \"arm64\"\n  ],\n  \"main\": \"next-swc.win32-arm64-msvc.node\",\n  \"files\": [\n    \"next-swc.win32-arm64-msvc.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "a61ee869cd9052ccec97aeaca73ba6c2ccbb24cd5ac728b210e2cb6feecd1906",
+          "text": "# `@next/swc-win32-arm64-msvc`\n\nThis is the **win32-arm64-msvc** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/win32-arm64-msvc/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/win32-arm64-msvc/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/win32-arm64-msvc/package.json",
+        "sha256": "932917735bb70a7ba8dd3bca0b99a5eec38d0ae9654508e6e1537bb6f0fa771a",
+        "bytes": 435
+      },
+      "source_package_version": "0.0.0"
+    },
+    {
+      "name": "@next/swc-win32-x64-msvc",
+      "version": "16.4.5",
+      "review_row": 61,
+      "registry": {
+        "url": "https://registry.npmjs.org/@next%2fswc-win32-x64-msvc/16.4.5",
+        "final_url": "https://registry.npmjs.org/@next%2fswc-win32-x64-msvc/16.4.5",
+        "sha256": "7c02c0e6f10e285f359ddc4ae50fd855b0d838bbbfbf3ad3571acde290b94c1f",
+        "bytes": 2151
+      },
+      "registry_gitHead_present": false,
+      "integrity": "sha512-qNZj66pYXnaWLiF9R9GUbfBdrCv7kC6TaZfIwB2KH5WPc/8pEM3nVOj8hpQhWJU8S94rlH5MPDcX15+RrgUhiw==",
+      "shasum": "0d8bc9277085a47854c6b36e693463e11ae86eb9",
+      "lock_integrity_matches": true,
+      "tarball": {
+        "url": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.4.5.tgz",
+        "final_url": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.4.5.tgz",
+        "sha256": "c830209c2e58d165cbcade943753041b1fe1d59f96e62c42613cee34af76731c",
+        "bytes": 36161113
+      },
+      "archive_directory": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/swc-win32-x64-msvc-s45kfn30",
+      "members": [
+        {
+          "name": "package/package.json",
+          "size": 425,
+          "type": "0"
+        },
+        {
+          "name": "package/README.md",
+          "size": 92,
+          "type": "0"
+        },
+        {
+          "name": "package/next-swc.win32-x64-msvc.node",
+          "size": 110264832,
+          "type": "0"
+        }
+      ],
+      "text_members": {
+        "package/package.json": {
+          "sha256": "47642f11f3be4da2f37a53e85e0bc273d41e49bafeddfd784f0d3e4c26912de5",
+          "text": "{\n  \"name\": \"@next/swc-win32-x64-msvc\",\n  \"version\": \"16.4.5\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/vercel/next.js\",\n    \"directory\": \"crates/next-napi-bindings/npm/win32-x64-msvc\"\n  },\n  \"os\": [\n    \"win32\"\n  ],\n  \"cpu\": [\n    \"x64\"\n  ],\n  \"main\": \"next-swc.win32-x64-msvc.node\",\n  \"files\": [\n    \"next-swc.win32-x64-msvc.node\"\n  ],\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">= 10\"\n  }\n}"
+        },
+        "package/README.md": {
+          "sha256": "0933eefa9f366c758e21c15b6b41407a6a3dd994509441f9fffc749e89e3d249",
+          "text": "# `@next/swc-win32-x64-msvc`\n\nThis is the **x86_64-pc-windows-msvc** binary for `@next/swc`\n"
+        }
+      },
+      "source_package_path": "crates/next-napi-bindings/npm/win32-x64-msvc/package.json",
+      "source_package": {
+        "url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/win32-x64-msvc/package.json",
+        "final_url": "https://raw.githubusercontent.com/vercel/next.js/4e5335a00314be7fbb2aace5e9be56a88e64e5a8/crates/next-napi-bindings/npm/win32-x64-msvc/package.json",
+        "sha256": "5e26ea6be897921519fa89625a90d6c44d946cbfb5de723a5a808310bd3fd05c",
+        "bytes": 425
+      },
+      "source_package_version": "0.0.0"
+    }
+  ],
+  "schema_version": 1,
+  "status": "built: completed read-only artifact/source verification; not legal clearance, binary audit or runtime verification",
+  "scope": "Seven current @next/swc platform notice-evidence rows only, refreshed from 16.4.3 to 16.4.5 after the Next.js security patch. The historical 128-row LICENSE-REVIEW.md and its row versions/findings are unchanged; review_row is a historical cross-reference, not a claim that the old row reviewed 16.4.5.",
+  "evidence_class": "tag-candidate",
+  "qualification": "All seven exact-version registry manifests omit gitHead; all seven platform manifests read at the resolved v16.4.5 commit declare MIT with placeholder version 0.0.0. The tag-pinned root MIT text is contextual evidence only, not direct npm-artifact-to-commit proof or proof of notice shipment.",
+  "notice_reuse": {
+    "path": "notices/nextjs-mit.txt",
+    "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
+    "basis": "Downloaded exact-commit license.md bytes have the same SHA-256 and compare byte-for-byte equal; old notice file preserved without changes."
+  },
+  "packaging_finding": "Each freshly downloaded and integrity-verified 16.4.5 archive has exactly three regular-file members: package/package.json, package/README.md and its platform .node binary. The two text members were read completely in memory; package.json supplies only an MIT declaration and README only identifies the platform binary. No LICENSE/LICENCE/COPYING/NOTICE member or full root MIT copyright/permission text exists in those text members. PACKAGING CONCERN: missing full root MIT notice remains.",
+  "limitations": "Native/third-party binary contents were not exhaustively audited. No full binary/component notice coverage, reproducible-build/source binding, legal clearance or patched-runtime behavior claim is established.",
+  "handling": "Public registry/GitHub read-only requests with normal TLS verification. Every tarball downloaded to its own unique newly created empty directory under out/open-pr-ci-20261117/license-refresh; review scripts kept separately under out/open-pr-ci-20261117/license-refresh-scripts. Python -I; tarfile over in-memory bytes, no filesystem extraction, no downloaded code execution, no Node/Go/build/test/native execution, installs, dependency changes, commits or pushes.",
+  "local_proof_path": "out/open-pr-ci-20261117/license-refresh/verification-kub97apt/proof.json",
+  "canonical_bundle_processing": {
+    "renderer": "scripts/notices.py render",
+    "checker": "scripts/notices.py check",
+    "python_isolated": true,
+    "production_counts": {
+      "direct-gitHead": 47,
+      "tag-candidate": 21,
+      "unresolved-native": 13
+    },
+    "count_checks_bypassed": false
+  }
+}
