@@ -455,15 +455,31 @@ func bookingReadiness(c *apiCase) string {
 	}
 	switch {
 	case c.State == "referral_rejected":
-		reason := "the returned referral is unresolved: an accepted re-referral is needed before a simulated reservation"
-		if c.last != nil && c.last.Handoff != nil && c.last.Handoff.Status != "" {
-			reason += " (hand-off " + c.last.Handoff.Status + ")"
-		}
-		return reason
+		return returnedReferralReadiness(c, "a simulated reservation")
 	case c.State == "inadequate" && c.last != nil && len(c.last.Pending) > 0:
 		return "a pending review must confirm the repeat before a simulated reservation"
 	}
 	return ""
+}
+
+// returnedReferralReadiness is the returned-referral readiness rule shared by
+// simulated booking reservations and no-show recovery backfills. A case whose
+// canonical state is still referral_rejected is not procedure-ready whatever its
+// hand-off status: awaiting_referrer, coordinator and medical_director are
+// unresolved, and a hand-off reply, ActedAt or referrer_acted only shows the
+// referrer acted, not that a re-referral was accepted. Only a later canonical
+// decision that moves the case out of referral_rejected (an accepted
+// re-referral or another explicit procedure-ready disposition) clears it. The
+// hand-off status is reported for the coordinator, never used as a bypass.
+func returnedReferralReadiness(c *apiCase, purpose string) string {
+	if c == nil || c.State != "referral_rejected" {
+		return ""
+	}
+	reason := "the returned referral is unresolved: an accepted re-referral is needed before " + purpose
+	if c.last != nil && c.last.Handoff != nil && c.last.Handoff.Status != "" {
+		reason += " (hand-off " + c.last.Handoff.Status + ")"
+	}
+	return reason
 }
 
 const bookingPolicyReadiness1 = "readiness/1"
