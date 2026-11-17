@@ -189,6 +189,14 @@ test("translation review preview: separate path, unreviewed warning on every ste
   await expect(sheet.getByRole("link")).toHaveCount(REVIEW_LANGS.length);
   await expect(sheet.getByRole("link", { name: DICTS.en.langName })).toHaveCount(0);
   for (const link of await sheet.getByRole("link").all()) await expect(link).toHaveAttribute("href", /^\/translation-review\//);
+  // #157: even the drafts no longer carry the withdrawn unchanged-care promise.
+  for (const lang of REVIEW_LANGS) {
+    await open(page, "notice", lang, "review");
+    await page.getByRole("button", { name: DICTS[lang].notice.rights }).click();
+    const rights = page.getByRole("dialog", { name: DICTS[lang].notice.rights });
+    await expect(rights.getByRole("listitem").nth(2)).toHaveText(DICTS[lang].notice.rightsItems[2]);
+    await expect(rights).not.toContainText(/ولن يؤثر ذلك في رعايتكِ|اس سے آپ کی دیکھ بھال پر اثر نہیں پڑے گا|Hindi magbabago ang pangangalaga/);
+  }
   const response = await page.goto("/translation-review/notice?lang=ar&error=invalid");
   expect(response?.headers()["cache-control"]).toBe("no-store");
   expect(response?.headers()["x-robots-tag"]).toBe("noindex, nofollow");
@@ -581,6 +589,15 @@ test("a breast case keeps its own programme through steps, languages and forged 
   await expect(page.getByRole("button", { name: "Save this preferred time" })).toHaveCount(0);
   await expect(page.getByText("Before your appointment")).toHaveCount(0);
 
+  // #157: the refusal right is programme-neutral and never promises unchanged care.
+  await page.goto("/patient/notice?lang=en");
+  await page.getByRole("button", { name: "Your rights" }).click();
+  const rights = page.getByRole("dialog", { name: "Your rights" });
+  await expect(rights).toContainText("You can say no to follow-up or question any decision.");
+  await expect(rights).toContainText("Talk to your doctor about what saying no could mean for you");
+  await expect(rights).not.toContainText(/care will not change|colonoscopy/i);
+  await page.keyboard.press("Escape");
+
   await page.goto("/patient/check?lang=en");
   await page.getByRole("button", { name: /assessment appointment at the breast clinic/ }).click();
   await expect(page.locator("h1")).toHaveText("May we send you reminders by SMS?");
@@ -622,6 +639,7 @@ test("a cervical case books from its own simulated colposcopy slots, with no CRC
   await expect(page.locator('div[lang="ar"]')).toHaveAttribute("dir", "rtl");
   await expect(page.getByText(UNREVIEWED_WARNING)).toBeVisible();
   await expect(page.locator("h1")).toHaveAttribute("lang", "en");
+  await expect(page.getByText("until a reviewed translation is ready")).toBeVisible();
   await expect(page.locator("h1")).toHaveAttribute("dir", "ltr");
   await expect(page.getByTestId("slot-date")).toBeVisible();
   await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");

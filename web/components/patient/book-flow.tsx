@@ -98,6 +98,8 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
   return (
     <>
       <main className="flex flex-1 flex-col gap-3 px-5 pt-2 pb-4" aria-busy={busy}>
+        {/* English procedure or place words inside a translated phone carry the same notice as the rest of the programme copy (#133). */}
+        <GatedNote script={{ gated: copy.gated || (place?.gated ?? false) }} />
         <section className="rounded-card border border-line bg-surface p-5">
           <h1 className={cn("m-0 mb-2 text-[20px] font-semibold", ur ? "leading-[2]" : "leading-[1.45]")} {...titleLang}>{title}</h1>
           <p className="m-0 mb-1 flex items-center gap-2" aria-live="polite">

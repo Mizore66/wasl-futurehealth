@@ -172,6 +172,8 @@ describe("offers from the case's simulated booking data", () => {
     const { book } = render(journey, cervicalOffers, "ar");
     expect(book).toMatch(/<h1[^>]*lang="en"[^>]*>Your colposcopy appointment<\/h1>/);
     expect(book).toMatch(/data-testid="slot-place" lang="en"/);
+    expect(book).toContain("until a reviewed translation is ready");
+    expect(render(journey, cervicalOffers, "en").book).not.toContain("until a reviewed translation is ready");
   });
 
   it("CRC: a catalogue colonoscopy offer keeps the served preparation and drops SKMC", () => {
