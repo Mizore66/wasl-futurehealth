@@ -28,7 +28,7 @@ export async function resolveReviewer(): Promise<ResolvedReviewer> {
   }
   try {
     const config = oidcConfig();
-    const resolved = defaultSessionStore(config.sessionDb).resolveSession(jar.get(OIDC_REVIEW_COOKIE)?.value);
+    const resolved = await (await defaultSessionStore(config.sessionStore)).resolveSession(jar.get(OIDC_REVIEW_COOKIE)?.value);
     if (!resolved.ok) return resolved;
     const { session } = resolved;
     if (session.issuer !== config.issuer) return { ok: false, reason: "unmapped" };
@@ -74,7 +74,7 @@ export async function signOutReviewer(caseId: string): Promise<void> {
   const jar = await cookies();
   if (reviewAuthMode() === "oidc") {
     try {
-      defaultSessionStore(oidcConfig().sessionDb).revokeSession(jar.get(OIDC_REVIEW_COOKIE)?.value);
+      await (await defaultSessionStore(oidcConfig().sessionStore)).revokeSession(jar.get(OIDC_REVIEW_COOKIE)?.value);
     } catch {
       /* Cookie deletion still prevents this browser from using the session; no global IdP logout is claimed. */
     }

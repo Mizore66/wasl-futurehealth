@@ -285,6 +285,15 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
 
+   With `WASL_REVIEW_AUTH_MODE=oidc`, login transactions and review sessions are stored server-side. The default SQLite
+   store (`WASL_OIDC_SESSION_DB`) serves one web instance only; it is not shared between Vercel function instances.
+   Run more than one web replica only with `WASL_OIDC_SESSION_STORE=nats`, which stores them in JetStream key-value
+   buckets on this package's NATS cluster over TLS with a NATS user (variables and limits in
+   [`web/README.md`](../web/README.md#session-storage)). The NATS client port must then be reachable from the web
+   servers, which `docker-compose.yml` does not publish. **Status:** built and verified with two web replicas against a
+   single loopback JetStream server on synthetic data; not verified against the three-node TLS cluster, behind a load
+   balancer, on Vercel or with a live identity provider.
+
 The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
 `X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the
 action, so every Today action is recorded as the coordinator token's actor. Anyone who can use the hosted site can

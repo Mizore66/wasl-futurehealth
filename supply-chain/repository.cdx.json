@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:e96ee62a-529e-5e71-88d5-3684eeddd7fc",
+  "serialNumber": "urn:uuid:3d40a85c-6ef3-59c4-b0ee-f479d13e261d",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-12T22:21:32Z",
+    "timestamp": "2026-11-16T17:04:05Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "0f47647cba6e5271a5cbe1813f1b2712481c100f"
+      "version": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "0f47647cba6e5271a5cbe1813f1b2712481c100f"
+        "value": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
       },
       {
         "name": "wasl:source-tree",
@@ -3704,6 +3704,192 @@
         {
           "alg": "SHA-512",
           "content": "991c83984c3dfdf0835c219f2f5b1b808c3f1942b43d5c515b863080f37ad45dcb43e7d2ca80456ab255ce01b2845ea447311067415e8c3aa6e162d749ea909b"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/jetstream@3.4.0",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "jetstream",
+      "version": "3.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/jetstream@3.4.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/jetstream@3.4.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "1b31d0a1d349f78dbe4792d16fc3ee679ba05565563118ae7f15182cb55691729fc035d837e3b0a3477b2ff6fd3bb04fcab6d80fb8d05800baf9956e5daf46cb"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/kv@3.4.0",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "kv",
+      "version": "3.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/kv@3.4.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/kv@3.4.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "d7af2971127159c2111f07727332370da1a4e6bdc2023dc2c8a5ee938366c7928a8fb375ce740e24f2310a85744cf940be84e27556fb781bf8d49f6299aa4c79"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/nats-core@3.4.0",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "nats-core",
+      "version": "3.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/nats-core@3.4.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/nats-core@3.4.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "40c0ccf3a114366fb0b9d94a0baec72daaff2871d052f2462df6f88db6a18dede9524dcaf5a7de724f5fc2cc41645d1e505a31e93fd303a9bfb7e950a9ff90b1"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/nkeys@2.0.3",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "nkeys",
+      "version": "2.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/nkeys@2.0.3",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/nkeys@2.0.3"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "255b79e86b84e99f3d294908e135d46d223d7e621f02693a3cc3e49e28e6b8bef619c0fe5202289937115a236fbc92b1034d6c05b9883d2b6a26ce5c311042dc"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/nuid@3.0.0",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "nuid",
+      "version": "3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/nuid@3.0.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/nuid@3.0.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "41b5d90ebc66625ae7e400f4ea061c5139841f0c67f7a1c140c224ed74e30e511cc7a14fcd50413e3a7800c461d6512fe81e2227a5dbfd4cfad49ba03d715142"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40nats-io/transport-node@3.4.0",
+      "type": "library",
+      "group": "@nats-io",
+      "name": "transport-node",
+      "version": "3.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40nats-io/transport-node@3.4.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@nats-io/transport-node@3.4.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "847eeeede8c805314424867cac870cac7248eb097e1e1a4ee6c545b35fa9a665daf11b81dbe2e1d7e5304f3679c5334d9b54ca711918cbedaa095e7aaa9f11c4"
         }
       ]
     },
@@ -21565,6 +21751,36 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/tweetnacl@1.0.3",
+      "type": "library",
+      "name": "tweetnacl",
+      "version": "1.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Unlicense"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tweetnacl@1.0.3",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "tweetnacl@1.0.3"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "eabb7e44deda3a2d6718cc82e176b90dd622ba497651609b7097eded887145e046403ece00cf0f6f1c3a60ca38af676234403c1449aedf660e9fdae16a2139cb"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/type-check@0.4.0",
       "type": "library",
       "name": "type-check",
@@ -23878,6 +24094,44 @@
         "pkg:npm/%40emnapi/core@1.10.0",
         "pkg:npm/%40emnapi/runtime@1.10.0",
         "pkg:npm/%40tybys/wasm-util@0.10.4"
+      ]
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/jetstream@3.4.0",
+      "dependsOn": [
+        "pkg:npm/%40nats-io/nats-core@3.4.0"
+      ]
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/kv@3.4.0",
+      "dependsOn": [
+        "pkg:npm/%40nats-io/jetstream@3.4.0",
+        "pkg:npm/%40nats-io/nats-core@3.4.0"
+      ]
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/nats-core@3.4.0",
+      "dependsOn": [
+        "pkg:npm/%40nats-io/nkeys@2.0.3",
+        "pkg:npm/%40nats-io/nuid@3.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/nkeys@2.0.3",
+      "dependsOn": [
+        "pkg:npm/tweetnacl@1.0.3"
+      ]
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/nuid@3.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/%40nats-io/transport-node@3.4.0",
+      "dependsOn": [
+        "pkg:npm/%40nats-io/nats-core@3.4.0",
+        "pkg:npm/%40nats-io/nkeys@2.0.3",
+        "pkg:npm/%40nats-io/nuid@3.0.0"
       ]
     },
     {
@@ -28229,6 +28483,10 @@
       "dependsOn": []
     },
     {
+      "ref": "pkg:npm/tweetnacl@1.0.3",
+      "dependsOn": []
+    },
+    {
       "ref": "pkg:npm/type-check@0.4.0",
       "dependsOn": [
         "pkg:npm/prelude-ls@1.2.1"
@@ -28589,6 +28847,9 @@
       "ref": "wasl:manifest:web/pnpm-lock.yaml",
       "dependsOn": [
         "pkg:npm/%40axe-core/playwright@4.14.0",
+        "pkg:npm/%40nats-io/jetstream@3.4.0",
+        "pkg:npm/%40nats-io/kv@3.4.0",
+        "pkg:npm/%40nats-io/transport-node@3.4.0",
         "pkg:npm/%40number-flow/react@0.6.2",
         "pkg:npm/%40playwright/test@1.64.1",
         "pkg:npm/%40tailwindcss/turbopack@4.3.3",
