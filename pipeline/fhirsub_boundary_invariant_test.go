@@ -216,7 +216,14 @@ func TestBoundaryAnonymousPrefixAfterLegitimateOtherCleanup(t *testing.T) {
 	input <- event
 	close(input)
 	go c.publisher("p1", input)
-	pendingOwnerWait(t, "actual anonymous provider head held", func() bool { c.mu.Lock(); defer c.mu.Unlock(); return w.attempt == 1 && !w.inflight && w.providerOwned })
+	// The publisher now services one finite known-work snapshot before waiting.
+	// Anonymous source authority is still absent on BOTH exact turns; observe the
+	// stable post-handoff head rather than the transient first-turn return.
+	pendingOwnerWait(t, "actual anonymous provider head held after one assistance snapshot", func() bool {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		return w.attempt == 2 && !w.inflight && !c.serviceActive && w.providerOwned
+	})
 	c.mu.Lock()
 	s := c.stateForLocked("new-sub")
 	c.mu.Unlock()
