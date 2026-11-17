@@ -510,6 +510,11 @@ export const PatientRightsRequestStaff = z.looseObject({
   resolved_at: z.string().optional(),
   resolved_by: z.string().optional(),
   closure_held: z.boolean().optional(),
+  /** The patient's own words; staff views only. */
+  reason: z.string().optional(),
+  /** Staff views only: the synthetic patient link that submitted it, and every reviewer who signed the case and so may not resolve it. */
+  requester: z.string().optional(),
+  excluded_reviewers: z.array(z.string()).optional(),
 });
 /** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
 /** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */

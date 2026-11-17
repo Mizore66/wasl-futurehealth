@@ -15,7 +15,7 @@ import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage
 import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
-import { PatientJourneyCard, PatientRequestsCard } from "./patient-journey-card";
+import { PatientJourneyCard, PatientRequestsCard, type PatientContestReview } from "./patient-journey-card";
 import { OutcomeHandoffCard } from "./outcome-handoff-card";
 import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
@@ -588,12 +588,12 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
 }
 
 /** Focused patient-link projection, deliberately outside canonical source events. */
-export function PatientJourneySection({ detail }: { detail: CaseDetail }) {
+export function PatientJourneySection({ detail, contestReview }: { detail: CaseDetail; contestReview?: PatientContestReview }) {
   return (
     <>
       <PatientJourneyCard detail={detail} />
       <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
-      <PatientRequestsCard detail={detail} />
+      <PatientRequestsCard detail={detail} review={contestReview} />
       {detail.outcome_handoff && <OutcomeHandoffCard handoff={detail.outcome_handoff} />}
     </>
   );
