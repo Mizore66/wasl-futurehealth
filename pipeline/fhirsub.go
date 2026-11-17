@@ -1702,6 +1702,15 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 		c.mu.Unlock()
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		c.liveCanonicalTurn(ctx, w)
+		c.mu.Lock()
+		needsAssistance := !w.returnApplied
+		c.mu.Unlock()
+		if needsAssistance && ctx.Err() == nil {
+			// Give the existing finite service queue one opportunity before waiting
+			// for periodic assistance. This shares the original deadline and does
+			// not grant publication authority or assume that service means return.
+			_ = c.serviceKnownWork(ctx)
+		}
 		cancel()
 		c.mu.Lock()
 		// Assistance owns progress while the exact head is held; a spurious wake
