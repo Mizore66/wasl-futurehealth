@@ -58,7 +58,30 @@ The issuer and callback must use HTTPS. Discovery must report the exact issuer, 
 
 The OIDC cookie contains only a random session ID, not an API credential or provider token. A ten-minute HttpOnly, Secure, SameSite=Lax correlation cookie binds login state to the initiating browser for the top-level OIDC return; the callback requires that binding, consumes state once and removes the correlation cookie before issuing the HttpOnly, Secure, SameSite=Strict review-session cookie. Sessions have a fixed eight-hour expiry and can be revoked by logout. Logout is local and does not claim to end the provider's global IdP session. OIDC verifies a provider subject and maps it to a configured actor; it does not itself prove separate real-world people.
 
-The SQLite store is for local verification and **single-instance production-shaped operation only**. Keep its file server-only with restricted permissions. Multi-instance deployment requires a shared `SessionStore` implementation and separate verification; no production-readiness or live-identity-provider claim is made here.
+#### Session storage
+
+`WASL_OIDC_SESSION_STORE=sqlite` (the default) keeps login transactions and review sessions in `WASL_OIDC_SESSION_DB`. It is for local verification and **single-instance** operation only. Keep its file server-only with restricted permissions.
+
+`WASL_OIDC_SESSION_STORE=nats` keeps them in two JetStream key-value buckets, `WASL_OIDC_LOGIN` and `WASL_OIDC_SESSION`, on the existing NATS cluster, so any web replica can start or finish a sign-in and every replica sees logout, expiry and revocation. `WASL_OIDC_SESSION_DB` is then not needed.
+
+```bash
+WASL_OIDC_SESSION_STORE=nats \
+WASL_OIDC_NATS_URL=tls://nats-0:4222,tls://nats-1:4222,tls://nats-2:4222 \
+WASL_OIDC_NATS_USER=server-only-user \
+WASL_OIDC_NATS_PASSWORD=server-only-password \
+WASL_OIDC_NATS_TLS_CA=/run/secrets/ca.crt \
+WASL_OIDC_NATS_TLS_CERT=/run/secrets/web.crt \
+WASL_OIDC_NATS_TLS_KEY=/run/secrets/web.key \
+WASL_OIDC_NATS_REPLICAS=3
+```
+
+- TLS (`WASL_OIDC_NATS_TLS_CA`, plus a client certificate and key when the server sets `verify: true`, as `deploy/nats/nats-production.conf` does) and a NATS user are required. Plaintext, unauthenticated NATS is accepted only together with `WASL_OIDC_INSECURE_LOOPBACK=1`, `WASL_SYNTHETIC_DATA_ONLY=1` and loopback NATS URLs.
+- `WASL_OIDC_NATS_REPLICAS` (1, 3 or 5; default 3) sets the bucket replication. Buckets are created on first use with file storage, one value per key, and a retention of the login lifetime plus 10 minutes, or the session lifetime plus 24 hours. Expiry itself is enforced from the stored timestamps, not from retention.
+- Callback consumption and logout are compare-and-set writes on the key's last revision, so concurrent callbacks for one state on different replicas produce exactly one session, and a second logout reports nothing to revoke. A wrong browser correlation does not consume the login.
+- Keys are SHA-256 hashes of state and session IDs. As in SQLite, the login value holds the PKCE verifier and the session value holds the issuer, subject and mapped credential *name*; no provider token or Wasl API credential is stored. They are protected by NATS authentication and the cluster's JetStream encryption at rest. The NATS user should be limited to the `$KV.WASL_OIDC_*` subjects and the JetStream API for these two buckets; the account is not scoped by this code.
+- While NATS is unreachable, sign-in and session reads fail closed (the reviewer is signed out and case data is withheld); the client reconnects on its own.
+
+Verification is synthetic and loopback only: `tests/oidc-nats-store.test.ts` (two store instances on one JetStream server: cross-replica consumption, 24 concurrent callbacks, logout, expiry, subject revocation, tampered records, broker restart and reconnection), `tests/oidc-flow-replicas.test.ts` (the real start/callback routes and reviewer-session code in two separate module graphs) and `e2e/review-oidc-replicas.spec.ts` (two `next start` processes, one browser). They need `../bin/nats-server` or `WASL_NATS_SERVER`, and skip without it unless `WASL_REQUIRE_NATS_TESTS=1`. A three-node TLS cluster, a load balancer and a live identity provider have not been exercised; no production-readiness or live-identity-provider claim is made here.
 
 For loopback synthetic testing only, set `WASL_OIDC_INSECURE_LOOPBACK=1` and `WASL_SYNTHETIC_DATA_ONLY=1`, and use loopback issuer/callback URLs. `tests/support/synthetic-oidc-provider.ts` generates RS256 keys, discovery, JWKS, single-use codes and PKCE checks on an ephemeral port. The focused Vitest files and `e2e/review-oidc.spec.ts` start it automatically; no external identity provider is contacted.
 

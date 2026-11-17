@@ -39,7 +39,7 @@ afterEach(() => {
   store.set.mockReset();
   store.delete.mockReset();
   revalidateMock.mockReset();
-  while (oidcStores.length) oidcStores.pop()!.close();
+  while (oidcStores.length) void oidcStores.pop()!.close();
   while (oidcDirectories.length) rmSync(oidcDirectories.pop()!, { recursive: true, force: true });
 });
 
@@ -130,7 +130,7 @@ describe("getReviewCase", () => {
 
 describe("OIDC reviewer sessions", () => {
   const MAPPED_TOKEN = "mapped-r1-server-token-123456";
-  function configure(options: { subject?: string; credential?: "reviewer" | "reviewer_2"; now?: number } = {}) {
+  async function configure(options: { subject?: string; credential?: "reviewer" | "reviewer_2"; now?: number } = {}) {
     const directory = mkdtempSync(path.join(tmpdir(), "wasl-reviewer-oidc-"));
     oidcDirectories.push(directory);
     const file = path.join(directory, "session.sqlite");
@@ -148,13 +148,13 @@ describe("OIDC reviewer sessions", () => {
     for (const [name, value] of Object.entries(values)) vi.stubEnv(name, value);
     const sessions = new SqliteSessionStore(file);
     oidcStores.push(sessions);
-    const { sessionId } = sessions.createSession({ issuer: "https://id.example.test", subject: options.subject ?? "synthetic-r1", credential: options.credential ?? "reviewer", now: options.now });
+    const { sessionId } = await sessions.createSession({ issuer: "https://id.example.test", subject: options.subject ?? "synthetic-r1", credential: options.credential ?? "reviewer", now: options.now });
     store.get.mockImplementation((name: string) => name === "__Secure-wasl_review_session" ? { value: sessionId } : undefined);
     return { sessions, sessionId };
   }
 
   it("maps the verified stored subject to only its current configured bearer token", async () => {
-    configure();
+    await configure();
     const fetchMock = vi.fn().mockResolvedValue(json(200, detailBody()));
     vi.stubGlobal("fetch", fetchMock);
     const result = await getReviewCase("c1");
@@ -166,14 +166,14 @@ describe("OIDC reviewer sessions", () => {
   });
 
   it("does not call the API for an unmapped subject or changed credential mapping", async () => {
-    const first = configure({ subject: "synthetic-unmapped" });
+    const first = await configure({ subject: "synthetic-unmapped" });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "unmapped" });
-    first.sessions.close();
+    await first.sessions.close();
     oidcStores.pop();
 
-    configure({ subject: "synthetic-r1", credential: "reviewer" });
+    await configure({ subject: "synthetic-r1", credential: "reviewer" });
     vi.stubEnv("WASL_OIDC_SUBJECT_MAP_JSON", '{"synthetic-r1":"reviewer_2","synthetic-r2":"reviewer"}');
     expect(await resolveReviewer()).toEqual({ ok: false, reason: "unmapped" });
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "unmapped" });
@@ -181,15 +181,15 @@ describe("OIDC reviewer sessions", () => {
   });
 
   it("withholds case data for revoked, expired, malformed or unknown sessions", async () => {
-    const { sessions, sessionId } = configure();
-    sessions.revokeSession(sessionId);
+    const { sessions, sessionId } = await configure();
+    await sessions.revokeSession(sessionId);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "revoked" });
-    sessions.close();
+    await sessions.close();
     oidcStores.pop();
 
-    configure({ now: Date.now() - 9 * 60 * 60 * 1000 });
+    await configure({ now: Date.now() - 9 * 60 * 60 * 1000 });
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "expired" });
     store.get.mockReturnValue({ value: "malformed" });
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false });
@@ -197,9 +197,9 @@ describe("OIDC reviewer sessions", () => {
   });
 
   it("revokes the server-side session on logout and refuses an old replayed cookie", async () => {
-    const { sessions, sessionId } = configure();
+    const { sessions, sessionId } = await configure();
     await signOutReviewer("c1");
-    expect(sessions.resolveSession(sessionId)).toEqual({ ok: false, reason: "revoked" });
+    expect(await sessions.resolveSession(sessionId)).toEqual({ ok: false, reason: "revoked" });
     expect(store.set).toHaveBeenCalledWith("__Secure-wasl_review_session", "", { httpOnly: true, secure: true, sameSite: "strict", path: "/app", maxAge: 0 });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -208,7 +208,7 @@ describe("OIDC reviewer sessions", () => {
   });
 
   it("disables demo token entry in OIDC mode", async () => {
-    configure();
+    await configure();
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect((await signInReviewer("c1", TOKEN)).ok).toBe(false);
