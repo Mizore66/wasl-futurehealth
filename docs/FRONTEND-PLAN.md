@@ -44,7 +44,8 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 | `/app/review`, `/app/review/[id]` | V2-review | `/api/cases?review=open`, `/api/cases/{id}`, POST review |
 | `/app/patients` | V2-patient | `/api/cases` (the nav target; added in phase 1) |
 | `/app/patients/[id]` | V2-patient | `/api/cases/{id}` + `/audit` |
-| `/app/referrals` | V2-referrals | `/api/cases?state=open` |
+| `/app/referrals` | V2-referrals | `/api/cases?programme=…&provider=…` (CRC default; lung work-up and DR views read `current.handoff` of marked cases), POST `/referral-response` (CRC) |
+| `/app/referrals/returned` | V2-referrals (referrer view) | same views; `api_overlay.referral_handoff` (unit return or canonical packet), POST `/referrer-response` with the view's referring-clinician credential (`WASL_API_REFERRER_TOKEN`, `_LUNG_`, `_DR_`); fixtures mode shows the synthetic lung/DR packets read-only |
 | `/app/pipeline` | V2-proof | `replay.json` |
 | `/app/pipeline/matching`, `/app/pipeline/reading` | V2-linker, V2-reader | `replay.json` + fixture cases |
 | `/app/results` | V2-results | `results.json` |
