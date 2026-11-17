@@ -3,8 +3,9 @@
  * This Urdu copy was drafted for the design and has not been reviewed by a
  * qualified medical translator. Do not show it to patients until it has been.
  * Patient routes are gated by TRANSLATION_REVIEW in ./review.ts (#133).
- * notice.rightsItems[2] predates the revised English refusal wording (#157) and
- * must be retranslated from it before review.
+ * notice.rightsItems[2] was redrafted from the revised English refusal wording
+ * (#157) by the development team, not a qualified medical translator. It needs
+ * that review, and the English meaning needs clinical sign-off, before patients.
  */
 import type { PatientDict } from "./types";
 
@@ -40,7 +41,8 @@ export const ur: PatientDict = {
     rightsItems: [
       "آپ کی رازداری محفوظ ہے۔ آپ کا نتیجہ صرف آپ اور آپ کی طبی ٹیم دیکھتی ہے۔",
       "آپ فون پر یا اپنی زبان میں مزید وضاحت مانگ سکتی ہیں۔",
-      "آپ فالو اپ سے انکار یا کسی بھی فیصلے پر اعتراض کر سکتی ہیں۔ اس سے آپ کی دیکھ بھال پر اثر نہیں پڑے گا۔",
+      // #157: redrafted from the revised English; not translator-reviewed.
+      "آپ فالو اپ سے انکار یا کسی بھی فیصلے پر اعتراض کر سکتی ہیں۔ اگر آپ انکار کریں تو بھی آپ کے ساتھ عزت سے پیش آیا جائے گا اور آپ کو دوسری ضروری دیکھ بھال ملتی رہے گی۔ انکار کرنے کا آپ کے لیے کیا مطلب ہو سکتا ہے اور آپ کے پاس اور کون سے راستے ہیں، اس بارے میں اپنے ڈاکٹر سے بات کریں۔",
     ],
     rightsNote: "آپ کی ہر درخواست طبی ٹیم کا ایک فرد دیکھتا ہے، کوئی خودکار نظام نہیں۔",
   },
