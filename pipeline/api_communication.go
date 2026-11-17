@@ -148,6 +148,26 @@ func communicationAnswers(c *apiCase, escalation string) bool {
 	return false
 }
 
+// staffAckOverdueLocked raises the engine's missing-acknowledgement escalation (closure.go: AckSLA days after the
+// notification, no acknowledgement) for a staff-recorded notification. The engine cannot raise it: its run clock ends
+// before the staff fact. The API counts from the recorded occurred_at on its own UTC clock, so a notification nobody
+// confirmed does not drop out of escalation just because it was recorded by staff. Only ever adds an escalation.
+func (s *apiServer) staffAckOverdueLocked(c *apiCase) bool {
+	n := c.ov.notification
+	if n == nil || c.ov.receipt != nil || c.last == nil || c.last.AckDay >= 0 || c.Closed || servedDropoffLocked(c) != "no_acknowledgement" {
+		return false
+	}
+	at, err := time.Parse(time.RFC3339, n["occurred_at"].(string))
+	if err != nil {
+		return false
+	}
+	now := time.Now
+	if s.now != nil {
+		now = s.now
+	}
+	return now().UTC().Sub(at) > time.Duration(AckSLA*24)*time.Hour
+}
+
 func hasCommunicationRecord(c *apiCase) bool { return c.ov.notification != nil || c.ov.receipt != nil }
 
 // communicationPreconditionLocked holds the case-state rules of both actions, shared by the write path and replay.
