@@ -399,6 +399,7 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colonoscopy" {
 				r1photoGate(ev.Ev, iv) // r1review.go: completion review only with a verified caecal photo (no-op with the flag off)
 			}
+			holdRetrievedReport(ev) // api_retrieved_report.go: a coordinator-delivered retrieved report waits for a human decision
 			ev.Images = nil
 			ev.Text = "" // the full body stays in the immutable FHIR log; downstream carries the verdict + hash
 		}
