@@ -73,11 +73,15 @@ test.describe("OIDC sessions shared by two web replicas", () => {
   }
   async function stopReplica(port: number) {
     const child = replicas.get(port);
+    if (!child) return;
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise((resolve) => child.once("exit", resolve));
+      // Exercise abrupt replica loss: shared sessions must survive a crash,
+      // without depending on Next's graceful shutdown of persistent clients.
+      child.kill("SIGKILL");
+      await exited;
+    }
     replicas.delete(port);
-    if (!child || child.exitCode !== null) return;
-    const exited = new Promise((resolve) => child.once("exit", resolve));
-    child.kill();
-    await exited;
   }
 
   test.beforeAll(async ({}, testInfo) => {
