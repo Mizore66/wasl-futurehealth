@@ -19,6 +19,7 @@ export type ReviewCase =
 
 export type SignInResult = { ok: true } | { ok: false; error: string };
 
-export function oidcStartHref(caseId: string): string {
-  return `/app/auth/oidc/start?returnTo=${encodeURIComponent(`/app/review/${encodeURIComponent(caseId)}`)}`;
+/** `returnTo` defaults to the case's review page; another /app/ page (the disposition workflow) may pass its own path. */
+export function oidcStartHref(caseId: string, returnTo = `/app/review/${encodeURIComponent(caseId)}`): string {
+  return `/app/auth/oidc/start?returnTo=${encodeURIComponent(returnTo)}`;
 }

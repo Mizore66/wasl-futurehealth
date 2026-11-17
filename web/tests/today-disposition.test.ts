@@ -37,7 +37,8 @@ describe("clinician disposition after a decline", () => {
 
   it("a closed_declined disposition shows a non-procedure end state, never a completed procedure", () => {
     const it = item({ decline_disposition: { ...followUp, plan: "closed_declined", follow_up_owner: undefined, next_review: undefined } });
-    expect(it.status).toBe("Declined · closed without the procedure");
+    expect(it.status).toBe("Declined · informed refusal recorded, no procedure");
+    expect(`${it.status} ${it.next}`).not.toMatch(/\bclosed\b|completed/i);
     expect(it.status).not.toMatch(/done|complete/i);
     expect(it.next).not.toContain("GP to sign");
   });

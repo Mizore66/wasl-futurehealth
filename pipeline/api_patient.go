@@ -52,13 +52,14 @@ var patientRoutineSteps = map[string]bool{
 var patientDistractors = map[string]string{"wait_for_symptoms": "misunderstood", "urgent_visit": "misunderstood", "not_sure": "needs_human"}
 
 // patientPlan is what one canonical decision lets the patient phone show and record.
-// Only CRC has simulated patient appointment offers and their preparation checklist.
+// Offers and Prep are resolved per case from its simulated booking data (api_patient_offers.go).
 type patientPlan struct {
 	Programme string
 	NextStep  string
 	Question  string
 	Choices   []string // teach-back answer ids in the order the phone shows them
 	Offers    bool
+	Prep      []string // preparation item ids that apply to the offered procedure
 }
 
 // patientNextStep is the served recommendation as a patient-safe key. It never infers one the decision lacks.
@@ -98,7 +99,7 @@ func patientPlanFor(d *Decision) (patientPlan, bool) {
 		return patientPlan{}, false
 	}
 	if d.Prog == "crc" {
-		return patientPlan{Programme: "crc", NextStep: "colonoscopy", Question: teachBackQuestionID, Choices: []string{"blood_test", "colonoscopy", "not_sure"}, Offers: true}, true
+		return patientPlan{Programme: "crc", NextStep: "colonoscopy", Question: teachBackQuestionID, Choices: []string{"blood_test", "colonoscopy", "not_sure"}}, true
 	}
 	step := patientNextStep(d)
 	distractor := "wait_for_symptoms"
@@ -168,6 +169,7 @@ type patientRequestRecord struct {
 type patientOffer struct {
 	SlotID   string `json:"slot_id"`
 	Unit     string `json:"unit"`
+	Region   string `json:"region,omitempty"`
 	StartsAt string `json:"starts_at"`
 }
 
@@ -185,15 +187,6 @@ func patientOffersVersion() string {
 	sort.Strings(ids)
 	h := sha256.Sum256([]byte(strings.Join(ids, "\n")))
 	return hex.EncodeToString(h[:])
-}
-
-func patientOfferedSlot(id string) bool {
-	for _, offer := range patientSlotOffers {
-		if offer.SlotID == id {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *apiServer) patientRequestsLocked() map[string]patientRequestRecord {
@@ -229,10 +222,11 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 	if p.Prep == nil {
 		p.Prep = initialPatientPrep()
 	}
-	plan := casePatientPlan(c)
-	version, prepIDs := "", []string{}
-	if plan.Offers {
-		version, prepIDs = patientOffersVersion(), []string{prepClearFluidsAndPrep, prepEscortHome}
+	plan, set := s.casePatientPlanLocked(c)
+	version, prepIDs := set.Version, []string{}
+	// Preparation applies only while this case has an offer to prepare for (or a saved preference from one).
+	if len(set.Prep) > 0 && (len(s.patientLiveOffersLocked(c, set)) > 0 || p.Slot.Status == "selected") {
+		prepIDs = set.Prep
 	}
 	ledger := "ok"
 	if s.ledgerErr != "" {
@@ -285,13 +279,6 @@ func patientOr(value, fallback string) string {
 		return fallback
 	}
 	return value
-}
-
-func patientOffersView(plan patientPlan) map[string]interface{} {
-	if !plan.Offers {
-		return map[string]interface{}{"version": "", "procedure": "", "slots": []patientOffer{}}
-	}
-	return map[string]interface{}{"version": patientOffersVersion(), "procedure": "colonoscopy", "slots": patientSlotOffers}
 }
 
 func patientPublicEvent(ev map[string]interface{}) map[string]interface{} {
@@ -377,7 +364,7 @@ func validatePatientData(plan patientPlan, kind string, in map[string]interface{
 		}
 		id, err := str("item_id")
 		completed, ok := in["completed"].(bool)
-		if err != nil || !ok || (id != prepClearFluidsAndPrep && id != prepEscortHome) {
+		if err != nil || !ok || !slices.Contains(plan.Prep, id) {
 			return nil, errors.New("preparation item or completed value is invalid")
 		}
 		out["item_id"], out["completed"] = id, completed
@@ -458,7 +445,7 @@ func (s *apiServer) patientJourney(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Wasl-Actor", "patient-link/"+link.LinkID)
 	if r.Method == http.MethodGet {
 		s.mu.Lock()
-		body := s.envelope(map[string]interface{}{"journey": s.patientViewLocked(s.cases[link.Case], true), "offers": patientOffersView(casePatientPlan(s.cases[link.Case])), "expires_at": link.ExpiresAt})
+		body := s.envelope(map[string]interface{}{"journey": s.patientViewLocked(s.cases[link.Case], true), "offers": s.patientOffersViewLocked(s.cases[link.Case]), "expires_at": link.ExpiresAt})
 		s.mu.Unlock()
 		writeJSONResp(w, http.StatusOK, body)
 		return
@@ -479,7 +466,7 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 	}
 	c := s.cases[link.Case]
 	s.mu.Lock()
-	plan := casePatientPlan(c)
+	plan, _ := s.casePatientPlanLocked(c)
 	s.mu.Unlock()
 	data, err := validatePatientData(plan, req.Kind, req.Data)
 	if err != nil {
@@ -503,11 +490,16 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 			return s.patientConflictLocked(c, "head", "stale expected_head; review the current patient journey before retrying")
 		}
 		if req.Kind == "slot_selected" {
-			if data["offers_version"] != patientOffersVersion() {
+			_, set := s.casePatientPlanLocked(c)
+			if data["offers_version"] != set.Version {
 				return s.patientConflictLocked(c, "offers", "the offered times changed; review the current offers")
 			}
-			if !patientOfferedSlot(sstr(data, "slot_id")) {
+			if !set.has(sstr(data, "slot_id")) {
 				return http.StatusBadRequest, map[string]interface{}{"error": "slot_id is not in the current offer set"}
+			}
+			live := s.patientLiveOffersLocked(c, set)
+			if !slices.ContainsFunc(live, func(o patientOffer) bool { return o.SlotID == sstr(data, "slot_id") }) && c.patient.Slot.SlotID != sstr(data, "slot_id") {
+				return s.patientConflictLocked(c, "offers", "that time is no longer available; review the current offers")
 			}
 		}
 		if req.Kind == "contact_permission_changed" {
@@ -629,6 +621,7 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if !ok {
 		return errors.New("patient event data must be an object")
 	}
+	plan, offers := s.replayPatientPlanLocked(c, plan, kind, data)
 	norm, err := validatePatientData(plan, kind, data)
 	if err != nil || !reflect.DeepEqual(norm, data) {
 		return errors.New("invalid or non-canonical patient event data")
@@ -656,7 +649,7 @@ func (s *apiServer) replayPatientEvent(ev map[string]interface{}) error {
 	if sstr(ev, "action") != expectedAction {
 		return errors.New("patient event action does not match its kind")
 	}
-	if kind == "slot_selected" && (sstr(data, "offers_version") != patientOffersVersion() || !patientOfferedSlot(sstr(data, "slot_id"))) {
+	if kind == "slot_selected" && (sstr(data, "offers_version") != offers.Version || !offers.has(sstr(data, "slot_id"))) {
 		return errors.New("patient event names an unoffered slot or offer version")
 	}
 	if s.patientSemanticNoOpLocked(c, kind, data) != requestOnly {

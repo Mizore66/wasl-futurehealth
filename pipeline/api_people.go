@@ -116,13 +116,18 @@ func decodeIdentitySnapshot(body []byte) (*identityClusterSnapshot, error) {
 // loadPersonProjection validates the complete snapshot and its binding to the
 // exact materialised logs on every request. Older runs therefore fail closed
 // only on person routes; existing case routes remain available.
+// identityPolicyName accepts the canonical decision policy stamp (v7.go policyName plus main.go suffixes), whose
+// segments are key=value pairs such as "v7strict+cal=true+guard=true+tau=0.99". exportOpCode has no "=", so it
+// rejected every real v7 run and /api/people answered 503 there.
+var identityPolicyName = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)*(?:\+[a-z0-9_]+(?:=[a-z0-9_.-]+)?)*$`)
+
 func (s *apiServer) loadPersonProjection() (*personProjection, error) {
 	body, err := os.ReadFile(filepath.Join(s.run, "identity_clusters.json"))
 	if err != nil {
 		return nil, err
 	}
 	snapshot, err := decodeIdentitySnapshot(body)
-	if err != nil || !exportOpCode.MatchString(snapshot.Policy) || len(snapshot.Policy) > 160 ||
+	if err != nil || !identityPolicyName.MatchString(snapshot.Policy) || len(snapshot.Policy) > 160 ||
 		!sha256Pattern.MatchString(snapshot.FHIRSHA256) || !sha256Pattern.MatchString(snapshot.OutLogSHA256) ||
 		(snapshot.Schema == identityClusterSchema && (len(snapshot.Clusters) == 0 || snapshot.Cases == nil)) || (snapshot.Schema == retainedIdentitySchema && (snapshot.Catalog == nil || snapshot.Clusters == nil)) {
 		return nil, fmt.Errorf("invalid identity projection")
