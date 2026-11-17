@@ -202,6 +202,9 @@ func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 			out = append(out, e)
 		}
 	}
+	if s.staffAckOverdueLocked(c) && !slices.Contains(out, "no_ack_7d") {
+		out = append(out, "no_ack_7d") // the engine's acknowledgement SLA, counted from the staff-recorded notification
+	}
 	for _, cb := range c.callbacks {
 		if cb.Source == teachBackSourcePatient && cb.open() {
 			out = append(out, cb.escalation())
