@@ -617,6 +617,7 @@ func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentSta
 	d.Dropoff = lungDropoff(state, false)
 	d.Contact = f.Contact
 	d.Policy = PolicyName
+	holdForPatientContest(f, d) // a contest of the surveillance loop holds only this child (patient_contest_hold.go)
 	d.Sig = sha(canon(d))
 	return d
 }

@@ -342,6 +342,14 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 	ots, _ := strconv.ParseInt(h.Get("Wsi-Ots"), 10, 64)
 	p := &Prep{Seq: seq, OriginTs: ots}
 	switch {
+	case subj == "fhir.review" && isPatientContestResource(data):
+		// A verified patient contest or its resolution from the API ledger (patient_contest_feed.go). Only the
+		// review subject carries it; the linker re-checks identity and RBAC before it reaches any loop.
+		if pc, err := patientContestFromResource(data); err != nil {
+			p.Skip, p.Reject = true, normalizationError("", "", "invalid_resource", "", "invalid patient contest")
+		} else {
+			p.Kind, p.PC = "patient_contest", pc
+		}
 	case subj == "fhir.review":
 		_, so, normErr := normaliseChecked("review", 0, data)
 		if so == nil {
@@ -399,6 +407,7 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colonoscopy" {
 				r1photoGate(ev.Ev, iv) // r1review.go: completion review only with a verified caecal photo (no-op with the flag off)
 			}
+			holdRetrievedReport(ev) // api_retrieved_report.go: a coordinator-delivered retrieved report waits for a human decision
 			ev.Images = nil
 			ev.Text = "" // the full body stays in the immutable FHIR log; downstream carries the verdict + hash
 		}

@@ -348,6 +348,8 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			for _, x := range xs {
 				xm := x.(map[string]interface{})
 				switch gs(xm, "url") {
+				case retrievedReportExt: // coordinator-delivered retrieved copy: the prep stage holds it for a human (api_retrieved_report.go)
+					e.Retrieved = gs(xm, "valueString")
 				case "urn:wsi:addendum-to", "urn:wsi:repeat-of":
 					// One unambiguous parent is required when a relationship is present.
 					if e.Relation != "" {

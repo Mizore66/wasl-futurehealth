@@ -1452,7 +1452,9 @@ type caseOverlay struct {
 	decline map[string]interface{}
 	// reconciliation is the latest completed-elsewhere report; its "retrieval" entry is the outcome that ended it.
 	reconciliation map[string]interface{}
-	plans          []map[string]interface{}
+	// retrieved lists every report delivered from a retrieved record (#177), append-only, for the source-feed export.
+	retrieved []map[string]interface{}
+	plans     []map[string]interface{}
 	// notification and receipt are the staff-recorded initial result notification and its acknowledgement (#197).
 	notification map[string]interface{}
 	receipt      map[string]interface{}
@@ -1593,6 +1595,8 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 		err = validateElsewhere(out, text)
 	case notificationKind, receiptKind:
 		err = validateCommunicationData(kind, out, text)
+	case retrievedReportKind:
+		err = validateRetrievedReport(out, text)
 	case retrievalKind:
 		if err = text("outcome", 32, true, false); err == nil && !retrievalOutcomes[out["outcome"].(string)] {
 			err = errors.New("outcome must be one of not_found|not_matching|non_closing")
@@ -1725,6 +1729,8 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		c.ov.reconciliation = entry
 	case notificationKind, receiptKind:
 		c.applyCommunication(ev["kind"].(string), entry)
+	case retrievedReportKind:
+		c.applyRetrievedReport(entry)
 	case retrievalKind:
 		ended := map[string]interface{}{}
 		for k, v := range c.ov.reconciliation {
@@ -1841,6 +1847,9 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 				retrieval = ended
 			}
 			summary["retrieval"] = retrieval
+		}
+		if rr, ok := r["retrieved_report"].(map[string]interface{}); ok {
+			summary["retrieved_report"] = retrievedReportView(rr, full)
 		}
 		m["reconciliation"] = summary
 	}
@@ -2134,7 +2143,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition|decline_disposition|completed_elsewhere|retrieval_outcome|"+communicationKindsList(), nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition|decline_disposition|completed_elsewhere|retrieval_outcome|retrieved_report|"+communicationKindsList(), nil)
 		return
 	}
 	if err := Authorize(role, actionForKind(kind)); err != nil {
@@ -2215,7 +2224,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 				data["decline_event"] = p
 			}
 		}
-		if _, named := data["report_event"]; kind == retrievalKind && !named {
+		if _, named := data["report_event"]; (kind == retrievalKind || kind == retrievedReportKind) && !named {
 			if p := c.ov.pendingRetrieval(); p != "" {
 				data["report_event"] = p
 			}
@@ -2227,6 +2236,15 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 		if isCommunicationKind(kind) {
 			if refusal := s.communicationPreconditionLocked(c, kind, data, now); refusal != nil {
+				body := map[string]interface{}{"error": refusal.msg}
+				if refusal.conflict != "" {
+					body["conflict"] = refusal.conflict
+				}
+				return refusal.code, body
+			}
+		}
+		if kind == retrievedReportKind {
+			if refusal := retrievedReportPreconditionLocked(c, data, now); refusal != nil {
 				body := map[string]interface{}{"error": refusal.msg}
 				if refusal.conflict != "" {
 					body["conflict"] = refusal.conflict
@@ -2505,6 +2523,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if isCommunicationKind(kind) {
 		recorded, _ := time.Parse(time.RFC3339Nano, at)
 		if refusal := s.communicationPreconditionLocked(c, kind, norm, recorded); refusal != nil {
+			return errors.New(refusal.msg)
+		}
+	}
+	if kind == retrievedReportKind {
+		recorded, _ := time.Parse(time.RFC3339Nano, at)
+		if refusal := retrievedReportPreconditionLocked(c, norm, recorded); refusal != nil {
 			return errors.New(refusal.msg)
 		}
 	}

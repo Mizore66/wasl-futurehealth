@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/url"
 	"os"
@@ -140,7 +141,9 @@ func TestNonCRCEvidenceReviewWithheldWhenSourceMissing(t *testing.T) {
 // #162 acceptance 1 on the live API path: the committed synthetic report behind the review_hold tissue disagreement
 // (MTSamples u35, data/evidence/reports43.json) is served whole for its item, and the source gate then no longer refuses
 // an evidence read for it. This does not post or sign a read: the signed path for the review_hold item is still open.
-func TestReviewHoldTissueSourceIsServedWholeAndUngated(t *testing.T) {
+// reviewHoldReportText: the committed synthetic report behind the review_hold tissue disagreement (MTSamples u35).
+func reviewHoldReportText(t *testing.T) string {
+	t.Helper()
 	raw, err := os.ReadFile(filepath.Join("..", "data", "evidence", "reports43.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -157,9 +160,14 @@ func TestReviewHoldTissueSourceIsServedWholeAndUngated(t *testing.T) {
 			text = r.Text
 		}
 	}
-	if !strings.Contains(text, "the level of the cecum") {
+	if !strings.Contains(text, "the level of the cecum") || !strings.Contains(text, "cold biopsy forceps") {
 		t.Fatalf("reports43.json u35 is not the review_hold report: %q", text)
 	}
+	return text
+}
+
+func TestReviewHoldTissueSourceIsServedWholeAndUngated(t *testing.T) {
+	text := reviewHoldReportText(t)
 	it := &ReviewItem{ItemID: "rv-hold", LoopID: ledgerLoop, Kinds: []string{"evidence"}, ReportID: "SKM-dr-217", ReportVersion: 1, Chain: sourceChain("skmc-endo", "SKM-dr-217")}
 	e := sourceEnv(t, []*ReviewItem{it}, sourceReportMsg(401, "skmc-endo", "SKM-dr-217", 1, text))
 	code, m, _ := e.source(t, irClinA, "rv-hold")
@@ -174,5 +182,43 @@ func TestReviewHoldTissueSourceIsServedWholeAndUngated(t *testing.T) {
 	// item is exercised by the source-bound factory tests; this hand-built item carries no colonoscopy category.)
 	if refusal := e.s.evidenceSourceRefusal(e.s.cases[ledgerLoop], "rv-hold"); refusal != nil {
 		t.Fatalf("source gate refused an item whose report opens: %v", refusal)
+	}
+}
+
+// #162 acceptance 1, the signing half: a pipeline-raised CRC colonoscopy evidence question whose received report is the
+// review_hold tissue report (u35). An authorised clinician opens the whole report, bound to the item's own revision,
+// and the two independent evidence reads are then signed. Opening appends nothing; the reads append once each; the
+// canonical decision is not rewritten and the case is not closed by the review. (The materialised run's review_hold
+// item is already signed by the run reviewer, so TestAPIReviewHoldSourceOpensWholeWithoutAddingASignature cannot sign it.)
+func TestReviewHoldTissueReportSignsAfterItsSourceOpens(t *testing.T) {
+	text := reviewHoldReportText(t)
+	withSourceBoundEvidenceText(t, text)
+	e, ids := newSourceBoundIR202(t, false)
+	item := e.s.queueItem(ledgerLoop, ids.Evidence)
+	canonical := canon(e.s.cases[ledgerLoop].last)
+	before := len(e.s.reviews)
+
+	code, m, body := e.source(t, irClinA, ids.Evidence)
+	src, _ := m["source"].(map[string]interface{})
+	if code != 200 || src["text"] != text || src["report"] != raisedReviewReport(item) || src["report_version"] != float64(item.ReportVersion) {
+		t.Fatalf("review_hold report for the evidence item: %d %s", code, body)
+	}
+	if !strings.Contains(src["text"].(string), "cold biopsy forceps") {
+		t.Fatal("the served report lacks the tissue context the readers disagreed about")
+	}
+	if code, _, body := e.source(t, irRevA, ids.Evidence); code != 403 || strings.Contains(body, "forceps") {
+		t.Fatalf("an identity reviewer opened the evidence report: %d %s", code, body)
+	}
+	if len(e.s.reviews) != before {
+		t.Fatal("opening the source report appended a review event")
+	}
+
+	r1 := stateOf(e.must(t, irClinA, irBody(ids.Evidence, "adequate", "r1", ""), 201))
+	r2 := stateOf(e.must(t, irClinB, irBody(ids.Evidence, "adequate", "r2", r1["head"].(string)), 201))
+	if r2["state"] != "resolved_agreed" || r2["final_decision"] != "adequate" {
+		t.Fatalf("agreeing evidence reads after the source opened: %v", r2)
+	}
+	if c := e.s.cases[ledgerLoop]; !bytes.Equal(canonical, canon(c.last)) || c.Closed {
+		t.Fatal("signing the evidence reads rewrote the canonical decision or closed the case")
 	}
 }

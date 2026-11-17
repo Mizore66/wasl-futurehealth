@@ -24,7 +24,7 @@ function reflects(journey: PatientJourney, intention: PatientIntention): boolean
     case "contact_permission_changed":
       return journey.contact_permission.status === intention.data.permission;
     case "slot_selected":
-      return journey.slot_selection.status === "selected" && journey.slot_selection.slot_id === intention.data.slot_id;
+      return journey.slot_selection.status === "selected" && journey.slot_selection.offer_id === intention.data.offer_id;
     case "preparation_changed":
       return journey.preparation.items.some((item) => item.item_id === intention.data.item_id && item.completed === intention.data.completed);
   }

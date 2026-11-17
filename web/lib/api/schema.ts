@@ -517,6 +517,8 @@ export const PatientRightsRequestStaff = z.looseObject({
   /** Staff views only: the synthetic patient link that submitted it, and every reviewer who signed the case and so may not resolve it. */
   requester: z.string().optional(),
   excluded_reviewers: z.array(z.string()).optional(),
+  /** The independent reviewer's recorded reason (staff view only; absent on resolutions recorded before it was required). */
+  resolution_reason: z.string().optional(),
 });
 /** A failed teach-back's nurse-callback task (pipeline/api_teachback.go callbackRowLocked); consultations only in case detail. */
 /** Staff view of the post-closure outcome hand-off (pipeline/api_outcome_handoff.go handoffViewLocked, staff=true). */
@@ -566,8 +568,11 @@ export const TeachBackCallback = z.looseObject({
 });
 /** One staff task a verified patient request opened (pipeline/patient_task.go patientTasksLocked); open tasks first, earliest due first. */
 export const PatientTask = z.looseObject({
-  kind: z.enum(["teach_back_callback", "patient_contest"]),
+  /** patient_contest_revision: a contest resolved decision_revised whose questioned decision is still current. */
+  kind: z.enum(["teach_back_callback", "patient_contest", "patient_contest_revision"]),
   id: z.string(),
+  /** Revision tasks: the receipt of the contest they follow. */
+  contest: z.string().optional(),
   owner: z.string(),
   status: z.enum(["open", "resolved"]),
   escalation: z.string(),
@@ -666,6 +671,8 @@ export const ActiveCaseSummary = z.looseObject({
   teach_back_callback: TeachBackCallback.optional(),
   /** Failed teach-back callbacks and patient contests as one owned, due-dated task list (docs/API-PATIENT-REQUESTS.md). */
   patient_tasks: z.array(PatientTask).optional(),
+  /** Set while a patient contest holds automatic closure (pipeline/api.go); `closed` is then false. */
+  closure_hold: z.literal("patient_contest").optional(),
   /**
    * Canonical escalations, less teach-back callbacks a coordinator resolved and missing-notification/acknowledgement
    * escalations a staff-recorded communication answered, plus open patient callbacks and contests.
@@ -923,7 +930,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "initial_notification", "receipt_acknowledgement", "referral_response", "referrer_response"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "retrieved_report", "initial_notification", "receipt_acknowledgement", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {

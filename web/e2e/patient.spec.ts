@@ -347,7 +347,7 @@ test("slot preference and preparation changes persist both true and false", asyn
   await expect(page.getByText("Your appointment is confirmed")).toHaveCount(0);
   expect((await bodies())[0]).toMatchObject({
     kind: "slot_selected",
-    data: { slot_id: "skmc-endo:2026-10-12:13:00", offers_version: (await journey()).slot_selection.offers_version },
+    data: { offer_id: "offer-crc-1012", offers_version: (await journey()).slot_selection.offers_version },
   });
   const boxes = page.getByRole("checkbox");
   await boxes.first().click();
@@ -543,6 +543,8 @@ for (const { lang, dir, surface } of PHONES) {
     await page.reload();
     await expect(page.getByRole("status")).toHaveText(OUTCOME_GATE_COPY.pendingRelease);
     if (lang !== "en") await expect(page.getByRole("status")).toHaveAttribute("lang", "en");
+    // English gate wording inside a translated phone carries the same note as other gated copy (#133); English has none.
+    await expect(page.getByRole("note").filter({ hasText: "until a reviewed translation is ready" })).toHaveCount(lang === "en" ? 0 : 1);
     await expect(page.getByText(t.outcome.safetyNet)).toHaveCount(0);
 
     await control("/__mock/handoff", "released");
@@ -550,6 +552,7 @@ for (const { lang, dir, surface } of PHONES) {
     await expect(page.locator("h1")).toHaveText(t.outcome.title);
     // The second identifier comes first: no outcome, next step or safety net before the one-time code is verified.
     await expect(page.getByText(OUTCOME_GATE_COPY.verifyIntro)).toBeVisible();
+    await expect(page.getByRole("note").filter({ hasText: "until a reviewed translation is ready" })).toHaveCount(lang === "en" ? 0 : 1);
     await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toHaveCount(0);
     await expect(page.getByText(t.outcome.simulated)).toBeVisible();
     await page.getByRole("button", { name: t.rights.getCode }).click();
@@ -559,6 +562,8 @@ for (const { lang, dir, surface } of PHONES) {
     await page.getByRole("textbox", { name: t.rights.codeLabel }).fill(code);
     await show.click();
     await expect(page.getByRole("region", { name: t.outcome.nextHead })).toContainText(t.outcome.next.routine_screening);
+    // The released content itself is the dictionary's own copy, so the note goes with the gate wording.
+    await expect(page.getByRole("note").filter({ hasText: "until a reviewed translation is ready" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: t.outcome.safetyHead })).toContainText(t.outcome.safetyNet);
     await page.getByRole("button", { name: t.outcome.acknowledge }).click();
     await expect(page.getByRole("status")).toHaveText(t.outcome.acknowledged);
@@ -627,6 +632,43 @@ test("a breast case keeps its own programme through steps, languages and forged 
   await expectNoSeriousAxe(page);
 });
 
+test("a CRC case ignores forged cervical programme and procedure parameters, and a second link replaces the first case", async ({ page }) => {
+  // #165 AC5: case and programme context come only from the server-resolved link, never from navigation parameters.
+  const forged = "programme=cervical&procedure=colposcopy&next_step=colposcopy&case=ahs/ServiceRequest/OTHER&offers_version=forged";
+  const cervicalWords = /colposcopy|cervical|cervix|smear|Abu Dhabi city region|Al Dhafra region|June|July/i;
+  await enter(page);
+  for (const [lang, surface] of [["en", "patient"], ["ar", "review"]] as const) {
+    for (const step of STEPS) {
+      await page.goto(`${BASE[surface]}/${step}?lang=${lang}&${forged}`);
+      await expect(page.locator("main")).not.toContainText(cervicalWords);
+      const nav = page.getByRole("navigation", { name: "Demo steps" });
+      await expect(nav.locator("a").first()).toHaveAttribute("href", `${BASE[surface]}/notice?lang=${lang}`);
+    }
+  }
+  await page.goto(`/patient/notice?lang=en&${forged}`);
+  await expect(page.locator("h1")).toHaveText("Your test result needs one more check");
+  await page.goto(`/patient/book?lang=en&${forged}`);
+  await expect(page.locator("h1")).toHaveText("Your colonoscopy appointment");
+  await expect(page.getByTestId("slot-date")).toHaveText("Friday 9 October");
+  await expect(page.getByRole("heading", { name: "Before your appointment" })).toBeVisible();
+  await page.getByRole("button", { name: "Save this preferred time" }).click();
+  await expect(page.getByText(/saved for coordinator review/)).toBeVisible();
+  expect((await bodies()).at(-1)).toEqual(expect.objectContaining({ kind: "slot_selected", data: { offer_id: "offer-crc-1009", offers_version: (await journey()).slot_selection.offers_version } }));
+
+  // A cervical link opened in the same browser serves only its own case: no CRC preference, slot or preparation carries over.
+  token = randomUUID();
+  await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "cervical" }) });
+  await enter(page);
+  await page.goto("/patient/book?lang=en&programme=crc&procedure=colonoscopy&next_step=colonoscopy");
+  await expect(page.locator("h1")).toHaveText("Your colposcopy appointment");
+  await expect(page.getByText(/saved for coordinator review/)).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText(/colonoscopy|bowel|SKMC|Endoscopy|October|Before your appointment/i);
+  await page.goto("/patient/check?lang=en&programme=crc&next_step=colonoscopy");
+  await expect(page.locator("main")).not.toContainText(/colonoscopy|bowel|SKMC|Hessa/i);
+  expect(await bodies()).toEqual([]);
+  await expectNoSeriousAxe(page);
+});
+
 test("a cervical case books from its own simulated colposcopy slots, with no CRC slot or preparation", async ({ page }) => {
   token = randomUUID();
   await fetch(`${MOCK}/__mock/links`, { method: "POST", body: JSON.stringify({ token, programme: "cervical" }) });
@@ -643,7 +685,7 @@ test("a cervical case books from its own simulated colposcopy slots, with no CRC
   await page.getByRole("button", { name: "Save this preferred time" }).click();
   await expect(page.getByText(/saved for coordinator review/)).toBeVisible();
   await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");
-  expect((await bodies()).at(-1)).toEqual(expect.objectContaining({ kind: "slot_selected", data: expect.objectContaining({ slot_id: "sim:colposcopy:5:1" }) }));
+  expect((await bodies()).at(-1)).toEqual(expect.objectContaining({ kind: "slot_selected", data: expect.objectContaining({ offer_id: "offer-cx-0701" }) }));
 
   // Public requests cannot enable an unreviewed translation.
   await page.goto("/patient/book?lang=ar");

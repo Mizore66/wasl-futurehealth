@@ -160,6 +160,13 @@ func (s *apiServer) staffCommunications() ([]staffComm, error) {
 // streams that receive staff Communications, which are rewritten with them merged in by arrival (stable: a staff fact
 // follows source events of the same arrival). Returns the manifest it wrote.
 func writeStaffCommunicationCohort(run, data, out string, comms []staffComm) (map[string]interface{}, error) {
+	return writeLedgerCohort(run, data, out, staffCommManifest, "staff-recorded notification and receipt facts from the verified review ledger, as FHIR Communications on the referring provider's stream. "+
+		"The closure engine re-verifies them; they are communication facts, never clinical evidence, and receipt is not comprehension.", comms)
+}
+
+// writeLedgerCohort writes a NEW cohort directory holding ledger-derived source resources (staff communications, or
+// retrieved reports in api_retrieved_report.go) merged by arrival into their provider streams, and its manifest.
+func writeLedgerCohort(run, data, out, manifestName, note string, comms []staffComm) (map[string]interface{}, error) {
 	absData, err := filepath.Abs(data)
 	if err != nil {
 		return nil, err
@@ -199,7 +206,7 @@ func writeStaffCommunicationCohort(run, data, out string, comms []staffComm) (ma
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if name == staffCommManifest {
+		if name == manifestName {
 			continue
 		}
 		prov := strings.TrimSuffix(strings.TrimPrefix(name, "fhir_"), ".ndjson")
@@ -221,15 +228,13 @@ func writeStaffCommunicationCohort(run, data, out string, comms []staffComm) (ma
 	}
 	manifest := map[string]interface{}{
 		"source_run": run, "source_cohort": absData, "horizon_day": TEnd, "horizon_date": dayDate(TEnd).Format(calendarDayLayout),
-		"injected": injected, "after_horizon": held,
-		"note": "staff-recorded notification and receipt facts from the verified review ledger, as FHIR Communications on the referring provider's stream. " +
-			"The closure engine re-verifies them; they are communication facts, never clinical evidence, and receipt is not comprehension.",
+		"injected": injected, "after_horizon": held, "note": note,
 	}
 	b, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	return manifest, os.WriteFile(filepath.Join(absOut, staffCommManifest), append(b, '\n'), 0600)
+	return manifest, os.WriteFile(filepath.Join(absOut, manifestName), append(b, '\n'), 0600)
 }
 
 // mergeStaffStream copies a provider stream line for line and inserts each staff Communication before the first source
@@ -242,7 +247,11 @@ func mergeStaffStream(src, dst, prov string, staff []staffComm) error {
 	defer in.Close()
 	var buf bytes.Buffer
 	emit := func(sc staffComm) error {
-		b, err := json.Marshal(GenEvent{Arrival: sc.Day, Prov: prov, MsgID: staffCommMsgPrefix + sc.Event, Res: sc.res})
+		prefix := staffCommMsgPrefix
+		if sc.Kind == retrievedReportKind {
+			prefix = "retrieved/"
+		}
+		b, err := json.Marshal(GenEvent{Arrival: sc.Day, Prov: prov, MsgID: prefix + sc.Event, Res: sc.res})
 		if err != nil {
 			return err
 		}

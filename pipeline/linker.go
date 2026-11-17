@@ -72,6 +72,7 @@ type LinkerCore struct {
 	commCurrent         map[string]communicationRevision   // provider|resource ID -> logical current revision, including reassociations
 	commHistory         map[string][]communicationRevision // provider|resource ID -> append-only normalized inputs and their basedOn loop
 	signoffs            map[string][]Signoff
+	patientContests     map[string][]*linkedPatientContest // tracking root -> verified patient contests (patient_contest_feed.go)
 	evOver              map[string]map[string]string
 	lastHash            map[string]string
 	Stats               map[string]int
@@ -1085,7 +1086,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	contact, optedOut := L.clusterConsent(s)
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
 		Prog: base.Prog, Priority: base.Priority, Cat: base.Cat, IndexDay: base.IndexDay,
-		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: optedOut, Contact: contact}
+		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: optedOut, Contact: contact, PatientContests: L.patientContestFacts(loop)}
 	ms := L.clusterOf(s)
 	best, weak, hops, pred := L.widestP(s, ms)
 	if V7Cal != nil || V7Guard {
@@ -1388,6 +1389,12 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	switch p.Kind {
 	case "eof":
 		L.provDone[p.Ev.Provider] = true
+	case "patient_contest":
+		if root, ok := L.applyPatientContest(p.PC); ok {
+			if _, known := L.loops[root]; known {
+				affLoops[root] = true
+			}
+		}
 	case "signoff":
 		so := p.So
 		if err := CheckSignoff(so, DualMerge); err != nil {

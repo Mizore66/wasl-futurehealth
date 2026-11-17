@@ -1,4 +1,4 @@
-import type { PatientJourney, PatientOffer, PatientProgramme } from "@/lib/api/patient-schema";
+import type { PatientJourney, PatientOffer, PatientOffers, PatientProgramme } from "@/lib/api/patient-schema";
 import { DICTS, type Lang } from "./i18n";
 
 type OtherProgramme = Exclude<PatientProgramme, "crc">;
@@ -204,12 +204,13 @@ export interface OfferPlace {
 }
 
 /**
- * Patient-facing place for one simulated offer. The fixed CRC demo unit keeps its reviewed SKMC wording; a booking
- * catalogue slot names only its region, never a staff unit code. An unknown unit or region shows no place.
+ * Patient-facing place for one simulated offer. The fixed CRC demo offers (`source: "demo_fixed"`) keep their reviewed
+ * SKMC wording; a booking catalogue slot names only its region (the payload carries no unit code). An unknown region
+ * shows no place.
  */
-export function offerPlace(slot: Pick<PatientOffer, "unit" | "region"> | undefined, lang: Lang): OfferPlace | null {
+export function offerPlace(slot: Pick<PatientOffer, "region"> | undefined, source: PatientOffers["source"], lang: Lang): OfferPlace | null {
   if (!slot) return null;
-  if (slot.unit === "skmc-endo") {
+  if (source === "demo_fixed") {
     const b = DICTS[lang].book;
     return { place: b.place, address: b.address, abbr: "SKMC", gated: false };
   }

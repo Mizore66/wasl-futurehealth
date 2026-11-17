@@ -17,6 +17,8 @@ import (
 const (
 	patientTaskTeachBack = "teach_back_callback"
 	patientTaskContest   = "patient_contest"
+	// patientTaskContestRevision: a contest resolved decision_revised whose questioned decision is still current.
+	patientTaskContestRevision = "patient_contest_revision"
 	// patientContestEscalation is served (never written into a canonical decision)
 	// while a patient contest is open; the engine raises the same name when it holds closure.
 	patientContestEscalation = "patient_contest_review"
@@ -92,6 +94,14 @@ func (s *apiServer) patientTasksLocked(c *apiCase) []map[string]interface{} {
 			row["outcome"] = r.Outcome
 		}
 		out = append(out, row)
+		if r.revisionPending(c) {
+			// decision_revised keeps the hold until the questioned decision is replaced: owned, due-dated work.
+			task := r.revisionTask()
+			revision := map[string]interface{}{"kind": patientTaskContestRevision, "id": r.ResolutionEvent, "contest": r.Receipt,
+				"escalation": patientContestRevisionEscalation, "closure_held": true}
+			task.taskFields(revision, now, true)
+			out = append(out, revision)
+		}
 	}
 	rank := func(row map[string]interface{}) (int, string) {
 		due, _ := row["due_at"].(string)

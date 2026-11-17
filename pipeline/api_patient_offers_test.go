@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func TestPatientOffersComeFromTheCasesSimulatedBooking(t *testing.T) {
 	if procedure != "colonoscopy" || len(slots) != 2 || body["offers"].(map[string]interface{})["source"] != offerSourceBooking {
 		t.Fatalf("CRC offers: %v", body["offers"])
 	}
-	if slots[0]["slot_id"] != "sim:colonoscopy:3:1" || slots[0]["unit"] != "AD-2" || slots[0]["region"] != "AD" ||
+	if slots[0]["offer_id"] != patientOfferID(patientTestCaseA, "sim:colonoscopy:3:1") || slots[0]["region"] != "AD" ||
 		slots[0]["starts_at"] != dayDate(69).Format("2006-01-02") || version == patientOffersVersion() {
 		t.Fatalf("CRC slot is not the case's simulated booking candidate: %v", slots[0])
 	}
@@ -96,7 +97,7 @@ func TestPatientOffersComeFromTheCasesSimulatedBooking(t *testing.T) {
 	p.writeLink(t, cervical, patientTestCaseB, "cccccccccccccccccccccccccccccccc", p.now.Add(time.Hour))
 	_, cbody, _ := p.request(t, http.MethodGet, "/api/patient/journey", cervical, nil)
 	cversion, cprocedure, cslots := offersOf(cbody)
-	if cprocedure != "colposcopy" || len(cslots) != 2 || cslots[1]["unit"] != "DH-1" || prepTotal(cbody) != 0 {
+	if cprocedure != "colposcopy" || len(cslots) != 2 || cslots[1]["region"] != "DH" || prepTotal(cbody) != 0 {
 		t.Fatalf("cervical offers: %v %v", cbody["offers"], cbody["journey"])
 	}
 	cHead := journeyHead(cbody)
@@ -157,7 +158,7 @@ func TestPatientOffersHideSlotsReservedForAnotherCase(t *testing.T) {
 	body := p.get(t)
 	version, _, slots := offersOf(body)
 	// Session 3 is still offered through its free seat; session 4's two seats are offered once.
-	if len(slots) != 2 || slots[0]["slot_id"] != "sim:colonoscopy:4:1" || slots[1]["slot_id"] != "sim:colonoscopy:3:2" {
+	if len(slots) != 2 || slots[0]["offer_id"] != patientOfferID(patientTestCaseA, "sim:colonoscopy:4:1") || slots[1]["offer_id"] != patientOfferID(patientTestCaseA, "sim:colonoscopy:3:2") {
 		t.Fatalf("a slot reserved for another case was offered, or a session was repeated: %v", slots)
 	}
 	if code, _ := p.post(t, "slot_selected", patientUUID(1), journeyHead(body), map[string]interface{}{"slot_id": "sim:colonoscopy:3:1", "offers_version": version}); code != http.StatusConflict {
@@ -181,5 +182,70 @@ func TestPatientDemoSlotHistoryReplaysAfterABookingCatalogueAppears(t *testing.T
 	reloaded := reloadWithBooking(t, p)
 	if reloaded.cases[patientTestCaseA].patient.Slot.SlotID != patientSlotOffers[1].SlotID {
 		t.Fatal("historical demo selection lost on replay")
+	}
+}
+
+// #165: the patient sees each offer's date and region and an opaque offer_id, never the unit code or the slot ID
+// (which encodes the session and seat). Choosing by offer_id records the same slot_selected event as before, so the
+// ledger, its replay and older clients that still send slot_id are unchanged.
+func TestPatientOffersShowOnlyDateAndRegionAndChooseByOfferID(t *testing.T) {
+	p := newPatientTestAPI(t)
+	withPatientBooking(t, p)
+	body := p.get(t)
+	version, _, slots := offersOf(body)
+	for _, slot := range slots {
+		if len(slot) != 3 || slot["offer_id"] == "" || slot["region"] == nil || slot["starts_at"] == nil {
+			t.Fatalf("patient offer carries more than its date, region and offer_id: %v", slot)
+		}
+	}
+	raw, _ := json.Marshal(body)
+	for _, leak := range []string{"sim:colonoscopy", "AD-2", "AA-2", "slot_id", "\"unit\""} {
+		if strings.Contains(string(raw), leak) {
+			t.Fatalf("patient journey response exposes %q: %s", leak, raw)
+		}
+	}
+	// Case B's offer IDs are not case A's: an offer_id from another case is not in this case's set.
+	if code, _ := p.post(t, "slot_selected", patientUUID(1), journeyHead(body), map[string]interface{}{"offer_id": patientOfferID(patientTestCaseB, "sim:colposcopy:2:1"), "offers_version": version}); code != http.StatusBadRequest {
+		t.Fatalf("another case's offer accepted: %d", code)
+	}
+	if code, _ := p.post(t, "slot_selected", patientUUID(2), journeyHead(body), map[string]interface{}{"offer_id": slots[1]["offer_id"], "offers_version": "stale"}); code != http.StatusConflict {
+		t.Fatalf("stale offers version: %d", code)
+	}
+	if code, _ := p.post(t, "slot_selected", patientUUID(3), journeyHead(body), map[string]interface{}{"offer_id": slots[1]["offer_id"], "slot_id": "sim:colonoscopy:4:1", "offers_version": version}); code != http.StatusBadRequest {
+		t.Fatalf("offer_id and slot_id together: %d", code)
+	}
+	if ledgerLines(t, p) != 0 {
+		t.Fatal("refused offer choices wrote events")
+	}
+	choice := map[string]interface{}{"offer_id": slots[1]["offer_id"], "offers_version": version}
+	code, saved := p.post(t, "slot_selected", patientUUID(4), journeyHead(body), choice)
+	if code != http.StatusCreated {
+		t.Fatalf("choose by offer_id: %d %v", code, saved)
+	}
+	event := saved["event"].(map[string]interface{})["data"].(map[string]interface{})
+	selection := saved["journey"].(map[string]interface{})["slot_selection"].(map[string]interface{})
+	if event["offer_id"] != slots[1]["offer_id"] || event["slot_id"] != nil || selection["offer_id"] != slots[1]["offer_id"] || selection["slot_id"] != nil {
+		t.Fatalf("saved preference not named by its offer_id: %v %v", event, selection)
+	}
+	// The ledger records the slot ID exactly as the earlier slot_id writer did.
+	if c := p.s.cases[patientTestCaseA]; c.patient.Slot.SlotID != "sim:colonoscopy:4:1" {
+		t.Fatalf("recorded slot: %q", c.patient.Slot.SlotID)
+	}
+	// An identical retry is a replay; the same choice under a new request ID is a semantic no-op.
+	if code, again := p.post(t, "slot_selected", patientUUID(4), journeyHead(body), choice); code != http.StatusOK || again["replayed"] != true {
+		t.Fatalf("retry by offer_id: %d %v", code, again)
+	}
+	if code, again := p.post(t, "slot_selected", patientUUID(5), journeyHead(saved), choice); code != http.StatusOK || again["replayed"] != true {
+		t.Fatalf("repeat by offer_id: %d %v", code, again)
+	}
+	// Staff views keep the slot ID; replay restores it.
+	if reloaded := reloadWithBooking(t, p); reloaded.cases[patientTestCaseA].patient.Slot.SlotID != "sim:colonoscopy:4:1" {
+		t.Fatal("offer_id choice did not survive replay")
+	}
+	p.s.mu.Lock()
+	staff := p.s.patientViewLocked(p.s.cases[patientTestCaseA], false)
+	p.s.mu.Unlock()
+	if staff["slot_selection"].(map[string]interface{})["slot_id"] != "sim:colonoscopy:4:1" {
+		t.Fatalf("staff projection lost the slot ID: %v", staff["slot_selection"])
 	}
 }

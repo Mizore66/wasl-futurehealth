@@ -48,6 +48,19 @@ describe("shared patient-request staff tasks", () => {
     expect([late.status, late.overdue]).toEqual(["Patient contest · independent review overdue since 2026-10-08 08:00 UTC", true]);
   });
 
+  it("keeps a decision_revised hold as owned, due-dated revision work in Waiting", () => {
+    const row = openRow();
+    const resolved = { ...contest, status: "resolved" as const, resolved_at: "2026-10-02T09:00:00Z", resolved_by: "dr-independent", outcome: "decision_revised" as const };
+    const revision: PatientTask = {
+      kind: "patient_contest_revision", id: "9a8b7c6d5e4f3021", contest: contest.id, owner: "senior_clinician", status: "open",
+      escalation: "patient_contest_revision", opened_at: "2026-10-02T09:00:00Z", due_at: "2026-10-09T09:00:00Z", overdue: false, closure_held: true,
+    };
+    const parsed = CaseList.shape.cases.element.parse({ ...row, patient_tasks: [revision, resolved] });
+    const item = workItem(parsed, 120, false);
+    expect([item.view, item.status]).toEqual(["waiting", "Patient contest · decision to be revised due 2026-10-09 09:00 UTC"]);
+    expect(workItem({ ...parsed, patient_tasks: [{ ...revision, overdue: true }, resolved] }, 120, false).overdue).toBe(true);
+  });
+
   it("restores the ordinary row once the contest is resolved", () => {
     const row = openRow();
     const resolved = { ...contest, status: "resolved" as const, resolved_at: "2026-10-02T09:00:00Z", resolved_by: "dr-independent", outcome: "decision_upheld" as const };

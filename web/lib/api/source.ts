@@ -469,11 +469,11 @@ export type PatientContestResult = { ok: true; hash: string } | { ok: false; sta
  * Resolve a patient contest (#167) as the signed-in credential only, never a server-held token. The API binds the token
  * to its role and actor, allows only `senior_clinician`, and refuses every reviewer who signed the case.
  */
-export async function postPatientContestResolutionWithToken(id: string, contest: string, outcome: PatientContestOutcome, token: string): Promise<PatientContestResult> {
+export async function postPatientContestResolutionWithToken(id: string, contest: string, outcome: PatientContestOutcome, reason: string, token: string): Promise<PatientContestResult> {
   if (apiMode() !== "live") throw new Error("postPatientContestResolutionWithToken needs WASL_API_URL: fixtures mode cannot append contest resolutions");
   const res = await fetch(
     `${liveBase()}/api/cases/${encodeURIComponent(id)}/patient-contest`,
-    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contest, outcome }) }, token),
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contest, outcome, reason }) }, token),
   );
   const json = await res.json().catch(() => undefined);
   if (res.status === 201) {
