@@ -606,9 +606,25 @@ test("a cervical case books from its own simulated colposcopy slots, with no CRC
   await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");
   expect((await bodies()).at(-1)).toEqual(expect.objectContaining({ kind: "slot_selected", data: expect.objectContaining({ slot_id: "sim:colposcopy:5:1" }) }));
 
+  // Public requests cannot enable an unreviewed translation.
   await page.goto("/patient/book?lang=ar");
-  await expect(page.locator("h1")).toHaveAttribute("lang", "en");
+  await expect(page.locator('div[lang="en"]')).toHaveAttribute("dir", "ltr");
+  await expect(page.locator('div[lang="ar"]')).toHaveCount(0);
+  await expect(page.locator("h1")).toHaveText("Your colposcopy appointment");
   await expect(page.getByTestId("slot-date")).toBeVisible();
+  await expect(page.getByTestId("slot-date")).toHaveText(/Wednesday\s+1\s+July/);
+  await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");
   await expect(page.locator("main")).not.toContainText(/colonoscopy|SKMC/i);
+  await expectNoSeriousAxe(page);
+
+  // Retain Arabic/RTL and explicit English-fallback coverage on the internal preview.
+  await page.goto("/translation-review/book?lang=ar");
+  await expect(page.locator('div[lang="ar"]')).toHaveAttribute("dir", "rtl");
+  await expect(page.getByText(UNREVIEWED_WARNING)).toBeVisible();
+  await expect(page.locator("h1")).toHaveAttribute("lang", "en");
+  await expect(page.locator("h1")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByTestId("slot-date")).toBeVisible();
+  await expect(page.getByTestId("slot-place")).toContainText("Al Dhafra region");
+  await expect(page.locator("main")).not.toContainText(/colonoscopy|bowel|SKMC|Before your appointment/i);
   await expectNoSeriousAxe(page);
 });
