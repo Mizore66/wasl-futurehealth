@@ -279,12 +279,14 @@ func TestReviewActiveUnnamedLegacyCannotBindNewSubscription(t *testing.T) {
 	input <- queued
 	close(input)
 	go c.publisher("p1", input)
-	pendingOwnerWait(t, "actual unnamed provider head attempted and held", func() bool {
+	// Observe the stable initial turn plus one finite assistance snapshot, not
+	// the transient first return. Neither turn may invent a subscription binding.
+	pendingOwnerWait(t, "actual unnamed provider head held after one assistance snapshot", func() bool {
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		return w.attempt == 1 && !w.inflight && w.providerOwned && c.providerHeads["p1"] == w
+		return w.attempt == 2 && !w.inflight && !c.serviceActive && w.providerOwned && c.providerHeads["p1"] == w
 	})
-	if w.canonical != nil || w.attempt != 1 || w.returnApplied {
+	if w.canonical != nil || w.attempt != 2 || w.returnApplied {
 		t.Fatal("unnamed startup did not hold its unproven head")
 	}
 	c.mu.Lock()
