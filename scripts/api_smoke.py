@@ -731,7 +731,12 @@ def smoke(c, independent_client=None, workflow_client=None):
         check(code == 200, f"fixture {tag}: audit returned {code}")
         check(a.get("case") == cid, f"fixture {tag}: audit case differs")
         check(a.get("chain_verified") is True, f"fixture {tag}: audit chain_verified is not true")
-        check(isinstance(a.get("chain_length"), int) and a["chain_length"] >= 1, f"fixture {tag}: audit chain is empty")
+        # The person_journey anchor may be an open case whose current decision carries no evidence blocks yet (a booked
+        # appointment): an empty current chain is then truthful, but its decisions must still be signed and listed.
+        open_anchor = tag == "person_journey" and f.get("closed") is False
+        check(isinstance(a.get("chain_length"), int) and (a["chain_length"] >= 1 or open_anchor), f"fixture {tag}: audit chain is empty")
+        check(not open_anchor or len(a.get("decision_signatures") or []) == f.get("decisions"),
+              f"fixture {tag}: open anchor audit does not list every decision signature")
         # Actual-run exports remain checked here even when all mutating software
         # exercises run on a separate fresh lane with its own canonical outputs.
         export = c.ok(case_path(cid, "/export"), "auditor")
