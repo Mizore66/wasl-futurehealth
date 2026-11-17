@@ -1,4 +1,4 @@
-import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralCondition, ReferralInfo, ReferralReturnReason } from "@/lib/api/schema";
+import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralCondition, ReferralInfo, ReferralReturnReason, ReferrerResponseCode } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { handoffUrgent } from "@/lib/domain/handoff";
 import { shortId } from "@/lib/domain/ids";
@@ -63,12 +63,24 @@ export function handoffOwner(h: Handoff | null, referrer: string): string {
 /**
  * A referral journey the inbox can show, addressed by programme and referring provider. CRC is the receiving endoscopy
  * unit's journey; lung work-up and DR show the canonical returned-referral packets of their single receiving unit.
+ * `credential` is the web server's referring-clinician credential for the view's referring provider (lib/api/source.ts),
+ * and `returned` describes the referrer's returned-referral page.
  */
-export type ReferralView = { programme: "crc" | "lung_nodule" | "diabetic_retinopathy"; provider: string; label: string; unit: string; referrer: string };
+export type ReferralView = {
+  programme: "crc" | "lung_nodule" | "diabetic_retinopathy";
+  provider: string;
+  label: string;
+  unit: string;
+  referrer: string;
+  credential: "referrer" | "referrer_lung" | "referrer_dr";
+  returned: string;
+};
 export const REFERRAL_VIEWS: readonly ReferralView[] = [
-  { programme: "crc", provider: "ahs-mushrif", label: "Colorectal, Al Mushrif", unit: "SKMC endoscopy", referrer: "GP" },
-  { programme: "lung_nodule", provider: "rad-imaging", label: "Lung nodule work-up", unit: "Radiology department, regional hospital", referrer: "referrer" },
-  { programme: "diabetic_retinopathy", provider: "phc-retina", label: "Diabetic eye", unit: "Eye clinic, regional hospital", referrer: "referrer" },
+  { programme: "crc", provider: "ahs-mushrif", label: "Colorectal, Al Mushrif", unit: "SKMC endoscopy", referrer: "GP", credential: "referrer", returned: "Referring GP, Al Mushrif. Referrals the endoscopy unit handed back to you." },
+  { programme: "lung_nodule", provider: "rad-imaging", label: "Lung nodule work-up", unit: "Radiology department, regional hospital", referrer: "referrer", credential: "referrer_lung",
+    returned: "Referring clinician, outpatient imaging centre. Nodule work-up referrals the radiology department handed back to you." },
+  { programme: "diabetic_retinopathy", provider: "phc-retina", label: "Diabetic eye", unit: "Eye clinic, regional hospital", referrer: "referrer", credential: "referrer_dr",
+    returned: "Referring clinician, primary care eye screening. Eye-clinic referrals the eye clinic handed back to you." },
 ];
 
 /** The view a URL names: no programme and no provider is the CRC default, and an unknown pair is null. */
@@ -218,6 +230,12 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
   const unit = p.decided_by ? unitName(p.decided_by) : UNAVAILABLE;
   const referrer = responsibleWords(p.responsible_clinician);
   const reason = p.reason_code ? (PACKET_REASONS[p.reason_code] ?? p.reason_code) : UNAVAILABLE;
+  // The referrer's answers recorded through the API project onto this packet (api_overlay.referral_handoff, source
+  // canonical); the canonical packet itself is never rewritten.
+  const projected = c.api_overlay?.referral_handoff;
+  const answered = projected?.source === "canonical" && projected.event === p.referral_id ? projected : undefined;
+  const status = answered?.status ?? p.status;
+  const r = answered?.referrer_response;
   return {
     id: c.id,
     kind: "packet",
@@ -235,7 +253,7 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
     flags: [],
     hasRecord,
     urgent: p.clinical_priority === "urgent",
-    handoff: { status: p.status, actBy: p.act_by },
+    handoff: { status, actBy: p.act_by },
     head: null,
     answer: `Returned the referral: ${reason.toLowerCase()}`,
     answerWhen: `Canonical packet, ${formatDay(p.decided_at)}`,
@@ -248,7 +266,9 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
       ["Other unit", p.suggested_alternative === undefined ? UNAVAILABLE : p.suggested_alternative ? unitName(p.suggested_alternative) : "None in the simulated network"],
       ["Priority", p.clinical_priority === "urgent" ? "Urgent" : p.clinical_priority === "routine" ? "Routine" : UNAVAILABLE],
       ["Responsible clinician", referrer],
-      ["Status", PACKET_STATUS[p.status]],
+      ["Status", PACKET_STATUS[status]],
+      ["Referrer acknowledged", answered?.acknowledgement ? formatDay(answered.acknowledgement.run_day) : "Not yet"],
+      ["Referrer's answer", r ? referrerAnswerWords(r) : p.status === "referrer_acted" ? "Acted, per the canonical packet" : "None yet"],
       ["Act by", formatDay(p.act_by)],
       ["Medical director step", p.medical_director_day === undefined ? UNAVAILABLE : formatDay(p.medical_director_day)],
       ["Referred", formatDay(c.referral_day)],
@@ -256,3 +276,23 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
     ],
   };
 }
+
+/** The referrer's resolving answers to a returned packet, in words (pipeline/api_referrer.go). */
+export const REFERRER_ANSWER_LABELS: Record<Exclude<ReferrerResponseCode, "acknowledge">, string> = {
+  supply_info: "Send the information requested",
+  re_refer: "Re-refer to the same unit",
+  redirect: "Refer to another unit",
+  manage_in_primary_care: "Manage in primary care",
+  close: "Close the referral",
+};
+
+/** A unit or provider id in words. */
+export const placeName = (id: string) => UNIT_NAMES[id] ?? providerLabel(id);
+
+/** A resolving answer in words; a reason appears only where the projection carries the referrer's free text. */
+export function referrerAnswerWords(r: { response: Exclude<ReferrerResponseCode, "acknowledge">; destination?: string; reason?: string; run_day: number }): string {
+  return `${REFERRER_ANSWER_LABELS[r.response]}${r.destination ? `: ${placeName(r.destination)}` : ""}${r.reason ? `. Reason: ${r.reason}` : ""}. Answered ${formatDay(r.run_day)}`;
+}
+
+/** The packet's reason code in words, or the code itself when it has no words. */
+export const packetReasonWords = (code: string) => PACKET_REASONS[code] ?? code;

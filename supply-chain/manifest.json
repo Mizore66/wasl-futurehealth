@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "0c590b2747acfbc9d54a4f7694f89d86290220e1",
-    "committed_at": "2026-11-17T08:03:11Z"
+    "revision": "22caeb6c4ca0965213ee043807fffc1a222d6bf0",
+    "committed_at": "2026-11-17T10:19:48Z"
   },
   "scanner": {
     "name": "trivy",
@@ -18,15 +18,15 @@
   "artifacts": [
     {
       "path": "repository.cdx.json",
-      "sha256": "e4b6c0292451d81d6b1715553616e3cf156fd49d71f812d963e20fdbb45dd56f"
+      "sha256": "dbeacb21ed9a1c212f9f4b8c9caa9e1cccabcc83de6024c3e7ae8c654849bee3"
     },
     {
       "path": "vulnerabilities.json",
-      "sha256": "85a240b8fe1f7b8f1bf775ef05be1515d7937000837d9b09a2057f7544602f78"
+      "sha256": "91b1610884af9d677bb4775a4a8da25df93c54621435504d24bc95f13e2000e0"
     },
     {
       "path": "licenses.json",
-      "sha256": "e2931c0066c3410b6176b56506d985d1f61a0936696566c92ca4576fce1764a5"
+      "sha256": "06dae91d38350bdab8ad89f6473291113c4481c78969eaec9817baafee114e40"
     }
   ],
   "notes": [

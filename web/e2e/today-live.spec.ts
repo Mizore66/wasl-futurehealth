@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 
 /*
  * Today against a mock of the Go API (issue #47): what a reload shows comes from the ledger, not from browser state.
- * Start `next start` yourself with WASL_API_URL=http://127.0.0.1:3294 and the four role tokens (WASL_API_REVIEWER_TOKEN,
+ * Start `next start` yourself with WASL_API_URL=http://127.0.0.1:3294 (or TODAY_LIVE_MOCK_PORT) and the four role tokens (WASL_API_REVIEWER_TOKEN,
  * WASL_API_CLINICIAN_TOKEN, WASL_API_AUDITOR_TOKEN, WASL_API_COORDINATOR_TOKEN), then run this spec with
  * TODAY_LIVE_MOCK=1, PLAYWRIGHT_BASE_URL pointing at that server and the same four tokens.
  *
@@ -15,7 +15,8 @@ import { expect, test } from "@playwright/test";
  * It is a mock: the real handler's output is pinned separately by pipeline/api_ledger_contract_test.go.
  */
 const LIVE = !!process.env.TODAY_LIVE_MOCK;
-const MOCK_PORT = 3294;
+// Overridable so parallel checkouts can run this spec at once; the server must point WASL_API_URL at the same port.
+const MOCK_PORT = Number(process.env.TODAY_LIVE_MOCK_PORT ?? 3294);
 
 type Ev = { kind: string; data: Record<string, string>; actor: string; at: string; hash: string; head: string; seq: number; prev: string };
 
@@ -30,7 +31,9 @@ test.describe("Today, live mode against a mock API", () => {
   const details: Record<string, unknown>[] = ["case_evidence_closure.json", "case_false_closure_trap.json", "case_review_hold.json", "case_dr_exam_closure.json"].map(read);
   const template = details[0] as { case: Record<string, unknown> };
   const byId = new Map<string, Record<string, unknown>>();
-  for (const c of [...Object.values(fx.fixtures), ...read("cases_crc_page1.json").cases] as Record<string, unknown>[]) if (!byId.has(c.id as string)) byId.set(c.id as string, c);
+  // Every programme's first page, so a non-CRC queue (issue #114) can be selected and written through the same action.
+  const pages = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"].flatMap((p) => read(`cases_${p}_page1.json`).cases);
+  for (const c of [...Object.values(fx.fixtures), ...pages] as Record<string, unknown>[]) if (!byId.has(c.id as string)) byId.set(c.id as string, c);
 
   const ledger = new Map<string, Ev[]>();
   let chain: Ev[] = [];
@@ -68,6 +71,19 @@ test.describe("Today, live mode against a mock API", () => {
       last_action_at: evs.at(-1)?.at ?? "",
       ledger_status: invalid ? "invalid" : "ok",
     };
+    const notification = evs.find((e) => e.kind === "initial_notification");
+    const receipt = evs.find((e) => e.kind === "receipt_acknowledgement");
+    if (notification || receipt) {
+      const canonical = (byId.get(id)?.dropoff as string) ?? "";
+      const fact = (e: Ev, keys: string[]) => ({ at: e.at, event: e.hash, ...Object.fromEntries(keys.map((k) => [k, e.data[k]])), ...(full ? { actor: e.actor, identity_check: e.data.identity_check } : {}) });
+      m.communication = {
+        canonical_dropoff: canonical,
+        obligation: servedDropoff(id, canonical),
+        understanding: "none",
+        ...(notification ? { notification: { ...fact(notification, ["occurred_at", "channel", "template"]), language: "en" } } : {}),
+        ...(receipt ? { receipt: { ...fact(receipt, ["occurred_at", "channel"]), notification_event: notification?.hash ?? "canonical" } } : {}),
+      };
+    }
     const snooze = [...evs].reverse().find((e) => e.kind === "snooze");
     if (snooze) m.snooze = entry(snooze);
     const last = contacts.at(-1);
@@ -83,6 +99,24 @@ test.describe("Today, live mode against a mock API", () => {
       m.canonical_owner = byId.get(id)?.owner ?? "";
     }
     return m;
+  }
+  /**
+   * The Go API's communication projection (pipeline/api_communication.go): a staff notification moves never_notified to
+   * no_acknowledgement, a receipt moves that to referral_unanswered; the approved wording is served while a notification
+   * is owed. Only those two actions move it: a contact outcome or note never does.
+   */
+  const recorded = (id: string, kind: string) => (ledger.get(id) ?? []).some((e) => e.kind === kind);
+  function servedDropoff(id: string, canonical: string): string {
+    if (canonical === "never_notified" && recorded(id, "initial_notification")) return recorded(id, "receipt_acknowledgement") ? "referral_unanswered" : "no_acknowledgement";
+    if (canonical === "no_acknowledgement" && recorded(id, "receipt_acknowledgement")) return "referral_unanswered";
+    return canonical;
+  }
+  function served(c: Record<string, unknown>): Record<string, unknown> {
+    const id = c.id as string;
+    const dropoff = servedDropoff(id, c.dropoff as string);
+    const out: Record<string, unknown> = { ...c, dropoff, api_overlay: overlay(id, false) };
+    if (c.programme === "crc" && dropoff === "never_notified" && c.consent === "granted") out.notification_template = "fitfu-notify-v2/en";
+    return out;
   }
   const apiEvent = (id: string, e: Ev) => ({
     type: "coordinator_action", kind: e.kind, case: id, data: e.data, role: "coordinator", actor: e.actor, action: "coordinate_case",
@@ -118,6 +152,12 @@ test.describe("Today, live mode against a mock API", () => {
           if (invalid) return send(500, { meta, error: "review ledger failed validation; writes refused", detail: invalid });
           if (expected_head !== head(id)) return send(409, { meta, error: "stale expected_head", conflict: "head", current_head: head(id) });
           if (action === "contact_outcome" && byId.get(id)?.consent !== "granted") return send(409, { meta, error: "contact outcomes need contact permission granted", conflict: "consent" });
+          if (action === "initial_notification" || action === "receipt_acknowledgement") {
+            const c = byId.get(id);
+            const owed = action === "initial_notification" ? "never_notified" : "no_acknowledgement";
+            if (c?.consent !== "granted") return send(409, { meta, error: "recording a patient communication needs canonical contact permission granted", conflict: "consent" });
+            if (servedDropoff(id, (c?.dropoff as string) ?? "") !== owed) return send(409, { meta, error: "no such communication is outstanding on this case", conflict: "communication" });
+          }
           if (action === "assign_owner" && data.owner === undefined) data.owner = principal.actor;
           const ev = append(id, action, data, principal.actor);
           send(201, { meta, event: apiEvent(id, ev), api_overlay: overlay(id, true) });
@@ -130,7 +170,8 @@ test.describe("Today, live mode against a mock API", () => {
         const q = url.searchParams;
         const cases = [...byId.values()]
           .filter((c) => (!q.get("provider") || c.provider === q.get("provider")) && (!q.get("programme") || c.programme === q.get("programme")))
-          .map((c) => ({ ...c, api_overlay: overlay(c.id as string, false) }));
+          .filter((c) => !q.has("closed") || String(c.closed) === q.get("closed"))
+          .map(served);
         return send(200, { meta, cases, total: cases.length, limit: 500, offset: 0 });
       }
       const id = p.replace(/^\/api\/cases\//, "");
@@ -150,7 +191,7 @@ test.describe("Today, live mode against a mock API", () => {
     const base = known ?? { ...template, case: summary };
     return send(200, {
       ...base,
-      case: { ...(base.case as object), api_overlay: overlay(id, false) },
+      case: served({ ...(base.case as object), ...(summary ?? {}) }),
       api_reviews: (ledger.get(id) ?? []).map((e) => apiEvent(id, e)),
       api_overlay: overlay(id, true),
       review_ledger: invalid ? { status: "invalid", detail: invalid, events_applied: chain.length, note: "api_overlay reflects only the ledger events before the failure; coordinator writes are refused" } : { status: "ok", events_applied: chain.length },
@@ -320,6 +361,121 @@ test.describe("Today, live mode against a mock API", () => {
     await page.getByRole("tab", { name: /^To call/ }).click();
     await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: new RegExp(heading) }).click();
     await expect(open).not.toContainText("Hessa");
+  });
+
+  test("a non-CRC case takes an owner, a contact outcome and a snooze through the same ledger action, and a reload restores them (issue #114)", async ({ page }) => {
+    const breast = "bsu-screen/ServiceRequest/BSU-sr-15";
+    await page.goto("/app/today?programme=breast&provider=bsu-screen");
+    await expect(page.getByText(/Breast screening · .* · run day/)).toBeVisible();
+    await page.getByRole("tab", { name: /^No owner/ }).click();
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("BSU-sr-15");
+    await expect(open).toContainText("Breast screening");
+
+    await open.getByRole("button", { name: "Take this patient" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Yours now");
+    await page.getByRole("tab", { name: /^To call/ }).click();
+    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /BSU-sr-15/ }).click();
+    await open.getByRole("button", { name: /^Log call/ }).click();
+    await open.getByRole("button", { name: "Reached" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Reached");
+    await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Snoozed to tomorrow");
+    // The breast clock is the programme's 14-day assessment standard, not CRC's 31 days.
+    await expect(page.getByTestId("finding")).toContainText("BSU-sr-15 is 113 days over 14");
+
+    // One chained ledger, written by the verified coordinator; each write named the head the one before it left.
+    const evs = ledger.get(breast) ?? [];
+    expect(evs.map((e) => [e.kind, e.actor])).toEqual([
+      ["assign_owner", "mock-coordinator"],
+      ["contact_outcome", "mock-coordinator"],
+      ["snooze", "mock-coordinator"],
+    ]);
+    expect(evs.map((e) => e.head)).toEqual([`sig-${breast}`, evs[0].hash, evs[1].hash]);
+    expect(evs[1].data.outcome).toBe("reached");
+
+    await page.reload();
+    await expect(page).toHaveURL(/programme=breast&provider=bsu-screen/);
+    // The persisted snooze parks the patient until tomorrow; the owner keeps them off No owner.
+    await expect(page.getByRole("tab", { name: "No owner 0" })).toBeVisible();
+    await page.getByRole("tab", { name: /^Waiting/ }).click();
+    const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /BSU-sr-15/ });
+    await expect(row).toContainText("Snoozed to tomorrow");
+    await row.click();
+    await expect(open).toContainText("Reached (phone)");
+    await expect(open).toContainText("mock-coordinator");
+    await expect(open).not.toContainText("Colorectal");
+  });
+
+  test("result notification and receipt are separate, labelled actions; Reached records neither (issue #197)", async ({ page }) => {
+    const id = "ahs-mushrif/ServiceRequest/AHS-sr-1003";
+    await page.goto("/app/today");
+    const list = page.getByRole("region", { name: "Your list" });
+    await list.getByRole("searchbox", { name: "Search" }).fill("AHS-sr-1003");
+    await list.getByRole("button", { name: /AHS-sr-1003/ }).click();
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1003");
+    const notifyForm = open.getByRole("region", { name: "Result notification" });
+    const receiptForm = open.getByRole("region", { name: "Receipt of the result" });
+    const notify = notifyForm.getByRole("button", { name: "Record result notification" });
+    const receipt = receiptForm.getByRole("button", { name: "Record receipt acknowledged" });
+    await expect(notifyForm).toContainText("fitfu-notify-v2/en");
+    await expect(receiptForm).toHaveCount(0);
+
+    // A generic Reached is a contact outcome only: the notification is still owed.
+    await open.getByRole("button", { name: /^Log call/ }).click();
+    await open.getByRole("button", { name: "Reached" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Reached");
+    await expect(notify).toBeVisible();
+    expect(ledger.get(id)?.map((e) => e.kind)).toEqual(["contact_outcome"]);
+
+    // Nothing is recorded until two identifiers are confirmed.
+    await expect(notify).toBeDisabled();
+    await notifyForm.getByLabel("Identity confirmed with").selectOption("name_and_dob");
+    await notify.click();
+    await expect(open.getByRole("status")).toContainText("Logged: Result notification");
+    await expect(notifyForm).toHaveCount(0);
+    await expect(receiptForm).toContainText("This is not a check that they understood the next step.");
+    await receiptForm.getByLabel("How").selectOption("video");
+    await receiptForm.getByLabel("Identity confirmed with").selectOption("name_and_mrn");
+    await receipt.click();
+    await expect(open.getByRole("status")).toContainText("Logged: Receipt acknowledged");
+    await expect(receiptForm).toHaveCount(0);
+
+    const evs = ledger.get(id) ?? [];
+    expect(evs.map((e) => [e.kind, e.data.channel, e.data.identity_check, e.actor])).toEqual([
+      ["contact_outcome", "phone", undefined, "mock-coordinator"],
+      ["initial_notification", "phone", "name_and_dob", "mock-coordinator"],
+      ["receipt_acknowledgement", "video", "name_and_mrn", "mock-coordinator"],
+    ]);
+    expect(evs[1].data.template).toBe("fitfu-notify-v2/en");
+
+    // After a reload the board follows the API's obligation: neither step is offered again.
+    await page.reload();
+    await list.getByRole("searchbox", { name: "Search" }).fill("AHS-sr-1003");
+    await list.getByRole("button", { name: /AHS-sr-1003/ }).click();
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1003");
+    await expect(notifyForm).toHaveCount(0);
+    await expect(receiptForm).toHaveCount(0);
+  });
+
+  test("a non-CRC case without contact permission refuses the outcome and records nothing (issue #114)", async ({ page }) => {
+    const ifhas = "ifh-screen/ServiceRequest/IFH-sr-101";
+    await page.goto("/app/today?programme=ifhas&provider=ifh-screen");
+    const list = page.getByRole("region", { name: "Your list" });
+    await list.getByRole("searchbox", { name: "Search" }).fill("IFH-sr-101");
+    const row = list.getByRole("button", { name: /IFH-sr-101/ });
+    for (const tab of ["To call", "Waiting", "No owner"]) {
+      await list.getByRole("tab", { name: new RegExp(`^${tab}`) }).click();
+      if (await row.count()) break;
+    }
+    await row.click();
+    const open = page.getByRole("region", { name: "Open patient" });
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("IFH-sr-101");
+    // The API refuses a contact outcome without contact permission; the board says so and records nothing.
+    await open.getByRole("button", { name: "Reached" }).click();
+    await expect(open.getByTestId("action-refused")).toContainText("Not saved: this patient has not given contact permission");
+    expect(ledger.get(ifhas)).toBeUndefined();
   });
 
   test("a partial ledger replay shows only the valid prefix under a warning and disables writes", async ({ page }) => {

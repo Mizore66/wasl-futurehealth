@@ -118,17 +118,22 @@ function resolve(token: string, body: Record<string, unknown>): [number, unknown
 }
 
 async function signIn(page: Page, token: string) {
-  await page.getByLabel("Review token").fill(token);
-  await page.getByRole("button", { name: /Sign in/ }).click();
+  const box = page.getByTestId("governance-signin");
+  await box.getByLabel("Your token").fill(token);
+  await box.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByTestId("governance-signin")).toHaveCount(0);
 }
 
 const caseURL = `${NEXT_URL}/app/patients/${encodeURIComponent(CASE)}`;
+const card = (page: Page) => page.getByRole("region", { name: "Patient explanation and contest requests" });
 
-async function review(page: Page, outcome: RegExp, reason: string) {
-  const form = page.getByRole("form", { name: `Review contest ${RECEIPT.slice(0, 8)}` });
-  await form.getByRole("radio", { name: outcome }).check();
+/** The inline controls on the case (components/case/patient-contest-controls.tsx), with the required reason. */
+async function review(page: Page, outcome: "decision_upheld" | "decision_revised", reason: string) {
+  await card(page).getByText("Resolve patient contest", { exact: true }).click();
+  const form = page.getByRole("form", { name: "Resolve patient contest" });
+  await form.getByRole("combobox", { name: "Outcome" }).selectOption(outcome);
   await form.getByLabel("Reason for your decision (required)").fill(reason);
-  await form.getByRole("button", { name: "Record contest review" }).click();
+  await form.getByRole("button", { name: "Record contest outcome" }).click();
   return form;
 }
 
@@ -185,44 +190,36 @@ test.describe("patient contest review, live mock", () => {
   });
 
   test("an independent senior clinician records the outcome and reason; refused reviewers append nothing", async ({ page }) => {
-    /* The case shows the open contest and links to the review. */
     await page.goto(caseURL);
-    const card = page.getByRole("region", { name: "Patient explanation and contest requests" });
-    await expect(card).toContainText("Closure is held");
-    await card.getByRole("link", { name: "Review the patient contest" }).click();
-    await expect(page).toHaveURL(/\/patient-contest$/);
+    await expect(card(page)).toContainText("Patient's reason: I do not understand why my check is finished (synthetic).");
 
-    /* Anonymous: the page asks for a sign-in and offers no form; no server-held credential stands in. */
-    await expect(page.getByRole("heading", { name: "Patient contest review" })).toBeVisible();
-    await expect(page.getByRole("form", { name: /Review contest/ })).toHaveCount(0);
+    /* Anonymous: a personal sign-in and no controls; no server-held credential stands in. */
+    await expect(card(page).getByTestId("governance-signin")).toBeVisible();
+    await expect(page.getByRole("form", { name: "Resolve patient contest" })).toHaveCount(0);
     expect(posts).toHaveLength(0);
 
-    /* A clinician may sign in to read, but the API refuses the write. */
+    /* A clinician may sign in, but the API refuses the write. */
     await signIn(page, CLINICIAN);
-    let form = await review(page, /Uphold the decision/, "Synthetic attempt by a clinician");
-    await expect(form.getByTestId("contest-error")).toContainText("Only a senior clinician who did not sign this case");
+    let form = await review(page, "decision_upheld", "Synthetic attempt by a clinician");
+    await expect(form.getByRole("alert")).toContainText("may not resolve_patient_contest");
     expect(events).toHaveLength(0);
 
     /* The original reviewer is a senior clinician, and is still refused. */
     await page.context().clearCookies();
-    await page.goto(`${caseURL}/patient-contest`);
+    await page.goto(caseURL);
     await signIn(page, ORIGINAL);
-    await expect(page.getByTestId(`contest-${RECEIPT.slice(0, 8)}`)).toContainText("May not resolve (signed this case): dr-original");
-    form = await review(page, /Uphold the decision/, "I stand by my own decision (synthetic)");
-    await expect(form.getByTestId("contest-error")).toContainText("the original decision reviewer may not resolve this contest");
+    form = await review(page, "decision_upheld", "I stand by my own decision (synthetic)");
+    await expect(form.getByRole("alert")).toContainText("the original decision reviewer may not resolve this contest");
     expect(events).toHaveLength(0);
 
     /* The independent senior clinician records the outcome and reason. */
     await page.context().clearCookies();
-    await page.goto(`${caseURL}/patient-contest`);
+    await page.goto(caseURL);
     await signIn(page, INDEPENDENT);
     const reason = "Matched colonoscopy report and closure verified independently (synthetic).";
-    await review(page, /Uphold the decision/, reason);
-    await expect(page.getByTestId("contest-saved")).toContainText("decision upheld");
-    const row = page.getByTestId(`contest-${RECEIPT.slice(0, 8)}`);
-    await expect(row.getByTestId("contest-status")).toContainText("Resolved: decision upheld by dr-independent");
-    await expect(row.getByTestId("contest-resolution-reason")).toContainText(reason);
-    await expect(page.getByRole("form", { name: /Review contest/ })).toHaveCount(0);
+    await review(page, "decision_upheld", reason);
+    /* The action revalidates the case, so the controls may already be gone; the append is the evidence. */
+    await expect.poll(() => events.length).toBe(1);
 
     /* One event, identity from the signed-in token only, a body of exactly contest/outcome/reason. */
     expect(events.map((e) => [e.kind, e.role, e.actor, e.outcome, e.reason])).toEqual([["contest_resolved", "senior_clinician", "dr-independent", "decision_upheld", reason]]);
@@ -232,28 +229,22 @@ test.describe("patient contest review, live mock", () => {
     }
     expect(posts.map((p) => p.token)).toEqual([CLINICIAN, ORIGINAL, INDEPENDENT]);
 
-    /* After reload, the case and the review page show the same resolved state. */
-    await page.goto(caseURL);
+    /* After reload, the case shows the resolved state with the reviewer's reason and no controls. */
     await page.reload();
-    const saved = page.getByRole("region", { name: "Patient explanation and contest requests" });
-    await expect(saved).toContainText("Resolved: decision upheld by dr-independent");
-    await expect(saved).toContainText(reason);
-    await expect(saved).not.toContainText("Closure is held");
-    await expect(saved.getByRole("link", { name: "View patient contest reviews" })).toBeVisible();
-    await page.goto(`${caseURL}/patient-contest`);
-    await expect(page.getByTestId(`contest-${RECEIPT.slice(0, 8)}`).getByTestId("contest-status")).toContainText("Resolved: decision upheld by dr-independent");
+    await expect(card(page)).toContainText("Resolved: decision upheld");
+    await expect(card(page)).toContainText(`Reviewer's reason: ${reason}`);
+    await expect(page.getByRole("form", { name: "Resolve patient contest" })).toHaveCount(0);
   });
 
   test("a revised outcome keeps closure held", async ({ page }) => {
     reset();
-    await page.goto(`${caseURL}/patient-contest`);
+    await page.goto(caseURL);
     await signIn(page, INDEPENDENT);
-    await review(page, /Revise the decision/, "The closing report belongs to another episode (synthetic).");
-    await expect(page.getByTestId("contest-saved")).toContainText("Closure stays held");
-    const row = page.getByTestId(`contest-${RECEIPT.slice(0, 8)}`);
-    await expect(row).toContainText("Resolved: decision to be revised by dr-independent");
-    await expect(row).toContainText("Closure stays held until the questioned decision is replaced");
-    await expect(page.locator("main header")).toContainText("automatic closure held by a patient contest");
+    await review(page, "decision_revised", "The closing report belongs to another episode (synthetic).");
+    await expect.poll(() => events.length).toBe(1);
+    await page.reload();
+    await expect(card(page)).toContainText("Resolved: decision to be revised");
+    await expect(card(page)).toContainText("Closure is held");
     expect(events).toHaveLength(1);
   });
 });

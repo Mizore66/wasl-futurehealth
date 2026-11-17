@@ -53,7 +53,7 @@ type Journey = {
   preparation: { items: { item_id: string; completed: boolean; updated_at: string; event: string }[]; completed: number; total: 0 | 2 };
   last_action_at: string;
 };
-type RightsRow = { receipt: string; kind: string; decision: string; submitted_at: string; reason: string; status: string; owner?: string; due_at?: string; overdue?: boolean; closure_held?: boolean };
+type RightsRow = { receipt: string; kind: string; decision: string; submitted_at: string; reason: string; status: string; owner?: string; due_at?: string; overdue?: boolean; closure_held?: boolean; outcome?: string; resolved_at?: string };
 type Link = {
   token: string;
   expires: number;
@@ -290,6 +290,16 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     const link = links.get(url.searchParams.get("token") ?? "");
     if (!link) return send(res, 404, { error: "unknown test link" });
     return send(res, 200, payload(link));
+  }
+  /* Stands in for an independent senior clinician resolving the first open contest (POST /api/cases/{id}/patient-contest). */
+  if (url.pathname === "/__mock/resolve-contest" && req.method === "POST") {
+    const input = JSON.parse(await body(req)) as { token: string; mode: string };
+    const link = links.get(input.token);
+    const row = link?.rights.find((r) => r.kind === "contest_submitted" && r.status === "open");
+    if (!row) return send(res, 404, { error: "no open contest on this test link" });
+    Object.assign(row, { status: "resolved", outcome: input.mode, resolved_at: new Date().toISOString(), closure_held: input.mode === "decision_revised" });
+    delete row.overdue;
+    return send(res, 200, { ok: true });
   }
   if (url.pathname === "/__mock/handoff" && req.method === "POST") {
     const input = JSON.parse(await body(req)) as { token: string; mode: string };

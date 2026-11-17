@@ -10,7 +10,10 @@ import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
 import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
-import { ApiStatusError, getAudit, getCase } from "@/lib/api/source";
+import { ApiStatusError, apiMode, getAudit, getCase } from "@/lib/api/source";
+import { resolveReviewer } from "@/lib/api/reviewer-session";
+import { reviewAuthMode } from "@/lib/auth/oidc-config";
+import { patientContestReview as contestSlots, type ContestSession } from "@/components/case/patient-contest-review";
 import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -54,6 +57,19 @@ const SECTIONS = [
   ["recovery", "Recovery"],
 ] as const;
 
+/**
+ * A patient contest is resolved only by the viewer's own signed-in credential (#167). The session is read only when the
+ * live case has an open contest; the shared web credential that renders this page never resolves one.
+ */
+async function contestSession(detail: Awaited<ReturnType<typeof getCase>>): Promise<ContestSession> {
+  const live = apiMode() === "live";
+  const open = (detail?.patient_requests ?? []).some((row) => row.kind === "contest_submitted" && row.status === "open");
+  if (!live || !open) return { live, signedIn: false };
+  const mode = reviewAuthMode();
+  const reviewer = await resolveReviewer();
+  return reviewer.ok ? { live, signedIn: true, mode: reviewer.method, expiresAt: reviewer.expiresAt } : { live, signedIn: false, mode };
+}
+
 export default async function Page({ params }: PageProps<"/app/patients/[id]">) {
   const id = caseIdFromParam((await params).id);
   const optionalPersonJourney = getPersonByCase(id).catch((error: unknown) => {
@@ -73,6 +89,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
     <TimelineCard detail={detail} />
     <LedgerCard detail={detail} />
   </>;
+  const contestReview = contestSlots(c.id, await contestSession(detail));
   const person = personForLoop(c.id);
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
@@ -271,7 +288,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             </section>
           )}
           <ConsentCard detail={detail} />
-          <PatientJourneySection detail={detail} />
+          <PatientJourneySection detail={detail} contestReview={contestReview} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>

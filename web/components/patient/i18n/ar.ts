@@ -3,8 +3,9 @@
  * This Arabic copy was drafted for the design and has not been reviewed by a
  * qualified medical translator. Do not show it to patients until it has been.
  * Patient routes are gated by TRANSLATION_REVIEW in ./review.ts (#133).
- * notice.rightsItems[2] predates the revised English refusal wording (#157) and
- * must be retranslated from it before review.
+ * notice.rightsItems[2] was redrafted from the revised English refusal wording
+ * (#157) by the development team, not a qualified medical translator. It needs
+ * that review, and the English meaning needs clinical sign-off, before patients.
  */
 import type { PatientDict } from "./types";
 
@@ -40,7 +41,8 @@ export const ar: PatientDict = {
     rightsItems: [
       "خصوصيتكِ محفوظة. لا يرى نتيجتكِ إلا أنتِ وفريقكِ الصحي.",
       "لكِ أن تطلبي شرحًا أوضح، بالهاتف أو بلغتكِ.",
-      "لكِ أن ترفضي المتابعة أو تعترضي على أي قرار، ولن يؤثر ذلك في رعايتكِ.",
+      // #157: redrafted from the revised English; not translator-reviewed.
+      "لكِ أن ترفضي المتابعة أو تعترضي على أي قرار. إذا رفضتِ، ستُعامَلين باحترام، ويمكنكِ أن تحصلي على الرعاية الأخرى التي تحتاجينها. تحدّثي مع طبيبكِ عمّا قد يعنيه الرفض بالنسبة لكِ، وعن الخيارات الأخرى المتاحة لكِ.",
     ],
     rightsNote: "يراجع أي طلب منكِ شخصٌ من الفريق الطبي، لا نظام آلي.",
   },

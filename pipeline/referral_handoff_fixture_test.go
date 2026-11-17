@@ -46,7 +46,9 @@ func referralHandoffControls() []referralHandoffControl {
 	}
 }
 
-func TestReferralHandoffCanonicalControls(t *testing.T) {
+// referralHandoffRun writes the canonical decisions of the returned-referral controls, at run day 120, as a run directory.
+func referralHandoffRun(t *testing.T) (string, []referralHandoffControl) {
+	t.Helper()
 	oldHandoff, oldOutreach, oldCal := Handoff, OutreachOn, V7Cal
 	Handoff, OutreachOn, V7Cal = true, false, nil
 	defer func() { Handoff, OutreachOn, V7Cal = oldHandoff, oldOutreach, oldCal }()
@@ -79,6 +81,11 @@ func TestReferralHandoffCanonicalControls(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(run, "fhir_log.ndjson"), nil, 0600); err != nil {
 		t.Fatal(err)
 	}
+	return run, controls
+}
+
+func TestReferralHandoffCanonicalControls(t *testing.T) {
+	run, controls := referralHandoffRun(t)
 	handler, err := loadAPI(run, "").handler("referral-handoff-test-token:reviewer:synthetic-referral-reviewer", "")
 	if err != nil {
 		t.Fatal(err)
