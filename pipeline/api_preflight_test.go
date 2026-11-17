@@ -105,7 +105,15 @@ func TestLoadAPIVerifiedMaterializedRunPreflight(t *testing.T) {
 		{name: "malformed reviewer record", artifact: "reviewer_decisions.ndjson", write: true, contents: `{"item":`, want: []string{"reviewer_decisions.ndjson:1", "truncated"}},
 		{name: "array reviewer record", artifact: "reviewer_decisions.ndjson", write: true, contents: "[]\n", want: []string{"reviewer_decisions.ndjson:1", "invalid", "object"}},
 		{name: "reviewer record over scanner limit", artifact: "reviewer_decisions.ndjson", write: true, contents: `{"note":"` + strings.Repeat("x", 16<<20) + `"}`, want: []string{"reviewer_decisions.ndjson:1", "scanner limit"}},
-		{name: "optional booking remains unchecked", artifact: "booking.json", write: true, contents: `not-json`},
+		{name: "valid optional booking object", artifact: "booking.json", write: true, contents: `{"cases":{},"version":2.0}` + "\n\t "},
+		{name: "malformed booking", artifact: "booking.json", write: true, contents: `not-json`, want: []string{"booking.json", "malformed"}},
+		{name: "truncated booking", artifact: "booking.json", write: true, contents: `{"cases":`, want: []string{"booking.json", "truncated"}},
+		{name: "empty booking", artifact: "booking.json", write: true, contents: ``, want: []string{"booking.json", "truncated"}},
+		{name: "trailing JSON value in booking", artifact: "booking.json", write: true, contents: `{} {}`, want: []string{"booking.json", "malformed", "after the top-level value"}},
+		{name: "trailing content in booking", artifact: "booking.json", write: true, contents: `{"cases":{}} garbage`, want: []string{"booking.json", "malformed"}},
+		{name: "null booking", artifact: "booking.json", write: true, contents: `null`, want: []string{"booking.json", "invalid", "top-level object"}},
+		{name: "array booking", artifact: "booking.json", write: true, contents: `[]`, want: []string{"booking.json", "invalid", "top-level object"}},
+		{name: "scalar booking", artifact: "booking.json", write: true, contents: `"generated"`, want: []string{"booking.json", "invalid", "top-level object"}},
 	}
 
 	for _, tt := range tests {
