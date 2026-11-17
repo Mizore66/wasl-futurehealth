@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:3d40a85c-6ef3-59c4-b0ee-f479d13e261d",
+  "serialNumber": "urn:uuid:7807d528-ef19-5976-8ac0-d7111643aece",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-16T17:04:05Z",
+    "timestamp": "2026-11-17T03:54:16Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
+      "version": "0a0f18d68c4beb9b3675e5de90faa0dd41e82812"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2"
+        "value": "0a0f18d68c4beb9b3675e5de90faa0dd41e82812"
       },
       {
         "name": "wasl:source-tree",
@@ -3894,11 +3894,11 @@
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/env@16.4.3",
+      "bom-ref": "pkg:npm/%40next/env@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "env",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "licenses": [
         {
           "license": {
@@ -3906,11 +3906,11 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40next/env@16.4.3",
+      "purl": "pkg:npm/%40next/env@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/env@16.4.3"
+          "value": "@next/env@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -3920,16 +3920,16 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "6bbb73d5009c5969300bfacf25c3cc264fd4351bbd085843777387604e6175d6c9aecf01a914da97123a1a52825841b344b1cdf92fc1edae0f0070ad9b6e5a05"
+          "content": "27048fc2976464be55325da303fabe248f0c65dc1e00bdf19b0e7fb5bf72fd32ed992d185d99e6603cd28a1c24f314e3d4e2fe58ce77813a9a8fdeb2b8ba7a5f"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/eslint-plugin-next@16.4.3",
+      "bom-ref": "pkg:npm/%40next/eslint-plugin-next@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "eslint-plugin-next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "licenses": [
         {
           "license": {
@@ -3937,11 +3937,11 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.3",
+      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/eslint-plugin-next@16.4.3(eslint@9.39.5(jiti@2.7.0))"
+          "value": "@next/eslint-plugin-next@16.4.5(eslint@9.39.5(jiti@2.7.0))"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -3951,16 +3951,16 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "a31b82d3ac2dffbd61e80098095f466ca39f9dfe5aed59517bfa7cd181d3badd794cd803126ca70e76aaf2dff1872e6b96f93b76122d20fb3a1f7aef20ce24cb"
+          "content": "74d99ce32e049ffdf8b56c5a045176b46fd1f467a247054f7fbbfc033fcfaa4f05713e14bf478f9ab64abd604bda7172d50a6b3e0256fba5e37f257a8db455dd"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-darwin-arm64",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "licenses": [
         {
           "license": {
@@ -3968,11 +3968,11 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
+      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-darwin-arm64@16.4.3"
+          "value": "@next/swc-darwin-arm64@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -3982,21 +3982,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "e32ab911706df950ed019c13c9f8a3685a790f60b9a33dc8930e5ada4897d8af67c3bdafad95f6ab952e02590fb5430ed6d433e894caa5a2968d2ece39e7d30d"
+          "content": "5b94e7881cd628049b34dc0767f4bf7f53314145d4fcb76392554c580d148db7e5ed2667533165b38e613b48bfb05ec1c758c9056a7b5969a841a8d7b57fcef0"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-darwin-x64@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-darwin-x64@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-darwin-x64",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-darwin-x64@16.4.3"
+          "value": "@next/swc-darwin-x64@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4006,21 +4006,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "d51be49ff2d4867105f16c674643aba8685bc17ba2d5b91617138d2886cdfabec2fbd2870d267e894a23e02cf2995316532648cb1f6ccdc6fdfa46ca843e74d0"
+          "content": "b96ab8aa41daa410d2d68165b564b86314dbf692c702d2cd7296ee2ba4a646c79b2d866aa4130bfe3fc2d28a7ee74258193a598152ff0d636dffaa1695a9abaf"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-linux-arm64-gnu",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-linux-arm64-gnu@16.4.3"
+          "value": "@next/swc-linux-arm64-gnu@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4030,21 +4030,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "7422a95c4ac683769b50ceade494c957fa2db550534ad241e654494db81d51d41a43e8cd1e22b9e87b1cd1800483fae29d2878da1606dc75a262610c762967c6"
+          "content": "15d45cc8ec79bb93f9d66940a8b07d11775df2364ee5fb1d1ed93804041292a3b2c02b1b4cd37fae6c3e8ceee99e68cd740b6ed801b8e8dcdb08bd853c3aeb83"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-linux-arm64-musl",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-linux-arm64-musl@16.4.3"
+          "value": "@next/swc-linux-arm64-musl@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4054,21 +4054,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "5b061b856921601bc1b626f52b85b490bf0c5b6b27043d80e5bdd2378bcfa6a6a565b66ce7e6d0d72cc075ea55a0eaab15f116ddd991132e19b3532b59cac56f"
+          "content": "732be69a0b515d1f1a1954fceb08bd3f2e772257f20b1ecfd9f671b805c0a13ba69839e12ad5328eb31e5df6a9aa9e2a803fa04f946ac860ff55f035ea310aed"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-linux-x64-gnu",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-linux-x64-gnu@16.4.3"
+          "value": "@next/swc-linux-x64-gnu@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4078,21 +4078,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "432996bdf5300c40b9fe5a493acc57e5501bca84760f5dfed89b23cf86deee04f82cfa8481da6478b211fc715f08b80ace8321a496e9e88fc99e88323591dc68"
+          "content": "84f73e165f8ddb60c0bea647ab9e7d3666a65dba0e5f92eef08e569740decdfae14e4d59cf6d4d41e62864398d23f3634dcaddb15c4cef61739f6948f90faf03"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-linux-x64-musl",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-linux-x64-musl@16.4.3"
+          "value": "@next/swc-linux-x64-musl@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4102,21 +4102,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "5668ddf43ec3a40e15bf771496bf364168090ff0506669ecf34d6fb42e5558783a8c2200e1ae6f30aa509dfaccda9c82ae9d9e57410d7548383e53776c073663"
+          "content": "81b002604f083ff8e5a6b353a625971dbf0df42a1f3b3a671301f64ab233d5d51b8897f515b0ecb03ba90803de3f54dac5ef26806db4b0665a98923b28539d67"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-win32-arm64-msvc",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-win32-arm64-msvc@16.4.3"
+          "value": "@next/swc-win32-arm64-msvc@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4126,21 +4126,21 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "946d693dd3cb93b813c866f4d27e4920c2dd0498236fe504852759bc56e150c8340f20bacf807b467a52285f5509de229a42ce6d56d73850349050a9c3bc85a3"
+          "content": "fbc823fbe64ca3c1f6d178768a38cdab2164e4b3cbc34002e05b384eafc6f78ae38d05e13a33788e0496b1628f16cc98dba85f21e7a6248c0ab4cc4eb29e4604"
         }
       ]
     },
     {
-      "bom-ref": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
+      "bom-ref": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
       "type": "library",
       "group": "@next",
       "name": "swc-win32-x64-msvc",
-      "version": "16.4.3",
-      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
+      "version": "16.4.5",
+      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "@next/swc-win32-x64-msvc@16.4.3"
+          "value": "@next/swc-win32-x64-msvc@16.4.5"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -4150,7 +4150,7 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "366402f519097673d745a331b640b3a1b077b5e563a85df7a123a7c037e2f97606596629b7ec6518ade6b64b5228b6dd8f06966c9bb63a490c8911465149dc2a"
+          "content": "a8d663ebaa585e76962e217d47d1946df05dac2bfb902e936997c8c01d8a1f958f73ff2910cde754e8fc86942158953c4bde2b947e4c3c3717d79f91ae05218b"
         }
       ]
     },
@@ -11811,10 +11811,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:npm/eslint-config-next@16.4.3",
+      "bom-ref": "pkg:npm/eslint-config-next@16.4.5",
       "type": "library",
       "name": "eslint-config-next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "licenses": [
         {
           "license": {
@@ -11822,11 +11822,11 @@
           }
         }
       ],
-      "purl": "pkg:npm/eslint-config-next@16.4.3",
+      "purl": "pkg:npm/eslint-config-next@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "eslint-config-next@16.4.3(@typescript-eslint/parser@8.72.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)"
+          "value": "eslint-config-next@16.4.5(@typescript-eslint/parser@8.72.1(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -11836,7 +11836,7 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "8fd22a0666ba69ba7cd347eb7545116a2cd83205ce2be8cd1b2aba0ac61c33d031a5226ce43fd380c346780991522959bc0ee0f55d53afbd60360f7f4954ee31"
+          "content": "9af877f7360ba0d8e94f9b5599ff3166eee2e6510e6f98cde5c5baa83f4ea5e0a9e0610439e62d6b46765f22a20f4a58765be6e7f4dde818bcf7499a3d19488e"
         }
       ]
     },
@@ -17701,10 +17701,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:npm/next@16.4.3",
+      "bom-ref": "pkg:npm/next@16.4.5",
       "type": "library",
       "name": "next",
-      "version": "16.4.3",
+      "version": "16.4.5",
       "licenses": [
         {
           "license": {
@@ -17712,11 +17712,11 @@
           }
         }
       ],
-      "purl": "pkg:npm/next@16.4.3",
+      "purl": "pkg:npm/next@16.4.5",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "next@16.4.3(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)"
+          "value": "next@16.4.5(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -17726,7 +17726,7 @@
       "hashes": [
         {
           "alg": "SHA-512",
-          "content": "3aac4a4c68bdbbcd05c9dc9db0c3583639ee8def40bbe92f1e5b76199fff7ed7690c79b57712aa01a10da0e3935f9c0ace7fbdbda2943487d97b2654b8b8429c"
+          "content": "ae675fb16a2c8d350efba4744b72a8928224e8a8f4b160d14def3ab591dda9a587fe85eafee757dffe316fe6108bb6966f2105a20943539e246a27cb09d5db07"
         }
       ]
     },
@@ -24135,46 +24135,46 @@
       ]
     },
     {
-      "ref": "pkg:npm/%40next/env@16.4.3",
+      "ref": "pkg:npm/%40next/env@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/eslint-plugin-next@16.4.3",
+      "ref": "pkg:npm/%40next/eslint-plugin-next@16.4.5",
       "dependsOn": [
         "pkg:npm/%40eslint-community/eslint-utils@4.9.1",
         "pkg:npm/fast-glob@3.3.1"
       ]
     },
     {
-      "ref": "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
+      "ref": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-darwin-x64@16.4.3",
+      "ref": "pkg:npm/%40next/swc-darwin-x64@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
+      "ref": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
+      "ref": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
+      "ref": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
+      "ref": "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
+      "ref": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
+      "ref": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
       "dependsOn": []
     },
     {
@@ -26245,9 +26245,9 @@
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/eslint-config-next@16.4.3",
+      "ref": "pkg:npm/eslint-config-next@16.4.5",
       "dependsOn": [
-        "pkg:npm/%40next/eslint-plugin-next@16.4.3",
+        "pkg:npm/%40next/eslint-plugin-next@16.4.5",
         "pkg:npm/eslint-import-resolver-node@0.3.10",
         "pkg:npm/eslint-import-resolver-typescript@3.10.1",
         "pkg:npm/eslint-plugin-import@2.32.0",
@@ -27480,17 +27480,17 @@
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/next@16.4.3",
+      "ref": "pkg:npm/next@16.4.5",
       "dependsOn": [
-        "pkg:npm/%40next/env@16.4.3",
-        "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
-        "pkg:npm/%40next/swc-darwin-x64@16.4.3",
-        "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
-        "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
-        "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
-        "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
-        "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
-        "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
+        "pkg:npm/%40next/env@16.4.5",
+        "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
+        "pkg:npm/%40next/swc-darwin-x64@16.4.5",
+        "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
+        "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
+        "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
+        "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
+        "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
+        "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
         "pkg:npm/%40playwright/test@1.64.1",
         "pkg:npm/%40swc/helpers@0.5.23",
         "pkg:npm/baseline-browser-mapping@2.11.34",
@@ -28859,13 +28859,13 @@
         "pkg:npm/%40types/three@0.187.0",
         "pkg:npm/class-variance-authority@0.7.1",
         "pkg:npm/cn@0.5.1",
-        "pkg:npm/eslint-config-next@16.4.3",
+        "pkg:npm/eslint-config-next@16.4.5",
         "pkg:npm/eslint@9.39.5",
         "pkg:npm/happy-dom@21.0.4",
         "pkg:npm/jose@6.2.17",
         "pkg:npm/lucide-react@1.66.0",
         "pkg:npm/motion@14.9.0",
-        "pkg:npm/next@16.4.3",
+        "pkg:npm/next@16.4.5",
         "pkg:npm/openid-client@6.8.9",
         "pkg:npm/radix-ui@1.8.1",
         "pkg:npm/react-dom@19.3.0",
