@@ -12,9 +12,9 @@ package main
 // of the contested loop's tracking root. The closure engine then holds the
 // questioned decision (patient_contest_hold.go).
 //
-// Because the messages are ordinary FHIR log entries, the audit replay of
-// fhir_log.ndjson re-derives the same held or released decisions
-// deterministically. A run that receives no contest message produces facts and
+// The messages are ordinary FHIR log entries, so the audit replay of
+// fhir_log.ndjson should re-derive the same held or released decisions; no
+// test runs audit over contest messages yet. A run that receives no contest message produces facts and
 // decisions byte-identical to before.
 //
 // `wsi7 patient-contest-feed -run <served run>` publishes the served run's
