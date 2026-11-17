@@ -58,6 +58,7 @@ type apiCase struct {
 	Closed    bool                 `json:"closed"`
 	ClosedDay float64              `json:"closed_day,omitempty"`
 	Fixture   string               `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	lang      string               // referral's recorded preferred language (ServiceRequest), the engine's expected notification language
 	ov        caseOverlay          // coordinator actions replayed from the ledger; never merged into the canonical fields above
 	patient   patientCaseState     // patient-link actions; separate from coordinator, consent and booking heads
 	requests  []*patientRequest    // patient explanation requests and contests, in ledger order
@@ -372,6 +373,7 @@ func (s *apiServer) loadTimelines() {
 	}
 	byPK := map[string][]map[string]interface{}{}
 	srPK := map[string]string{}
+	srLang := map[string]string{}
 	s.reviewReportSources = map[reviewReportSourceKey]reviewReportSource{}
 	s.demo = map[string]regDemo{}
 	s.idSignoffs = nil
@@ -410,11 +412,13 @@ func (s *apiServer) loadTimelines() {
 		s.demo[e.PatientKey] = d
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			srPK[prov+"/ServiceRequest/"+e.ID] = e.PatientKey
+			srLang[prov+"/ServiceRequest/"+e.ID] = e.PrefLang
 		}
 	}
 	projection, _ := s.loadPersonProjection()
 	for id, c := range s.cases {
 		referral := srPK[baseLoop(id)]
+		c.lang = srLang[baseLoop(id)]
 		pks := map[string]bool{referral: true}
 		if projection != nil {
 			if currentReferral := projection.referralByCase[id]; currentReferral != "" {
@@ -792,6 +796,17 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		m["patient_tasks"] = tasks // patient_task.go: failed teach-back callbacks and patient contests, one shape
 		m["escalations"] = s.servedEscalationsLocked(c)
 	}
+	if hasCommunicationRecord(c) {
+		m["dropoff"], m["canonical_dropoff"] = servedDropoffLocked(c), c.Dropoff
+		m["escalations"] = s.servedEscalationsLocked(c)
+	}
+	if servedDropoffLocked(c) == "never_notified" && s.contactGuardLocked(c).Allowed {
+		// The approved wording a staff-assisted notification must use (api_communication.go); read it, never improvise.
+		// Served only where the notification could be recorded: without contact permission the write is refused anyway.
+		if tpl := notificationTemplateFor(c, TemplateVersion); tpl != "" {
+			m["notification_template"] = tpl
+		}
+	}
 	s.mu.Unlock()
 	return m
 }
@@ -806,7 +821,7 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 			return false
 		}
 		return eq("programme", c.Programme) && eq("state", c.State) && eq("owner", owner) && (q.Get("unowned") != "true" || owner == "") && eq("consent", c.Consent) &&
-			eq("review", c.Review) && eq("dropoff", c.Dropoff) && eq("provider", c.Provider) &&
+			eq("review", c.Review) && eq("dropoff", s.servedDropoff(c)) && eq("provider", c.Provider) &&
 			(q.Get("overdue") == "" || q.Get("overdue") == strconv.FormatBool(c.Overdue)) &&
 			(q.Get("closed") == "" || q.Get("closed") == strconv.FormatBool(s.servedClosed(c))) &&
 			(q.Get("fixture") == "" || c.Fixture != "") && (q.Get("q") == "" || strings.Contains(c.ID, q.Get("q")))
@@ -1428,10 +1443,13 @@ type caseOverlay struct {
 	// reconciliation is the latest completed-elsewhere report; its "retrieval" entry is the outcome that ended it.
 	reconciliation map[string]interface{}
 	plans          []map[string]interface{}
-	booking        caseBookingState
-	referral       map[string]interface{}   // the receiving unit's referral response, if any
-	referrer       []map[string]interface{} // the responsible referrer's acknowledgement and response to a returned referral
-	lastAt         string
+	// notification and receipt are the staff-recorded initial result notification and its acknowledgement (#197).
+	notification map[string]interface{}
+	receipt      map[string]interface{}
+	booking      caseBookingState
+	referral     map[string]interface{}   // the receiving unit's referral response, if any
+	referrer     []map[string]interface{} // the responsible referrer's acknowledgement and response to a returned referral
+	lastAt       string
 }
 
 func (s *apiServer) caseHead(c *apiCase) string {
@@ -1563,6 +1581,8 @@ func validateActionData(kind string, in map[string]interface{}) (map[string]inte
 		err = validateDeclineDisposition(in, out, text)
 	case elsewhereKind:
 		err = validateElsewhere(out, text)
+	case notificationKind, receiptKind:
+		err = validateCommunicationData(kind, out, text)
 	case retrievalKind:
 		if err = text("outcome", 32, true, false); err == nil && !retrievalOutcomes[out["outcome"].(string)] {
 			err = errors.New("outcome must be one of not_found|not_matching|non_closing")
@@ -1693,6 +1713,8 @@ func (c *apiCase) applyOverlay(ev map[string]interface{}) {
 		c.ov.decline = entry
 	case elsewhereKind:
 		c.ov.reconciliation = entry
+	case notificationKind, receiptKind:
+		c.applyCommunication(ev["kind"].(string), entry)
 	case retrievalKind:
 		ended := map[string]interface{}{}
 		for k, v := range c.ov.reconciliation {
@@ -1807,6 +1829,9 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			summary["retrieval"] = retrieval
 		}
 		m["reconciliation"] = summary
+	}
+	if comm := communicationViewLocked(c, full); comm != nil {
+		m["communication"] = comm
 	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
@@ -2095,7 +2120,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	delete(fields, "expected_head")
 	kind, _ := kindV.(string)
 	if actionFields[kind] == nil {
-		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition|decline_disposition|completed_elsewhere|retrieval_outcome", nil)
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note|booking_accept|booking_choose_slot|booking_reschedule|booking_cancel|clinician_disposition|decline_disposition|completed_elsewhere|retrieval_outcome|"+communicationKindsList(), nil)
 		return
 	}
 	if err := Authorize(role, actionForKind(kind)); err != nil {
@@ -2179,6 +2204,20 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		if _, named := data["report_event"]; kind == retrievalKind && !named {
 			if p := c.ov.pendingRetrieval(); p != "" {
 				data["report_event"] = p
+			}
+		}
+		if _, named := data["notification_event"]; kind == receiptKind && !named {
+			if ref, _, ok := currentNotification(c); ok {
+				data["notification_event"] = ref
+			}
+		}
+		if isCommunicationKind(kind) {
+			if refusal := s.communicationPreconditionLocked(c, kind, data, now); refusal != nil {
+				body := map[string]interface{}{"error": refusal.msg}
+				if refusal.conflict != "" {
+					body["conflict"] = refusal.conflict
+				}
+				return refusal.code, body
 			}
 		}
 		refusal := actionPreconditionLocked(c, kind, data)
@@ -2448,6 +2487,12 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	}
 	if kind == dispositionKind && !caseEverHeld(c, norm["hold"].(string)) {
 		return errors.New("clinician disposition for a hold the case never had")
+	}
+	if isCommunicationKind(kind) {
+		recorded, _ := time.Parse(time.RFC3339Nano, at)
+		if refusal := s.communicationPreconditionLocked(c, kind, norm, recorded); refusal != nil {
+			return errors.New(refusal.msg)
+		}
 	}
 	if refusal := actionPreconditionLocked(c, kind, norm); refusal != nil {
 		return errors.New(refusal.msg)

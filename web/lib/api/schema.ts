@@ -429,6 +429,27 @@ export const ReferrerResponseRequest = z.discriminatedUnion("response", [
   z.object({ response: z.enum(["manage_in_primary_care", "close"]), reason: z.string().trim().min(1).max(200) }),
 ]);
 
+/** A staff-recorded communication fact (pipeline/api_communication.go). `actor` and `identity_check` only in detail. */
+const CommunicationFact = z.looseObject({
+  at: z.string(),
+  event: z.string(),
+  occurred_at: z.string(),
+  channel: z.enum(["phone", "video", "in_person"]),
+  actor: z.string().optional(),
+  identity_check: z.string().optional(),
+});
+/**
+ * Staff-recorded initial notification and receipt. Receipt is not comprehension: `understanding` is the engine's
+ * teach-back state, which neither action changes. `obligation` is the drop-off the case serves after these facts.
+ */
+export const OverlayCommunication = z.looseObject({
+  canonical_dropoff: z.string(),
+  obligation: z.string(),
+  understanding: z.string(),
+  notification: CommunicationFact.extend({ template: z.string(), language: z.string().optional() }).optional(),
+  receipt: CommunicationFact.extend({ notification_event: z.string() }).optional(),
+});
+
 /**
  * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
  * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
@@ -445,6 +466,7 @@ export const ApiOverlay = z.looseObject({
   last_appointment_agreement: z.looseObject({ at: z.string(), event: z.string().default("") }).optional(),
   decline_disposition: OverlayDisposition.optional(),
   reconciliation: OverlayReconciliation.optional(),
+  communication: OverlayCommunication.optional(),
   booking: BookingSummary.optional(),
   no_answer_streak: z.number().default(0),
   contact_outcomes: z.array(OverlayContact).optional(),
@@ -635,8 +657,15 @@ export const ActiveCaseSummary = z.looseObject({
   teach_back_callback: TeachBackCallback.optional(),
   /** Failed teach-back callbacks and patient contests as one owned, due-dated task list (docs/API-PATIENT-REQUESTS.md). */
   patient_tasks: z.array(PatientTask).optional(),
-  /** Canonical escalations, less teach-back callbacks a coordinator resolved, plus open patient callbacks and contests. */
+  /**
+   * Canonical escalations, less teach-back callbacks a coordinator resolved and missing-notification/acknowledgement
+   * escalations a staff-recorded communication answered, plus open patient callbacks and contests.
+   */
   escalations: z.array(z.string()).optional(),
+  /** Present when a staff-recorded notification or receipt changed `dropoff`: the engine's own drop-off, unchanged. */
+  canonical_dropoff: Dropoff.optional(),
+  /** Only while a result notification is owed: the approved wording (template id) a staff notification must use. */
+  notification_template: z.string().optional(),
 });
 
 const RetainedRequest = {
@@ -885,7 +914,7 @@ export const AuditReview = z.looseObject({
  * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
  * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
  */
-export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "referral_response", "referrer_response"] as const;
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note", "booking_accept", "booking_choose_slot", "booking_reschedule", "booking_cancel", "clinician_disposition", "decline_disposition", "completed_elsewhere", "retrieval_outcome", "initial_notification", "receipt_acknowledgement", "referral_response", "referrer_response"] as const;
 export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
 
 const ledgerCore = {
@@ -929,6 +958,10 @@ export const CoordinatorData = z.looseObject({
   details: z.string().optional(),
   review_date: z.string().optional(),
   hold: z.string().optional(),
+  occurred_at: z.string().optional(),
+  template: z.string().optional(),
+  identity_check: z.string().optional(),
+  notification_event: z.string().optional(),
 });
 
 const coordinatorShape = {
@@ -1658,6 +1691,9 @@ export const CompensationResponse = withMeta({
   note: z.string(),
 });
 
+export const COMMUNICATION_CHANNELS = ["phone", "video", "in_person"] as const;
+export const IDENTITY_CHECKS = ["name_and_dob", "name_and_emirates_id", "name_and_mrn"] as const;
+
 /** POST /api/cases/{id}/actions body (docs/API.md, "POST actions"). `expected_head` is added by the caller. */
 const hash = z.string().regex(/^[0-9a-f]{64}$/);
 const bookingReason = z.string().trim().min(1).max(200);
@@ -1695,6 +1731,22 @@ export const CaseAction = z.discriminatedUnion("action", [
     retrieval_due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   }),
   z.object({ action: z.literal("retrieval_outcome"), outcome: z.enum(RETRIEVAL_OUTCOMES), note: z.string().min(1).max(1000).optional() }),
+  /** Staff-assisted: the coordinator told the patient, reading the approved wording. Nothing is sent. */
+  z.object({
+    action: z.literal("initial_notification"),
+    occurred_at: z.string(),
+    channel: z.enum(COMMUNICATION_CHANNELS),
+    template: z.string().min(1).max(64),
+    identity_check: z.enum(IDENTITY_CHECKS),
+  }),
+  /** The patient confirmed receiving the notification. Not comprehension: teach-back stays as it was. */
+  z.object({
+    action: z.literal("receipt_acknowledgement"),
+    occurred_at: z.string(),
+    channel: z.enum(COMMUNICATION_CHANNELS),
+    identity_check: z.enum(IDENTITY_CHECKS),
+    notification_event: z.string().min(1).max(64).optional(),
+  }),
   ...BookingAction.options,
 ]);
 export const ActionResponse = withMeta({

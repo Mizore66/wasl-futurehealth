@@ -186,13 +186,17 @@ func (s *apiServer) callbacksViewLocked(c *apiCase) []map[string]interface{} {
 }
 
 // servedEscalationsLocked is the canonical list without teach-back callback
-// escalations that a coordinator resolved, plus any open patient callback or
-// patient contest (patient_task.go).
+// escalations that a coordinator resolved and without the missing-notification /
+// missing-acknowledgement escalations a staff-recorded communication answered,
+// plus any open patient callback or patient contest (patient_task.go).
 func (s *apiServer) servedEscalationsLocked(c *apiCase) []string {
 	out := []string{}
 	if c.last != nil {
 		for _, e := range c.last.Escalations {
 			if cb := c.callback(teachBackSourceEngine + "/" + e); cb != nil && !cb.open() {
+				continue
+			}
+			if communicationAnswers(c, e) { // a staff-recorded notification or receipt answers it (api_communication.go)
 				continue
 			}
 			out = append(out, e)
