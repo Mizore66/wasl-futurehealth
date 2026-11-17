@@ -30,10 +30,11 @@ export const PatientContactPermission = z.strictObject({
   updated_at: z.string(),
   event: z.string(),
 });
+/** The saved preference, named by the opaque `offer_id` it was chosen by (the slot ID stays server-side). */
 export const PatientSlotSelection = z.strictObject({
   status: z.enum(["unselected", "selected"]),
   offers_version: z.string(),
-  slot_id: z.string(),
+  offer_id: z.string(),
   selected_at: z.string(),
   event: z.string(),
 });
@@ -62,8 +63,11 @@ export const PatientJourney = z.strictObject({
   preparation: PatientPreparation,
   last_action_at: z.string(),
 });
-/** One simulated slot. Catalogue slots carry a `region` and a date-only `starts_at` (the booking data has no time of day). */
-export const PatientOffer = z.strictObject({ slot_id: z.string(), unit: z.string(), region: z.string().optional(), starts_at: z.string() });
+/**
+ * One simulated slot as the patient sees it: an opaque `offer_id`, the date and (catalogue slots) the region. Catalogue
+ * slots have a date-only `starts_at` (the booking data has no time of day). No unit code or slot ID reaches the phone.
+ */
+export const PatientOffer = z.strictObject({ offer_id: z.string().min(1), region: z.string().optional(), starts_at: z.string() });
 /**
  * Simulated patient offers; an empty `procedure` means the case has none and the phone shows a contact fallback.
  * `source` is `simulated_booking` (the case's own generated booking candidates) or `demo_fixed` (the CRC demo offers that a
@@ -120,7 +124,7 @@ export const PatientMutation = z.discriminatedUnion("kind", [
   z.strictObject({
     ...mutationBase,
     kind: z.literal("slot_selected"),
-    data: z.strictObject({ slot_id: z.string().min(1), offers_version: z.string().min(1) }),
+    data: z.strictObject({ offer_id: z.string().min(1), offers_version: z.string().min(1) }),
   }),
   z.strictObject({
     ...mutationBase,

@@ -3,10 +3,11 @@ import type { PatientJourneyResponse } from "@/lib/api/patient-schema";
 export const patientOffers = {
   version: "offer-version-1",
   procedure: "colonoscopy" as const,
+  source: "demo_fixed" as const,
   slots: [
-    { slot_id: "skmc-endo:2026-10-09:09:30", unit: "skmc-endo", starts_at: "2026-10-09T09:30:00+04:00" },
-    { slot_id: "skmc-endo:2026-10-08:11:00", unit: "skmc-endo", starts_at: "2026-10-08T11:00:00+04:00" },
-    { slot_id: "skmc-endo:2026-10-12:13:00", unit: "skmc-endo", starts_at: "2026-10-12T13:00:00+04:00" },
+    { offer_id: "offer-crc-1009", starts_at: "2026-10-09T09:30:00+04:00" },
+    { offer_id: "offer-crc-1008", starts_at: "2026-10-08T11:00:00+04:00" },
+    { offer_id: "offer-crc-1012", starts_at: "2026-10-12T13:00:00+04:00" },
   ],
 };
 
@@ -25,7 +26,7 @@ export function patientFixture(): PatientJourneyResponse {
         answers: ["blood_test", "colonoscopy", "not_sure"],
       },
       contact_permission: { status: "unknown", updated_at: "", event: "" },
-      slot_selection: { status: "unselected", offers_version: patientOffers.version, slot_id: "", selected_at: "", event: "" },
+      slot_selection: { status: "unselected", offers_version: patientOffers.version, offer_id: "", selected_at: "", event: "" },
       preparation: {
         items: [
           { item_id: "clear_fluids_and_prep", completed: false, updated_at: "", event: "" },

@@ -41,6 +41,45 @@ func (o patientOfferSet) has(slotID string) bool {
 	return slices.ContainsFunc(o.Slots, func(p patientOffer) bool { return p.SlotID == slotID })
 }
 
+// patientOfferView is one offer as the patient sees it: the date, the region (catalogue slots only) and an opaque
+// offer_id to choose it by. The slot ID (which encodes the session and seat) and the unit code stay server-side.
+type patientOfferView struct {
+	OfferID  string `json:"offer_id"`
+	Region   string `json:"region,omitempty"`
+	StartsAt string `json:"starts_at"`
+}
+
+// patientOfferID is stable for one case and slot, so a reload or retry names the same offer, and reveals neither.
+func patientOfferID(caseID, slotID string) string {
+	if slotID == "" {
+		return ""
+	}
+	h := sha256.Sum256([]byte("wasl-patient-offer/1\n" + caseID + "\n" + slotID))
+	return "offer-" + hex.EncodeToString(h[:12])
+}
+
+// slotFor resolves a patient's offer_id to the slot ID the ledger records, or "" when this set has no such offer.
+func (o patientOfferSet) slotFor(caseID, offerID string) string {
+	for _, p := range o.Slots {
+		if patientOfferID(caseID, p.SlotID) == offerID {
+			return p.SlotID
+		}
+	}
+	return ""
+}
+
+// patientRouteJourneyLocked is the journey the patient link serves: the saved preference is named by its offer_id,
+// never by the slot ID that staff views and the audit export keep.
+func (s *apiServer) patientRouteJourneyLocked(c *apiCase) map[string]interface{} {
+	out := s.patientViewLocked(c, true)
+	if sel, ok := out["slot_selection"].(map[string]interface{}); ok {
+		slotID, _ := sel["slot_id"].(string)
+		delete(sel, "slot_id")
+		sel["offer_id"] = patientOfferID(c.ID, slotID)
+	}
+	return out
+}
+
 func demoOfferSet() patientOfferSet {
 	return patientOfferSet{Source: offerSourceDemo, Procedure: "colonoscopy", Version: patientOffersVersion(), Slots: patientSlotOffers,
 		Prep: patientProcedurePrep["colonoscopy"]}
@@ -140,7 +179,11 @@ func (s *apiServer) patientOffersViewLocked(c *apiCase) map[string]interface{} {
 	_, set := s.casePatientPlanLocked(c)
 	live := s.patientLiveOffersLocked(c, set)
 	if set.Source == "" || len(live) == 0 {
-		return map[string]interface{}{"version": "", "procedure": "", "slots": []patientOffer{}}
+		return map[string]interface{}{"version": "", "procedure": "", "slots": []patientOfferView{}}
 	}
-	return map[string]interface{}{"version": set.Version, "procedure": set.Procedure, "slots": live, "source": set.Source}
+	slots := make([]patientOfferView, 0, len(live))
+	for _, offer := range live {
+		slots = append(slots, patientOfferView{OfferID: patientOfferID(c.ID, offer.SlotID), Region: offer.Region, StartsAt: offer.StartsAt})
+	}
+	return map[string]interface{}{"version": set.Version, "procedure": set.Procedure, "slots": slots, "source": set.Source}
 }

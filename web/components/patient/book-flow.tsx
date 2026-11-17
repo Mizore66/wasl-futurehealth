@@ -53,28 +53,28 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
   const b = t.book;
   const ur = query.lang === "ur";
   const { journey, busy, status, save, retry, canRetry } = usePatientJourney(initial);
-  const initialSavedIndex = offers.slots.findIndex((slot) => slot.slot_id === initial.slot_selection.slot_id);
+  const initialSavedIndex = offers.slots.findIndex((slot) => slot.offer_id === initial.slot_selection.offer_id);
   const [mode, setMode] = useState<Mode>(initial.slot_selection.status === "selected" ? "confirmed" : "proposed");
   const [current, setCurrent] = useState(initialSavedIndex >= 0 ? initialSavedIndex : 0);
 
   async function retrySave() {
     const currentJourney = await retry();
     if (currentJourney?.slot_selection.status !== "selected") return;
-    const index = offers.slots.findIndex((offer) => offer.slot_id === currentJourney.slot_selection.slot_id);
+    const index = offers.slots.findIndex((offer) => offer.offer_id === currentJourney.slot_selection.offer_id);
     if (index >= 0) setCurrent(index);
     setMode("confirmed");
   }
 
   const slots = offers.slots.map((slot) => slotLabel(slot, b, query.lang));
   const confirmed = mode === "confirmed" && journey.slot_selection.status === "selected";
-  const savedIndex = offers.slots.findIndex((offer) => offer.slot_id === journey.slot_selection.slot_id);
+  const savedIndex = offers.slots.findIndex((offer) => offer.offer_id === journey.slot_selection.offer_id);
   const slot = slots[confirmed ? savedIndex : current];
   const contact = journey.contact_permission.status;
 
   async function confirmSlot() {
     const offer = offers.slots[current];
     if (!offer) return;
-    const saved = await save({ kind: "slot_selected", data: { slot_id: offer.slot_id, offers_version: offers.version } });
+    const saved = await save({ kind: "slot_selected", data: { offer_id: offer.offer_id, offers_version: offers.version } });
     if (saved) setMode("confirmed");
   }
 
@@ -84,7 +84,7 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
     await save({ kind: "preparation_changed", data: { item_id, completed } });
   }
 
-  const place = offerPlace(offers.slots[confirmed ? savedIndex : current], query.lang);
+  const place = offerPlace(offers.slots[confirmed ? savedIndex : current], offers.source, query.lang);
 
   if (!slot) {
     return (
@@ -139,7 +139,7 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
                 {slots.map((s, i) =>
                   i === current ? null : (
                     <button
-                      key={offers.slots[i].slot_id}
+                      key={offers.slots[i].offer_id}
                       type="button"
                       disabled={busy}
                       onClick={() => { setCurrent(i); setMode("proposed"); }}

@@ -166,11 +166,13 @@ type patientRequestRecord struct {
 	Receipt     string
 }
 
+// patientOffer is the server's record of one offered slot. Its slot ID and unit stay server-side: the patient sees
+// patientOfferView (an opaque offer_id, the date and the region) only.
 type patientOffer struct {
-	SlotID   string `json:"slot_id"`
-	Unit     string `json:"unit"`
-	Region   string `json:"region,omitempty"`
-	StartsAt string `json:"starts_at"`
+	SlotID   string
+	Unit     string
+	Region   string
+	StartsAt string
 }
 
 var patientSlotOffers = []patientOffer{
@@ -285,7 +287,13 @@ func patientPublicEvent(ev map[string]interface{}) map[string]interface{} {
 	if ev == nil {
 		return nil
 	}
-	return map[string]interface{}{"hash": ev["hash"], "kind": ev["kind"], "at": ev["at"], "seq": ev["seq"], "data": ev["data"]}
+	data := ev["data"]
+	if ev["kind"] == "slot_selected" {
+		// The ledger keeps the slot ID; the patient sees only the opaque offer ID it chose.
+		d, _ := data.(map[string]interface{})
+		data = map[string]interface{}{"offer_id": patientOfferID(sstr(ev, "case"), sstr(d, "slot_id")), "offers_version": d["offers_version"]}
+	}
+	return map[string]interface{}{"hash": ev["hash"], "kind": ev["kind"], "at": ev["at"], "seq": ev["seq"], "data": data}
 }
 
 func patientRequestFingerprint(link patientLink, kind, head string, data map[string]interface{}) string {
@@ -349,15 +357,21 @@ func validatePatientData(plan patientPlan, kind string, in map[string]interface{
 		}
 		out["permission"] = p
 	case "slot_selected":
-		if err := exact("slot_id", "offers_version"); err != nil {
+		// The phone names the opaque offer_id it was served; postPatientJourney resolves it to the slot ID the ledger
+		// records. slot_id stays accepted for clients written before offer IDs (the ledger format is unchanged).
+		key := "offer_id"
+		if _, legacy := in["slot_id"]; legacy {
+			key = "slot_id"
+		}
+		if err := exact(key, "offers_version"); err != nil {
 			return nil, err
 		}
-		id, err1 := str("slot_id")
+		id, err1 := str(key)
 		version, err2 := str("offers_version")
 		if err1 != nil || err2 != nil {
-			return nil, errors.New("slot_id and offers_version are required")
+			return nil, errors.New("offer_id and offers_version are required")
 		}
-		out["slot_id"], out["offers_version"] = id, version
+		out[key], out["offers_version"] = id, version
 	case "preparation_changed":
 		if err := exact("item_id", "completed"); err != nil {
 			return nil, err
@@ -415,7 +429,7 @@ func (c *apiCase) applyPatientEvent(ev map[string]interface{}) {
 func patientConsentDecision(permission string) string { return "consent_" + permission }
 
 func (s *apiServer) patientConflictLocked(c *apiCase, conflict, message string) (int, map[string]interface{}) {
-	return http.StatusConflict, map[string]interface{}{"error": message, "conflict": conflict, "current_head": patientHead(c), "journey": s.patientViewLocked(c, true)}
+	return http.StatusConflict, map[string]interface{}{"error": message, "conflict": conflict, "current_head": patientHead(c), "journey": s.patientRouteJourneyLocked(c)}
 }
 
 func (s *apiServer) patientJourney(w http.ResponseWriter, r *http.Request) {
@@ -445,7 +459,7 @@ func (s *apiServer) patientJourney(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Wasl-Actor", "patient-link/"+link.LinkID)
 	if r.Method == http.MethodGet {
 		s.mu.Lock()
-		body := s.envelope(map[string]interface{}{"journey": s.patientViewLocked(s.cases[link.Case], true), "offers": s.patientOffersViewLocked(s.cases[link.Case]), "expires_at": link.ExpiresAt})
+		body := s.envelope(map[string]interface{}{"journey": s.patientRouteJourneyLocked(s.cases[link.Case]), "offers": s.patientOffersViewLocked(s.cases[link.Case]), "expires_at": link.ExpiresAt})
 		s.mu.Unlock()
 		writeJSONResp(w, http.StatusOK, body)
 		return
@@ -479,12 +493,24 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 		if s.ledgerErr != "" {
 			return http.StatusInternalServerError, map[string]interface{}{"error": "review ledger failed validation; writes refused"}
 		}
+		if req.Kind == "slot_selected" && data["offer_id"] != nil {
+			// Resolve before fingerprinting so the request, its retry and its replay all name the recorded slot ID.
+			_, set := s.casePatientPlanLocked(c)
+			slotID := set.slotFor(c.ID, sstr(data, "offer_id"))
+			if slotID == "" {
+				if data["offers_version"] != set.Version {
+					return s.patientConflictLocked(c, "offers", "the offered times changed; review the current offers")
+				}
+				return http.StatusBadRequest, map[string]interface{}{"error": "offer_id is not in the current offer set"}
+			}
+			data = map[string]interface{}{"slot_id": slotID, "offers_version": data["offers_version"]}
+		}
 		fingerprint := patientRequestFingerprint(link, req.Kind, req.ExpectedHead, data)
 		if previous, found := s.patientRequestsLocked()[req.RequestID]; found {
 			if previous.Fingerprint != fingerprint {
 				return s.patientConflictLocked(c, "request", "request_id was already used for a different patient action")
 			}
-			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
+			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientRouteJourneyLocked(c), "replayed": true}
 		}
 		if req.ExpectedHead != patientHead(c) {
 			return s.patientConflictLocked(c, "head", "stale expected_head; review the current patient journey before retrying")
@@ -533,10 +559,10 @@ func (s *apiServer) postPatientJourney(w http.ResponseWriter, r *http.Request, l
 		}
 		s.patientRequestsLocked()[req.RequestID] = patientRequestRecord{Fingerprint: fingerprint}
 		if requestOnly {
-			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientViewLocked(c, true), "replayed": true}
+			return http.StatusOK, map[string]interface{}{"event": nil, "journey": s.patientRouteJourneyLocked(c), "replayed": true}
 		}
 		c.applyPatientEvent(stored)
-		return http.StatusCreated, map[string]interface{}{"event": patientPublicEvent(stored), "journey": s.patientViewLocked(c, true), "replayed": false}
+		return http.StatusCreated, map[string]interface{}{"event": patientPublicEvent(stored), "journey": s.patientRouteJourneyLocked(c), "replayed": false}
 	}()
 	writeJSONResp(w, code, s.envelope(body))
 }

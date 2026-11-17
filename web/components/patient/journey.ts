@@ -51,11 +51,12 @@ export interface SlotLabel {
   period: string;
 }
 
-/** Format the offer's own unit-local wall time; never substitute a browser timezone or a hard-coded slot list. */
+/** Format the offer's own unit-local wall time as served; never substitute a browser timezone or a hard-coded slot list. */
 export function slotLabel(slot: PatientOffer, t: PatientDict["book"], lang: Lang): SlotLabel {
   // Simulated booking catalogue slots carry a date only: show that date and no invented time of day.
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(slot.starts_at);
-  const match = /:(\d{4})-(\d{2})-(\d{2}):(\d{2}):(\d{2})$/.exec(slot.slot_id) ?? (dateOnly ? [...dateOnly, "", ""] : null);
+  // Fixed demo offers carry the unit-local wall time and offset; read the digits as served, not via a browser Date.
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(slot.starts_at) ?? (dateOnly ? [...dateOnly, "", ""] : null);
   if (!match) return { weekday: "", date: slot.starts_at, month: "", time: "", period: "" };
   const [, y, month, day, hour, minute] = match;
   const utc = new Date(Date.UTC(Number(y), Number(month) - 1, Number(day)));
