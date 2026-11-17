@@ -254,12 +254,7 @@ func (c *ClosureCore) evalIfhas(ls *loopState, inSeq uint64, mid string) []OutMs
 	for _, s := range f.Signoffs {
 		signed[s.ItemID] = s
 	}
-	owner := ""
-	for _, t := range f.Tasks {
-		if t.Owner != "" {
-			owner = t.Owner
-		}
-	}
+	owner := canonicalTaskOwner(f.Tasks)
 	ib := &IfhasDecision{GradeDay: f.SRDay}
 	// ---- rows (same identity trust rule as the other programmes)
 	var screens, notes []row

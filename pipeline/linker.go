@@ -65,7 +65,9 @@ type LinkerCore struct {
 	loops               map[string]*LoopFacts        // active tracking requests only: static part (sr info)
 	requests            map[string]*trackingRevision // current ServiceRequest revisions, including category changes
 	loopRec             map[string]int
-	tasks               map[string][]TaskFact              // loop -> tasks
+	tasks               map[string][]TaskFact              // loop -> current Task revisions only
+	taskCurrent         map[string]taskRevision            // provider|Task ID -> logical current revision, including refocusing
+	taskHistory         map[string][]taskRevision          // provider|Task ID -> append-only normalized inputs and their focus loop
 	comms               map[string][]CommFact              // loop -> current Communication revisions only
 	commCurrent         map[string]communicationRevision   // provider|resource ID -> logical current revision, including reassociations
 	commHistory         map[string][]communicationRevision // provider|resource ID -> append-only normalized inputs and their basedOn loop
@@ -126,7 +128,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{}, requests: map[string]*trackingRevision{},
-		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, commCurrent: map[string]communicationRevision{}, commHistory: map[string][]communicationRevision{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
+		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, taskCurrent: map[string]taskRevision{}, taskHistory: map[string][]taskRevision{}, comms: map[string][]CommFact{}, commCurrent: map[string]communicationRevision{}, commHistory: map[string][]communicationRevision{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{},
 		consentJournal: map[string][]*Event{}, consentSeen: map[string]struct{}{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
@@ -1259,6 +1261,121 @@ func (L *LinkerCore) foldCommunication(loop string, cf CommFact) []string {
 	return uniqueSorted(affected)
 }
 
+type taskRevision struct {
+	Loop string
+	Fact TaskFact
+}
+
+// foldTask reduces same-ID Task revisions by meta.versionId, never by arrival
+// order or lastModified. Only the current revision is projected onto a loop, so
+// a later cancelled or entered-in-error revision withdraws an owner supplied by
+// an earlier one, and a delayed stale revision cannot restore it. A refocused
+// revision retracts the old loop's projection. Missing versions and v1 are
+// equivalent; exact duplicates are idempotent; conflicting same-version payloads
+// become an ownerless tombstone until a greater version arrives. Every input is
+// retained append-only in taskHistory (and in the raw FHIR log) for audit.
+func (L *LinkerCore) foldTask(loop string, tf TaskFact) []string {
+	provider, _, _ := strings.Cut(loop, "/")
+	key := provider + "|" + tf.ID
+	version := func(v int) int {
+		if v <= 1 {
+			return 1
+		}
+		return v
+	}
+	L.taskHistory[key] = append(L.taskHistory[key], taskRevision{Loop: loop, Fact: tf})
+	next := taskRevision{Loop: loop, Fact: tf}
+	next.Fact.Version = version(tf.Version)
+	if next.Fact.Status == "" {
+		// A live Task without a status is unknown work: it must never read as a
+		// legacy materialized fact in canonicalTaskOwner.
+		next.Fact.Status = "unknown"
+	}
+	current, exists := L.taskCurrent[key]
+	if exists {
+		cv, nv := current.Fact.Version, next.Fact.Version
+		if nv < cv {
+			L.Stats["stale_task_version"]++
+			return nil
+		}
+		if nv == cv {
+			if string(canon(current)) == string(canon(next)) {
+				L.Stats["duplicate_task_version"]++
+				return nil
+			}
+			// The tombstone's loop is the lexically first conflicting focus, so
+			// reverse arrival and repeated conflicts yield the same projection.
+			if current.Loop < next.Loop {
+				next.Loop = current.Loop
+			}
+			next.Fact = TaskFact{ID: tf.ID, Version: nv, Status: "conflicting_revision"}
+			if string(canon(current)) == string(canon(next)) {
+				L.Stats["duplicate_task_version"]++
+				return nil
+			}
+			L.Stats["conflicting_task_version"]++
+		}
+	}
+	// Copy slices rather than editing previously emitted LoopFacts in place.
+	if exists {
+		remaining := []TaskFact{}
+		for _, old := range L.tasks[current.Loop] {
+			if old.ID != tf.ID {
+				remaining = append(remaining, old)
+			}
+		}
+		if len(remaining) == 0 {
+			delete(L.tasks, current.Loop)
+		} else {
+			L.tasks[current.Loop] = remaining
+		}
+	}
+	updated := append([]TaskFact{}, L.tasks[next.Loop]...)
+	updated = append(updated, next.Fact)
+	sort.Slice(updated, func(i, j int) bool {
+		a, b := updated[i], updated[j]
+		if a.Day != b.Day {
+			return a.Day < b.Day
+		}
+		return a.ID < b.ID
+	})
+	L.tasks[next.Loop], L.taskCurrent[key] = updated, next
+	affected := []string{loop, next.Loop}
+	if exists {
+		affected = append(affected, current.Loop)
+	}
+	return uniqueSorted(affected)
+}
+
+// taskAssignsOwner lists the Task lifecycle states in which Task.owner holds
+// responsibility for the loop. Draft work is not yet assigned; rejected, failed,
+// cancelled and entered-in-error work is withdrawn; unknown, empty and the
+// linker's conflicting_revision tombstone fail closed (no owner).
+var taskAssignsOwner = map[string]bool{
+	"requested": true, "received": true, "accepted": true, "ready": true,
+	"in-progress": true, "on-hold": true, "completed": true,
+}
+
+// canonicalTaskOwner is the single owner projection used by every programme
+// reducer: the last owner among current Task revisions whose lifecycle assigns
+// responsibility. It never reads the coordinator overlay.
+//
+// foldTask always records the Task ID. A fact with neither ID nor status is a
+// pre-#158 materialized closure-seam input (for example the signed referral
+// inbox controls) and keeps its historical reading so recorded replays stay
+// byte-identical; any fact carrying a status, and every fact the current
+// linker emits, is lifecycle-checked and fails closed.
+func canonicalTaskOwner(tasks []TaskFact) string {
+	owner := ""
+	for _, t := range tasks {
+		legacy := t.ID == "" && t.Status == ""
+		if t.Owner != "" && (taskAssignsOwner[t.Status] || legacy) {
+			owner = t.Owner
+		}
+	}
+	return owner
+}
+
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
 func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	out := []FactsMsg{}
@@ -1375,10 +1492,11 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		if e.RType == "Task" {
-			loop := e.Provider + "/" + strings.Replace(e.Focus, "ServiceRequest/", "ServiceRequest/", 1)
-			L.tasks[loop] = append(L.tasks[loop], TaskFact{Day: e.Day, Status: e.Status, Owner: e.Owner})
-			if _, ok := L.loops[loop]; ok {
-				affLoops[loop] = true
+			loop := e.Provider + "/" + e.Focus
+			for _, affected := range L.foldTask(loop, TaskFact{ID: e.ID, Version: e.Version, Day: e.Day, Status: e.Status, Owner: e.Owner}) {
+				if _, ok := L.loops[affected]; ok {
+					affLoops[affected] = true
+				}
 			}
 			break
 		}

@@ -76,7 +76,7 @@ type Event struct {
 	RType         string      `json:"rtype"`
 	Status        string      `json:"status,omitempty"`
 	ConsentStatus string      `json:"consent_status,omitempty"` // Consent lifecycle; Status remains provision.type
-	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Communication, Consent and tracking ServiceRequest revision/withdrawal ordering (legacy requests: zero reads as one)
+	Version       int         `json:"ver,omitempty"`            // FHIR meta.versionId; DiagnosticReport, Communication, Consent, Task and tracking ServiceRequest revision/withdrawal ordering (legacy requests: zero reads as one)
 	Day           float64     `json:"day"`
 	Name          string      `json:"name"`
 	Dob           string      `json:"dob,omitempty"`
@@ -185,10 +185,15 @@ type Edge struct {
 	Basis string  `json:"basis"` // wasl|eid|human
 }
 
+// TaskFact is the current revision of one Task resource on a loop. Superseded
+// same-ID revisions are folded out by the linker (foldTask); the raw FHIR log
+// and LinkerCore.taskHistory keep every input for audit.
 type TaskFact struct {
-	Day    float64 `json:"day"`
-	Status string  `json:"status"`
-	Owner  string  `json:"owner,omitempty"`
+	ID      string  `json:"id,omitempty"`
+	Version int     `json:"ver,omitempty"` // Task.meta.versionId; zero/one are legacy-compatible
+	Day     float64 `json:"day"`
+	Status  string  `json:"status"`
+	Owner   string  `json:"owner,omitempty"`
 }
 
 type DownFact struct {
