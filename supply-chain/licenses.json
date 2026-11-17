@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "7e7ed5b98aec76c6669b3c4714d72365e96cfbb8",
-    "committed_at": "2026-11-17T04:04:31Z"
+    "revision": "6d1b17bac84e8b897fa2a35a56edac4ddf64c8e2",
+    "committed_at": "2026-11-16T17:04:05Z"
   },
   "scanner": {
     "name": "trivy",
@@ -13,13 +13,13 @@
     "machine": "arm64"
   },
   "summary": {
-    "packages": 783,
-    "with_discovered_license": 655,
+    "packages": 790,
+    "with_discovered_license": 662,
     "without_discovered_license": 128,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
       "0BSD": 1,
-      "Apache-2.0": 43,
+      "Apache-2.0": 49,
       "BSD-2-Clause": 12,
       "BSD-3-Clause": 15,
       "BlueOak-1.0.0": 3,
@@ -29,7 +29,8 @@
       "LGPL-3.0-or-later": 1,
       "MIT": 554,
       "MPL-2.0": 6,
-      "Python-2.0": 1
+      "Python-2.0": 1,
+      "Unlicense": 1
     }
   },
   "packages": [
@@ -1291,9 +1292,69 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/jetstream",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/jetstream@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/kv",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/kv@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nats-core",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/nats-core@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nkeys",
+      "version": "2.0.3",
+      "purl": "pkg:npm/%40nats-io/nkeys@2.0.3",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/nuid",
+      "version": "3.0.0",
+      "purl": "pkg:npm/%40nats-io/nuid@3.0.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@nats-io/transport-node",
+      "version": "3.4.0",
+      "purl": "pkg:npm/%40nats-io/transport-node@3.4.0",
+      "development": false,
+      "licenses": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "@next/env",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/env@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/env@16.4.3",
       "development": false,
       "licenses": [
         "MIT"
@@ -1302,8 +1363,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/eslint-plugin-next",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/eslint-plugin-next@16.4.3",
       "development": true,
       "licenses": [
         "MIT"
@@ -1312,8 +1373,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-darwin-arm64",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.4.3",
       "development": false,
       "licenses": [
         "MIT"
@@ -1322,56 +1383,56 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-darwin-x64",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-darwin-x64@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-arm64-gnu",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-arm64-musl",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-x64-gnu",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-linux-x64-musl",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-win32-arm64-msvc",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.4.3",
       "development": false,
       "licenses": []
     },
     {
       "target": "web/pnpm-lock.yaml",
       "name": "@next/swc-win32-x64-msvc",
-      "version": "16.4.5",
-      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.4.3",
       "development": false,
       "licenses": []
     },
@@ -3904,8 +3965,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "eslint-config-next",
-      "version": "16.4.5",
-      "purl": "pkg:npm/eslint-config-next@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/eslint-config-next@16.4.3",
       "development": true,
       "licenses": [
         "MIT"
@@ -5864,8 +5925,8 @@
     {
       "target": "web/pnpm-lock.yaml",
       "name": "next",
-      "version": "16.4.5",
-      "purl": "pkg:npm/next@16.4.5",
+      "version": "16.4.3",
+      "purl": "pkg:npm/next@16.4.3",
       "development": false,
       "licenses": [
         "MIT"
@@ -7209,6 +7270,16 @@
       "development": true,
       "licenses": [
         "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "tweetnacl",
+      "version": "1.0.3",
+      "purl": "pkg:npm/tweetnacl@1.0.3",
+      "development": false,
+      "licenses": [
+        "Unlicense"
       ]
     },
     {

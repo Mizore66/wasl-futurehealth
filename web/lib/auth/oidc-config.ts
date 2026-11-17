@@ -14,9 +14,21 @@ export type OidcConfig = {
   clientSecret: string;
   redirectUri: string;
   subjectMap: ReadonlyMap<string, OidcCredential>;
-  sessionDb: string;
+  sessionStore: SessionStoreConfig;
   insecureLoopback: boolean;
 };
+
+/** Local single-instance SQLite, or the shared JetStream key-value store used by more than one web replica. */
+export type SessionStoreConfig =
+  | { kind: "sqlite"; path: string }
+  | {
+      kind: "nats";
+      servers: string[];
+      user?: string;
+      password?: string;
+      tls?: { caFile: string; certFile?: string; keyFile?: string };
+      replicas: 1 | 3 | 5;
+    };
 
 export class OidcConfigurationError extends Error {
   constructor(message: string) {
@@ -131,7 +143,7 @@ export function oidcConfig(env: OidcEnvironment = process.env): OidcConfig {
   for (const [url, name] of [[issuerUrl, "WASL_OIDC_ISSUER"], [redirectUrl, "WASL_OIDC_REDIRECT_URI"]] as const) {
     if (url.protocol !== "https:" && !(loopback && url.protocol === "http:")) throw new OidcConfigurationError(`${name} must use HTTPS`);
   }
-  const sessionDb = required(env, "WASL_OIDC_SESSION_DB");
+  const sessionStore = sessionStoreConfig(env, loopback);
   return {
     mode: "oidc",
     issuer,
@@ -139,8 +151,54 @@ export function oidcConfig(env: OidcEnvironment = process.env): OidcConfig {
     clientSecret: required(env, "WASL_OIDC_CLIENT_SECRET"),
     redirectUri,
     subjectMap: parseSubjectMap(required(env, "WASL_OIDC_SUBJECT_MAP_JSON")),
-    sessionDb,
+    sessionStore,
     insecureLoopback: loopback,
+  };
+}
+
+function natsServer(value: string, loopback: boolean, tls: boolean): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new OidcConfigurationError("WASL_OIDC_NATS_URL entries must be nats:// or tls:// URLs");
+  }
+  if ((url.protocol !== "nats:" && url.protocol !== "tls:") || !url.hostname || url.username || url.password || url.search || url.hash || (url.pathname && url.pathname !== "/")) {
+    throw new OidcConfigurationError("WASL_OIDC_NATS_URL entries must be nats:// or tls:// host:port URLs without credentials, paths or queries");
+  }
+  /* Plaintext NATS is limited to the same loopback synthetic test mode as plaintext OIDC. */
+  if (!tls && !(loopback && isLoopback(url))) throw new OidcConfigurationError("WASL_OIDC_NATS_TLS_CA is required unless NATS is loopback synthetic testing");
+  return url.port ? `${url.hostname}:${url.port}` : url.hostname;
+}
+
+/** Shared session storage is opt-in; SQLite remains the default local and single-instance store. */
+export function sessionStoreConfig(env: OidcEnvironment, loopback: boolean): SessionStoreConfig {
+  const kind = env.WASL_OIDC_SESSION_STORE?.trim() || "sqlite";
+  if (kind === "sqlite") return { kind, path: required(env, "WASL_OIDC_SESSION_DB") };
+  if (kind !== "nats") throw new OidcConfigurationError("WASL_OIDC_SESSION_STORE must be sqlite or nats");
+  const caFile = env.WASL_OIDC_NATS_TLS_CA?.trim();
+  const certFile = env.WASL_OIDC_NATS_TLS_CERT?.trim();
+  const keyFile = env.WASL_OIDC_NATS_TLS_KEY?.trim();
+  if (Boolean(certFile) !== Boolean(keyFile)) throw new OidcConfigurationError("WASL_OIDC_NATS_TLS_CERT and WASL_OIDC_NATS_TLS_KEY must be set together");
+  if (certFile && !caFile) throw new OidcConfigurationError("WASL_OIDC_NATS_TLS_CA is required with a NATS client certificate");
+  const servers = required(env, "WASL_OIDC_NATS_URL")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => natsServer(entry, loopback, Boolean(caFile)));
+  if (servers.length === 0) throw new OidcConfigurationError("WASL_OIDC_NATS_URL is required in OIDC mode");
+  const user = env.WASL_OIDC_NATS_USER?.trim();
+  const password = env.WASL_OIDC_NATS_PASSWORD;
+  if (Boolean(user) !== Boolean(password)) throw new OidcConfigurationError("WASL_OIDC_NATS_USER and WASL_OIDC_NATS_PASSWORD must be set together");
+  if (!user && !loopback) throw new OidcConfigurationError("WASL_OIDC_NATS_USER is required unless NATS is loopback synthetic testing");
+  const replicasText = env.WASL_OIDC_NATS_REPLICAS?.trim() || "3";
+  if (!["1", "3", "5"].includes(replicasText)) throw new OidcConfigurationError("WASL_OIDC_NATS_REPLICAS must be 1, 3 or 5");
+  return {
+    kind,
+    servers,
+    ...(user ? { user, password } : {}),
+    ...(caFile ? { tls: { caFile, ...(certFile ? { certFile, keyFile } : {}) } } : {}),
+    replicas: Number(replicasText) as 1 | 3 | 5,
   };
 }
 
