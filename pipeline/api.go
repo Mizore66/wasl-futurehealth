@@ -730,22 +730,29 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.CRC != nil {
 		m["crc"] = c.last.CRC
 	}
-	if h := handoffMarker(c); h != nil {
+	s.mu.Lock()
+	if h := handoffMarkerLocked(c); h != nil {
 		m["handoff"] = h
 	}
+	s.mu.Unlock()
 	return m
 }
 
-// handoffMarker: a list-level marker of the canonical returned-referral packet (codes, days and the rejecting unit only;
-// the advice and requested information stay in the case detail), so a referral inbox reads the detail of returned
-// cases instead of every open case.
-func handoffMarker(c *apiCase) map[string]interface{} {
+// handoffMarkerLocked: a list-level marker of the canonical returned-referral packet (codes, days and the rejecting unit
+// only; the advice and requested information stay in the case detail), so a referral inbox reads the detail of returned
+// cases instead of every open case. The status follows the responsible referrer's resolving answer recorded through the
+// API (api_referrer.go), so an answered packet no longer reads as waiting on the referrer; the decision is unchanged.
+func handoffMarkerLocked(c *apiCase) map[string]interface{} {
 	if c.last == nil || c.last.Handoff == nil {
 		return nil
 	}
 	h := c.last.Handoff
-	return map[string]interface{}{"referral_id": h.ReferralID, "status": h.Status, "clinical_priority": h.Priority,
+	m := map[string]interface{}{"referral_id": h.ReferralID, "status": h.Status, "clinical_priority": h.Priority,
 		"decided_by": h.DecidedBy, "decided_at": round4(h.DecidedAt), "act_by": round4(h.ActBy)}
+	if referrerResolvedLocked(c) {
+		m["status"], m["referrer_answered"] = "referrer_acted", true
+	}
+	return m
 }
 
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
@@ -798,6 +805,9 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	}
 	if hasCommunicationRecord(c) {
 		m["dropoff"], m["canonical_dropoff"] = servedDropoffLocked(c), c.Dropoff
+		m["escalations"] = s.servedEscalationsLocked(c)
+	}
+	if referrerResolvedLocked(c) { // the referrer's answer clears the canonical hand-off chasers (api_referrer.go)
 		m["escalations"] = s.servedEscalationsLocked(c)
 	}
 	if servedDropoffLocked(c) == "never_notified" && s.contactGuardLocked(c).Allowed {
@@ -1766,16 +1776,20 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 		}
 		m["no_answer_streak"] = streak
 	}
-	if response, handoff := referralViewLocked(c); response != nil {
+	response, handoff := referralViewLocked(c)
+	if response != nil {
 		m["referral_response"] = response
-		if handoff != nil {
-			// Like notes, the referrer's free text (supplied information, a close or primary-care reason) is detail only.
-			if r, ok := handoff["referrer_response"].(map[string]interface{}); ok && !full {
-				delete(r, "supplied_info")
-				delete(r, "reason")
-			}
-			m["referral_handoff"] = handoff
+	}
+	if handoff == nil {
+		handoff = canonicalHandoffViewLocked(c) // no unit return: the latest decision's canonical packet, if any
+	}
+	if handoff != nil {
+		// Like notes, the referrer's free text (supplied information, a close or primary-care reason) is detail only.
+		if r, ok := handoff["referrer_response"].(map[string]interface{}); ok && !full {
+			delete(r, "supplied_info")
+			delete(r, "reason")
 		}
+		m["referral_handoff"] = handoff
 	}
 	if o.agreement != nil {
 		m["last_appointment_agreement"] = map[string]interface{}{"at": o.agreement["at"], "event": o.agreement["event"]}
