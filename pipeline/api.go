@@ -87,6 +87,7 @@ type apiServer struct {
 	bookingCalendar         string
 	bookingSlots            map[string]*simulatedSlot // union of generated candidates; reservations replay from the ledger
 	sawBookingStamp         bool                      // GLOBAL ledger-order barrier, never per case; set only by a valid acquisition
+	sawRecoveryStamp        bool                      // GLOBAL ledger-order barrier for recovery_policy; set only by a valid stamped confirmation
 	recovery                recoveryProjection
 	fixtures                map[string]string
 	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
