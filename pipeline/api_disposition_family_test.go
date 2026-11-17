@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -67,5 +69,62 @@ func TestDispositionFamilySharesOneRouteAndKeepsFITToCRC(t *testing.T) {
 		if strings.Contains(string(raw), banned) {
 			t.Fatalf("a disposition wrote %s to the ledger: %s", banned, raw)
 		}
+	}
+}
+
+// Main accepted a non-CRC decline_disposition carrying fit_reoffer before the write-path refusal existed (#223). Such a
+// legacy ledger must still replay, with the field ignored for the non-CRC case, while a new write is refused.
+func TestLegacyNonCRCFITReofferReplaysButNewWritesAreRefused(t *testing.T) {
+	hc := dispositionHolds[0]
+	run := holdRun(t, hc.prog, hc.state, hc.dropoff, hc.esc)
+	s := loadAPI(run, "")
+	h, _ := s.handler(dispositionTokens, "")
+	path := "/api/cases/" + url.PathEscape(ledgerLoop)
+	head := func(s *apiServer) string { return s.caseHead(s.cases[ledgerLoop]) }
+	declined := func(s *apiServer) string {
+		return fmt.Sprintf(`{"action":"contact_outcome","outcome":"declined","channel":"phone","expected_head":%q}`, head(s))
+	}
+	disposition := func(s *apiServer, extra string) string {
+		return fmt.Sprintf(`{"action":"decline_disposition","expected_head":%q,"reason":"procedure_anxiety","counselling":"Synthetic counselling","safety_net":"Synthetic safety net","plan":"closed_declined"%s}`, head(s), extra)
+	}
+	ledgerPost(t, h, path+"/actions", tokCoordinator, declined(s), http.StatusCreated)
+	ledgerPost(t, h, path+"/actions", tokClinician, disposition(s, ""), http.StatusCreated)
+
+	// Rewrite the last event as main @7eb59d1 wrote it: the same disposition with a non-CRC fit_reoffer, re-hashed.
+	file := filepath.Join(run, "api_reviews.ndjson")
+	raw, _ := os.ReadFile(file)
+	lines := bytes.Split(bytes.TrimRight(raw, "\n"), []byte("\n"))
+	var ev map[string]interface{}
+	if err := json.Unmarshal(lines[len(lines)-1], &ev); err != nil {
+		t.Fatal(err)
+	}
+	ev["data"].(map[string]interface{})["fit_reoffer"] = "offered_declined"
+	delete(ev, "hash")
+	ev["hash"] = apiEventHash(ev)
+	legacy, _ := json.Marshal(ev)
+	lines[len(lines)-1] = legacy
+	if err := os.WriteFile(file, append(bytes.Join(lines, []byte("\n")), '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateReviewLedger(file); err != nil {
+		t.Fatalf("legacy ledger does not verify: %v", err)
+	}
+
+	s2 := loadAPI(run, "")
+	if s2.ledgerErr != "" {
+		t.Fatalf("a legacy non-CRC fit_reoffer broke replay: %s", s2.ledgerErr)
+	}
+	for _, full := range []bool{false, true} {
+		d, _ := s2.overlayView(s2.cases[ledgerLoop], full)["decline_disposition"].(map[string]interface{})
+		if d["plan"] != "closed_declined" || d["fit_reoffer"] != nil {
+			t.Fatalf("full=%v: legacy disposition projected as %v, want the plan without fit_reoffer", full, d)
+		}
+	}
+	h2, _ := s2.handler(dispositionTokens, "")
+	ledgerPost(t, h2, path+"/actions", tokCoordinator, declined(s2), http.StatusCreated)
+	ledgerPost(t, h2, path+"/actions", tokClinician, disposition(s2, `,"fit_reoffer":"offered_declined"`), http.StatusBadRequest)
+	ledgerPost(t, h2, path+"/actions", tokClinician, disposition(s2, ""), http.StatusCreated)
+	if s3 := loadAPI(run, ""); s3.ledgerErr != "" {
+		t.Fatalf("replay after new writes: %s", s3.ledgerErr)
 	}
 }

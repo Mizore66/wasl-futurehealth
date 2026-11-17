@@ -1361,8 +1361,6 @@ func actionPreconditionLocked(c *apiCase, kind string, data map[string]interface
 	}
 	if _, given := data["fit_reoffer"]; c.Programme == "crc" && !given {
 		return &actionRefusal{400, "", "fit_reoffer is required for a CRC decline (offered_accepted|offered_declined|not_appropriate)"}
-	} else if given && c.Programme != "crc" {
-		return &actionRefusal{400, "", "fit_reoffer applies only to a CRC decline; other programmes have no FIT re-offer rule"}
 	}
 	return nil
 }
@@ -1752,7 +1750,13 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 			}
 		}
 		if full {
-			summary = d
+			summary = map[string]interface{}{}
+			for k, v := range d {
+				summary[k] = v
+			}
+		}
+		if c.Programme != "crc" {
+			delete(summary, "fit_reoffer") // a legacy non-CRC FIT re-offer: replayed, never projected
 		}
 		m["decline_disposition"] = summary
 	}
@@ -2149,7 +2153,13 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 				data["report_event"] = p
 			}
 		}
-		if refusal := actionPreconditionLocked(c, kind, data); refusal != nil {
+		refusal := actionPreconditionLocked(c, kind, data)
+		if _, given := data["fit_reoffer"]; refusal == nil && kind == declineDispositionKind && given && c.Programme != "crc" {
+			// Write path only: main accepted a non-CRC fit_reoffer before this rule, so replay keeps those legacy events
+			// and the projection ignores the field for non-CRC cases.
+			refusal = &actionRefusal{400, "", "fit_reoffer applies only to a CRC decline; other programmes have no FIT re-offer rule"}
+		}
+		if refusal != nil {
 			body := map[string]interface{}{"error": refusal.msg}
 			if refusal.conflict != "" {
 				body["conflict"] = refusal.conflict

@@ -35,7 +35,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
         {back}
         <h1 className="m-0 text-title font-semibold">Clinician disposition</h1>
         <p className="m-0 mt-1 max-w-[72ch] text-muted">Only a clinician or senior clinician may record a disposition. Sign in with the token assigned to you.</p>
-        <ReviewerLogin caseId={id} mode={reviewAuthMode()} authError={query.oidc_error === "1"} />
+        <ReviewerLogin caseId={id} mode={reviewAuthMode()} authError={query.oidc_error === "1"} returnTo={`${caseHref("/app/patients", id)}/disposition`} />
       </>
     );
   }

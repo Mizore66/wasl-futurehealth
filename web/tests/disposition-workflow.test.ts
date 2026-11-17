@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import { recordDisposition } from "@/app/app/patients/[id]/disposition/actions";
 import { DispositionCard } from "@/components/disposition/disposition-card";
+import { oidcStartHref } from "@/components/review/auth";
 import { DispositionInput, dispositionContext } from "@/components/disposition/model";
 import { reviewerToken } from "@/lib/api/reviewer-session";
 import { CaseDetail } from "@/lib/api/schema";
@@ -154,5 +155,12 @@ describe("DispositionCard copy", () => {
     }
     expect(html).not.toMatch(/GP to sign|loop closed|procedure done|care completed|\bclosed\b/i);
     expect(html).not.toContain("/disposition\"");
+  });
+});
+
+describe("OIDC sign-in from the disposition page", () => {
+  it("returns to the disposition workflow, while the review desk keeps its default", () => {
+    expect(oidcStartHref("case/1", "/app/patients/case%2F1/disposition")).toBe("/app/auth/oidc/start?returnTo=%2Fapp%2Fpatients%2Fcase%252F1%2Fdisposition");
+    expect(oidcStartHref("case/1")).toBe("/app/auth/oidc/start?returnTo=%2Fapp%2Freview%2Fcase%252F1");
   });
 });
