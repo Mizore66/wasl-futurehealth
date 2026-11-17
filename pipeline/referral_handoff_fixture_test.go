@@ -108,6 +108,26 @@ func TestReferralHandoffCanonicalControls(t *testing.T) {
 		}
 		served = append(served, map[string]interface{}{"case": detail["case"], "current": current})
 	}
+	// The case list carries a free-text-free marker of each packet, so an inbox needs no detail read for other cases.
+	listed := 0
+	for _, prog := range []string{"lung_nodule", "diabetic_retinopathy"} {
+		for _, x := range get("/api/cases?programme=" + prog)["cases"].([]interface{}) {
+			sum := x.(map[string]interface{})
+			marker, _ := sum["handoff"].(map[string]interface{})
+			for _, ctl := range controls {
+				if ctl.facts.LoopID != sum["id"] {
+					continue
+				}
+				listed++
+				if marker == nil || marker["status"] != ctl.status || marker["referral_id"] == "" || marker["advice_to_referrer"] != nil || marker["info_requested"] != nil {
+					t.Fatalf("%s: list marker %v", sum["id"], marker)
+				}
+			}
+		}
+	}
+	if listed != len(controls) {
+		t.Fatalf("list served %d of %d returned controls", listed, len(controls))
+	}
 	encoded, err := json.MarshalIndent(served, "", "  ")
 	if err != nil {
 		t.Fatal(err)

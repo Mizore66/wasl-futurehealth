@@ -144,13 +144,14 @@ func (h phaseTraceHistory) Read(ctx context.Context, q uint64) (*jetstream.RawSt
 	return v, e
 }
 
-// Only adjacent, independent source/cell observations may exchange completion
-// order after the joined initial-read optimization. Preserve every exact read
-// argument/result and all mutation/history/publication ordering in the oracle.
+// Only adjacent independent source/cell or bootstrap Info/source observations
+// may exchange completion order. This retained-receipt replay fixture requires
+// exactly one bootstrap Info per work; it does not perform history traversal.
+// Preserve every exact argument/result, count, and mutation/publication boundary.
 func phaseTraceObservationOrder(trace []string) []string {
 	out := append([]string(nil), trace...)
 	for i := 0; i+1 < len(out); i++ {
-		if strings.HasPrefix(out[i], "get "+canonicalCellPrefix) && strings.HasPrefix(out[i+1], "get "+canonicalSourcePrefix) {
+		if (strings.HasPrefix(out[i], "get "+canonicalCellPrefix) || strings.HasPrefix(out[i], "history-info ")) && strings.HasPrefix(out[i+1], "get "+canonicalSourcePrefix) {
 			out[i], out[i+1] = out[i+1], out[i]
 			i++
 		}
@@ -220,6 +221,18 @@ func TestPhaseDiagnosticsProductionReplayNoninterference(t *testing.T) {
 			if !v.Enabled || v.Operations[diagGet].Completed == 0 || v.Returned != 3 || v.Retired != 3 {
 				t.Fatal("actual completed work was not observed")
 			}
+		}
+		bootstrapInfos := 0
+		for _, operation := range trace {
+			if strings.HasPrefix(operation, "history-info ") {
+				bootstrapInfos++
+			}
+			if strings.HasPrefix(operation, "history-read ") {
+				t.Fatal("retained-receipt replay unexpectedly traversed history")
+			}
+		}
+		if bootstrapInfos != 3 {
+			t.Fatalf("bootstrap Info/source commutation requires exactly three source setups, got %d", bootstrapInfos)
 		}
 		return result{trace: phaseTraceObservationOrder(trace), status: canon([]any{c.next, c.ackHWM, len(c.pending), len(c.holes), c.eofSent}), cells: kv.entries, stored: js.stored, checkpoint: c.floor}
 	}

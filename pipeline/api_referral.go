@@ -309,16 +309,46 @@ func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 	return response, handoff
 }
 
-// referralBookingConstraints: the structured conditions booking must honour after a conditional acceptance.
+// referralSlotAttribute: the conditional-acceptance codes a simulated slot can itself satisfy, and the booking candidate
+// field that does. The other conditions (medication hold, kidney-function check) are pre-procedure tasks that no slot
+// attribute proves, so booking lists them as requirements but the server cannot verify them.
+var referralSlotAttribute = map[string]string{"female_endoscopist": "endoscopist_female", "arabic_interpreter": "arabic"}
+
+// referralBookingConstraints: the structured conditions booking must honour after a conditional acceptance. check is
+// "slot" when the server enforces the condition on the chosen simulated slot, "before_procedure" when it is a task the
+// coordinator must arrange and the server cannot verify.
 func referralBookingConstraints(c *apiCase) []map[string]interface{} {
 	out := []map[string]interface{}{}
-	if c.ov.referral == nil {
+	if c == nil || c.ov.referral == nil {
 		return out
 	}
 	conds, _ := c.ov.referral["conditions"].([]interface{})
 	for _, x := range conds {
 		code := fmt.Sprint(x)
-		out = append(out, map[string]interface{}{"code": code, "kind": referralConditions[code].kind})
+		check := "before_procedure"
+		if referralSlotAttribute[code] != "" {
+			check = "slot"
+		}
+		out = append(out, map[string]interface{}{"code": code, "kind": referralConditions[code].kind, "check": check})
 	}
 	return out
+}
+
+// referralReturned: the receiving unit's recorded answer returned the referral to the referrer.
+func referralReturned(c *apiCase) bool {
+	return c != nil && c.ov.referral != nil && c.ov.referral["response"] == "return"
+}
+
+// referralSlotUnmet: the slot-checkable conditions of a conditional acceptance that a booking candidate does not meet.
+func referralSlotUnmet(c *apiCase, candidate map[string]interface{}) []string {
+	unmet := []string{}
+	for _, k := range referralBookingConstraints(c) {
+		code := k["code"].(string)
+		if field := referralSlotAttribute[code]; field != "" {
+			if ok, _ := candidate[field].(bool); !ok {
+				unmet = append(unmet, code)
+			}
+		}
+	}
+	return unmet
 }

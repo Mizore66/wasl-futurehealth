@@ -402,11 +402,22 @@ func (c *SubConsumer) liveCanonicalTurn(ctx context.Context, w *pendingWork) {
 		var authority canonicalMetadataReceipt
 		if err == nil {
 			frame.Live = 2
-			inc, err = c.protectedCanonicalIncarnation(ctx)
-		}
-		if err == nil {
-			frame.Live = 3
-			authority, err = c.persistCanonicalSource(ctx, inc, source)
+			// The protected incarnation and exact source lookup are independent
+			// read-only observations of this same turn. Neither can authorize a
+			// source write before both join and full compatibility validates.
+			var incarnationErr error
+			incarnationDone := make(chan struct{})
+			go func() {
+				defer close(incarnationDone)
+				inc, incarnationErr = c.protectedCanonicalIncarnation(ctx)
+			}()
+			meta, stored, found, readErr := c.observeCanonicalSource(ctx, source)
+			<-incarnationDone
+			err = incarnationErr
+			if err == nil {
+				frame.Live = 3
+				authority, err = c.persistCanonicalSourceObserved(ctx, inc, source, meta, stored, found, readErr)
+			}
 		}
 		// Compatible first-observation metadata is positive, but the attempt adapter
 		// requires acknowledged source operation authority, not a mere observation.

@@ -100,6 +100,14 @@ func canonicalCompatibleSourceValidated(validation *canonicalValidationMemo, sto
 // readCanonicalSource distinguishes a public negative from positive authority.
 // A negative can lead only to guarded Create, never to a successful result.
 func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalIncarnation, source canonicalSource, diagnostic ...*headPredicate) (canonicalMetadataReceipt, canonicalSourceRecord, bool, error) {
+	meta, record, found, err := c.observeCanonicalSource(ctx, source, diagnostic...)
+	return validateCanonicalSourceObservation(ctx, inc, source, meta, record, found, err, diagnostic...)
+}
+
+// The observation is invocation-local positive/negative read evidence, never an
+// acknowledged source operation. Expected incarnation and full source identity
+// must still validate before it can participate in a guarded Create/CAS.
+func (c *SubConsumer) observeCanonicalSource(ctx context.Context, source canonicalSource, diagnostic ...*headPredicate) (canonicalMetadataReceipt, canonicalSourceRecord, bool, error) {
 	headPredicateStep(diagnostic, 1)
 	if c == nil || c.kv == nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, errCanonicalUnavailable
@@ -130,7 +138,13 @@ func (c *SubConsumer) readCanonicalSource(ctx context.Context, inc canonicalInca
 	if err != nil {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, err
 	}
-	record := value.source
+	return meta, value.source, true, nil
+}
+
+func validateCanonicalSourceObservation(ctx context.Context, inc canonicalIncarnation, source canonicalSource, meta canonicalMetadataReceipt, record canonicalSourceRecord, found bool, err error, diagnostic ...*headPredicate) (canonicalMetadataReceipt, canonicalSourceRecord, bool, error) {
+	if err != nil || !found {
+		return meta, record, found, err
+	}
 	headPredicateStep(diagnostic, 6)
 	if !record.Incarnation.equal(inc) {
 		return canonicalMetadataReceipt{}, canonicalSourceRecord{}, false, canonicalConflictf("source incarnation changed")
@@ -188,7 +202,18 @@ func (c *SubConsumer) persistCanonicalSource(ctx context.Context, inc canonicalI
 	if err := canonicalRealSource(source, canonicalValidationFor(ctx)); err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
-	meta, stored, found, err := c.readCanonicalSource(ctx, inc, source)
+	meta, stored, found, err := c.observeCanonicalSource(ctx, source)
+	return c.persistCanonicalSourceObserved(ctx, inc, source, meta, stored, found, err)
+}
+
+func (c *SubConsumer) persistCanonicalSourceObserved(ctx context.Context, inc canonicalIncarnation, source canonicalSource, meta canonicalMetadataReceipt, stored canonicalSourceRecord, found bool, readErr error) (canonicalMetadataReceipt, error) {
+	if err := inc.validate(); err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	if err := canonicalRealSource(source, canonicalValidationFor(ctx)); err != nil {
+		return canonicalMetadataReceipt{}, err
+	}
+	meta, stored, found, err := validateCanonicalSourceObservation(ctx, inc, source, meta, stored, found, readErr)
 	if err != nil {
 		return canonicalMetadataReceipt{}, err
 	}
@@ -301,13 +326,25 @@ func (c *SubConsumer) bindCanonicalSource(ctx context.Context, inc canonicalInca
 	if err := ctx.Err(); err != nil {
 		return canonicalMetadataReceipt{}, fmt.Errorf("%w: %v", errCanonicalUnknown, err)
 	}
-	durable, receipt, err := c.canonicalDurableSourceProof(ctx, inc, source, proof)
-	if err != nil {
-		return canonicalMetadataReceipt{}, err
+	// Both current observations follow the actual receipt operation. Keep their
+	// validation memos separate, and join before relation selection or any write.
+	// Durable receipt failures retain precedence even if the source read finishes first.
+	proofCtx := canonicalValidationContext(ctx)
+	var durable canonicalMetadataReceipt
+	var receipt canonicalReceipt
+	var proofErr error
+	proofDone := make(chan struct{})
+	go func() {
+		defer close(proofDone)
+		durable, receipt, proofErr = c.canonicalDurableSourceProof(proofCtx, inc, source, proof)
+	}()
+	meta, stored, found, sourceErr := c.readCanonicalSource(ctx, inc, source)
+	<-proofDone
+	if proofErr != nil {
+		return canonicalMetadataReceipt{}, proofErr
 	}
-	meta, stored, found, err := c.readCanonicalSource(ctx, inc, source)
-	if err != nil {
-		return canonicalMetadataReceipt{}, err
+	if sourceErr != nil {
+		return canonicalMetadataReceipt{}, sourceErr
 	}
 	relation, err := canonicalSourceRelation(source, durable, receipt, originalAttempt, canonicalValidationFor(ctx))
 	if err != nil {

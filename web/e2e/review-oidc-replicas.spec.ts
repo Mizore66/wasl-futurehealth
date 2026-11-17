@@ -73,17 +73,15 @@ test.describe("OIDC sessions shared by two web replicas", () => {
   }
   async function stopReplica(port: number) {
     const child = replicas.get(port);
-    replicas.delete(port);
-    if (!child || child.exitCode !== null) return;
-    const exited = new Promise((resolve) => child.once("exit", resolve));
-    child.kill();
-    /* `next start` drains open connections on SIGTERM (server.close() without closeAllConnections() outside dev),
-     * so a client keep-alive can delay exit indefinitely on a loaded runner. Bound the wait, then force the stop. */
-    const timedOut = await Promise.race([exited.then(() => false), new Promise((r) => setTimeout(() => r(true), 10_000))]);
-    if (timedOut) {
+    if (!child) return;
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise((resolve) => child.once("exit", resolve));
+      // Exercise abrupt replica loss: shared sessions must survive a crash,
+      // without depending on Next's graceful shutdown of persistent clients.
       child.kill("SIGKILL");
       await exited;
     }
+    replicas.delete(port);
   }
 
   test.beforeAll(async ({}, testInfo) => {
@@ -157,9 +155,7 @@ test.describe("OIDC sessions shared by two web replicas", () => {
     }
     expect(provider.tokenRequests).toBe(1);
 
-    /* A restarted replica still honours the session held in NATS. Leave replica A first so the browser holds no
-     * keep-alive connection that its graceful shutdown would wait for. */
-    await page.goto("about:blank");
+    /* A restarted replica still honours the session held in NATS. */
     await stopReplica(A_PORT);
     await startReplica(A_PORT);
     await page.goto(deskOn(A_PORT));

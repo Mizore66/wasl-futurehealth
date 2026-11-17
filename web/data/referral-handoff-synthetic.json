@@ -29,6 +29,14 @@
       "decisions": 2,
       "dropoff": "no_followup_ct",
       "fixture": "",
+      "handoff": {
+        "act_by": 123,
+        "clinical_priority": "urgent",
+        "decided_at": 119,
+        "decided_by": "mafraq-rad",
+        "referral_id": "MAF-intake-9101",
+        "status": "awaiting_referrer"
+      },
       "id": "rad-imaging/ServiceRequest/RAD-sr-9101",
       "lung": {
         "finding_label": "solid/\u003e8/single",
@@ -195,6 +203,14 @@
       },
       "dropoff": "no_eye_exam",
       "fixture": "",
+      "handoff": {
+        "act_by": 123,
+        "clinical_priority": "urgent",
+        "decided_at": 119,
+        "decided_by": "eye-hosp",
+        "referral_id": "EYE-intake-9201",
+        "status": "awaiting_referrer"
+      },
       "id": "phc-retina/ServiceRequest/PHC-sr-9201",
       "overdue": false,
       "owner": "",
@@ -355,6 +371,14 @@
       },
       "dropoff": "no_eye_exam",
       "fixture": "",
+      "handoff": {
+        "act_by": 117,
+        "clinical_priority": "urgent",
+        "decided_at": 115,
+        "decided_by": "eye-hosp",
+        "referral_id": "EYE-intake-9202",
+        "status": "coordinator"
+      },
       "id": "phc-retina/ServiceRequest/PHC-sr-9202",
       "overdue": false,
       "owner": "",
@@ -511,6 +535,14 @@
       },
       "dropoff": "no_eye_exam",
       "fixture": "",
+      "handoff": {
+        "act_by": 102,
+        "clinical_priority": "urgent",
+        "decided_at": 100,
+        "decided_by": "eye-hosp",
+        "referral_id": "EYE-intake-9203",
+        "status": "medical_director"
+      },
       "id": "phc-retina/ServiceRequest/PHC-sr-9203",
       "overdue": false,
       "owner": "",
@@ -673,6 +705,14 @@
       },
       "dropoff": "no_eye_exam",
       "fixture": "",
+      "handoff": {
+        "act_by": 125,
+        "clinical_priority": "routine",
+        "decided_at": 117,
+        "decided_by": "eye-hosp",
+        "referral_id": "EYE-intake-9204",
+        "status": "awaiting_referrer"
+      },
       "id": "phc-retina/ServiceRequest/PHC-sr-9204",
       "overdue": false,
       "owner": "",
@@ -832,6 +872,14 @@
       },
       "dropoff": "no_eye_exam",
       "fixture": "",
+      "handoff": {
+        "act_by": 102,
+        "clinical_priority": "urgent",
+        "decided_at": 100,
+        "decided_by": "eye-hosp",
+        "referral_id": "EYE-intake-9205",
+        "status": "referrer_acted"
+      },
       "id": "phc-retina/ServiceRequest/PHC-sr-9205",
       "overdue": false,
       "owner": "",

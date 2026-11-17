@@ -5,6 +5,7 @@ import { REFERRAL_VIEWS, handoffOf, packetReferral, referralFrom, referralView, 
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { syntheticHandoffs, syntheticReferrals } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
+import type { CaseSummary } from "@/lib/api/schema";
 import { apiMode, getCase, getDashboard } from "@/lib/api/source";
 import { cn } from "@/lib/utils";
 import { respondToReferral } from "./actions";
@@ -14,17 +15,23 @@ export const metadata = { title: "Referrals" };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
 
+/*
+ * Which open cases need their canonical packet from the detail read. The live list carries a hand-off marker
+ * (pipeline handoffMarker), so only returned cases are read; the static fixtures predate it and keep the dropoff rule.
+ */
+const needsPacket = (c: CaseSummary, fallback: boolean) => !c.closed && (apiMode() === "live" ? !!c.handoff : fallback);
+
 async function crcReferrals(view: ReferralView, q: string, now: number): Promise<Referral[]> {
   const [{ cases: listed }, extra] = await Promise.all([getAllCases({ provider: view.provider, programme: view.programme, ...(q && { q }) }), syntheticReferrals(q)]);
   const cases = [...listed, ...extra];
-  const currents = await Promise.all(cases.map(async (c) => (!c.closed && c.dropoff === "referral_rejected" ? ((await getCase(c.id))?.current ?? null) : null)));
+  const currents = await Promise.all(cases.map(async (c) => (needsPacket(c, c.dropoff === "referral_rejected") ? ((await getCase(c.id))?.current ?? null) : null)));
   return cases.map((c, i) => referralFrom(c, now, hasRecord(c), currents[i] && handoffOf(currents[i]))).filter((r) => r !== null);
 }
 
-/* A returned lung or DR referral carries no list-level marker, so live mode reads each open case's canonical packet. */
+/* Live mode reads the canonical packet only of cases whose list summary marks a returned referral. */
 async function packetReferrals(view: ReferralView, q: string, now: number): Promise<Referral[]> {
   const [{ cases: listed }, extra] = await Promise.all([getAllCases({ provider: view.provider, programme: view.programme, ...(q && { q }) }), syntheticHandoffs(view.programme, view.provider, q)]);
-  const live = apiMode() === "live" ? await Promise.all(listed.filter((c) => !c.closed).map(async (c) => ({ case: c, current: (await getCase(c.id))?.current ?? null }))) : [];
+  const live = apiMode() === "live" ? await Promise.all(listed.filter((c) => needsPacket(c, false)).map(async (c) => ({ case: c, current: (await getCase(c.id))?.current ?? null }))) : [];
   return [...live, ...extra].map((x) => packetReferral(x.case, x.current, now, hasRecord(x.case))).filter((r) => r !== null);
 }
 

@@ -220,7 +220,7 @@ func TestPR205AuthenticParentHistory(t *testing.T) {
 		}
 		requireBooking(t, srv, s, pr205Ready, kind, slot, "Ready control")
 		ev := s.reviews[len(s.reviews)-1]
-		if len(ev) != 14 || ev["booking_policy"] != "readiness/1" || ev["hash"] != apiEventHash(ev) {
+		if len(ev) != 14 || ev["booking_policy"] != bookingPolicyCurrent || ev["hash"] != apiEventHash(ev) {
 			t.Fatalf("unstamped/unhashed new %s: %v", kind, ev)
 		}
 		if kind == "booking_reschedule" {
@@ -342,7 +342,7 @@ func TestPR205SyntheticEnvelopeGuards(t *testing.T) {
 		{"stamp_cancel", "booking_cancel", true, nil}, {"stamp_note", "note", true, nil}, {"stamp_contact", "contact_outcome", true, nil},
 		{"held_stamped", "booking_choose_slot", true, nil},
 	}
-	for _, value := range []interface{}{nil, 1, true, []interface{}{}, map[string]interface{}{}, "", "readiness/2", "READINESS/1", "readiness/1 ", " readiness/1"} {
+	for _, value := range []interface{}{nil, 1, true, []interface{}{}, map[string]interface{}{}, "", "readiness/3", "READINESS/2", "READINESS/1", "readiness/1 ", " readiness/1"} {
 		v := value
 		cases = append(cases, struct {
 			name, kind string
