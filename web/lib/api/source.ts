@@ -31,6 +31,7 @@ import {
   ReviewResponse,
   ReviewSourceResponse,
   SourceStatus,
+  TeachBackCallback,
   UndoProjection,
   UndoRequest,
   type CaseSummary,
@@ -443,7 +444,9 @@ async function postAnswer(id: string, route: string, credential: Role | WebCrede
 }
 
 export type TeachBackOutcome = "understood_on_call" | "another_explanation";
-export type TeachBackCallbackResult = { ok: true } | { ok: false; status: number; error: string };
+/** On 201 the API returns the case's callbacks as recorded, so the card can show the outcome before revalidation. */
+export type TeachBackCallbackResult = { ok: true; callbacks?: TeachBackCallback[] } | { ok: false; status: number; error: string };
+const TeachBackCallbackCreated = z.looseObject({ teach_back_callbacks: z.array(TeachBackCallback) });
 
 /** Record a failed teach-back consultation outcome. The API binds the coordinator token to its role and actor. */
 export async function postTeachBackCallback(id: string, callback: string, outcome: TeachBackOutcome): Promise<TeachBackCallbackResult> {
@@ -456,7 +459,10 @@ export async function postTeachBackCallback(id: string, callback: string, outcom
     throw e;
   }
   const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/teach-back-callback`, init);
-  if (res.status === 201) return { ok: true };
+  if (res.status === 201) {
+    const created = TeachBackCallbackCreated.safeParse(await res.json().catch(() => undefined));
+    return created.success ? { ok: true, callbacks: created.data.teach_back_callbacks } : { ok: true };
+  }
   if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
   const e = ApiError.safeParse(await res.json().catch(() => undefined));
   return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };

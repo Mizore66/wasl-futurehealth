@@ -48,6 +48,13 @@ import { SourceReport } from "./source-report";
 
 export type NextCase = { href: string; label: string; last: boolean };
 
+const CLAIM_DONE: Record<"claim" | "renew" | "release" | "takeover", string> = { claim: "claimed", renew: "renewed", release: "released", takeover: "taken over" };
+
+/** What a screen reader hears after a lease operation: the question and the operation in the past tense. */
+export function claimAnnouncement(question: ReviewState["question"], operation: keyof typeof CLAIM_DONE): string {
+  return `${question === "link" ? "Identity" : "Evidence"} question ${CLAIM_DONE[operation]}. The current server state is shown.`;
+}
+
 type Done = { outcome: OutcomeKey; next: NextCase };
 
 const appear = { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0 }, transition: { duration: 0.16 } };
@@ -561,7 +568,7 @@ export function ReviewDesk({
           setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
         }
         if (res.committed && !res.states) setNotice("The server recorded the claim operation, but its confirmation could not be read. Reload before continuing.");
-        setAnnouncement(`${state.question === "link" ? "Identity" : "Evidence"} claim ${operation} recorded. The current server state is shown.`);
+        setAnnouncement(claimAnnouncement(state.question, operation));
         return "success";
       }
       if (res.failure.status === 401 || res.failure.status === 403 || res.failure.status === 409) haltedLeases.current[qk] = true;

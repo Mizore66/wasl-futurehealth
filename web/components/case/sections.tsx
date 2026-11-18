@@ -30,6 +30,7 @@ import {
   ledgerId,
   ledgerWords,
   ledgerWordsWithHistory,
+  openReviewReasons,
   outreachRows,
   reviewWords,
   roleWords,
@@ -76,6 +77,7 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
   if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each current CRC obligation below has its own evidence binding, clinician confirmation and tracking state. Completing one pathway does not discharge another.</p></Card>;
   const reason = closureReason(detail);
   const holds = caseHolds(detail);
+  const reviewReasons = openReviewReasons(detail);
   const tone = detail.case.closed ? CLOSE_TONE.closed : holds.current.length ? CLOSE_TONE.held : CLOSE_TONE.open;
   return (
     <Card id="why" title={detail.case.closed ? "Why it closed" : "Why it is still open"}>
@@ -92,6 +94,15 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
         </span>
       </p>
       <p className="m-0 mt-2">{reason.body}</p>
+      {reviewReasons.length > 0 && (
+        <ul className="m-0 mt-3 list-none p-0" aria-label="Open review questions" data-testid="open-review-reasons">
+          {reviewReasons.map((r) => (
+            <li key={r} className="border-t border-rule py-2">
+              {r}
+            </li>
+          ))}
+        </ul>
+      )}
       {holds.current.length > 0 && (
         <ul className="m-0 mt-3 list-none p-0" aria-label="Holds">
           {holds.current.map((h, i) => (
@@ -141,7 +152,15 @@ function HoldFacts({ h }: { h: CaseDetail["holds"][number] }) {
 /** Both records of the patient, how each script writes the name, and how Wasl joined them. */
 export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
   return (
-    <Card id="people" title="One patient, two records" note="Names are the simulated cast; the record numbers and the link facts come from the API.">
+    <Card
+      id="people"
+      title="One patient, two records"
+      note={
+        detail.identities.some((idn) => personFor(idn.registration))
+          ? "Names are the simulated cast; the record numbers and the link facts come from the API."
+          : "The API sends record numbers and link facts, not names, so no name is shown."
+      }
+    >
       <ul className="m-0 mt-3 list-none p-0" aria-label="Records">
         {detail.identities.map((idn) => {
           const p = personFor(idn.registration);

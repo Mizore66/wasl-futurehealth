@@ -2,6 +2,7 @@ import type { Audit, CaseDetail, Programme, ReferralCondition } from "@/lib/api/
 import { formatDay } from "@/lib/domain/day";
 import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
+import { openReviewItems } from "@/lib/domain/stage";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
 import { noActionWords, providerLabel, statusWords } from "@/components/worklist/model";
@@ -123,6 +124,24 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
   const hold = caseHolds(d).current[0];
   if (hold) return { title: "Held, not closed", body: `${holdWords(hold)}${hold.rule ? ` Rule: ${hold.rule}.` : ""}` };
   return { title: "Open", body: statusWords(c).next + "." };
+}
+
+/**
+ * Open review questions that keep a case open, in words: identity first, then evidence. The identity reason names the
+ * missing second identifier when the API says so.
+ */
+export function openReviewReasons(d: CaseDetail): string[] {
+  if (d.case.closed) return [];
+  const open = openReviewItems(d);
+  const link = open.find((r) => r.kinds.includes("link"));
+  const evidence = open.some((r) => r.kinds.includes("evidence"));
+  return [
+    link &&
+      (link.reason === "second_identifier"
+        ? "Identity in review: no second identifier is confirmed for the two records."
+        : "Identity in review: a person must confirm the two records are the same patient."),
+    evidence && "Evidence in review: a person must check what the report shows.",
+  ].filter((r): r is string => !!r);
 }
 
 export type OutreachRow = { key: string; what: string; outcome: string; sent: boolean | null; raw: Record<string, unknown> };

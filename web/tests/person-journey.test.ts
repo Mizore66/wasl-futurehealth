@@ -96,7 +96,10 @@ describe("person journey contract", () => {
     const html = renderToStaticMarkup(page);
     expect(html).toContain('data-testid="case-actions"');
     expect(html).toContain("Audit trail");
-    expect(html).toContain("Chain verified by the server");
+    // This published case has an empty audit chain: the teaser is neutral, not "verified" (USABILITY-AUDIT N1).
+    expect(html).toContain("No sealed entries yet");
+    expect(html).not.toContain("Chain verified by the server");
+    expect(html).not.toContain("0 of 0 intact");
     expect(html).not.toContain("View all programmes");
   });
 
