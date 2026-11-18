@@ -580,14 +580,14 @@ test.describe("independent double review with synthetic OIDC", () => {
     const original = (await context.cookies()).find((cookie) => cookie.name === "__Secure-wasl_review_session");
     expect(original?.httpOnly).toBe(true);
     expect(original?.secure).toBe(true);
-    expect(original?.sameSite).toBe("Strict");
+    expect(original?.sameSite).toBe("Lax");
     expect(original?.path).toBe("/app");
     expect(original?.value).toMatch(/^[A-Za-z0-9_-]{43}$/);
     await rail(page).getByRole("button", { name: "Sign out" }).click();
     await expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();
     expect((await context.cookies()).some((cookie) => cookie.name === "__Secure-wasl_review_session")).toBe(false);
 
-    await context.addCookies([{ name: "__Secure-wasl_review_session", value: original!.value, domain: "127.0.0.1", path: "/app", httpOnly: true, secure: true, sameSite: "Strict" }]);
+    await context.addCookies([{ name: "__Secure-wasl_review_session", value: original!.value, domain: "127.0.0.1", path: "/app", httpOnly: true, secure: true, sameSite: "Lax" }]);
     let before = reviewGets;
     await page.goto(desk);
     await expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();

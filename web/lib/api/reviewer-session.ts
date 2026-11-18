@@ -6,6 +6,7 @@ import { apiMode, getCase, getCaseWithToken } from "@/lib/api/source";
 import {
   isReviewToken,
   OIDC_REVIEW_COOKIE,
+  OIDC_SESSION_SAME_SITE,
   REVIEW_COOKIE,
   REVIEW_COOKIE_MAX_AGE,
   REVIEW_COOKIE_PATH,
@@ -14,6 +15,7 @@ import {
 } from "@/components/review/auth";
 import { mappedCredentialToken, oidcConfig, reviewAuthMode } from "@/lib/auth/oidc-config";
 import { defaultSessionStore } from "@/lib/auth/oidc-store";
+import { logOidcFailure } from "@/lib/auth/oidc";
 import { personaFromOidc, personaFromToken, type SessionPersona } from "@/lib/auth/session-persona";
 
 export type ResolvedReviewer =
@@ -37,7 +39,9 @@ export async function resolveReviewer(): Promise<ResolvedReviewer> {
     return token
       ? { ok: true, token, method: "oidc", expiresAt: new Date(session.expiresAt).toISOString(), subject: session.subject, credential: session.credential }
       : { ok: false, reason: "unmapped" };
-  } catch {
+  } catch (error) {
+    /* An unreadable configuration or an unreachable session store fails closed; the operator sees why. */
+    logOidcFailure("session", "session_resolve", error);
     return { ok: false, reason: "anonymous" };
   }
 }
@@ -93,12 +97,13 @@ export async function signOutReviewer(caseId: string): Promise<void> {
   if (reviewAuthMode() === "oidc") {
     try {
       await (await defaultSessionStore(oidcConfig().sessionStore)).revokeSession(jar.get(OIDC_REVIEW_COOKIE)?.value);
-    } catch {
+    } catch (error) {
+      logOidcFailure("session", "session_store", error);
       /* Cookie deletion still prevents this browser from using the session; no global IdP logout is claimed. */
     }
   }
   jar.delete({ name: REVIEW_COOKIE, path: REVIEW_COOKIE_PATH });
-  jar.set(OIDC_REVIEW_COOKIE, "", { httpOnly: true, secure: true, sameSite: "strict", path: REVIEW_COOKIE_PATH, maxAge: 0 });
+  jar.set(OIDC_REVIEW_COOKIE, "", { httpOnly: true, secure: true, sameSite: OIDC_SESSION_SAME_SITE, path: REVIEW_COOKIE_PATH, maxAge: 0 });
   revalidatePath(`/app/review/${encodeURIComponent(caseId)}`);
   revalidatePath(`/app/patients/${encodeURIComponent(caseId)}/audit`);
   revalidatePath("/app/review");

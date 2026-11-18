@@ -101,7 +101,7 @@ describe.skipIf(!binary)("OIDC sign-in across two web replicas sharing NATS sess
     expect(completed.headers.get("location")).toBe(`${APP}/app/review/case-1`);
     const cookie = sessionCookie(completed)!;
     expect(cookie).toMatch(/^__Secure-wasl_review_session=[A-Za-z0-9_-]{43};/);
-    expect(cookie.toLowerCase()).toContain("samesite=strict");
+    expect(cookie.toLowerCase()).toContain("samesite=lax");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
     for (const secret of [provider.clientSecret, "synthetic-server-r1-token-0001", "access_token", "id_token"]) {

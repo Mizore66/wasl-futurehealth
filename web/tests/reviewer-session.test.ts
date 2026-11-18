@@ -200,7 +200,7 @@ describe("OIDC reviewer sessions", () => {
     const { sessions, sessionId } = await configure();
     await signOutReviewer("c1");
     expect(await sessions.resolveSession(sessionId)).toEqual({ ok: false, reason: "revoked" });
-    expect(store.set).toHaveBeenCalledWith("__Secure-wasl_review_session", "", { httpOnly: true, secure: true, sameSite: "strict", path: "/app", maxAge: 0 });
+    expect(store.set).toHaveBeenCalledWith("__Secure-wasl_review_session", "", { httpOnly: true, secure: true, sameSite: "lax", path: "/app", maxAge: 0 });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     expect(await getReviewCase("c1")).toEqual({ detail: null, authenticated: false, reason: "revoked" });

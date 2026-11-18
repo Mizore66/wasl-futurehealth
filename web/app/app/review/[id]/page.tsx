@@ -10,7 +10,7 @@ import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { gatedHistory } from "@/lib/api/protocol-history";
-import { getReviewCase } from "@/lib/api/reviewer-session";
+import { getReviewCase, reviewerPersona } from "@/lib/api/reviewer-session";
 import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
@@ -30,7 +30,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
     return (
       <>
         <h1 className="m-0 text-title font-semibold">Review</h1>
-        <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} />
+        <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} reason={viewer.reason === "anonymous" ? undefined : viewer.reason} />
       </>
     );
   }
@@ -103,7 +103,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
         </div>
       </header>
-      {viewer.session && <ReviewerSessionStatus session={viewer.session} />}
+      {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
       {view.guided ? (
         <ReviewDesk
           view={view}

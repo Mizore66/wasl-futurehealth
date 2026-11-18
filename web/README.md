@@ -48,15 +48,18 @@ WASL_OIDC_CLIENT_SECRET=server-only-secret \
 WASL_OIDC_REDIRECT_URI=https://wasl.example.test/app/auth/oidc/callback \
 WASL_OIDC_SUBJECT_MAP_JSON='{"provider-subject-r1":"reviewer","provider-subject-r2":"reviewer_2","provider-subject-senior":"reviewer_3"}' \
 WASL_OIDC_SESSION_DB=/private/var/lib/wasl/review-sessions.sqlite \
+WASL_API_URL=https://api.example.test \
+WASL_API_WEB_REVIEWER_TOKEN=server-only-shared-reader-token \
+WASL_API_AUDITOR_TOKEN=server-only-auditor-token \
 WASL_API_REVIEWER_TOKEN=server-only-r1-token \
 WASL_API_REVIEWER_2_TOKEN=server-only-r2-token \
 WASL_API_REVIEWER_3_TOKEN=server-only-senior-token \
 pnpm dev
 ```
 
-The issuer and callback must use HTTPS. Discovery must report the exact issuer, authorization/token endpoints, a JWKS URI and RS256 support. The callback must be registered exactly with the provider. Allowed mapping values are `reviewer`, `reviewer_2`, `reviewer_3`, `clinician`, `clinician_2` and `clinician_3`; each may be assigned once. Shared `web_reviewer`, `auditor` and `coordinator` credentials cannot be selected. Only verified `(iss, sub)` claims select a mapping: browser parameters and ID-token role/group/actor claims never do.
+`WASL_API_WEB_REVIEWER_TOKEN` and `WASL_API_AUDITOR_TOKEN` are required in OIDC mode too: the review list reads with the shared reader credential, and the review case page reads its gated history with the auditor credential, so without them those pages fail with a server error even after a successful sign-in. The issuer and callback must use HTTPS. Discovery must report the exact issuer, authorization/token endpoints, a JWKS URI and RS256 support. The callback must be registered exactly with the provider. Allowed mapping values are `reviewer`, `reviewer_2`, `reviewer_3`, `clinician`, `clinician_2` and `clinician_3`; each may be assigned once. Shared `web_reviewer`, `auditor` and `coordinator` credentials cannot be selected. Only verified `(iss, sub)` claims select a mapping: browser parameters and ID-token role/group/actor claims never do.
 
-The OIDC cookie contains only a random session ID, not an API credential or provider token. A ten-minute HttpOnly, Secure, SameSite=Lax correlation cookie binds login state to the initiating browser for the top-level OIDC return; the callback requires that binding, consumes state once and removes the correlation cookie before issuing the HttpOnly, Secure, SameSite=Strict review-session cookie. Sessions have a fixed eight-hour expiry and can be revoked by logout. Logout is local and does not claim to end the provider's global IdP session. OIDC verifies a provider subject and maps it to a configured actor; it does not itself prove separate real-world people.
+The OIDC cookie contains only a random session ID, not an API credential or provider token. A ten-minute HttpOnly, Secure, SameSite=Lax correlation cookie binds login state to the initiating browser for the top-level OIDC return; the callback requires that binding, consumes state once and removes the correlation cookie before issuing the HttpOnly, Secure, SameSite=Lax review-session cookie. It is Lax, not Strict, because the callback is a navigation that began on the identity provider's site, and browsers withhold Strict cookies for that whole redirect chain, so the first page after sign-in would look signed out. Every write is a POST server action, which Lax never sends cross-site and which Next also checks for a same-origin `Origin`; the reasoning is in `components/review/auth.ts`. Failed sign-ins and unreadable sessions log one `[wasl-oidc]` warning line with a fixed failure category (never a token, code, cookie or subject). Sessions have a fixed eight-hour expiry and can be revoked by logout. Logout is local and does not claim to end the provider's global IdP session. OIDC verifies a provider subject and maps it to a configured actor; it does not itself prove separate real-world people.
 
 #### Session storage
 
