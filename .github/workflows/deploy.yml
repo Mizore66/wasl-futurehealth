@@ -199,8 +199,9 @@ jobs:
           # `vercel build` would only see "[SENSITIVE]" placeholders for the production variables.
           url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
           echo "deployed $url"
-          vercel inspect "$url" --token="$VERCEL_TOKEN" | tee inspect.txt
-          grep -q "Ready" inspect.txt
+          inspect="$(vercel inspect "$url" --token="$VERCEL_TOKEN" 2>&1)" || true
+          printf '%s\n' "$inspect" | head -20
+          grep -qE 'status\s+.*Ready' <<<"$inspect"
 
   model:
     name: Gemma server to Modal
