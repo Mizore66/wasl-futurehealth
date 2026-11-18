@@ -162,18 +162,23 @@ Each job runs only when its inputs changed:
 |---|---|---|---|
 | API | `pipeline/`, `scripts/`, `data/`, `models/`, `booking/`, `patient-parsers/`, `Dockerfile`, the API deploy files | builds the image on the runner, pushes `wasl:<sha>` to ACR, rolls the Container App onto it | the new revision becomes ready and runs the new image (a failed revision leaves the old one serving, which a smoke test alone would miss), then `verify_api.py smoke` |
 | Agent | `deploy/azure/agent/`, `azure.yaml` | runs the agent tests, rebuilds the `azd` environment from `ci.env`, `azd deploy` | the deployed agent answers a no-case-id prompt |
-| Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel pull`, `vercel build --prod`, `vercel deploy --prebuilt --prod` | the deployment reports Ready |
+| Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel deploy --prod` of the repository root, built by Vercel with the real production variables (a runner-side build sees only `[SENSITIVE]` placeholders) | the token can see the team, and the deployment reports Ready |
 | Model | `deploy/modal/` | `modal deploy` of the Gemma server | `/health` reaches 200 and an unauthenticated model route gets 401 |
 
-GitHub signs in to Azure as the user-assigned identity `wasl-github-deploy`, through a federated credential that
-trusts only `repo:Mizore66/wasl-futurehealth:ref:refs/heads/main`. No Azure secret exists. The identity holds
+GitHub signs in to Azure as the user-assigned identity `wasl-github-deploy`, through federated credentials that trust
+only `main`. GitHub sends this repository's subject with immutable owner and repository IDs,
+`repo:Mizore66@123628501/wasl-futurehealth@1431169101:ref:refs/heads/main`, not the plain `repo:<owner>/<repo>` form;
+a credential for the plain form alone fails with `AADSTS700213`. Both forms are configured. No Azure secret exists. The identity holds
 Contributor on the resource group, AcrPush on the registry, and Foundry Project Manager and Foundry User on the
 Foundry account. App registrations are blocked in this tenant, which is why it is a managed identity.
 
-One-time setup by a repository admin: create a Vercel token for the `kais-projects-42abda1c` team, then run
-`deploy/azure/ci_setup.sh` with the five IDs (the identity's client ID, the tenant, the subscription, and the Vercel
-org and project IDs from `.vercel/project.json`) and the token on stdin. For the Model job, also pass a Modal API
-token (Modal dashboard, Settings > API Tokens) as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`.
+Setup, done once and repeated when the tokens expire: run `bash deploy/azure/ci_setup.sh` on a machine with `az` and
+`vercel link` set up, from a GitHub account allowed to set the repository's Actions variables and secrets (write
+access sufficed on 18 Nov 2026; admin was not needed). It sets five repository variables: the identity's client ID,
+the tenant, the subscription, and the Vercel org and project IDs. It then runs `ci_secrets.sh`, which creates a 30-day
+Modal token after you approve it in the browser and asks, at a hidden prompt, for a Vercel token you create for the
+`kais-projects-42abda1c` team. Each token goes straight into a GitHub secret (`MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`,
+`VERCEL_TOKEN`) and is never printed. The Modal and Vercel tokens expire 30 days after creation; rerun the script then.
 
 Not automated: the pipeline run that produces the API's data. A new run invalidates the review ledger (`docs/API.md`),
 so refreshing the share stays a deliberate, manual step (section 1 and 2).
