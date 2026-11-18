@@ -42,7 +42,7 @@ const button = (text: string) => Array.from(host.querySelectorAll("button")).fin
 const mount = async (items: CaseSummary[] = [initial]) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null })));
+  await act(async () => root!.render(createElement(TodayBoard, { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null, undoMs: 0 })));
 };
 const click = async (text: string) => act(async () => button(text).click());
 
