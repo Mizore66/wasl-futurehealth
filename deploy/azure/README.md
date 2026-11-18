@@ -123,8 +123,10 @@ Production variables (server-only, never `NEXT_PUBLIC_`): `WASL_API_URL` and the
 set there; people type them into the sign-in form. The API must be deployed with
 `WASL_RECEIVING_UNIT_CLINICIANS=skmc-endo:hosted-unit-clinician WASL_REFERRING_CLINICIANS=ahs-mushrif:hosted-referrer`.
 
-The production alias is public. Anyone who opens it acts as the coordinator, unit clinician and referrer actors on the
-synthetic ledger. Turn on Vercel protection for that domain if that is not wanted.
+The production alias is public by decision (18 Nov 2026), so that judges can open it without a Vercel account.
+Anyone who opens it acts as the coordinator, unit clinician and referrer actors on the synthetic ledger. Deployment
+URLs other than the production alias stay behind Vercel Authentication. To close the alias, turn on Vercel protection
+for it.
 
 ## Continuous deployment
 

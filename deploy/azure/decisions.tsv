@@ -36,3 +36,4 @@ ts	phase	decision	why	evidence	result
 2026-11-18T06:51:36Z	cicd	deploy on push to main, per-target path filters; no GitHub environment	CI is PR-only and required, so main is tested; an environment would change the OIDC subject	.github/workflows/deploy.yml	done
 2026-11-18T06:51:36Z	cicd	IDs in repo variables set by an admin via ci_setup.sh; names in deploy/azure/ci.env	repo is public; Kaiz404 has push but not admin	gh api permissions	needs repo owner
 2026-11-18T06:51:37Z	cicd	rehearsed agent job script (agent v3) and API roll+smoke script (revision 4) locally	workflow cannot run before merge and the identity trusts only main	exit 0 both	VERIFIED locally; web job not rehearsed
+2026-11-18T06:56:26Z	web	kept the production alias public	user decided: judges need open access; data is synthetic	user reply 'Keep it open'	decided
