@@ -62,6 +62,8 @@ export const PatientJourney = z.strictObject({
   slot_selection: PatientSlotSelection,
   preparation: PatientPreparation,
   last_action_at: z.string(),
+  /** The case is served as closed (no contest hold, no ongoing care): the phone shows finished-follow-up wording, no booking. */
+  case_closed: z.boolean().optional(),
 });
 /**
  * One simulated slot as the patient sees it: an opaque `offer_id`, the date and (catalogue slots) the region. Catalogue

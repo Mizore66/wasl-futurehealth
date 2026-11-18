@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
@@ -7,7 +8,7 @@ import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
 import { formatDay, formatDayYear } from "@/lib/domain/day";
 import { caseHolds } from "@/lib/domain/holds";
-import { shortId } from "@/lib/domain/ids";
+import { caseHref, shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
@@ -15,8 +16,9 @@ import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage
 import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
+import { obligationConfirmationWords } from "./crc-confirmation";
+import { dayNumber } from "./booking-words";
 import { PatientJourneyCard, PatientRequestsCard, type PatientContestReview } from "./patient-journey-card";
-import { OutcomeHandoffCard } from "./outcome-handoff-card";
 import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
 import {
@@ -30,6 +32,7 @@ import {
   ledgerId,
   ledgerWords,
   ledgerWordsWithHistory,
+  openReviewReasons,
   outreachRows,
   reviewWords,
   roleWords,
@@ -76,6 +79,7 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
   if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each current CRC obligation below has its own evidence binding, clinician confirmation and tracking state. Completing one pathway does not discharge another.</p></Card>;
   const reason = closureReason(detail);
   const holds = caseHolds(detail);
+  const reviewReasons = openReviewReasons(detail);
   const tone = detail.case.closed ? CLOSE_TONE.closed : holds.current.length ? CLOSE_TONE.held : CLOSE_TONE.open;
   return (
     <Card id="why" title={detail.case.closed ? "Why it closed" : "Why it is still open"}>
@@ -92,6 +96,15 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
         </span>
       </p>
       <p className="m-0 mt-2">{reason.body}</p>
+      {reviewReasons.length > 0 && (
+        <ul className="m-0 mt-3 list-none p-0" aria-label="Open review questions" data-testid="open-review-reasons">
+          {reviewReasons.map((r) => (
+            <li key={r} className="border-t border-rule py-2">
+              {r}
+            </li>
+          ))}
+        </ul>
+      )}
       {holds.current.length > 0 && (
         <ul className="m-0 mt-3 list-none p-0" aria-label="Holds">
           {holds.current.map((h, i) => (
@@ -141,7 +154,15 @@ function HoldFacts({ h }: { h: CaseDetail["holds"][number] }) {
 /** Both records of the patient, how each script writes the name, and how Wasl joined them. */
 export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
   return (
-    <Card id="people" title="One patient, two records" note="Names are the simulated cast; the record numbers and the link facts come from the API.">
+    <Card
+      id="people"
+      title="One patient, two records"
+      note={
+        detail.identities.some((idn) => personFor(idn.registration))
+          ? "Names are the simulated cast; the record numbers and the link facts come from the API."
+          : "The API sends record numbers and link facts, not names, so no name is shown."
+      }
+    >
       <ul className="m-0 mt-3 list-none p-0" aria-label="Records">
         {detail.identities.map((idn) => {
           const p = personFor(idn.registration);
@@ -488,14 +509,22 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
   if (c.crc) {
     return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only; no treatment delivery or referral dispatch.">
       <p>Screening: {c.crc.screening_complete ? "complete" : "evidence incomplete"}. Care: {c.crc.care_state.replaceAll("_", " ")}.</p>
-      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
+      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start === undefined ? "not recorded" : Math.floor(c.crc.clock_start)}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
       <ul aria-label="Independent CRC obligations">
         {c.crc.obligations.map((need) => <li key={need.id}>
           <strong>{need.outcome.replaceAll("_", " ")}</strong> · {need.state.replaceAll("_", " ")}
-          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {need.clock_start}. Owner {need.owner}.</p>
+          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {Math.floor(need.clock_start)}. Owner {plain(need.owner)}.</p>
           {need.blockers.length > 0 && <p>Holds: {need.blockers.map((b) => b.replaceAll("_", " ")).join(", ")}.</p>}
-          <p>{need.confirmation ? `Confirmed by ${need.reviewer}; signature ${need.confirmation}.` : `Separate clinician confirmation required: ${need.review_item}.`}</p>
-          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day}.</p>}
+          <p data-testid={`obligation-confirmation-${need.id}`}>
+            {obligationConfirmationWords(need, detail)}
+            {!need.confirmation && need.state === "awaiting_confirmation" && (
+              <>
+                {" "}
+                <Link href={`${caseHref("/app/review", c.id)}#${need.review_item}`}>Open the review desk</Link> (item {need.review_item}).
+              </>
+            )}
+          </p>
+          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day === undefined ? "not recorded" : Math.floor(need.due_day)}.</p>}
           {need.child_loop && <p>Tracking loop: {need.child_loop}.</p>}
         </li>)}
       </ul>
@@ -594,7 +623,6 @@ export function PatientJourneySection({ detail, contestReview }: { detail: CaseD
       <PatientJourneyCard detail={detail} />
       <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
       <PatientRequestsCard detail={detail} review={contestReview} />
-      {detail.outcome_handoff && <OutcomeHandoffCard handoff={detail.outcome_handoff} />}
     </>
   );
 }
@@ -845,7 +873,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
             <>
               <dt className="text-muted">Slot</dt>
               <dd className="m-0">
-                Day {slot.day}
+                Day {dayNumber(slot.day)}
                 {d.wait_days !== undefined ? `, ${d.wait_days} days after the request` : ""}
               </dd>
             </>
@@ -854,7 +882,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
             <>
               <dt className="text-muted">Deadline</dt>
               <dd className="m-0">
-                Day {slot.deadline}, {slot.within_deadline ? "slot is inside it" : "slot is past it"}
+                Day {dayNumber(slot.deadline)}, {slot.within_deadline ? "slot is inside it" : "slot is past it"}
               </dd>
             </>
           )}
@@ -873,7 +901,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
           {slot.prep_send_day !== undefined && (
             <>
               <dt className="text-muted">Prep sent</dt>
-              <dd className="m-0">Day {slot.prep_send_day}</dd>
+              <dd className="m-0">Day {dayNumber(slot.prep_send_day)}</dd>
             </>
           )}
         </dl>

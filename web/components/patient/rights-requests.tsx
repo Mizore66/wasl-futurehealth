@@ -9,7 +9,8 @@ import {
   type PatientRightsRequest,
   type PatientRightsSubmission,
 } from "@/lib/api/patient-schema";
-import { DICTS, type Lang } from "./i18n";
+import type { Lang } from "./i18n";
+import { usePatientDict } from "./i18n/context";
 import type { PatientDict } from "./i18n/types";
 import { phoneType } from "./parts";
 
@@ -37,7 +38,7 @@ async function loadRequests(): Promise<PatientRightsList | null> {
 }
 
 export function RightsRequests({ lang }: { lang: Lang }) {
-  const t = DICTS[lang].rights;
+  const t = usePatientDict(lang).rights;
   const type = phoneType(lang);
   const [list, setList] = useState<PatientRightsList | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);

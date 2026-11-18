@@ -5,6 +5,8 @@ import { BookFlow } from "@/components/patient/book-flow";
 import { CheckFlow } from "@/components/patient/check-flow";
 import { patientApproved, type Lang } from "@/components/patient/i18n";
 import { NoticeScreen } from "@/components/patient/notice-screen";
+import { DictsProvider } from "@/components/patient/i18n/context";
+import { dictsForSurface } from "@/components/patient/i18n/drafts";
 import { patientScript } from "@/components/patient/programme";
 import { PatientJourneyResponse, type PatientJourney, type PatientOffers, type PatientProgramme } from "@/lib/api/patient-schema";
 import { patientFixture, patientOffers } from "./patient-fixture";
@@ -55,10 +57,11 @@ function journeyFor(programme: PatientProgramme, next: string, distractor: strin
 function render(journey: PatientJourney, offers: PatientOffers, lang: Lang = "en") {
   // Draft languages render only on the internal review surface (#133).
   const query = { lang, surface: patientApproved(lang) ? ("patient" as const) : ("review" as const) };
+  const within = (el: ReturnType<typeof createElement>) => renderToStaticMarkup(createElement(DictsProvider, { dicts: dictsForSurface(query.surface) }, el));
   return {
-    notice: renderToStaticMarkup(createElement(NoticeScreen, { lang, journey })),
-    check: renderToStaticMarkup(createElement(CheckFlow, { query, initial: journey })),
-    book: renderToStaticMarkup(createElement(BookFlow, { query, initial: journey, offers })),
+    notice: within(createElement(NoticeScreen, { lang, journey })),
+    check: within(createElement(CheckFlow, { query, initial: journey })),
+    book: within(createElement(BookFlow, { query, initial: journey, offers })),
   };
 }
 

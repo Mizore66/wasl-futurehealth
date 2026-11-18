@@ -27,7 +27,7 @@ The opaque ID is:
 
 It therefore does not expose the union-find root and does not change merely because the linker chooses another root. Registration values are served only as deterministic `reg_<64 hex>` pseudonyms. These unkeyed pseudonyms support equality joins; they are not semantic anonymity.
 
-Person routes return `503 person_projection_unavailable` for a missing, malformed, overlapping, stale-hash, unknown-case, or incomplete artifact. They also refuse a nonzero `live_vs_replay_final_mismatch`. No partial journey is served. Existing case routes do not require this new artifact and continue to support older runs.
+Person routes return `503 person_projection_unavailable` for a missing, malformed, overlapping, stale-hash, unknown-case, or incomplete artifact. They also refuse a nonzero `live_vs_replay_final_mismatch`. No partial journey is served. Existing case routes do not require this new artifact and continue to support older runs. The server validates the artifact once and reuses the result (and a validation failure) until one of its inputs changes: `identity_clusters.json`, `fhir_log.ndjson` or `out_log.ndjson` (size, nanosecond modification time or inode), report7's mismatch counter or the loaded case set. Review-ledger appends do not invalidate it, because the projection never reads `api_reviews.ndjson`. Case detail reads use the same cached projection for current identity; before this they re-validated the whole run on every read (about 4 s per read on a 5,332-case run).
 
 ## Routes and authorization
 

@@ -108,11 +108,27 @@ export function dispositionContext(detail: CaseDetail): DispositionContext {
   return { caseId: c.id, programme: c.programme, expectedHead: String(ov.head ?? ""), hold, holdPlan, decline, declinePlan, open };
 }
 
+/** Today's UTC calendar date as YYYY-MM-DD (the API checks a plan's review date against the same day). */
+export function todayIso(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+/** A plan review date that has passed: shown with an overdue marker (older events predate the API's date check). */
+export function reviewOverdue(date: unknown, now: Date = new Date()): boolean {
+  return typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) && date < todayIso(now);
+}
+
+/** "2026-12-15", or "2020-01-01 (overdue)" once that date has passed. */
+export function reviewDateWords(date: unknown, now: Date = new Date()): string {
+  if (date === undefined || date === null || date === "") return "a date not recorded";
+  return reviewOverdue(date, now) ? `${String(date)} (overdue)` : String(date);
+}
+
 /** Plain words for a recorded disposition. Never says the procedure was done or the loop closed. */
 export function recordedWords(kind: DispositionKind, d: Recorded): string {
   if (kind === "clinician_disposition") {
     const plan = HOLD_PLANS[d.plan as keyof typeof HOLD_PLANS] ?? String(d.plan);
-    return `Plan recorded, not completed care: ${plan} · ${String(d.owner ?? "owner not recorded")} to review by ${String(d.review_date ?? "a date not recorded")}`;
+    return `Plan recorded, not completed care: ${plan} · ${String(d.owner ?? "owner not recorded")} to review by ${reviewDateWords(d.review_date)}`;
   }
   if (d.plan === "closed_declined") return "Informed refusal recorded · non-procedure end state: no procedure was done and no screening result exists";
   return `Informed refusal recorded · ${String(d.follow_up_owner ?? "the GP")} reviews again on ${String(d.next_review ?? "a date not recorded")}`;

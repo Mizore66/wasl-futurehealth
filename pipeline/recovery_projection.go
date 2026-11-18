@@ -415,16 +415,16 @@ func recoveryReviewEvidenceFromEvent(ev map[string]interface{}) (recoveryReviewE
 }
 
 func (s *apiServer) recoveryCandidateLocked(slot *recoverySlot, w *recoveryWaitlistCase) map[string]interface{} {
-	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "", nil, false)
+	return s.recoveryCandidateAtDecisionLocked(slot, w, nil, "", nil, recoveryPolicyCurrent)
 }
 
 // A non-nil guardDecision reconstructs the candidate at a historical ledger
 // event. Source staleness and review holds are checked against stored event-time
 // evidence, not against later canonical decisions, review items or sign-offs.
-// waiveReadiness is set ONLY when replaying a legacy confirmation written before
-// the recovery readiness policy existed (no recovery_policy stamp, and no stamp
-// earlier in the ledger); every live candidate and every stamped event enforces it.
-func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string, eventReview *recoveryReviewEvidence, waiveReadiness bool) map[string]interface{} {
+// readinessPolicy is the stamp the readiness check runs under: recoveryPolicyCurrent for every live candidate,
+// the event's own stamp on replay. It is "" ONLY when replaying a legacy confirmation written before the
+// recovery readiness policy existed (no recovery_policy stamp, and no stamp earlier in the ledger).
+func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *recoveryWaitlistCase, guardDecision *Decision, replayCaseHead string, eventReview *recoveryReviewEvidence, readinessPolicy string) map[string]interface{} {
 	c := s.cases[w.CaseID]
 	review := recoveryReviewEvidence{}
 	if eventReview != nil {
@@ -463,7 +463,9 @@ func (s *apiServer) recoveryCandidateAtDecisionLocked(slot *recoverySlot, w *rec
 	// the event-time decision during replay. Like the reservation check below, it
 	// is appended only when it fails, so eligibility hashes of unaffected
 	// candidates stay byte-compatible with ledgers written before this policy.
-	if !waiveReadiness && returnedReferralReadiness(c, "recovery capacity") != "" {
+	// readiness/2 also holds a referral the receiving unit returned through the ledger, exactly as booking does
+	// (bookingReadinessUnder); readiness/1 confirmations replay under the rule they were written with.
+	if readinessPolicy != "" && referralReadinessHold(c, "recovery capacity", readinessPolicy != recoveryPolicyReadiness1) != "" {
 		add("procedure_ready", "returned_referral_unresolved", true)
 	}
 	add("not_source_case", "source_case_for_own_release", w.CaseID == slot.SourceCase)
@@ -800,14 +802,15 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	stamped, err := recoveryPolicyStamp(ev)
+	policy, err := recoveryPolicyStamp(ev)
 	if err != nil {
 		return err
 	}
+	stamped := policy != ""
 	if !stamped && s.sawRecoveryStamp {
 		return errors.New("unstamped recovery confirmation after the first readiness policy stamp")
 	}
-	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead, &reviewEvidence, !stamped)
+	candidate := s.recoveryCandidateAtDecisionLocked(slot, w, guardDecision, expectedCaseHead, &reviewEvidence, policy)
 	if candidate["eligible"] != true || ev["eligibility_hash"] != candidate["eligibility_hash"] {
 		return errors.New("recovery candidate does not match event-time eligibility evidence")
 	}
@@ -845,21 +848,26 @@ func (s *apiServer) replayRecovery(ev map[string]interface{}) error {
 	return nil
 }
 
-// recoveryPolicyReadiness1 marks confirmations written under the returned-referral
-// readiness policy. It is server-owned and hashed with the event.
-const recoveryPolicyReadiness1 = "readiness/1"
+// Recovery readiness policy stamps, server-owned and hashed with the event:
+//   - readiness/1: a canonical referral_rejected case is not procedure-ready.
+//   - readiness/2: readiness/1 plus a receiving-unit return recorded in the ledger (booking's readiness/2 rule).
+const (
+	recoveryPolicyReadiness1 = "readiness/1"
+	recoveryPolicyReadiness2 = "readiness/2"
+	recoveryPolicyCurrent    = recoveryPolicyReadiness2
+)
 
-// recoveryPolicyStamp reports whether a confirmation carries the readiness
-// policy stamp. A present stamp must be exactly recoveryPolicyReadiness1.
-func recoveryPolicyStamp(ev map[string]interface{}) (bool, error) {
+// recoveryPolicyStamp returns a confirmation's readiness policy stamp ("" when unstamped).
+// A present stamp must be one of the known policies.
+func recoveryPolicyStamp(ev map[string]interface{}) (string, error) {
 	policy, stamped := ev["recovery_policy"]
 	if !stamped {
-		return false, nil
+		return "", nil
 	}
-	if value, ok := policy.(string); !ok || value != recoveryPolicyReadiness1 {
-		return false, errors.New("unknown or non-string recovery_policy")
+	if value, ok := policy.(string); !ok || (value != recoveryPolicyReadiness1 && value != recoveryPolicyReadiness2) {
+		return "", errors.New("unknown or non-string recovery_policy")
 	}
-	return true, nil
+	return policy.(string), nil
 }
 
 // releaseRecoveryLocked applies an appended cancellation: the confirmation stays

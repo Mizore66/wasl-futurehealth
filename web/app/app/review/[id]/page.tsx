@@ -10,10 +10,12 @@ import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { gatedHistory } from "@/lib/api/protocol-history";
-import { getReviewCase } from "@/lib/api/reviewer-session";
+import { getReviewCase, reviewerPersona } from "@/lib/api/reviewer-session";
 import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
+import { GlossaryPopover } from "@/components/wasl/glossary-popover";
+import { settledWords } from "@/components/case/crc-confirmation";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
 export const metadata = { title: "Review" };
@@ -29,7 +31,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
     return (
       <>
         <h1 className="m-0 text-title font-semibold">Review</h1>
-        <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} />
+        <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} reason={viewer.reason === "anonymous" ? undefined : viewer.reason} />
       </>
     );
   }
@@ -99,9 +101,10 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
             </span>
           )}
           {queue && <QueueLabel source={queue.source} />}
+          <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
         </div>
       </header>
-      {viewer.session && <ReviewerSessionStatus session={viewer.session} />}
+      {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
       {view.guided ? (
         <ReviewDesk
           view={view}
@@ -114,12 +117,8 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           states={detail.api_review_states}
           settled={
             <div className="mt-6 flex flex-col gap-3">
-              <Card id="not-waiting" title="This case is not waiting for a signature">
-                <p className="m-0 mt-3 max-w-[72ch]">
-                  {detail.review_items.length === 0
-                    ? "No review item was raised for this case. Open the case page to see the recorded evidence and outcomes."
-                    : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
-                </p>
+              <Card id="not-waiting" title={settledWords(detail).title}>
+                <p className="m-0 mt-3 max-w-[72ch]">{settledWords(detail).body}</p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <Link
                     href={caseHref("/app/patients", view.caseId)}

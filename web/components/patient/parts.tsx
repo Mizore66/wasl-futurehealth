@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { DICTS, type Lang } from "./i18n";
+import { LANG_DIR, type Lang } from "./i18n";
 import { CLINIC_PHONE } from "./journey";
 
 /**
@@ -16,7 +16,7 @@ export const PHONE_FONT: Record<Lang, string> = {
 /** Urdu needs Nastaliq's taller lines; Arabic script needs more leading than Latin. */
 export function phoneType(lang: Lang) {
   const ur = lang === "ur";
-  const rtl = DICTS[lang].dir === "rtl";
+  const rtl = LANG_DIR[lang] === "rtl";
   return {
     h1: cn("m-0 mb-3 font-semibold", ur ? "text-[22px] leading-[2]" : "text-[24px] leading-[1.4]"),
     body: cn("m-0", ur ? "text-[16px] leading-[2.3]" : rtl ? "text-[17px] leading-[1.8]" : "text-[17px] leading-[1.55]"),

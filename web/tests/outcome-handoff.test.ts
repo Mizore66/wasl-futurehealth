@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DICTS, LANGS } from "@/components/patient/i18n";
+import { LANGS } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { OUTCOME_GATE_COPY } from "@/components/patient/outcome-copy";
 import { outcomeWithheldLine } from "@/components/patient/outcome-handoff";
 import { OUTCOME_NEXT_STEPS, PatientOutcomeResponse } from "@/lib/api/patient-schema";

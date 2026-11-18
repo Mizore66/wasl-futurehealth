@@ -416,6 +416,12 @@ func signoffAnswers(r map[string]interface{}, it *ReviewItem, q string) bool {
 	case q == "link":
 		return link != ""
 	case q == "evidence":
+		// A CRC obligation is confirmed only by a sign-off of its documented proposal (crc_plan.go). A run
+		// sign-off that answered the item without confirming it (crc_disposition_not_confirmed) leaves the
+		// obligation awaiting_confirmation, so it must not close the confirmation question either.
+		if it.Reason == CRCDispositionPurpose && it.Verdict != "" {
+			return evidence == it.Verdict
+		}
 		return evidence != ""
 	}
 	return true
@@ -699,6 +705,9 @@ func (s *apiServer) protocolReview(w http.ResponseWriter, c *apiCase, it *Review
 		}
 		if s.questionSigned(c.ID, it, question) {
 			return 409, map[string]interface{}{"error": "item already has a canonical sign-off; independent reads are closed"}
+		}
+		if err := s.crcIndependentReadRefusalLocked(c, it, viewer.actor); err != nil {
+			return s.claimFailureLocked(c, viewer, reviewQuestionKey{it.ItemID, question}, err)
 		}
 		states := s.protoStatesLocked()
 		nonce, nerr := newReviewNonce()

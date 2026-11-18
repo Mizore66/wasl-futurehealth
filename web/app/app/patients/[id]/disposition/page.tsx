@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { DispositionCard } from "@/components/disposition/disposition-card";
 import { DispositionForm } from "@/components/disposition/disposition-form";
 import { dispositionContext } from "@/components/disposition/model";
+import { clinicianSignInWords } from "@/components/review/auth";
 import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
-import { getReviewCase } from "@/lib/api/reviewer-session";
+import { getReviewCase, reviewerPersona } from "@/lib/api/reviewer-session";
 import { apiMode } from "@/lib/api/source";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -30,12 +31,19 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
   );
   const viewer = await getReviewCase(id);
   if (!viewer.authenticated) {
+    const authMode = reviewAuthMode();
     return (
       <>
         {back}
         <h1 className="m-0 text-title font-semibold">Clinician disposition</h1>
-        <p className="m-0 mt-1 max-w-[72ch] text-muted">Only a clinician or senior clinician may record a disposition. Sign in with the token assigned to you.</p>
-        <ReviewerLogin caseId={id} mode={reviewAuthMode()} authError={query.oidc_error === "1"} returnTo={`${caseHref("/app/patients", id)}/disposition`} />
+        <p className="m-0 mt-1 max-w-[72ch] text-muted">Only a clinician or senior clinician may record a disposition. {clinicianSignInWords(authMode)}</p>
+        <ReviewerLogin
+          caseId={id}
+          mode={authMode}
+          authError={query.oidc_error === "1"}
+          reason={viewer.reason === "anonymous" ? undefined : viewer.reason}
+          returnTo={`${caseHref("/app/patients", id)}/disposition`}
+        />
       </>
     );
   }
@@ -51,7 +59,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
           <p className="m-0 mt-1 text-muted">
             Case {shortId(detail.case.id)} · {detail.case.programme.replaceAll("_", " ")} · screening record {detail.case.closed ? "closed by evidence" : "open"}
           </p>
-          {live && viewer.session && <ReviewerSessionStatus session={viewer.session} />}
+          {live && viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
         </div>
         <HonestyLabel kind="simulated">Synthetic case</HonestyLabel>
       </header>

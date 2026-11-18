@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Avatar, type AvatarState } from "@/components/avatar/avatar";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
-import type { ReviewView, Verdict } from "./case-view";
+import type { IdentityRow, ReviewView, Verdict } from "./case-view";
 import type { IdentityAnswer } from "./decision";
 import { Mark, type Shape, type Tone } from "./marks";
 
@@ -20,6 +20,18 @@ const VERDICT: Record<Verdict, { shape: Shape; tone: Tone; word: string }> = {
 };
 
 const ARABIC = /[؀-ۿ]/;
+const LATIN = /[A-Za-z]/;
+
+/**
+ * A name "differ" between an Arabic-script and a Latin-script rendering may be one name transliterated, so the reviewer
+ * is told to compare transliteration. The server's verdict is shown unchanged; this only adds a hint beside it.
+ */
+export function scriptHint(row: IdentityRow): string | undefined {
+  if (row.field !== "Name" || row.verdict !== "differ") return undefined;
+  const arabic = [row.referral, row.report].map((v) => ARABIC.test(v) && !LATIN.test(v));
+  const latin = [row.referral, row.report].map((v) => LATIN.test(v) && !ARABIC.test(v));
+  return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts; compare transliteration" : undefined;
+}
 const CELL = "flex min-h-9 items-center border-t border-rule py-1 @2xl:h-9 @2xl:overflow-hidden @2xl:text-ellipsis @2xl:whitespace-nowrap @2xl:py-0";
 
 type Shown = { person: PersonSeed; state: AvatarState; label: string };
@@ -176,6 +188,10 @@ export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: Id
         />
       </div>
 
+      {view.identity.flatMap((r) => {
+        const hint = scriptHint(r);
+        return hint ? [<p key={r.field} className="m-0 mt-3 text-small" data-testid="script-hint">{r.field}: {hint}.</p>] : [];
+      })}
       <p role="note" aria-label="Identifier source context" className="m-0 mt-4 text-small text-muted">{view.identityContext}</p>
       <p className="m-0 mt-2 font-medium">{view.identitySummary}</p>
       {view.identityGuard.length > 0 && (

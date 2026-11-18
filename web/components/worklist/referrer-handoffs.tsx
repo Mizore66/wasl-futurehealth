@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import type { ReferrerAnswer, RespondResult } from "@/app/app/referrals/actions";
 import { INFO_LABELS, handoffWords } from "./referrals";
-import { DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
+import { afterAnswerWords, DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
 
 const DISPOSITIONS = Object.entries(DISPOSITION_LABELS) as [Disposition, string][];
 const REFUSED: Record<number, string> = {
@@ -16,6 +16,11 @@ const REFUSED: Record<number, string> = {
   500: "the case ledger could not be read.",
 };
 const field = "w-full rounded-control border border-control bg-surface px-3 py-2 text-body text-ink";
+
+/** A live case without a synthetic name falls back to its case ID; show that ID once so the heading is not read twice. */
+export function packetHeading(p: Pick<ReturnedPacket, "name" | "short">): { name: string; caseId: string | null } {
+  return { name: p.name, caseId: p.name.trim() === p.short ? null : p.short };
+}
 
 /** The referrer's returned referrals: acknowledge the exact packet, then resolve it with one structured answer. */
 export function ReferrerHandoffs({
@@ -58,6 +63,7 @@ function PacketCard({
   const words = handoffWords({ status: p.status, actBy: p.actBy }, referrer);
   const built = referrerRequest(p, draft);
   const titleId = `packet-${p.short}`;
+  const heading = packetHeading(p);
 
   const send = (request: ReferrerAnswer, done: string) => {
     if (!answer || busy) return;
@@ -80,20 +86,23 @@ function PacketCard({
   return (
     <article aria-labelledby={titleId} className="rounded-card border border-line bg-surface p-4 sm:p-pad">
       <h2 id={titleId} className="m-0 text-section font-semibold">
-        {p.name} <span className="text-small font-normal text-muted">{p.short}</span>
+        {heading.name}
+        {heading.caseId && (
+          <>
+            <span className="sr-only">, case</span> <span className="text-small font-normal text-muted">{heading.caseId}</span>
+          </>
+        )}
       </h2>
       <dl className="m-0 mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
         {(
           [
             ...(p.source === "canonical"
-              ? ([
-                  ["Recommendation", p.recommendation ?? "Not in the packet"],
-                  ["Priority", p.urgent ? "Urgent" : "Routine"],
-                ] as const)
+              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail; reload to try again" : (p.recommendation ?? "Not in the packet")]] as const)
               : []),
+            ["Priority", p.urgent ? "Urgent" : "Routine"],
             ["Returned by", p.unit],
             ["Reason", p.reason],
-            ...(p.source === "canonical" ? ([["Advice from the unit", p.advice ?? "Not in the packet"]] as const) : []),
+            ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not in the packet")]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
             ["Acknowledged", p.acknowledged ? "Yes" : "Not yet"],
@@ -108,7 +117,7 @@ function PacketCard({
 
       {p.answer ? (
         <p role="status" className="m-0 mt-4">
-          {p.answer}. Nothing else is needed from you; the case stays open until its procedure evidence arrives.
+          {p.answer}. {afterAnswerWords(p.answerCode)}
         </p>
       ) : !answer ? (
         <p className="m-0 mt-4 text-muted">Answers need the live synthetic API; nothing can be recorded here.</p>
@@ -126,7 +135,8 @@ function PacketCard({
                 .filter(([d]) => d !== "redirect" || p.others.length > 0)
                 .map(([d, label]) => (
                   <label key={d} className="flex min-h-11 cursor-pointer items-center gap-2">
-                    <input type="radio" name={`answer-${p.id}`} value={d} checked={draft.response === d} onChange={() => setDraft({ ...draft, response: d })} />
+                    {/* WCAG 2.5.8: the radio itself is 24×24 px, and the whole 44 px row is its label. */}
+                    <input type="radio" className="size-6 flex-none cursor-pointer accent-ink" name={`answer-${p.id}`} value={d} checked={draft.response === d} onChange={() => setDraft({ ...draft, response: d })} />
                     {d === "re_refer" ? `${label}: ${p.unit}` : label}
                   </label>
                 ))}

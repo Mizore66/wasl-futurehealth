@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { PatientJourney, PatientOffers } from "@/lib/api/patient-schema";
 import { cn } from "@/lib/utils";
-import { DICTS } from "./i18n";
+import { usePatientDict } from "./i18n/context";
 import { slotLabel, type PhoneQuery } from "./journey";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
@@ -16,8 +16,8 @@ const PREP_IDS = ["clear_fluids_and_prep", "escort_home"] as const;
 
 /** No simulated offer for this case: the served next step and a coordinator contact, with no slot, confirmation or preparation. */
 function NoOffer({ query, initial }: { query: PhoneQuery; initial: PatientJourney }) {
-  const t = DICTS[query.lang];
-  const script = patientScript(initial, query.lang);
+  const t = usePatientDict(query.lang);
+  const script = patientScript(initial, query.lang, t);
   const type = phoneType(script.lang);
   return (
     <>
@@ -35,21 +35,39 @@ function NoOffer({ query, initial }: { query: PhoneQuery; initial: PatientJourne
 }
 
 /** Slot choices are preferences for coordinator review, never reservations. */
-export function BookFlow(props: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers }) {
-  const copy = offerCopy(props.offers.procedure, props.query.lang);
+export function BookFlow(props: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; preview?: boolean }) {
+  const dict = usePatientDict(props.query.lang);
+  const copy = offerCopy(props.offers.procedure, props.query.lang, dict);
   // An offer is shown only for the procedure this case's own programme needs; anything else falls back to contact.
-  if (!copy || PROCEDURE[props.initial.programme] !== props.offers.procedure || props.offers.slots.length === 0) {
+  // A closed case offers nothing to book.
+  if (props.preview && !props.initial.case_closed && props.initial.programme === "crc" && props.offers.slots.length === 0) {
+    // The translation-review preview shows the offer, slot picker and preparation strings with sample times; nothing is saved.
+    return <OfferFlow {...props} offers={PREVIEW_OFFERS} copy={offerCopy("colonoscopy", props.query.lang, dict)!} preview />;
+  }
+  if (props.initial.case_closed || !copy || PROCEDURE[props.initial.programme] !== props.offers.procedure || props.offers.slots.length === 0) {
     return <NoOffer query={props.query} initial={props.initial} />;
   }
   return <OfferFlow {...props} copy={copy} />;
 }
 
+/** Sample offers for the internal translation-review preview only (never on a patient route). */
+export const PREVIEW_OFFERS: PatientOffers = {
+  version: "translation-review-preview",
+  procedure: "colonoscopy",
+  source: "demo_fixed",
+  slots: [
+    { offer_id: "preview-1", starts_at: "2026-10-12T08:30:00+04:00" },
+    { offer_id: "preview-2", starts_at: "2026-10-14T13:00:00+04:00" },
+    { offer_id: "preview-3", starts_at: "2026-10-19T09:15:00+04:00" },
+  ],
+};
+
 const PROCEDURE: Partial<Record<PatientJourney["programme"], PatientOffers["procedure"]>> = { crc: "colonoscopy", cervical: "colposcopy" };
 
-function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; copy: OfferCopy }) {
+function OfferFlow({ query, initial, offers, copy, preview = false }: { query: PhoneQuery; initial: PatientJourney; offers: PatientOffers; copy: OfferCopy; preview?: boolean }) {
   const title = copy.title;
   const titleLang = copy.gated ? ({ lang: "en", dir: "ltr" } as const) : {};
-  const t = DICTS[query.lang];
+  const t = usePatientDict(query.lang);
   const b = t.book;
   const ur = query.lang === "ur";
   const { journey, busy, status, save, retry, canRetry } = usePatientJourney(initial);
@@ -72,6 +90,7 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
   const contact = journey.contact_permission.status;
 
   async function confirmSlot() {
+    if (preview) return;
     const offer = offers.slots[current];
     if (!offer) return;
     const saved = await save({ kind: "slot_selected", data: { offer_id: offer.offer_id, offers_version: offers.version } });
@@ -79,12 +98,13 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
   }
 
   async function togglePreparation(index: number) {
+    if (preview) return;
     const item_id = PREP_IDS[index];
     const completed = !journey.preparation.items.find((item) => item.item_id === item_id)?.completed;
     await save({ kind: "preparation_changed", data: { item_id, completed } });
   }
 
-  const place = offerPlace(offers.slots[confirmed ? savedIndex : current], offers.source, query.lang);
+  const place = offerPlace(offers.slots[confirmed ? savedIndex : current], offers.source, query.lang, t);
 
   if (!slot) {
     return (
@@ -166,7 +186,8 @@ function OfferFlow({ query, initial, offers, copy }: { query: PhoneQuery; initia
           <PatientStatus t={t.common} status={status} canRetry={canRetry} onRetry={() => void retrySave()} />
         </section>
 
-        {journey.preparation.total > 0 && <section aria-labelledby="prep-head" className="rounded-card border border-line bg-surface p-5">
+        {preview && <p role="note" lang="en" dir="ltr" className="m-0 text-[14px] text-muted">Translation-review preview: sample times; nothing is saved.</p>}
+        {(preview || journey.preparation.total > 0) && <section aria-labelledby="prep-head" className="rounded-card border border-line bg-surface p-5">
           <h2 id="prep-head" className="m-0 mb-3 text-[18px] font-semibold">{b.prepHead}</h2>
           <p role="note" className="m-0 mb-2 flex items-start gap-2.5 rounded-control bg-pill-warning-bg p-3 text-[16px] leading-[1.75] font-medium text-pill-warning-ink">
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="mt-1 flex-none"><path d="M12 3l9.5 17h-19z" /><path d="M12 10v4" /><path d="M12 17.5v.01" /></svg>

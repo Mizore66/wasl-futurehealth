@@ -6,6 +6,8 @@ import { DispositionInput } from "@/components/disposition/model";
 import { postDispositionWithToken } from "@/lib/api/disposition";
 import * as session from "@/lib/api/reviewer-session";
 import { apiMode } from "@/lib/api/source";
+import { reviewAuthMode } from "@/lib/auth/oidc-config";
+import { clinicianSignInWords } from "@/components/review/auth";
 
 /*
  * The clinician disposition server action. It acts only as the signed-in credential (the reviewer-session token). The
@@ -33,7 +35,7 @@ export async function recordDisposition(input: unknown): Promise<DispositionActi
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Complete every required field" };
   if (apiMode() !== "live") return { ok: false, error: "Dispositions need the live API; fixtures cannot append events." };
   const token = await session.reviewerToken();
-  if (!token) return { ok: false, error: "Sign in with the clinician token assigned to you.", signIn: true };
+  if (!token) return { ok: false, error: clinicianSignInWords(reviewAuthMode()), signIn: true };
 
   const { caseId, expectedHead } = envelope.data;
   const result = await postDispositionWithToken(caseId, parsed.data, expectedHead, token);

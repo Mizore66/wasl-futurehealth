@@ -129,7 +129,7 @@ func TestRecoveryReturnedReferralEligibleAfterAcceptedReReferral(t *testing.T) {
 		t.Fatalf("accepted re-referral confirmation: %d %v", code, body)
 	}
 	event := body["event"].(map[string]interface{})
-	if s.reviews[len(s.reviews)-1]["recovery_policy"] != recoveryPolicyReadiness1 {
+	if s.reviews[len(s.reviews)-1]["recovery_policy"] != recoveryPolicyCurrent {
 		t.Fatalf("confirmation not stamped with readiness policy: %v", event)
 	}
 	reloaded := loadAPI(run, "")

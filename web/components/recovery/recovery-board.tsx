@@ -8,8 +8,27 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import type { RecoveryCandidate, RecoveryDetail, RecoveryList } from "@/lib/api/recovery-schema";
 import { caseHref } from "@/lib/domain/ids";
 import { shortId } from "@/lib/domain/ids";
+import { CANDIDATE_PAGE, candidatePages, slotsByDay } from "./candidates";
 
 const words = (value: string) => value.replaceAll("_", " ");
+
+/** A candidate's checks render only once opened: a slot can list over a thousand candidates. */
+function CandidateChecks({ candidate }: { candidate: RecoveryCandidate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details className="mt-2" onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary className="min-h-11 cursor-pointer">Checks and explanations</summary>
+      {open && (
+        <>
+          <ul className="m-0 mt-2 list-disc pl-5 text-small">
+            {candidate.checks.map((check) => <li key={check.code} data-result={check.result}>{check.code}: {check.result} — {words(check.reason_code)}</li>)}
+          </ul>
+          <p className="text-small text-muted">Constraints: {JSON.stringify(candidate.constraints)}</p>
+        </>
+      )}
+    </details>
+  );
+}
 
 export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; detail: RecoveryDetail | null; readOnly: boolean }) {
   const router = useRouter();
@@ -22,7 +41,10 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
   const [releasing, setReleasing] = useState(false);
   const [reason, setReason] = useState("");
   const submitting = useRef(false);
+  const [eligibleShown, setEligibleShown] = useState(CANDIDATE_PAGE);
+  const [excludedShown, setExcludedShown] = useState(CANDIDATE_PAGE);
   const slot = detail?.slot;
+  const pages = slot ? candidatePages(slot.candidates, eligibleShown, excludedShown) : null;
   const filledHead = slot?.backfill ? slot.candidates.find((candidate) => candidate.case_id === slot.backfill?.case_id)?.case_head : undefined;
 
   const openRelease = () => {
@@ -111,7 +133,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
 
   return (
     <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(260px,0.7fr)_minmax(0,1.6fr)]">
-      <section aria-labelledby="released-slots" className="min-w-0">
+      <section aria-labelledby="released-slots" className="min-w-0 xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto">
         <h2 id="released-slots" className="m-0 text-section font-medium">Released-capacity projections</h2>
         <p className="text-small text-muted">Synthetic future sessions derived after trusted no-shows. They are not original appointments or real cancellations.</p>
         {list.status !== "ready" ? (
@@ -120,7 +142,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
           <p role="status" className="rounded-card border border-line bg-surface p-4">No simulated released capacity is available.</p>
         ) : (
           <ul className="m-0 mt-3 flex list-none flex-col gap-2 p-0">
-            {list.slots.map((item) => (
+            {slotsByDay(list.slots).map((item) => (
               <li key={item.slot_id}>
                 <Link
                   href={`/app/recovery?slot=${item.slot_id}`}
@@ -139,7 +161,8 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
         )}
       </section>
 
-      <section aria-labelledby="candidate-list" className="min-w-0">
+      {/* The selected projection comes first on narrow screens, so it is not below every slot card. */}
+      <section aria-labelledby="candidate-list" className="order-first min-w-0 xl:order-none">
         {!slot ? (
           <div className="rounded-card border border-line bg-surface p-6">
             <h2 id="candidate-list" className="m-0 text-section font-medium">Select a projection</h2>
@@ -177,33 +200,49 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
               </details>
             )}
             <p className="text-small text-muted">Ordering: urgent priority, earliest absolute deadline, requested day, then case ID. Consent gates messaging only; it does not change slot eligibility.</p>
-            {slot.candidates.length === 0 ? <p role="status">No waitlist candidates were generated.</p> : (
-              <ol className="m-0 flex list-none flex-col gap-3 p-0">
-                {slot.candidates.map((candidate) => (
-                  <li key={candidate.case_id} className="rounded-card border border-line bg-surface p-4" data-eligible={candidate.eligible}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h3 className="m-0 text-body font-medium">
-                          {candidate.eligible ? `Rank ${candidate.rank} · ` : "Excluded · "}
-                          <Link className="underline underline-offset-2" href={caseHref("/app/patients", candidate.case_id)}>{shortId(candidate.case_id)}</Link>
-                        </h3>
-                        <p className="m-0 mt-1 text-small text-muted">Requested day {candidate.requested_day} · absolute deadline day {candidate.deadline_day}{candidate.priority ? ` · ${candidate.priority}` : ""}</p>
+            {slot.candidates.length === 0 || !pages ? <p role="status">No waitlist candidates were generated.</p> : (
+              <>
+                <p className="m-0 mb-2 text-small text-muted" data-testid="candidate-count">
+                  {slot.candidates.length - pages.totalExcluded} eligible, {pages.totalExcluded} excluded.
+                </p>
+                <ol className="m-0 flex list-none flex-col gap-3 p-0">
+                  {[...pages.eligible, ...pages.excluded].map((candidate) => (
+                    <li key={candidate.case_id} className="rounded-card border border-line bg-surface p-4" data-eligible={candidate.eligible}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="m-0 text-body font-medium">
+                            {candidate.eligible ? `Rank ${candidate.rank} · ` : "Excluded · "}
+                            <Link className="underline underline-offset-2" href={caseHref("/app/patients", candidate.case_id)}>{shortId(candidate.case_id)}</Link>
+                          </h3>
+                          <p className="m-0 mt-1 text-small text-muted">Requested day {Math.floor(candidate.requested_day)} · absolute deadline day {Math.floor(candidate.deadline_day)}{candidate.priority ? ` · ${candidate.priority}` : ""}</p>
+                        </div>
+                        {candidate.eligible && slot.status === "open" && !readOnly && (
+                          <button type="button" onClick={() => openConfirmation(candidate)} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink">Select case</button>
+                        )}
                       </div>
-                      {candidate.eligible && slot.status === "open" && !readOnly && (
-                        <button type="button" onClick={() => openConfirmation(candidate)} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink">Select case</button>
+                      {!candidate.outreach.allowed && candidate.eligible && <p className="text-small font-medium">Slot eligible; outreach not permitted.</p>}
+                      {!candidate.eligible && (
+                        <p className="m-0 mt-1 text-small" data-testid="excluded-by">
+                          Excluded by: {candidate.checks.filter((check) => check.result === "fail").map((check) => `${check.code}: ${check.result} — ${words(check.reason_code)}`).join("; ") || "a failed check"}
+                        </p>
                       )}
-                    </div>
-                    {!candidate.outreach.allowed && candidate.eligible && <p className="text-small font-medium">Slot eligible; outreach not permitted.</p>}
-                    <details className="mt-2">
-                      <summary className="min-h-11 cursor-pointer">Checks and explanations</summary>
-                      <ul className="m-0 mt-2 list-disc pl-5 text-small">
-                        {candidate.checks.map((check) => <li key={check.code} data-result={check.result}>{check.code}: {check.result} — {words(check.reason_code)}</li>)}
-                      </ul>
-                      <p className="text-small text-muted">Constraints: {JSON.stringify(candidate.constraints)}</p>
-                    </details>
-                  </li>
-                ))}
-              </ol>
+                      <CandidateChecks candidate={candidate} />
+                    </li>
+                  ))}
+                </ol>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {pages.hiddenEligible > 0 && (
+                    <button type="button" onClick={() => setEligibleShown((n) => n + CANDIDATE_PAGE)} className="min-h-11 rounded-control border border-control px-4">
+                      Show {Math.min(CANDIDATE_PAGE, pages.hiddenEligible)} more eligible ({pages.hiddenEligible} not shown)
+                    </button>
+                  )}
+                  {pages.hiddenExcluded > 0 && (
+                    <button type="button" onClick={() => setExcludedShown((n) => n + CANDIDATE_PAGE)} className="min-h-11 rounded-control border border-control px-4">
+                      Show {Math.min(CANDIDATE_PAGE, pages.hiddenExcluded)} more excluded ({pages.hiddenExcluded} not shown)
+                    </button>
+                  )}
+                </div>
+              </>
             )}
           </>
         )}

@@ -212,7 +212,7 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 		if !s.recoverySessionCapacityAvailableLocked(slot) {
 			return s.recoveryConflict(viewer, "session_capacity", "session has no remaining regular capacity", slot, candidate, currentSlotHead, currentCaseHead)
 		}
-		if reason := returnedReferralReadiness(c, "recovery capacity"); reason != "" {
+		if reason := referralReadinessHold(c, "recovery capacity", true); reason != "" {
 			return s.recoveryConflict(viewer, "readiness", "not clinically ready for simulated recovery capacity: "+reason, slot, candidate, currentSlotHead, currentCaseHead)
 		}
 		if candidate["eligible"] != true {
@@ -241,7 +241,7 @@ func (s *apiServer) confirmRecovery(w http.ResponseWriter, r *http.Request, slot
 			"slot_snapshot": recoverySlotSnapshot(slot), "outreach_intent": req.OutreachIntent, "guard_evidence": gates["guard_evidence"],
 			"consent_at_confirmation": gates["consent"], "guard_decision_sig": c.last.Sig,
 			"review_at_confirmation": reviewEvidence.status, "canonical_hold_at_confirmation": reviewEvidence.canonicalHold,
-			"note": req.Note, "mode": "demo", "recovery_policy": recoveryPolicyReadiness1, "prev": s.lastHashLocked()}
+			"note": req.Note, "mode": "demo", "recovery_policy": recoveryPolicyCurrent, "prev": s.lastHashLocked()}
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
 		}

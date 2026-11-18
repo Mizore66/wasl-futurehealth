@@ -180,7 +180,7 @@ describe("#140 per-case canonical packets and stored session deadlines", () => {
     ["awaiting_referrer", 121, "Act on the return", "by"],
     ["coordinator", 103, "Escalated to the care coordinator", "was due"],
     ["medical_director", 97, "Escalated to the medical director", "was due"],
-    ["referrer_acted", 99, "The GP has acted", "was due"],
+    ["referrer_acted", 99, "The GP has acted", "answer was due by"],
   ] as const)("renders canonical %s without reanchoring", (status, actBy, what, when) => {
     const original = CaseSummary.parse(synthetic[3]);
     const current = CurrentDecision.parse({ ...provenance.currents[original.id as keyof typeof provenance.currents], handoff: { status, act_by: actBy, decided_at: actBy - 4, clinical_priority: "urgent" } });

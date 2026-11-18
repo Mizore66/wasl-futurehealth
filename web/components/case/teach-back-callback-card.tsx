@@ -5,6 +5,7 @@ import { recordTeachBackCallback } from "@/app/app/patients/[id]/actions";
 import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { TeachBackCallback } from "@/lib/api/schema";
+import { staffDueTime } from "@/lib/domain/staff-time";
 import { atWords } from "./words";
 
 const STATE: Record<TeachBackCallback["state"], string> = {
@@ -16,14 +17,33 @@ const STATE: Record<TeachBackCallback["state"], string> = {
 export function callbackStatus(cb: TeachBackCallback): string {
   if (cb.status === "resolved") return `Resolved${cb.resolved_by ? ` by ${cb.resolved_by}` : ""}${cb.resolved_at ? ` ${atWords(cb.resolved_at)}` : ""}`;
   if (!cb.due_at) return `Open · ${cb.owner} callback, no due date (engine escalation)`;
-  return `${cb.overdue ? "Overdue" : "Open"} · ${cb.owner} callback due ${atWords(cb.due_at)}`;
+  return `${cb.overdue ? "Overdue" : "Open"} · ${cb.owner} callback due ${staffDueTime(cb.due_at)}`;
+}
+
+/**
+ * The callbacks to show right after a recorded outcome, before revalidation re-renders the page: the API's own
+ * post-append list when it sent one, otherwise the recorded item marked resolved ("understood" is the only outcome
+ * that resolves a callback; "another explanation" leaves it open).
+ */
+export function afterOutcome(
+  callbacks: TeachBackCallback[],
+  callback: string,
+  outcome: "understood_on_call" | "another_explanation",
+  returned?: TeachBackCallback[],
+): TeachBackCallback[] {
+  if (returned) return returned;
+  if (outcome !== "understood_on_call") return callbacks;
+  return callbacks.map((cb) => (cb.id === callback ? { ...cb, status: "resolved" as const, overdue: false } : cb));
 }
 
 /** Failed teach-back callbacks. Only a recorded consultation outcome resolves one; a generic call log does not. */
 export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: string; callbacks: TeachBackCallback[]; live: boolean }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
-  if (callbacks.length === 0) return null;
+  /* An optimistic list holds only while the page still renders the props it was derived from; revalidation replaces them. */
+  const [recorded, setRecorded] = useState<{ base: TeachBackCallback[]; list: TeachBackCallback[] } | null>(null);
+  const shown = recorded && recorded.base === callbacks ? recorded.list : callbacks;
+  if (shown.length === 0) return null;
 
   function record(callback: string, outcome: "understood_on_call" | "another_explanation") {
     setMessage(null);
@@ -31,6 +51,7 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
       const result = await recordTeachBackCallback({ caseId, callback, outcome }).catch(() => null);
       if (!result) return setMessage({ error: true, text: "The API did not answer. Reload before retrying." });
       if (!result.ok) return setMessage({ error: true, text: `Not saved: ${result.error}` });
+      setRecorded({ base: callbacks, list: afterOutcome(shown, callback, outcome, result.callbacks) });
       setMessage({
         error: false,
         text: outcome === "understood_on_call" ? "Callback resolved. The canonical decision is unchanged." : "Another explanation recorded. The callback stays open.",
@@ -45,7 +66,7 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
         <HonestyLabel kind="simulated">No call is placed</HonestyLabel>
       </div>
       <ol className="m-0 mt-2 list-none p-0" aria-label="Teach-back callbacks">
-        {callbacks.map((cb) => (
+        {shown.map((cb) => (
           <li key={cb.id} className="border-t border-rule py-3">
             <p className="m-0 font-medium">{STATE[cb.state]}</p>
             <p className="m-0 mt-1">{callbackStatus(cb)}</p>

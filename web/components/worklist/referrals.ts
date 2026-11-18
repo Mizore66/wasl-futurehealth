@@ -52,7 +52,9 @@ const HANDOFF_WORDS: Record<HandoffStatus, (referrer: string) => string> = {
 /** A past-due packet keeps its original deadline; only one still awaiting the referrer is phrased as upcoming. */
 export function handoffWords(h: Handoff | null, referrer = "GP"): { what: string; when: string } {
   if (!h) return { what: HANDOFF_WORDS.awaiting_referrer(referrer), when: "deadline unavailable" };
-  return { what: HANDOFF_WORDS[h.status](referrer), when: `${h.status === "awaiting_referrer" ? "by" : "was due"} ${formatDay(h.actBy)}` };
+  /* An answered packet is not overdue: its act-by day is history, not a missed deadline. */
+  const when = h.status === "awaiting_referrer" ? "by" : h.status === "referrer_acted" ? "answer was due by" : "was due";
+  return { what: HANDOFF_WORDS[h.status](referrer), when: `${when} ${formatDay(h.actBy)}` };
 }
 
 /** Who holds a returned referral at each packet status: the responsible referrer until escalation moves it on. */
@@ -296,3 +298,13 @@ export function referrerAnswerWords(r: { response: Exclude<ReferrerResponseCode,
 
 /** The packet's reason code in words, or the code itself when it has no words. */
 export const packetReasonWords = (code: string) => PACKET_REASONS[code] ?? code;
+
+/**
+ * The returned-referrals header label. It follows the same credential check as the save error
+ * (REFERRER_TOKEN_MISSING), so the header never claims answers are saved when this server cannot send them.
+ */
+export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean): { kind: "built" | "designed"; text: string } {
+  if (!live) return { kind: "designed", text: "Referrer answers: need the live synthetic API" };
+  if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not available on this server (no referring-clinician credential configured)" };
+  return { kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" };
+}

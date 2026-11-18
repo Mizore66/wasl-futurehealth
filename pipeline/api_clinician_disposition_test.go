@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -47,7 +48,10 @@ func dispositionBody(head string, fields string) string {
 	return fmt.Sprintf(`{"action":"clinician_disposition","expected_head":%q,%s}`, head, fields)
 }
 
-const validDisposition = `"reason":"No fundal view on two attempts; synthetic","plan":"alternative_diagnostic","details":"Slit-lamp examination at the eye clinic","owner":"Dr Synthetic","review_date":"2026-12-01"`
+// dispositionReviewDate is a future date: the API refuses a plan review date before today (B7).
+var dispositionReviewDate = time.Now().UTC().AddDate(0, 0, 30).Format("2006-01-02")
+
+var validDisposition = `"reason":"No fundal view on two attempts; synthetic","plan":"alternative_diagnostic","details":"Slit-lamp examination at the eye clinic","owner":"Dr Synthetic","review_date":"` + dispositionReviewDate + `"`
 
 func TestClinicianDispositionRecordsPlanWithoutClosingTheLoop(t *testing.T) {
 	for _, hc := range dispositionHolds {
@@ -72,7 +76,7 @@ func TestClinicianDispositionRecordsPlanWithoutClosingTheLoop(t *testing.T) {
 				}
 				ov := d["api_overlay"].(map[string]interface{})
 				disp, _ := ov["clinician_disposition"].(map[string]interface{})
-				want := map[string]interface{}{"plan": "alternative_diagnostic", "owner": "Dr Synthetic", "review_date": "2026-12-01", "hold": hc.esc,
+				want := map[string]interface{}{"plan": "alternative_diagnostic", "owner": "Dr Synthetic", "review_date": dispositionReviewDate, "hold": hc.esc,
 					"actor": "clinician-bound", "reason": "No fundal view on two attempts; synthetic", "details": "Slit-lamp examination at the eye clinic"}
 				for k, v := range want {
 					if disp[k] != v {
@@ -90,7 +94,7 @@ func TestClinicianDispositionRecordsPlanWithoutClosingTheLoop(t *testing.T) {
 			for _, v := range ledgerGet(t, h2, "/api/cases", tokCoordinator)["cases"].([]interface{}) {
 				ov := v.(map[string]interface{})["api_overlay"].(map[string]interface{})
 				disp, _ := ov["clinician_disposition"].(map[string]interface{})
-				if disp["plan"] != "alternative_diagnostic" || disp["owner"] != "Dr Synthetic" || disp["review_date"] != "2026-12-01" || disp["reason"] != nil {
+				if disp["plan"] != "alternative_diagnostic" || disp["owner"] != "Dr Synthetic" || disp["review_date"] != dispositionReviewDate || disp["reason"] != nil {
 					t.Fatalf("list projection = %v, want plan, owner and date without free text", disp)
 				}
 			}
@@ -125,7 +129,9 @@ func TestClinicianDispositionRejectsInvalidWrites(t *testing.T) {
 		{"missing review date", tokClinician, dispositionBody(head, drop("review_date")), 400},
 		{"missing details", tokClinician, dispositionBody(head, drop("details")), 400},
 		{"unsupported plan", tokClinician, dispositionBody(head, strings.Replace(validDisposition, "alternative_diagnostic", "procedure_done", 1)), 400},
-		{"bad review date", tokClinician, dispositionBody(head, strings.Replace(validDisposition, "2026-12-01", "next week", 1)), 400},
+		{"bad review date", tokClinician, dispositionBody(head, strings.Replace(validDisposition, dispositionReviewDate, "next week", 1)), 400},
+		{"past review date", tokClinician, dispositionBody(head, strings.Replace(validDisposition, dispositionReviewDate, "2020-01-01", 1)), 400},
+		{"review date beyond a year", tokClinician, dispositionBody(head, strings.Replace(validDisposition, dispositionReviewDate, time.Now().UTC().AddDate(1, 1, 0).Format("2006-01-02"), 1)), 400},
 		{"client supplied hold", tokClinician, dispositionBody(head, validDisposition+`,"hold":"clinician_decision_no_fundal_view"`), 400},
 		{"coordinator", tokCoordinator, dispositionBody(head, validDisposition), 403},
 		{"reviewer", "reviewer-four-token-123456", dispositionBody(head, validDisposition), 403},

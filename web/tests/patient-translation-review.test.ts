@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { approvedWith, DICTS, LANGS, PATIENT_DEFAULT_LANG, PATIENT_LANGS, patientApproved, REVIEW_LANGS, SOURCE_SIGN_OFF, TRANSLATION_REVIEW } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
+import { approvedWith, LANGS, PATIENT_DEFAULT_LANG, PATIENT_LANGS, patientApproved, REVIEW_LANGS, SOURCE_SIGN_OFF, TRANSLATION_REVIEW } from "@/components/patient/i18n";
 import { parsePhoneQuery, phoneHref, STEPS } from "@/components/patient/journey";
 import { translationReviewEnabled } from "@/components/patient/translation-review";
 

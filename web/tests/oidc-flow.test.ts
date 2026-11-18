@@ -76,7 +76,7 @@ function expectRefusal(response: Response) {
 }
 
 describe("OIDC authorization-code flow", () => {
-  it("uses discovery/JWKS, code, state, nonce and S256 PKCE and rotates to an opaque strict session cookie", async () => {
+  it("uses discovery/JWKS, code, state, nonce and S256 PKCE and rotates to an opaque SameSite=Lax session cookie", async () => {
     const login = await begin();
     const { authorizationUrl } = login;
     const parameters = new URL(authorizationUrl).searchParams;
@@ -97,7 +97,7 @@ describe("OIDC authorization-code flow", () => {
     expect(cookie).toContain("Path=/app");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
-    expect(cookie.toLowerCase()).toContain("samesite=strict");
+    expect(cookie.toLowerCase()).toContain("samesite=lax");
     expect(Number(cookie.match(/Max-Age=(\d+)/)?.[1])).toBeGreaterThanOrEqual(28790);
     expect(Number(cookie.match(/Max-Age=(\d+)/)?.[1])).toBeLessThanOrEqual(28800);
     expect(cookie.toLowerCase()).not.toContain("domain=");

@@ -30,7 +30,7 @@ afterEach(async () => {
 async function mount(items = allCallWorkItems(1201), live = false) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live })));
+  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live, undoMs: 0 })));
 }
 const list = () => host.querySelector<HTMLElement>('section[aria-label="Your list"]')!;
 const open = () => host.querySelector<HTMLElement>('section[aria-label="Open patient"]')!;
@@ -115,13 +115,19 @@ it("follows a snoozed row to its new last page and Undo back, with no false remo
   expect(open().textContent).not.toContain("Logged: Snoozed");
 });
 
-it("final-page hand-off clamps to 48, preserves the full-list removed/Undo notice, and restores the acted identity", async () => {
+it("final-page hand-off clamps to 48, keeps the acted patient open with Undo and a link to Waiting, and restores the acted identity", async () => {
   const items = allCallWorkItems(1201); await mount(items); await pager("Last");
   await click("Hand to Dr Al Kaabi");
   expect(rows()).toHaveLength(25); expect(status()).toBe("Page 48 of 48, showing 1176 to 1200 of 1200.");
-  expect(heading()).toBe(items[1175].name); assertMounted();
-  expect(host.querySelector('[data-testid="removed-notice"]')?.textContent).toContain("moved to Waiting");
+  // N1: the moved patient stays open until the user moves on; the list itself no longer holds them.
+  expect(heading()).toBe(items[1200].name); expect(names()).not.toContain(items[1200].name);
+  expect(open().textContent).toContain("moved to Waiting"); expect(button("Open Waiting", open())).toBeTruthy();
+  expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
   await click("Undo", open()); expect(heading()).toBe(items[1200].name); expect(status()).toContain("Page 49 of 49"); assertMounted();
+  await click("Hand to Dr Al Kaabi");
+  const next = Array.from(open().querySelectorAll("button")).find((b) => b.textContent?.startsWith("Next patient:"))!;
+  await act(async () => next.click());
+  expect(heading()).toBe(items[1175].name); assertMounted();
 });
 
 it("search retains the selected matching row, otherwise resets to one; empty results remove pager/status", async () => {
@@ -146,7 +152,7 @@ it("does not transfer drafts or Undo between identities, while committed history
   await pager("Next"); expect(open().textContent).not.toContain("What next?"); expect(open().textContent).not.toContain("Undo");
   await pager("First"); expect(open().textContent).toContain("Reached on the phone");
   // Committed awaitingNext belongs to A, not a leaked in-progress draft. Appointment removes A from To call.
-  await click("Appointment agreed"); assertMounted(); expect(heading()).toBe(items[1].name);
+  await click("Appointment agreed"); expect(heading()).toBe(items[0].name); expect(names()).not.toContain(items[0].name);
   expect(open().textContent).toContain("moved to Waiting");
   await pager("Next"); expect(open().textContent).not.toContain("Undo"); expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
   await click("Waiting 1"); expect(heading()).toBe(items[0].name); expect(open().textContent).toContain("Appointment agreed");
@@ -200,7 +206,7 @@ it("T-TODAY-LIVE-INFLIGHT invokes recordAction before paging, then follows that 
 
 it.each([
   { count: 1201, action: "Snooze to tomorrow", kind: "snooze", page: "Page 49 of 49", selected: 0 },
-  { count: 26, action: "Hand to Dr Al Kaabi", kind: "assign_owner", page: undefined, selected: 1 },
+  { count: 26, action: "Hand to Dr Al Kaabi", kind: "assign_owner", page: undefined, selected: 0 },
 ])("phone delayed $kind follows the action but focuses the visible row, including a disappearing pager ($count rows)", async ({ count, action, kind, page, selected }) => {
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   // SYNTHETIC per-row heads added after workItem, not production authority or API captures.
@@ -215,7 +221,9 @@ it.each([
   expect(document.activeElement).toBe(focusedPager);
   expect(heading()).toBe(items[25].name);
   await act(async () => saved.resolve({ ok: true, head: "synthetic-phone-saved-head", hash: "synthetic-phone-write-hash", actor: "Synthetic coordinator" }));
-  expect(heading()).toBe(items[selected].name); assertMounted();
+  expect(heading()).toBe(items[selected].name);
+  // A hand-off moves the patient to Waiting but keeps them open (N1); a snooze keeps them in To call.
+  if (kind === "snooze") assertMounted(); else expect(names()).not.toContain(heading());
   if (page) expect(status()).toBe(`${page}, showing 1201 to 1201 of 1201.`);
   else { expect(status()).toBeUndefined(); expect(list().querySelector("nav")).toBeNull(); }
   expect(focusedPager.isConnected).toBe(false);
@@ -224,13 +232,15 @@ it.each([
   expect(list().classList.contains("hidden")).toBe(false);
   expect(list().classList.contains("flex")).toBe(true);
   expect(open().classList.contains("hidden")).toBe(true);
-  expect(document.activeElement).toBe(rows().find((row) => row.getAttribute("aria-pressed") === "true"));
+  expect(document.activeElement).toBe(
+    kind === "snooze" ? rows().find((row) => row.getAttribute("aria-pressed") === "true") : list().querySelector('[role="tab"][aria-selected="true"]'),
+  );
   expect(list().contains(document.activeElement)).toBe(true);
   expect(open().contains(document.activeElement)).toBe(false);
   expect(document.activeElement).not.toBe(document.body);
   expect(open().textContent).toContain("saved to the case ledger");
-  if (kind === "snooze") expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
-  else expect(host.querySelector('[data-testid="removed-notice"]')?.textContent).toContain("moved to Waiting");
+  expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
+  if (kind !== "snooze") expect(open().textContent).toContain("moved to Waiting");
 });
 
 it("phone delayed hand-off of the only row focuses the surviving selected list tab", async () => {
@@ -247,7 +257,7 @@ it("phone delayed hand-off of the only row focuses the surviving selected list t
   expect(list().classList.contains("hidden")).toBe(false); expect(open().classList.contains("hidden")).toBe(true);
   expect(document.activeElement).toBe(list().querySelector('[role="tab"][aria-selected="true"]'));
   expect(document.activeElement).not.toBe(document.body);
-  expect(host.querySelector('[data-testid="removed-notice"]')?.textContent).toContain("moved to Waiting");
+  expect(heading()).toBe(items[0].name); expect(open().textContent).toContain("moved to Waiting");
 });
 
 it.each(["phone detail", "desktop list after resize"])("delayed action retains its normal detail focus on %s", async (pane) => {

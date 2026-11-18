@@ -6,6 +6,7 @@ import { recordBooking, type BookingProjection, type BookingWriteResult } from "
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CONDITION_LABELS } from "@/components/worklist/referrals";
+import { dayNumber, slotUnavailableWords } from "./booking-words";
 import type { BookingAction, EligibleBookingSlot, ReferralCondition } from "@/lib/api/schema";
 
 type Mode = "accept" | "choose" | "reschedule" | "cancel";
@@ -13,7 +14,7 @@ type Mode = "accept" | "choose" | "reschedule" | "cancel";
 const OPEN = new Set(["open", "no_show", "inadequate", "referral_rejected"]);
 
 function slotWords(slot: EligibleBookingSlot) {
-  return `${slot.unit} · Day ${slot.day} · ${slot.region}${slot.cross_region ? " · cross-region" : ""}`;
+  return `${slot.unit} · Day ${dayNumber(slot.day)} · ${slot.region}${slot.cross_region ? " · cross-region" : ""}`;
 }
 
 /**
@@ -75,6 +76,7 @@ export function BookingControls({
   else if (reconciling) disabledReason = "A record retrieval for a procedure done elsewhere is pending. Record its outcome before booking.";
   else if (notReady) disabledReason = `Not clinically ready: ${booking.readiness?.reason ?? "a referral or repeat disposition is unresolved"}.`;
   else if (!eligibleCase && !active) disabledReason = "A simulated reservation needs an open booking-eligible case with canonical contact permission granted.";
+  else if (!active && hasCatalogue) disabledReason = slotUnavailableWords(candidates, booking.suggested_slot_id, booking.reservable);
 
   const open = (next: Mode) => {
     setNotice("");
@@ -166,7 +168,7 @@ export function BookingControls({
       </p>
       {summary?.slot && (
         <p className="m-0 mt-1 text-muted">
-          {summary.slot.unit} · Day {summary.slot.day} · {summary.slot.procedure} · deadline Day {summary.slot.deadline}
+          {summary.slot.unit} · Day {dayNumber(summary.slot.day)} · {summary.slot.procedure} · deadline Day {dayNumber(summary.slot.deadline)}
         </p>
       )}
       {booking.reservation_explanation === "overbooked_suggestion_not_reservable" && (

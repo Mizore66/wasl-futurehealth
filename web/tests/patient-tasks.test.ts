@@ -1,4 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Due times carry a relative hint ("in 2 days"), so the wall clock is pinned (Dubai 16:00, Sat 3 Oct 2026).
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-03T12:00:00Z"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 import { workItem } from "@/components/worklist/model";
 import { openPatientTasks } from "@/components/worklist/patient-tasks";
 import { CaseList, type PatientTask, type TeachBackCallback } from "@/lib/api/schema";
@@ -43,9 +52,9 @@ describe("shared patient-request staff tasks", () => {
   it("shows an open patient contest as independent review in Waiting, with due and overdue words", () => {
     const row = openRow();
     const item = workItem({ ...row, patient_tasks: [contest] }, 120, false);
-    expect([item.view, item.status, item.overdue]).toEqual(["waiting", "Patient contest · independent review due 2026-10-08 08:00 UTC", false]);
+    expect([item.view, item.status, item.overdue]).toEqual(["waiting", "Patient contest · independent review due Thu 8 Oct, 12:00 Dubai time (in 5 days)", false]);
     const late = workItem({ ...row, patient_tasks: [{ ...contest, overdue: true }] }, 120, false);
-    expect([late.status, late.overdue]).toEqual(["Patient contest · independent review overdue since 2026-10-08 08:00 UTC", true]);
+    expect([late.status, late.overdue]).toEqual(["Patient contest · independent review overdue since Thu 8 Oct, 12:00 Dubai time (in 5 days)", true]);
   });
 
   it("keeps a decision_revised hold as owned, due-dated revision work in Waiting", () => {
@@ -57,7 +66,7 @@ describe("shared patient-request staff tasks", () => {
     };
     const parsed = CaseList.shape.cases.element.parse({ ...row, patient_tasks: [revision, resolved] });
     const item = workItem(parsed, 120, false);
-    expect([item.view, item.status]).toEqual(["waiting", "Patient contest · decision to be revised due 2026-10-09 09:00 UTC"]);
+    expect([item.view, item.status]).toEqual(["waiting", "Patient contest · decision to be revised due Fri 9 Oct, 13:00 Dubai time (in 6 days)"]);
     expect(workItem({ ...parsed, patient_tasks: [{ ...revision, overdue: true }, resolved] }, 120, false).overdue).toBe(true);
   });
 
@@ -72,7 +81,7 @@ describe("shared patient-request staff tasks", () => {
   it("keeps the coordinator's own failed teach-back call ahead of a contest it cannot resolve", () => {
     const row = openRow();
     const item = workItem({ ...row, teach_back_callback: teachBack, patient_tasks: [callback, contest] }, 120, false);
-    expect([item.view, item.status]).toEqual(["call", "Teach-back failed · nurse callback due 2026-10-05 08:00 UTC"]);
+    expect([item.view, item.status]).toEqual(["call", "Teach-back failed · nurse callback due Mon 5 Oct, 12:00 Dubai time (in 2 days)"]);
     expect(workItem({ ...row, teach_back_callback: teachBack, patient_tasks: [callback, { ...contest, overdue: true }] }, 120, false).overdue).toBe(true);
   });
 });

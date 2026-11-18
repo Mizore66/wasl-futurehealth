@@ -8,6 +8,8 @@ import { parsePhoneQuery, phoneHref, type Step, type Surface } from "./journey";
 import { NoticeScreen } from "./notice-screen";
 import { OutcomeHandoff } from "./outcome-handoff";
 import { PhoneFrame } from "./phone-frame";
+import { DictsProvider } from "./i18n/context";
+import { dictsForSurface } from "./i18n/drafts";
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -34,10 +36,13 @@ export async function PhonePage({ step, search, surface }: { step: Step; search:
 
   return (
     <PhoneFrame step={step} query={query} live>
-      {step === "notice" && <NoticeScreen lang={query.lang} journey={initial.journey} />}
-      {step === "check" && <CheckFlow query={query} initial={initial.journey} />}
-      {step === "book" && <BookFlow query={query} initial={initial.journey} offers={initial.offers} />}
-      {step === "outcome" && <OutcomeHandoff lang={query.lang} />}
+      {/* Draft dictionaries reach client components only through this provider, and only on the review surface. */}
+      <DictsProvider dicts={dictsForSurface(surface)}>
+        {step === "notice" && <NoticeScreen lang={query.lang} journey={initial.journey} />}
+        {step === "check" && <CheckFlow query={query} initial={initial.journey} />}
+        {step === "book" && <BookFlow query={query} initial={initial.journey} offers={initial.offers} preview={surface === "review"} />}
+        {step === "outcome" && <OutcomeHandoff lang={query.lang} />}
+      </DictsProvider>
     </PhoneFrame>
   );
 }

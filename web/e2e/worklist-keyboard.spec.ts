@@ -122,18 +122,21 @@ test.describe("Today: stale patient actions (issue #12)", () => {
     return open.getByRole("button", { name: /^(Log call|Logging call|Snooze to tomorrow|Hand to Dr Al Kaabi|Take this patient)/ });
   };
 
-  test("Hand-off advances to the next patient; a no-match search leaves no patient actions, only Undo", async ({ page }) => {
+  test("Hand-off keeps the patient open with a way on to the next; a no-match search leaves no patient actions, only Undo", async ({ page }) => {
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Hand to Dr Al Kaabi" }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
-    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1023" })).toBeVisible();
-    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
-    const notice = open.getByTestId("removed-notice");
-    await expect(notice).toContainText("Logged: Handed to Dr Al Kaabi · AHS-sr-1002 moved to Waiting");
-    await focused(page, notice.getByRole("button", { name: "Undo" }));
+    // The handed-off patient stays open (they are now in Waiting), with Undo, a way to their tab and to the next patient.
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open.getByRole("status")).toContainText("Logged: Handed to Dr Al Kaabi · AHS-sr-1002 moved to Waiting");
+    await expect(open.getByTestId("removed-notice")).toHaveCount(0);
+    await focused(page, open.getByRole("button", { name: "Undo" }));
+    await expect(open.getByTestId("open-destination")).toHaveText("Open Waiting");
+    await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ })).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Next patient: AHS-sr-1023" })).toBeVisible();
     await shot(page, "today-handoff");
 
+    // A search that excludes the held patient lets go of them: the way back is all that is left.
     await page.getByRole("searchbox").fill("zzzz-no-match");
     await expect(page.getByText("Nobody left in this view.")).toBeVisible();
     await expect(page.getByText("0 to call")).toBeVisible();
@@ -197,9 +200,12 @@ test.describe("Today: focus through the call workflow (issue #14)", () => {
     await focused(page, open.getByRole("button", { name: "Appointment agreed" }));
 
     await page.keyboard.press("Enter");
-    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Appointment agreed");
-    await focused(page, open.getByTestId("removed-notice").getByRole("button", { name: "Undo" }));
+    // The patient moves to Waiting but stays open, so the outcome is seen where it was recorded.
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open.getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
+    await focused(page, open.getByRole("button", { name: "Undo" }));
     await tabStaysIn(page, open);
+    await focused(page, open.getByTestId("open-destination"));
   });
 
   test("No answer lands on Undo; Tab continues in the patient panel; Undo returns to the patient heading", async ({ page }) => {

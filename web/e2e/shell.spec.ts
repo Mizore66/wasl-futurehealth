@@ -310,6 +310,10 @@ const navNames = async (page: Page) => {
 };
 const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
 const FOCUS_TEXT = ["Skip to main content", "WaslADPHC · screening follow-up", "Programme", "Today", "Recovery", "Review", "Patients", "Referrals", "Pipeline", "Results", "Agent reviewExperimental"];
+// Worklist pages (Today, Referrals) add a second skip link, "Skip to worklist", straight after "Skip to main content".
+const WORKLIST_ROUTES = new Set(["/app/today", "/app/referrals"]);
+const withWorklistSkip = (route: string, stops: string[]) =>
+  WORKLIST_ROUTES.has(route) ? [stops[0], "Skip to worklist", ...stops.slice(1)] : stops;
 
 const tabStop = (page: Page) =>
   page.evaluate(() => {
@@ -337,15 +341,16 @@ for (const route of APP_ROUTES) {
       await expect(sidebar(page).getByRole("navigation", { name: "Main", exact: true })).toBeVisible();
       // The header (and the mobile menu inside it) is display:none, so it is not in the tab order either.
       await expect(page.locator("header #mobile-menu")).toBeHidden();
+      const expected = withWorklistSkip(route, FOCUS_TEXT);
       const seen: string[] = [];
-      for (let i = 0; i < FOCUS_TEXT.length; i++) {
+      for (let i = 0; i < expected.length; i++) {
         await page.keyboard.press("Tab");
         const f = await tabStop(page);
         seen.push(f.text);
         expect(f.outline, `focus ring on "${f.text}"`).not.toBe("none");
         expect(f.width).toBe("2px");
       }
-      expect(seen).toEqual(FOCUS_TEXT);
+      expect(seen).toEqual(expected);
     });
 
     test("390px: one Main navigation with the menu closed and open, unique names, focus order and rings", async ({ page }) => {
@@ -355,15 +360,16 @@ for (const route of APP_ROUTES) {
       await expect(page.locator("aside#app-sidebar")).toBeHidden();
       await expect(main(page)).toHaveCount(0);
       expect((await navNames(page)).filter((n) => n.startsWith("Main"))).toHaveLength(0);
+      const expectedClosed = withWorklistSkip(route, ["Skip to main content", "WaslADPHC · screening follow-up", "Menu navigation"]);
       const closed: string[] = [];
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < expectedClosed.length; i++) {
         await page.keyboard.press("Tab");
         const f = await tabStop(page);
         closed.push(f.text);
         expect(f.outline).not.toBe("none");
         expect(f.width).toBe("2px");
       }
-      expect(closed).toEqual(["Skip to main content", "WaslADPHC · screening follow-up", "Menu navigation"]);
+      expect(closed).toEqual(expectedClosed);
 
       await page.getByRole("button", { name: /Menu/ }).click();
       await expectOneMain(page, "Main (mobile)");

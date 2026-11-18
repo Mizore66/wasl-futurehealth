@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import { recordDisposition } from "@/app/app/patients/[id]/disposition/actions";
 import { DispositionCard } from "@/components/disposition/disposition-card";
-import { oidcStartHref } from "@/components/review/auth";
+import { clinicianSignInWords, oidcStartHref } from "@/components/review/auth";
 import { DispositionInput, dispositionContext } from "@/components/disposition/model";
 import { reviewerToken } from "@/lib/api/reviewer-session";
 import { CaseDetail } from "@/lib/api/schema";
@@ -162,5 +162,25 @@ describe("OIDC sign-in from the disposition page", () => {
   it("returns to the disposition workflow, while the review desk keeps its default", () => {
     expect(oidcStartHref("case/1", "/app/patients/case%2F1/disposition")).toBe("/app/auth/oidc/start?returnTo=%2Fapp%2Fpatients%2Fcase%252F1%2Fdisposition");
     expect(oidcStartHref("case/1")).toBe("/app/auth/oidc/start?returnTo=%2Fapp%2Freview%2Fcase%252F1");
+  });
+
+  it("does not talk about tokens in OIDC mode, on the page or in the signed-out action reply", async () => {
+    expect(clinicianSignInWords("oidc")).not.toMatch(/token/i);
+    expect(clinicianSignInWords("oidc")).toMatch(/OIDC/);
+    expect(clinicianSignInWords("demo")).toMatch(/token assigned to you/);
+    const page = readFileSync(path.join(process.cwd(), "app", "app", "patients", "[id]", "disposition", "page.tsx"), "utf8");
+    expect(page).not.toContain("Sign in with the token assigned to you");
+    expect(page).toContain("clinicianSignInWords(authMode)");
+
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_REVIEW_AUTH_MODE", "oidc");
+    vi.mocked(reviewerToken).mockResolvedValue(undefined);
+    const res = await recordDisposition({ caseId: "c", expectedHead: HEAD, disposition: holdPlan });
+    expect(res).toMatchObject({ ok: false, signIn: true });
+    expect(!res.ok && res.error).not.toMatch(/token/i);
+    vi.stubEnv("WASL_REVIEW_AUTH_MODE", "demo");
+    const demo = await recordDisposition({ caseId: "c", expectedHead: HEAD, disposition: holdPlan });
+    expect(!demo.ok && demo.error).toMatch(/clinician token/);
+    vi.unstubAllEnvs();
   });
 });

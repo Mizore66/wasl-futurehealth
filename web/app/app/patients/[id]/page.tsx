@@ -9,19 +9,22 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
-import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { closedHeadline, closedInDays, headerStatusWords, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, apiMode, getAudit, getCase } from "@/lib/api/source";
 import { resolveReviewer } from "@/lib/api/reviewer-session";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
 import { patientContestReview as contestSlots, type ContestSession } from "@/components/case/patient-contest-review";
+import { OutcomeHandoffSection } from "@/components/case/outcome-handoff-review";
 import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
-import { personForLoop } from "@/lib/people";
+import { personForLoop, showsSimulatedName } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
 import { entryLabel } from "@/components/case/words";
+import { chainCheck } from "@/components/case/audit-view";
+import { StageMarks } from "@/components/case/stage-marks";
 
 export async function generateMetadata({ params }: PageProps<"/app/patients/[id]">) {
   const id = caseIdFromParam((await params).id);
@@ -103,6 +106,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   /* An invalid replay keeps the valid prefix (so the saved owner still shows) but that owner is not authoritative. */
   const ledgerInvalid = detail.review_ledger?.status === "invalid" || detail.api_overlay?.ledger_status === "invalid";
   const [latest, ...earlier] = [...detail.evidence].reverse();
+  const chain = audit ? chainCheck(audit) : undefined;
 
   return (
     <>
@@ -126,15 +130,15 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               {closedIn !== null ? (
                 <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
               ) : (
-                <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
+                <StageMarks stage={caseStage(detail).label} overdue={c.overdue} />
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? (isNoAction(c) ? "closed, no action needed" : "closed with evidence") : statusWords(c).status.toLowerCase()} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
+                {headerStatusWords(c)} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
               </span>
             </p>
           </div>
         </div>
-        <HonestyLabel kind="simulated">Simulated names</HonestyLabel>
+        {showsSimulatedName(c.id) && <HonestyLabel kind="simulated">Simulated names</HonestyLabel>}
       </header>
 
       {ledgerInvalid && <LedgerInvalidBanner what="this record" className="mt-4" />}
@@ -172,7 +176,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </Link>
         {audit && (
           <span className="text-muted" data-testid="audit-teaser">
-            {audit.chain_verified ? "Chain verified by the server" : "Chain broken"}
+            {!audit.chain_verified ? "Chain broken" : audit.chain_length === 0 ? "No sealed entries yet" : "Chain verified by the server"}
           </span>
         )}
       </div>
@@ -192,7 +196,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </ul>
       </nav>
 
-      <div className="mt-6 flex flex-wrap items-stretch gap-gap">
+      {/* Why the case is (still) open comes before the step-by-step chain, so a "done" step is never read as closure. */}
+      <div className="mt-6" data-testid="why-above-timeline">
+        <ReasonCard detail={detail} />
+      </div>
+
+      <div className="mt-gap flex flex-wrap items-stretch gap-gap">
         <section aria-labelledby="chain-h" className="min-w-0 flex-[999_1_560px] self-start rounded-card border border-line bg-surface p-4 md:p-pad">
           <div className="flex flex-wrap items-baseline justify-between gap-gap">
             <h2 id="chain-h" className="m-0 text-section font-medium">
@@ -220,7 +229,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </section>
 
         <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-gap">
-          <ReasonCard detail={detail} />
           <DispositionCard ctx={dispositionContext(detail)} />
           <ProgrammeFindingCard detail={detail} />
           <IdentitiesCard detail={detail} />
@@ -246,13 +254,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 </ol>
               </details>
               <p className="m-0 flex flex-wrap items-center gap-2 pb-3" role="status" data-testid="chain-verified">
-                {audit.chain_verified ? (
-                  <Pill tone="positive">
-                    Verified · {audit.chain.length} of {audit.chain_length} intact
-                  </Pill>
-                ) : (
-                  <Pill tone="negative">Chain broken</Pill>
-                )}
+                <Pill tone={chain?.tone === "muted" ? "neutral" : (chain?.tone ?? "neutral")}>{chain?.label}</Pill>
                 <span className="text-small text-muted">The server recomputed each hash from its contents and the entry before it.</span>
               </p>
               <p className="m-0 pb-3">
@@ -289,6 +291,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           )}
           <ConsentCard detail={detail} />
           <PatientJourneySection detail={detail} contestReview={contestReview} />
+          <OutcomeHandoffSection detail={detail} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>

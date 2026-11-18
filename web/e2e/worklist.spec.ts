@@ -83,10 +83,14 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Reached" }).click();
     await open.getByRole("button", { name: "Appointment agreed" }).click();
-    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
+    // The patient stays open with the outcome; the toast's "Open Waiting" follows them to their new tab.
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open.getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
     await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Waiting 7" })).toBeVisible();
-    await page.getByRole("tab", { name: "Waiting 7" }).click();
+    await open.getByRole("button", { name: "Open Waiting" }).click();
+    await expect(page.getByRole("tab", { name: "Waiting 7" })).toHaveAttribute("aria-selected", "true");
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
     await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ })).toContainText("Booking needed · date to confirm");
 
     await page.getByRole("tab", { name: "No owner 2" }).click();
@@ -249,7 +253,17 @@ test.describe("Referrals", () => {
   test("inline Accept, Undo, conditions and Return", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
+    // A row-level Accept opens the referral and asks once more; nothing is accepted until Confirm.
     await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await expect(pane.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-9001");
+    const confirm = page.getByRole("button", { name: "Confirm accepting the referral for AHS-sr-9001" });
+    await expect(confirm).toBeFocused();
+    await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+    await page.getByRole("button", { name: "Do not accept the referral for AHS-sr-9001 yet" }).click();
+    await expect(pane.getByText("Accepted. Your unit books her now.")).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await confirm.click();
     await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
     await expect(page.getByRole("tab", { name: "Needs you 3" })).toBeVisible();
     await pane.getByRole("button", { name: "Undo" }).click();
@@ -341,6 +355,12 @@ test.describe("Referrals", () => {
     await expect(page).toHaveURL(aisha);
   });
 
+  /** A row-level Accept opens the referral and asks once more; Confirm commits it. */
+  async function acceptFromRow(page: Page, id: string) {
+    await page.getByRole("button", { name: `Accept referral for ${id}` }).click();
+    await page.getByRole("button", { name: `Confirm accepting the referral for ${id}` }).click();
+  }
+
   async function search(page: Page, text: string) {
     const box = page.getByRole("searchbox", { name: "Search case id" });
     await box.fill(text);
@@ -352,7 +372,7 @@ test.describe("Referrals", () => {
   test("searching and clearing keep an Accept, its history and Undo", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await acceptFromRow(page, "AHS-sr-9001");
     await expect(page.getByRole("tab", { name: "Accepted 17" })).toBeVisible();
     await search(page, "9001");
     await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
@@ -370,7 +390,7 @@ test.describe("Referrals", () => {
   test("a search that hides several decisions gives every one back when cleared", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await acceptFromRow(page, "AHS-sr-9001");
     await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
     await pane.getByRole("button", { name: "Accept with conditions" }).click();
     await pane.getByRole("button", { name: "Female endoscopist" }).click();
@@ -446,7 +466,7 @@ test.describe("Referrals", () => {
   test("clearing a search drops an unconfirmed draft but keeps committed decisions", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-9001" }).click();
+    await acceptFromRow(page, "AHS-sr-9001");
     await page.getByRole("button", { name: /^AHS-sr-9002/ }).click();
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await pane.getByRole("button", { name: "Wrong unit" }).click();

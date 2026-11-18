@@ -3,7 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { recordDisposition } from "@/app/app/patients/[id]/disposition/actions";
-import { FIT_REOFFERS, HOLD_PLANS, REFUSAL_REASONS, type DispositionKind } from "./model";
+import { FIT_REOFFERS, HOLD_PLANS, REFUSAL_REASONS, todayIso, type DispositionKind } from "./model";
 
 const FIELD = "mt-1 min-h-11 w-full rounded-control border border-control bg-surface px-3 text-ink";
 const AREA = "mt-1 min-h-24 w-full rounded-control border border-control bg-surface px-3 py-2 text-ink";
@@ -90,7 +90,7 @@ export function DispositionForm({ caseId, expectedHead, kind, crc }: { caseId: s
             <input id={f("owner")} name="owner" required maxLength={64} className={FIELD} />
           </Field>
           <Field id={f("review_date")} label="Review date (required)">
-            <input id={f("review_date")} name="review_date" type="date" required className={FIELD} />
+            <input id={f("review_date")} name="review_date" type="date" required min={todayIso()} className={FIELD} />
           </Field>
         </>
       ) : (
