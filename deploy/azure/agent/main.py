@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import json
 import os
+import urllib.request
 
 from azure.ai.agentserver.responses import (
     CreateResponse,
@@ -15,40 +17,46 @@ from azure.ai.agentserver.responses import (
 
 import wasl_agent
 
+MODEL_TIMEOUT_S = 180
+
 
 @functools.cache
-def auditor_token() -> str:
+def secret(env_name: str, vault_secret: str) -> str:
     vault_url = os.environ.get("WASL_KEYVAULT_URL")
     if not vault_url:
-        return os.environ["WASL_API_TOKEN"]
+        return os.environ[env_name]
     from azure.identity import DefaultAzureCredential
     from azure.keyvault.secrets import SecretClient
 
-    secret_name = os.environ.get("WASL_AUDITOR_SECRET_NAME", "wasl-auditor-token")
-    return SecretClient(vault_url, DefaultAzureCredential()).get_secret(secret_name).value
+    return SecretClient(vault_url, DefaultAzureCredential()).get_secret(vault_secret).value
 
 
-def foundry_model(endpoint: str, deployment: str) -> wasl_agent.ModelFn:
-    client = None
+def auditor_token() -> str:
+    return secret("WASL_API_TOKEN", os.environ.get("WASL_AUDITOR_SECRET_NAME", "wasl-auditor-token"))
+
+
+def chat_model(base_url: str, model_name: str) -> wasl_agent.ModelFn:
+    """One call to an OpenAI-compatible /v1/chat/completions, such as the repository's llama-server reader."""
 
     def call(system: str, user: str) -> str:
-        nonlocal client
-        if client is None:
-            from azure.ai.projects import AIProjectClient
-            from azure.identity import DefaultAzureCredential
-
-            client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential()).get_openai_client()
-        completion = client.chat.completions.create(
-            model=deployment,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            max_tokens=wasl_agent.MAX_OUTPUT_TOKENS,
+        body = {
+            "model": model_name,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "max_tokens": wasl_agent.MAX_OUTPUT_TOKENS,
+        }
+        key = secret("WASL_LLM_KEY", os.environ.get("WASL_LLM_KEY_SECRET_NAME", "gemma-api-key"))
+        request = urllib.request.Request(
+            base_url.rstrip("/") + "/v1/chat/completions",
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
         )
-        return completion.choices[0].message.content or ""
+        with urllib.request.urlopen(request, timeout=MODEL_TIMEOUT_S) as response:
+            return json.loads(response.read())["choices"][0]["message"]["content"] or ""
 
     return call
 
 
-def build_app(model: wasl_agent.ModelFn, deployment: str) -> ResponsesAgentServerHost:
+def build_app(model: wasl_agent.ModelFn, model_name: str) -> ResponsesAgentServerHost:
     api_url = os.environ["WASL_API_URL"]
     app = ResponsesAgentServerHost()
 
@@ -56,7 +64,7 @@ def build_app(model: wasl_agent.ModelFn, deployment: str) -> ResponsesAgentServe
     async def handler(request: CreateResponse, context: ResponseContext, _cancel: asyncio.Event):
         text = await context.get_input_text() or ""
         reply = await asyncio.to_thread(
-            wasl_agent.answer, text, api_url=api_url, token=auditor_token, model=model, deployment=deployment
+            wasl_agent.answer, text, api_url=api_url, token=auditor_token, model=model, model_name=model_name
         )
         return TextResponse(context, request, text=reply)
 
@@ -64,5 +72,5 @@ def build_app(model: wasl_agent.ModelFn, deployment: str) -> ResponsesAgentServe
 
 
 if __name__ == "__main__":
-    deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini")
-    build_app(foundry_model(os.environ.get("FOUNDRY_PROJECT_ENDPOINT", ""), deployment), deployment).run()
+    model_name = os.environ.get("WASL_LLM_MODEL", "gemma-3-4b-it-Q4_K_M")
+    build_app(chat_model(os.environ["WASL_LLM_URL"], model_name), model_name).run()

@@ -1,14 +1,20 @@
-# Wasl on Azure: API on Container Apps, audit agent on Foundry
+# Wasl hosted demo: API on Azure, audit agent on Foundry, Gemma 3 4B on Modal
 
 Status and evidence are in [`docs/DEPLOY.md`, "Azure"](../../docs/DEPLOY.md#azure). This file is the runbook.
 All data is synthetic. Keep `WASL_SYNTHETIC_DATA_ONLY=1`.
+
+Wasl's language model is the small open model the repository's reader already uses: Gemma 3 4B as
+`gemma-3-4b-it-Q4_K_M.gguf`, served by `llama-server`. That file runs on a hospital's own laptop or server, so patient
+text never has to reach a cloud-hosted model. For this hosted demo the same file runs on a rented GPU on Modal, which
+stands in for the hospital's machine and only ever sees synthetic data. No frontier model is in the request path.
 
 | Part | Where | What it is |
 |---|---|---|
 | `wsi7 serve` API | Azure Container Apps, one replica | The read/write API over a finished run. The run directory lives on an Azure Files share. |
 | Pipeline run | Local Docker (`docker compose`, 3-node NATS) | Produces the run directory the API serves. It is **not** run on Azure. |
-| `wasl-audit-explainer` | Foundry hosted agent (`agent/`) | Reads one case's redacted audit trail with an auditor token and explains it with `gpt-4.1-mini`. Read-only. |
-| `gpt-4.1-mini` | Foundry model deployment, Global Standard | The agent's model. It is not the Gemma reader; the published results do not use it. |
+| `wasl-audit-explainer` | Foundry hosted agent (`agent/`) | Reads one case's redacted audit trail with an auditor token and explains it with Gemma 3 4B. Read-only. |
+| Gemma 3 4B (`gemma-3-4b-it-Q4_K_M.gguf`) | Modal, one T4 GPU, scales to zero (`deploy/modal/gemma_server.py`) | The on-device reader's exact file and `llama-server` flags, behind an API key. |
+| `gpt-4.1-mini` | Foundry model deployment, unused | Created during the first Azure deploy. Nothing calls it; delete it with `az cognitiveservices account deployment delete`. |
 
 ## Prerequisites
 
@@ -82,13 +88,29 @@ az containerapp revision restart -g $RG -n wasl-api --revision <active revision>
 python3 deploy/azure/verify_api.py reread https://<fqdn> <same dir>
 ```
 
-## 4. The model and the agent
+## 4. Gemma 3 4B on Modal
+
+Modal needs a payment method on the account before it runs a GPU; the Starter plan's monthly credit still applies.
+Generate a random server key, then:
+
+```bash
+python -m modal token new                                       # browser sign-in
+python -m modal secret create wasl-gemma-key --from-dotenv <file with LLAMA_API_KEY=...>
+az keyvault secret set --vault-name <kv> -n gemma-api-key --file <file with the key>
+python -m modal run    deploy/modal/gemma_server.py::download   # fetch ggml-org's file, check its SHA-256
+python -m modal deploy deploy/modal/gemma_server.py             # WASL_GEMMA_WARM=1 keeps one GPU up
+```
+
+The server refuses every model route without the key (401); `/health` stays open. It scales to zero after 15 idle
+minutes. Measured on 18 Nov 2026, one sample each: a cold request after a fresh deploy took 135 s and returned 200,
+including the image pull; a warm request took 1.3 s; generation ran at 50.6 tokens per second. During judging, deploy
+with `WASL_GEMMA_WARM=1` so no visitor waits for a cold start, then redeploy without it.
+
+## 5. The agent
 
 ```bash
 az cognitiveservices account create -g $RG -n <ai> -l $LOC --kind AIServices --sku S0 --custom-domain <ai> --allow-project-management
 az cognitiveservices account project create -g $RG -n <ai> --project-name wasl-agents -l $LOC
-az cognitiveservices account deployment create -g $RG -n <ai> --deployment-name gpt-4.1-mini \
-  --model-name gpt-4.1-mini --model-version 2025-04-14 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 20
 ```
 
 Put the auditor token in Key Vault (RBAC mode) as `wasl-auditor-token`. Then, from `deploy/azure/`:
@@ -96,21 +118,23 @@ Put the auditor token in Key Vault (RBAC mode) as `wasl-auditor-token`. Then, fr
 ```bash
 azd env set WASL_API_URL https://<fqdn>
 azd env set WASL_KEYVAULT_URL https://<kv>.vault.azure.net/
+azd env set WASL_LLM_URL https://<workspace>--wasl-gemma-serve.us-east.modal.run
+azd env set WASL_LLM_MODEL gemma-3-4b-it-Q4_K_M
 azd deploy wasl-audit-explainer
 azd ai agent show wasl-audit-explainer        # instance_identity.principal_id
 ```
 
-Grant that principal `Key Vault Secrets User` on the vault. The working deployment also granted it both
-`Foundry User` and `Cognitive Services OpenAI User` on the Foundry account. Which of the two the model call needs is
-untested. If a new agent version still fails with `AuthenticationError` after the grants, redeploy it. Then:
+Grant that principal `Key Vault Secrets User` on the vault: it reads `wasl-auditor-token` and `gemma-api-key` there.
+Then:
 
 ```bash
 azd ai agent invoke wasl-audit-explainer "Explain the audit trail for ahs-mushrif/ServiceRequest/AHS-sr-1001"
 ```
 
-The agent makes one GET to `/api/cases/{id}/audit` and one model call. It sends nothing to any write route.
+The agent makes one GET to `/api/cases/{id}/audit` and one call to the Gemma server. It sends nothing to any write
+route.
 
-## 5. The web app on Vercel
+## 6. The web app on Vercel
 
 The Vercel project `wasl` has Root Directory `web`. Deploy from the repository root: the root `.vercelignore`
 uploads only `web/` and `data/evidence/`, which `next build` type-checks through
@@ -139,6 +163,7 @@ Each job runs only when its inputs changed:
 | API | `pipeline/`, `scripts/`, `data/`, `models/`, `booking/`, `patient-parsers/`, `Dockerfile`, the API deploy files | builds the image on the runner, pushes `wasl:<sha>` to ACR, rolls the Container App onto it | the new revision becomes ready and runs the new image (a failed revision leaves the old one serving, which a smoke test alone would miss), then `verify_api.py smoke` |
 | Agent | `deploy/azure/agent/`, `azure.yaml` | runs the agent tests, rebuilds the `azd` environment from `ci.env`, `azd deploy` | the deployed agent answers a no-case-id prompt |
 | Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel pull`, `vercel build --prod`, `vercel deploy --prebuilt --prod` | the deployment reports Ready |
+| Model | `deploy/modal/` | `modal deploy` of the Gemma server | `/health` reaches 200 and an unauthenticated model route gets 401 |
 
 GitHub signs in to Azure as the user-assigned identity `wasl-github-deploy`, through a federated credential that
 trusts only `repo:Mizore66/wasl-futurehealth:ref:refs/heads/main`. No Azure secret exists. The identity holds
@@ -147,7 +172,8 @@ Foundry account. App registrations are blocked in this tenant, which is why it i
 
 One-time setup by a repository admin: create a Vercel token for the `kais-projects-42abda1c` team, then run
 `deploy/azure/ci_setup.sh` with the five IDs (the identity's client ID, the tenant, the subscription, and the Vercel
-org and project IDs from `.vercel/project.json`) and the token on stdin.
+org and project IDs from `.vercel/project.json`) and the token on stdin. For the Model job, also pass a Modal API
+token (Modal dashboard, Settings > API Tokens) as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`.
 
 Not automated: the pipeline run that produces the API's data. A new run invalidates the review ledger (`docs/API.md`),
 so refreshing the share stays a deliberate, manual step (section 1 and 2).
@@ -156,4 +182,5 @@ so refreshing the share stays a deliberate, manual step (section 1 and 2).
 
 The API runs one always-on replica (1 vCPU, 2 GiB). That is the largest cost: roughly USD 1.5 to 2 a day at list
 consumption prices, which is an estimate, not a measured bill. ACR Basic, the storage account and the Key Vault cost
-cents a day. The model and the agent bill per use. Delete everything with `az group delete -n rg-wasl-demo`.
+cents a day. The Foundry agent bills per use. Modal bills the T4 per second while a container runs, about USD 0.59 an
+hour at its list price, after the monthly credit. Delete everything with `az group delete -n rg-wasl-demo`.
