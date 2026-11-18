@@ -98,6 +98,28 @@ describe("N1: an outcome that moves the patient keeps them open", () => {
   });
 });
 
+describe("N1 and issue #12: a search that excludes the held patient lets go of them", () => {
+  it("leaves no patient actions, only the way back, and holds them again once the search is cleared", async () => {
+    const items = allCallWorkItems(3);
+    await mount(items);
+    await click("Hand to Dr Al Kaabi");
+    const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+    const type = (text: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(search, text);
+        search.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await type("zzzz-no-match");
+    expect(heading()).toBe("Nobody to open");
+    // Only the phone-width "Your list" toggle and Undo are left: nothing that acts on the patient.
+    expect(Array.from(open().querySelectorAll("button")).map((b) => b.textContent?.trim())).toEqual(["‹Your list", "Undo"]);
+    expect(host.querySelector('[data-testid="removed-notice"]')!.textContent).toContain("moved to Waiting");
+    await type("");
+    expect(heading()).toBe(items[0].name);
+    expect(host.querySelector('[data-testid="open-destination"]')).not.toBeNull();
+  });
+});
+
 describe("N5: live Snooze, Hand to and Declined wait with Undo before the POST", () => {
   it("Undo inside the window sends nothing, ever", async () => {
     vi.useFakeTimers();

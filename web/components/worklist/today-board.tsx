@@ -241,15 +241,16 @@ export function TodayBoard({
   });
   const inView = (v: View) => all.filter((p) => p.view === v).sort(byUrgency);
   const q = s.q.trim().toLowerCase();
-  const list = inView(s.tab).filter((p) => !q || p.name.toLowerCase().includes(q) || p.short.toLowerCase().includes(q));
+  const matches = (x: Row) => !q || x.name.toLowerCase().includes(q) || x.short.toLowerCase().includes(q);
+  const list = inView(s.tab).filter(matches);
   const toCall = inView("call");
   /*
    * The open patient is one of the visible results, so Call, Snooze and Hand-off never act on someone filtered out.
    * The one exception: a patient the last action moved to another tab stays open (named, with a link to that tab)
-   * until the user moves on, so the outcome is seen where it was recorded.
+   * until the user moves on, so the outcome is seen where it was recorded. A search that excludes them lets go too.
    */
   const paging = paginate(list, pageWith(list, s.sel, s.page));
-  const held = s.last ? all.find((x) => x.id === s.last!.id && x.view !== s.tab) : undefined;
+  const held = s.last ? all.find((x) => x.id === s.last!.id && x.view !== s.tab && matches(x)) : undefined;
   const p = held ?? paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
   if (s.page !== paging.page) setS((prev) => (prev.page === paging.page ? prev : { ...prev, page: paging.page }));
   const fresh = { calling: null, stage: null, last: null };
