@@ -1,0 +1,5 @@
+# Containers execute these on Linux. A CRLF checkout (core.autocrlf on Windows) breaks shebangs and entrypoints.
+*.sh text eol=lf
+*.py text eol=lf
+*.conf text eol=lf
+Dockerfile text eol=lf

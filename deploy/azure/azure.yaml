@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+infra:
+    provider: microsoft.foundry
+name: azure
+services:
+    wasl-agents:
+        endpoint: https://wasl-foundry-1608b4.services.ai.azure.com/api/projects/wasl-agents
+        host: azure.ai.project
+    wasl-audit-explainer:
+        codeConfiguration:
+            dependencyResolution: remote_build
+            entryPoint: main.py
+            runtime: python_3_13
+        container:
+            resources:
+                cpu: "0.5"
+                memory: 1Gi
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+            WASL_API_URL: ${WASL_API_URL}
+            WASL_KEYVAULT_URL: ${WASL_KEYVAULT_URL}
+            PYTHONNOUSERSITE: "1"
+        host: azure.ai.agent
+        kind: hosted
+        language: python
+        name: wasl-audit-explainer
+        project: ./agent
+        protocols:
+            - protocol: responses
+              version: 2.0.0
+        uses:
+            - wasl-agents

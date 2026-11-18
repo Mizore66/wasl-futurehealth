@@ -336,6 +336,42 @@ the operator issued to distinct people. Review and coordinator events are append
 makes the old ledger invalid (see `API.md`). To rotate a credential, change both `WASL_API_TOKENS` on the API host
 (then rerun `scripts/deploy_up.sh -d` with the original `WASL_JS_KEY` exported) and the matching Vercel variable.
 
+## Azure
+
+Observed on 17 Nov 2026 in one Azure for Students subscription, region `japaneast`. The image was built locally from
+a checkout of commit `4bfd661` with LF line endings, and tagged `4bfd661c-lf`. The live API returned 401 for every
+published `wasl-demo-*` token. The runbook
+is [`deploy/azure/README.md`](../deploy/azure/README.md). Synthetic data only.
+
+| Part | Label | What was verified |
+|---|---|---|
+| `wsi7 serve` API on Azure Container Apps | **built** | `deploy/azure/verify_api.py` passed against the Container Apps URL. `/healthz` reported 2,148 cases with `nats: not_required_for_read_api`. Calls without a token got 401, and `/api/fixtures` returned 200 with a fresh reviewer token. A coordinator note returned 201. After a revision restart, a replica created after the write still served the note, and the note's line was read back from the Azure Files share. |
+| Pipeline run that produced the API's data | **built, local** | It ran on local Docker with the 3-node NATS cluster and exited 0. The run directory was then copied to Azure Files. **The pipeline did not run on Azure.** |
+| `gpt-4.1-mini` on Foundry | **built** | Deployment `gpt-4.1-mini` 2025-04-14, Global Standard. One JSON-mode call returned the expected object. This is not the Gemma reader. The cached reader answers and the published results are unchanged, and no metric uses this model. |
+| `wasl-audit-explainer` Foundry hosted agent | **built, demo** | One end-to-end call was observed. The agent read the auditor token from Key Vault, sent `GET /api/cases/{id}/audit` to the Azure API, and called the model through the project endpoint. The API log shows only GETs from that actor. The answer was fluent but contained a false statement about the 31-day window. Agent output is unvalidated and is not a clinical or audit finding. |
+| Vercel web app on the Azure API | **built** | 18 Nov 2026: production redeployed with `WASL_API_URL` and the server tokens. Pages showed the Azure run's 2,148 cases, and the API log recorded the dashboard, case-list and case-detail reads as `hosted-web-reviewer`. The production alias is public by decision, so judges can open it (see the runbook). |
+| Continuous deployment (`.github/workflows/deploy.yml`) | **built, not yet run on GitHub** | actionlint 1.7.10 and `scripts/check_action_pins.py` pass. The agent job's deploy script and the API job's roll-and-smoke script were run locally with the same commands. They produced agent version 3 and API revision 4. The workflow's first GitHub run needs the one-time variables and the Vercel token (runbook, "Continuous deployment"). The web job's `vercel build` on a Linux runner was not rehearsed. |
+| Live Gemma readers on Azure GPU, NATS on Azure, pipeline as a Container Apps job, Entra ID sign-in for the web app | **designed** | Not attempted. Student subscriptions have no GPU quota. |
+
+Problems found on the way, each fixed in the deploy rather than in Wasl code:
+
+- **CRLF checkout.** With `core.autocrlf=true` on Windows, every `*.sh` file was checked out with CRLF endings. Container
+  entrypoints then failed with `no such file or directory`. `.gitattributes` now forces LF for `*.sh`, `*.py`, `*.conf`
+  and `Dockerfile`.
+- **Express environments.** Container Apps environments created without a VNet came out as "express" environments, which
+  refuse Azure Files volumes. The environment now runs on its own VNet.
+- **Ledger chmod on SMB.** The ledger append chmods `api_reviews.ndjson` to 0600. On a default Azure Files mount every
+  file belongs to root, so the chmod by UID 10001 failed with EPERM and every write returned 500. Taking the lock itself
+  worked. The share is now mounted with `uid=10001,gid=10001,file_mode=0600,dir_mode=0700`.
+- **Restart overlap.** A revision restart starts the new replica before the old one stops, so for a short time two
+  processes share the ledger. The `flock` and the ledger re-check under the lock (`appendEventLocked`) are meant for
+  this case. No concurrent write was attempted during the overlap, so that case is **not tested** on Azure Files.
+- **Unknowns.**
+  - The agent's identity holds both Foundry User and Cognitive Services OpenAI User on the Foundry account. Which one
+    is required is untested.
+  - The first agent version failed model authentication even after the roles were granted. A redeploy fixed it, and a
+    token cached from before the roles is the likely reason. This is **inferred**, not tested.
+
 ## Not production-ready
 
 - **Verified under Podman + Docker Compose provider only.** Docker Engine and other hosts are untested. A retained-volume restart is checked under Podman only (7 Nov, above): a correct-key restart recovers the stores without decryption warnings and a wrong key is refused; retained messages are not shown to be read back, and the pipeline reruns a fresh cohort. The key marker script is not exercised on Docker Engine.
