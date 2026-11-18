@@ -30,3 +30,6 @@ models/*_pairfeat8.json
 *.pprof
 coverage.out
 /pipeline/results/soak/runs/
+
+.vercel
+.env.local

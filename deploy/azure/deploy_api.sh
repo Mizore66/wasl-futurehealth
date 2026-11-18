@@ -28,7 +28,9 @@ import json, sys
 tokens = open("$TOKENS_FILE").read().strip()
 env = [{"name": k, "value": v} for k, v in {
     "WASL_OUT": "/var/lib/wasl", "WASL_POLICY": "v7strict", "WASL_SOURCE": "fhir", "WASL_READER": "cached",
-    "WASL_SYNTHETIC_DATA_ONLY": "1", "WASL_API_ADDR": "0.0.0.0:8088", "WASL_RUNTIME_ADDR": "127.0.0.1:8090"}.items()]
+    "WASL_SYNTHETIC_DATA_ONLY": "1", "WASL_API_ADDR": "0.0.0.0:8088", "WASL_RUNTIME_ADDR": "127.0.0.1:8090",
+    "WASL_RECEIVING_UNIT_CLINICIANS": "${WASL_RECEIVING_UNIT_CLINICIANS:-}",
+    "WASL_REFERRING_CLINICIANS": "${WASL_REFERRING_CLINICIANS:-}"}.items() if v]
 env.append({"name": "WASL_API_TOKENS", "secretRef": "wasl-api-tokens"})
 spec = {
   "location": "$LOC",

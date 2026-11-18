@@ -110,6 +110,46 @@ azd ai agent invoke wasl-audit-explainer "Explain the audit trail for ahs-mushri
 
 The agent makes one GET to `/api/cases/{id}/audit` and one model call. It sends nothing to any write route.
 
+## 5. The web app on Vercel
+
+The Vercel project `wasl` has Root Directory `web`. Deploy from the repository root: the root `.vercelignore`
+uploads only `web/` and `data/evidence/`, which `next build` type-checks through
+`web/tests/review-source-fixture.test.ts`. A deploy from inside `web/` fails on that missing file.
+
+Production variables (server-only, never `NEXT_PUBLIC_`): `WASL_API_URL` and the tokens the server reads:
+`WASL_API_WEB_REVIEWER_TOKEN` (actor `hosted-web-reviewer`, not an assigned reader), `WASL_API_AUDITOR_TOKEN`,
+`WASL_API_COORDINATOR_TOKEN`, `WASL_API_CLINICIAN_TOKEN` (the unit clinician in `WASL_RECEIVING_UNIT_CLINICIANS`) and
+`WASL_API_REFERRER_TOKEN` (the referrer in `WASL_REFERRING_CLINICIANS`). Personal reviewer and clinician tokens are not
+set there; people type them into the sign-in form. The API must be deployed with
+`WASL_RECEIVING_UNIT_CLINICIANS=skmc-endo:hosted-unit-clinician WASL_REFERRING_CLINICIANS=ahs-mushrif:hosted-referrer`.
+
+The production alias is public. Anyone who opens it acts as the coordinator, unit clinician and referrer actors on the
+synthetic ledger. Turn on Vercel protection for that domain if that is not wanted.
+
+## Continuous deployment
+
+`.github/workflows/deploy.yml` runs on every push to `main` and on manual dispatch. CI runs only on pull requests,
+and branch protection admits a merge only after "CI required" passes, so `main` is already tested when Deploy starts.
+Each job runs only when its inputs changed:
+
+| Job | Triggered by changes to | Does | Checks |
+|---|---|---|---|
+| API | `pipeline/`, `scripts/`, `data/`, `models/`, `booking/`, `patient-parsers/`, `Dockerfile`, the API deploy files | builds the image on the runner, pushes `wasl:<sha>` to ACR, rolls the Container App onto it | the new revision becomes ready and runs the new image (a failed revision leaves the old one serving, which a smoke test alone would miss), then `verify_api.py smoke` |
+| Agent | `deploy/azure/agent/`, `azure.yaml` | runs the agent tests, rebuilds the `azd` environment from `ci.env`, `azd deploy` | the deployed agent answers a no-case-id prompt |
+| Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel pull`, `vercel build --prod`, `vercel deploy --prebuilt --prod` | the deployment reports Ready |
+
+GitHub signs in to Azure as the user-assigned identity `wasl-github-deploy`, through a federated credential that
+trusts only `repo:Mizore66/wasl-futurehealth:ref:refs/heads/main`. No Azure secret exists. The identity holds
+Contributor on the resource group, AcrPush on the registry, and Foundry Project Manager and Foundry User on the
+Foundry account. App registrations are blocked in this tenant, which is why it is a managed identity.
+
+One-time setup by a repository admin: create a Vercel token for the `kais-projects-42abda1c` team, then run
+`deploy/azure/ci_setup.sh` with the five IDs (the identity's client ID, the tenant, the subscription, and the Vercel
+org and project IDs from `.vercel/project.json`) and the token on stdin.
+
+Not automated: the pipeline run that produces the API's data. A new run invalidates the review ledger (`docs/API.md`),
+so refreshing the share stays a deliberate, manual step (section 1 and 2).
+
 ## Cost and teardown
 
 The API runs one always-on replica (1 vCPU, 2 GiB). That is the largest cost: roughly USD 1.5 to 2 a day at list

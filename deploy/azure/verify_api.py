@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check a deployed Wasl API: health, auth, a read, and that a coordinator write survives a restart.
 
+  python3 deploy/azure/verify_api.py smoke  <base-url>               # health and 401 only; no token, no write
   python3 deploy/azure/verify_api.py write  <base-url> <token-dir>   # appends one note, records its marker
   python3 deploy/azure/verify_api.py reread <base-url> <token-dir>   # after a restart: the marker is still there
 
@@ -47,15 +48,19 @@ def notes(base, coord, case_id):
 
 
 def main():
-    mode, base, tokdir = sys.argv[1], sys.argv[2], pathlib.Path(sys.argv[3])
-    reviewer = (tokdir / "wasl-reviewer.token").read_text().strip()
-    coord = (tokdir / "wasl-coordinator.token").read_text().strip()
+    mode, base = sys.argv[1], sys.argv[2]
 
     code, health = call(base, "/healthz")
     check(code == 200 and health.get("status") == "ok", f"/healthz -> {code} {health and health.get('dependencies')}")
     check(health.get("cases", 0) > 0, f"materialised run loaded with {health.get('cases')} cases")
     code, _ = call(base, "/api/fixtures")
     check(code == 401, f"/api/fixtures without token -> {code}")
+    if mode == "smoke":
+        return
+
+    tokdir = pathlib.Path(sys.argv[3])
+    reviewer = (tokdir / "wasl-reviewer.token").read_text().strip()
+    coord = (tokdir / "wasl-coordinator.token").read_text().strip()
     code, fixtures = call(base, "/api/fixtures", reviewer)
     check(code == 200, f"/api/fixtures with reviewer token -> {code}")
 

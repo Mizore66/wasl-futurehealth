@@ -1,0 +1,9 @@
+# The Vercel project builds web/ (Root Directory "web"). Upload only what that build reads:
+# web/ itself, and data/evidence/, which web/tests/review-source-fixture.test.ts imports and next build type-checks.
+/*
+!/web
+!/data
+/data/*
+!/data/evidence
+/web/node_modules
+/web/.next

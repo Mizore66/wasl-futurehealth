@@ -1,0 +1,194 @@
+name: Deploy
+
+# Continuous deployment of main. Branch protection only admits merges whose pull request passed "CI required", so a
+# push to main is already tested. Each target redeploys only when its inputs changed (or on manual dispatch), then
+# checks the live result. Runbook and setup: deploy/azure/README.md, "Continuous deployment".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to deploy
+        type: choice
+        options: [all, api, agent, web]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    name: Decide what to deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.decide.outputs.api }}
+      agent: ${{ steps.decide.outputs.agent }}
+      web: ${{ steps.decide.outputs.web }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = workflow_dispatch ]; then
+            for t in api agent web; do
+              if [ "$TARGET" = all ] || [ "$TARGET" = "$t" ]; then echo "$t=true"; else echo "$t=false"; fi
+            done >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then BEFORE="$(git rev-parse HEAD~1)"; fi
+          changed="$(git diff --name-only "$BEFORE" HEAD)"
+          printf '%s\n' "$changed"
+          has() { if printf '%s\n' "$changed" | grep -qE "$1"; then echo true; else echo false; fi; }
+          {
+            echo "api=$(has '^(pipeline/|scripts/|data/|models/|booking/|patient-parsers/|Dockerfile$|deploy/azure/(deploy_api\.sh|verify_api\.py|ci\.env)$)')"
+            echo "agent=$(has '^deploy/azure/(agent/|azure\.yaml$|ci\.env$)')"
+            echo "web=$(has '^(web/|data/evidence/|\.vercelignore$)')"
+          } >> "$GITHUB_OUTPUT"
+
+  api:
+    name: API image to Container Apps
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Load resource names
+        run: grep -E '^[A-Z_]+=' deploy/azure/ci.env >> "$GITHUB_ENV"
+      - uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and push the image
+        run: |
+          set -euo pipefail
+          image="$WASL_ACR.azurecr.io/wasl:${GITHUB_SHA::12}"
+          az acr login -n "$WASL_ACR"
+          docker build --platform linux/amd64 -t "$image" .
+          docker push "$image"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+      - name: Roll the Container App onto the image
+        run: |
+          set -euo pipefail
+          az containerapp update -g "$WASL_RG" -n "$WASL_API_APP" --image "$IMAGE" -o none
+          revision="$(az containerapp show -g "$WASL_RG" -n "$WASL_API_APP" --query properties.latestRevisionName -o tsv)"
+          echo "waiting for $revision"
+          for _ in $(seq 1 60); do
+            ready="$(az containerapp show -g "$WASL_RG" -n "$WASL_API_APP" --query properties.latestReadyRevisionName -o tsv)"
+            if [ "$ready" = "$revision" ]; then break; fi
+            sleep 15
+          done
+          # A revision that never becomes ready leaves the previous one serving, so the smoke test alone would pass.
+          test "$ready" = "$revision" || { echo "::error::$revision did not become ready; the previous revision is still serving"; exit 1; }
+          serving="$(az containerapp revision show -g "$WASL_RG" -n "$WASL_API_APP" --revision "$revision" --query 'properties.template.containers[0].image' -o tsv)"
+          test "$serving" = "$IMAGE"
+      - name: Smoke test the live API
+        run: python3 deploy/azure/verify_api.py smoke "$WASL_API_URL"
+
+  agent:
+    name: Audit agent to Foundry
+    needs: changes
+    if: needs.changes.outputs.agent == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Load resource names
+        run: grep -E '^[A-Z_]+=' deploy/azure/ci.env >> "$GITHUB_ENV"
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.13"
+      - name: Test the agent
+        working-directory: deploy/azure/agent
+        run: |
+          python -m pip install -r requirements.txt pytest
+          python -m pytest -q tests
+      - uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2.4.0
+      - name: Deploy and invoke the agent
+        working-directory: deploy/azure
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          set -euo pipefail
+          azd config set auth.useAzCliAuth true
+          azd extension install microsoft.foundry
+          project_id="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$WASL_RG/providers/Microsoft.CognitiveServices/accounts/$WASL_FOUNDRY_ACCOUNT/projects/$WASL_FOUNDRY_PROJECT"
+          endpoint="https://$WASL_FOUNDRY_ACCOUNT.services.ai.azure.com/api/projects/$WASL_FOUNDRY_PROJECT"
+          azd env new ci --no-prompt --subscription "$AZURE_SUBSCRIPTION_ID" --location "$WASL_LOCATION"
+          while read -r k v; do azd env set -e ci "$k" "$v"; done <<EOF
+          AZURE_TENANT_ID $AZURE_TENANT_ID
+          AZURE_RESOURCE_GROUP $WASL_RG
+          AZURE_AI_ACCOUNT_NAME $WASL_FOUNDRY_ACCOUNT
+          AZURE_AI_PROJECT_NAME $WASL_FOUNDRY_PROJECT
+          AZURE_AI_PROJECT_ID $project_id
+          AZURE_AI_DEPLOYMENTS_LOCATION $WASL_LOCATION
+          AZURE_AI_MODEL_DEPLOYMENT_NAME $WASL_MODEL_DEPLOYMENT
+          AZURE_AI_PROJECT_CONNECTIONS_PROJECT_ENDPOINT $endpoint
+          FOUNDRY_PROJECT_ENDPOINT $endpoint
+          AZURE_OPENAI_ENDPOINT https://$WASL_FOUNDRY_ACCOUNT.openai.azure.com/
+          USE_EXISTING_AI_PROJECT true
+          AZD_AGENT_SKIP_ACR true
+          AZD_FOUNDRY_ACR_MODE none
+          WASL_API_URL $WASL_API_URL
+          WASL_KEYVAULT_URL https://$WASL_KEYVAULT.vault.azure.net/
+          EOF
+          azd deploy "$WASL_AGENT" -e ci --no-prompt
+          reply="$(azd ai agent invoke "$WASL_AGENT" "hello" -e ci 2>&1)"
+          printf '%s\n' "$reply"
+          printf '%s\n' "$reply" | grep -q "Please give a Wasl case id"
+
+  web:
+    name: Web app to Vercel
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        with:
+          version: 10.32.1
+          run_install: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: web/.nvmrc
+      - name: Build and deploy to production
+        run: |
+          set -euo pipefail
+          test -n "$VERCEL_TOKEN" || { echo "::error::VERCEL_TOKEN secret is not set (deploy/azure/README.md)"; exit 1; }
+          npm install --global vercel@59.10.0
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "deployed $url"
+          vercel inspect "$url" --token="$VERCEL_TOKEN" | tee inspect.txt
+          grep -q "Ready" inspect.txt
