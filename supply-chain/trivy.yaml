@@ -1,5 +1,6 @@
 # Wasl policy: every reported vulnerability is release-blocking, including UNKNOWN and development-only findings.
-# Do not add .trivyignore or ignore-unfixed to make this scan green. Remediate or explicitly review a recorded blocker.
+# Do not add ignore-unfixed or blanket ignores to make this scan green. Remediate, or record a reviewed,
+# version-pinned, expiring entry in supply-chain/trivyignore.yaml (see "Reviewed exceptions" in README.md).
 cache:
   backend: memory
 db:
