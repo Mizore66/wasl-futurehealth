@@ -95,8 +95,10 @@ type apiServer struct {
 	agentInv                map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
 	agentProv               map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu                      sync.Mutex
-	unitClinicians          map[string]string // verified actor -> receiving unit (WASL_RECEIVING_UNIT_CLINICIANS)
-	referrers               map[string]string // verified actor -> referring provider (WASL_REFERRING_CLINICIANS)
+	personMu                sync.Mutex             // guards personCache (separate from mu: person reads run outside it)
+	personCache             *personProjectionCache // last validated identity projection and its file fingerprint
+	unitClinicians          map[string]string      // verified actor -> receiving unit (WASL_RECEIVING_UNIT_CLINICIANS)
+	referrers               map[string]string      // verified actor -> referring provider (WASL_REFERRING_CLINICIANS)
 	reviews                 []map[string]interface{}
 	rstates                 map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
 	claims                  map[reviewQuestionKey]*reviewClaimState    // independent-review leases, rebuilt from claim events
@@ -127,7 +129,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/people", s.peopleRoutes)
 	mux.HandleFunc("/api/people/", s.peopleRoutes)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
-	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
+	caseAPI := s.referrerScoped(s.withConsent(s.undoRoutes(s.caseRoutes)))
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)
@@ -1045,6 +1047,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		defer s.mu.Unlock()
 		if s.ledgerErr != "" {
 			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if code, msg := s.crcLegacyConfirmationRefusalLocked(c, s.queueItem(c.ID, req.Item), actor); code != 0 {
+			return code, map[string]interface{}{"error": msg, "conflict": "review_state"}
 		}
 		if req.Decision == "confirm_contact" && s.contactGuardLocked(c).Blocked {
 			return 409, map[string]interface{}{"error": "contact is blocked by a recorded denial or opt-out; confirm_contact refused", "conflict": "consent"}
@@ -2187,6 +2192,16 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		review, _ := time.Parse("2006-01-02", d)
 		if !review.After(now) || review.After(now.Add(maxSnoozeHorizon)) {
 			s.actionErr(w, 400, "next_review must be a future date within 365 days", nil)
+			return
+		}
+	}
+	if d, ok := data["review_date"].(string); ok && kind == dispositionKind {
+		// A plan's review date is when its owner next looks at the case: today at the earliest (a past date would be
+		// recorded already overdue), within the same 365-day horizon as a declined case's next_review.
+		review, _ := time.Parse("2006-01-02", d)
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		if review.Before(today) || review.After(today.Add(maxSnoozeHorizon)) {
+			s.actionErr(w, 400, "review_date must be today or later and within 365 days", nil)
 			return
 		}
 	}

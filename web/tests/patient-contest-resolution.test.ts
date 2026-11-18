@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import { resolvePatientContest } from "@/lib/api/patient-contest-actions";
 import { reviewerToken } from "@/lib/api/reviewer-session";
@@ -127,8 +127,14 @@ const html = (rows: unknown[], session: ContestSession) =>
 
 describe("staff patient-contest card", () => {
   it("states pending, overdue and resolved in the same terms as the patient", () => {
-    expect(requestState(contest)).toBe("Pending · senior_clinician review due 2026-10-08 08:00 UTC");
-    expect(requestState({ ...contest, overdue: true })).toBe("Overdue · senior_clinician review overdue since 2026-10-08 08:00 UTC");
+    // Due times carry a relative hint, so the wall clock is pinned (Dubai 16:00, Sat 3 Oct 2026).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-03T12:00:00Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    expect(requestState(contest)).toBe("Pending · senior clinician review due Thu 8 Oct, 12:00 Dubai time (in 5 days)");
+    expect(requestState({ ...contest, overdue: true })).toBe("Overdue · senior clinician review overdue since Thu 8 Oct, 12:00 Dubai time (in 5 days)");
     expect(requestState({ ...contest, status: "resolved", outcome: "decision_upheld", resolved_by: "clinician-three", resolved_at: "2026-10-02T09:00:00Z" })).toBe(
       "Resolved: decision upheld by clinician-three 2026-10-02 09:00 UTC",
     );

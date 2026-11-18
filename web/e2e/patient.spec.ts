@@ -2,7 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
-import { DICTS, PATIENT_LANGS, REVIEW_LANGS, type Lang } from "@/components/patient/i18n";
+import { PATIENT_LANGS, REVIEW_LANGS, type Lang } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { OUTCOME_GATE_COPY } from "@/components/patient/outcome-copy";
 
 const MOCK = `http://127.0.0.1:${process.env.PATIENT_MOCK_PORT ?? 31987}`;

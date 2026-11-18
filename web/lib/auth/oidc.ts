@@ -1,7 +1,7 @@
 import "server-only";
 
 import * as client from "openid-client";
-import { isLoopback, type OidcConfig } from "./oidc-config";
+import { isLoopback, OidcConfigurationError, type OidcConfig } from "./oidc-config";
 
 export type OidcProvider = client.Configuration;
 
@@ -18,10 +18,57 @@ export function safeReturnTo(value: string | null, requestOrigin: string): strin
   try {
     const url = new URL(value, requestOrigin);
     if (url.origin !== requestOrigin || url.username || url.password || hasIdentityParameters(url.searchParams)) return fallback;
+    /* Dot segments are resolved by URL parsing, so check the normalised path too: /app/../../x must not become /x. */
+    if (!url.pathname.startsWith("/app/")) return fallback;
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return fallback;
   }
+}
+
+/** Server-side failure categories. Fixed words only, so a log line can never carry a token, code, cookie or claim. */
+export type OidcFailureCategory =
+  | "disabled"
+  | "bad_request"
+  | "provider_error"
+  | "no_correlation"
+  | "unknown_state"
+  | "nonce_mismatch"
+  | "config"
+  | "session_store"
+  | "discovery"
+  | "authorize"
+  | "token_exchange"
+  | "issuer_mismatch"
+  | "unmapped_subject"
+  | "session_resolve";
+
+/*
+ * A library error's `code` (openid-client and oauth4webapi use fixed upper-case codes such as
+ * OAUTH_JWT_CLAIM_COMPARISON_FAILED) is logged when it has that shape. Library messages and causes are never logged:
+ * they can quote response bodies or claim values. Only OidcConfigurationError's message is logged: it is fixed text
+ * that names an environment variable, never its value.
+ */
+function errorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" && /^[A-Z][A-Z0-9_]{1,63}$/.test(code) ? code : undefined;
+}
+
+function errorName(error: unknown): string | undefined {
+  const name = error instanceof Error ? error.name : undefined;
+  return name && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(name) ? name : undefined;
+}
+
+/** One warning line per refused OIDC step, for operators. Never includes tokens, codes, cookies, subjects or URLs. */
+export function logOidcFailure(stage: "start" | "callback" | "session", category: OidcFailureCategory, error?: unknown): void {
+  const parts = [`[wasl-oidc] ${stage} refused: category=${category}`];
+  const name = errorName(error);
+  const code = errorCode(error);
+  if (name) parts.push(`error=${name}`);
+  if (code) parts.push(`code=${code}`);
+  if (error instanceof OidcConfigurationError) parts.push(`detail=${JSON.stringify(error.message)}`);
+  console.warn(parts.join(" "));
 }
 
 export function oidcFailureRedirect(request: Request, returnTo = "/app/review"): Response {

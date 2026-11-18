@@ -166,7 +166,7 @@ test.describe("OIDC sessions shared by two web replicas", () => {
     await page.goto(deskOn(B_PORT));
     await page.getByRole("button", { name: "Sign out" }).click();
     await signedOut(page);
-    await context.addCookies([{ name: session.name, value: session.value, domain: "127.0.0.1", path: "/app", httpOnly: true, secure: true, sameSite: "Strict" }]);
+    await context.addCookies([{ name: session.name, value: session.value, domain: "127.0.0.1", path: "/app", httpOnly: true, secure: true, sameSite: "Lax" }]);
     const before = caseReads;
     await page.goto(deskOn(A_PORT));
     await signedOut(page);

@@ -1,6 +1,14 @@
+import type { ReactNode } from "react";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { OutcomeHandoff } from "@/lib/api/schema";
+import { NEXT_STEP_WORDS } from "./outcome-handoff-words";
 import { atWords } from "./words";
+
+/**
+ * Staff steps, built on the server (`outcomeHandoffActions`) and passed in so that rendering the card never loads the
+ * server actions. `live: false` means fixtures: nothing can be appended.
+ */
+export type OutcomeHandoffActions = { live: false } | { live: true; identity?: ReactNode; approve?: ReactNode; release?: ReactNode };
 
 const PATIENT: Record<OutcomeHandoff["status"], string> = {
   not_eligible: "Not eligible: the case is not closed, or a patient contest holds it open",
@@ -26,7 +34,7 @@ const GATE: Record<NonNullable<OutcomeHandoff["release"]>["gate"], string> = {
 };
 
 /** Post-closure outcome hand-off. Referrer and patient acknowledgements are separate; neither changes the canonical decision. */
-export function OutcomeHandoffCard({ handoff }: { handoff: OutcomeHandoff }) {
+export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHandoff; actions?: OutcomeHandoffActions }) {
   return (
     <section id="outcome-handoff" aria-labelledby="outcome-handoff-h" className="min-w-0 scroll-mt-4 rounded-card border border-line bg-surface p-4 md:p-pad">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -44,13 +52,37 @@ export function OutcomeHandoffCard({ handoff }: { handoff: OutcomeHandoff }) {
             <dd className="m-0">{handoff.patient_informed ? "Yes: the patient acknowledged this version" : "No"}</dd>
           </>
         )}
+        <dt className="text-small text-muted">Contact permission now</dt>
+        <dd className="m-0">{handoff.consent}</dd>
+        {handoff.draft && (
+          <>
+            <dt className="text-small text-muted">Current decision</dt>
+            <dd className="m-0">
+              {handoff.draft.programme} · {handoff.draft.outcome.replaceAll("_", " ")} · signature {handoff.draft.decision.slice(0, 12)}
+            </dd>
+          </>
+        )}
         {handoff.content && (
           <>
             <dt className="text-small text-muted">Approved next step</dt>
-            <dd className="m-0">{handoff.content.next_step.replaceAll("_", " ")}</dd>
+            <dd className="m-0">
+              {NEXT_STEP_WORDS[handoff.content.next_step] ?? handoff.content.next_step.replaceAll("_", " ")}
+              {handoff.approved_by ? ` · approved by ${handoff.approved_by}` : ""}
+              {handoff.approved_at ? ` · ${atWords(handoff.approved_at)}` : ""}
+              {handoff.version ? ` · version ${handoff.version.slice(0, 8)}` : ""}
+            </dd>
+          </>
+        )}
+        {handoff.release && (
+          <>
+            <dt className="text-small text-muted">Latest release record</dt>
+            <dd className="m-0">
+              {GATE[handoff.release.gate]} · {handoff.release.actor} · {atWords(handoff.release.at)}
+            </dd>
           </>
         )}
       </dl>
+      {actions && <StaffSteps handoff={handoff} actions={actions} />}
       {handoff.history.length > 0 && (
         <ol className="m-0 mt-2 list-none p-0" aria-label="Outcome hand-off history">
           {handoff.history.map((h) => (
@@ -62,5 +94,31 @@ export function OutcomeHandoffCard({ handoff }: { handoff: OutcomeHandoff }) {
         </ol>
       )}
     </section>
+  );
+}
+
+/** Approve (clinician, signed in) and release (coordinator credential). Referrer acknowledgement stays read-only here. */
+function StaffSteps({ handoff, actions }: { handoff: OutcomeHandoff; actions: OutcomeHandoffActions }) {
+  let body: ReactNode;
+  if (handoff.status === "not_eligible") {
+    body = <p className="m-0 text-small text-muted">No staff step: only a closed case with no open patient contest can have an outcome hand-off.</p>;
+  } else if (!actions.live) {
+    body = <p className="m-0 text-small text-muted">Approval and release need the live API; fixture data cannot record them.</p>;
+  } else {
+    body = (
+      <>
+        {actions.identity}
+        {actions.approve}
+        {actions.release ?? (
+          <p className="m-0 mt-3 text-small text-muted">Release: available once a clinician has approved the current content.</p>
+        )}
+      </>
+    );
+  }
+  return (
+    <div className="mt-3 border-t border-rule pt-3" data-testid="outcome-handoff-steps">
+      <h3 className="m-0 text-body font-medium">Staff steps</h3>
+      {body}
+    </div>
   );
 }

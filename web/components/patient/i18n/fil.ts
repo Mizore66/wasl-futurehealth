@@ -45,6 +45,10 @@ export const fil: PatientDict = {
       "Puwede kang tumanggi sa follow-up o kuwestiyunin ang anumang desisyon. Kung tatanggi ka, igagalang ka pa rin at makakakuha ka pa rin ng ibang pangangalagang kailangan mo. Kausapin ang iyong doktor tungkol sa maaaring kahulugan ng pagtanggi para sa iyo at kung ano pa ang ibang pagpipilian mo.",
     ],
     rightsNote: "Isang tao mula sa care team ang tumitingin sa bawat hiling mo, hindi awtomatikong sistema.",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    closedTitle: "Your follow-up check is finished",
+    closedBody: "Your care team has recorded the result of this follow-up check. Nothing more needs to be booked for it.",
+    closedNext: "You do not need to do anything now. If anything changes, the care team will contact you.",
   },
   check: {
     steps: ["Tanong", "Mensahe", "Tapos"],
@@ -82,6 +86,8 @@ export const fil: PatientDict = {
   },
   book: {
     title: "Ang iyong colonoscopy",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    noOffer: "There is no appointment time to choose on this phone yet. Nurse Hessa will call you to arrange the colonoscopy with you. You can also call her:",
     proposed: "Iminumungkahing iskedyul",
     confirmed: "Nai-save ang gusto mong oras para sa coordinator review — simulated lang; walang appointment na naka-reserve.",
     weekdays: ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"],

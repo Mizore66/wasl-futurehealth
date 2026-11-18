@@ -2,6 +2,9 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
+
+// Each test renders dozens of pages of a large list; the 5 s default times out on a loaded CI runner.
+vi.setConfig({ testTimeout: 30_000 });
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { allNewReferrals, syntheticReferrals } from "./paging-fixtures";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));

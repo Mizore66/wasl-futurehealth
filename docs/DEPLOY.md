@@ -109,7 +109,10 @@ Requirements and limits:
   `POST /referrer-response`. A referrer answers every returned packet of its provider, including the canonical lung
   work-up packets of `rad-imaging` and DR eye-clinic packets of `phc-retina` (for example
   `ahs-mushrif:hosted-referrer,rad-imaging:hosted-lung-referrer,phc-retina:hosted-eye-referrer`); one actor maps to one
-  provider. The two lists must not share an actor. Left empty, both endpoints refuse every answer with
+  provider. The two lists must not share an actor. The same referring-clinician actor may acknowledge its provider's
+  outcome hand-off (`referrer_acknowledged`, docs/API-OUTCOME-HANDOFF.md), so a demo needs no separate `referrer`-role
+  token for it; a `token:referrer:referrer/<provider>` entry in `WASL_API_TOKENS` still works. A referring clinician may
+  write only to its own provider's cases (other providers' case writes return 403); reads are not provider-scoped. Left empty, both endpoints refuse every answer with
   403. `scripts/demo.sh` assigns its clinician token's actor (`smoke-clinician`) to `skmc-endo` and assigns no referrer.
 
 ## Pointing it at real HL7 feeds
@@ -265,7 +268,7 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    `scripts/production_secrets.sh` generates, for the Basic-auth production package, `api_users.json` entries `reviewer`, `reviewer-2`,
    `senior-reviewer`, `clinician`, `clinician-2`, `senior-clinician`, `coordinator` and `auditor`, each with its own
    random password, without printing them. These credentials identify configured actors, not separate humans; there is
-   no OIDC. **Limitation:** the Basic-auth production package exposes independent review through its API only; the web sign-in form accepts bearer tokens, so those Basic passwords do not work in it and there is no production web path for independent review yet. The smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
+   no OIDC. **Limitation:** the Basic-auth production package exposes independent review through its API only; the web sign-in form accepts bearer tokens (or, with `WASL_REVIEW_AUTH_MODE=oidc`, only OIDC sign-in, which disables the token form), so those Basic passwords do not work in it and there is no production web path for independent review yet. The smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
 2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
    on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
 3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
@@ -289,6 +292,28 @@ reachable API must not use them, so generate fresh tokens for each role and inde
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
+
+   To sign reviewers and clinicians in through your identity provider instead of typed tokens, also set these
+   (details and the full mapping rules in [`web/README.md`](../web/README.md#reviewer-sign-in-modes)). OIDC mode turns
+   the token form off: the sign-in card shows only **Sign in with OIDC**. The table above still applies:
+   `WASL_API_WEB_REVIEWER_TOKEN` and `WASL_API_AUDITOR_TOKEN` are required, and each mapped credential's
+   `WASL_API_*_TOKEN` must be set on the web server, which uses it on behalf of the signed-in subject.
+
+   | Variable | Value | Used for |
+   |---|---|---|
+   | `WASL_REVIEW_AUTH_MODE` | `oidc` (default `demo`, the token form) | turns OIDC sign-in on and token entry off |
+   | `WASL_OIDC_ISSUER` | the provider's exact HTTPS issuer URL | discovery and ID-token `iss` checks |
+   | `WASL_OIDC_CLIENT_ID` | the confidential client registered for Wasl | authorization and token requests |
+   | `WASL_OIDC_CLIENT_SECRET` | that client's secret | token request (client_secret_basic) |
+   | `WASL_OIDC_REDIRECT_URI` | `https://<site>/app/auth/oidc/callback`, registered exactly with the provider | the callback |
+   | `WASL_OIDC_SUBJECT_MAP_JSON` | JSON object from provider subject to one of `reviewer`, `reviewer_2`, `reviewer_3`, `clinician`, `clinician_2`, `clinician_3` | which server-held credential a verified subject acts with |
+   | `WASL_OIDC_SESSION_STORE` | `sqlite` (default) or `nats` | where login transactions and sessions live (below) |
+   | `WASL_OIDC_SESSION_DB` | path to a server-only SQLite file | the `sqlite` store |
+   | `WASL_OIDC_INSECURE_LOOPBACK`, `WASL_SYNTHETIC_DATA_ONLY` | leave unset in production; `1` and `1` allow plain HTTP to a loopback provider for synthetic tests only | local testing |
+
+   A failed sign-in shows a generic notice in the browser and logs one `[wasl-oidc] … refused: category=…` warning
+   on the web server (for example `discovery`, `config`, `token_exchange`, `unmapped_subject`, `session_store`), so a
+   misconfigured deployment can be diagnosed without exposing tokens or subjects.
 
    With `WASL_REVIEW_AUTH_MODE=oidc`, login transactions and review sessions are stored server-side. The default SQLite
    store (`WASL_OIDC_SESSION_DB`) serves one web instance only; it is not shared between Vercel function instances.

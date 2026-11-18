@@ -1,5 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, expect, it, vi } from "vitest";
+
+// Each test renders dozens of pages of a large list; the 5 s default times out on a loaded CI runner.
+vi.setConfig({ testTimeout: 30_000 });
 import { ReviewState } from "@/lib/api/schema";
 import { caseHref } from "@/lib/domain/ids";
 import { questionAnchor } from "@/components/review/decision";

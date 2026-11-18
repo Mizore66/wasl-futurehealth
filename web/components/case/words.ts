@@ -2,8 +2,10 @@ import type { Audit, CaseDetail, Programme, ReferralCondition } from "@/lib/api/
 import { formatDay } from "@/lib/domain/day";
 import { caseHolds } from "@/lib/domain/holds";
 import { shortId } from "@/lib/domain/ids";
+import { openReviewItems } from "@/lib/domain/stage";
 import { plain } from "@/lib/domain/terms";
 import { isNoAction } from "@/components/worklist/days";
+import { reviewDateWords } from "@/components/disposition/model";
 import { noActionWords, providerLabel, statusWords } from "@/components/worklist/model";
 import { CONDITION_LABELS, REASON_LABELS } from "@/components/worklist/referrals";
 
@@ -123,6 +125,24 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
   const hold = caseHolds(d).current[0];
   if (hold) return { title: "Held, not closed", body: `${holdWords(hold)}${hold.rule ? ` Rule: ${hold.rule}.` : ""}` };
   return { title: "Open", body: statusWords(c).next + "." };
+}
+
+/**
+ * Open review questions that keep a case open, in words: identity first, then evidence. The identity reason names the
+ * missing second identifier when the API says so.
+ */
+export function openReviewReasons(d: CaseDetail): string[] {
+  if (d.case.closed) return [];
+  const open = openReviewItems(d);
+  const link = open.find((r) => r.kinds.includes("link"));
+  const evidence = open.some((r) => r.kinds.includes("evidence"));
+  return [
+    link &&
+      (link.reason === "second_identifier"
+        ? "Identity in review: no second identifier is confirmed for the two records."
+        : "Identity in review: a person must confirm the two records are the same patient."),
+    evidence && "Evidence in review: a person must check what the report shows.",
+  ].filter((r): r is string => !!r);
 }
 
 export type OutreachRow = { key: string; what: string; outcome: string; sent: boolean | null; raw: Record<string, unknown> };
@@ -332,6 +352,13 @@ type LedgerLike =
   | { ledger: "patient"; kind: string }
   | { ledger: "unknown"; label: string };
 
+/** Patient rights requests (pipeline/api_patient_request.go, type `patient_request`): a labelled event, not an unrecognised one. */
+const PATIENT_REQUEST_WORDS: Record<string, string> = {
+  "patient_request/contest_submitted": "Patient questioned the decision · closure held until a senior clinician reviews it",
+  "patient_request/explanation_requested": "Patient asked for an explanation of the decision",
+  "patient_request/contest_resolved": "Patient's contest resolved by a senior clinician",
+};
+
 /** The system identifier of a ledger event as the API wrote it: `type/kind`, the compensation kind, or the review's action. */
 export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
@@ -432,7 +459,7 @@ export function ledgerWords(e: LedgerLike): string {
     if (e.kind === "referral_response") return referralResponseWords(d);
     if (e.kind === "referrer_response") return referrerResponseWords(d);
     if (e.kind === "clinician_disposition") {
-      return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${d.review_date ?? "date not recorded"}`;
+      return `Clinician plan recorded, not completed care: ${plain(d.plan ?? "plan")} · ${d.owner ?? "owner not recorded"} to review by ${reviewDateWords(d.review_date)}`;
     }
     if (e.kind === "decline_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
     if (e.kind === "completed_elsewhere") return `Reported done elsewhere: ${d.procedure ?? "procedure"} at ${d.provider ?? "another provider"} · ${d.retrieval_owner ?? "coordinator"} to retrieve the record by ${d.retrieval_due ?? "a date not recorded"}`;
@@ -452,6 +479,9 @@ export function ledgerWords(e: LedgerLike): string {
     return `Review question ${operation.toLowerCase()}`;
   }
   if (e.ledger === "patient") return `Patient self-service: ${plain(e.kind)}`;
-  if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
+  if (e.ledger === "unknown") {
+    if (e.label in PATIENT_REQUEST_WORDS) return PATIENT_REQUEST_WORDS[e.label];
+    return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
+  }
   return e.decision ? plain(e.decision) : "Review";
 }

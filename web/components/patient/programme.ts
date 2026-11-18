@@ -1,5 +1,5 @@
 import type { PatientJourney, PatientOffer, PatientOffers, PatientProgramme } from "@/lib/api/patient-schema";
-import { DICTS, type Lang } from "./i18n";
+import { EN_DICT, type Lang, type PatientDict } from "./i18n";
 
 type OtherProgramme = Exclude<PatientProgramme, "crc">;
 
@@ -152,10 +152,29 @@ export interface PatientScript {
   book: { title: string; noOffer: string };
 }
 
-export function patientScript(journey: Pick<PatientJourney, "programme" | "next_step" | "teach_back">, lang: Lang): PatientScript {
+/**
+ * `dict` is the dictionary for `lang` from the surface's dictionary set (English on patient routes). A closed case
+ * (`case_closed`) gets the finished-follow-up wording instead of the booking next step.
+ */
+export function patientScript(
+  journey: Pick<PatientJourney, "programme" | "next_step" | "teach_back" | "case_closed">,
+  lang: Lang,
+  dict: PatientDict = EN_DICT,
+): PatientScript {
+  const script = openCaseScript(journey, lang, dict);
+  if (!journey.case_closed) return script;
+  const n = journey.programme === "crc" ? dict.notice : EN_DICT.notice;
+  return {
+    ...script,
+    notice: { ...script.notice, title: n.closedTitle, body: n.closedBody, next: n.closedNext },
+    book: { ...script.book, noOffer: n.closedNext },
+  };
+}
+
+function openCaseScript(journey: Pick<PatientJourney, "programme" | "next_step" | "teach_back">, lang: Lang, dict: PatientDict): PatientScript {
   const ids = journey.teach_back.answers;
   if (journey.programme === "crc") {
-    const { notice: n, check: c, book: b } = DICTS[lang];
+    const { notice: n, check: c, book: b } = dict;
     const crcAnswers: Record<string, string> = { blood_test: c.wrong, colonoscopy: c.right, not_sure: c.notSure };
     return {
       lang,
@@ -169,7 +188,7 @@ export function patientScript(journey: Pick<PatientJourney, "programme" | "next_
         thanks: c.thanks,
         willCall: `${c.willCall} ${c.alsoCall}`,
       },
-      book: { title: b.title, noOffer: DICTS[lang].common.unavailable },
+      book: { title: b.title, noOffer: b.noOffer },
     };
   }
   const step = STEPS[journey.programme][journey.next_step] ?? CARE_TEAM;
@@ -208,10 +227,10 @@ export interface OfferPlace {
  * SKMC wording; a booking catalogue slot names only its region (the payload carries no unit code). An unknown region
  * shows no place.
  */
-export function offerPlace(slot: Pick<PatientOffer, "region"> | undefined, source: PatientOffers["source"], lang: Lang): OfferPlace | null {
+export function offerPlace(slot: Pick<PatientOffer, "region"> | undefined, source: PatientOffers["source"], lang: Lang, dict: PatientDict = EN_DICT): OfferPlace | null {
   if (!slot) return null;
   if (source === "demo_fixed") {
-    const b = DICTS[lang].book;
+    const b = dict.book;
     return { place: b.place, address: b.address, abbr: "SKMC", gated: false };
   }
   const region = REGIONS[slot.region ?? ""];
@@ -227,8 +246,8 @@ export interface OfferCopy {
 }
 
 /** Patient-facing words for a simulated offer's procedure. Colposcopy copy is English until translation review (#133). */
-export function offerCopy(procedure: string, lang: Lang): OfferCopy | null {
-  if (procedure === "colonoscopy") return { title: DICTS[lang].book.title, smsNo: DICTS[lang].book.smsNo, gated: false };
+export function offerCopy(procedure: string, lang: Lang, dict: PatientDict = EN_DICT): OfferCopy | null {
+  if (procedure === "colonoscopy") return { title: dict.book.title, smsNo: dict.book.smsNo, gated: false };
   if (procedure === "colposcopy") {
     return {
       title: "Your colposcopy appointment",

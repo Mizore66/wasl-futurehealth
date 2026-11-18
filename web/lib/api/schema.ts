@@ -549,7 +549,12 @@ export const OutcomeHandoff = z.looseObject({
   approved_by: z.string().optional(),
   approved_at: z.string().optional(),
   acknowledged_at: z.string().optional(),
-  content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string() }).optional(),
+  /** Staff content adds the approved decision signature and programme; the patient view never carries them. */
+  content: z.looseObject({ next_step: z.string(), safety_net: z.string(), outcome: z.string(), decision: z.string().optional(), programme: z.string().optional() }).optional(),
+  /** The case's current decision as a clinician would approve it; `decision` is the signature an approval must name. */
+  draft: z.looseObject({ decision: z.string(), programme: z.string(), outcome: z.string(), safety_net: z.string() }).optional(),
+  /** The closed list a clinician picks a next step from (pipeline outcomeNextSteps); Wasl never derives one. */
+  next_steps: z.array(z.string()).optional(),
   history: z.array(
     z.looseObject({
       kind: z.enum(["content_approved", "release_recorded", "referrer_acknowledged", "patient_acknowledged"]),

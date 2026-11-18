@@ -20,7 +20,7 @@ export default async function Page({ searchParams }: PageProps<"/app/recovery">)
         </div>
         <HonestyLabel kind="simulated">Simulated capacity · decision support only</HonestyLabel>
       </header>
-      <RecoveryBoard list={list} detail={detail} readOnly={apiMode() === "fixtures"} />
+      <RecoveryBoard key={detail?.slot?.slot_id ?? "none"} list={list} detail={detail} readOnly={apiMode() === "fixtures"} />
     </>
   );
 }

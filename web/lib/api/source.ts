@@ -31,6 +31,7 @@ import {
   ReviewResponse,
   ReviewSourceResponse,
   SourceStatus,
+  TeachBackCallback,
   UndoProjection,
   UndoRequest,
   type CaseSummary,
@@ -95,8 +96,17 @@ export class ApiStatusError extends Error {
   }
 }
 
+function credentialVariableName(credential: Role | WebCredential): string {
+  return `WASL_API_${credential.toUpperCase()}_TOKEN`;
+}
+
+/** Whether this server holds the named credential. The same source `authenticated` reads, so labels and errors agree. */
+export function hasCredential(credential: Role | WebCredential, env: Record<string, string | undefined> = process.env): boolean {
+  return Boolean(env[credentialVariableName(credential)]?.trim());
+}
+
 function apiToken(credential: Role | WebCredential): string {
-  const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
+  const name = credentialVariableName(credential);
   const token = process.env[name]?.trim();
   if (!token) throw new MissingCredentialError(name);
   return token;
@@ -201,6 +211,18 @@ export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
 
 export async function getCase(id: string): Promise<CaseDetail | null> {
   if (apiMode() === "live") return live(CaseDetail, `/api/cases/${encodeURIComponent(id)}`);
+  return getPublishedCase(id);
+}
+
+/**
+ * The published fixture snapshot (data/api), read in either mode. For replay screens only: a live run that does not
+ * carry the showcase fixtures falls back to it, labelled as a replay, instead of returning 404.
+ */
+export async function getPublishedFixtures(): Promise<Fixtures> {
+  return fixture(Fixtures, "fixtures.json");
+}
+
+export async function getPublishedCase(id: string): Promise<CaseDetail | null> {
   for (const f of await fixtureCaseFiles("")) {
     const detail = await fixture(CaseDetail, f);
     if (detail.case.id === id) return detail;
@@ -443,7 +465,9 @@ async function postAnswer(id: string, route: string, credential: Role | WebCrede
 }
 
 export type TeachBackOutcome = "understood_on_call" | "another_explanation";
-export type TeachBackCallbackResult = { ok: true } | { ok: false; status: number; error: string };
+/** On 201 the API returns the case's callbacks as recorded, so the card can show the outcome before revalidation. */
+export type TeachBackCallbackResult = { ok: true; callbacks?: TeachBackCallback[] } | { ok: false; status: number; error: string };
+const TeachBackCallbackCreated = z.looseObject({ teach_back_callbacks: z.array(TeachBackCallback) });
 
 /** Record a failed teach-back consultation outcome. The API binds the coordinator token to its role and actor. */
 export async function postTeachBackCallback(id: string, callback: string, outcome: TeachBackOutcome): Promise<TeachBackCallbackResult> {
@@ -456,7 +480,10 @@ export async function postTeachBackCallback(id: string, callback: string, outcom
     throw e;
   }
   const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/teach-back-callback`, init);
-  if (res.status === 201) return { ok: true };
+  if (res.status === 201) {
+    const created = TeachBackCallbackCreated.safeParse(await res.json().catch(() => undefined));
+    return created.success ? { ok: true, callbacks: created.data.teach_back_callbacks } : { ok: true };
+  }
   if (res.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
   const e = ApiError.safeParse(await res.json().catch(() => undefined));
   return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
@@ -691,4 +718,58 @@ export async function postReviewClaimWithToken(id: string, body: ReviewClaimRequ
     };
   }
   throw new Error(`POST review claim: HTTP ${res.status}`);
+}
+
+export type OutcomeHandoffResult =
+  /** 201 recorded a new event; 200 `replayed` means the same write was already recorded and nothing was appended. */
+  | { ok: true; status: 200 | 201; replayed: boolean; hash: string }
+  | { ok: false; status: number; error: string };
+
+const OUTCOME_HANDOFF_SAVED = z.looseObject({ replayed: z.boolean().optional(), event: z.looseObject({ hash: z.string() }).nullish() });
+
+async function postOutcomeHandoff(id: string, init: RequestInit): Promise<OutcomeHandoffResult> {
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/outcome-handoff`, init);
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 200 || res.status === 201) {
+    const saved = OUTCOME_HANDOFF_SAVED.safeParse(json);
+    return { ok: true, status: res.status, replayed: saved.success && saved.data.replayed === true, hash: (saved.success && saved.data.event?.hash) || "" };
+  }
+  /* Refusals carry {error, handoff}; only the server's own words are shown. */
+  const e = z.looseObject({ error: z.string() }).safeParse(json);
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
+const jsonPost = (body: object): RequestInit => ({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+/**
+ * Clinician approval of one outcome hand-off content version (docs/API-OUTCOME-HANDOFF.md), sent with the signed-in
+ * person's own assigned token (the reviewer-session cookie), never a server-held credential. The API binds the token to
+ * its role and actor and allows only `clinician`. `version` is the approval the clinician saw ("" for none).
+ */
+export async function postOutcomeHandoffApprovalWithToken(
+  id: string,
+  approval: { decision: string; next_step: string; version: string },
+  token: string,
+): Promise<OutcomeHandoffResult> {
+  if (apiMode() !== "live") throw new Error("postOutcomeHandoffApprovalWithToken needs WASL_API_URL: fixtures mode cannot append hand-off events");
+  return postOutcomeHandoff(id, bearer(jsonPost({ kind: "content_approved", ...approval }), token));
+}
+
+/**
+ * The coordinator's simulated release of one approved version, sent with the server-side coordinator credential
+ * (WASL_API_COORDINATOR_TOKEN) like every other coordinator action; the API binds it to its role and actor. The API
+ * evaluates consent at that moment and records the gate it found.
+ */
+export async function postOutcomeHandoffRelease(id: string, version: string): Promise<OutcomeHandoffResult> {
+  if (apiMode() !== "live") throw new Error("postOutcomeHandoffRelease needs WASL_API_URL: fixtures mode cannot append hand-off events");
+  let init: RequestInit;
+  try {
+    init = authenticated(jsonPost({ kind: "release_recorded", version }), "coordinator");
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const result = await postOutcomeHandoff(id, init);
+  if (!result.ok && result.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  return result;
 }

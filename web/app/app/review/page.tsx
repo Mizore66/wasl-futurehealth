@@ -12,6 +12,7 @@ import { reviewerToken } from "@/lib/api/reviewer-session";
 import { claimActionLabel, claimSummary, questionAnchor } from "@/components/review/decision";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
+import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 
 export async function generateMetadata({ searchParams }: PageProps<"/app/review">) {
   const page = parsePage(await searchParams);
@@ -51,7 +52,10 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
             </p>
           )}
         </div>
-        <QueueLabel source={queue.source} />
+        <div className="flex flex-col gap-1 sm:items-end">
+          <QueueLabel source={queue.source} />
+          <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
+        </div>
       </header>
 
       {query.oidc_error === "1" && (

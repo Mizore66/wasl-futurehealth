@@ -36,6 +36,9 @@ export const en: PatientDict = {
       "You can say no to follow-up or question any decision. If you say no, you will still be treated with respect and can still get other care you need. Talk to your doctor about what saying no could mean for you and what other choices you have.",
     ],
     rightsNote: "A person on the care team reviews every request, not an automated system.",
+    closedTitle: "Your follow-up check is finished",
+    closedBody: "Your care team has recorded the result of this follow-up check. Nothing more needs to be booked for it.",
+    closedNext: "You do not need to do anything now. If anything changes, the care team will contact you.",
   },
   check: {
     steps: ["Question", "Messages", "Done"],
@@ -73,6 +76,7 @@ export const en: PatientDict = {
   },
   book: {
     title: "Your colonoscopy appointment",
+    noOffer: "There is no appointment time to choose on this phone yet. Nurse Hessa will call you to arrange the colonoscopy with you. You can also call her:",
     proposed: "Proposed appointment",
     confirmed: "Your preferred time is saved for coordinator review — simulated only; no appointment is reserved.",
     weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PatientJourney, PatientTeachBackCallback } from "@/lib/api/patient-schema";
 import { cn } from "@/lib/utils";
-import { DICTS, type Lang, type PatientDict } from "./i18n";
+import { type Lang, type PatientDict } from "./i18n";
+import { usePatientDict } from "./i18n/context";
 import type { PhoneQuery } from "./journey";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { PatientStatus } from "./patient-status";
@@ -45,11 +46,11 @@ function CallbackReceipt({ callback, c, lang, script }: { callback: PatientTeach
 
 /** Teach-back and contact permission advance only after their durable patient events are confirmed. */
 export function CheckFlow({ query, initial }: { query: PhoneQuery; initial: PatientJourney }) {
-  const t = DICTS[query.lang];
+  const t = usePatientDict(query.lang);
   const c = t.check;
   const type = phoneType(query.lang);
   const { journey, busy, status, save, retry, canRetry } = usePatientJourney(initial);
-  const script = patientScript(journey, query.lang);
+  const script = patientScript(journey, query.lang, t);
   const s = script.check;
   const copy = scriptLang(script);
   const [step, setStep] = useState<CheckStep>(() => initialStep(initial));

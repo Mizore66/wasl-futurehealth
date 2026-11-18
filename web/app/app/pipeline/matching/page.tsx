@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { PipelineHeading } from "@/components/pipeline/heading";
+import { PipelineHeading, SNAPSHOT_NOTE } from "@/components/pipeline/heading";
 import { MatchingReplay, type MatchCase } from "@/components/pipeline/matching-replay";
-import { getCase, getDashboard, getFixtures } from "@/lib/api/source";
-import { CRC_FIXTURES } from "@/lib/api/schema";
+import { apiMode, getCase, getDashboard, getFixtures, getPublishedCase, getPublishedFixtures } from "@/lib/api/source";
+import { CRC_FIXTURES, type CaseDetail } from "@/lib/api/schema";
 import { linkScore } from "@/components/worklist/model";
 import { personFor } from "@/lib/people";
 import { caseHref } from "@/lib/domain/ids";
@@ -42,8 +42,8 @@ const TOP_SIMILARITY: Record<CrcFixture, number> = { evidence_closure: 0.97, fal
 /** What the weakest edge of the chosen link rests on, in words. A `human` edge was a below-line name match two reviewers confirmed. */
 const BASIS: Record<string, string> = { eid: "Emirates ID", human: "name", wasl: "name and details", p_cal: "name and details" };
 
-async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase | null> {
-  const detail = await getCase(loop);
+async function matchCase(fixture: CrcFixture, loop: string, read: (id: string) => Promise<CaseDetail | null>): Promise<MatchCase | null> {
+  const detail = await read(loop);
   const link = detail?.links[0];
   if (!detail || !link) return null;
   const referral = personFor(link.weakest_edge.a);
@@ -106,9 +106,18 @@ async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase |
   };
 }
 
+type Fx = Awaited<ReturnType<typeof getFixtures>>;
+async function matchCases(fx: Fx, read: (id: string) => Promise<CaseDetail | null>): Promise<MatchCase[]> {
+  const found = await Promise.all(CRC_FIXTURES.map((name) => (fx.fixtures[name]?.id ? matchCase(name, fx.fixtures[name].id, read) : null)));
+  return found.filter((c): c is MatchCase => c !== null);
+}
+
 export default async function Page() {
   const [fx, dashboard] = await Promise.all([getFixtures(), getDashboard()]);
-  const cases = (await Promise.all(CRC_FIXTURES.map((name) => matchCase(name, fx.fixtures[name].id)))).filter((c): c is MatchCase => c !== null);
+  let cases = await matchCases(fx, getCase);
+  // A live run without the showcase fixtures replays the published snapshot instead of answering 404.
+  const snapshot = cases.length === 0 && apiMode() === "live";
+  if (snapshot) cases = await matchCases(await getPublishedFixtures(), getPublishedCase);
   if (cases.length === 0) notFound();
 
   return (
@@ -118,6 +127,7 @@ export default async function Page() {
           title="Identity matching"
           question="Is this incoming report the same woman as one of our referrals?"
           current="/app/pipeline/matching"
+          note={snapshot ? SNAPSHOT_NOTE : undefined}
         />
       }
       cases={cases}

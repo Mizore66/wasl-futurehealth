@@ -12,6 +12,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cx } from "@/lib/cx";
+import type { SessionPersona } from "@/lib/auth/session-persona";
+import { PERSONA_PREFIX, shellPersona, type ShellPersona } from "./persona";
 
 type NavItem = {
   href: string;
@@ -126,51 +128,6 @@ const NAV: NavItem[] = [
         <path d="M8 5v3.2l2 1.3" />
       </>,
     ),
-  },
-];
-
-/** Who is signed in depends on whose screen it is (design-brief-v2, canonical facts). */
-const USERS: {
-  prefix: string;
-  initials: string;
-  name: string;
-  role: string;
-}[] = [
-  {
-    prefix: "/app/today",
-    initials: "HA",
-    name: "Hessa Al Ali",
-    role: "Nurse coordinator",
-  },
-  {
-    prefix: "/app/recovery",
-    initials: "HA",
-    name: "Hessa Al Ali",
-    role: "Nurse coordinator",
-  },
-  {
-    prefix: "/app/patients",
-    initials: "HA",
-    name: "Hessa Al Ali",
-    role: "Nurse coordinator",
-  },
-  {
-    prefix: "/app/review",
-    initials: "OK",
-    name: "Dr Omar Al Kaabi",
-    role: "Medical director",
-  },
-  {
-    prefix: "/app/referrals",
-    initials: "LH",
-    name: "Dr Layla Haddad",
-    role: "Unit lead, SKMC endoscopy",
-  },
-  {
-    prefix: "/app",
-    initials: "ST",
-    name: "Dr Salama Al Tamimi",
-    role: "Programme director",
   },
 ];
 
@@ -334,12 +291,14 @@ function UserBlock({
   user,
   collapsed = false,
 }: {
-  user: (typeof USERS)[number];
+  user: ShellPersona;
   collapsed?: boolean;
 }) {
   return (
     <div
       className={cx("flex items-center gap-2.5", collapsed && "justify-center")}
+      data-testid="shell-persona"
+      data-persona-source={user.source}
     >
       <span
         aria-hidden
@@ -349,16 +308,48 @@ function UserBlock({
       </span>
       <span
         className={cx(
-          "flex flex-col whitespace-nowrap",
+          "flex min-w-0 flex-col",
           collapsed && "sr-only",
         )}
       >
-        <span className="text-body font-medium leading-[18px]">
+        <span className="text-small text-muted">{PERSONA_PREFIX[user.source]}</span>
+        <span className="truncate text-body font-medium leading-[18px]">
           {user.name}
         </span>
         <span className="text-small text-muted">{user.role}</span>
       </span>
     </div>
+  );
+}
+
+/** The session resolves on the server after the shell paints; until then the screen's "Viewing as" persona shows. */
+function SessionUserBlock({
+  pathname,
+  session,
+  collapsed,
+}: {
+  pathname: string;
+  session: Promise<SessionPersona | null>;
+  collapsed?: boolean;
+}) {
+  return <UserBlock user={shellPersona(pathname, use(session))} collapsed={collapsed} />;
+}
+
+function PersonaSlot({
+  pathname,
+  session,
+  collapsed,
+}: {
+  pathname: string;
+  session?: Promise<SessionPersona | null>;
+  collapsed?: boolean;
+}) {
+  const fallback = <UserBlock user={shellPersona(pathname, null)} collapsed={collapsed} />;
+  if (!session) return fallback;
+  return (
+    <Suspense fallback={fallback}>
+      <SessionUserBlock pathname={pathname} session={session} collapsed={collapsed} />
+    </Suspense>
   );
 }
 
@@ -374,14 +365,15 @@ function typingTarget(t: EventTarget | null) {
 /** Queue counts arrive as a promise so the shell renders before the API answers. */
 export function AppSidebar({
   counts,
+  session,
   defaultCollapsed = false,
 }: {
   counts: Promise<NavCounts>;
+  /** The signed-in review session's actor, if any (lib/api/reviewer-session.ts). */
+  session?: Promise<SessionPersona | null>;
   defaultCollapsed?: boolean;
 }) {
   const pathname = usePathname();
-  const user =
-    USERS.find((u) => pathname.startsWith(u.prefix)) ?? USERS.at(-1)!;
 
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const toggle = useCallback(() => {
@@ -489,7 +481,7 @@ export function AppSidebar({
               collapsed ? "items-center" : "px-2.5",
             )}
           >
-            <UserBlock user={user} collapsed={collapsed} />
+            <PersonaSlot pathname={pathname} session={session} collapsed={collapsed} />
             <HonestyChip kind="simulated" compact={collapsed}>
               <span className={cx(collapsed && "sr-only")}>{SYNTHETIC}</span>
             </HonestyChip>
@@ -526,7 +518,7 @@ export function AppSidebar({
           <div className="flex max-h-[calc(100dvh-3.5rem)] flex-col gap-3 overflow-y-auto border-b border-line bg-surface p-3">
             <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
-              <UserBlock user={user} />
+              <PersonaSlot pathname={pathname} session={session} />
               <HonestyChip kind="simulated">{SYNTHETIC}</HonestyChip>
             </div>
           </div>

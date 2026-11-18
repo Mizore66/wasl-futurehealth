@@ -2,6 +2,7 @@ import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/sche
 import { effectiveOwner } from "@/lib/api/owner";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
+import { staffDueTime } from "@/lib/domain/staff-time";
 import { compareInstants } from "@/lib/domain/instant";
 import { caseStage } from "@/lib/domain/stage";
 import { plain } from "@/lib/domain/terms";
@@ -11,6 +12,7 @@ import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, communicationWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
+import { reviewDateWords } from "@/components/disposition/model";
 import { isActionable, obligationWords, openObligation } from "./obligation";
 import { patientContestWords, patientTaskOverdue } from "./patient-tasks";
 
@@ -59,12 +61,25 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
     if (c.crc.care_state === "awaiting_confirmation") return { status: "Care pathways need confirmation", next: "Review each obligation separately" };
     if (c.crc.care_state === "blocked") return { status: "Current evidence incomplete", next: "Resolve the evidence holds" };
   }
+  /* A patient contest holds closure: the API serves closed:false with the canonical closure kept aside (closure_hold). */
+  if (c.closure_hold === "patient_contest") return { status: "Closure held: patient contest open", next: "A senior clinician reviews the patient's contest" };
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
   const plan = c.api_overlay?.clinician_disposition;
-  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${plan.review_date}` };
+  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${reviewDateWords(plan.review_date)}` };
   return DROPOFF_WORDS[c.dropoff];
+}
+
+/**
+ * The case-page header phrase. "closed with evidence" only when the API serves the case as closed; a closure held by a
+ * patient contest (closed:false, closure_hold) never reads as closed.
+ */
+export function headerStatusWords(c: CaseSummary): string {
+  const status = statusWords(c).status;
+  if (status === "Closed" && c.closed && !c.closure_hold) return isNoAction(c) ? "closed, no action needed" : "closed with evidence";
+  if (status === "Closed") return "not closed: check the record";
+  return status.toLowerCase();
 }
 
 const PLAN_WORDS: Record<NonNullable<NonNullable<CaseSummary["api_overlay"]>["clinician_disposition"]>["plan"], string> = {
@@ -229,6 +244,11 @@ export type WorkItem = {
   communicationStep?: "notify" | "receipt";
   /** The approved wording a staff notification must use, as the API serves it. */
   notificationTemplate?: string;
+  /**
+   * An open failed teach-back callback: its status words and the reference the patient's receipt shows (the first 8
+   * characters of the task id). Kept apart from `status`, which a later local action may replace while the task stays open.
+   */
+  teachBackCallback?: { status: string; ref: string };
 };
 
 /** Today's words for a recorded staff communication (issue #197). Receipt never claims understanding. */
@@ -253,8 +273,11 @@ export function teachBackCallbackWords(c: CaseSummary): string | null {
   const cb = c.teach_back_callback;
   if (!cb || cb.status !== "open") return null;
   if (!cb.due_at) return "Teach-back failed · nurse callback open";
-  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${atWords(cb.due_at)}`;
+  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${staffDueTime(cb.due_at)}`;
 }
+
+/** The reference a patient's teach-back callback receipt shows (components/patient/check-flow.tsx). */
+export const callbackRef = (id: string) => id.slice(0, 8);
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
@@ -429,6 +452,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     hasRecord,
     ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
     ...(reconciliation && retrieval ? { retrieval: { owner: reconciliation.retrieval_owner, due: reconciliation.retrieval_due, overdue: retrieval.overdue } } : {}),
+    ...(callback && c.teach_back_callback ? { teachBackCallback: { status: callback, ref: callbackRef(c.teach_back_callback.id) } } : {}),
   };
 }
 

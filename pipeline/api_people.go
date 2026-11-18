@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -121,7 +122,65 @@ func decodeIdentitySnapshot(body []byte) (*identityClusterSnapshot, error) {
 // rejected every real v7 run and /api/people answered 503 there.
 var identityPolicyName = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)*(?:\+[a-z0-9_]+(?:=[a-z0-9_.-]+)?)*$`)
 
+// personProjectionCache keeps the last validated projection (or validation error) with the fingerprint of every
+// input it was validated against. The full validation re-reads and re-hashes the identity artifact, fhir_log and
+// out_log and re-decodes every retained decision (~4 s on a 5k-case run); it ran on every case detail read.
+type personProjectionCache struct {
+	key        personProjectionKey
+	projection *personProjection
+	err        error
+}
+
+type personFileStamp struct {
+	size    int64
+	modNano int64
+	ino     uint64
+}
+
+// personProjectionKey: the projection depends only on these three files, report7's mismatch counter and the
+// loaded case set. Canonical cases are never rewritten after load (interactive writes go to api_reviews.ndjson,
+// which the projection does not read), so a ledger append does not invalidate it; any rewrite of the bound
+// files (size, nanosecond mtime or inode) does, and so does a different loaded case map.
+type personProjectionKey struct {
+	files    [3]personFileStamp
+	mismatch interface{}
+	cases    uintptr
+	nCases   int
+}
+
+func (s *apiServer) personProjectionKey() (personProjectionKey, bool) {
+	k := personProjectionKey{mismatch: s.report["live_vs_replay_final_mismatch"], nCases: len(s.cases)}
+	if s.cases != nil {
+		k.cases = reflect.ValueOf(s.cases).Pointer()
+	}
+	for i, name := range []string{"identity_clusters.json", "fhir_log.ndjson", "out_log.ndjson"} {
+		fi, err := os.Stat(filepath.Join(s.run, name))
+		if err != nil {
+			return k, false
+		}
+		k.files[i] = personFileStamp{size: fi.Size(), modNano: fi.ModTime().UnixNano(), ino: fileInode(fi)}
+	}
+	return k, true
+}
+
+// loadPersonProjection returns the validated projection, recomputing it only when an input changed.
 func (s *apiServer) loadPersonProjection() (*personProjection, error) {
+	key, ok := s.personProjectionKey()
+	s.personMu.Lock()
+	defer s.personMu.Unlock()
+	if ok && s.personCache != nil && s.personCache.key == key {
+		return s.personCache.projection, s.personCache.err
+	}
+	projection, err := s.buildPersonProjection()
+	if ok {
+		if after, still := s.personProjectionKey(); still && after == key {
+			s.personCache = &personProjectionCache{key: key, projection: projection, err: err}
+		}
+	}
+	return projection, err
+}
+
+func (s *apiServer) buildPersonProjection() (*personProjection, error) {
 	body, err := os.ReadFile(filepath.Join(s.run, "identity_clusters.json"))
 	if err != nil {
 		return nil, err

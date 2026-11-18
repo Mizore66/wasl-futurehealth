@@ -45,6 +45,10 @@ export const ur: PatientDict = {
       "آپ فالو اپ سے انکار یا کسی بھی فیصلے پر اعتراض کر سکتی ہیں۔ اگر آپ انکار کریں تو بھی آپ کے ساتھ عزت سے پیش آیا جائے گا اور آپ کو دوسری ضروری دیکھ بھال ملتی رہے گی۔ انکار کرنے کا آپ کے لیے کیا مطلب ہو سکتا ہے اور آپ کے پاس اور کون سے راستے ہیں، اس بارے میں اپنے ڈاکٹر سے بات کریں۔",
     ],
     rightsNote: "آپ کی ہر درخواست طبی ٹیم کا ایک فرد دیکھتا ہے، کوئی خودکار نظام نہیں۔",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    closedTitle: "Your follow-up check is finished",
+    closedBody: "Your care team has recorded the result of this follow-up check. Nothing more needs to be booked for it.",
+    closedNext: "You do not need to do anything now. If anything changes, the care team will contact you.",
   },
   check: {
     steps: ["سوال", "پیغامات", "مکمل"],
@@ -82,6 +86,8 @@ export const ur: PatientDict = {
   },
   book: {
     title: "کولونوسکوپی کا وقت",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    noOffer: "There is no appointment time to choose on this phone yet. Nurse Hessa will call you to arrange the colonoscopy with you. You can also call her:",
     proposed: "تجویز کردہ وقت",
     confirmed: "آپ کا پسندیدہ وقت کوآرڈینیٹر کے جائزے کے لیے محفوظ ہے — صرف نقلی؛ کوئی وقت مختص نہیں ہوا۔",
     weekdays: ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"],

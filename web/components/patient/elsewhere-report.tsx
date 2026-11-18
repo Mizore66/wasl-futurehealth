@@ -29,6 +29,11 @@ export function elsewhereStatusLine(r: PatientElsewhereReport, t: ElsewhereCopy 
   return fill(r.retrieval_status === "overdue" ? t.overdue : t.pending);
 }
 
+/** Whether the section has anything to show; an empty labelled region is never rendered. */
+export function elsewhereVisible(view: PatientElsewhereView | null, drafting: boolean): boolean {
+  return drafting || !!view?.report || !!view?.can_report || !!view?.limit_reached;
+}
+
 async function load(): Promise<PatientElsewhereView | null> {
   const res = await fetch("/patient/completed-elsewhere", { cache: "no-store" }).catch(() => null);
   const parsed = PatientElsewhereView.safeParse(res?.ok ? await res.json().catch(() => null) : null);
@@ -74,6 +79,8 @@ export function ElsewhereReport({ lang, procedure }: { lang: Lang; procedure: st
   const input = "min-h-11 rounded-control border border-line bg-surface px-3 text-[16px]";
   const button = "min-h-11 w-full cursor-pointer rounded-control border border-line bg-surface px-4 text-[16px] font-medium text-ink disabled:cursor-not-allowed disabled:opacity-50";
   const thisMonth = new Date().toISOString().slice(0, 7);
+  // Nothing to show (not loaded, unavailable, or no report allowed): render no labelled region at all.
+  if (!elsewhereVisible(view, draft !== null)) return null;
 
   return (
     <section aria-labelledby={`${id}-head`} className="flex flex-col gap-3" {...scriptLang(gate)}>

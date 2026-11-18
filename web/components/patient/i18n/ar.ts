@@ -45,6 +45,10 @@ export const ar: PatientDict = {
       "لكِ أن ترفضي المتابعة أو تعترضي على أي قرار. إذا رفضتِ، ستُعامَلين باحترام، ويمكنكِ أن تحصلي على الرعاية الأخرى التي تحتاجينها. تحدّثي مع طبيبكِ عمّا قد يعنيه الرفض بالنسبة لكِ، وعن الخيارات الأخرى المتاحة لكِ.",
     ],
     rightsNote: "يراجع أي طلب منكِ شخصٌ من الفريق الطبي، لا نظام آلي.",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    closedTitle: "Your follow-up check is finished",
+    closedBody: "Your care team has recorded the result of this follow-up check. Nothing more needs to be booked for it.",
+    closedNext: "You do not need to do anything now. If anything changes, the care team will contact you.",
   },
   check: {
     steps: ["السؤال", "إذن الرسائل", "تم"],
@@ -81,6 +85,8 @@ export const ar: PatientDict = {
   },
   book: {
     title: "موعد تنظير القولون",
+    // English placeholder: needs drafting and qualified medical translation review (#133).
+    noOffer: "There is no appointment time to choose on this phone yet. Nurse Hessa will call you to arrange the colonoscopy with you. You can also call her:",
     proposed: "الموعد المقترح",
     confirmed: "حُفظ وقتكِ المفضل لمراجعته المنسق — محاكاة فقط؛ لم يُحجز موعد.",
     weekdays: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],

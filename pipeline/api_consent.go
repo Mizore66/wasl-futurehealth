@@ -343,10 +343,14 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		}
 		rev := consentRevision(s.caseEvents(c.ID), c.last.Sig)
 		if req.ExpectedHead != rev {
-			return 409, map[string]interface{}{"error": "stale expected_head: the case's consent has moved on; reload and retry", "current_head": c.last.Sig, "current_revision": rev}
+			return 409, map[string]interface{}{"error": "stale expected_head: the case's consent has moved on; reload and retry", "current_head": rev, "current_revision": rev}
 		}
 		if cur, _ := s.overlayLocked(c); cur["status"] == "opted_out" && req.Event != "consent_opted_out" {
-			return 409, map[string]interface{}{"error": "patient has opted out; a later grant needs a new, separately recorded consent flow", "api_contact": cur}
+			msg := "patient has opted out; a later grant needs a new, separately recorded consent flow"
+			if req.Event != "consent_granted" {
+				msg = "patient has opted out; contact is already blocked and an opt-out is not replaced by a denial"
+			}
+			return 409, map[string]interface{}{"error": msg, "api_contact": cur}
 		}
 		ev := map[string]interface{}{"case": c.ID, "item": "", "decision": req.Event, "note": req.Note, "role": role, "actor": actor,
 			"action": ActRecordConsent, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "consent_rev": rev, "mode": "demo", "prev": s.lastHashLocked()}

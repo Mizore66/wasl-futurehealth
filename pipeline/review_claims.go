@@ -401,6 +401,9 @@ func (s *apiServer) caseReviewClaim(w http.ResponseWriter, r *http.Request, c *a
 		if s.questionSigned(c.ID, it, req.Question) {
 			return s.claimFailureLocked(c, viewer, key, cerr(http.StatusConflict, "review_state", "item already has a canonical sign-off; claims are closed"))
 		}
+		if err := s.crcIndependentReadRefusalLocked(c, it, viewer.actor); err != nil {
+			return s.claimFailureLocked(c, viewer, key, err)
+		}
 		at := s.clock()
 		stamp := at.Format(time.RFC3339Nano)
 		claimedAt, heartbeatAt, expiresAt := at, at, at.Add(reviewClaimTTL)
@@ -417,7 +420,8 @@ func (s *apiServer) caseReviewClaim(w http.ResponseWriter, r *http.Request, c *a
 			"at": stamp, "claimed_at": claimedAt.Format(time.RFC3339Nano), "heartbeat_at": heartbeatAt.Format(time.RFC3339Nano),
 			"expires_at": expiresAt.Format(time.RFC3339Nano), "expected_claim_head": *req.ExpectedHead, "mode": "demo", "prev": s.lastHashLocked()}
 		states := s.protoStatesLocked()
-		ev["read"] = nextRead(protocolStateForClaim(states, key))
+		read, _ := nextRead(protocolStateForClaim(states, key)).(string) // "" once terminal: checkReviewClaim answers 409
+		ev["read"] = read
 		if err := checkReviewClaim(s.claimsLocked(), states, ev); err != nil {
 			return s.claimFailureLocked(c, viewer, key, err)
 		}

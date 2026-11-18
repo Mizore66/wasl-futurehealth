@@ -6,6 +6,7 @@ import { SkipLink } from "@/components/shell/skip-link";
 import { RunMetaScope } from "@/components/shell/run-meta-scope";
 import { RunMeta, RunMetaFallback } from "@/components/shell/run-meta";
 import { getCases } from "@/lib/api/source";
+import { reviewerPersona } from "@/lib/api/reviewer-session";
 
 /** The Review queue is CRC only, so the badge counts open CRC reviews, not the dashboard's all-programme total. */
 async function navCounts(): Promise<NavCounts> {
@@ -20,7 +21,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
   return (
     <div className="flex min-h-dvh flex-col bg-ground md:flex-row">
       <SkipLink />
-      <AppSidebar counts={navCounts()} defaultCollapsed={collapsed} />
+      <AppSidebar counts={navCounts()} session={reviewerPersona()} defaultCollapsed={collapsed} />
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-6 py-8 focus:outline-none">
         <RunMetaScope>
           <Suspense fallback={<RunMetaFallback />}>

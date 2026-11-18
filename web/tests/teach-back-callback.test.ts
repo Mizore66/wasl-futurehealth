@@ -1,5 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { DICTS, LANGS } from "@/components/patient/i18n";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Due times carry a relative hint ("in 2 days"), so the wall clock is pinned (Dubai 16:00, Sat 3 Oct 2026).
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-03T12:00:00Z"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
+import { LANGS } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { callbackStatus } from "@/components/case/teach-back-callback-card";
 import { workItem } from "@/components/worklist/model";
 import { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";
@@ -44,7 +54,7 @@ describe("failed teach-back callback", () => {
   });
 
   it("shows open, overdue and resolved staff states", () => {
-    expect(callbackStatus(open)).toBe("Open · coordinator callback due 2026-10-05 08:00 UTC");
+    expect(callbackStatus(open)).toBe("Open · coordinator callback due Mon 5 Oct, 12:00 Dubai time (in 2 days)");
     expect(callbackStatus({ ...open, overdue: true })).toMatch(/^Overdue/);
     expect(callbackStatus({ ...open, status: "resolved", resolved_by: "coordinator-one", resolved_at: "2026-10-02T09:00:00Z" })).toBe(
       "Resolved by coordinator-one 2026-10-02 09:00 UTC",
@@ -55,9 +65,9 @@ describe("failed teach-back callback", () => {
     const row = CaseList.parse(loadSample("cases_crc_page1.json")).cases.find((c) => !c.closed)!;
     const withTask = { ...row, teach_back_callback: open };
     const item = workItem(withTask, 120, false);
-    expect([item.view, item.status]).toEqual(["call", "Teach-back failed · nurse callback due 2026-10-05 08:00 UTC"]);
+    expect([item.view, item.status]).toEqual(["call", "Teach-back failed · nurse callback due Mon 5 Oct, 12:00 Dubai time (in 2 days)"]);
     expect(workItem({ ...withTask, teach_back_callback: { ...open, overdue: true } }, 120, false).status).toBe(
-      "Teach-back failed · nurse callback overdue since 2026-10-05 08:00 UTC",
+      "Teach-back failed · nurse callback overdue since Mon 5 Oct, 12:00 Dubai time (in 2 days)",
     );
     expect(workItem({ ...withTask, teach_back_callback: { ...open, status: "resolved" } }, 120, false).status).toBe(workItem(row, 120, false).status);
   });

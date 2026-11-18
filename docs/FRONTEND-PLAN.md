@@ -80,6 +80,7 @@ Refusal wording (#157): the English rights dialog keeps the right to decline fol
 | G7 | Linker runner-up candidates are not in the API. | Shown from `replay.json`, labelled illustrative. | illustrative |
 | G8 | Referrals search was not wired in the canvas. | Wire `q` to `/api/cases?q=`. | built |
 | G8a | Patient explanation/contest requests and failed teach-back had no staff resolution path (#167, #179). | Patient rights sheet and teach-back receipt read the API; the case page's callback card records a coordinator consultation, and the contest card resolves a contest only as the viewer's own signed-in senior clinician session. See [API-PATIENT-REQUESTS.md](API-PATIENT-REQUESTS.md#web-workflow). | built; one-time code and callback simulated |
+| G8b | Post-closure outcome hand-off had no staff approve/release UI (#112). | The case page's outcome hand-off card approves content only as the viewer's own signed-in session (the API allows only a clinician) and records a simulated release with the server's coordinator credential; the referrer acknowledgement is shown read-only. See [API-OUTCOME-HANDOFF.md](API-OUTCOME-HANDOFF.md#staff-web-workflow). | built (minimal UI; delivery simulated; browser-tested against a mock, not the real Go API) |
 | G9 | Two "0 lost" figures (201,285 in PITCH.md vs 136,669 in SUMMARY.md v2; v1 + v2 sum to 276,133). | Both recorded in `results.json` `conflicts`; no screen shows an exactly-once denominator until the backend owner picks one. | — |
 
 ## Phases (each ends in a check)

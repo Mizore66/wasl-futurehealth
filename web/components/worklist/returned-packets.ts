@@ -35,7 +35,27 @@ export type ReturnedPacket = {
   acknowledged: boolean;
   /** The referrer's resolving answer in words, or null while the hand-off waits on the referrer. */
   answer: string | null;
+  /** The resolving answer's code, when the API recorded one (decides what the case still expects). */
+  answerCode?: Disposition;
+  /** The canonical packet's detail read failed or timed out: its recommendation and advice are unavailable, nothing else. */
+  detailUnavailable?: boolean;
 };
+
+/** What a resolved hand-off leaves the case waiting for, after the referrer's answer. */
+export function afterAnswerWords(code: Disposition | undefined): string {
+  if (code === "close") return "Nothing else is needed from you; the referral is closed and no procedure is expected through it.";
+  if (code === "manage_in_primary_care") return "Nothing else is needed from you; the patient is managed in primary care, so no procedure is expected through this referral.";
+  return "Nothing else is needed from you; the case stays open until its procedure evidence arrives.";
+}
+
+/**
+ * Packets whose canonical detail is worth reading: a canonical packet still waiting on the referrer. Answered or acted
+ * packets need no recommendation to act on, so they are never read (a page of them must not fan out detail reads).
+ */
+export function needsDetail(c: CaseSummary): boolean {
+  const h = c.api_overlay?.referral_handoff;
+  return h?.source === "canonical" && !h.referrer_response && h.status !== "referrer_acted" && h.acted_at === undefined;
+}
 
 /**
  * The returned packet of an open case, from its `api_overlay.referral_handoff` projection. `current` (the case detail's
@@ -67,6 +87,7 @@ export function returnedPacket(c: CaseSummary, current: CurrentDecision | null =
     status: h.status,
     acknowledged: !!h.acknowledgement,
     answer: r ? referrerAnswerWords(r) : h.status === "referrer_acted" ? "The canonical packet already records the referrer's action" : null,
+    ...(r ? { answerCode: r.response } : {}),
   };
 }
 

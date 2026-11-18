@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DICTS, LANGS } from "@/components/patient/i18n";
+import { LANGS } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { requestStatusLine } from "@/components/patient/rights-requests";
 import { forwardPatientRights } from "@/lib/api/patient-source";
 import { PatientRightsList, PatientRightsReceipt, PatientRightsSubmission } from "@/lib/api/patient-schema";
