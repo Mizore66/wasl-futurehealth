@@ -162,7 +162,7 @@ Each job runs only when its inputs changed:
 |---|---|---|---|
 | API | `pipeline/`, `scripts/`, `data/`, `models/`, `booking/`, `patient-parsers/`, `Dockerfile`, the API deploy files | builds the image on the runner, pushes `wasl:<sha>` to ACR, rolls the Container App onto it | the new revision becomes ready and runs the new image (a failed revision leaves the old one serving, which a smoke test alone would miss), then `verify_api.py smoke` |
 | Agent | `deploy/azure/agent/`, `azure.yaml` | runs the agent tests, rebuilds the `azd` environment from `ci.env`, `azd deploy` | the deployed agent answers a no-case-id prompt |
-| Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel pull`, `vercel build --prod`, `vercel deploy --prebuilt --prod` | the deployment reports Ready |
+| Web | `web/`, `data/evidence/`, `.vercelignore` | `vercel deploy --prod` of the repository root, built by Vercel with the real production variables (a runner-side build sees only `[SENSITIVE]` placeholders) | the token can see the team, and the deployment reports Ready |
 | Model | `deploy/modal/` | `modal deploy` of the Gemma server | `/health` reaches 200 and an unauthenticated model route gets 401 |
 
 GitHub signs in to Azure as the user-assigned identity `wasl-github-deploy`, through federated credentials that trust
