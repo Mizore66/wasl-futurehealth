@@ -10,6 +10,7 @@ import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
+import { simulatedRunDate } from "@/lib/domain/staff-time";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, clockWords } from "./days";
@@ -543,7 +544,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
           <span className="text-small text-muted">
-            {scope} · run day {Math.floor(now)}, {formatDay(now)}
+            {scope} · {simulatedRunDate(now)}
           </span>
           {aside}
         </div>

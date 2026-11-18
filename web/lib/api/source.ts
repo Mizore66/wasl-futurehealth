@@ -95,8 +95,17 @@ export class ApiStatusError extends Error {
   }
 }
 
+function credentialVariableName(credential: Role | WebCredential): string {
+  return `WASL_API_${credential.toUpperCase()}_TOKEN`;
+}
+
+/** Whether this server holds the named credential. The same source `authenticated` reads, so labels and errors agree. */
+export function hasCredential(credential: Role | WebCredential, env: Record<string, string | undefined> = process.env): boolean {
+  return Boolean(env[credentialVariableName(credential)]?.trim());
+}
+
 function apiToken(credential: Role | WebCredential): string {
-  const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
+  const name = credentialVariableName(credential);
   const token = process.env[name]?.trim();
   if (!token) throw new MissingCredentialError(name);
   return token;
@@ -201,6 +210,18 @@ export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
 
 export async function getCase(id: string): Promise<CaseDetail | null> {
   if (apiMode() === "live") return live(CaseDetail, `/api/cases/${encodeURIComponent(id)}`);
+  return getPublishedCase(id);
+}
+
+/**
+ * The published fixture snapshot (data/api), read in either mode. For replay screens only: a live run that does not
+ * carry the showcase fixtures falls back to it, labelled as a replay, instead of returning 404.
+ */
+export async function getPublishedFixtures(): Promise<Fixtures> {
+  return fixture(Fixtures, "fixtures.json");
+}
+
+export async function getPublishedCase(id: string): Promise<CaseDetail | null> {
   for (const f of await fixtureCaseFiles("")) {
     const detail = await fixture(CaseDetail, f);
     if (detail.case.id === id) return detail;

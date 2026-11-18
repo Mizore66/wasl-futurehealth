@@ -14,6 +14,7 @@ import { getReviewCase } from "@/lib/api/reviewer-session";
 import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
+import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
 export const metadata = { title: "Review" };
@@ -99,6 +100,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
             </span>
           )}
           {queue && <QueueLabel source={queue.source} />}
+          <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
         </div>
       </header>
       {viewer.session && <ReviewerSessionStatus session={viewer.session} />}

@@ -5,6 +5,7 @@ import { recordTeachBackCallback } from "@/app/app/patients/[id]/actions";
 import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { TeachBackCallback } from "@/lib/api/schema";
+import { staffDueTime } from "@/lib/domain/staff-time";
 import { atWords } from "./words";
 
 const STATE: Record<TeachBackCallback["state"], string> = {
@@ -16,7 +17,7 @@ const STATE: Record<TeachBackCallback["state"], string> = {
 export function callbackStatus(cb: TeachBackCallback): string {
   if (cb.status === "resolved") return `Resolved${cb.resolved_by ? ` by ${cb.resolved_by}` : ""}${cb.resolved_at ? ` ${atWords(cb.resolved_at)}` : ""}`;
   if (!cb.due_at) return `Open · ${cb.owner} callback, no due date (engine escalation)`;
-  return `${cb.overdue ? "Overdue" : "Open"} · ${cb.owner} callback due ${atWords(cb.due_at)}`;
+  return `${cb.overdue ? "Overdue" : "Open"} · ${cb.owner} callback due ${staffDueTime(cb.due_at)}`;
 }
 
 /** Failed teach-back callbacks. Only a recorded consultation outcome resolves one; a generic call log does not. */

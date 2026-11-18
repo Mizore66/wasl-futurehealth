@@ -1,6 +1,7 @@
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { ReactNode } from "react";
 import type { CaseDetail, PatientJourneyEvent } from "@/lib/api/schema";
+import { staffDueTime } from "@/lib/domain/staff-time";
 import { atWords } from "./words";
 
 const KIND: Record<PatientJourneyEvent["kind"], string> = {
@@ -76,7 +77,7 @@ export function requestState(row: NonNullable<CaseDetail["patient_requests"]>[nu
     const at = row.resolved_at ? ` ${atWords(row.resolved_at)}` : "";
     return `Resolved: ${row.outcome === "decision_revised" ? "decision to be revised" : "decision upheld"}${by}${at}`;
   }
-  const due = row.due_at ? ` review ${row.overdue ? "overdue since" : "due"} ${atWords(row.due_at)}` : " review";
+  const due = row.due_at ? ` review ${row.overdue ? "overdue since" : "due"} ${staffDueTime(row.due_at)}` : " review";
   return `${row.overdue ? "Overdue" : "Pending"} · ${row.owner ?? "senior_clinician"}${due}`;
 }
 

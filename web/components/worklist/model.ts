@@ -2,6 +2,7 @@ import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/sche
 import { effectiveOwner } from "@/lib/api/owner";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
+import { staffDueTime } from "@/lib/domain/staff-time";
 import { compareInstants } from "@/lib/domain/instant";
 import { caseStage } from "@/lib/domain/stage";
 import { plain } from "@/lib/domain/terms";
@@ -253,7 +254,7 @@ export function teachBackCallbackWords(c: CaseSummary): string | null {
   const cb = c.teach_back_callback;
   if (!cb || cb.status !== "open") return null;
   if (!cb.due_at) return "Teach-back failed · nurse callback open";
-  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${atWords(cb.due_at)}`;
+  return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${staffDueTime(cb.due_at)}`;
 }
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */

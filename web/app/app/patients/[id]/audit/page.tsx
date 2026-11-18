@@ -9,6 +9,7 @@ import { getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
+import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 
 export async function generateMetadata({ params }: PageProps<"/app/patients/[id]/audit">) {
   const id = caseIdFromParam((await params).id);
@@ -39,7 +40,10 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
             </p>
           </div>
         </div>
-        <HonestyLabel kind="simulated">Simulated run, real hashes</HonestyLabel>
+        <div className="flex flex-col gap-1 sm:items-end">
+          <HonestyLabel kind="simulated">Simulated run, real hashes</HonestyLabel>
+          <GlossaryPopover />
+        </div>
       </header>
 
       <div className="mt-6 flex flex-col gap-gap">

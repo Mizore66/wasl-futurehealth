@@ -14,9 +14,10 @@ import {
 } from "@/components/review/auth";
 import { mappedCredentialToken, oidcConfig, reviewAuthMode } from "@/lib/auth/oidc-config";
 import { defaultSessionStore } from "@/lib/auth/oidc-store";
+import { personaFromOidc, personaFromToken, type SessionPersona } from "@/lib/auth/session-persona";
 
 export type ResolvedReviewer =
-  | { ok: true; token: string; method: "demo" | "oidc"; expiresAt?: string }
+  | { ok: true; token: string; method: "demo" | "oidc"; expiresAt?: string; subject?: string; credential?: string }
   | { ok: false; reason: "anonymous" | "expired" | "revoked" | "unmapped" };
 
 /** Resolve the current request without ever falling back to a shared API credential. */
@@ -34,10 +35,27 @@ export async function resolveReviewer(): Promise<ResolvedReviewer> {
     if (session.issuer !== config.issuer) return { ok: false, reason: "unmapped" };
     const token = mappedCredentialToken(config, session.subject, session.credential);
     return token
-      ? { ok: true, token, method: "oidc", expiresAt: new Date(session.expiresAt).toISOString() }
+      ? { ok: true, token, method: "oidc", expiresAt: new Date(session.expiresAt).toISOString(), subject: session.subject, credential: session.credential }
       : { ok: false, reason: "unmapped" };
   } catch {
     return { ok: false, reason: "anonymous" };
+  }
+}
+
+/**
+ * The signed-in review session's actor and role for the app shell, or null without one (fixtures never sign in).
+ * Never throws: the shell falls back to its "Viewing as" persona.
+ */
+export async function reviewerPersona(): Promise<SessionPersona | null> {
+  if (apiMode() !== "live") return null;
+  try {
+    const resolved = await resolveReviewer();
+    if (!resolved.ok) return null;
+    return resolved.method === "oidc" && resolved.subject && resolved.credential
+      ? personaFromOidc(resolved.subject, resolved.credential)
+      : personaFromToken(resolved.token);
+  } catch {
+    return null;
   }
 }
 

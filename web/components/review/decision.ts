@@ -1,5 +1,6 @@
 import type { Role, ReviewRead, ReviewState } from "@/lib/api/schema";
 import { READ_LABEL, type ReviewSlot } from "@/lib/domain/stage";
+import { staffDueTime } from "@/lib/domain/staff-time";
 
 /*
  * Review decisions in the order the reviewer answers them: identity first (reviewer role) when a link item exists,
@@ -311,10 +312,7 @@ export type Question = "link" | "evidence";
 
 export const questionAnchor = (item: string, question: Question) => `review-question-${item.replace(/[^A-Za-z0-9_-]/g, "-")}-${question}`;
 
-function leaseTime(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : `${date.toISOString().slice(0, 10)} ${date.toISOString().slice(11, 16)} UTC`;
-}
+const leaseTime = (value: string) => staffDueTime(value);
 
 /** Server-projected ownership, formatted consistently on the queue and desk. */
 export function claimSummary(state: Pick<ReviewState, "claim">): string {

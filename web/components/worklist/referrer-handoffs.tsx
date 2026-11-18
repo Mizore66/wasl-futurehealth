@@ -17,6 +17,11 @@ const REFUSED: Record<number, string> = {
 };
 const field = "w-full rounded-control border border-control bg-surface px-3 py-2 text-body text-ink";
 
+/** A live case without a synthetic name falls back to its case ID; show that ID once so the heading is not read twice. */
+export function packetHeading(p: Pick<ReturnedPacket, "name" | "short">): { name: string; caseId: string | null } {
+  return { name: p.name, caseId: p.name.trim() === p.short ? null : p.short };
+}
+
 /** The referrer's returned referrals: acknowledge the exact packet, then resolve it with one structured answer. */
 export function ReferrerHandoffs({
   packets,
@@ -58,6 +63,7 @@ function PacketCard({
   const words = handoffWords({ status: p.status, actBy: p.actBy }, referrer);
   const built = referrerRequest(p, draft);
   const titleId = `packet-${p.short}`;
+  const heading = packetHeading(p);
 
   const send = (request: ReferrerAnswer, done: string) => {
     if (!answer || busy) return;
@@ -80,7 +86,12 @@ function PacketCard({
   return (
     <article aria-labelledby={titleId} className="rounded-card border border-line bg-surface p-4 sm:p-pad">
       <h2 id={titleId} className="m-0 text-section font-semibold">
-        {p.name} <span className="text-small font-normal text-muted">{p.short}</span>
+        {heading.name}
+        {heading.caseId && (
+          <>
+            <span className="sr-only">, case</span> <span className="text-small font-normal text-muted">{heading.caseId}</span>
+          </>
+        )}
       </h2>
       <dl className="m-0 mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
         {(
@@ -126,7 +137,8 @@ function PacketCard({
                 .filter(([d]) => d !== "redirect" || p.others.length > 0)
                 .map(([d, label]) => (
                   <label key={d} className="flex min-h-11 cursor-pointer items-center gap-2">
-                    <input type="radio" name={`answer-${p.id}`} value={d} checked={draft.response === d} onChange={() => setDraft({ ...draft, response: d })} />
+                    {/* WCAG 2.5.8: the radio itself is 24×24 px, and the whole 44 px row is its label. */}
+                    <input type="radio" className="size-6 flex-none cursor-pointer accent-ink" name={`answer-${p.id}`} value={d} checked={draft.response === d} onChange={() => setDraft({ ...draft, response: d })} />
                     {d === "re_refer" ? `${label}: ${p.unit}` : label}
                   </label>
                 ))}
