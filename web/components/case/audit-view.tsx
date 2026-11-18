@@ -23,24 +23,30 @@ function Hash({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * The chain-check mark. An empty chain passes the server's check vacuously, so it reads as neutral, never as a
+ * positive "0 of 0 intact"; a broken chain is negative whatever its length.
+ */
+export function chainCheck(audit: Pick<Audit, "chain" | "chain_length" | "chain_verified">): { tone: "positive" | "negative" | "muted"; shape: "tick" | "cross" | "dash"; label: string } {
+  if (!audit.chain_verified) return { tone: "negative", shape: "cross", label: "Chain broken" };
+  if (audit.chain_length === 0) return { tone: "muted", shape: "dash", label: "No sealed entries yet" };
+  return { tone: "positive", shape: "tick", label: `Verified · ${audit.chain.length} of ${audit.chain_length} intact` };
+}
+
 /** Whether the server's check passed, with honest wording about what that check is. */
 export function VerifiedCard({ audit }: { audit: Audit }) {
   const intact = audit.chain.length === audit.chain_length;
+  const mark = chainCheck(audit);
+  const empty = audit.chain_verified && audit.chain_length === 0;
   return (
     <section aria-labelledby="verified-h" className="rounded-card border border-line bg-surface p-4 md:p-pad">
       <h2 id="verified-h" className="m-0 text-section font-medium">
         Chain check
       </h2>
       <p className="m-0 mt-3 flex flex-wrap items-center gap-3" role="status" data-testid="chain-verified">
-        {audit.chain_verified ? (
-          <Pill tone="positive" shape="tick">
-            Verified · {audit.chain.length} of {audit.chain_length} intact
-          </Pill>
-        ) : (
-          <Pill tone="negative" shape="cross">
-            Chain broken
-          </Pill>
-        )}
+        <Pill tone={mark.tone} shape={mark.shape}>
+          {mark.label}
+        </Pill>
         {!intact && (
           <span className="text-negative">
             Only {audit.chain.length} of {audit.chain_length} entries were returned.
@@ -48,7 +54,9 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
         )}
       </p>
       <p className="m-0 mt-3 max-w-[72ch]">
-        {audit.chain_verified
+        {empty
+          ? "Nothing has been sealed for this case yet, so there is no entry for the server to check."
+          : audit.chain_verified
           ? "The server recomputed every entry's hash from its contents and the hash of the entry before it, and they all matched. So no entry was changed or removed after it was sealed."
           : "The server recomputed the hashes and at least one did not match. Treat this case's record as altered until it is checked."}
       </p>
