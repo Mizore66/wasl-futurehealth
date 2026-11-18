@@ -1,5 +1,5 @@
 import type { CaseSummary, PatientTask } from "@/lib/api/schema";
-import { atWords } from "@/components/case/words";
+import { staffDueTime } from "@/lib/domain/staff-time";
 
 /**
  * Staff tasks opened by verified patient requests (pipeline/patient_task.go): a failed teach-back callback or a
@@ -26,14 +26,14 @@ export function patientContestWords(c: CaseSummary): { status: string; next: str
   const contest = open.find((t) => t.kind === "patient_contest");
   const revision = open.find((t) => t.kind === "patient_contest_revision");
   if (!contest && revision) {
-    const due = revision.due_at ? ` ${revision.overdue ? "overdue since" : "due"} ${atWords(revision.due_at)}` : "";
+    const due = revision.due_at ? ` ${revision.overdue ? "overdue since" : "due"} ${staffDueTime(revision.due_at)}` : "";
     return {
       status: `Patient contest · decision to be revised${due}`,
       next: "A senior clinician replaces the questioned decision; automatic closure stays held until then",
     };
   }
   if (!contest) return null;
-  const due = contest.due_at ? ` ${contest.overdue ? "overdue since" : "due"} ${atWords(contest.due_at)}` : "";
+  const due = contest.due_at ? ` ${contest.overdue ? "overdue since" : "due"} ${staffDueTime(contest.due_at)}` : "";
   return {
     status: `Patient contest · independent review${due}`,
     next: "A senior clinician who did not sign this case reviews the contest; automatic closure is held until then",

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { ReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
-import { REFERRAL_VIEWS, referralView, viewScope, type ReferralView } from "@/components/worklist/referrals";
+import { REFERRAL_VIEWS, referralView, referrerAnswerLabel, viewScope, type ReferralView } from "@/components/worklist/referrals";
 import { returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
 import { syntheticHandoffs } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
-import { apiMode, getCase } from "@/lib/api/source";
+import { apiMode, getCase, hasCredential } from "@/lib/api/source";
 import { cn } from "@/lib/utils";
 import { answerAsReferrerWith } from "../actions";
 
@@ -38,6 +38,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
   const live = apiMode() === "live";
   const list = view ? (await packets(view)).sort(order) : [];
   const scope = viewScope(programme, provider);
+  const label = referrerAnswerLabel(live, view ? hasCredential(view.credential) : false);
   return (
     <div>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
@@ -64,11 +65,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
           <Link href={scope ? `/app/referrals?${scope}` : "/app/referrals"} className="inline-flex min-h-11 items-center text-small underline">
             Receiving unit inbox
           </Link>
-          {live ? (
-            <HonestyLabel kind="built">Referrer answers: built, saved to the synthetic case ledger</HonestyLabel>
-          ) : (
-            <HonestyLabel kind="designed">Referrer answers: need the live synthetic API</HonestyLabel>
-          )}
+          <HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>
         </div>
       </header>
       {view && <ReferrerHandoffs packets={list} referrer={view.referrer} answer={live ? answerAsReferrerWith.bind(null, view.credential) : undefined} />}

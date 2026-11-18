@@ -9,7 +9,7 @@ import type { CaseSummary } from "@/lib/api/schema";
 import { apiMode, getCase, getDashboard } from "@/lib/api/source";
 import { cn } from "@/lib/utils";
 import { respondToReferral } from "./actions";
-import { formatDay } from "@/lib/domain/day";
+import { simulatedRunDate } from "@/lib/domain/staff-time";
 
 export const metadata = { title: "Referrals" };
 
@@ -79,7 +79,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
             )}
           </div>
           <span className="text-small text-muted">
-            {view ? view.unit : "No referral workflow for this programme and provider"} · run day {Math.floor(now)}, {formatDay(now)}
+            {view ? view.unit : "No referral workflow for this programme and provider"} · {simulatedRunDate(now)}
           </span>
           {view?.programme !== "crc" ? (
             // The longest label on the page: let it wrap so a phone does not scroll sideways (#155).
