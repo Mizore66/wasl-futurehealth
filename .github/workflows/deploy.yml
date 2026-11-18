@@ -186,8 +186,9 @@ jobs:
           test -n "$VERCEL_TOKEN" || { echo "::error::VERCEL_TOKEN secret is not set (deploy/azure/README.md)"; exit 1; }
           npm install --global vercel@59.10.0
           echo "token belongs to: $(vercel whoami --token="$VERCEL_TOKEN")"
-          vercel teams ls --token="$VERCEL_TOKEN" | grep -q kais-projects-42abda1c \
-            || { echo "::error::VERCEL_TOKEN cannot see the kais-projects-42abda1c team; create it with that scope"; exit 1; }
+          # A team-scoped token may not list teams, so check what the deploy needs: the team's wasl project.
+          vercel project ls --scope kais-projects-42abda1c --token="$VERCEL_TOKEN" | grep -qE '^\s+wasl\s' \
+            || { echo "::error::VERCEL_TOKEN cannot reach the wasl project in kais-projects-42abda1c; create it with that scope"; exit 1; }
           # Vercel builds from the uploaded source (.vercelignore keeps it to web/ and data/evidence/). A runner-side
           # `vercel build` would only see "[SENSITIVE]" placeholders for the production variables.
           url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
