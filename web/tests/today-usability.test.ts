@@ -177,7 +177,8 @@ describe("N6 and the closed loop: a failed teach-back callback", () => {
   const item = () => workItem({ ...row, teach_back_callback: open_ }, 120, true);
 
   it("carries the status and the patient's receipt reference on the work item", () => {
-    expect(item().teachBackCallback).toEqual({ status: "Teach-back failed · nurse callback due 2026-10-05 08:00 UTC", ref: "a1b2c3d4" });
+    // The due time uses the shared staff formatter (Dubai time plus a relative hint that depends on today).
+    expect(item().teachBackCallback).toEqual({ status: expect.stringMatching(/^Teach-back failed · nurse callback due Mon 5 Oct, 12:00 Dubai time \(.+\)$/), ref: "a1b2c3d4" });
     expect(workItem({ ...row, teach_back_callback: { ...open_, status: "resolved" } }, 120, true).teachBackCallback).toBeUndefined();
   });
 
@@ -197,7 +198,7 @@ describe("N6 and the closed loop: a failed teach-back callback", () => {
     await click("Hand to Dr Al Kaabi");
     await click("Open Waiting", open());
     const line = list().querySelector('[data-testid="row-callback"]')!.textContent;
-    expect(line).toBe("Teach-back failed · nurse callback due 2026-10-05 08:00 UTC · Patient ref a1b2c3d4");
+    expect(line).toMatch(/^Teach-back failed · nurse callback due Mon 5 Oct, 12:00 Dubai time \(.+\) · Patient ref a1b2c3d4$/);
   });
 });
 
