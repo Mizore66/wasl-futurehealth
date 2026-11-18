@@ -75,6 +75,15 @@ func apiReadAction(path string) string {
 	return ActReadQueue
 }
 
+// readDeniedMessage keeps "read permission denied" and, for the outcome hand-off route (read and write share one
+// gate), names which roles act on it, so a refused write does not read as a missing case permission.
+func readDeniedMessage(role, action string) string {
+	if action == ActViewOutcomeHandoff {
+		return fmt.Sprintf("read permission denied: role %q may not view or act on an outcome hand-off; a clinician approves its content, a coordinator records its release and the case's responsible referrer acknowledges it", role)
+	}
+	return "read permission denied"
+}
+
 // authorizeVerified applies read permissions after either bearer or Basic authentication has established identity.
 // Preflight carries no credentials or case data and is handled by the downstream CORS policy.
 func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
@@ -84,7 +93,7 @@ func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
 			return
 		}
 		if err := Authorize(r.Header.Get("X-Wasl-Role"), apiReadAction(r.URL.Path)); err != nil {
-			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": "read permission denied"})
+			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": readDeniedMessage(r.Header.Get("X-Wasl-Role"), apiReadAction(r.URL.Path))})
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -120,7 +129,7 @@ func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Han
 		// downstream handlers still enforce their own method and mutation-specific RBAC contracts.
 		action := apiReadAction(r.URL.Path)
 		if err := Authorize(principal.role, action); err != nil {
-			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": "read permission denied"})
+			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": readDeniedMessage(principal.role, action)})
 			return
 		}
 		// Downstream workflow handlers retain their action-specific RBAC checks, but see only verified identity.
@@ -184,7 +193,7 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	mux.HandleFunc("/api/people", s.peopleRoutes)
 	mux.HandleFunc("/api/people/", s.peopleRoutes)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
-	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
+	caseAPI := s.referrerScoped(s.withConsent(s.undoRoutes(s.caseRoutes)))
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)

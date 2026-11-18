@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -74,6 +75,13 @@ type outcomeHandoff struct {
 }
 
 func responsibleReferrer(c *apiCase) string { return "referrer/" + c.Provider }
+
+// referringClinicianFor: the verified clinician actor is the one WASL_REFERRING_CLINICIANS assigns to the case's
+// referring provider (api_referrer.go uses the same assignment for returned-referral answers).
+func (s *apiServer) referringClinicianFor(c *apiCase, actor string) bool {
+	provider := referrerProvider(c)
+	return provider != "" && actor != "" && s.referrers[actor] == provider
+}
 
 func handoffDecision(c *apiCase, sig string) *Decision {
 	for _, d := range c.decisions {
@@ -269,11 +277,16 @@ func (s *apiServer) staffHandoffError(c *apiCase, kind, role, actor, sig, nextSt
 		}
 		return 0, "", content, false
 	case handoffReferrerAck:
-		if err := Authorize(role, ActAcknowledgeOutcomeHandoff); err != nil {
-			return http.StatusForbidden, err.Error(), outcomeContent{}, false
-		}
-		if actor != responsibleReferrer(c) {
-			return http.StatusForbidden, "only this case's responsible referrer may acknowledge its outcome", outcomeContent{}, false
+		// The responsible referrer is either the referrer/<provider> identity or the referring clinician that
+		// WASL_REFERRING_CLINICIANS assigns to the case's provider (the same credential that answers its returned
+		// referral), so one referring GP does not need two credentials.
+		if !(role == RoleClinician && s.referringClinicianFor(c, actor)) {
+			if err := Authorize(role, ActAcknowledgeOutcomeHandoff); err != nil {
+				return http.StatusForbidden, err.Error() + "; a clinician may acknowledge only as the case's assigned referring clinician (WASL_REFERRING_CLINICIANS)", outcomeContent{}, false
+			}
+			if actor != responsibleReferrer(c) {
+				return http.StatusForbidden, "only this case's responsible referrer may acknowledge its outcome", outcomeContent{}, false
+			}
 		}
 		approved := s.approvedHandoffLocked(c)
 		if approved == nil {
@@ -356,6 +369,9 @@ func (s *apiServer) caseOutcomeHandoff(w http.ResponseWriter, r *http.Request, c
 		}
 		if req.Kind == handoffRelease {
 			ev["gate"] = s.handoffGateLocked(c)
+		}
+		if req.Kind == handoffReferrerAck && role == RoleClinician {
+			ev["acting_for"] = responsibleReferrer(c) // replay cannot see today's WASL_REFERRING_CLINICIANS; the event says whom it acted for
 		}
 		stored, err := s.appendEventLocked(ev)
 		if err != nil {
@@ -442,7 +458,7 @@ func (s *apiServer) patientOutcomeRoute(w http.ResponseWriter, r *http.Request) 
 }
 
 var outcomeHandoffFields = map[string]bool{"type": true, "kind": true, "case": true, "decision": true, "next_step": true, "version": true,
-	"link_id": true, "role": true, "actor": true, "action": true, "verification": true, "consent": true, "gate": true, "at": true, "mode": true, "prev": true, "hash": true}
+	"link_id": true, "role": true, "actor": true, "action": true, "verification": true, "consent": true, "gate": true, "acting_for": true, "at": true, "mode": true, "prev": true, "hash": true}
 
 // replayOutcomeHandoff validates history, not today's gates: closure, consent and link expiry
 // were checked when the event was written and may have changed since.
@@ -488,7 +504,9 @@ func (s *apiServer) replayOutcomeHandoff(ev map[string]interface{}) error {
 			return errors.New("invalid actor")
 		}
 	case handoffReferrerAck:
-		if patientFields || Authorize(role, ActAcknowledgeOutcomeHandoff) != nil || sstr(ev, "action") != ActAcknowledgeOutcomeHandoff || actor != responsibleReferrer(c) {
+		asReferrer := ev["acting_for"] == nil && Authorize(role, ActAcknowledgeOutcomeHandoff) == nil && actor == responsibleReferrer(c)
+		asReferringClinician := role == RoleClinician && sstr(ev, "acting_for") == responsibleReferrer(c) && strings.TrimSpace(actor) != ""
+		if patientFields || sstr(ev, "action") != ActAcknowledgeOutcomeHandoff || !(asReferrer || asReferringClinician) {
 			return errors.New("acknowledgement by someone other than the responsible referrer")
 		}
 	case handoffPatientAck:

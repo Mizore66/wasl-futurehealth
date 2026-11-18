@@ -18,7 +18,7 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 | 400 | Bad JSON, trailing data, unknown event, missing/overlong actor, missing `expected_head`, or note over 500 characters |
 | 403 | Role may not record consent |
 | 404 | Unknown case |
-| 409 | `expected_head` does not equal the case's consent revision (response carries `current_revision` and `current_head`), or a grant after an opt-out |
+| 409 | `expected_head` does not equal the case's consent revision (response carries the revision to retry from as both `current_revision` and `current_head`), or a grant or denial after an opt-out (the message names the opt-out) |
 | 500 | The shared ledger is invalid, its state is indeterminate, or the durable append failed; nothing is recorded in memory |
 | 405 | Method other than GET or POST |
 

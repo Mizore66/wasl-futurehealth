@@ -109,7 +109,10 @@ Requirements and limits:
   `POST /referrer-response`. A referrer answers every returned packet of its provider, including the canonical lung
   work-up packets of `rad-imaging` and DR eye-clinic packets of `phc-retina` (for example
   `ahs-mushrif:hosted-referrer,rad-imaging:hosted-lung-referrer,phc-retina:hosted-eye-referrer`); one actor maps to one
-  provider. The two lists must not share an actor. Left empty, both endpoints refuse every answer with
+  provider. The two lists must not share an actor. The same referring-clinician actor may acknowledge its provider's
+  outcome hand-off (`referrer_acknowledged`, docs/API-OUTCOME-HANDOFF.md), so a demo needs no separate `referrer`-role
+  token for it; a `token:referrer:referrer/<provider>` entry in `WASL_API_TOKENS` still works. A referring clinician may
+  write only to its own provider's cases (other providers' case writes return 403); reads are not provider-scoped. Left empty, both endpoints refuse every answer with
   403. `scripts/demo.sh` assigns its clinician token's actor (`smoke-clinician`) to `skmc-endo` and assigns no referrer.
 
 ## Pointing it at real HL7 feeds

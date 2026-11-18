@@ -461,11 +461,10 @@ func bookingReadinessUnder(c *apiCase, policy string) string {
 	if c == nil {
 		return ""
 	}
+	if hold := referralReadinessHold(c, "a simulated reservation", policy != bookingPolicyReadiness1); hold != "" {
+		return hold
+	}
 	switch {
-	case c.State == "referral_rejected":
-		return returnedReferralReadiness(c, "a simulated reservation")
-	case policy != bookingPolicyReadiness1 && referralReturned(c):
-		return "the receiving unit returned this referral: the hand-off to the referrer is unresolved, and a referrer answer alone does not make the procedure bookable"
 	case c.State == "inadequate" && c.last != nil && len(c.last.Pending) > 0:
 		return "a pending review must confirm the repeat before a simulated reservation"
 	}
@@ -503,6 +502,21 @@ func bookingPolicyRank(policy string) int {
 // decision that moves the case out of referral_rejected (an accepted
 // re-referral or another explicit procedure-ready disposition) clears it. The
 // hand-off status is reported for the coordinator, never used as a bypass.
+// referralReadinessHold is the one returned-referral readiness predicate shared by simulated booking and recovery
+// backfill: a canonical referral_rejected case, and (ledgerReturn, the readiness/2 rule) a referral the receiving
+// unit returned through the ledger, are not procedure-ready. A referrer answer alone does not make either ready.
+func referralReadinessHold(c *apiCase, purpose string, ledgerReturn bool) string {
+	switch {
+	case c == nil:
+		return ""
+	case c.State == "referral_rejected":
+		return returnedReferralReadiness(c, purpose)
+	case ledgerReturn && referralReturned(c):
+		return "the receiving unit returned this referral: the hand-off to the referrer is unresolved, and a referrer answer alone does not make the procedure ready for " + purpose
+	}
+	return ""
+}
+
 func returnedReferralReadiness(c *apiCase, purpose string) string {
 	if c == nil || c.State != "referral_rejected" {
 		return ""
@@ -762,6 +776,14 @@ func (s *apiServer) bookingForLocked(id string) map[string]interface{} {
 				} else if slotElapsed(s.cases[id], slot) {
 					candidate["availability"] = "elapsed"
 				}
+			}
+			// A suggestion whose slot has passed on the run clock, or is already reserved, is not a reservable seat;
+			// say so instead of reporting reservable:true next to an elapsed slot.
+			if avail, _ := candidate["availability"].(string); slotID == out["suggested_slot_id"] && (avail == "elapsed" || avail == "reserved") {
+				if out["reservable"] == true {
+					out["reservation_explanation"] = "suggested_slot_" + avail
+				}
+				out["reservable"] = false
 			}
 			if len(constraints) > 0 {
 				unmet := referralSlotUnmet(s.cases[id], candidate)

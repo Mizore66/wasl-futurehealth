@@ -16,7 +16,7 @@ and no open patient contest holds it. Everything is an `outcome_handoff` event o
 |---|---|---|
 | `content_approved` | `clinician` (`approve_outcome_handoff`) | The exact content version: canonical decision signature, programme, outcome state, a `next_step` chosen from the closed list `routine_screening\|surveillance\|specialist_follow_up\|discuss_with_doctor`, and the fixed safety-net notice `safety_net_v1`. `version` is the SHA-256 of that content. Wasl never derives a next step from outcome codes. |
 | `release_recorded` | `coordinator` (`dispatch_outreach`) | A simulated release of one approved version, with the `gate` the server found from consent at that moment: `released` (a simulated hand-off intent; consent granted), `held_consent` (consent unknown) or `suppressed` (denied or opted out). |
-| `referrer_acknowledged` | `referrer`, only the case's responsible referrer `referrer/<case provider>` (`acknowledge_outcome_handoff`) | That referrer acknowledged that version. It never marks the patient informed. |
+| `referrer_acknowledged` | `referrer`, only the case's responsible referrer `referrer/<case provider>` (`acknowledge_outcome_handoff`); or the `clinician` whose actor `WASL_REFERRING_CLINICIANS` assigns to the case's provider (the credential that answers its returned referrals), recorded with `acting_for: "referrer/<case provider>"` | That referrer acknowledged that version. It never marks the patient informed. |
 | `patient_acknowledged` | the case-bound patient link (`patient_link`), after a simulated one-time code | The patient read and acknowledged that version. |
 
 Every acknowledgement and release names the approved `version`, so all parties refer to the same immutable content. A
@@ -38,7 +38,8 @@ new approval (a revised next step) creates a new version; acknowledgements of th
 ## Staff: `GET|POST /api/cases/{id}/outcome-handoff`
 
 Staff bearer token. Read: `coordinator`, `clinician` and the responsible `referrer` (another referrer gets 403 and no
-content). Referrer tokens cannot read the worklist.
+content). Referrer tokens cannot read the worklist. Other roles (for example `senior_clinician`) get 403
+`read permission denied: …` naming which roles act on the hand-off; read and write share this route gate.
 
 `GET` returns `{handoff}`: `status`, `delivery: "simulated"`, `consent`, `responsible_referrer`, `referrer_status`
 (`pending|acknowledged`), `patient_informed` (true only after the patient's own acknowledgement), `draft` (current

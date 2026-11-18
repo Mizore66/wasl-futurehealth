@@ -237,6 +237,9 @@ func (s *apiServer) patientViewLocked(c *apiCase, full bool) map[string]interfac
 	out := map[string]interface{}{
 		"schema": patientJourneySchema, "head": patientHead(c), "seq": p.Seq, "ledger_status": ledger,
 		"last_action_at": p.LastAt, "programme": plan.Programme, "next_step": plan.NextStep,
+		// case_closed is the served closure (no ongoing care, no patient-contest hold), so the phone can say the
+		// follow-up is finished instead of offering the next step again. next_step stays the canonical key.
+		"case_closed": c.Closed && (c.last == nil || !ongoingCare(c.last)) && !s.patientContestHoldLocked(c),
 	}
 	if !full {
 		out["teach_back"] = map[string]interface{}{"status": patientOr(p.Teach.Status, "pending"), "attempts": len(p.Attempts)}
