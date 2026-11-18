@@ -2,14 +2,18 @@ import Link from "next/link";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { ReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
 import { REFERRAL_VIEWS, referralView, referrerAnswerLabel, viewScope, type ReferralView } from "@/components/worklist/referrals";
-import { returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
+import { needsDetail, returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
 import { syntheticHandoffs } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
 import { apiMode, getCase, hasCredential } from "@/lib/api/source";
+import { mapSettledBounded } from "@/lib/domain/bounded";
 import { cn } from "@/lib/utils";
 import { answerAsReferrerWith } from "../actions";
 
 export const metadata = { title: "Returned referrals" };
+
+/** Concurrent case-detail reads this page may hold open against the API. */
+const DETAIL_READS = 4;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
 const order = (a: ReturnedPacket, b: ReturnedPacket) => Number(!!a.answer) - Number(!!b.answer) || a.actBy - b.actBy;
@@ -25,8 +29,18 @@ async function packets(view: ReferralView): Promise<ReturnedPacket[]> {
   }
   const { cases } = await getAllCases({ provider: view.provider, programme: view.programme });
   const open = cases.filter((c) => !c.closed && c.api_overlay?.referral_handoff?.event);
-  const read = await Promise.all(open.map(async (c) => (c.api_overlay?.referral_handoff?.source === "canonical" ? ((await getCase(c.id))?.current ?? null) : null)));
-  return open.map((c, i) => returnedPacket(c, read[i])).filter((p) => p !== null);
+  /*
+   * Only canonical packets still waiting on the referrer need their detail (recommendation and advice). Reads run at most
+   * DETAIL_READS at a time and settle per card: a slow or failed case read marks that card, never fails the page.
+   */
+  const read = await mapSettledBounded(open, DETAIL_READS, async (c) => (needsDetail(c) ? ((await getCase(c.id))?.current ?? null) : null));
+  return open
+    .map((c, i) => {
+      const r = read[i];
+      const packet = returnedPacket(c, r.ok ? r.value : null);
+      return packet && !r.ok ? { ...packet, detailUnavailable: true } : packet;
+    })
+    .filter((p) => p !== null);
 }
 
 /** The responsible referrer's view: referrals a receiving unit returned, answered with the referring provider's own credential. */

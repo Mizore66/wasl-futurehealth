@@ -264,7 +264,7 @@ export function HistoryCard({
                   </p>
                 )}
                 <p className="m-0 mt-1 text-small leading-5">
-                  {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
+                  {r.prev && <Hash label={i === 0 ? "Continues the shared ledger after" : "After"} value={r.prev} />}
                   {r.hash && <Hash label="Hash" value={r.hash} />}
                 </p>
                 {governance && controls && governable(r) === "review" && (

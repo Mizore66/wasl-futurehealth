@@ -8,7 +8,8 @@ import {
   type PatientOutcomeHandoff,
   type PatientOutcomeVerify,
 } from "@/lib/api/patient-schema";
-import { DICTS, type Lang } from "./i18n";
+import type { Lang } from "./i18n";
+import { usePatientDict } from "./i18n/context";
 import type { PatientDict } from "./i18n/types";
 import { OUTCOME_GATE_COPY, outcomeGateCopy } from "./outcome-copy";
 import { phoneType } from "./parts";
@@ -47,9 +48,10 @@ async function postOutcome(body: PatientOutcomeAck | PatientOutcomeVerify): Prom
 }
 
 export function OutcomeHandoff({ lang }: { lang: Lang }) {
-  const t = DICTS[lang].outcome;
-  const r = DICTS[lang].rights;
-  const common = DICTS[lang].common;
+  const dict = usePatientDict(lang);
+  const t = dict.outcome;
+  const r = dict.rights;
+  const common = dict.common;
   const gate = outcomeGateCopy(lang);
   const gateLang = gate.gated ? ({ lang: "en", dir: "ltr" } as const) : {};
   const type = phoneType(lang);

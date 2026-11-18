@@ -133,8 +133,8 @@ describe("staff patient-contest card", () => {
     onTestFinished(() => {
       vi.useRealTimers();
     });
-    expect(requestState(contest)).toBe("Pending · senior_clinician review due Thu 8 Oct, 12:00 Dubai time (in 5 days)");
-    expect(requestState({ ...contest, overdue: true })).toBe("Overdue · senior_clinician review overdue since Thu 8 Oct, 12:00 Dubai time (in 5 days)");
+    expect(requestState(contest)).toBe("Pending · senior clinician review due Thu 8 Oct, 12:00 Dubai time (in 5 days)");
+    expect(requestState({ ...contest, overdue: true })).toBe("Overdue · senior clinician review overdue since Thu 8 Oct, 12:00 Dubai time (in 5 days)");
     expect(requestState({ ...contest, status: "resolved", outcome: "decision_upheld", resolved_by: "clinician-three", resolved_at: "2026-10-02T09:00:00Z" })).toBe(
       "Resolved: decision upheld by clinician-three 2026-10-02 09:00 UTC",
     );

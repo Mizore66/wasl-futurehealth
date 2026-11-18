@@ -1,4 +1,4 @@
-import { DICTS } from "./i18n";
+import { ALL_DICTS as DICTS } from "./i18n/drafts";
 import type { PhoneQuery } from "./journey";
 import { CallBar } from "./parts";
 import { PhoneFrame } from "./phone-frame";

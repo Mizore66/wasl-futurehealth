@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import type { ReferrerAnswer, RespondResult } from "@/app/app/referrals/actions";
 import { INFO_LABELS, handoffWords } from "./referrals";
-import { DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
+import { afterAnswerWords, DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
 
 const DISPOSITIONS = Object.entries(DISPOSITION_LABELS) as [Disposition, string][];
 const REFUSED: Record<number, string> = {
@@ -97,14 +97,12 @@ function PacketCard({
         {(
           [
             ...(p.source === "canonical"
-              ? ([
-                  ["Recommendation", p.recommendation ?? "Not in the packet"],
-                  ["Priority", p.urgent ? "Urgent" : "Routine"],
-                ] as const)
+              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail; reload to try again" : (p.recommendation ?? "Not in the packet")]] as const)
               : []),
+            ["Priority", p.urgent ? "Urgent" : "Routine"],
             ["Returned by", p.unit],
             ["Reason", p.reason],
-            ...(p.source === "canonical" ? ([["Advice from the unit", p.advice ?? "Not in the packet"]] as const) : []),
+            ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not in the packet")]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
             ["Acknowledged", p.acknowledged ? "Yes" : "Not yet"],
@@ -119,7 +117,7 @@ function PacketCard({
 
       {p.answer ? (
         <p role="status" className="m-0 mt-4">
-          {p.answer}. Nothing else is needed from you; the case stays open until its procedure evidence arrives.
+          {p.answer}. {afterAnswerWords(p.answerCode)}
         </p>
       ) : !answer ? (
         <p className="m-0 mt-4 text-muted">Answers need the live synthetic API; nothing can be recorded here.</p>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
@@ -7,7 +8,7 @@ import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
 import { formatDay, formatDayYear } from "@/lib/domain/day";
 import { caseHolds } from "@/lib/domain/holds";
-import { shortId } from "@/lib/domain/ids";
+import { caseHref, shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
@@ -15,6 +16,8 @@ import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage
 import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
+import { obligationConfirmationWords } from "./crc-confirmation";
+import { dayNumber } from "./booking-words";
 import { PatientJourneyCard, PatientRequestsCard, type PatientContestReview } from "./patient-journey-card";
 import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
@@ -506,14 +509,22 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
   if (c.crc) {
     return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only; no treatment delivery or referral dispatch.">
       <p>Screening: {c.crc.screening_complete ? "complete" : "evidence incomplete"}. Care: {c.crc.care_state.replaceAll("_", " ")}.</p>
-      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
+      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start === undefined ? "not recorded" : Math.floor(c.crc.clock_start)}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
       <ul aria-label="Independent CRC obligations">
         {c.crc.obligations.map((need) => <li key={need.id}>
           <strong>{need.outcome.replaceAll("_", " ")}</strong> · {need.state.replaceAll("_", " ")}
-          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {need.clock_start}. Owner {need.owner}.</p>
+          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {Math.floor(need.clock_start)}. Owner {plain(need.owner)}.</p>
           {need.blockers.length > 0 && <p>Holds: {need.blockers.map((b) => b.replaceAll("_", " ")).join(", ")}.</p>}
-          <p>{need.confirmation ? `Confirmed by ${need.reviewer}; signature ${need.confirmation}.` : `Separate clinician confirmation required: ${need.review_item}.`}</p>
-          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day}.</p>}
+          <p data-testid={`obligation-confirmation-${need.id}`}>
+            {obligationConfirmationWords(need, detail)}
+            {!need.confirmation && need.state === "awaiting_confirmation" && (
+              <>
+                {" "}
+                <Link href={`${caseHref("/app/review", c.id)}#${need.review_item}`}>Open the review desk</Link> (item {need.review_item}).
+              </>
+            )}
+          </p>
+          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day === undefined ? "not recorded" : Math.floor(need.due_day)}.</p>}
           {need.child_loop && <p>Tracking loop: {need.child_loop}.</p>}
         </li>)}
       </ul>
@@ -862,7 +873,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
             <>
               <dt className="text-muted">Slot</dt>
               <dd className="m-0">
-                Day {slot.day}
+                Day {dayNumber(slot.day)}
                 {d.wait_days !== undefined ? `, ${d.wait_days} days after the request` : ""}
               </dd>
             </>
@@ -871,7 +882,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
             <>
               <dt className="text-muted">Deadline</dt>
               <dd className="m-0">
-                Day {slot.deadline}, {slot.within_deadline ? "slot is inside it" : "slot is past it"}
+                Day {dayNumber(slot.deadline)}, {slot.within_deadline ? "slot is inside it" : "slot is past it"}
               </dd>
             </>
           )}
@@ -890,7 +901,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
           {slot.prep_send_day !== undefined && (
             <>
               <dt className="text-muted">Prep sent</dt>
-              <dd className="m-0">Day {slot.prep_send_day}</dd>
+              <dd className="m-0">Day {dayNumber(slot.prep_send_day)}</dd>
             </>
           )}
         </dl>

@@ -9,7 +9,7 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
-import { closedHeadline, closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { closedHeadline, closedInDays, headerStatusWords, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { ApiStatusError, apiMode, getAudit, getCase } from "@/lib/api/source";
 import { resolveReviewer } from "@/lib/api/reviewer-session";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
@@ -133,7 +133,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 <StageMarks stage={caseStage(detail).label} overdue={c.overdue} />
               )}
               <span className="text-muted">
-                {statusWords(c).status === "Closed" ? (isNoAction(c) ? "closed, no action needed" : "closed with evidence") : statusWords(c).status.toLowerCase()} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
+                {headerStatusWords(c)} · owner {ownerLabel(effectiveOwner(c, detail.api_overlay))}
               </span>
             </p>
           </div>

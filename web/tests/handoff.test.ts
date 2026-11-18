@@ -43,7 +43,7 @@ describe("returned referrals", () => {
     expect(handoffWords(handoff(121, "awaiting_referrer"))).toEqual({ what: "Act on the return", when: `by ${formatDay(121)}` });
     expect(handoffWords(handoff(103, "coordinator"))).toEqual({ what: "Escalated to the care coordinator", when: `was due ${due}` });
     expect(handoffWords(handoff(103, "medical_director"))).toEqual({ what: "Escalated to the medical director", when: `was due ${due}` });
-    expect(handoffWords(handoff(103, "referrer_acted"))).toEqual({ what: "The GP has acted", when: `was due ${due}` });
+    expect(handoffWords(handoff(103, "referrer_acted"))).toEqual({ what: "The GP has acted", when: `answer was due by ${due}` });
   });
 
   it("says the deadline is unavailable when the case has no hand-off", () => {

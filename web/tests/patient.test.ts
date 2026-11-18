@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DICTS, LANGS } from "@/components/patient/i18n";
+import { LANGS } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { parsePhoneQuery, phoneHref, slotLabel, surfaceLangs } from "@/components/patient/journey";
 import { getPatientJourney, postPatientJourney } from "@/lib/api/patient-source";
 import { PatientJourneyResponse, PatientMutation, PatientOffer } from "@/lib/api/patient-schema";

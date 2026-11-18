@@ -84,6 +84,23 @@ describe("signInReviewer", () => {
     expect(result.ok).toBe(false);
     expect(JSON.stringify(result)).not.toContain(TOKEN);
   });
+
+  /* B6: a timeout or server error is not a bad token. */
+  it.each([
+    ["a network error", () => Promise.reject(new TypeError("fetch failed"))],
+    ["a timeout", () => Promise.reject(Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }))],
+    ["a 500", () => Promise.resolve(json(500, { error: "boom", meta }))],
+    ["a 503", () => Promise.resolve(json(503, { error: "busy", meta }))],
+  ])("says the server could not be reached on %s, not to check the token", async (_label, reply) => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(reply));
+    const result = await signInReviewer("c1", TOKEN);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/could not be reached/);
+      expect(result.error).not.toMatch(/Check the token/);
+    }
+    expect(store.set).not.toHaveBeenCalled();
+  });
 });
 
 describe("signOutReviewer", () => {

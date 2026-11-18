@@ -55,6 +55,20 @@ export function claimAnnouncement(question: ReviewState["question"], operation: 
   return `${question === "link" ? "Identity" : "Evidence"} question ${CLAIM_DONE[operation]}. The current server state is shown.`;
 }
 
+/**
+ * The note under a disagreement before the viewer can answer. An eligible senior who has not claimed yet is told to
+ * claim; only a viewer the API does not let claim or take over the senior read is told a third read is not accepted.
+ */
+export function awaitingSeniorWords(actions: ReviewState["claim_actions"]): string {
+  if (actions?.claim || actions?.takeover) return "The two reads differ. Claim the senior resolution to give the deciding read.";
+  return "The two reads differ. Only an authorised senior can resolve it; a third read from you is not accepted.";
+}
+
+/** A second read reveals the first, so the page's withheld-history notice must be re-rendered from the server. */
+export function readEndsConcealment(read: unknown): boolean {
+  return read === "r2";
+}
+
 type Done = { outcome: OutcomeKey; next: NextCase };
 
 const appear = { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0 }, transition: { duration: 0.16 } };
@@ -265,7 +279,7 @@ function QuestionCard({
         </p>
       )}
       {state.state === "awaiting_r3" && !canAnswer && !locked && (
-        <p className="m-0 mt-2 text-small text-muted">The two reads differ. Only an authorised senior can resolve it; a third read from you is not accepted.</p>
+        <p className="m-0 mt-2 text-small text-muted" data-testid={`r3-note-${state.question}`}>{awaitingSeniorWords(actions)}</p>
       )}
       {state.state === "awaiting_r2" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
@@ -619,6 +633,8 @@ export function ReviewDesk({
         const label = state.question === "link" ? "identity" : "evidence";
         setAnnouncement(`Your ${READ_LABEL[res.read as "r1" | "r2" | "r3"]?.toLowerCase() ?? "read"} for the ${label} question was recorded. The question status has been updated.`);
         requestAnimationFrame(() => headings.current[`${state.item}:${state.question}`]?.focus());
+        /* The server-rendered history gate ("withheld while a first read is hidden") is stale once r2 is in: re-render it. */
+        if (readEndsConcealment(res.read)) reconcileAfterOperations.current = true;
       } else {
         setErrors((e) => ({ ...e, [qk]: readFailureSentence(res.failure) }));
         if (res.failure.status === 409) setAnnouncement(`The ${state.question === "link" ? "identity" : "evidence"} question changed on the server. The current state is shown.`);

@@ -1,6 +1,7 @@
 import type { PatientJourney } from "@/lib/api/patient-schema";
 import { BottomSheet } from "./bottom-sheet";
-import { DICTS, type Lang } from "./i18n";
+import type { Lang } from "./i18n";
+import { ALL_DICTS as DICTS } from "./i18n/drafts";
 import { CallBar, PhoneNumber, phoneType } from "./parts";
 import { GatedNote, scriptLang } from "./programme-copy";
 import { patientScript } from "./programme";
@@ -10,7 +11,7 @@ import { ElsewhereReport } from "./elsewhere-report";
 export function NoticeScreen({ lang, journey }: { lang: Lang; journey: PatientJourney }) {
   const t = DICTS[lang];
   const n = t.notice;
-  const script = patientScript(journey, lang);
+  const script = patientScript(journey, lang, t);
   const s = script.notice;
   const type = phoneType(script.lang);
   return (
@@ -47,7 +48,7 @@ export function NoticeScreen({ lang, journey }: { lang: Lang; journey: PatientJo
           </div>
         </section>
 
-        <ElsewhereReport lang={lang} procedure={journey.next_step === "colonoscopy" ? "colonoscopy" : ""} />
+        {!journey.case_closed && <ElsewhereReport lang={lang} procedure={journey.next_step === "colonoscopy" ? "colonoscopy" : ""} />}
 
         <BottomSheet
           title={n.rights}

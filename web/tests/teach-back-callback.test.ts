@@ -8,7 +8,8 @@ beforeAll(() => {
 afterAll(() => {
   vi.useRealTimers();
 });
-import { DICTS, LANGS } from "@/components/patient/i18n";
+import { LANGS } from "@/components/patient/i18n";
+import { ALL_DICTS as DICTS } from "@/components/patient/i18n/all";
 import { callbackStatus } from "@/components/case/teach-back-callback-card";
 import { workItem } from "@/components/worklist/model";
 import { PatientJourney, PatientMutation } from "@/lib/api/patient-schema";

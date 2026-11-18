@@ -13,7 +13,7 @@ export function TechTerm({ id, label, className }: { id: string; label?: string;
         <span aria-hidden className="text-small text-muted group-open:rotate-90 motion-safe:transition-transform">
           ›
         </span>
-        <span className="sr-only">, show the system identifier</span>
+        <span className="sr-only"> (show the system identifier)</span>
       </summary>
       <code className="mt-1 block font-mono text-small text-muted">{id}</code>
     </details>

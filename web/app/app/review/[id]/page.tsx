@@ -15,6 +15,7 @@ import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
 import { GlossaryPopover } from "@/components/wasl/glossary-popover";
+import { settledWords } from "@/components/case/crc-confirmation";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
 export const metadata = { title: "Review" };
@@ -116,12 +117,8 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           states={detail.api_review_states}
           settled={
             <div className="mt-6 flex flex-col gap-3">
-              <Card id="not-waiting" title="This case is not waiting for a signature">
-                <p className="m-0 mt-3 max-w-[72ch]">
-                  {detail.review_items.length === 0
-                    ? "No review item was raised for this case. Open the case page to see the recorded evidence and outcomes."
-                    : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
-                </p>
+              <Card id="not-waiting" title={settledWords(detail).title}>
+                <p className="m-0 mt-3 max-w-[72ch]">{settledWords(detail).body}</p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <Link
                     href={caseHref("/app/patients", view.caseId)}

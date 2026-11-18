@@ -70,6 +70,11 @@ export async function reviewerToken(): Promise<string | undefined> {
 }
 
 const REFUSED: SignInResult = { ok: false, error: "Sign-in failed. Check the token and try again." };
+/** A network error, timeout or server error says nothing about the token, so it is not reported as a bad token. */
+export const UNREACHABLE: SignInResult = {
+  ok: false,
+  error: "Sign-in could not be checked: the review server could not be reached or did not answer in time. The token was not rejected; try again in a moment.",
+};
 
 /** Demo token entry only. Explicit OIDC mode cannot be downgraded by this server action. */
 export async function signInReviewer(caseId: string, token: string): Promise<SignInResult> {
@@ -78,7 +83,7 @@ export async function signInReviewer(caseId: string, token: string): Promise<Sig
   try {
     verified = await getCaseWithToken(caseId, token);
   } catch {
-    return REFUSED;
+    return UNREACHABLE;
   }
   if (!verified.ok) return REFUSED;
   (await cookies()).set(REVIEW_COOKIE, token, {

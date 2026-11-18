@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/case/sections";
 import { caseHref } from "@/lib/domain/ids";
-import { CLINICIAN_HOLDS, FIT_REOFFERS, REFUSAL_REASONS, recordedWords, type DispositionContext } from "./model";
+import { CLINICIAN_HOLDS, FIT_REOFFERS, REFUSAL_REASONS, recordedWords, reviewDateWords, type DispositionContext } from "./model";
 
 const short = (h: unknown) => (typeof h === "string" && h ? h.slice(0, 12) : "not recorded");
 const roleWords = (r: unknown) => (r === "senior_clinician" ? "senior clinician" : r === "clinician" ? "clinician" : "clinician role not recorded");
@@ -39,7 +39,7 @@ export function DispositionCard({ ctx, link = true }: { ctx: DispositionContext;
                 {holdPlan.reason !== undefined && <Row label="Rationale">{String(holdPlan.reason)}</Row>}
                 {holdPlan.details !== undefined && <Row label="Plan details">{String(holdPlan.details)}</Row>}
                 <Row label="Owner">{String(holdPlan.owner)}</Row>
-                <Row label="Review date">{String(holdPlan.review_date)}</Row>
+                <Row label="Review date">{reviewDateWords(holdPlan.review_date)}</Row>
               </dl>
             ) : (
               <p className="m-0 mt-1">Waiting on a clinician: no plan recorded yet. The case stays open.</p>

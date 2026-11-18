@@ -37,6 +37,10 @@ export interface PatientDict {
     rights: string;
     rightsItems: Three;
     rightsNote: string;
+    /** A closed case: the follow-up is finished and nothing is booked (the journey's `case_closed`). */
+    closedTitle: string;
+    closedBody: string;
+    closedNext: string;
   };
   check: {
     steps: Three;
@@ -71,6 +75,8 @@ export interface PatientDict {
   };
   book: {
     title: string;
+    /** No appointment time can be offered on the phone (none live, or all past): the nurse arranges it. */
+    noOffer: string;
     proposed: string;
     confirmed: string;
     weekdays: Week;

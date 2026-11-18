@@ -12,6 +12,7 @@ import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { atWords, communicationWords, dispositionWords, ledgerWordsWithHistory, reconciliationWords } from "@/components/case/words";
 import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "./days";
+import { reviewDateWords } from "@/components/disposition/model";
 import { isActionable, obligationWords, openObligation } from "./obligation";
 import { patientContestWords, patientTaskOverdue } from "./patient-tasks";
 
@@ -60,12 +61,25 @@ export function statusWords(c: CaseSummary): { status: string; next: string } {
     if (c.crc.care_state === "awaiting_confirmation") return { status: "Care pathways need confirmation", next: "Review each obligation separately" };
     if (c.crc.care_state === "blocked") return { status: "Current evidence incomplete", next: "Resolve the evidence holds" };
   }
+  /* A patient contest holds closure: the API serves closed:false with the canonical closure kept aside (closure_hold). */
+  if (c.closure_hold === "patient_contest") return { status: "Closure held: patient contest open", next: "A senior clinician reviews the patient's contest" };
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
   if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
   const plan = c.api_overlay?.clinician_disposition;
-  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${plan.review_date}` };
+  if (plan) return { status: "Clinician plan recorded", next: `${PLAN_WORDS[plan.plan]} · ${plan.owner} to review by ${reviewDateWords(plan.review_date)}` };
   return DROPOFF_WORDS[c.dropoff];
+}
+
+/**
+ * The case-page header phrase. "closed with evidence" only when the API serves the case as closed; a closure held by a
+ * patient contest (closed:false, closure_hold) never reads as closed.
+ */
+export function headerStatusWords(c: CaseSummary): string {
+  const status = statusWords(c).status;
+  if (status === "Closed" && c.closed && !c.closure_hold) return isNoAction(c) ? "closed, no action needed" : "closed with evidence";
+  if (status === "Closed") return "not closed: check the record";
+  return status.toLowerCase();
 }
 
 const PLAN_WORDS: Record<NonNullable<NonNullable<CaseSummary["api_overlay"]>["clinician_disposition"]>["plan"], string> = {
