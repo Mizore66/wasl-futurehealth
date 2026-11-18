@@ -90,6 +90,8 @@ export function ReferralInbox({
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [over, setOver] = useState<Record<string, Override>>({});
+  /** A row-level Accept opens the referral and asks once more on the row; nothing is answered until Confirm. */
+  const [confirming, setConfirming] = useState<string | null>(null);
   /** Below lg the list and the open referral take turns; from lg up both show. */
   const [pane, setPane] = useState<"list" | "detail">("detail");
   const reduce = useReducedMotion();
@@ -111,6 +113,7 @@ export function ReferralInbox({
   }, [want]);
 
   const selectTab = (id: Tab) => {
+    setConfirming(null);
     setTab(id);
     setPage(1);
     setSel(null);
@@ -162,6 +165,13 @@ export function ReferralInbox({
     setPane("detail");
     setMode(null);
     setPicked([]);
+    setConfirming(null);
+  };
+  /* Row-level Accept: open the referral so its details and flags are in view, and ask to confirm on the row. */
+  const armAccept = (id: string) => {
+    open(id);
+    setConfirming(id);
+    setWant({ k: `confirm-${id}` });
   };
   const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff, who = ME) => {
     setWant({ k: "undo" });
@@ -262,7 +272,7 @@ export function ReferralInbox({
         {aside}
       </header>
       <div className="flex flex-wrap items-stretch gap-gap">
-        <section aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
+        <section id="worklist" tabIndex={-1} aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
           <div {...roving.listProps} aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
             {TABS.map(([id, label, t]) => (
               <button
@@ -305,6 +315,7 @@ export function ReferralInbox({
                   </div>
                   <button
                     ref={on ? rowRef : undefined}
+                    data-focus={`row-${x.id}`}
                     aria-pressed={on}
                     onClick={() => open(x.id)}
                     className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 text-left after:absolute after:inset-0 after:rounded-control"
@@ -323,10 +334,28 @@ export function ReferralInbox({
                     <span className="mt-0.5 block text-muted">{lineFor(x, over[x.id])}</span>
                   </button>
                   <span className="flex-none pr-1">
-                    {inline && (
-                      <Button variant="cta" size="touch" onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10">
+                    {inline && confirming !== x.id && (
+                      <Button variant="cta" size="touch" onClick={() => armAccept(x.id)} aria-label={`Accept referral for ${x.name}`} className="relative z-10">
                         Accept
                       </Button>
+                    )}
+                    {inline && confirming === x.id && (
+                      <span className="relative z-10 flex gap-1">
+                        <Button variant="cta" size="touch" data-focus={`confirm-${x.id}`} onClick={() => accept(x)} aria-label={`Confirm accepting the referral for ${x.name}`}>
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="quiet"
+                          size="touch"
+                          onClick={() => {
+                            setConfirming(null);
+                            setWant({ k: `row-${x.id}` });
+                          }}
+                          aria-label={`Do not accept the referral for ${x.name} yet`}
+                        >
+                          Cancel
+                        </Button>
+                      </span>
                     )}
                     {review && (
                       <Button variant="quiet" size="touch" onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10">

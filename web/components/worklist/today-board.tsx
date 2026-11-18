@@ -33,8 +33,10 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 
 /*
  * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
- * (POST /api/cases/{id}/actions) and shown only after a 201. The ledger is append-only, so there is no Undo.
- * Fixtures mode: the same buttons keep session state in the browser, with Undo.
+ * (POST /api/cases/{id}/actions) and shown only after a 201. The ledger is append-only, so there is no Undo once saved;
+ * the riskiest one-click writes (Snooze, Hand to …, Declined) wait `undoMs` before they are sent, with an Undo that
+ * cancels the POST outright.
+ * Fixtures mode: the same buttons keep session state in the browser, with Undo after the fact.
  *
  * Live API, after a reload: the board position comes from the persisted overlay in the case list (model.ts workItem),
  * and the open patient's trail from that ONE case's detail overlay (GET /app/today/ledger), never from session state.
@@ -63,6 +65,11 @@ type State = {
 };
 
 type Row = WorkItem & { snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; log: Contact[] };
+/** A live write held back for the Undo window: nothing has been sent yet. */
+type Pending = { id: string; name: string; what: string; patch: Omit<Patch, "log">; head: string; move: string; action: CaseAction };
+
+/** Live API: how long Snooze, Hand to … and Declined wait, with Undo, before the POST is sent. */
+export const LIVE_UNDO_MS = 5000;
 
 /** One case's ledger read on Today: the persisted trail, or why it could not be read (the route's own words). */
 const LedgerResponse = z.object({
@@ -123,9 +130,51 @@ function useReadFence() {
   return { revisionFor, supersede };
 }
 
-export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushrif Healthcare Centre" }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean; scope?: string }) {
+/**
+ * One write held back for an Undo window. `take` cancels the timer and hands the job back (Undo drops it, Save now sends
+ * it); unmounting inside the window sends it rather than losing what the user chose. Ref access stays in callbacks.
+ */
+function useHeldWrite<T>() {
+  const held = useRef<{ job: T; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const sender = useRef<(job: T) => void>(() => {});
+  const setSender = useCallback((fn: (job: T) => void) => { sender.current = fn; }, []);
+  const send = useCallback((job: T) => sender.current(job), []);
+  const isHeld = useCallback(() => held.current !== null, []);
+  const hold = useCallback((job: T, ms: number, due: () => void) => { held.current = { job, timer: setTimeout(due, ms) }; }, []);
+  const take = useCallback(() => {
+    const h = held.current;
+    if (!h) return null;
+    clearTimeout(h.timer);
+    held.current = null;
+    return h.job;
+  }, []);
+  useEffect(() => () => {
+    const job = take();
+    if (job) send(job);
+  }, [take, send]);
+  return { setSender, send, isHeld, hold, take };
+}
+
+export function TodayBoard({
+  items,
+  now,
+  aside,
+  live = false,
+  scope = "Al Mushrif Healthcare Centre",
+  undoMs = LIVE_UNDO_MS,
+}: {
+  items: WorkItem[];
+  now: number;
+  aside: React.ReactNode;
+  live?: boolean;
+  scope?: string;
+  /** Live API: the Undo window before a held-back write is sent; 0 sends at once. */
+  undoMs?: number;
+}) {
   const [s, setS] = useState<State>({ tab: "call", page: 1, mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<Pending | null>(null);
+  const heldWrite = useHeldWrite<Pending>();
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
   /**
    * Live API: each case's last ledger read. Every selection of a case reads it again (however it was selected: row
@@ -194,9 +243,14 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
   const q = s.q.trim().toLowerCase();
   const list = inView(s.tab).filter((p) => !q || p.name.toLowerCase().includes(q) || p.short.toLowerCase().includes(q));
   const toCall = inView("call");
-  /* The open patient is always one of the visible results, so Call, Snooze and Hand-off never act on someone filtered or moved out. */
+  /*
+   * The open patient is one of the visible results, so Call, Snooze and Hand-off never act on someone filtered out.
+   * The one exception: a patient the last action moved to another tab stays open (named, with a link to that tab)
+   * until the user moves on, so the outcome is seen where it was recorded.
+   */
   const paging = paginate(list, pageWith(list, s.sel, s.page));
-  const p = paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
+  const held = s.last ? all.find((x) => x.id === s.last!.id && x.view !== s.tab) : undefined;
+  const p = held ?? paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
   if (s.page !== paging.page) setS((prev) => (prev.page === paging.page ? prev : { ...prev, page: paging.page }));
   const fresh = { calling: null, stage: null, last: null };
   const goPage = (to: number, via: PagerControl) => {
@@ -369,9 +423,59 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
       .finally(() => setBusy(false));
   };
 
+  /*
+   * Live API: Snooze, Hand to … and Declined are held for `undoMs` with Undo before anything is sent. Undo cancels the
+   * timer, so no POST is made. Leaving the page inside the window sends the held write rather than dropping it.
+   */
+  // The timer sends with the latest render's `log` and rows, so a ledger read that refreshed the head in the window is used.
+  const { setSender } = heldWrite;
+  useEffect(() => {
+    setSender((job) => {
+      const row = all.find((x) => x.id === job.id);
+      if (row) log(row, job.what, job.patch, job.head, job.move, job.action);
+    });
+  });
+  const sendPending = () => {
+    const job = heldWrite.take();
+    if (!job) return;
+    setPending(null);
+    heldWrite.send(job);
+  };
+  const undoPending = () => {
+    if (!heldWrite.take()) return;
+    setPending(null);
+    setWant({ k: "heading" });
+  };
+  /** A write held back for the Undo window in live mode; fixtures apply at once and keep their Undo after the fact. */
+  const deferred = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, action: CaseAction) => {
+    if (!live || undoMs <= 0) return log(row, what, patch, head, move, action);
+    setRefusal(null);
+    if (busy || heldWrite.isHeld()) return;
+    if (ledgerInvalid) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[500]}` });
+    if (!row.head) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[409]}` });
+    const job: Pending = { id: row.id, name: row.name, what, patch, head, move, action };
+    heldWrite.hold(job, undoMs, sendPending);
+    setPending(job);
+    setWant({ k: "pending-undo" });
+  };
+  const writing = busy || !!pending;
+  const pendingNotice = pending && (
+    <div role="status" className="mb-4 flex min-h-11 flex-wrap items-center gap-x-gap rounded-card border border-warning px-3" data-testid="pending-write">
+      <span className="flex-1">
+        <span className="font-medium">{pending.what}</span> · {pending.name} · saves to the case ledger in {Math.round(undoMs / 1000)} seconds
+      </span>
+      <Button variant="quiet" size="touch" data-focus="pending-undo" onClick={undoPending}>
+        Undo
+      </Button>
+      <Button variant="quiet" size="touch" onClick={sendPending}>
+        Save now
+      </Button>
+    </div>
+  );
+
   const last = s.last && p && s.last.id === p.id ? s.last : null;
-  /* The last action moved its patient out of this result set: they are not shown, only the way back is. */
-  const removed = s.last && !list.some((x) => x.id === s.last!.id) ? s.last : null;
+  /* The last action moved its patient out of this result set and they are not held open: only the way back is shown. */
+  const removed = s.last && !held && !list.some((x) => x.id === s.last!.id) ? s.last : null;
   const undoLast = (l: Logged) => {
     setWant({ k: "heading" });
     setS((prev) => ({ ...prev, sel: l.id, calling: null, ...l.undo }));
@@ -490,7 +594,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
         [
           "Declined",
           () =>
-            log(
+            deferred(
               p,
               "Declined the procedure",
               { view: "waiting", status: DECLINED_STATUS, snoozed: false, awaitingNext: false, ...(p.reserved ? { next: DECLINED_RESERVED_NEXT } : p.cancelled ? { next: DECLINED_CANCELLED_NEXT } : {}) },
@@ -510,7 +614,8 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
     }
   }
   const chipsLive = !!p && (s.calling === p.id || !!stage);
-  const nextUp = p ? list.find((x) => x.id !== p.id) : undefined;
+  /* A held patient is no longer in the list: next is the first row on the page in view, so paging does not jump. */
+  const nextUp = held ? paging.rows[0] : p ? list.find((x) => x.id !== p.id) : undefined;
   const callingNow = !!p && s.calling === p.id;
 
   /* Persisted ledger records first (live), then this session's; a record saved here and already read back shows once. */
@@ -551,9 +656,12 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
       </header>
 
       {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-6" />}
+      {pendingNotice}
 
       <div className="flex flex-wrap items-stretch gap-gap">
         <section
+          id="worklist"
+          tabIndex={-1}
           aria-label="Your list"
           className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_384px]", showList ? "flex" : "hidden")}
         >
@@ -611,6 +719,11 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                       </span>
                     </span>
                     <span className="mt-0.5 block text-muted">{r.status}</span>
+                    {r.teachBackCallback && (
+                      <span className="mt-0.5 block text-small text-warning" data-testid="row-callback">
+                        {r.status === r.teachBackCallback.status ? "" : `${r.teachBackCallback.status} · `}Patient ref <span dir="ltr">{r.teachBackCallback.ref}</span>
+                      </span>
+                    )}
                     {mixed && (
                       <span className="mt-0.5 block text-small text-muted" data-testid="row-programme">
                         {r.programmeName} · {r.providerName}
@@ -708,9 +821,9 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                 variant="quiet"
                 size="touch"
                 className="max-sm:flex-1"
-                disabled={busy || ledgerInvalid}
+                disabled={writing || ledgerInvalid}
                 onClick={() =>
-                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
+                  deferred(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
                     action: "snooze",
                     until: fromNow(1),
                     reason: "Snoozed to tomorrow",
@@ -724,7 +837,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                   variant="quiet"
                   size="touch"
                   className="max-sm:flex-1"
-                  disabled={busy || ledgerInvalid}
+                  disabled={writing || ledgerInvalid}
                   onClick={() =>
                     log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
                       action: "assign_owner",
@@ -738,9 +851,9 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                   variant="quiet"
                   size="touch"
                   className="max-sm:flex-1"
-                  disabled={busy || ledgerInvalid}
+                  disabled={writing || ledgerInvalid}
                   onClick={() =>
-                    log(
+                    deferred(
                       p,
                       `Handed to ${HANDOFF_OWNER}`,
                       { view: "waiting", status: `With ${HANDOFF_OWNER}`, owner: HANDOFF_OWNER },
@@ -801,6 +914,19 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                       </>
                     )}
                   </span>
+                  {held && held.id === p.id && (
+                    <Button
+                      variant="quiet"
+                      size="touch"
+                      data-testid="open-destination"
+                      onClick={() => {
+                        setWant({ k: "heading" });
+                        setS((prev) => ({ ...prev, tab: held.view, page: 1, sel: held.id }));
+                      }}
+                    >
+                      Open {TABS.find(([id]) => id === held.view)![1]}
+                    </Button>
+                  )}
                   {!stage && nextUp && (
                     <Button
                       variant="quiet"
@@ -827,7 +953,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                   owner={p.owner === "No owner" ? "" : p.owner}
                   procedure={p.procedure ?? ""}
                   nowMs={s.callbackFrom}
-                  disabled={busy || ledgerInvalid}
+                  disabled={writing || ledgerInvalid}
                   onCancel={() => setS((prev) => ({ ...prev, calling: null, stage: "reached" }))}
                   onRecord={(action) => {
                     const words = reconciliationWords(action, new Date().toISOString().slice(0, 10));
@@ -849,7 +975,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                 key={`${p.id}-${p.communicationStep}`}
                 step={p.communicationStep}
                 template={p.notificationTemplate}
-                disabled={busy || ledgerInvalid}
+                disabled={writing || ledgerInvalid}
                 onRecord={(action) => {
                   const notify = action.action === "initial_notification";
                   log(
@@ -877,7 +1003,7 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                       key={label}
                       variant="chip"
                       size="touch"
-                      disabled={busy || ledgerInvalid}
+                      disabled={writing || ledgerInvalid}
                       onClick={pick}
                       className={chipsLive ? "border-ink" : "border-control"}
                     >
@@ -885,6 +1011,25 @@ export function TodayBoard({ items, now, aside, live = false, scope = "Al Mushri
                     </Button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {p.teachBackCallback && (
+              <div data-testid="teach-back-callback" className="mt-4 rounded-card border border-warning p-3">
+                <p className="m-0 font-medium text-warning">
+                  {p.teachBackCallback.status} · patient ref <span dir="ltr">{p.teachBackCallback.ref}</span>
+                </p>
+                <p className="m-0 mt-1">
+                  Call to explain the next step. Logging a call does not resolve this task;{" "}
+                  {p.hasRecord ? (
+                    <Link href={`${caseHref("/app/patients", p.id)}#teach-back-callbacks`} className="underline">
+                      record the consultation outcome on the case page
+                    </Link>
+                  ) : (
+                    "record the consultation outcome on the case page"
+                  )}
+                  .
+                </p>
               </div>
             )}
 

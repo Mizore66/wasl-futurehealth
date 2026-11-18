@@ -107,7 +107,7 @@ async function mount(items: WorkItem[], live = true) {
   // The selected case's ledger read never answers: these tests are about the write path.
   vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items, now: 40, aside: null, live })));
+  await act(async () => root!.render(createElement(TodayBoard, { items, now: 40, aside: null, live, undoMs: 0 })));
 }
 const open = () => host.querySelector<HTMLElement>('section[aria-label="Open patient"]')!;
 const button = (text: string) => Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((b) => b.textContent?.trim() === text);

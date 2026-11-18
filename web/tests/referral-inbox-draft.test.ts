@@ -100,6 +100,7 @@ describe("referral inbox: an unconfirmed draft belongs to the referral it was st
     render(ALL, "");
     const inbox = host.querySelector("h1")!;
     click(button(host, "Accept referral for AHS-sr-9001"));
+    click(button(host, "Confirm accepting the referral for AHS-sr-9001"));
     click(button(host, /^AHS-sr-9002/, false));
     click(button(pane(), "Return to GP"));
     click(button(pane(), "Wrong unit"));
@@ -126,5 +127,30 @@ describe("referral inbox: an unconfirmed draft belongs to the referral it was st
     expect(heading()).toBe("AHS-sr-9003");
     expect(hasText(pane(), "Why return this referral?")).toBe(true);
     expect(pressed()).toEqual(["Wrong unit"]);
+  });
+});
+
+describe("referral inbox: a row-level Accept asks once more (usability N5)", () => {
+  it("opens the referral and answers nothing until Confirm; Cancel backs out", () => {
+    render(ALL, "");
+    click(button(host, "Accept referral for AHS-sr-9001"));
+    expect(heading()).toBe("AHS-sr-9001");
+    expect(hasText(pane(), "Accepted. Your unit books her now.")).toBe(false);
+    const confirm = button(host, "Confirm accepting the referral for AHS-sr-9001");
+    expect(document.activeElement).toBe(confirm);
+    click(button(host, "Do not accept the referral for AHS-sr-9001 yet"));
+    expect(hasText(pane(), "Accepted. Your unit books her now.")).toBe(false);
+    expect(button(host, "Accept referral for AHS-sr-9001")).toBeTruthy();
+
+    click(button(host, "Accept referral for AHS-sr-9001"));
+    click(button(host, "Confirm accepting the referral for AHS-sr-9001"));
+    expect(pane().querySelector('[role="status"]')!.textContent).toContain("Accepted. Your unit books her now.");
+  });
+
+  it("drops an unconfirmed row accept when another referral is opened", () => {
+    render(ALL, "");
+    click(button(host, "Accept referral for AHS-sr-9001"));
+    click(button(host, /^AHS-sr-9002/, false));
+    expect([...host.querySelectorAll("button")].some((b) => b.getAttribute("aria-label")?.startsWith("Confirm accepting"))).toBe(false);
   });
 });

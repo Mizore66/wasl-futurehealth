@@ -230,6 +230,11 @@ export type WorkItem = {
   communicationStep?: "notify" | "receipt";
   /** The approved wording a staff notification must use, as the API serves it. */
   notificationTemplate?: string;
+  /**
+   * An open failed teach-back callback: its status words and the reference the patient's receipt shows (the first 8
+   * characters of the task id). Kept apart from `status`, which a later local action may replace while the task stays open.
+   */
+  teachBackCallback?: { status: string; ref: string };
 };
 
 /** Today's words for a recorded staff communication (issue #197). Receipt never claims understanding. */
@@ -256,6 +261,9 @@ export function teachBackCallbackWords(c: CaseSummary): string | null {
   if (!cb.due_at) return "Teach-back failed · nurse callback open";
   return `Teach-back failed · nurse callback ${cb.overdue ? "overdue since" : "due"} ${staffDueTime(cb.due_at)}`;
 }
+
+/** The reference a patient's teach-back callback receipt shows (components/patient/check-flow.tsx). */
+export const callbackRef = (id: string) => id.slice(0, 8);
 
 /** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
 export const BOOKING_NEEDED = "Booking needed · date to confirm";
@@ -430,6 +438,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     hasRecord,
     ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, awaitingNext, ledgerStatus: ov.ledger_status, reserved: booking?.status === "reserved", cancelled: booking?.status === "cancelled" } : {}),
     ...(reconciliation && retrieval ? { retrieval: { owner: reconciliation.retrieval_owner, due: reconciliation.retrieval_due, overdue: retrieval.overdue } } : {}),
+    ...(callback && c.teach_back_callback ? { teachBackCallback: { status: callback, ref: callbackRef(c.teach_back_callback.id) } } : {}),
   };
 }
 
