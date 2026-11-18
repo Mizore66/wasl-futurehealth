@@ -7,9 +7,17 @@ This directory contains a **source dependency inventory and scan evidence**, not
 - Trivy is pinned to `0.76.2`; CI verifies the release archive's SHA-256 before extracting it.
 - `trivy.yaml` enables development dependencies and all severities: `UNKNOWN`, `LOW`, `MEDIUM`, `HIGH`, and `CRITICAL`.
 - Any reported vulnerability fails the source gate and each image gate. A HIGH/CRITICAL-only result is not considered clean.
-- There are no ignore entries, ignored vulnerability statuses, unfixed-vulnerability exclusions, or accepted-risk suppressions. Do not add them to make a run green.
+- There are no ignored vulnerability statuses, unfixed-vulnerability exclusions, or blanket suppressions. Do not add them to make a run green. The only exceptions are the reviewed entries listed under [Reviewed exceptions](#reviewed-exceptions), each pinned to exact package versions and given an expiry date.
 - License identifiers are reported when discovered. Missing license metadata remains visible as an empty `licenses` array and in `summary.without_discovered_license`; it is not interpreted as permission or public domain. Scanner output is evidence for review, **not legal clearance**.
 - Module-level advisories are retained even when the vulnerable package path is not compiled. Reachability needs a separate code-level analysis and must not be inferred from an SBOM alone.
+
+## Reviewed exceptions
+
+An exception is allowed only when no fixed version exists, the package is outside the shipped images, and someone has recorded why it is safe to wait. Each one lives in two places that must stay in step: `supply-chain/trivyignore.yaml` (Trivy, pinned by package URL, with `expired_at`) and `auditConfig.ignoreGhsas` in `web/pnpm-workspace.yaml` (`pnpm audit`). When an entry expires, Trivy reports the finding again and the gate fails, which forces a fresh review.
+
+| Advisory | Package | Why it waits | Expires | Remove when |
+|---|---|---|---|---|
+| GHSA-fc5q-39xc-vjpf / CVE-2026-112366 (HIGH, ReDoS on repeated extglobs) | picomatch 2.3.2 and 4.0.7 | No patched release (`<= 4.0.7` affected, 4.0.7 is latest). Reached only through development tooling: eslint-config-next, typescript-eslint and the shadcn CLI. Not present in the application or NATS images (the container lane scans them separately and passes). The globs it evaluates come from repository configuration, not user input. Reviewed 18 Nov 2026. | 18 Dec 2026 | picomatch publishes a fixed version: update the lockfile, then delete both entries. |
 
 ## Prerequisites
 
