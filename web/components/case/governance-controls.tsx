@@ -104,7 +104,19 @@ const INDEPENDENCE = {
  * Shown instead of the controls when nobody is signed in. The same assigned-token sign-in as the review desk: the token is
  * sent once to a server action, kept in an HttpOnly cookie and never returned. No role or credential is offered.
  */
-export function GovernanceSignIn({ caseId, mode = "demo" }: { caseId: string; mode?: ReviewAuthMode }) {
+export function GovernanceSignIn({
+  caseId,
+  mode = "demo",
+  purpose = "undo, contest or resolve",
+  acts = "Undo, contest and resolve act",
+}: {
+  caseId: string;
+  mode?: ReviewAuthMode;
+  /** Completes the heading "Sign in to …". */
+  purpose?: string;
+  /** What acts as the signed-in credential, e.g. "Approval acts". */
+  acts?: string;
+}) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
@@ -131,10 +143,10 @@ export function GovernanceSignIn({ caseId, mode = "demo" }: { caseId: string; mo
   return (
     <section aria-labelledby={`${id}-h`} className="mt-3 rounded-control bg-ground px-3 py-3" data-testid="governance-signin">
       <h3 id={`${id}-h`} className="m-0 font-medium">
-        Sign in to undo, contest or resolve
+        Sign in to {purpose}
       </h3>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-        {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} Undo, contest and resolve act only as that signed-in credential;
+        {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} {acts} only as that signed-in credential;
         this page never offers a role or credential choice. {INDEPENDENCE[mode]}
       </p>
       {notice && (
@@ -188,14 +200,27 @@ export function GovernanceSignIn({ caseId, mode = "demo" }: { caseId: string; mo
  * Who acts, said plainly, with a way to end the session so a different actor can sign in. `signOut={false}` when the
  * host page already offers the same sign-out (the review desk), so the page has one "Sign out" control, not two.
  */
-export function GovernanceIdentity({ caseId, signOut = true, mode = "demo", expiresAt }: { caseId: string; signOut?: boolean; mode?: ReviewAuthMode; expiresAt?: string }) {
+export function GovernanceIdentity({
+  caseId,
+  signOut = true,
+  mode = "demo",
+  expiresAt,
+  acts = "Undo, contest and resolve act",
+}: {
+  caseId: string;
+  signOut?: boolean;
+  mode?: ReviewAuthMode;
+  expiresAt?: string;
+  /** What acts as this credential, e.g. "Approval acts". */
+  acts?: string;
+}) {
   const [pending, start] = useTransition();
   return (
     <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-control bg-ground px-3 py-3" data-testid="governance-identity">
       <p className="m-0 max-w-[64ch] text-small text-muted">
         {mode === "oidc"
-          ? "Undo, contest and resolve act as your OIDC-mapped credential; the API decides your role and actor from it."
-          : "Undo, contest and resolve act as the token you signed in with; the API decides your role and actor from it."}
+          ? `${acts} as your OIDC-mapped credential; the API decides your role and actor from it.`
+          : `${acts} as the token you signed in with; the API decides your role and actor from it.`}
         {expiresAt && <> Session expires at <time dateTime={expiresAt}>{expiresAt}</time>.</>}
         {!signOut && " To act as someone else, use Sign out on the review desk."} {INDEPENDENCE[mode]}
       </p>

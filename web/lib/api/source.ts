@@ -719,3 +719,57 @@ export async function postReviewClaimWithToken(id: string, body: ReviewClaimRequ
   }
   throw new Error(`POST review claim: HTTP ${res.status}`);
 }
+
+export type OutcomeHandoffResult =
+  /** 201 recorded a new event; 200 `replayed` means the same write was already recorded and nothing was appended. */
+  | { ok: true; status: 200 | 201; replayed: boolean; hash: string }
+  | { ok: false; status: number; error: string };
+
+const OUTCOME_HANDOFF_SAVED = z.looseObject({ replayed: z.boolean().optional(), event: z.looseObject({ hash: z.string() }).nullish() });
+
+async function postOutcomeHandoff(id: string, init: RequestInit): Promise<OutcomeHandoffResult> {
+  const res = await fetch(`${liveBase()}/api/cases/${encodeURIComponent(id)}/outcome-handoff`, init);
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 200 || res.status === 201) {
+    const saved = OUTCOME_HANDOFF_SAVED.safeParse(json);
+    return { ok: true, status: res.status, replayed: saved.success && saved.data.replayed === true, hash: (saved.success && saved.data.event?.hash) || "" };
+  }
+  /* Refusals carry {error, handoff}; only the server's own words are shown. */
+  const e = z.looseObject({ error: z.string() }).safeParse(json);
+  return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}` };
+}
+
+const jsonPost = (body: object): RequestInit => ({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+/**
+ * Clinician approval of one outcome hand-off content version (docs/API-OUTCOME-HANDOFF.md), sent with the signed-in
+ * person's own assigned token (the reviewer-session cookie), never a server-held credential. The API binds the token to
+ * its role and actor and allows only `clinician`. `version` is the approval the clinician saw ("" for none).
+ */
+export async function postOutcomeHandoffApprovalWithToken(
+  id: string,
+  approval: { decision: string; next_step: string; version: string },
+  token: string,
+): Promise<OutcomeHandoffResult> {
+  if (apiMode() !== "live") throw new Error("postOutcomeHandoffApprovalWithToken needs WASL_API_URL: fixtures mode cannot append hand-off events");
+  return postOutcomeHandoff(id, bearer(jsonPost({ kind: "content_approved", ...approval }), token));
+}
+
+/**
+ * The coordinator's simulated release of one approved version, sent with the server-side coordinator credential
+ * (WASL_API_COORDINATOR_TOKEN) like every other coordinator action; the API binds it to its role and actor. The API
+ * evaluates consent at that moment and records the gate it found.
+ */
+export async function postOutcomeHandoffRelease(id: string, version: string): Promise<OutcomeHandoffResult> {
+  if (apiMode() !== "live") throw new Error("postOutcomeHandoffRelease needs WASL_API_URL: fixtures mode cannot append hand-off events");
+  let init: RequestInit;
+  try {
+    init = authenticated(jsonPost({ kind: "release_recorded", version }), "coordinator");
+  } catch (e) {
+    if (e instanceof MissingCredentialError) return { ok: false, status: 401, error: COORDINATOR_TOKEN_MISSING };
+    throw e;
+  }
+  const result = await postOutcomeHandoff(id, init);
+  if (!result.ok && result.status === 401) return { ok: false, status: 401, error: COORDINATOR_TOKEN_REFUSED };
+  return result;
+}
