@@ -29,7 +29,7 @@ fi
 
 COMMON=(
   --config "$CONFIG"
-  --ignorefile ""
+  --ignorefile "$ROOT/supply-chain/trivyignore.yaml"
   --skip-java-db-update
   --skip-vex-repo-update
   --disable-telemetry

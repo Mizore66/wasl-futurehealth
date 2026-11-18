@@ -1,0 +1,12 @@
+# Reviewed exceptions only. Each entry needs a statement, the exact packages it covers, and an expiry.
+# See "Reviewed exceptions" in supply-chain/README.md before adding or extending one.
+vulnerabilities:
+  - id: CVE-2026-112366
+    purls:
+      - pkg:npm/picomatch@2.3.2
+      - pkg:npm/picomatch@4.0.7
+    expired_at: 2026-12-18
+    statement: >-
+      GHSA-fc5q-39xc-vjpf (picomatch ReDoS on repeated extglobs). No patched version exists.
+      Development tooling only (ESLint, typescript-eslint, shadcn CLI); it is not in the
+      application or NATS images. Glob patterns come from repository config, not user input.

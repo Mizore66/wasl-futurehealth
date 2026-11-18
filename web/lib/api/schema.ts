@@ -98,7 +98,21 @@ export const LungFinding = z.looseObject({
   scope: z.string().optional(),
   window_start_day: z.number().optional(),
   window_end_day: z.number().optional(),
-  outcome: z.enum(["stable", "resolved", "growing", "suspicious_solid", "not_assessable"]).optional(),
+  /** Every outcome pipeline/lung.go can set, including the PET/CT and tissue closers (keep in step with LUNG_OUTCOMES). */
+  outcome: z
+    .enum([
+      "stable",
+      "resolved",
+      "growing",
+      "suspicious_solid",
+      "not_assessable",
+      "pet_low",
+      "pet_avid",
+      "benign",
+      "nondiagnostic",
+      "malignant",
+    ])
+    .optional(),
   rec: z
     .looseObject({
       action: z.enum(["none", "ct", "ct_or_pet_or_tissue"]),
@@ -1293,7 +1307,8 @@ export const Audit = withMeta({
   chain_length: z.number(),
   chain_verified: z.boolean(),
   decision_signatures: z.array(
-    z.looseObject({ decision_id: z.string(), policy: z.string(), sig: z.string(), recomputed: z.string() }),
+    // The redacted audit leaves decision_id out for some decisions (seen on a live 7-programme run); signatures still compare.
+    z.looseObject({ decision_id: z.string().optional(), policy: z.string(), sig: z.string(), recomputed: z.string() }),
   ),
   /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
   anchors: z.record(z.string(), z.string()).default({}),

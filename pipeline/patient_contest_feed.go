@@ -271,7 +271,13 @@ func runPatientContestFeed(run, data string) {
 	msgs := patientContestFeedMessages(s.reviews)
 	nc, js := connect("patient-contest-feed")
 	defer nc.Close()
-	published, duplicate := 0, 0
+	published, duplicate := publishPatientContestFeed(js, msgs)
+	fmt.Printf("patient-contest-feed: %d contest events, %d published, %d already in the stream (simulated; no message dispatched)\n", len(msgs), published, duplicate)
+}
+
+// publishPatientContestFeed publishes the feed messages with their ledger-derived Nats-Msg-Id, so a re-run is a
+// stream-level no-op. It returns how many the stream stored and how many it already had.
+func publishPatientContestFeed(js jetstream.JetStream, msgs []LogMsg) (published, duplicate int) {
 	for _, m := range msgs {
 		out := nats.NewMsg(m.Subject)
 		out.Data = m.Data
@@ -283,5 +289,5 @@ func runPatientContestFeed(run, data string) {
 			published++
 		}
 	}
-	fmt.Printf("patient-contest-feed: %d contest events, %d published, %d already in the stream (simulated; no message dispatched)\n", len(msgs), published, duplicate)
+	return published, duplicate
 }
