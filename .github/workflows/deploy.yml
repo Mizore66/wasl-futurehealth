@@ -187,9 +187,14 @@ jobs:
           npm install --global vercel@59.10.0
           echo "token belongs to: $(vercel whoami --token="$VERCEL_TOKEN")"
           # A team-scoped token may not list teams, so check what the deploy needs: the team's wasl project.
-          # The CLI prints the project table on stderr.
-          vercel project ls --scope kais-projects-42abda1c --token="$VERCEL_TOKEN" 2>&1 | grep -qE '^\s+wasl\s' \
-            || { echo "::error::VERCEL_TOKEN cannot reach the wasl project in kais-projects-42abda1c; create it with that scope"; exit 1; }
+          # Capture first: the CLI prints the table on stderr, and piping it into `grep -q` under pipefail can fail the
+          # step with SIGPIPE when grep exits on the match.
+          projects="$(vercel project ls --scope kais-projects-42abda1c --token="$VERCEL_TOKEN" 2>&1)" || true
+          grep -qE '^\s+wasl\s' <<<"$projects" || {
+            printf '%s\n' "$projects"
+            echo "::error::VERCEL_TOKEN cannot reach the wasl project in kais-projects-42abda1c; create it with that scope"
+            exit 1
+          }
           # Vercel builds from the uploaded source (.vercelignore keeps it to web/ and data/evidence/). A runner-side
           # `vercel build` would only see "[SENSITIVE]" placeholders for the production variables.
           url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
