@@ -42,8 +42,10 @@ if [ "$ONLY" = all ] || [ "$ONLY" = vercel ]; then
     exit 1
   fi
   # A team-scoped token may not list teams, so ask for what the deploy needs: the team's wasl project.
-  if ! vercel project ls --scope "$TEAM" --token="$token" 2>/dev/null | grep -qE '^\s+wasl\s'; then
-    echo "The token works for $account but cannot reach the wasl project in $TEAM. Recreate it with that scope. Nothing was stored." >&2
+  if ! listing="$(vercel project ls --scope "$TEAM" --token="$token" 2>&1)" || ! grep -qE '^\s+wasl\s' <<<"$listing"; then
+    echo "The token works for $account but cannot reach the wasl project in $TEAM. Nothing was stored." >&2
+    echo "Vercel said:" >&2
+    grep -vE 'telemetry|^\s*$' <<<"$listing" | sed 's/^/    /' >&2
     exit 1
   fi
   printf '%s' "$token" | gh secret set VERCEL_TOKEN --repo "$REPO"
