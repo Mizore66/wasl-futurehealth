@@ -58,7 +58,7 @@ class FakeModel:
 
 
 def ask(wasl, model, text):
-    return wasl_agent.answer(text, api_url=wasl.url, token=lambda: TOKEN, model=model, deployment="gpt-4.1-mini")
+    return wasl_agent.answer(text, api_url=wasl.url, token=lambda: TOKEN, model=model, model_name="gemma-3-4b-it-Q4_K_M")
 
 
 def audit_path(case_id=CASE):
@@ -71,7 +71,7 @@ def test_no_case_id_makes_no_fetch_and_no_model_call(wasl):
 
     reply = wasl_agent.answer(
         "what happened to my case?", api_url=wasl.url, token=lambda: tokens_read.append(1) or TOKEN,
-        model=model, deployment="d",
+        model=model, model_name="d",
     )
 
     assert "case id" in reply
@@ -98,7 +98,7 @@ def test_unreachable_api_returns_short_error(wasl):
     wasl.server.shutdown()
     wasl.server.server_close()
 
-    reply = wasl_agent.answer(f"explain {CASE}", api_url=url, token=lambda: TOKEN, model=model, deployment="d")
+    reply = wasl_agent.answer(f"explain {CASE}", api_url=url, token=lambda: TOKEN, model=model, model_name="d")
 
     assert reply.startswith(f"Could not read the audit trail for {CASE}")
     assert TOKEN not in reply
@@ -112,7 +112,7 @@ def test_sample_audit_yields_provenance_and_one_get_with_bearer(wasl):
     reply = ask(wasl, model, f"Please explain {CASE} for me.")
 
     first, rest = reply.split("\n", 1)
-    assert first == f"[synthetic data | case {CASE} | chain_verified=true | model gpt-4.1-mini]"
+    assert first == f"[synthetic data | case {CASE} | chain_verified=true | model gemma-3-4b-it-Q4_K_M]"
     assert rest == "The synthetic case closed and the chain verified."
     assert wasl.requests == [("GET", audit_path(), f"Bearer {TOKEN}")]
     assert len(model.calls) == 1

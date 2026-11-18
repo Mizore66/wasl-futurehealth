@@ -92,12 +92,12 @@ def build_prompt(case_id: str, audit: dict) -> str:
     return "\n".join(lines)[:MAX_PROMPT_CHARS]
 
 
-def provenance_line(case_id: str, audit: dict, deployment: str) -> str:
+def provenance_line(case_id: str, audit: dict, model_name: str) -> str:
     verified = json.dumps(audit.get("chain_verified"))
-    return f"[synthetic data | case {case_id} | chain_verified={verified} | model {deployment}]"
+    return f"[synthetic data | case {case_id} | chain_verified={verified} | model {model_name}]"
 
 
-def answer(text: str, *, api_url: str, token: TokenSource, model: ModelFn, deployment: str) -> str:
+def answer(text: str, *, api_url: str, token: TokenSource, model: ModelFn, model_name: str) -> str:
     case_id = extract_case_id(text)
     if case_id is None:
         return NO_CASE_ID_REPLY
@@ -110,5 +110,5 @@ def answer(text: str, *, api_url: str, token: TokenSource, model: ModelFn, deplo
         explanation = model(SYSTEM_PROMPT, build_prompt(case_id, audit))
     except Exception as err:  # the model client raises many SDK-specific types; the reply must stay short
         log.exception("model call failed for %s", case_id)
-        return f"{provenance_line(case_id, audit, deployment)}\nThe model call failed ({type(err).__name__})."
-    return f"{provenance_line(case_id, audit, deployment)}\n{explanation}"
+        return f"{provenance_line(case_id, audit, model_name)}\nThe model call failed ({type(err).__name__})."
+    return f"{provenance_line(case_id, audit, model_name)}\n{explanation}"

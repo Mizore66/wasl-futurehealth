@@ -343,15 +343,21 @@ a checkout of commit `4bfd661` with LF line endings, and tagged `4bfd661c-lf`. T
 published `wasl-demo-*` token. The runbook
 is [`deploy/azure/README.md`](../deploy/azure/README.md). Synthetic data only.
 
+**The model stays small and local by design.** Wasl's language model is Gemma 3 4B, the quantized file
+`gemma-3-4b-it-Q4_K_M.gguf` that the reader already runs through `llama-server`. A hospital runs that file on its own
+machine, so patient text never reaches a cloud-hosted model. The hosted demo runs the identical file on a rented Modal
+GPU that stands in for that machine and receives only synthetic data. No frontier model is in any request path.
+
 | Part | Label | What was verified |
 |---|---|---|
 | `wsi7 serve` API on Azure Container Apps | **built** | `deploy/azure/verify_api.py` passed against the Container Apps URL. `/healthz` reported 2,148 cases with `nats: not_required_for_read_api`. Calls without a token got 401, and `/api/fixtures` returned 200 with a fresh reviewer token. A coordinator note returned 201. After a revision restart, a replica created after the write still served the note, and the note's line was read back from the Azure Files share. |
 | Pipeline run that produced the API's data | **built, local** | It ran on local Docker with the 3-node NATS cluster and exited 0. The run directory was then copied to Azure Files. **The pipeline did not run on Azure.** |
-| `gpt-4.1-mini` on Foundry | **built** | Deployment `gpt-4.1-mini` 2025-04-14, Global Standard. One JSON-mode call returned the expected object. This is not the Gemma reader. The cached reader answers and the published results are unchanged, and no metric uses this model. |
-| `wasl-audit-explainer` Foundry hosted agent | **built, demo** | One end-to-end call was observed. The agent read the auditor token from Key Vault, sent `GET /api/cases/{id}/audit` to the Azure API, and called the model through the project endpoint. The API log shows only GETs from that actor. The answer was fluent but contained a false statement about the 31-day window. Agent output is unvalidated and is not a clinical or audit finding. |
+| Gemma 3 4B on Modal (`deploy/modal/gemma_server.py`) | **built** | 18 Nov 2026: `llama-server` (llama.cpp `server-cuda12-b12030`) on one T4 serves `ggml-org/gemma-3-4b-it-GGUF` at a pinned revision, and the download checks the file's SHA-256. Model routes returned 401 without the key or with a wrong one, and 200 with it. One sample each: a cold request after a fresh deploy took 135 s including the image pull, a warm one 1.3 s, and generation ran at 50.6 tokens per second. The cached reader answers and the published results are unchanged; no metric uses this server. |
+| `gpt-4.1-mini` on Foundry | **built, unused** | Deployed on 17 Nov for the agent's first version. Since 18 Nov nothing calls it; kept on request. |
+| `wasl-audit-explainer` Foundry hosted agent | **built, demo** | One end-to-end call was observed. The agent read the auditor token from Key Vault, sent `GET /api/cases/{id}/audit` to the Azure API, and called the model. The API log shows only GETs from that actor. On 17 Nov, with `gpt-4.1-mini`, the answer was fluent but contained a false statement about the 31-day window. On 18 Nov the agent was switched to Gemma 3 4B on Modal, reading the server key from Key Vault; one end-to-end call returned in 12 s with the chain length, verification and 11 matching signatures stated correctly. Agent output is unvalidated and is not a clinical or audit finding. |
 | Vercel web app on the Azure API | **built** | 18 Nov 2026: production redeployed with `WASL_API_URL` and the server tokens. Pages showed the Azure run's 2,148 cases, and the API log recorded the dashboard, case-list and case-detail reads as `hosted-web-reviewer`. The production alias is public by decision, so judges can open it (see the runbook). |
-| Continuous deployment (`.github/workflows/deploy.yml`) | **built, not yet run on GitHub** | actionlint 1.7.10 and `scripts/check_action_pins.py` pass. The agent job's deploy script and the API job's roll-and-smoke script were run locally with the same commands. They produced agent version 3 and API revision 4. The workflow's first GitHub run needs the one-time variables and the Vercel token (runbook, "Continuous deployment"). The web job's `vercel build` on a Linux runner was not rehearsed. |
-| Live Gemma readers on Azure GPU, NATS on Azure, pipeline as a Container Apps job, Entra ID sign-in for the web app | **designed** | Not attempted. Student subscriptions have no GPU quota. |
+| Continuous deployment (`.github/workflows/deploy.yml`) | **built, not yet run on GitHub** | actionlint 1.7.10 and `scripts/check_action_pins.py` pass. The agent job's deploy script and the API job's roll-and-smoke script were run locally with the same commands. They produced agent version 3 and API revision 4. The workflow's first GitHub run needs the one-time variables and the Vercel token (runbook, "Continuous deployment"). The web job's `vercel build` on a Linux runner was not rehearsed. On 18 Nov a Model job was added for `deploy/modal/`; its deploy and its health and 401 checks were run by hand, not by the workflow. It also needs a Modal API token. |
+| The Go live readers against the Modal server, NATS on Azure, pipeline as a Container Apps job, Entra ID sign-in for the web app | **designed** | Not attempted. The Go readers send no auth header, which the Modal server requires. Student subscriptions have no Azure GPU quota, which is why the GPU is on Modal. |
 
 Problems found on the way, each fixed in the deploy rather than in Wasl code:
 
@@ -367,8 +373,8 @@ Problems found on the way, each fixed in the deploy rather than in Wasl code:
   processes share the ledger. The `flock` and the ledger re-check under the lock (`appendEventLocked`) are meant for
   this case. No concurrent write was attempted during the overlap, so that case is **not tested** on Azure Files.
 - **Unknowns.**
-  - The agent's identity holds both Foundry User and Cognitive Services OpenAI User on the Foundry account. Which one
-    is required is untested.
+  - The agent's identity still holds Foundry User and Cognitive Services OpenAI User on the Foundry account from its
+    `gpt-4.1-mini` version. The Gemma version needs neither; they were not removed.
   - The first agent version failed model authentication even after the roles were granted. A redeploy fixed it, and a
     token cached from before the roles is the likely reason. This is **inferred**, not tested.
 

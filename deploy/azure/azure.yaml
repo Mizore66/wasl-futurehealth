@@ -17,7 +17,8 @@ services:
                 cpu: "0.5"
                 memory: 1Gi
         env:
-            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+            WASL_LLM_URL: ${WASL_LLM_URL}
+            WASL_LLM_MODEL: ${WASL_LLM_MODEL}
             WASL_API_URL: ${WASL_API_URL}
             WASL_KEYVAULT_URL: ${WASL_KEYVAULT_URL}
             PYTHONNOUSERSITE: "1"
