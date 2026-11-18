@@ -89,7 +89,7 @@ it("traverses all 1201 mounted rows exactly once in urgency/stable-tie order wit
   expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-prev");
   expect(list().querySelectorAll('[role="status"]')).toHaveLength(1);
   expect(open().querySelector('[data-testid="page-status"]')).toBeNull();
-});
+}, 30_000); // 48 page renders of a 1201-row board; the 5 s default timed out on a loaded CI runner at 5.05 s.
 
 it("mixed 401/400/400 tab badges and resets use full data, never the 1201 traversal claim", async () => {
   await mount(syntheticWorkItems(1201));
