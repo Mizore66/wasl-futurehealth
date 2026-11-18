@@ -14,6 +14,7 @@ import { ApiStatusError, apiMode, getAudit, getCase } from "@/lib/api/source";
 import { resolveReviewer } from "@/lib/api/reviewer-session";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
 import { patientContestReview as contestSlots, type ContestSession } from "@/components/case/patient-contest-review";
+import { OutcomeHandoffSection } from "@/components/case/outcome-handoff-review";
 import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -289,6 +290,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           )}
           <ConsentCard detail={detail} />
           <PatientJourneySection detail={detail} contestReview={contestReview} />
+          <OutcomeHandoffSection detail={detail} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>

@@ -16,7 +16,6 @@ import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
 import { PatientJourneyCard, PatientRequestsCard, type PatientContestReview } from "./patient-journey-card";
-import { OutcomeHandoffCard } from "./outcome-handoff-card";
 import { TeachBackCallbackCard } from "./teach-back-callback-card";
 import { BookingControls } from "./booking-controls";
 import {
@@ -594,7 +593,6 @@ export function PatientJourneySection({ detail, contestReview }: { detail: CaseD
       <PatientJourneyCard detail={detail} />
       <TeachBackCallbackCard caseId={detail.case.id} callbacks={detail.teach_back_callbacks ?? []} live={apiMode() === "live"} />
       <PatientRequestsCard detail={detail} review={contestReview} />
-      {detail.outcome_handoff && <OutcomeHandoffCard handoff={detail.outcome_handoff} />}
     </>
   );
 }
