@@ -6,6 +6,7 @@ import { GET } from "@/app/app/today/ledger/route";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
+import { todayRecords } from "@/components/worklist/today-records";
 import { BOOKING_NEEDED, DECLINED_STATUS, noAnswerStatus, workItem } from "@/components/worklist/model";
 import { ActiveCaseSummary, CaseDetail, CaseList, type ApiOverlay } from "@/lib/api/schema";
 import { COORDINATOR_TOKEN_MISSING, COORDINATOR_TOKEN_REFUSED, postAction } from "@/lib/api/source";
@@ -238,6 +239,8 @@ describe("GET /app/today/ledger", () => {
     expect(await res.json()).toEqual({
       ...persistedLedger(partial),
       bookingPanel: { booking: partial.booking, overlay: partial.api_overlay, case: partial.case },
+      // Today's Records come from this same read: the detail is fetched once.
+      records: JSON.parse(JSON.stringify(todayRecords(partial))),
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(partial.case.id)}`);
