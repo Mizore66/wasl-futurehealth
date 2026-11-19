@@ -951,7 +951,7 @@ func (ms *memStore) NumPendingMulti(sseq uint64, sl *gsl.SimpleSublist, lastPerS
 	var havePartial bool
 	var totalSkipped uint64
 	// We will track start and end sequences as we go.
-	stree.IntersectGSL[SimpleState](ms.fss, sl, func(subj []byte, fss *SimpleState) {
+	stree.IntersectGSL[SimpleState](ms.fss, sl, func(subj []byte, fss *SimpleState) bool {
 		if fss.firstNeedsUpdate || fss.lastNeedsUpdate {
 			ms.recalculateForSubj(bytesToString(subj), fss)
 		}
@@ -965,6 +965,7 @@ func (ms *memStore) NumPendingMulti(sseq uint64, sl *gsl.SimpleSublist, lastPerS
 		} else {
 			totalSkipped += fss.Msgs
 		}
+		return true
 	})
 
 	// If we did not encounter any partials we can return here.
@@ -1907,31 +1908,41 @@ func (ms *memStore) loadNextMsgLocked(filter string, wc bool, start uint64, smp 
 	return nil, ms.state.LastSeq, ErrStoreEOF
 }
 
-// Will load the next non-deleted msg starting at the start sequence and walking backwards.
-func (ms *memStore) LoadPrevMsg(start uint64, smp *StoreMsg) (sm *StoreMsg, err error) {
+// Will load the previous message matching the filter subject, starting at the start sequence and walking backwards.
+func (ms *memStore) LoadPrevMsg(filter string, wc bool, start uint64, smp *StoreMsg) (sm *StoreMsg, skip uint64, err error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
 	if ms.msgs == nil {
-		return nil, ErrStoreClosed
+		return nil, 0, ErrStoreClosed
 	}
 	if ms.state.Msgs == 0 || start < ms.state.FirstSeq {
-		return nil, ErrStoreEOF
+		return nil, ms.state.FirstSeq, ErrStoreEOF
 	}
 	if start > ms.state.LastSeq {
 		start = ms.state.LastSeq
 	}
 
+	if filter == _EMPTY_ {
+		filter = fwcs
+		wc = true
+	}
+	isAll := filter == fwcs
+	eq := subjectsEqual
+	if wc {
+		eq = matchLiteral
+	}
+
 	for seq := start; seq >= ms.state.FirstSeq; seq-- {
-		if sm, ok := ms.msgs[seq]; ok {
+		if sm, ok := ms.msgs[seq]; ok && (isAll || eq(sm.subj, filter)) {
 			if smp == nil {
 				smp = new(StoreMsg)
 			}
 			sm.copy(smp)
-			return smp, nil
+			return smp, seq, nil
 		}
 	}
-	return nil, ErrStoreEOF
+	return nil, ms.state.FirstSeq, ErrStoreEOF
 }
 
 // LoadPrevMsgMulti will find the previous message matching any entry in the sublist.
@@ -1965,7 +1976,7 @@ func (ms *memStore) LoadPrevMsgMulti(sl *gsl.SimpleSublist, start uint64, smp *S
 			return smp, nseq, nil
 		}
 	}
-	return nil, ms.state.LastSeq, ErrStoreEOF
+	return nil, ms.state.FirstSeq, ErrStoreEOF
 }
 
 // RemoveMsg will remove the message from this store.
@@ -2514,13 +2525,15 @@ func (o *consumerMemStore) UpdateAcks(dseq, sseq uint64) error {
 		return ErrNoAckPolicy
 	}
 
+	// We do this regardless.
+	delete(o.state.Redelivered, sseq)
+
 	// On restarts the old leader may get a replay from the raft logs that are old.
 	if dseq <= o.state.AckFloor.Consumer {
 		return nil
 	}
 
 	if len(o.state.Pending) == 0 || o.state.Pending[sseq] == nil {
-		delete(o.state.Redelivered, sseq)
 		return ErrStoreMsgNotFound
 	}
 
@@ -2574,10 +2587,21 @@ func (o *consumerMemStore) UpdateAcks(dseq, sseq uint64) error {
 			}
 		}
 	}
-	// We do these regardless.
-	delete(o.state.Redelivered, sseq)
 
 	return nil
+}
+
+func (o *consumerMemStore) RemoveRedeliveredBelow(seq uint64) {
+	if seq == 0 {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	for s := range o.state.Redelivered {
+		if s < seq {
+			delete(o.state.Redelivered, s)
+		}
+	}
 }
 
 func (o *consumerMemStore) UpdateConfig(cfg *ConsumerConfig) error {

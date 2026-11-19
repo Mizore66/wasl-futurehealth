@@ -1,7 +1,7 @@
-# Rebuild NATS with a supported Go toolchain and patched modules: the upstream 2.12.6 image still bundles an older
+# Rebuild NATS with a supported Go toolchain and patched modules: the upstream 2.12.9 image still bundles an older
 # Go runtime and x/crypto. The final stage retains the official image layout and receives Alpine security updates.
 ARG GO_VERSION=1.27.4
-ARG NATS_VERSION=2.12.6
+ARG NATS_VERSION=2.12.9
 
 FROM golang:${GO_VERSION}-bookworm AS build
 ARG NATS_VERSION
