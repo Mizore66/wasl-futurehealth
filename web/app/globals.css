@@ -280,3 +280,8 @@
   letter-spacing: -0.035em;
 }
 }
+
+/* The jade sidebar: a limestone focus ring, since the jade ring would vanish on jade. */
+.staff .staff-rail :focus-visible {
+  outline-color: var(--color-limestone-50);
+}

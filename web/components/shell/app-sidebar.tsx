@@ -147,14 +147,18 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
       prefetch={false}
       title="Back to the Wasl site"
       className={cx(
-        "flex min-h-11 items-center gap-2.5 rounded-control text-ink no-underline hover:text-ink",
-        collapsed ? "justify-center" : "px-2.5",
+        "flex min-h-11 min-w-0 items-center gap-2 rounded-control text-limestone-50 no-underline hover:text-limestone-50",
+        collapsed ? "justify-center" : "px-2",
       )}
     >
-      <Mark size={24} />
-      <span className={cx("flex items-center gap-2.5 whitespace-nowrap", collapsed && "sr-only")}>
-        <span className="staff-display text-[31px] leading-none text-ink">Wasl</span>
-        <span lang="ar" dir="rtl" className="border-l border-limestone-400 pl-2.5 text-[22px] leading-none text-jade-700">
+      <Mark size={22} tone="dark" />
+      <span className={cx("flex min-w-0 items-center gap-2", collapsed && "sr-only")}>
+        <span className="staff-display text-[28px] leading-[1.15] text-limestone-50">Wasl</span>
+        <span
+          lang="ar"
+          dir="rtl"
+          className="flex-none border-l border-jade-500 pl-2 text-[21px] leading-[1.5] text-jade-100"
+        >
           وصل
         </span>
       </span>
@@ -176,7 +180,7 @@ function Count({
   if (collapsed) {
     return (
       <>
-        <span aria-hidden className="absolute right-2 top-2 size-2 rounded-full bg-jade-600" />
+        <span aria-hidden className="absolute right-2 top-2 size-2 rounded-full bg-jade-200" />
         <span className="sr-only">{n} open</span>
       </>
     );
@@ -200,8 +204,8 @@ const linkClass = (active: boolean, collapsed: boolean) =>
     "relative flex h-11 items-center gap-3 rounded-[4px] text-[14px] no-underline md:h-10",
     collapsed ? "justify-center" : "px-3",
     active
-      ? "bg-jade-700 font-semibold text-limestone-50 hover:bg-jade-800 hover:text-limestone-50"
-      : "text-ink hover:bg-jade-50 hover:text-ink",
+      ? "bg-limestone-50 font-semibold text-jade-800 hover:bg-limestone-100 hover:text-jade-900"
+      : "text-limestone-100 hover:bg-jade-800 hover:text-limestone-50",
   );
 
 /** The sidebar's Audit trail opens the audit of the case opened last in this tab; with none yet, the case list. */
@@ -283,18 +287,18 @@ function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<Na
   const raw = params.get("queue");
   const current = pathname === "/app/today" ? (isTodayQueue(raw) ? raw : "call") : null;
   return (
-    <ul className="m-0 mb-1 ml-[19px] list-none border-l border-limestone-400 p-0">
+    <ul className="m-0 mb-1 ml-[19px] list-none border-l border-jade-500 p-0">
       {TODAY_QUEUES.map(([q, label]) => {
         const on = current === q;
         return (
           <li key={q} className="relative">
-            <span aria-hidden className="absolute left-0 top-1/2 h-px w-2.5 bg-limestone-400" />
+            <span aria-hidden className="absolute left-0 top-1/2 h-px w-2.5 bg-jade-500" />
             <Link
               href={`/app/today?queue=${q}`}
               aria-current={on ? "page" : undefined}
               className={cx(
                 "ml-2.5 flex h-11 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline md:h-9",
-                on ? "bg-jade-100 font-semibold text-jade-900" : "text-ink-soft hover:bg-jade-50 hover:text-ink",
+                on ? "bg-jade-900 font-semibold text-limestone-50 hover:text-limestone-50" : "text-jade-100 hover:bg-jade-800 hover:text-limestone-50",
               )}
             >
               <span>{label}</span>
@@ -327,7 +331,7 @@ function Nav({
         <div key={group.title} className={cx(gi > 0 && "mt-5")}>
           <p
             className={cx(
-              "m-0 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[1.45px] text-muted",
+              "m-0 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[1.45px] text-jade-200",
               collapsed && "sr-only",
             )}
           >
@@ -378,11 +382,11 @@ function UserBlock({
           collapsed && "sr-only",
         )}
       >
-        <span className="text-small text-muted">{PERSONA_PREFIX[user.source]}</span>
-        <span className="truncate text-body font-medium leading-[18px]">
+        <span className="text-small text-jade-200">{PERSONA_PREFIX[user.source]}</span>
+        <span className="truncate text-body text-limestone-50 font-medium leading-[18px]">
           {user.name}
         </span>
-        <span className="text-small text-muted">{user.role}</span>
+        <span className="text-small text-jade-200">{user.role}</span>
       </span>
     </div>
   );
@@ -500,7 +504,7 @@ export function AppSidebar({
         aria-label="Wasl"
         data-collapsed={collapsed}
         className={cx(
-          "sticky top-0 hidden h-dvh flex-none flex-col overflow-y-auto overflow-x-hidden border-r border-line bg-surface pb-5 pt-7 motion-safe:transition-[width] motion-safe:duration-200 md:flex",
+          "staff-rail sticky top-0 hidden h-dvh flex-none flex-col overflow-y-auto overflow-x-hidden border-r border-jade-800 bg-jade-700 pb-5 pt-7 text-limestone-50 motion-safe:transition-[width] motion-safe:duration-200 md:flex",
           collapsed ? "w-16 px-2" : "w-[228px] px-3",
         )}
       >
@@ -510,7 +514,7 @@ export function AppSidebar({
         </div>
         <div
           className={cx(
-            "mt-auto flex flex-col gap-3 border-t border-line pt-4",
+            "mt-auto flex flex-col gap-3 border-t border-jade-500 pt-4",
             collapsed && "items-center",
           )}
         >
@@ -524,7 +528,7 @@ export function AppSidebar({
                 aria-label={toggleLabel}
                 aria-keyshortcuts="["
                 className={cx(
-                  "flex h-10 items-center rounded-control text-muted hover:bg-jade-50 hover:text-ink",
+                  "flex h-10 items-center rounded-control text-jade-100 hover:bg-jade-800 hover:text-limestone-50",
                   collapsed ? "w-10 justify-center" : "w-full gap-2.5 px-2.5",
                 )}
               >
@@ -589,7 +593,7 @@ export function AppSidebar({
           hidden={!menuOpen}
           className="absolute left-2 top-full w-[min(280px,calc(100%-16px))]"
         >
-          <div className="flex max-h-[min(75dvh,calc(100dvh-4.5rem))] flex-col gap-3 overflow-y-auto rounded-b-[7px] border border-t-0 border-line bg-surface p-2.5 shadow-[0_5px_18px_#20372e17]">
+          <div className="flex max-h-[min(75dvh,calc(100dvh-4.5rem))] flex-col gap-3 overflow-y-auto rounded-b-[7px] border border-t-0 border-jade-800 bg-jade-700 p-2.5 text-limestone-50 shadow-[0_5px_18px_#20372e33] staff-rail">
             <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <PersonaSlot pathname={pathname} session={session} />
