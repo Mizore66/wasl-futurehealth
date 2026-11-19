@@ -1,27 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, History, Hospital, House, Inbox, Undo2 } from "lucide-react";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shell/page-header";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
-import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import { handoffActBy } from "@/lib/domain/handoff";
 import type { ReferralAnswer, RespondResult } from "@/app/app/referrals/actions";
 import type { ReferralCondition, ReferralReturnReason } from "@/lib/api/schema";
-import { CONDITION_LABELS, REASON_LABELS, handoffOwner, handoffWords, type Handoff, type Referral, type ReferralState } from "./referrals";
+import {
+  CONDITION_LABELS,
+  REASON_LABELS,
+  STATUS_FILTERS,
+  handoffOwner,
+  handoffWords,
+  referralStatus,
+  statusFilterLabel,
+  type Handoff,
+  type Referral,
+  type ReferralState,
+  type StatusTone,
+} from "./referrals";
 import { SearchField } from "./search-field";
-import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
-import { Pager } from "./pager";
-import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl } from "./paging";
+import { inboxHref, readInboxUrl, shallowGo, type InboxUrl } from "./inbox-url";
+import { paginate, pageOfId, pageStatusText, type Paging } from "./paging";
 
 /* With `respond` (live API), answers are appended to the case ledger and the inbox shows the server's projection after
-   a refresh. Without it (fixtures), answers and prep grades are session state. Prep grading is always session state. */
+   a refresh. Without it (fixtures), answers and prep grades are session state. Prep grading is always session state.
+   The inbox state (view, search, status, page, open referral) lives in the URL (inbox-url.ts); session decisions live
+   here, so they outlive every move between the hand-off and the full inbox. */
 
 const ME = "Dr Layla Haddad";
 const CONDITIONS = Object.entries(CONDITION_LABELS) as [ReferralCondition, string][];
@@ -32,14 +45,9 @@ const GRADES: [string, string][] = [
   ["2", "Mostly seen"],
   ["3", "All seen"],
 ];
-
-type Tab = "needs" | "all" | "returned" | "accepted";
-const TABS: [Tab, string, (r: Referral) => boolean][] = [
-  ["needs", "Needs you", (r) => r.state === "new" || r.state === "grade"],
-  ["all", "All", () => true],
-  ["returned", "Waiting on GP", (r) => r.state === "returned" && r.handoff?.status !== "referrer_acted"],
-  ["accepted", "Accepted", (r) => r.state === "accepted" || r.state === "done"],
-];
+/** Rows per page of the full inbox; the hand-off previews this many. */
+export const INBOX_PAGE = 10;
+const PREVIEW = 3;
 const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, accepted: 3, done: 4 };
 
 /** `saved`: appended to the ledger, so no local Undo and no session trail entry. */
@@ -52,6 +60,12 @@ const REFUSED: Record<number, string> = {
 };
 type Mode = null | "cond" | "ret";
 
+const TONE: Record<StatusTone, string> = {
+  pending: "text-ochre-ink",
+  held: "text-clay-ink",
+  done: "text-jade-800",
+};
+
 export function ReferralInbox({
   referrals,
   window,
@@ -61,6 +75,7 @@ export function ReferralInbox({
   respond,
   scope = "",
   referrer = "GP",
+  heading = { title: "Referrals", indication: "" },
 }: {
   referrals: Referral[];
   /** The server action that appends the receiving unit's answer; absent when there is no live API. */
@@ -70,40 +85,41 @@ export function ReferralInbox({
   /** The run day: a return is decided on it. */
   now: number;
   q: string;
+  /** The programme views, the referrer's view link and the honesty label, under the referral. */
   aside: React.ReactNode;
-  /** The programme/provider query that a search keeps; empty for the CRC default. */
+  /** The programme/provider query that every inbox URL keeps; empty for the CRC default. */
   scope?: string;
   /** Who returned referrals wait on, in words. */
   referrer?: string;
+  /** The open referral's heading and programme chip. */
+  heading?: { title: string; indication: string };
 }) {
   const router = useRouter();
-  /* The query is a navigation, not a reload, so the session decisions below outlive it. */
+  const params = useSearchParams();
+  const url = readInboxUrl(params, q);
+  /* A decision moves its referral in the queue order; the hand-off keeps showing it until the URL moves on. Kept in
+     state, not written to the URL: a history write here would make the router re-render and drop the focus the
+     decision hands to Undo. */
+  const [pinned, setPinned] = useState<string | null>(null);
+  const urlKey = `${params.toString()}|${q}`;
+  const [seenUrl, setSeenUrl] = useState(urlKey);
+  if (seenUrl !== urlKey) {
+    setSeenUrl(urlKey);
+    setPinned(null);
+  }
   const [text, setText] = useState(q);
   const [seenQ, setSeenQ] = useState(q);
   if (seenQ !== q) {
     setSeenQ(q);
     setText(q);
   }
-  const [tab, setTab] = useState<Tab>("needs");
-  const [page, setPage] = useState(1);
-  const [sel, setSel] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
+  const [tried, setTried] = useState(false);
   const [over, setOver] = useState<Record<string, Override>>({});
-  /** A row-level Accept opens the referral and asks once more on the row; nothing is answered until Confirm. */
-  const [confirming, setConfirming] = useState<string | null>(null);
-  /** Below lg the list and the open referral take turns; from lg up both show. */
-  const [pane, setPane] = useState<"list" | "detail">("detail");
+  const [packetOpen, setPacketOpen] = useState(false);
   const reduce = useReducedMotion();
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const rowRef = useRef<HTMLButtonElement>(null);
-  const prevPane = useRef(pane);
-  useEffect(() => {
-    if (prevPane.current === pane) return;
-    prevPane.current = pane;
-    if (globalThis.matchMedia("(min-width: 1024px)").matches) return;
-    (pane === "detail" ? headingRef : rowRef).current?.focus();
-  }, [pane]);
+  const reasonError = `rf-reason-error-${useId().replace(/:/g, "")}`;
 
   /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
   const root = useRef<HTMLDivElement>(null);
@@ -111,72 +127,44 @@ export function ReferralInbox({
   useEffect(() => {
     if (want) root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
   }, [want]);
-
-  const selectTab = (id: Tab) => {
-    setConfirming(null);
-    setTab(id);
-    setPage(1);
-    setSel(null);
-    setMode(null);
-    setPicked([]);
-  };
-  const roving = useRovingTabs({ ids: TABS.map(([id]) => id), selected: tab, onSelect: selectTab, prefix: "referrals" });
+  /* Moving between the hand-off and the full inbox focuses the new view's heading, or the row last opened. */
+  const lastView = useRef(url.view);
+  useEffect(() => {
+    if (lastView.current === url.view) return;
+    lastView.current = url.view;
+    const el = root.current;
+    (el?.querySelector<HTMLElement>('[data-focus="selected-row"]') ?? el?.querySelector<HTMLElement>('[data-focus="heading"]'))?.focus();
+  }, [url.view]);
 
   const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state, handoff: over[r.id]?.handoff ?? r.handoff }));
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
-  const test = TABS.find(([id]) => id === tab)![2];
-  const list = sorted.filter(test);
-  const paging = paginate(list, pageWith(list, sel, page));
-  const r = list.find((x) => x.id === sel) ?? (sel ? all.find((x) => x.id === sel) : undefined) ?? paging.rows[0];
-  if (page !== paging.page) setPage(paging.page);
-  const goPage = (to: number, via: PagerControl) => {
-    const target = paginate(list, to);
-    const focus = pagerFocusAfter(via, target);
-    if (focus) setWant({ k: `pager-${focus}` });
-    setPage(target.page);
-    setSel(target.rows[0]?.id ?? null);
-    setMode(null);
-    setPicked([]);
-  };
-  const needCount = all.filter(TABS[0][2]).length;
+  const list = url.status ? sorted.filter((x) => referralStatus(x, referrer).key === url.status) : sorted;
+  const r = url.caseId ? all.find((x) => x.id === url.caseId) : ((pinned ? all.find((x) => x.id === pinned) : undefined) ?? list[0]);
 
-  /* An unconfirmed mode and picks belong to the referral shown when they were started. A search can change which
-     referral is shown (or show none) without any click here, so they are dropped when the displayed id changes.
+  /* An unconfirmed mode and picks belong to the referral shown when they were started. A search or a URL change can
+     show another referral (or none) without any click here, so they are dropped when the displayed id changes.
      Committed decisions live in `over` and are untouched. */
   const [draftFor, setDraftFor] = useState<string | null>(null);
-  const shownId = r?.id ?? null;
+  const shownId = url.view === "case" ? (r?.id ?? null) : null;
   if (draftFor !== shownId) {
     setDraftFor(shownId);
     setMode(null);
     setPicked([]);
+    setTried(false);
   }
 
-  const late = sorted.filter((x) => x.state === "new" && x.waiting > window);
-  const grade = sorted.find((x) => x.state === "grade");
-  const finding = [
-    late[0] && `${late[0].name} has waited ${late[0].waiting} days, ${late[0].waiting - window} past the unit's ${window}.`,
-    grade && `${grade.name}'s report needs your review.`,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const href = (s: Partial<InboxUrl>) => inboxHref(scope, { q: url.q, status: url.status, ...s });
+  const caseLink = (id: string) => href({ caseId: id, from: url.view === "inbox" || url.from, page: url.page ?? undefined });
 
-  const open = (id: string) => {
-    setSel(id);
-    setPane("detail");
-    setMode(null);
-    setPicked([]);
-    setConfirming(null);
-  };
-  /* Row-level Accept: open the referral so its details and flags are in view, and ask to confirm on the row. */
-  const armAccept = (id: string) => {
-    open(id);
-    setConfirming(id);
-    setWant({ k: `confirm-${id}` });
+  const pin = (id: string) => {
+    if (url.caseId !== id) setPinned(id);
   };
   const act = (id: string, state: ReferralState, outcome: string, entry: string, handoff?: Handoff, who = ME) => {
+    pin(id);
     setWant({ k: "undo" });
+    setMode(null);
+    setPicked([]);
     setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), { who, what: entry }], handoff } }));
-    open(id);
   };
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
@@ -190,9 +178,11 @@ export function ReferralInbox({
     respond(x.id, x.head, request)
       .then((res) => {
         if (!res.ok) return setRefusal({ id: x.id, text: `Not saved: ${REFUSED[res.status] ?? res.error}` });
+        pin(x.id);
         setWant({ k: "heading" });
+        setMode(null);
+        setPicked([]);
         setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case ledger.`, log: [{ who: ME, what: entry }], saved: true } }));
-        open(x.id);
         router.refresh();
       })
       .catch(() => setRefusal({ id: x.id, text: "Not saved: the API did not answer." }))
@@ -221,361 +211,718 @@ export function ReferralInbox({
       x.referrer,
     );
   const undo = (id: string) => {
+    pin(id);
     setWant({ k: "heading" });
     setOver((o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== id)));
-    open(id);
   };
-
-  const chain: ChainNode[] = r
-    ? [
-        { id: "ref", kind: "human", who: r.referrer, what: `referred to ${r.unit}`, when: r.sent },
-        ...(r.answer ? [{ id: "answer", kind: "human" as const, who: r.unit, what: r.answer, when: r.answerWhen }] : []),
-        ...(over[r.id]?.saved ? [] : (over[r.id]?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, kind: "human" as const, who, what, when: "This session" })),
-        ...(r.state === "done"
-          ? []
-          : [
-              {
-                id: "now",
-                kind: "current" as const,
-                who: r.state === "returned" ? handoffOwner(r.handoff, r.referrer) : r.state === "grade" ? "You" : r.unit,
-                what: r.state === "returned" ? handoffWords(r.handoff, referrer).what : { new: "Your answer", grade: over[r.id] ? "Complete the report" : "Review the incomplete report", accepted: "Book and do the colonoscopy", done: "", returned: "" }[r.state],
-                when: r.state === "returned" ? handoffWords(r.handoff, referrer).when : `${r.waiting} days since referral`,
-              },
-            ]),
-      ]
-    : [];
-
   const choose = (m: Exclude<Mode, null>) => {
     setWant({ k: "mode" });
     setMode(m);
     setPicked([]);
+    setTried(false);
   };
-  const cancel = (id: string, opener: string) => {
-    open(id);
+  const cancel = (opener: string) => {
+    setMode(null);
+    setPicked([]);
+    setTried(false);
     setWant({ k: opener });
   };
 
-  const chip = (on: boolean) =>
-    cn("h-11 cursor-pointer rounded-chip border px-4 text-body text-ink", on ? "border-ink bg-active" : "border-control bg-surface hover:bg-ground");
-  const lateOpen = !!r && r.state === "new" && r.waiting > window;
-  const outcome = r && over[r.id]?.outcome;
+  const search = (next: string) => {
+    const target = href({ q: next.trim(), view: url.view === "inbox" ? "inbox" : undefined, caseId: undefined, page: undefined, from: url.from });
+    router.push(target);
+  };
 
-  return (
-    <div ref={root}>
-      <header data-open={pane === "detail" && !!r} className="group/inbox mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <h1 className="m-0 text-title font-semibold">Referrals</h1>
-          <p className="m-0 mt-1 text-muted" data-testid="finding">
-            {finding || "Nothing needs you right now."}
+  const footer = (
+    <div className="mt-4 flex flex-col gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">{aside}</div>
+      <p className="m-0 text-small text-muted">
+        {respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.
+      </p>
+    </div>
+  );
+
+  if (url.view === "inbox") {
+    return (
+      <div ref={root}>
+        <Directory
+          list={list}
+          total={sorted.length}
+          url={url}
+          scope={scope}
+          href={href}
+          caseLink={caseLink}
+          referrer={referrer}
+          window={window}
+          text={text}
+          setText={setText}
+          search={search}
+        />
+        {footer}
+      </div>
+    );
+  }
+
+  if (!r) {
+    return (
+      <div ref={root}>
+        {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
+        <PageHeader title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>} />
+        <section aria-label="Open referral" className="rounded-card border border-line bg-surface p-4 sm:p-pad">
+          <h2 className="m-0 text-section font-medium">{url.caseId ? "This referral is not in this view" : "Nothing to open"}</h2>
+          <p className="m-0 mt-2 text-muted">
+            {url.caseId ? "It may have been answered elsewhere, or the search no longer includes it." : "This view is empty."}{" "}
           </p>
+          {(url.q || url.status || url.caseId) && (
+            <Link href={inboxHref(scope, {})} className="mt-2 inline-flex min-h-11 items-center underline">
+              Clear the search
+            </Link>
+          )}
+        </section>
+        {footer}
+      </div>
+    );
+  }
+
+  const status = referralStatus(r, referrer);
+  const returned = r.state === "returned";
+  const late = r.state === "new" && r.waiting > window;
+  const outcome = over[r.id]?.outcome;
+  const fromName = r.referrer;
+  const backUrl = href({ view: "inbox", caseId: r.id, page: url.page ?? undefined });
+  const gpView = `/app/referrals/returned?${new URLSearchParams([...new URLSearchParams(scope), ["case", r.id], ["back", backUrl]]).toString()}`;
+
+  /* The status line under the current party: status, case reference and how long it has waited. */
+  const stateLine = (
+    <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 max-md:justify-start">
+      <StatusChip label={status.label} tone={status.tone} plain />
+      <span className="border-l border-rule pl-2.5 text-small tabular-nums text-muted" title={r.id}>
+        {r.short}
+      </span>
+      {(r.state === "new" || r.state === "grade") && (
+        <span data-testid="lead-days" data-value={r.waiting} className={cn("border-l border-rule pl-2.5 text-small tabular-nums", late ? "font-medium text-negative" : "text-muted")}>
+          {r.waiting} {r.waiting === 1 ? "day" : "days"} waiting{r.state === "new" && (late ? `, ${r.waiting - window} past the unit's ${window}` : `, answer within ${window}`)}
+        </span>
+      )}
+    </div>
+  );
+
+  const outcomeBlock = (
+    <>
+      <AnimatePresence initial={false}>
+        {outcome && (
+          <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="mt-3 flex flex-wrap items-center justify-center gap-gap max-md:justify-start">
+            <p className="m-0 max-w-prose">{outcome}</p>
+            {!over[r.id]?.saved && (
+              <Button variant="quiet" size="touch" data-focus="undo" onClick={() => undo(r.id)}>
+                Undo
+              </Button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {refusal?.id === r.id && (
+        <p role="alert" className="m-0 mt-3 text-negative">
+          {refusal.text}
+        </p>
+      )}
+    </>
+  );
+
+  const unitPanel = (
+    <div className="mt-4 w-full">
+      {r.flags.length > 0 && r.state !== "done" && (
+        <p className="m-0 mb-3 text-body" data-testid="flags">
+          <span className="font-medium">Check first:</span> <span className="text-muted">{r.flags.join(" · ")}</span>
+        </p>
+      )}
+      {r.state === "new" && mode === null && (
+        <div className="flex flex-wrap justify-center gap-2 max-md:justify-start">
+          <Button variant="cta" size="touch" aria-label="Accept referral" onClick={() => accept(r)}>
+            <Check aria-hidden /> Accept
+          </Button>
+          <Button variant="quiet" size="touch" data-focus="open-ret" aria-label="Return with reason" onClick={() => choose("ret")}>
+            <Undo2 aria-hidden /> Return
+          </Button>
+          <Button variant="quiet" size="touch" data-focus="open-cond" onClick={() => choose("cond")}>
+            Accept with conditions
+          </Button>
         </div>
-        {aside}
-      </header>
-      <div className="flex flex-wrap items-stretch gap-gap">
-        <section id="worklist" tabIndex={-1} aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
-          <div {...roving.listProps} aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
-            {TABS.map(([id, label, t]) => (
+      )}
+      {r.state === "new" && mode === "cond" && (
+        <div className="mx-auto w-full max-w-[520px] text-start">
+          <h3 data-focus="mode" tabIndex={-1} className="m-0 text-body font-semibold outline-none">
+            Accept on these conditions
+          </h3>
+          <div role="group" aria-label="Conditions" className="mt-2 flex flex-wrap gap-2">
+            {CONDITIONS.map(([c, label]) => (
               <button
-                key={id}
-                {...roving.tabProps(id)}
-                onClick={() => selectTab(id)}
-                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", TAB_FOCUS, tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
+                key={c}
+                type="button"
+                aria-pressed={picked.includes(c)}
+                className={chip(picked.includes(c))}
+                onClick={() => setPicked((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]))}
               >
-                {id === "returned" ? `Waiting on ${referrer}` : label} <span className="text-small text-muted">{all.filter(t).length}</span>
+                {label}
               </button>
             ))}
           </div>
-          <form
-            action="/app/referrals"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const next = text.trim();
-              const query = [scope, next && `q=${encodeURIComponent(next)}`].filter(Boolean).join("&");
-              router.push(query ? `/app/referrals?${query}` : "/app/referrals");
-            }}
-            className="px-4 pb-2 pt-3"
-          >
-            {[...new URLSearchParams(scope)].map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
-            <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
-          </form>
-          <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
-            {paging.rows.map((x) => {
-              const on = r?.id === x.id;
-              const isLate = x.state === "new" && x.waiting > window;
-              const inline = x.state === "new" && x.flags.length === 0;
-              const review = (x.state === "new" && x.flags.length > 0) || x.state === "grade";
-              return (
-                <div key={x.id} className={cn("relative flex min-h-[68px] items-center gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
-                  <div className="flex size-11 flex-none items-center justify-center self-start">
-                    <RecordAvatar id={x.id} name={x.name} linked={x.hasRecord} className="relative z-10 size-11 items-center justify-center">
-                      <Avatar person={x.seed} size={24} label="" />
-                    </RecordAvatar>
-                  </div>
-                  <button
-                    ref={on ? rowRef : undefined}
-                    data-focus={`row-${x.id}`}
-                    aria-pressed={on}
-                    onClick={() => open(x.id)}
-                    className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 text-left after:absolute after:inset-0 after:rounded-control"
-                  >
-                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                      <span className="font-semibold">{x.name}</span>
-                      {x.nameAr && (
-                        <span lang="ar" dir="rtl" className="text-muted">
-                          {x.nameAr}
-                        </span>
-                      )}
-                      {(x.state === "new" || x.state === "grade") && (
-                        <span className={cn("whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
-                      )}
-                    </span>
-                    <span className="mt-0.5 block text-muted">{lineFor(x, over[x.id])}</span>
-                  </button>
-                  <span className="flex-none pr-1">
-                    {inline && confirming !== x.id && (
-                      <Button variant="cta" size="touch" onClick={() => armAccept(x.id)} aria-label={`Accept referral for ${x.name}`} className="relative z-10">
-                        Accept
-                      </Button>
-                    )}
-                    {inline && confirming === x.id && (
-                      <span className="relative z-10 flex gap-1">
-                        <Button variant="cta" size="touch" data-focus={`confirm-${x.id}`} onClick={() => accept(x)} aria-label={`Confirm accepting the referral for ${x.name}`}>
-                          Confirm
-                        </Button>
-                        <Button
-                          variant="quiet"
-                          size="touch"
-                          onClick={() => {
-                            setConfirming(null);
-                            setWant({ k: `row-${x.id}` });
-                          }}
-                          aria-label={`Do not accept the referral for ${x.name} yet`}
-                        >
-                          Cancel
-                        </Button>
-                      </span>
-                    )}
-                    {review && (
-                      <Button variant="quiet" size="touch" onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10">
-                        Review
-                      </Button>
-                    )}
-                    {!inline && !review && <span className="pr-2 text-small text-muted">{{ returned: "Returned", accepted: "Accepted", done: "Closed", new: "", grade: "" }[x.state]}</span>}
-                  </span>
-                </div>
-              );
-            })}
-            {list.length === 0 && <p className="m-2 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">No referrals in this view.</p>}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="cta" size="touch" onClick={() => accept(r, picked as ReferralCondition[])}>
+              {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
+            </Button>
+            <Button variant="quiet" size="touch" onClick={() => cancel("open-cond")}>
+              Cancel
+            </Button>
           </div>
-          <Pager paging={paging} label="Referral list pages" testId="page-range" onPage={goPage} />
-          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
-          <div className="border-t border-rule px-4 py-3 text-small text-muted">
-            {list.length} {list.length === 1 ? "referral" : "referrals"} · {needCount} need you{q && ` · matching “${q}”`}
-          </div>
-        </section>
-
-        {r ? (
-          <section aria-label="Open referral" className={cn("min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-4 sm:p-pad lg:flex", pane === "list" ? "hidden" : "flex")}>
-            <button onClick={() => setPane("list")} className="-mt-1 mb-3 flex min-h-11 cursor-pointer items-center gap-2 self-start rounded-control bg-transparent pr-3 text-body text-ink lg:hidden">
-              <span aria-hidden>‹</span>
-              All referrals · {list.length}
-            </button>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="flex min-w-0 items-start gap-4">
-                <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord}>
-                  <Avatar person={r.seed} size={56} label="" />
-                </RecordAvatar>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-x-3">
-                    <h2 ref={headingRef} data-focus="heading" tabIndex={-1} className="m-0 text-title font-semibold outline-none">
-                      {r.name}
-                    </h2>
-                    {r.nameAr && (
-                      <span lang="ar" dir="rtl" className="text-section text-muted">
-                        {r.nameAr}
-                      </span>
-                    )}
-                  </div>
-                  <p className="m-0 mt-1 text-muted">{[r.age, r.kind === "packet" ? `from ${r.clinic}` : `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}</p>
-                  {r.hasRecord && (
-                    <Link href={caseHref("/app/patients", r.id)} className="inline-flex min-h-11 items-center underline">
-                      Open record
-                    </Link>
-                  )}
-                </div>
-              </div>
-              <div className="sm:flex-none sm:text-right">
-                <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" className={cn("text-lead font-bold tabular-nums", lateOpen ? "text-negative" : "text-ink")}>
-                    {r.waiting}
-                  </span>
-                  <span className="text-muted">{r.state === "new" ? "days waiting" : "days since referral"}</span>
-                </div>
-                <div className={cn("mt-0.5 text-body sm:text-small", lateOpen ? "text-negative" : "text-muted")}>
-                  {r.state === "new" ? (lateOpen ? `${r.waiting - window} past the unit's ${window}` : `unit answers within ${window}`) : `sent ${r.sent}`}
-                </div>
-              </div>
-            </div>
-
-            {r.flags.length > 0 && r.state !== "done" && (
-              <p className="m-0 mt-3 text-body" data-testid="flags">
-                <span className="font-medium">Check first:</span> <span className="text-muted">{r.flags.join(" · ")}</span>
-              </p>
-            )}
-
-            <div className="mt-4">
-              {r.state === "new" && mode === null && (
-                <div className="flex flex-wrap gap-gap">
-                  <Button variant="cta" size="touch" onClick={() => accept(r)}>
-                    Accept referral
-                  </Button>
-                  <Button variant="quiet" size="touch" data-focus="open-cond" onClick={() => choose("cond")}>Accept with conditions</Button>
-                  <Button variant="quiet" size="touch" data-focus="open-ret" onClick={() => choose("ret")}>Return to GP</Button>
-                </div>
-              )}
-              {r.state === "new" && mode === "cond" && (
-                <div>
-                  <h3 data-focus="mode" tabIndex={-1} className="m-0 text-section font-medium">
-                    Accept on these conditions
-                  </h3>
-                  <div role="group" aria-label="Conditions" className="mt-2 flex flex-wrap gap-2">
-                    {CONDITIONS.map(([c, label]) => (
-                      <button key={c} aria-pressed={picked.includes(c)} className={chip(picked.includes(c))} onClick={() => setPicked((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]))}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex gap-gap">
-                    <Button variant="cta" size="touch" onClick={() => accept(r, picked as ReferralCondition[])}>
-                      {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
-                    </Button>
-                    <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-cond")}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-              {r.state === "new" && mode === "ret" && (
-                <div>
-                  <h3 data-focus="mode" tabIndex={-1} className="m-0 text-section font-medium">
-                    Why return this referral?
-                  </h3>
-                  <div role="group" aria-label="Reason" className="mt-2 flex flex-wrap gap-2">
-                    {REASONS.map(([c, label]) => (
-                      <button key={c} aria-pressed={picked[0] === c} className={chip(picked[0] === c)} onClick={() => setPicked([c])}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="m-0 mt-2 text-small text-muted">Returning hands the case back to the {r.clinic} GP, who must act by {formatDay(handoffActBy(now, r.urgent))}.</p>
-                  <div className="mt-3 flex items-center gap-gap">
-                    {picked[0] ? (
-                      <Button
-                        variant="cta"
-                        size="touch"
-                        onClick={() => returnToGp(r, picked[0] as ReferralReturnReason)}
-                      >
-                        Return to GP
-                      </Button>
-                    ) : (
-                      <span className="text-muted">Choose a reason to return it.</span>
-                    )}
-                    <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-ret")}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-              {r.kind === "packet" && r.state === "returned" && r.handoff && r.handoff.status !== "referrer_acted" && !outcome && (
-                <div>
-                  <Button variant="quiet" size="touch" onClick={() => reRefer(r)}>
-                    Re-refer to {r.unit}
-                  </Button>
-                  <p className="m-0 mt-2 text-small text-muted">The network has no other unit for this, so the referrer re-refers to the same one. Recorded in this session only.</p>
-                </div>
-              )}
-              {r.state === "grade" && (
-                <div>
-                  <p className="m-0">The report does not state the prep or that the caecum was reached. Grade the prep from your procedure record.</p>
-                  <div role="group" aria-label="Boston grade" className="mt-2 flex flex-wrap gap-2">
-                    {GRADES.map(([n, w]) => (
-                      <button
-                        key={n}
-                        onClick={() => act(r.id, "grade", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
-                        className="flex h-14 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
-                      >
-                        <span className="font-medium">{n}</span>
-                        <span className="text-small text-muted">{w}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="m-0 mt-2 text-small text-muted">A grade never closes a case. Only a complete report does.</p>
-                </div>
-              )}
-              <AnimatePresence initial={false}>
-                {outcome && (
-                  <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="flex flex-wrap items-center gap-gap">
-                    <p className="m-0 flex-1">{outcome}</p>
-                    {!over[r.id]?.saved && (
-                      <Button variant="quiet" size="touch" data-focus="undo" onClick={() => undo(r.id)}>Undo</Button>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              {refusal?.id === r.id && (
-                <p role="alert" className="m-0 mt-3 text-negative">
-                  {refusal.text}
-                </p>
-              )}
-              {!outcome && (r.state === "accepted" || r.state === "done" || r.state === "returned") && (
-                <p className="m-0" role="status">
-                  {{ accepted: r.answer ? `${r.answer}. Nothing needed from you.` : "Accepted. Nothing needed from you.", done: "Closed with evidence. Nothing needed from you.", returned: r.answer ? `${r.answer}.` : `Returned to the ${referrer}.`, new: "", grade: "" }[r.state]}
-                </p>
-              )}
-            </div>
-
-            <h3 className="m-0 mt-7 text-section font-medium">Hand-off</h3>
-            <div aria-live="polite" className="mt-3">
-              <SealedChain nodes={chain} />
-            </div>
-
-            <h3 className="m-0 mt-6 text-section font-medium">{r.kind === "packet" ? "Canonical hand-off packet" : "Referral details"}</h3>
-            <dl className="m-0 mt-2 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-              {r.details.map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-small text-muted">{k}</dt>
-                  <dd className={cn("m-0", k === "Case" && "text-small text-muted")}>{v}</dd>
-                </div>
+        </div>
+      )}
+      {r.state === "new" && mode === "ret" && (
+        <form
+          noValidate
+          aria-label="Return to the GP"
+          className="mx-auto grid w-full max-w-[520px] gap-2 text-start"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTried(true);
+            if (!picked[0]) return;
+            returnToGp(r, picked[0] as ReferralReturnReason);
+          }}
+        >
+          <fieldset className="m-0 border-0 p-0" aria-describedby={tried && !picked[0] ? reasonError : undefined} aria-invalid={tried && !picked[0] ? true : undefined}>
+            <legend data-focus="mode" tabIndex={-1} className="mb-1 text-body font-semibold outline-none">
+              Reason for return
+            </legend>
+            <div className="grid gap-0.5">
+              {REASONS.map(([c, label]) => (
+                <label key={c} className="flex min-h-11 cursor-pointer items-center gap-2.5">
+                  <input
+                    type="radio"
+                    name={`reason-${r.id}`}
+                    value={c}
+                    checked={picked[0] === c}
+                    onChange={() => setPicked([c])}
+                    className="size-5 flex-none cursor-pointer accent-jade-700"
+                  />
+                  {label}
+                </label>
               ))}
-            </dl>
+            </div>
+          </fieldset>
+          {tried && !picked[0] && (
+            <p id={reasonError} role="alert" className="m-0 font-medium text-negative">
+              Choose a reason before you return it. Nothing was sent.
+            </p>
+          )}
+          <p className="m-0 text-small text-muted">
+            Returning hands the case back to the {r.clinic} GP, who must act by {formatDay(handoffActBy(now, r.urgent))}. Booking stays held.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="cta" size="touch" disabled={busy}>
+              Return to GP
+            </Button>
+            <Button type="button" variant="quiet" size="touch" onClick={() => cancel("open-ret")}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+      {r.state === "grade" && (
+        <div className="text-start">
+          <p className="m-0">The report does not state the prep or that the caecum was reached. Grade the prep from your procedure record.</p>
+          <div role="group" aria-label="Boston grade" className="mt-2 flex flex-wrap gap-2">
+            {GRADES.map(([n, w]) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => act(r.id, "grade", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
+                className="flex h-14 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
+              >
+                <span className="font-medium">{n}</span>
+                <span className="text-small text-muted">{w}</span>
+              </button>
+            ))}
+          </div>
+          <p className="m-0 mt-2 text-small text-muted">A grade never closes a case. Only a complete report does.</p>
+        </div>
+      )}
+      {!outcome && (r.state === "accepted" || r.state === "done") && (
+        <p className="m-0" role="status">
+          {r.state === "done" ? "Closed with evidence. Nothing needed from you." : r.answer ? `${r.answer}. Nothing needed from you.` : "Accepted. Nothing needed from you."}
+        </p>
+      )}
+      {outcomeBlock}
+    </div>
+  );
+
+  const words = handoffWords(r.handoff, referrer);
+  const referrerPanel = (
+    <div className="mt-4 grid w-full justify-items-center gap-1 max-md:justify-items-start">
+      <strong className="text-body font-semibold">{r.kind === "crc" ? "Booking held" : `Held with the ${referrer}`}</strong>
+      {!outcome && <p className="m-0 text-muted">{r.answer ? `${r.answer}.` : `Returned to the ${referrer}.`}</p>}
+
+      {r.acknowledged && (
+        <small className="flex items-center gap-1.5 text-small text-jade-700">
+          <Check aria-hidden className="size-4" /> The {referrer} acknowledged the return
+        </small>
+      )}
+      {r.kind === "packet" && r.handoff && r.handoff.status !== "referrer_acted" && !outcome && (
+        <div className="mt-2 grid justify-items-center gap-1 max-md:justify-items-start">
+          <Button variant="quiet" size="touch" onClick={() => reRefer(r)}>
+            Re-refer to {r.unit}
+          </Button>
+          <p className="m-0 text-small text-muted">The network has no other unit for this, so the referrer re-refers to the same one. Recorded in this session only.</p>
+        </div>
+      )}
+      {outcomeBlock}
+      <p className="m-0 text-small text-muted">
+        {handoffOwner(r.handoff, r.referrer)}: {words.what.toLowerCase()}, {words.when}
+      </p>
+      <Link href={gpView} className="inline-flex min-h-11 items-center gap-1 font-medium">
+        Open the {referrer} view <ChevronRight aria-hidden className="size-4" />
+      </Link>
+      {!respond && r.kind === "crc" && over[r.id] && (
+        <p className="m-0 text-small text-muted">The {referrer} view needs the live synthetic API; this return stays in this session.</p>
+      )}
+    </div>
+  );
+
+  const preview = previewOf(sorted.length === list.length ? sorted : list, r.id);
+  const counted = list.length;
+  const viewAll = url.from ? backUrl : href({ view: "inbox", caseId: r.id });
+
+  return (
+    <div ref={root}>
+      {url.from && <BackLink href={backUrl} />}
+      <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
+        <PageHeader
+          className="mb-0 rounded-none border-0 border-b border-line"
+          title={
+            <span data-focus="heading" tabIndex={-1} aria-label={`${heading.title}, ${r.short}`} className="outline-none">
+              {heading.title}
+            </span>
+          }
+          titleAside={
+            <>
+              <button
+                type="button"
+                aria-expanded={packetOpen}
+                aria-controls="rf-packet"
+                aria-label="Referral packet"
+                title="Referral packet"
+                onClick={() => setPacketOpen((o) => !o)}
+                className={cn("grid size-11 cursor-pointer place-items-center rounded-control bg-transparent text-jade-700 hover:bg-jade-100", packetOpen && "bg-jade-100 text-jade-900")}
+              >
+                <FolderOpen aria-hidden className="size-5" strokeWidth={1.6} />
+              </button>
+              {heading.indication && <span className="rounded-full bg-jade-100 px-2.5 py-1 text-small font-semibold text-jade-800">{heading.indication}</span>}
+            </>
+          }
+          sub={
+            <>
+              <span className="font-semibold text-ink">{r.name}</span>
+              {r.nameAr && (
+                <>
+                  {" "}
+                  <span lang="ar" dir="rtl">
+                    {r.nameAr}
+                  </span>
+                </>
+              )}
+              {" · "}
+              {[r.age, r.kind === "packet" ? `from ${r.clinic}` : `from ${r.clinic} Healthcare Centre`, `sent ${r.sent}`].filter(Boolean).join(" · ")}
+            </>
+          }
+          aside={
+            r.hasRecord ? (
+              <RecordAvatar id={r.id} name={r.name} linked>
+                <Avatar person={r.seed} size={36} label="" />
+              </RecordAvatar>
+            ) : undefined
+          }
+        />
+        <dl id="rf-packet" hidden={!packetOpen} className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 border-b border-line bg-limestone-100 px-[clamp(16px,2.8vw,42px)] py-3.5 sm:grid-cols-3 lg:grid-cols-4">
+          {r.details.map(([k, v]) => (
+            <div key={k} className="min-w-0">
+              <dt className="text-small text-muted">{k}</dt>
+              <dd className="m-0 break-words font-semibold">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <div
+          role="group"
+          aria-label={`Hand-off from ${returned ? r.unit : fromName} to ${returned ? fromName : r.unit}`}
+          data-returned={returned}
+          className="grid grid-cols-[minmax(0,1fr)_clamp(40px,8vw,120px)_minmax(0,1fr)] bg-gradient-to-b from-limestone-50 to-surface px-[clamp(20px,2.8vw,42px)] py-[clamp(24px,4.5vh,54px)] max-md:grid-cols-1 max-md:px-4 max-md:py-[18px]"
+        >
+          <Station name={fromName} icon="clinic" current={returned} line={returned ? stateLine : null}>
+            {returned && referrerPanel}
+          </Station>
+          <div aria-hidden className="grid h-[clamp(70px,7vw,108px)] place-items-center self-start text-jade-600 max-md:h-9 max-md:w-11">
+            <ArrowRight className={cn("size-6", returned ? "rotate-180 max-md:-rotate-90" : "max-md:rotate-90")} strokeWidth={1.7} data-testid="handoff-arrow" data-direction={returned ? "back" : "forward"} />
+          </div>
+          <Station name={r.unit} icon="hospital" current={!returned} line={!returned ? stateLine : null}>
+            {!returned && unitPanel}
+          </Station>
+        </div>
+        <div className="grid border-t border-line bg-limestone-100 md:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)]">
+          <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="flex min-w-0 flex-col outline-none max-md:order-2">
+            <h2 className="m-0 flex min-h-12 items-center gap-2 px-[clamp(16px,2.8vw,42px)] text-body font-semibold text-jade-800">
+              <Inbox aria-hidden className="size-[17px]" />
+              Inbox <span className="text-small font-normal tabular-nums text-muted">{counted}</span>
+              <Link href={viewAll} aria-label={`View all ${counted} referrals`} className="ml-auto inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-jade-700 no-underline hover:underline" onClick={shallow(viewAll)}>
+                View all <ChevronRight aria-hidden className="size-4" />
+              </Link>
+            </h2>
+            <ul className="m-0 grid flex-1 list-none content-start auto-rows-[minmax(56px,auto)] p-0">
+              {preview.map((x) => {
+                const s = referralStatus(x, referrer);
+                const on = x.id === r.id;
+                const target = caseLink(x.id);
+                return (
+                  <li key={x.id} className="flex">
+                    <a
+                      href={target}
+                      aria-current={on ? "true" : undefined}
+                      onClick={shallow(target)}
+                      className={cn(
+                        "flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-rule px-[clamp(16px,2.8vw,42px)] py-2.5 text-ink no-underline hover:bg-jade-50",
+                        on ? "bg-jade-100 shadow-[inset_3px_0_var(--color-jade-600)]" : "bg-surface",
+                      )}
+                    >
+                      <span className="font-semibold tabular-nums text-ink">{x.short}</span>
+                      {s.key !== "needs" ? <small className="text-small text-jade-700">{s.label}</small> : <span className="sr-only">{s.label}</span>}
+                      <span className="ml-auto whitespace-nowrap text-small text-muted">{x.sent}</span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
-        ) : (
-          <section aria-label="Open referral" className={cn("min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-4 sm:p-pad lg:block", pane === "list" ? "hidden" : "block")}>
-            <button onClick={() => setPane("list")} className="mb-3 flex min-h-11 cursor-pointer items-center gap-2 bg-transparent text-body text-ink lg:hidden">
-              <span aria-hidden>‹</span>
-              All referrals
-            </button>
-            <h2 className="m-0 text-section font-medium">Nothing to open</h2>
-            <p className="m-0 mt-2 text-muted">This view is empty. Choose another tab or clear the search.</p>
-          </section>
-        )}
-      </div>
-      <p className="mt-6 text-small text-muted">{respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.</p>
+          <Activity r={r} over={over[r.id]} referrer={referrer} />
+        </div>
+      </section>
+      {footer}
     </div>
   );
 }
 
-function lineFor(x: Referral, o: Override | undefined): string {
-  if (o) return o.log.at(-1)!.what;
-  switch (x.state) {
-    case "new":
-      return x.flags.length ? x.flags.join(" · ") : "Ready to accept";
-    case "grade":
-      return "Report incomplete · grade the prep";
-    case "returned":
-      if (x.kind === "packet") return `Returned by ${x.unit} · ${handoffWords(x.handoff, "referrer").what.toLowerCase()}`;
-      return !x.handoff || x.handoff.status === "awaiting_referrer" ? "Returned to GP · waiting on the GP" : `Returned to GP · ${handoffWords(x.handoff).what.toLowerCase()}`;
-    case "accepted":
-      return "Accepted · in progress";
-    case "done":
-      return "Closed with evidence";
-  }
+const chip = (on: boolean) => cn("h-11 cursor-pointer rounded-chip border px-4 text-body text-ink", on ? "border-ink bg-active" : "border-control bg-surface hover:bg-ground");
+
+/** A plain left click moves within the inbox without a server round trip; a modified click opens a new tab as usual. */
+function shallow(href: string) {
+  return (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    shallowGo(href);
+  };
+}
+
+function BackLink({ href }: { href: string }) {
+  return (
+    <a href={href} onClick={shallow(href)} className="mb-2 inline-flex min-h-11 items-center gap-1.5 font-semibold text-jade-800 no-underline hover:underline">
+      <ChevronRight aria-hidden className="size-4 rotate-180" /> Back to inbox
+    </a>
+  );
+}
+
+function StatusChip({ label, tone, plain = false }: { label: string; tone: StatusTone; plain?: boolean }) {
+  return (
+    <span
+      data-tone={tone}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-small font-semibold",
+        TONE[tone],
+        !plain && { pending: "bg-ochre-wash", held: "bg-clay-wash", done: "bg-jade-100" }[tone],
+        !plain && "rounded-full px-2 py-0.5",
+      )}
+    >
+      <i aria-hidden className="size-1.5 flex-none rounded-full bg-current" />
+      {label}
+    </span>
+  );
+}
+
+function Station({ name, icon, current, line, children }: { name: string; icon: "clinic" | "hospital"; current: boolean; line: React.ReactNode; children?: React.ReactNode }) {
+  const Icon = icon === "clinic" ? House : Hospital;
+  return (
+    <section
+      aria-label={current ? `${name}, current` : name}
+      className="flex min-w-0 flex-col items-center text-center max-md:grid max-md:grid-cols-[44px_minmax(0,1fr)] max-md:items-center max-md:gap-x-3 max-md:text-start"
+    >
+      <span className={cn("grid size-[clamp(70px,7vw,108px)] place-items-center rounded-[30%] max-md:size-11 max-md:self-start", current ? "bg-jade-100 text-jade-700" : "bg-limestone-100 text-limestone-700")}>
+        <Icon aria-hidden className="size-[53%] max-md:size-[25px]" strokeWidth={1.25} />
+      </span>
+      <div className="mt-[15px] flex min-w-0 flex-col items-center gap-2 max-md:mt-0 max-md:items-start max-md:gap-1">
+        <h2 className="staff-display m-0 break-words text-[clamp(22px,2.4vw,36px)] leading-[1.13] text-jade-900">{name}</h2>
+        {line}
+      </div>
+      {children && <div className="flex w-full min-w-0 justify-center max-md:col-start-2 max-md:justify-start">{children}</div>}
+    </section>
+  );
+}
+
+/** Three rows around the open referral, so it is always in view; the full inbox pages through the rest. */
+function previewOf<T extends { id: string }>(rows: T[], id: string): T[] {
+  const i = Math.max(0, rows.findIndex((x) => x.id === id));
+  const start = Math.min(Math.floor(i / PREVIEW) * PREVIEW, Math.max(0, rows.length - PREVIEW));
+  return rows.slice(start, start + PREVIEW);
+}
+
+const PHONE = "(max-width: 767px)";
+const isPhone = () => globalThis.matchMedia?.(PHONE).matches ?? false;
+function subscribePhone(onChange: () => void) {
+  const m = globalThis.matchMedia?.(PHONE);
+  m?.addEventListener?.("change", onChange);
+  return () => m?.removeEventListener?.("change", onChange);
+}
+
+type Entry = { id: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; what: string; who: string; when: string; now?: boolean };
+
+function Activity({ r, over, referrer }: { r: Referral; over: Override | undefined; referrer: string }) {
+  /* Open on desktop and closed on a phone until chosen: CSS decides first, so nothing moves on load. */
+  const [open, setOpen] = useState<boolean | null>(null);
+  const phone = useSyncExternalStore(subscribePhone, isPhone, () => false);
+  const expanded = open ?? !phone;
+  const entries: Entry[] = [
+    { id: "ref", icon: FileText, what: "Referral sent", who: r.referrer, when: r.sent },
+    ...(r.answer ? [{ id: "answer", icon: r.state === "returned" ? Undo2 : Check, what: r.answer, who: r.unit, when: r.answerWhen }] : []),
+    ...(r.acknowledged ? [{ id: "ack", icon: Check, what: `The ${referrer} acknowledged the return`, who: r.referrer, when: "Saved to the case ledger" }] : []),
+    ...(over?.saved ? [] : (over?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, icon: what.startsWith("Returned") ? Undo2 : Check, what, who, when: "This session" })),
+    ...(r.state === "done"
+      ? []
+      : [
+          {
+            id: "now",
+            icon: Clock,
+            now: true,
+            who: r.state === "returned" ? handoffOwner(r.handoff, r.referrer) : r.state === "grade" ? "You" : r.unit,
+            what:
+              r.state === "returned"
+                ? handoffWords(r.handoff, referrer).what
+                : { new: "Your answer", grade: over ? "Complete the report" : "Review the incomplete report", accepted: "Book and do the procedure", done: "", returned: "" }[r.state],
+            when: r.state === "returned" ? handoffWords(r.handoff, referrer).when : `${r.waiting} ${r.waiting === 1 ? "day" : "days"} since referral`,
+          },
+        ]),
+  ];
+  return (
+    <section aria-label="Activity" className="min-w-0 border-line px-[clamp(16px,2.8vw,42px)] md:border-l max-md:order-1 max-md:border-b">
+      <h2 className="m-0">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls="rf-activity"
+          onClick={() => setOpen(!expanded)}
+          className="flex min-h-12 cursor-pointer items-center gap-2 bg-transparent text-body font-semibold text-jade-800"
+        >
+          <History aria-hidden className="size-[17px]" /> Activity <ChevronDown aria-hidden className={cn("size-4 transition-transform", expanded && "rotate-180")} />
+        </button>
+      </h2>
+      <ol
+        id="rf-activity"
+        aria-label="Hand-off activity"
+        aria-live="polite"
+        className={cn("m-0 list-none p-0 pb-3", open === null ? "max-md:hidden" : open ? "" : "hidden")}
+      >
+        {entries.map((e) => (
+          <li key={e.id} className="grid grid-cols-[19px_minmax(0,1fr)_auto] items-baseline gap-2 border-t border-rule py-[clamp(8px,1.25vh,16px)]">
+            <e.icon aria-hidden className={cn("size-[17px] translate-y-[3px]", e.now ? "text-ochre-ink" : "text-jade-600")} />
+            <span className="min-w-0">
+              <span className="block font-semibold">{e.now ? `Now: ${e.what}` : e.what}</span>
+              <span className="block text-small text-muted">{e.who}</span>
+            </span>
+            <span className="text-end text-small tabular-nums text-muted">{e.when}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function Directory({
+  list,
+  total,
+  url,
+  scope,
+  href,
+  caseLink,
+  referrer,
+  window,
+  text,
+  setText,
+  search,
+}: {
+  list: Referral[];
+  total: number;
+  url: InboxUrl;
+  scope: string;
+  href: (s: Partial<InboxUrl>) => string;
+  caseLink: (id: string) => string;
+  referrer: string;
+  window: number;
+  text: string;
+  setText: (v: string) => void;
+  search: (q: string) => void;
+}) {
+  const requested = url.page ?? pageOfId(list, url.caseId, INBOX_PAGE) ?? 1;
+  const paging = paginate(list, requested, INBOX_PAGE);
+  const filtered = !!(url.q || url.status);
+  return (
+    <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="overflow-hidden rounded-card border border-line bg-surface outline-none">
+      <PageHeader
+        className="mb-0 rounded-none border-0 border-b border-line"
+        title={
+          <span data-focus="heading" tabIndex={-1} className="outline-none">
+            Referral inbox
+          </span>
+        }
+        sub={`${total} ${total === 1 ? "referral" : "referrals"}${url.q ? ` matching “${url.q}”` : ""}`}
+      />
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-limestone-100 px-[clamp(14px,2.4vw,32px)] py-3">
+        <form
+          role="search"
+          action="/app/referrals"
+          className="min-w-0 max-w-[34rem] flex-[1_1_170px]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            search(text);
+          }}
+        >
+          {[...new URLSearchParams(scope), ["view", "inbox"]].map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+          <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
+        </form>
+        <label className="flex items-center gap-2">
+          <span className="sr-only">Filter by referral status</span>
+          <select
+            value={url.status}
+            onChange={(e) => shallowGo(href({ view: "inbox", status: e.target.value as InboxUrl["status"], page: undefined, caseId: url.caseId ?? undefined }), true)}
+            className="h-11 max-w-full rounded-control border border-input bg-surface px-2 text-body text-ink"
+          >
+            <option value="">All statuses</option>
+            {STATUS_FILTERS.map((s) => (
+              <option key={s} value={s}>
+                {statusFilterLabel(s, referrer)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {paging.rows.length === 0 ? (
+        <div className="p-6 text-center">
+          <p role="status" className="m-0 mb-2.5">
+            No matching referrals
+          </p>
+          {filtered && (
+            <Link href={href({ view: "inbox", q: "", status: "" })} className="inline-flex min-h-11 items-center rounded-control border border-control px-3 text-ink no-underline hover:bg-active">
+              Clear filters
+            </Link>
+          )}
+        </div>
+      ) : (
+        <table className="w-full table-fixed border-collapse text-start">
+          <caption className="sr-only">Referral inbox, {pageStatusText(paging)}</caption>
+          <thead>
+            <tr className="bg-limestone-100 text-small text-muted">
+              {["Referral", "From", "Status", "Sent"].map((h, i) => (
+                <th key={h} scope="col" className={cn("border-b border-rule px-[clamp(8px,2.4vw,32px)] py-2.5 text-start font-medium", i === 1 && "max-md:hidden", i === 0 && "w-[34%]")}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {paging.rows.map((x) => {
+              const s = referralStatus(x, referrer);
+              const on = x.id === url.caseId;
+              const target = caseLink(x.id);
+              const late = x.state === "new" && x.waiting > window;
+              return (
+                <tr key={x.id} className={cn("relative h-12 hover:bg-jade-50 focus-within:bg-jade-50", on && "bg-jade-100")}>
+                  <th scope="row" className="border-b border-rule px-[clamp(8px,2.4vw,32px)] py-2.5 text-start align-middle font-normal">
+                    <a
+                      href={target}
+                      onClick={shallow(target)}
+                      data-focus={on ? "selected-row" : undefined}
+                      aria-current={on ? "true" : undefined}
+                      className="flex min-h-11 items-center font-semibold tabular-nums text-ink no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-jade-600"
+                    >
+                      {x.short}
+                    </a>
+                    {x.name !== x.short && <span className="block truncate text-small text-muted">
+                      {x.name}
+                      {x.nameAr && (
+                        <>
+                          {" · "}
+                          <span lang="ar" dir="rtl">
+                            {x.nameAr}
+                          </span>
+                        </>
+                      )}
+                    </span>}
+                  </th>
+                  <td className="break-words border-b border-rule px-[clamp(8px,2.4vw,32px)] py-2.5 max-md:hidden">{x.referrer}</td>
+                  <td className="border-b border-rule px-[clamp(8px,2.4vw,32px)] py-2.5">
+                    <StatusChip label={s.label} tone={s.tone} />
+                  </td>
+                  <td className="border-b border-rule px-[clamp(8px,2.4vw,32px)] py-2.5 text-small text-muted">
+                    {x.sent}
+                    {(x.state === "new" || x.state === "grade") && <span className={cn("block tabular-nums", late && "font-medium text-negative")}>{x.waiting} {x.waiting === 1 ? "day" : "days"}</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <div className="flex min-h-14 flex-wrap items-center justify-between gap-2.5 px-[clamp(14px,2.4vw,32px)] py-2 text-small text-muted">
+        <span data-testid="page-range" aria-live="polite" aria-atomic="true">
+          {list.length > INBOX_PAGE ? `${paging.from}–${paging.to} of ` : ""}
+          {list.length} {list.length === 1 ? "referral" : "referrals"}
+        </span>
+        <PageLinks paging={paging} hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })} />
+      </div>
+    </section>
+  );
+}
+
+/** Numbered pages around the current one, with the first and last always reachable; a gap stands for the rest. */
+export function pageNumbers(current: number, pages: number): number[] {
+  return [...new Set([1, current - 1, current, current + 1, pages])].filter((n) => n > 0 && n <= pages).sort((a, b) => a - b);
+}
+
+function PageLinks({ paging, hrefFor }: { paging: Paging<unknown>; hrefFor: (page: number) => string }) {
+  if (paging.pages < 2) return null;
+  const nums = pageNumbers(paging.page, paging.pages);
+  const link = (n: number, label: string, body: React.ReactNode) => {
+    const target = hrefFor(n);
+    return (
+      <a key={label} href={target} aria-label={label} onClick={shallow(target)} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] px-1 font-semibold text-jade-800 no-underline hover:bg-jade-100">
+        {body}
+      </a>
+    );
+  };
+  return (
+    <nav aria-label="Inbox pages" className="flex flex-wrap items-center gap-0.5">
+      {paging.page > 1 && link(paging.page - 1, "Previous page", <ChevronRight aria-hidden className="size-4 rotate-180" />)}
+      {nums.map((n, i) => (
+        <span key={n} className="contents">
+          {i > 0 && n - nums[i - 1] > 1 && (
+            <span aria-hidden className="px-1">
+              …
+            </span>
+          )}
+          {n === paging.page ? (
+            <span aria-current="page" aria-label={`Page ${n}`} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] bg-jade-100 font-semibold text-jade-800">
+              {n}
+            </span>
+          ) : (
+            link(n, `Page ${n}`, n)
+          )}
+        </span>
+      ))}
+      {paging.page < paging.pages && link(paging.page + 1, "Next page", <ChevronRight aria-hidden className="size-4" />)}
+    </nav>
+  );
 }

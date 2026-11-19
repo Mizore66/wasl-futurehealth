@@ -1,156 +1,123 @@
 // @vitest-environment happy-dom
-import { createElement, act } from "react";
-import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseSummary } from "@/lib/api/schema";
-import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { referralFrom, type Referral } from "@/components/worklist/referrals";
 import synthetic from "@/data/referral-inbox-synthetic-v2.json";
+import { mountInbox, type Harness } from "./referral-inbox-harness";
 
-// Only the router is replaced (the inbox needs an app-router context); the inbox and its state are real.
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+vi.mock("next/navigation", async () => (await import("./referral-nav-mock")).navigationMock);
 
 const NOW = 120;
-const ALL: Referral[] = synthetic
-  .map((c) => referralFrom(CaseSummary.parse(c), NOW, false))
-  .filter((r): r is Referral => r !== null);
+const ALL: Referral[] = synthetic.map((c) => referralFrom(CaseSummary.parse(c), NOW, false)).filter((r): r is Referral => r !== null);
+const id = (n: string) => ALL.find((r) => r.id.endsWith(`AHS-sr-${n}`))!.id;
 const only = (n: string) => ALL.filter((r) => r.id.endsWith(`AHS-sr-${n}`));
 
-let host: HTMLDivElement;
-let root: Root;
-
-function render(referrals: Referral[], q: string) {
-  act(() => {
-    root.render(createElement(ReferralInbox, { referrals, window: 2, now: NOW, q, aside: null }));
-  });
-}
-const pane = () => host.querySelector<HTMLElement>('section[aria-label="Open referral"]')!;
-const button = (scope: ParentNode, name: string | RegExp, exact = true) => {
-  const found = [...scope.querySelectorAll<HTMLButtonElement>("button")].filter((b) => {
-    const label = (b.getAttribute("aria-label") ?? b.textContent ?? "").trim();
-    return typeof name === "string" ? (exact ? label === name : label.includes(name)) : name.test(label);
-  });
-  expect(found, `button ${String(name)}`).toHaveLength(1);
-  return found[0];
-};
-const click = (el: HTMLElement) => act(() => el.click());
-const heading = () => pane().querySelector("h2")!.textContent;
-const hasText = (scope: ParentNode, text: string) => (scope.textContent ?? "").includes(text);
-/** Condition-based wait inside act: lets AnimatePresence finish an exit (a real, short transition) without a fixed sleep. */
-async function settled(cond: () => boolean, ms = 2000) {
-  const end = Date.now() + ms;
-  while (!cond() && Date.now() < end) await act(async () => void (await new Promise((r) => setTimeout(r, 20))));
-  expect(cond()).toBe(true);
-}
-const pressed = () => [...pane().querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+let h: Harness;
+const render = (referrals: Referral[], q: string) => h.render({ referrals, window: 2, now: NOW, q });
+const checked = () => [...h.host.querySelectorAll<HTMLInputElement>('input[type="radio"]:checked')].map((i) => i.value);
+const pressed = () => [...(h.pane()?.querySelectorAll('button[aria-pressed="true"]') ?? [])].map((b) => b.textContent);
 
 beforeEach(() => {
-  // happy-dom cancels Web Animations on unmount with an unhandled AbortError; motion falls back to its JS driver without them.
-  Object.defineProperty(Element.prototype, "animate", { value: undefined, configurable: true, writable: true });
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
+  h = mountInbox();
 });
-afterEach(() => {
-  act(() => root.unmount());
-  host.remove();
-});
+afterEach(() => h.unmount());
 
 describe("referral inbox: an unconfirmed draft belongs to the referral it was started on", () => {
   it("drops a return reason when a search shows another referral, in one mounted inbox", () => {
     render(ALL, "");
-    expect(heading()).toBe("AHS-sr-9003");
-    const inbox = host.querySelector("h1")!;
-    click(button(pane(), "Return to GP"));
-    click(button(pane(), "Wrong unit"));
-    expect(pressed()).toEqual(["Wrong unit"]);
+    expect(h.openId()).toBe(id("9003"));
+    const title = h.host.querySelector("h1")!;
+    h.click("Return with reason");
+    h.radio("Wrong unit");
+    expect(checked()).toEqual(["wrong_unit"]);
 
-    render(only("9002"), "9002");
-    expect(heading()).toBe("AHS-sr-9002");
-    expect(hasText(pane(), "Why return this referral?")).toBe(false);
-    expect(button(pane(), "Accept referral")).toBeTruthy();
-    click(button(pane(), "Return to GP"));
-    expect(hasText(pane(), "Choose a reason to return it.")).toBe(true);
-    expect(pressed()).toEqual([]);
+    h.search("9002", only("9002"));
+    expect(h.openId()).toBe(id("9002"));
+    expect(h.paneText()).not.toContain("Reason for return");
+    expect(h.button("Accept referral")).toBeTruthy();
+    h.click("Return with reason");
+    expect(checked()).toEqual([]);
 
-    render(ALL, "");
-    expect(pressed()).toEqual([]);
-    expect(host.querySelector("h1")).toBe(inbox);
+    h.search("", ALL);
+    expect(checked()).toEqual([]);
+    expect(h.host.querySelector("h1")).toBe(title);
   });
 
   it("drops conditions across a zero-result intermediary to a different referral", () => {
     render(ALL, "");
-    click(button(pane(), "Accept with conditions"));
-    click(button(pane(), "Female endoscopist"));
+    h.click("Accept with conditions");
+    h.click("Female endoscopist");
     expect(pressed()).toEqual(["Female endoscopist"]);
 
-    render([], "no-such-case");
-    expect(hasText(host, "Nothing to open")).toBe(true);
-    render(only("9002"), "9002");
-    expect(heading()).toBe("AHS-sr-9002");
-    expect(hasText(pane(), "Accept on these conditions")).toBe(false);
-    click(button(pane(), "Accept with conditions"));
-    expect(button(pane(), "Accept with no conditions")).toBeTruthy();
+    h.search("no-such-case", []);
+    expect(h.text()).toContain("Nothing to open");
+    h.search("9002", only("9002"));
+    expect(h.openId()).toBe(id("9002"));
+    expect(h.paneText()).not.toContain("Accept on these conditions");
+    h.click("Accept with conditions");
+    expect(h.button("Accept with no conditions")).toBeTruthy();
     expect(pressed()).toEqual([]);
   });
 
   it("clearing a search drops the draft but keeps a committed decision and its Undo", async () => {
     render(ALL, "");
-    const inbox = host.querySelector("h1")!;
-    click(button(host, "Accept referral for AHS-sr-9001"));
-    click(button(host, "Confirm accepting the referral for AHS-sr-9001"));
-    click(button(host, /^AHS-sr-9002/, false));
-    click(button(pane(), "Return to GP"));
-    click(button(pane(), "Wrong unit"));
+    const title = h.host.querySelector("h1")!;
+    h.open(id("9001"));
+    h.click("Accept referral");
+    h.open(id("9002"));
+    h.click("Return with reason");
+    h.radio("Wrong unit");
 
-    render(only("9003"), "9003");
-    render(ALL, "");
-    expect(hasText(pane(), "Why return this referral?")).toBe(false);
-    expect(host.querySelector("h1")).toBe(inbox);
+    h.search("9003", only("9003"));
+    h.search("", ALL);
+    expect(h.paneText()).not.toContain("Reason for return");
+    expect(h.host.querySelector("h1")).toBe(title);
 
-    click(button(host, /^All \d+$/));
-    click(button(host, /^AHS-sr-9001/, false));
-    expect(heading()).toBe("AHS-sr-9001");
-    expect(pane().querySelector('[role="status"]')!.textContent).toContain("Accepted. Your unit books her now.");
-    click(button(pane(), "Undo"));
-    await settled(() => !hasText(pane(), "Accepted. Your unit books her now."));
-    expect(button(pane(), "Accept referral")).toBeTruthy();
+    h.open(id("9001"));
+    expect(h.pane()!.querySelector('[role="status"]')!.textContent).toContain("Accepted. Your unit books her now.");
+    h.click("Undo");
+    await h.settled(() => !h.paneText().includes("Accepted. Your unit books her now."));
+    expect(h.button("Accept referral")).toBeTruthy();
   });
 
   it("keeps the draft when the same referral stays displayed through a search", () => {
     render(ALL, "");
-    click(button(pane(), "Return to GP"));
-    click(button(pane(), "Wrong unit"));
-    render(only("9003"), "9003");
-    expect(heading()).toBe("AHS-sr-9003");
-    expect(hasText(pane(), "Why return this referral?")).toBe(true);
-    expect(pressed()).toEqual(["Wrong unit"]);
+    h.click("Return with reason");
+    h.radio("Wrong unit");
+    h.search("9003", only("9003"));
+    expect(h.openId()).toBe(id("9003"));
+    expect(h.paneText()).toContain("Reason for return");
+    expect(checked()).toEqual(["wrong_unit"]);
   });
 });
 
-describe("referral inbox: a row-level Accept asks once more (usability N5)", () => {
-  it("opens the referral and answers nothing until Confirm; Cancel backs out", () => {
+describe("referral inbox: a return needs a reason", () => {
+  it("blocks Return to GP with no reason, says why and sends nothing; a reason returns it and reverses the hand-off", () => {
     render(ALL, "");
-    click(button(host, "Accept referral for AHS-sr-9001"));
-    expect(heading()).toBe("AHS-sr-9001");
-    expect(hasText(pane(), "Accepted. Your unit books her now.")).toBe(false);
-    const confirm = button(host, "Confirm accepting the referral for AHS-sr-9001");
-    expect(document.activeElement).toBe(confirm);
-    click(button(host, "Do not accept the referral for AHS-sr-9001 yet"));
-    expect(hasText(pane(), "Accepted. Your unit books her now.")).toBe(false);
-    expect(button(host, "Accept referral for AHS-sr-9001")).toBeTruthy();
+    const arrow = () => h.host.querySelector('[data-testid="handoff-arrow"]')!.getAttribute("data-direction");
+    expect(arrow()).toBe("forward");
+    h.click("Return with reason");
+    h.click("Return to GP");
+    const alert = h.pane()!.querySelector('[role="alert"]')!;
+    expect(alert.textContent).toBe("Choose a reason before you return it. Nothing was sent.");
+    expect(h.pane()!.querySelector("fieldset")!.getAttribute("aria-describedby")).toBe(alert.id);
+    expect(h.paneText()).not.toContain("Returned to the");
+    expect(arrow()).toBe("forward");
 
-    click(button(host, "Accept referral for AHS-sr-9001"));
-    click(button(host, "Confirm accepting the referral for AHS-sr-9001"));
-    expect(pane().querySelector('[role="status"]')!.textContent).toContain("Accepted. Your unit books her now.");
+    h.radio("Needs a clinic visit first");
+    expect(h.pane()!.querySelector('[role="alert"]')).toBeNull();
+    h.click("Return to GP");
+    expect(arrow()).toBe("back");
+    expect(h.paneText()).toContain("Booking held");
+    expect(h.paneText()).toContain("Reason: needs a clinic visit first.");
+    expect(h.host.querySelector('section[aria-label="Al Mushrif GP, current"]')).not.toBeNull();
+    expect(h.count("waiting")).toBe(2);
   });
 
-  it("drops an unconfirmed row accept when another referral is opened", () => {
+  it("offers Accept only on the open referral, never on an inbox row", () => {
     render(ALL, "");
-    click(button(host, "Accept referral for AHS-sr-9001"));
-    click(button(host, /^AHS-sr-9002/, false));
-    expect([...host.querySelectorAll("button")].some((b) => b.getAttribute("aria-label")?.startsWith("Confirm accepting"))).toBe(false);
+    h.go("/app/referrals?view=inbox");
+    expect([...h.host.querySelectorAll("tbody button")]).toHaveLength(0);
+    expect(h.rows()).toContain("AHS-sr-9001");
   });
 });

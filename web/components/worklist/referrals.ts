@@ -76,13 +76,19 @@ export type ReferralView = {
   referrer: string;
   credential: "referrer" | "referrer_lung" | "referrer_dr";
   returned: string;
+  /** The open referral's heading and its programme chip. */
+  title: string;
+  indication: string;
 };
 export const REFERRAL_VIEWS: readonly ReferralView[] = [
-  { programme: "crc", provider: "ahs-mushrif", label: "Colorectal, Al Mushrif", unit: "SKMC endoscopy", referrer: "GP", credential: "referrer", returned: "Referring GP, Al Mushrif. Referrals the endoscopy unit handed back to you." },
+  { programme: "crc", provider: "ahs-mushrif", label: "Colorectal, Al Mushrif", unit: "SKMC endoscopy", referrer: "GP", credential: "referrer", returned: "Referring GP, Al Mushrif. Referrals the endoscopy unit handed back to you.",
+    title: "Colonoscopy referral", indication: "Positive FIT" },
   { programme: "lung_nodule", provider: "rad-imaging", label: "Lung nodule work-up", unit: "Radiology department, regional hospital", referrer: "referrer", credential: "referrer_lung",
-    returned: "Referring clinician, outpatient imaging centre. Nodule work-up referrals the radiology department handed back to you." },
+    returned: "Referring clinician, outpatient imaging centre. Nodule work-up referrals the radiology department handed back to you.",
+    title: "Nodule work-up referral", indication: "Lung nodule" },
   { programme: "diabetic_retinopathy", provider: "phc-retina", label: "Diabetic eye", unit: "Eye clinic, regional hospital", referrer: "referrer", credential: "referrer_dr",
-    returned: "Referring clinician, primary care eye screening. Eye-clinic referrals the eye clinic handed back to you." },
+    returned: "Referring clinician, primary care eye screening. Eye-clinic referrals the eye clinic handed back to you.",
+    title: "Eye clinic referral", indication: "Diabetic eye" },
 ];
 
 /** The view a URL names: no programme and no provider is the CRC default, and an unknown pair is null. */
@@ -165,6 +171,8 @@ export type Referral = {
   answer: string | null;
   /** Where `answer` comes from, in words. */
   answerWhen: string;
+  /** The referrer acknowledged the returned packet through the API (it still waits on their answer). */
+  acknowledged?: boolean;
 };
 
 const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
@@ -207,6 +215,7 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
     handoff: answered && returned ? { status: returned.status, actBy: returned.act_by } : handoff,
     head: c.api_overlay?.head ?? null,
     answer: answered ? answerWords(answered) : null,
+    acknowledged: !!(answered && returned?.acknowledgement),
     details: [
       ["Indication", "Positive FIT, colorectal screening"],
       ["Referred", formatDay(c.referral_day)],
@@ -257,6 +266,7 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
     urgent: p.clinical_priority === "urgent",
     handoff: { status, actBy: p.act_by },
     head: null,
+    acknowledged: !!answered?.acknowledgement,
     answer: `Returned the referral: ${reason.toLowerCase()}`,
     answerWhen: `Canonical packet, ${formatDay(p.decided_at)}`,
     details: [
@@ -307,4 +317,43 @@ export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean
   if (!live) return { kind: "designed", text: "Referrer answers: need the live synthetic API" };
   if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not available on this server (no referring-clinician credential configured)" };
   return { kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" };
+}
+
+/** A referral's place in the inbox, as one status a filter can name. */
+export type ReferralStatus = "needs" | "report" | "waiting" | "acknowledged" | "acted" | "escalated" | "accepted" | "closed";
+export type StatusTone = "pending" | "held" | "done";
+
+/** The status words of a referral; `referrer` is who a return waits on ("GP" or "referrer"). */
+export function referralStatus(r: Pick<Referral, "state" | "handoff" | "acknowledged">, referrer = "GP"): { key: ReferralStatus; label: string; tone: StatusTone } {
+  switch (r.state) {
+    case "new":
+      return { key: "needs", label: "Needs response", tone: "pending" };
+    case "grade":
+      return { key: "report", label: "Report incomplete", tone: "pending" };
+    case "accepted":
+      return { key: "accepted", label: "Accepted", tone: "done" };
+    case "done":
+      return { key: "closed", label: "Closed", tone: "done" };
+    case "returned": {
+      const s = r.handoff?.status;
+      if (s === "referrer_acted") return { key: "acted", label: `The ${referrer} has acted`, tone: "done" };
+      if (s === "coordinator" || s === "medical_director") return { key: "escalated", label: "Escalated", tone: "held" };
+      return r.acknowledged ? { key: "acknowledged", label: `Acknowledged by ${referrer}`, tone: "done" } : { key: "waiting", label: `Waiting on ${referrer}`, tone: "held" };
+    }
+  }
+}
+
+/** The inbox's status filter, in queue order. */
+export const STATUS_FILTERS: readonly ReferralStatus[] = ["needs", "report", "waiting", "acknowledged", "escalated", "acted", "accepted", "closed"];
+export function statusFilterLabel(key: ReferralStatus, referrer = "GP"): string {
+  return {
+    needs: "Needs response",
+    report: "Report incomplete",
+    waiting: `Waiting on ${referrer}`,
+    acknowledged: `Acknowledged by ${referrer}`,
+    escalated: "Escalated",
+    acted: `The ${referrer} has acted`,
+    accepted: "Accepted",
+    closed: "Closed",
+  }[key];
 }
