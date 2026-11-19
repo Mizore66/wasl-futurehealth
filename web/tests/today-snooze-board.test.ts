@@ -35,11 +35,10 @@ it("rendered Waiting board places superseded snoozes by urgency but preserves la
   const host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items: [b, c, a], now: 40, aside: null, live: true })));
-  const tabs = Array.from(host.querySelectorAll<HTMLButtonElement>("button[role=tab]"));
-  await act(async () => tabs.find((t) => t.textContent?.startsWith("Waiting"))!.click());
-  const rows = () => Array.from(host.querySelectorAll("[role=tabpanel] > div > button"));
-  expect(rows().map((r) => r.querySelector(".font-semibold")?.textContent)).toEqual([a.name, b.name, c.name]);
-  await act(async () => tabs.find((t) => t.textContent?.startsWith("To call"))!.click());
-  expect(rows().map((r) => r.querySelector(".font-semibold")?.textContent)).toEqual([]);
+  const board = (queue: "call" | "waiting") => createElement(TodayBoard, { items: [b, c, a], now: 40, aside: null, live: true, queue });
+  await act(async () => root!.render(board("waiting")));
+  const rows = () => Array.from(host.querySelectorAll<HTMLElement>("button[data-case-row]"));
+  expect(rows().map((r) => r.dataset.caseRow)).toEqual([a.short, b.short, c.short]);
+  await act(async () => root!.render(board("call")));
+  expect(rows().map((r) => r.dataset.caseRow)).toEqual([]);
 });

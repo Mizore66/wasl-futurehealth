@@ -96,3 +96,9 @@ export function toCaseQuery(f: CaseFilters): CaseQuery {
   const { owner, ...rest } = f;
   return { ...rest, ...(owner === UNOWNED ? { unowned: true } : owner ? { owner } : {}) };
 }
+
+/** Today's `?queue=`: To call unless the URL names Waiting or No owner. */
+export function parseTodayQueue(sp: SearchParams): "call" | "waiting" | "none" {
+  const q = one(sp.queue);
+  return q === "waiting" || q === "none" ? q : "call";
+}

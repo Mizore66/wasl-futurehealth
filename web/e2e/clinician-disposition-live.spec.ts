@@ -255,9 +255,9 @@ test.describe("clinician disposition, live mock", () => {
   }
 
   test("CRC decline: the GP's informed-refusal disposition resolves 'GP to sign' on Today and the case", async ({ page }) => {
-    const todayRow = () => page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-9003/ });
+    const todayRow = () => page.locator('button[data-case-row="AHS-sr-9003"]');
     await page.goto(`${NEXT_URL}/app/today`);
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
     await expect(todayRow()).toContainText("Declined · GP to sign");
 
     await page.goto(caseURL(CRC));
@@ -289,7 +289,7 @@ test.describe("clinician disposition, live mock", () => {
 
     await page.goto(`${NEXT_URL}/app/today`);
     await page.reload();
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
     await expect(todayRow()).toContainText("Declined · informed refusal recorded, no procedure");
     await expect(todayRow()).not.toContainText("GP to sign");
     await expect(todayRow()).not.toContainText(/closed|completed/i);

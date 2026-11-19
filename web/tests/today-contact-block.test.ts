@@ -31,19 +31,19 @@ describe("Today follows the effective contact state", () => {
     }
   });
 
-  it("a blocked patient is not shown as Allowed and has no contact-outcome controls", () => {
+  it("a blocked patient is not shown as Contact permitted and has no contact-outcome controls", () => {
     const html = board(withContact("opted_out", true));
-    expect(html).not.toContain("Allowed");
+    expect(html).not.toContain("Contact permitted");
     expect(html).toMatch(/<button[^>]* disabled=""[^>]*>(?:(?!<\/button>).)*Log call/);
     expect(html).not.toContain("After the call");
-    expect(html).toContain("Contact blocked");
+    expect(html).toContain("Contact on hold");
   });
 
-  it("an unblocked patient keeps Allowed and the Log call control", () => {
+  it("an unblocked patient keeps Contact permitted and the Log call control", () => {
     const html = board(withContact("none", false));
-    expect(html).toContain("Allowed");
+    expect(html).toContain("Contact permitted");
     expect(html).not.toMatch(/<button[^>]* disabled=""[^>]*>(?:(?!<\/button>).)*Log call/);
     expect(html).toContain("After the call");
-    expect(html).not.toContain("Contact blocked");
+    expect(html).not.toContain("Contact on hold");
   });
 });

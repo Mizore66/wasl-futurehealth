@@ -13,7 +13,7 @@ import { loadSample } from "./samples";
 
 const { recordAction, pathname } = vi.hoisted(() => ({ recordAction: vi.fn(), pathname: { current: "/app/today" } }));
 vi.mock("@/app/app/today/actions", () => ({ recordAction }));
-vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current, useSearchParams: () => null }));
 vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) => String(value) }));
 vi.mock("next/link", async () => {
   const { createElement } = await import("react");
@@ -57,10 +57,11 @@ async function mount(items: WorkItem[], live = false) {
   root = createRoot(host);
   await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live })));
 }
-const list = () => host.querySelector<HTMLElement>('section[aria-label="Your list"]')!;
-const open = () => host.querySelector<HTMLElement>('section[aria-label="Open patient"]')!;
-const heading = () => open().querySelector("h2")!.textContent!.trim();
-const names = () => Array.from(list().querySelectorAll('[role="tabpanel"] > div > button .font-semibold')).map((n) => n.textContent);
+const list = () => host.querySelector<HTMLElement>('[data-testid="today-sheet"]')!;
+const open = () => host.querySelector<HTMLElement>('section[aria-label="Selected case"]')!;
+const heading = () => open()?.dataset.case ?? "No case";
+const rowButtons = () => Array.from(list().querySelectorAll<HTMLButtonElement>("button[data-case-row]"));
+const names = () => rowButtons().map((n) => n.dataset.caseRow);
 function button(text: string, scope: ParentNode = host) {
   const found = Array.from(scope.querySelectorAll<HTMLButtonElement>("button")).find((b) => b.textContent?.trim().startsWith(text));
   expect(found, `button ${text}`).toBeDefined();
@@ -81,9 +82,10 @@ describe("N1: an outcome that moves the patient keeps them open", () => {
     expect(open().textContent).toContain("moved to Waiting");
     expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
     await click("Open Waiting", open());
-    expect(list().querySelector('[role="tab"][aria-selected="true"]')!.textContent).toMatch(/^Waiting/);
+    expect(list().querySelector("#today-queue")!.textContent).toMatch(/^Waiting/);
+    expect(new URLSearchParams(window.location.search).get("queue")).toBe("waiting");
     expect(heading()).toBe(items[0].name);
-    expect(list().querySelector('button[aria-pressed="true"] .font-semibold')!.textContent).toBe(items[0].name);
+    expect(list().querySelector<HTMLElement>('button[aria-expanded="true"][data-case-row]')!.dataset.caseRow).toBe(items[0].name);
     expect(host.querySelector('[data-testid="open-destination"]')).toBeNull();
   });
 
@@ -92,7 +94,7 @@ describe("N1: an outcome that moves the patient keeps them open", () => {
     await mount(items);
     await click("Hand to Dr Al Kaabi");
     expect(heading()).toBe(items[0].name);
-    await act(async () => Array.from(list().querySelectorAll<HTMLButtonElement>('[role="tabpanel"] > div > button'))[1].click());
+    await act(async () => rowButtons()[1].click());
     expect(heading()).toBe(items[2].name);
     expect(host.querySelector('[data-testid="open-destination"]')).toBeNull();
   });
@@ -110,9 +112,9 @@ describe("N1 and issue #12: a search that excludes the held patient lets go of t
         search.dispatchEvent(new Event("input", { bubbles: true }));
       });
     await type("zzzz-no-match");
-    expect(heading()).toBe("Nobody to open");
-    // Only the phone-width "Your list" toggle and Undo are left: nothing that acts on the patient.
-    expect(Array.from(open().querySelectorAll("button")).map((b) => b.textContent?.trim())).toEqual(["‹Your list", "Undo"]);
+    expect(heading()).toBe("No case");
+    // Only Undo is left in the case pane: nothing that acts on the patient.
+    expect(Array.from(host.querySelector('[data-testid="no-case"]')!.querySelectorAll("button")).map((b) => b.textContent?.trim())).toEqual(["Undo"]);
     expect(host.querySelector('[data-testid="removed-notice"]')!.textContent).toContain("moved to Waiting");
     await type("");
     expect(heading()).toBe(items[0].name);
@@ -243,7 +245,7 @@ describe("N7: skip to worklist (WCAG 2.4.1)", () => {
     const items = allCallWorkItems(3);
     await mount(items);
     expect(focusWorklist()).toBe(true);
-    expect(document.activeElement).toBe(list().querySelector('[role="tabpanel"] button[aria-pressed]'));
+    expect(document.activeElement).toBe(rowButtons()[0]);
     expect(document.activeElement!.textContent).toContain(items[0].name);
   });
 
