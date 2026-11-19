@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Ordinary browser journeys through the app's committed synthetic sample mode.
 // No routes are intercepted and these files are not represented as live API captures.
-type Sample = { id: string; programme: string; provider: string; state: string; closed: boolean };
+type Sample = { id: string; programme: string; provider: string; state: string; closed: boolean; referral_day: number };
 const dir = path.join(process.cwd(), "data/api");
 const read = (file: string) => JSON.parse(readFileSync(path.join(dir, file), "utf8"));
 const samples = new Map<string, Sample>();
@@ -13,13 +13,25 @@ for (const file of readdirSync(dir).filter((name) => /^cases_[a-z_]+_page1\.json
   for (const c of read(file).cases as Sample[]) samples.set(c.id, c);
 const all = [...samples.values()];
 
-async function view(page: Page, rows: Sample[], closed: boolean, offset = 0) {
+/** The UTC date a referral was received (the cohort epoch is 1 May 2026), as the Referral calendar groups it. */
+const referred = (c: Sample) => new Date(Date.UTC(2026, 4, 1) + Math.round(c.referral_day * 86_400_000)).toISOString().slice(0, 10);
+const months = (rows: Sample[]) => [...new Set(rows.map((c) => referred(c).slice(0, 7)))].sort();
+
+/** The count says how many match; the latest month's case files list exactly that month's matches, each closed or open. */
+async function view(page: Page, rows: Sample[], closed: boolean) {
   await expect(page.getByTestId("showing")).toContainText(`${rows.length} ${rows.length === 1 ? "case" : "cases"}: `);
-  await expect(page.locator("tbody tr")).toHaveCount(Math.min(25, Math.max(0, rows.length - offset)));
-  for (const row of await page.locator("tbody tr").all()) {
-    if (closed) await expect(row).toContainText("Closed day");
-    else await expect(row).not.toContainText("Closed day");
+  if (rows.length === 0) return;
+  const month = months(rows).at(-1)!;
+  const inMonth = rows.filter((c) => referred(c).startsWith(month));
+  await expect(page.getByTestId("month-total")).toHaveText(`${inMonth.length} ${inMonth.length === 1 ? "referral" : "referrals"}`);
+  await page.getByRole("link", { name: /^Month’s files for / }).click();
+  await expect(page).toHaveURL((url) => url.searchParams.get("files") === month);
+  await expect(page.locator("[data-pf-case]")).toHaveCount(Math.min(25, inMonth.length));
+  for (const folder of await page.locator("[data-pf-case]").all()) {
+    if (closed) await expect(folder).toContainText("Closed day");
+    else await expect(folder).not.toContainText("Closed day");
   }
+  await page.goBack();
 }
 
 for (const programme of ["lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]) {
@@ -32,8 +44,11 @@ for (const programme of ["lung_nodule", "diabetic_retinopathy", "breast", "lung_
     await expect(page).toHaveURL((url) => url.searchParams.get("programme") === programme && url.searchParams.get("closed") === "true" && !url.searchParams.has("state"));
     await expect(chip).toHaveAttribute("aria-current", "true");
     await view(page, rows, true);
-    for (const c of rows.filter((c) => c.state !== "closed"))
-      await expect(page.locator("tbody")).toContainText(c.id.split("/").at(-1)!);
+    // Every no-action resolution is in the closed view: each one's date opens a folder for it.
+    for (const c of rows.filter((c) => c.state !== "closed").slice(0, 3)) {
+      await page.goto(`/app/patients?programme=${programme}&closed=true&files=${referred(c)}`);
+      await expect(page.locator(`[data-pf-case="${c.id}"]`)).toContainText("Closed day");
+    }
   });
 }
 
@@ -43,15 +58,20 @@ for (const closed of [true, false]) {
     expect(rows.length).toBeGreaterThan(25);
     await page.goto(`/app/patients?closed=${closed}`);
     await view(page, rows, closed);
-    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next", exact: true }).click();
-    await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("page") === "2");
-    await view(page, rows, closed, 25);
+    // A month with more than 25 files pages through them and keeps the filter.
+    const busy = months(rows).find((m) => rows.filter((c) => referred(c).startsWith(m)).length > 25);
+    if (busy) {
+      await page.goto(`/app/patients?closed=${closed}&files=${busy}`);
+      await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next", exact: true }).click();
+      await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("page") === "2");
+      await page.goto(`/app/patients?closed=${closed}`);
+    }
 
-    const search = page.getByRole("searchbox", { name: "Search case id" });
+    const search = page.getByRole("searchbox", { name: "Find a case, task or owner" });
     await search.fill("sr-1");
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("q") === "sr-1" && !url.searchParams.has("page"));
-    await view(page, rows.filter((c) => c.id.includes("sr-1")), closed);
+    await view(page, rows.filter((c) => c.id.toLowerCase().includes("sr-1")), closed);
 
     const refine = page.getByTestId("refine");
     await refine.locator("summary").click();

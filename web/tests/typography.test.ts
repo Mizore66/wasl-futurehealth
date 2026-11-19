@@ -13,7 +13,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   // Hashes and signatures
   { file: "components/wasl/sealed-chain.tsx", line: /\{n\.hash\}/, why: "full audit hash" },
   { file: "components/review/review-desk.tsx", line: /title=\{r\.hash\}/, why: "audit hash of each independent review read" },
-  { file: "app/app/patients/[id]/page.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
+  { file: "components/case/evidence-file.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.hash\)/, why: "agent ledger entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.prev\)/, why: "agent ledger previous hash" },
   { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },

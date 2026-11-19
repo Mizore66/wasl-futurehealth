@@ -164,7 +164,7 @@ test.describe("Patients", () => {
   test("filters from the query string, as Programme's stall links send them", async ({ page }) => {
     await page.goto("/app/patients?dropoff=never_notified&overdue=true");
     await expect(page.getByTestId("showing")).toHaveText("7 cases: never notified · overdue");
-    await expect(page.locator("tbody tr")).toHaveCount(7);
+    await expect(page.getByRole("region", { name: "Referrals by date received" })).toBeVisible();
     await expect(page.locator("[data-honesty]").first()).toBeVisible();
     await shot(page, "patients-filtered");
     await noSeriousAxe(page);
@@ -172,24 +172,21 @@ test.describe("Patients", () => {
     await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" }).click();
     await expect(page).toHaveURL(/closed=true/);
     await expect(page.getByTestId("showing")).toContainText("cases: closed");
-    await expect(page.locator("tbody tr").first()).toContainText("Closed day");
+    await page.getByRole("link", { name: /^Month’s files for / }).click();
+    await expect(page.locator("[data-pf-case]").first()).toContainText("Closed day");
   });
 
-  test("search by case id leads to the record", async ({ page }) => {
+  test("search by case id leads to the record through its date and folder", async ({ page }) => {
     await page.goto("/app/patients");
     await expect(page.getByTestId("showing")).toHaveText("177 cases: all cases");
     await shot(page, "patients");
-    await page.getByRole("searchbox", { name: "Search case id" }).fill("1001");
+    await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("AHS-sr-1001");
     await page.getByRole("button", { name: "Search" }).click();
-    await expect(page).toHaveURL(/q=1001/);
-    await page.getByRole("link", { name: "Fatima Al Zaabi" }).click();
-    await expect(page).toHaveURL(fatima);
-  });
-
-  test("the avatar is part of the record link", async ({ page }) => {
-    await page.goto("/app/patients?q=1001");
-    await page.getByRole("link", { name: "Fatima Al Zaabi" }).locator(".wav-root").click();
-    await expect(page).toHaveURL(fatima);
+    await expect(page).toHaveURL(/q=AHS-sr-1001/);
+    await page.getByRole("link", { name: /^23 May 2026, 1 referral/ }).click();
+    await page.locator("[data-pf-case]", { hasText: "Fatima Al Zaabi" }).click();
+    await expect(page).toHaveURL(/open=ahs-mushrif%2FServiceRequest%2FAHS-sr-1001/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fatima Al Zaabi");
   });
 });
 
@@ -427,21 +424,21 @@ async function targetsAre44(page: Page) {
 test.describe("Phone width, 390px", () => {
   test.use({ viewport: PHONE });
 
-  test("Patients: cards, no side scroll, 44px targets", async ({ page }) => {
+  test("Patients: calendar and case files, no side scroll, 44px targets", async ({ page }) => {
     await page.goto("/app/patients");
     await noSideScroll(page);
     await targetsAre44(page);
-    await expect(page.locator("tbody tr")).toHaveCount(25);
-    await page.goto("/app/patients?q=1011");
-    const card = page.locator("tbody tr").first();
-    await expect(card).toContainText("Aisha Al Mansoori");
-    await expect(card).toContainText("Referred");
-    await expect(card).toContainText("Due");
-    await expect(card).toContainText("Owner");
-    for (const word of ["Referred", "Due", "Owner"]) {
-      const box = (await card.getByText(word).first().boundingBox())!;
-      expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
-    }
+    await page.goto("/app/patients?q=AHS-sr-1011");
+    // On a phone each date shows a count; the tile opens that date's case files.
+    await page.getByRole("link", { name: /^27 May 2026, 1 referral/ }).click();
+    const folder = page.locator("[data-pf-case]").first();
+    await expect(folder).toContainText("Aisha Al Mansoori");
+    await expect(folder).toContainText("Due");
+    await expect(folder).toContainText("Nurse 3");
+    const box = (await folder.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
+    await noSideScroll(page);
+    await targetsAre44(page);
     await shot(page, "patients-card-390");
     await page.goto("/app/patients");
     await shot(page, "patients-390");
@@ -524,26 +521,30 @@ test.describe("Phone width, 390px", () => {
 });
 
 test.describe("Patients: paging and filters", () => {
-  test("25 per page; Next and Previous keep the filters", async ({ page }) => {
-    await page.goto("/app/patients");
-    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 177");
-    await expect(page.locator("tbody tr")).toHaveCount(25);
+  test("a month's case files show 25 a page; Next and Previous keep the filters", async ({ page }) => {
+    await page.goto("/app/patients?files=2026-05");
+    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 39");
+    await expect(page.locator("[data-pf-case]")).toHaveCount(25);
     await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
     await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 177");
+    await expect(page.getByTestId("range")).toHaveText("Showing 26–39 of 39");
 
-    await page.goto("/app/patients?programme=crc&page=2");
+    await page.goto("/app/patients?programme=crc&files=2026-05&page=2");
     await expect(page.getByTestId("showing")).toContainText("colorectal screening");
-    await page.getByRole("link", { name: "Previous" }).click();
-    await expect(page).toHaveURL(/programme=crc/);
-    await expect(page).not.toHaveURL(/page=/);
+    await expect(page.getByTestId("range")).toHaveCount(0);
   });
 
   test("a page past the end lands on the last page", async ({ page }) => {
-    await page.goto("/app/patients?page=99");
-    await expect(page).toHaveURL(/page=8$/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 176–177 of 177");
+    await page.goto("/app/patients?files=2026-05&page=99");
+    await expect(page).toHaveURL(/page=2$/);
+    await expect(page.getByTestId("range")).toHaveText("Showing 26–39 of 39");
+  });
+
+  test("an old list link still works: the calendar opens with its filters", async ({ page }) => {
+    await page.goto("/app/patients?programme=crc&page=2");
+    await expect(page.getByTestId("showing")).toContainText("colorectal screening");
+    await expect(page.getByRole("region", { name: "Referrals by date received" })).toBeVisible();
   });
 
   test("programme filter is its own param and survives the chips", async ({ page }) => {

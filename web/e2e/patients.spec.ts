@@ -31,7 +31,9 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
 
     await page.goto("/app/patients?owner=none");
     await expect(showing(page)).toHaveText("136 cases: no owner");
-    await expect(page.locator("tbody tr").first()).toContainText("No owner");
+    // The month's case files carry the owner on every folder.
+    await page.getByRole("link", { name: /^Month’s files for / }).click();
+    await expect(page.locator("[data-pf-case]").first()).toContainText("No owner");
 
     await page.goto("/app/patients?owner=Practitioner%2Fahs-mushrif-nurse-4");
     await expect(showing(page)).toHaveText("9 cases: owner Nurse 4");
@@ -47,7 +49,7 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await expect(page).toHaveURL(/consent=granted/);
     await expect(page).toHaveURL(/overdue=true/);
     // Search keeps them too.
-    await page.getByRole("searchbox", { name: "Search case id" }).fill("10");
+    await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("10");
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page).toHaveURL(/owner=none/);
     await expect(page).toHaveURL(/q=10/);
@@ -89,7 +91,7 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await page.goto("/app/patients?provider=no-such-unit");
     await expect(showing(page)).toHaveText("0 cases: provider no-such-unit");
     await expect(page.getByText("No cases match these filters. Try removing one.")).toBeVisible();
-    await expect(page.getByTestId("range")).toHaveText("Showing 0–0 of 0");
+    await expect(page.getByRole("region", { name: "Referrals by date received" })).toHaveCount(0);
     await expect(page.getByTestId("programmes-in-view")).toHaveText("No programme in view.");
   });
 

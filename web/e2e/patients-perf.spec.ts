@@ -34,7 +34,7 @@ async function measure(page: Page, url: string): Promise<Measure> {
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   const t0 = Date.now();
   const res = await page.goto(url, { waitUntil: "commit" });
-  const box = page.getByRole("searchbox", { name: "Search case id" });
+  const box = page.getByRole("searchbox", { name: "Find a case, task or owner" });
   await box.waitFor({ state: "visible" });
   // Interactive = the field takes a keystroke and shows it.
   await box.focus();
@@ -82,7 +82,7 @@ test("search and filters stay usable after the first render (4x CPU)", async ({ 
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.goto("/app/patients");
-  await page.getByRole("searchbox", { name: "Search case id" }).fill("1001");
+  await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("1001");
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page).toHaveURL(/q=1001/);
   await expect(page.getByTestId("showing")).toContainText("2 cases");
