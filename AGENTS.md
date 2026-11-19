@@ -1,6 +1,10 @@
 # Wasl agent entry point
 
-## Backend, integrations, pipeline, safety, evaluation, or deployment work
+## Hosted demo, live services, secrets, or CI/CD
+
+**Read [`docs/LIVE.md`](docs/LIVE.md) before touching anything deployed, `deploy/`, or `.github/workflows/deploy.yml`.** It maps every live link, platform, credential and deploy job, and how they connect.
+
+## Backend, integrations, pipeline, safety, evaluation, or on-premise deployment work
 
 **Read [`docs/BACKEND-HANDOFF.md`](docs/BACKEND-HANDOFF.md) before inspecting or changing code.** It is the authoritative execution brief for the backend owner: current architecture, truthful implementation status, task order, module boundaries, acceptance tests, and API contract for the frontend.
 

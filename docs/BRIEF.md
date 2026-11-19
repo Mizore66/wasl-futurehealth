@@ -13,6 +13,11 @@
 
 Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader, lung nodules), `pipeline/results/final/SUMMARY.md` (frozen evaluation), `booking/RESULTS.md`, `image/RESULTS.md`, `reader/RESULTS-gemma4b.md` and `docs/research/v7-gate-offline-results.md`.
 
+**Hosted demo (19 Nov, built):** the web app is public at https://wasl-topaz-mu.vercel.app and reads the Wasl API on
+Azure Container Apps. The audit agent runs on Azure AI Foundry using Gemma 3 4B, the on-device reader's file, served
+from a Modal GPU. CI/CD redeploys every changed part on merge to `main`. The API serves a run produced locally; the
+pipeline does not run in the cloud. Map and limits: [`LIVE.md`](LIVE.md).
+
 **Status (2 Nov):**
 - **Backend:** all 8 handoff stages and all 20 agents2 items are built and integrated locally; nothing has been pushed. This includes the one-command demo, v7 gate, live 4B reader, consent hold, HL7 v2, API, booking, frozen 5-seed eval, Learn-then-Test gate, image reader, five additional loop types, deployment and adversarial/scale tests. The encoder retrain is built and merged. X10/B8 hardening and fresh scale/B8 validation are complete; the final-code ten-lane frozen evaluation is complete at decision code `075abc5`. The seven-programme API samples have been refreshed.
 - **Left:** the Next.js frontend (Kai) and the demo video. The 43 reports now have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling. The submission draft and recording guide are prepared.

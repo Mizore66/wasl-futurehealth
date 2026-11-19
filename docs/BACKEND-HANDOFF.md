@@ -13,6 +13,7 @@ Turn the existing experiments into one reproducible, demoable backend for the Fu
 3. [`../pipeline/v7-gate/RESULTS.md`](../pipeline/v7-gate/RESULTS.md) — stricter gate results from a separate implementation.
 4. [`../reader/RESULTS-gemma4b.md`](../reader/RESULTS-gemma4b.md) — local-reader result.
 5. [`../booking/RESULTS.md`](../booking/RESULTS.md) — booking/capacity simulation result.
+6. [`LIVE.md`](LIVE.md) — the hosted demo: where the API, web app, audit agent and Gemma server run, how they connect, and how CI/CD deploys them.
 
 ## Current architecture
 

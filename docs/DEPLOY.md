@@ -338,6 +338,9 @@ makes the old ledger invalid (see `API.md`). To rotate a credential, change both
 
 ## Azure
 
+The map of the hosted demo (links, architecture, credentials, CI/CD) is [`LIVE.md`](LIVE.md). This section is the
+evidence behind it.
+
 Observed on 17 Nov 2026 in one Azure for Students subscription, region `japaneast`. The image was built locally from
 a checkout of commit `4bfd661` with LF line endings, and tagged `4bfd661c-lf`. The live API returned 401 for every
 published `wasl-demo-*` token. The runbook
