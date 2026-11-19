@@ -4,7 +4,12 @@ package main
 //
 // POST /api/cases/{id}/referral-response  verified clinician principal only
 // body: {"expected_head": "<api_overlay.head>", "referral_id": "<case id>", "response": "accept|accept_with_conditions|return",
-//        "conditions": [...], "reason": "...", "requested_info": [...]}
+//        "conditions": [...], "reason": "...", "requested_info": [...], "note": "..."}
+//
+// A return carries one supported reason code and, optionally, a short free-text note to the referring GP (at most
+// maxReturnNoteRunes characters, cleaned like other API free text). The note is optional in the ledger, so returns
+// recorded before it existed replay unchanged. Like other free text it is served only in the case detail (the list
+// projection says has_note) and never in the auditor view or export (api_export.go allowlists).
 //
 // A response is one coordinator_action ledger event of kind referral_response, authorised by respond_referral rather
 // than coordinate_case, so it shares the case head, per-case sequence, hash chain and replay with the other overlay
@@ -26,6 +31,9 @@ import (
 
 const referralResponseKind = "referral_response"
 
+// maxReturnNoteRunes bounds the receiving unit's optional note to the referring GP on a return.
+const maxReturnNoteRunes = 500
+
 type referralCondition struct{ kind string }
 
 var (
@@ -46,7 +54,7 @@ var (
 	}
 	referralInfo = map[string]bool{"reason_for_referral": true, "relevant_clinical_information": true, "expected_outcome": true,
 		"anticoagulant_plan": true, "kidney_function_result": true}
-	referralClientFields = []string{"referral_id", "response", "conditions", "reason", "requested_info"}
+	referralClientFields = []string{"referral_id", "response", "conditions", "reason", "requested_info", "note"}
 	// Drop-offs at which the receiving unit still owes its first answer.
 	referralAwaitingUnit = map[string]bool{"referral_unanswered": true, "not_booked": true}
 )
@@ -145,6 +153,10 @@ func validateReferralResponse(c *apiCase, in map[string]interface{}) (map[string
 		return nil, err
 	}
 	reason, hasReason := in["reason"]
+	note, hasNote := in["note"]
+	if hasNote && response != "return" {
+		return nil, errors.New("only a return carries a note to the referrer")
+	}
 	out := map[string]interface{}{"referral_id": c.ID, "response": response, "conditions": conditions, "requested_info": info}
 	switch response {
 	case "accept":
@@ -167,6 +179,15 @@ func validateReferralResponse(c *apiCase, in map[string]interface{}) (map[string
 			return nil, errors.New("a return carries no conditions")
 		}
 		out["reason"] = code
+		if hasNote {
+			text, err := cleanText(note, maxReturnNoteRunes, false, true)
+			if err != nil {
+				return nil, fmt.Errorf("note %v", err)
+			}
+			if text != "" { // an empty note is no note: nothing is stored, so the event replays as one without it
+				out["note"] = text
+			}
+		}
 	}
 	return out, nil
 }
@@ -283,7 +304,7 @@ func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 		return nil, nil
 	}
 	response = map[string]interface{}{}
-	for _, k := range []string{"response", "conditions", "reason", "requested_info", "unit", "run_day", "at", "actor", "event"} {
+	for _, k := range []string{"response", "conditions", "reason", "note", "requested_info", "unit", "run_day", "at", "actor", "event"} {
 		if v, ok := e[k]; ok {
 			response[k] = v
 		}
@@ -305,6 +326,9 @@ func referralViewLocked(c *apiCase) (response, handoff map[string]interface{}) {
 		"reason_code": referralReturnReasons[fmt.Sprint(e["reason"])], "info_requested": e["requested_info"],
 		"clinical_priority": map[bool]string{true: "urgent", false: "routine"}[urgent], "responsible_clinician": "referring PCP, " + c.Provider,
 		"decided_by": e["unit"], "decided_at": decided, "act_by": round4(actBy), "medical_director_day": round4(medDir), "status": status, "event": e["event"]}
+	if note, ok := e["note"]; ok {
+		handoff["note"] = note // the unit's note to the GP (detail only: overlayViewLocked strips it from the list)
+	}
 	referrerView(c, currentReferrerPacketLocked(c), handoff)
 	return response, handoff
 }

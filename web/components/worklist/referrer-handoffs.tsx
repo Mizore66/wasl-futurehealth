@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import type { ReferrerAnswer, RespondResult } from "@/app/app/referrals/actions";
 import { INFO_LABELS, handoffWords } from "./referrals";
-import { afterAnswerWords, DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
+import { afterAnswerWords, DISPOSITION_LABELS, EMPTY_DRAFT, referrerRequest, sessionPacket, type Disposition, type Draft, type ReturnedPacket } from "./returned-packets";
+import { acknowledgeSessionReturn, useSessionReturns } from "./session-returns";
 
 const DISPOSITIONS = Object.entries(DISPOSITION_LABELS) as [Disposition, string][];
 const REFUSED: Record<number, string> = {
@@ -20,6 +22,31 @@ const field = "w-full rounded-control border border-control bg-surface px-3 py-2
 /** A live case without a synthetic name falls back to its case ID; show that ID once so the heading is not read twice. */
 export function packetHeading(p: Pick<ReturnedPacket, "name" | "short">): { name: string; caseId: string | null } {
   return { name: p.name, caseId: p.name.trim() === p.short ? null : p.short };
+}
+
+/**
+ * Fixtures mode, CRC: the returns the receiving unit made in this browser session, which the GP may acknowledge here.
+ * Both stay in this browser's sessionStorage (session-returns.ts); nothing is sent, saved or seen by another browser.
+ */
+export function SessionReferrerHandoffs({ referrer = "GP", focus }: { referrer?: string; focus?: string }) {
+  const kept = useSessionReturns();
+  const packets = Object.values(kept)
+    .map(sessionPacket)
+    .sort((a, b) => Number(a.acknowledged) - Number(b.acknowledged) || a.actBy - b.actBy);
+  const shown = focus ? [...packets.filter((p) => p.id === focus), ...packets.filter((p) => p.id !== focus)] : packets;
+  return (
+    <section aria-label="Returns kept in this browser" className="flex flex-col gap-gap">
+      <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-muted">
+        <HonestyLabel kind="designed">Kept in this browser only</HonestyLabel>
+        <span>Returns made in the referral inbox in this browser. An acknowledgement here is kept in this browser too; nothing is sent to the {referrer} or saved to the case ledger.</span>
+      </p>
+      {packets.length ? (
+        <ReferrerHandoffs packets={shown} referrer={referrer} focus={focus} />
+      ) : (
+        <p className="m-0 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">No returns in this browser yet. Return a referral from the referral inbox to see it here.</p>
+      )}
+    </section>
+  );
 }
 
 /** The referrer's returned referrals: acknowledge the exact packet, then resolve it with one structured answer. */
@@ -108,14 +135,15 @@ function PacketCard({
             ["Returned by", p.unit],
             ["Reason", p.reason],
             ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not in the packet")]] as const) : []),
+            ...(p.hasNote || p.note ? ([["Note from the unit", p.note ?? "Could not load this case's detail; reload to try again"]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
             ["Acknowledged", p.acknowledged ? "Yes" : "Not yet"],
           ] as const
         ).map(([k, v]) => (
-          <div key={k}>
+          <div key={k} className={k === "Note from the unit" ? "sm:col-span-2" : undefined}>
             <dt className="text-small text-muted">{k}</dt>
-            <dd className="m-0">{v}</dd>
+            <dd className={cn("m-0", k === "Note from the unit" && "whitespace-pre-line break-words")}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -124,6 +152,19 @@ function PacketCard({
         <p role="status" className="m-0 mt-4">
           {p.answer}. {afterAnswerWords(p.answerCode)}
         </p>
+      ) : p.kept === "browser" ? (
+        <div className="mt-4 grid justify-items-start gap-2">
+          {p.acknowledged ? (
+            <p role="status" className="m-0">
+              Acknowledged in this browser. The return still waits on your answer.
+            </p>
+          ) : (
+            <Button variant="quiet" size="touch" onClick={() => acknowledgeSessionReturn(p.id)}>
+              Acknowledge the returned referral
+            </Button>
+          )}
+          <p className="m-0 text-small text-muted">Kept in this browser only. Other answers need the live synthetic API.</p>
+        </div>
       ) : !answer ? (
         <p className="m-0 mt-4 text-muted">Answers need the live synthetic API; nothing can be recorded here.</p>
       ) : (

@@ -21,11 +21,21 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  */
 const needsPacket = (c: CaseSummary, fallback: boolean) => !c.closed && (apiMode() === "live" ? !!c.handoff : fallback);
 
+/* A unit return's note to the GP is free text, so the list only says it exists; the detail carries it. */
+const needsNote = (c: CaseSummary) => !c.closed && !!c.api_overlay?.referral_response?.has_note;
+
 async function crcReferrals(view: ReferralView, q: string, now: number): Promise<Referral[]> {
   const [{ cases: listed }, extra] = await Promise.all([getAllCases({ provider: view.provider, programme: view.programme, ...(q && { q }) }), syntheticReferrals(q)]);
   const cases = [...listed, ...extra];
-  const currents = await Promise.all(cases.map(async (c) => (needsPacket(c, c.dropoff === "referral_rejected") ? ((await getCase(c.id))?.current ?? null) : null)));
-  return cases.map((c, i) => referralFrom(c, now, hasRecord(c), currents[i] && handoffOf(currents[i]))).filter((r) => r !== null);
+  const details = await Promise.all(cases.map(async (c) => (needsPacket(c, c.dropoff === "referral_rejected") || needsNote(c) ? await getCase(c.id) : null)));
+  return cases
+    .map((c, i) => {
+      const d = details[i];
+      const current = needsPacket(c, c.dropoff === "referral_rejected") ? (d?.current ?? null) : null;
+      const read = needsNote(c) && d?.api_overlay ? { ...c, api_overlay: d.api_overlay } : c;
+      return referralFrom(read, now, hasRecord(c), current && handoffOf(current));
+    })
+    .filter((r) => r !== null);
 }
 
 /* Live mode reads the canonical packet only of cases whose list summary marks a returned referral. */

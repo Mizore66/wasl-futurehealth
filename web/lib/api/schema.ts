@@ -390,6 +390,9 @@ export const ReferralResponse = z.looseObject({
   response: z.enum(["accept", "accept_with_conditions", "return"]),
   conditions: z.array(ReferralCondition).default([]),
   reason: ReferralReturnReason.optional(),
+  /** A return's free-text note to the GP: case detail only. The list says `has_note` instead. */
+  note: z.string().optional(),
+  has_note: z.boolean().optional(),
   requested_info: z.array(ReferralInfo).default([]),
   unit: z.string(),
   run_day: z.number(),
@@ -416,6 +419,9 @@ export const ReferralHandoff = z.looseObject({
   status: HandoffStatus,
   event: z.string().optional(),
   info_requested: z.array(ReferralInfo).default([]),
+  /** The unit's free-text note to the GP on a unit return: case detail only; the list says `has_note`. */
+  note: z.string().optional(),
+  has_note: z.boolean().optional(),
   destinations: z.array(z.string()).default([]),
   acknowledgement: z.looseObject(ReferrerEntry).optional(),
   referrer_response: z
@@ -430,11 +436,14 @@ export const ReferralHandoff = z.looseObject({
   acted_at: z.number().optional(),
 });
 
+/** The longest note to the GP a return may carry (pipeline/api_referral.go maxReturnNoteRunes), in characters. */
+export const RETURN_NOTE_MAX = 500;
+
 /** POST /api/cases/{id}/referral-response body. `referral_id` and `expected_head` are added by the caller. */
 export const ReferralResponseRequest = z.discriminatedUnion("response", [
   z.object({ response: z.literal("accept") }),
   z.object({ response: z.literal("accept_with_conditions"), conditions: z.array(ReferralCondition).min(1) }),
-  z.object({ response: z.literal("return"), reason: ReferralReturnReason, requested_info: z.array(ReferralInfo).optional() }),
+  z.object({ response: z.literal("return"), reason: ReferralReturnReason, requested_info: z.array(ReferralInfo).optional(), note: z.string().trim().min(1).max(RETURN_NOTE_MAX).optional() }),
 ]);
 
 /** POST /api/cases/{id}/referrer-response body. `referral_id`, `packet` and `expected_head` are added by the caller. */

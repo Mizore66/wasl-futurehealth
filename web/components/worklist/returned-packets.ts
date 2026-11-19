@@ -2,6 +2,7 @@ import type { CaseSummary, CurrentDecision, HandoffStatus, ReferralInfo, Referre
 import type { ReferrerAnswer } from "@/app/app/referrals/actions";
 import { shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
+import type { SessionReturn } from "./session-returns";
 import { INFO_LABELS, REASON_LABELS, REFERRER_ANSWER_LABELS, packetReasonWords, placeName, referrerAnswerWords } from "./referrals";
 
 /** A resolving answer: everything but acknowledge, which leaves the packet waiting on the GP. */
@@ -39,6 +40,12 @@ export type ReturnedPacket = {
   answerCode?: Disposition;
   /** The canonical packet's detail read failed or timed out: its recommendation and advice are unavailable, nothing else. */
   detailUnavailable?: boolean;
+  /** The receiving unit's note to the GP on a unit return; null when there is none or it was not read. */
+  note?: string | null;
+  /** The packet has a note (the list says so even when the detail holding its text was not read). */
+  hasNote?: boolean;
+  /** "browser": a return kept in this browser session only (fixtures mode); the GP may only acknowledge it here. */
+  kept?: "browser";
 };
 
 /** What a resolved hand-off leaves the case waiting for, after the referrer's answer. */
@@ -54,7 +61,8 @@ export function afterAnswerWords(code: Disposition | undefined): string {
  */
 export function needsDetail(c: CaseSummary): boolean {
   const h = c.api_overlay?.referral_handoff;
-  return h?.source === "canonical" && !h.referrer_response && h.status !== "referrer_acted" && h.acted_at === undefined;
+  if (h?.source !== "canonical") return !!h?.has_note; // a unit return's note to the GP is free text: detail only
+  return !h.referrer_response && h.status !== "referrer_acted" && h.acted_at === undefined;
 }
 
 /**
@@ -88,6 +96,35 @@ export function returnedPacket(c: CaseSummary, current: CurrentDecision | null =
     acknowledged: !!h.acknowledgement,
     answer: r ? referrerAnswerWords(r) : h.status === "referrer_acted" ? "The canonical packet already records the referrer's action" : null,
     ...(r ? { answerCode: r.response } : {}),
+    note: source === "unit_return" ? (ov.referral_response?.note ?? h.note ?? null) : null,
+    ...(source === "unit_return" && (h.has_note || h.note || ov.referral_response?.note) ? { hasNote: true } : {}),
+  };
+}
+
+/** A return kept in this browser (fixtures mode), as the GP's view shows it. It binds to no ledger head or packet. */
+export function sessionPacket(s: SessionReturn): ReturnedPacket {
+  return {
+    id: s.id,
+    name: s.name,
+    short: s.short,
+    head: "",
+    packet: "",
+    source: "unit_return",
+    unit: s.unit,
+    unitId: "",
+    reason: REASON_LABELS[s.reason],
+    recommendation: null,
+    advice: null,
+    urgent: s.urgent,
+    infoRequested: [],
+    others: [],
+    actBy: s.actBy,
+    status: "awaiting_referrer",
+    acknowledged: !!s.acknowledgedAt,
+    answer: null,
+    note: s.note ?? null,
+    ...(s.note ? { hasNote: true } : {}),
+    kept: "browser",
   };
 }
 

@@ -1788,6 +1788,15 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 		m["no_answer_streak"] = streak
 	}
 	response, handoff := referralViewLocked(c)
+	// Like notes, the unit's note to the GP on a return is detail only; the list says one exists.
+	if !full {
+		for _, v := range []map[string]interface{}{response, handoff} {
+			if _, ok := v["note"]; ok {
+				delete(v, "note")
+				v["has_note"] = true
+			}
+		}
+	}
 	if response != nil {
 		m["referral_response"] = response
 	}
