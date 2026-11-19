@@ -227,6 +227,7 @@
   background-size: auto, 144px 144px;
   background-repeat: repeat;
 }
+@layer base {
 .staff a,
 .staff-tokens a {
   color: var(--color-jade-600);
@@ -239,7 +240,9 @@
   outline: 3px solid var(--color-jade-500);
   outline-offset: 2px;
 }
+}
 
+@layer components {
 /* Title header: limestone to jade wash with the calligraphy pen strokes on the right. */
 .staff-heading {
   position: relative;
@@ -275,4 +278,5 @@
   font-family: var(--font-display);
   font-weight: 500;
   letter-spacing: -0.035em;
+}
 }
