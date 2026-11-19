@@ -1,6 +1,6 @@
 # Three-minute demo recording guide
 
-**Status:** script and shot list prepared; video not recorded. Record after Kai's frontend is ready. Use only synthetic fixtures. Do not show credentials, local paths, real patient data or unvalidated experiment claims.
+**Status (19 Nov):** script and shot list prepared; video not recorded. Record now against the hosted demo, https://wasl-topaz-mu.vercel.app: the built frontend on the live Azure API with the same simulated run ([`LIVE.md`](LIVE.md)). Open https://kaiz404--wasl-gemma-serve.us-east.modal.run/health first so Gemma is warm if you show the audit agent, and remember that clicks on the hosted app persist in the shared synthetic ledger. The local commands below are the fallback. Use only synthetic fixtures. Do not show credentials, local paths, real patient data or unvalidated experiment claims.
 
 ## Setup
 
@@ -64,7 +64,7 @@ Rehearse these four views before recording:
 
 - Keep the run/policy/model version visible in at least one shot.
 - Say “simulated” for capacity, patient and reviewer results; never imply a clinical pilot has happened.
-- Say **clinically verified model-assisted labels**, not independent human double-labelling or clinical ground truth. Do not claim buyer commitments, live Malaffi integration or live cloud-LLM inference.
+- Say **clinically verified model-assisted labels**, not independent human double-labelling or clinical ground truth. Do not claim buyer commitments or live Malaffi integration. If you show the Foundry audit agent, say it uses Gemma 3 4B, the on-device reader's file, on a rented GPU standing in for a hospital machine, with synthetic data, and that its explanations are unvalidated summaries.
 - The 26B reader is cached in the canonical demo; the local 4B reader is live only when explicitly started in that mode.
 - Record a clean backup take without the evidence-agent sentence. The r1agent10 take must include its exact experimental trade-off and must not imply that validation passed.
 - Target 145–155 words per minute; trim pauses rather than speeding past the safety and limitation statements.
