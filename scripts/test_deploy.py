@@ -178,7 +178,7 @@ exit 2
         self.assertNotIn("go get", df)
         self.assertIn("github.com/nats-io/nats-server/v2", df)
         gomod = (ROOT / "deploy/nats/build/go.mod").read_text()
-        self.assertIn("github.com/nats-io/nats-server/v2 v${NATS_VERSION}".replace("${NATS_VERSION}", "2.12.9"), gomod)
+        self.assertIn("github.com/nats-io/nats-server/v2 v${NATS_VERSION}".replace("${NATS_VERSION}", "2.12.12"), gomod)
         self.assertIn("github.com/klauspost/compress v1.20.0", gomod)
         self.assertIn("golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2", gomod)
         self.assertIn("FROM golang:${GO_VERSION}-bookworm AS build", df)

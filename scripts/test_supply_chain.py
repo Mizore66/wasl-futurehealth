@@ -86,7 +86,7 @@ class AugmentSbomTests(unittest.TestCase):
             set(containers),
             {"golang", "python", "nats"},
         )
-        self.assertEqual(containers["nats"]["version"], "2.12.9-alpine")
+        self.assertEqual(containers["nats"]["version"], "2.12.12-alpine")
         self.assertIn("pkg:docker/", containers["python"]["purl"])
         self.assertEqual(containers["python"]["version"], "3.12-alpine")
 
@@ -168,7 +168,7 @@ class ContainerSecurityTests(unittest.TestCase):
         dockerfile = (ROOT / "deploy" / "nats" / "Dockerfile").read_text()
         self.assertIn("ARG GO_VERSION=1.27.4", dockerfile)
         self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", dockerfile)
-        self.assertIn("ARG NATS_VERSION=2.12.9", dockerfile)
+        self.assertIn("ARG NATS_VERSION=2.12.12", dockerfile)
         self.assertIn("ENV GOFLAGS=-mod=vendor GOPROXY=off", dockerfile)
         self.assertNotIn("go get", dockerfile)
         gomod = (ROOT / "deploy" / "nats" / "build" / "go.mod").read_text()

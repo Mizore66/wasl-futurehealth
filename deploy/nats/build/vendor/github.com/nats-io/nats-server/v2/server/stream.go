@@ -1500,7 +1500,11 @@ func (jsa *jsAccount) subjectsOverlap(subjects []string, self *stream) bool {
 		if self != nil && mset == self {
 			continue
 		}
-		for _, subj := range mset.cfg.Subjects {
+		// Read the other stream's subjects under its cfgMu.
+		mset.cfgMu.RLock()
+		msubjects := mset.cfg.Subjects
+		mset.cfgMu.RUnlock()
+		for _, subj := range msubjects {
 			for _, tsubj := range subjects {
 				if SubjectsCollide(tsubj, subj) {
 					return true
@@ -1647,6 +1651,9 @@ func (s *Server) checkStreamCfg(config *StreamConfig, acc *Account, pedantic boo
 		if cfg.AllowMsgTTL {
 			return StreamConfig{}, NewJSStreamInvalidConfigError(fmt.Errorf("counter stream cannot use message TTLs"))
 		}
+		if cfg.AllowMsgSchedules {
+			return StreamConfig{}, NewJSStreamInvalidConfigError(fmt.Errorf("counter stream cannot use message schedules"))
+		}
 		if cfg.Retention != LimitsPolicy {
 			return StreamConfig{}, NewJSStreamInvalidConfigError(fmt.Errorf("counter stream can only use limits retention"))
 		}
@@ -1683,6 +1690,9 @@ func (s *Server) checkStreamCfg(config *StreamConfig, acc *Account, pedantic boo
 	}
 
 	if cfg.AllowMsgSchedules {
+		if cfg.Discard == DiscardNew {
+			return StreamConfig{}, NewJSStreamInvalidConfigError(fmt.Errorf("message scheduling cannot use discard new"))
+		}
 		if !cfg.AllowRollup {
 			if pedantic {
 				return StreamConfig{}, NewJSStreamInvalidConfigError(fmt.Errorf("message scheduling cannot be set if roll-ups are disabled"))
@@ -2277,25 +2287,28 @@ func (mset *stream) updateWithAdvisory(config *StreamConfig, sendAdvisory bool, 
 
 	// In the event that some of the stream-level limits have changed, yell appropriately
 	// if any of the consumers exceed that limit.
-	updateLimits := ocfg.ConsumerLimits.InactiveThreshold != cfg.ConsumerLimits.InactiveThreshold ||
-		ocfg.ConsumerLimits.MaxAckPending != cfg.ConsumerLimits.MaxAckPending
-	if updateLimits {
+	oldInactiveThreshold, newInactiveThreshold := ocfg.ConsumerLimits.InactiveThreshold, cfg.ConsumerLimits.InactiveThreshold
+	oldMaxAckPending, newMaxAckPending := ocfg.ConsumerLimits.MaxAckPending, cfg.ConsumerLimits.MaxAckPending
+	updateLimits := (newInactiveThreshold > 0 && oldInactiveThreshold != newInactiveThreshold) ||
+		(newMaxAckPending > 0 && oldMaxAckPending != newMaxAckPending)
+
+	// Only check if not clustered. The meta leader performs clustered checks.
+	if updateLimits && !mset.js.isClustered() {
 		var errorConsumers []string
-		consumers := map[string]*ConsumerConfig{}
-		if mset.js.isClustered() {
-			for _, c := range mset.sa.consumers {
-				consumers[c.Name] = c.Config
-			}
-		} else {
-			for _, c := range mset.consumers {
-				consumers[c.name] = &c.cfg
-			}
+		mset.mu.RLock()
+		clist := make([]*consumer, 0, len(mset.consumers))
+		for _, c := range mset.consumers {
+			clist = append(clist, c)
 		}
-		for name, ccfg := range consumers {
-			if ccfg.InactiveThreshold > cfg.ConsumerLimits.InactiveThreshold ||
-				ccfg.MaxAckPending > cfg.ConsumerLimits.MaxAckPending {
+		mset.mu.RUnlock()
+		for _, c := range clist {
+			c.mu.RLock()
+			name, ccfg := c.name, c.cfg
+			if (newInactiveThreshold > 0 && ccfg.InactiveThreshold > newInactiveThreshold) ||
+				(newMaxAckPending > 0 && ccfg.MaxAckPending > newMaxAckPending) {
 				errorConsumers = append(errorConsumers, name)
 			}
+			c.mu.RUnlock()
 		}
 		if len(errorConsumers) > 0 {
 			// TODO(nat): Return a parsable error so that we can surface something
@@ -2368,7 +2381,9 @@ func (mset *stream) updateWithAdvisory(config *StreamConfig, sendAdvisory bool, 
 					if mset.sources == nil {
 						mset.sources = make(map[string]*sourceInfo)
 					}
+					mset.cfgMu.Lock()
 					mset.cfg.Sources = append(mset.cfg.Sources, s)
+					mset.cfgMu.Unlock()
 
 					var si *sourceInfo
 
@@ -2989,7 +3004,9 @@ func (mset *stream) processInboundMirrorMsg(m *inMsg) bool {
 	if mset.cfg.MirrorDirect && mset.mirrorDirectSub == nil && pending < dgetCaughtUpThresh {
 		if err := mset.subscribeToMirrorDirect(); err != nil {
 			// Disable since we had problems above.
+			mset.cfgMu.Lock()
 			mset.cfg.MirrorDirect = false
+			mset.cfgMu.Unlock()
 		}
 	}
 
@@ -5469,7 +5486,7 @@ func (mset *stream) processInboundJetStreamMsg(_ *subscription, c *client, _ *Ac
 		// to prevent a trace event to be generated when a stored message
 		// is delivered to a consumer and routed.
 		if !traceOnly {
-			disableTraceHeaders(c, hdr)
+			hdr = setHeader(MsgTraceDest, MsgTraceDestDisabled, hdr)
 		}
 		// This will add the jetstream event while in the client read loop.
 		// Since the event will be updated in a different go routine, the
@@ -6114,7 +6131,7 @@ func (mset *stream) processJetStreamMsg(subject, reply string, hdr, msg []byte, 
 
 	// Skip msg here.
 	if noInterest {
-		mset.lseq, _ = store.SkipMsg(0)
+		mset.lseq, _ = store.SkipMsgNoInterest(0)
 		mset.lmsgId = msgId
 		// If we have a msgId make sure to save.
 		if msgId != _EMPTY_ {
@@ -6690,8 +6707,14 @@ func (mset *stream) processJetStreamBatchMsg(batchId, subject, reply string, hdr
 		return apiErr
 	}
 
+	type checkedMsg struct {
+		subj string
+		hdr  []byte
+		msg  []byte
+	}
 	var (
 		entries []*Entry
+		checked []checkedMsg
 		bsubj   string
 		bhdr    []byte
 		bmsg    []byte
@@ -6752,6 +6775,11 @@ func (mset *stream) processJetStreamBatchMsg(batchId, subject, reply string, hdr
 			esm := encodeStreamMsgAllowCompressAndBatch(bsubj, _reply, bhdr, bmsg, mset.clseq, ts, false, batchId, seq, isCommit)
 			entries = append(entries, newEntry(EntryNormal, esm))
 			sz += len(esm)
+		} else {
+			// Preserve the (possibly rewritten) headers and message, for example for counters and
+			// scheduled messages, so the commit below stores the transformed message.
+			// Need to copy, the staged message buffer is reused on every load.
+			checked = append(checked, checkedMsg{bsubj, copyBytes(bhdr), copyBytes(bmsg)})
 		}
 		mset.clseq++
 	}
@@ -6766,16 +6794,11 @@ func (mset *stream) processJetStreamBatchMsg(batchId, subject, reply string, hdr
 		// can only happen after the full batch is committed.
 		// We keep holding the stream lock.
 		for seq := uint64(1); seq <= batchSeq; seq++ {
-			if seq == batchSeq && b.store.Type() != FileStorage {
-				bsubj, bhdr, bmsg = subject, hdr, msg
-			} else if sm, err = b.store.LoadMsg(seq, &smv); sm != nil && err == nil {
-				bsubj, bhdr, bmsg = sm.subj, sm.hdr, sm.msg
-			} else {
-				// Should not happen, we've already checked this message existed while doing consistency checks.
-				// We'll just exit here, the batch is already inconsistent without the message at this sequence.
-				// No use in trying to still store the rest.
-				break
-			}
+			// Use the checked (and possibly rewritten) message from above, not the raw staged
+			// message, so transformations like counter increments and scheduled message
+			// rollups are persisted just like in the clustered proposal path.
+			cm := checked[seq-1]
+			bsubj, bhdr, bmsg = cm.subj, cm.hdr, cm.msg
 			var _reply string
 			if seq == batchSeq {
 				_reply = reply

@@ -15,7 +15,7 @@ ENGINE="${ENGINE:-podman}"
 PYTHON_REF="docker.io/library/python@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7"
 NATS_REF="docker.io/library/nats@sha256:1cfc36e2e5e638243d8c722f72c954cd0ec4b15ee82fadbc718ce12e2b3c1652"
 WASL_REL="3.24"   # python:3.12-alpine base
-NATS_REL="3.22"   # nats:2.12.9-alpine base (Alpine 3.22)
+NATS_REL="3.22"   # nats:2.12.12-alpine base (Alpine 3.22)
 WASL_APKS="bash util-linux ca-certificates krb5-libs zlib"
 # Upgrades the NATS Dockerfile needs on top of the base, plus ca-certificates; no apk-tools/tzdata/alpine-release.
 NATS_APKS="ca-certificates ca-certificates-bundle libcrypto3 libssl3 musl musl-utils zlib"

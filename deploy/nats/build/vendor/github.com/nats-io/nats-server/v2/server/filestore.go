@@ -184,6 +184,7 @@ type fileStore struct {
 	syncTmr     *time.Timer
 	cfg         FileStreamInfo
 	fcfg        FileStoreConfig
+	syncAlways  atomic.Bool // Mirrors FileStoreConfig.SyncAlways for lock-free reads from writeFileWithOptionalSync.
 	prf         keyGen
 	oldprf      keyGen
 	aek         cipher.AEAD
@@ -373,6 +374,10 @@ const (
 	rlBadThresh = 32 * 1024 * 1024
 	// Checksum size for hash for msg records.
 	recordHashSize = 8
+
+	// Above this number of subjects, index.db may not be written regularly anymore, and
+	// certain psim optimisations may not be used.
+	highCardinalityThreshold = 1_000_000
 )
 
 func newFileStore(fcfg FileStoreConfig, cfg StreamConfig) (*fileStore, error) {
@@ -432,6 +437,7 @@ func newFileStoreWithCreated(fcfg FileStoreConfig, cfg StreamConfig, created tim
 		fsld:   make(chan struct{}),
 		srv:    fcfg.srv,
 	}
+	fs.syncAlways.Store(fcfg.SyncAlways)
 
 	// Register with access time service.
 	ats.Register()
@@ -715,7 +721,7 @@ func (fs *fileStore) UpdateConfig(cfg *StreamConfig) error {
 		fs.ageChkTime = 0
 	}
 
-	if fs.cfg.MaxMsgsPer > 0 && (old_cfg.MaxMsgsPer == 0 || fs.cfg.MaxMsgsPer < old_cfg.MaxMsgsPer) {
+	if fs.cfg.MaxMsgsPer > 0 && (old_cfg.MaxMsgsPer <= 0 || fs.cfg.MaxMsgsPer < old_cfg.MaxMsgsPer) {
 		fs.enforceMsgPerSubjectLimit(true)
 	}
 
@@ -728,7 +734,10 @@ func (fs *fileStore) UpdateConfig(cfg *StreamConfig) error {
 		if cfg.PersistMode == AsyncPersistMode {
 			supportsAsyncFlush = true
 			fs.fcfg.SyncAlways = false
+			fs.syncAlways.Store(false)
+			lmb.mu.Lock()
 			lmb.syncAlways = false
+			lmb.mu.Unlock()
 		}
 
 		if supportsAsyncFlush && !fs.fcfg.AsyncFlush {
@@ -2069,7 +2078,9 @@ func (fs *fileStore) recoverTTLState() error {
 		ttlseq, err = fs.ttls.Decode(buf)
 		if err != nil {
 			fs.warn("Error decoding TTL state: %s", err)
-			os.Remove(fn)
+			// Remove the file, and reset collected state (if any).
+			_ = os.Remove(fn)
+			fs.ttls = thw.NewHashWheel()
 		}
 	}
 
@@ -2154,7 +2165,9 @@ func (fs *fileStore) recoverMsgSchedulingState() error {
 		schedSeq, err = fs.scheduling.decode(buf)
 		if err != nil {
 			fs.warn("Error decoding message scheduling state: %s", err)
-			os.Remove(fn)
+			// Remove the file, and reset collected state (if any).
+			_ = os.Remove(fn)
+			fs.scheduling = newMsgScheduling(fs.runMsgScheduling)
 		}
 	}
 
@@ -3272,6 +3285,9 @@ func (fs *fileStore) checkSkipFirstBlock(filter string, wc bool, bi int) (int, e
 	// Move through psim to gather start and stop bounds.
 	start, stop := uint32(math.MaxUint32), uint32(0)
 	if wc {
+		if fs.psim.Size() > highCardinalityThreshold {
+			return bi + 1, nil
+		}
 		fs.psim.Match(stringToBytes(filter), func(_ []byte, psi *psi) {
 			if psi.fblk < start {
 				start = psi.fblk
@@ -3294,7 +3310,7 @@ func (fs *fileStore) checkSkipFirstBlock(filter string, wc bool, bi int) (int, e
 // Will return -1 and ErrStoreEOF if no matches at all or no more from where we are.
 func (fs *fileStore) checkSkipFirstBlockMulti(sl *gsl.SimpleSublist, bi int) (int, error) {
 	// Don't bother if full wildcard.
-	if sl.MatchesFullWildcard() {
+	if sl.MatchesFullWildcard() || fs.psim.Size() > highCardinalityThreshold {
 		return bi + 1, nil
 	}
 	// Move through psim to gather start and stop bounds.
@@ -3599,10 +3615,11 @@ func (fs *fileStore) filterIsAll(filters []string) bool {
 		return false
 	}
 	// Sort so we can compare.
+	subjects := copyStrings(fs.cfg.Subjects)
 	slices.Sort(filters)
-	slices.Sort(fs.cfg.Subjects)
+	slices.Sort(subjects)
 	for i, subj := range filters {
-		if !subjectIsSubsetMatch(fs.cfg.Subjects[i], subj) {
+		if !subjectIsSubsetMatch(subjects[i], subj) {
 			return false
 		}
 	}
@@ -4765,7 +4782,9 @@ func (fs *fileStore) storeRawMsg(subj string, hdr, msg []byte, seq uint64, ts, t
 		}
 		// Need to count these regardless as we might want to enable TTLs
 		// later via UpdateConfig.
+		fs.lmb.mu.Lock()
 		fs.lmb.ttls++
+		fs.lmb.mu.Unlock()
 	}
 
 	// Check if we have and need the age expiration timer running.
@@ -4780,8 +4799,10 @@ func (fs *fileStore) storeRawMsg(subj string, hdr, msg []byte, seq uint64, ts, t
 	if fs.scheduling != nil {
 		if schedule, ok := getMessageSchedule(hdr); ok && !schedule.IsZero() {
 			fs.scheduling.add(seq, subj, schedule.UnixNano())
+			fs.lmb.mu.Lock()
 			fs.lmb.schedules++
-		} else {
+			fs.lmb.mu.Unlock()
+		} else if getMessageScheduler(hdr) == _EMPTY_ {
 			fs.scheduling.removeSubject(subj)
 		}
 	}
@@ -4831,7 +4852,7 @@ func (fs *fileStore) StoreMsg(subj string, hdr, msg []byte, ttl int64) (uint64, 
 // we will place an empty record marking the sequence as used. The
 // sequence will be marked erased.
 // fs lock should be held.
-func (mb *msgBlock) skipMsg(seq uint64, now int64) {
+func (mb *msgBlock) skipMsg(seq uint64, ts int64) {
 	if mb == nil {
 		return
 	}
@@ -4841,7 +4862,7 @@ func (mb *msgBlock) skipMsg(seq uint64, now int64) {
 	// If we are empty can just do meta.
 	if mb.msgs == 0 {
 		atomic.StoreUint64(&mb.last.seq, seq)
-		mb.last.ts = now
+		mb.last.ts = ts
 		atomic.StoreUint64(&mb.first.seq, seq+1)
 		mb.first.ts = 0
 		needsRecord = mb == mb.fs.lmb
@@ -4850,7 +4871,7 @@ func (mb *msgBlock) skipMsg(seq uint64, now int64) {
 		mb.dmap.Insert(seq)
 	}
 	if needsRecord {
-		mb.writeMsgRecordLocked(emptyRecordLen, seq|ebit, _EMPTY_, nil, nil, now, true, true)
+		mb.writeMsgRecordLocked(emptyRecordLen, seq|ebit, _EMPTY_, nil, nil, ts, true, true)
 	}
 	mb.mu.Unlock()
 	if !needsRecord {
@@ -4860,9 +4881,16 @@ func (mb *msgBlock) skipMsg(seq uint64, now int64) {
 
 // SkipMsg will use the next sequence number but not store anything.
 func (fs *fileStore) SkipMsg(seq uint64) (uint64, error) {
-	// Grab time.
-	now := ats.AccessTime()
+	return fs.skipMsg(seq, false)
+}
 
+// SkipMsgNoInterest will use the next sequence number but not store anything.
+// Unlike SkipMsg it also advances LastTime, which is used for Interest retention.
+func (fs *fileStore) SkipMsgNoInterest(seq uint64) (uint64, error) {
+	return fs.skipMsg(seq, true)
+}
+
+func (fs *fileStore) skipMsg(seq uint64, noInterest bool) (uint64, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -4880,11 +4908,23 @@ func (fs *fileStore) SkipMsg(seq uint64) (uint64, error) {
 		return 0, err
 	}
 
+	// Only update time if not already set or for Interest retention.
+	var ts int64
+	updateTime := noInterest || fs.state.LastTime.IsZero()
+	if updateTime {
+		ts = ats.AccessTime()
+	} else {
+		ts = fs.state.LastTime.UnixNano()
+	}
+
 	// Write skip msg.
-	mb.skipMsg(seq, now)
+	mb.skipMsg(seq, ts)
 
 	// Update fs state.
-	fs.state.LastSeq, fs.state.LastTime = seq, time.Unix(0, now).UTC()
+	fs.state.LastSeq = seq
+	if updateTime {
+		fs.state.LastTime = time.Unix(0, ts).UTC()
+	}
 	if fs.state.Msgs == 0 {
 		fs.state.FirstSeq, fs.state.FirstTime = seq, time.Time{}
 	}
@@ -4930,14 +4970,19 @@ func (fs *fileStore) SkipMsgs(seq uint64, num uint64) error {
 	}
 
 	// Insert into dmap all entries and place last as marker.
-	now := ats.AccessTime()
+	var ts int64
+	if !fs.state.LastTime.IsZero() {
+		ts = fs.state.LastTime.UnixNano()
+	} else {
+		ts = ats.AccessTime()
+	}
 	lseq := seq + num - 1
 
 	mb.mu.Lock()
 	// If we are empty update meta directly.
 	if mb.msgs == 0 {
 		atomic.StoreUint64(&mb.last.seq, lseq)
-		mb.last.ts = now
+		mb.last.ts = ts
 		atomic.StoreUint64(&mb.first.seq, lseq+1)
 		mb.first.ts = 0
 	} else {
@@ -4946,12 +4991,15 @@ func (fs *fileStore) SkipMsgs(seq uint64, num uint64) error {
 		}
 	}
 	// Write out our placeholder.
-	mb.writeMsgRecordLocked(emptyRecordLen, lseq|ebit, _EMPTY_, nil, nil, now, true, true)
+	mb.writeMsgRecordLocked(emptyRecordLen, lseq|ebit, _EMPTY_, nil, nil, ts, true, true)
 	mb.mu.Unlock()
 
 	// Now update FS accounting.
 	// Update fs state.
-	fs.state.LastSeq, fs.state.LastTime = lseq, time.Unix(0, now).UTC()
+	fs.state.LastSeq = lseq
+	if fs.state.LastTime.IsZero() {
+		fs.state.LastTime = time.Unix(0, ts).UTC()
+	}
 	if fs.state.Msgs == 0 {
 		fs.state.FirstSeq, fs.state.FirstTime = lseq+1, time.Time{}
 	}
@@ -5283,7 +5331,12 @@ func (fs *fileStore) removePerSubject(subj string) uint64 {
 	bsubj := stringToBytes(subj)
 	if info, ok := fs.psim.Find(bsubj); ok {
 		info.total--
-		if info.total == 0 {
+		if info.total == 1 {
+			// This is only correct if the last message for this subject still exists and was
+			// not removed. The 2.12 line can't handle this better sadly, 2.14+ persists both
+			// fblk and lblk, so it does not contain this block.
+			info.fblk = info.lblk
+		} else if info.total == 0 {
 			if _, ok = fs.psim.Delete(bsubj); ok {
 				fs.tsl -= len(subj)
 				return 0
@@ -6965,6 +7018,11 @@ func (fs *fileStore) writeTombstoneNoFlush(seq uint64, ts int64) error {
 
 // Lock should be held.
 func (mb *msgBlock) recompressOnDiskIfNeeded() error {
+	// If the block has been closed in the meantime, skip.
+	if mb.closed {
+		return nil
+	}
+
 	alg := mb.fs.fcfg.Compression
 
 	// Open up the file block and read in the entire contents into memory.
@@ -9121,6 +9179,10 @@ func compareFn(subject string) func(string, string) bool {
 // PurgeEx will remove messages based on subject filters, sequence and number of messages to keep.
 // Will return the number of purged messages.
 func (fs *fileStore) PurgeEx(subject string, sequence, keep uint64) (purged uint64, err error) {
+	// sequence == 1 means "purge up to but not including 1", a no-op.
+	if sequence == 1 {
+		return 0, nil
+	}
 	if subject == _EMPTY_ || subject == fwcs {
 		if keep == 0 && sequence == 0 {
 			return fs.purge(0)
@@ -9128,11 +9190,10 @@ func (fs *fileStore) PurgeEx(subject string, sequence, keep uint64) (purged uint
 		if sequence > 1 {
 			return fs.compact(sequence)
 		}
-	}
-
-	// Make sure to not leave subject if empty and we reach this spot.
-	if subject == _EMPTY_ {
-		subject = fwcs
+		// Make sure to not leave subject if empty.
+		if subject == _EMPTY_ {
+			subject = fwcs
+		}
 	}
 
 	eq, wc := compareFn(subject), subjectHasWildcard(subject)
@@ -9209,7 +9270,10 @@ func (fs *fileStore) PurgeEx(subject string, sequence, keep uint64) (purged uint
 			continue
 		}
 
-		if sequence > 1 && sequence <= l {
+		// "Purge up to but not including sequence": sequence == 0 means no
+		// sequence filter; sequence >= 1 clamps the per-block upper bound to
+		// sequence-1 (so sequence == 1 leaves nothing to process).
+		if sequence >= 1 && sequence <= l {
 			l = sequence - 1
 		}
 
@@ -9369,7 +9433,11 @@ func (fs *fileStore) purge(fseq uint64) (uint64, error) {
 	fs.state.Msgs = 0
 
 	for _, mb := range fs.blks {
-		mb.dirtyClose()
+		// These blocks are being discarded by the purge, so mark them closed.
+		mb.mu.Lock()
+		mb.dirtyCloseWithRemove(false)
+		mb.closed = true
+		mb.mu.Unlock()
 	}
 
 	fs.blks = nil
@@ -9590,8 +9658,24 @@ func (fs *fileStore) compact(seq uint64) (uint64, error) {
 			buf := smb.cache.buf[moff:]
 			// Don't reuse, copy to new recycled buf.
 			nbuf := getMsgBlockBuf(len(buf))
+			// Recycle our nbuf when we are done.
+			defer recycleMsgBlockBuf(nbuf)
 			nbuf = append(nbuf, buf...)
 			smb.closeFDsLockedNoCheck()
+			// Check for compression.
+			if smb.cmp != NoCompression && len(nbuf) > 0 {
+				originalSize := len(nbuf)
+				if nbuf, err = smb.cmp.Compress(nbuf); err != nil {
+					smb.mu.Unlock()
+					fs.mu.Unlock()
+					return purged, err
+				}
+				meta := &CompressionInfo{
+					Algorithm:    smb.cmp,
+					OriginalSize: uint64(originalSize),
+				}
+				nbuf = append(meta.MarshalMetadata(), nbuf...)
+			}
 			// Check for encryption.
 			if smb.bek != nil && len(nbuf) > 0 {
 				// Recreate to reset counter.
@@ -9602,11 +9686,6 @@ func (fs *fileStore) compact(seq uint64) (uint64, error) {
 				// For future writes make sure to set smb.bek to keep counter correct.
 				smb.bek = bek
 				smb.bek.XORKeyStream(nbuf, nbuf)
-			}
-			// Recompress if necessary (smb.cmp contains the algorithm used when
-			// the block was loaded from disk, or defaults to NoCompression if not)
-			if nbuf, err = smb.cmp.Compress(nbuf); err != nil {
-				goto SKIP
 			}
 
 			// We will write to a new file and mv/rename it in case of failure.
@@ -10148,6 +10227,8 @@ func (mb *msgBlock) dirtyCloseWithRemove(remove bool) error {
 		mb.mfd = nil
 	}
 	if remove {
+		// The block is being destroyed, so mark it closed.
+		mb.closed = true
 		// Clear any tracking by subject if we are removing.
 		mb.fss = nil
 		if mb.mfn != _EMPTY_ {
@@ -10704,13 +10785,12 @@ func (fs *fileStore) _writeFullState(force, needLock bool) error {
 	// We will base off of number of subjects and interior deletes. A very large number of msg blocks could also
 	// be used, but for next server version will redo all meta handling to be disk based. So this is temporary.
 	if !force {
-		const numThreshold = 1_000_000
 		// Calculate interior deletes.
 		var numDeleted int
 		if fs.state.LastSeq > fs.state.FirstSeq {
 			numDeleted = int((fs.state.LastSeq - fs.state.FirstSeq + 1) - fs.state.Msgs)
 		}
-		if numSubjects > numThreshold || numDeleted > numThreshold {
+		if numSubjects > highCardinalityThreshold || numDeleted > highCardinalityThreshold {
 			fsUnlock()
 			return errStateTooBig
 		}
@@ -12653,7 +12733,7 @@ func (alg StoreCompression) Decompress(buf []byte) ([]byte, error) {
 // sets O_SYNC on the open file if SyncAlways is set. The dios semaphore is
 // handled automatically by this function, so don't wrap calls to it in dios.
 func (fs *fileStore) writeFileWithOptionalSync(name string, data []byte, perm fs.FileMode) error {
-	return writeAtomically(name, data, perm, fs.fcfg.SyncAlways)
+	return writeAtomically(name, data, perm, fs.syncAlways.Load())
 }
 
 func writeFileWithSync(name string, data []byte, perm fs.FileMode) error {

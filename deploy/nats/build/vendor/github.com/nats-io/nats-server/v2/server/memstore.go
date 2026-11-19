@@ -123,7 +123,7 @@ func (ms *memStore) UpdateConfig(cfg *StreamConfig) error {
 	maxp := ms.maxp
 	ms.maxp = cfg.MaxMsgsPer
 	// If the value is smaller, or was unset before, we need to enforce that.
-	if ms.maxp > 0 && (maxp == 0 || ms.maxp < maxp) {
+	if ms.maxp > 0 && (maxp <= 0 || ms.maxp < maxp) {
 		lm := uint64(ms.maxp)
 		ms.fss.IterFast(func(subj []byte, ss *SimpleState) bool {
 			if ss.Msgs > lm {
@@ -359,9 +359,16 @@ func (ms *memStore) StoreMsg(subj string, hdr, msg []byte, ttl int64) (uint64, i
 
 // SkipMsg will use the next sequence number but not store anything.
 func (ms *memStore) SkipMsg(seq uint64) (uint64, error) {
-	// Grab time.
-	now := time.Unix(0, ats.AccessTime()).UTC()
+	return ms.skipMsg(seq, false)
+}
 
+// SkipMsgNoInterest will use the next sequence number but not store anything.
+// Unlike SkipMsg it also advances LastTime, which is used for Interest retention.
+func (ms *memStore) SkipMsgNoInterest(seq uint64) (uint64, error) {
+	return ms.skipMsg(seq, true)
+}
+
+func (ms *memStore) skipMsg(seq uint64, noInterest bool) (uint64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -374,7 +381,10 @@ func (ms *memStore) SkipMsg(seq uint64) (uint64, error) {
 	}
 
 	ms.state.LastSeq = seq
-	ms.state.LastTime = now
+	// Only update time if not already set or for Interest retention.
+	if noInterest || ms.state.LastTime.IsZero() {
+		ms.state.LastTime = time.Unix(0, ats.AccessTime()).UTC()
+	}
 	if ms.state.Msgs == 0 {
 		ms.state.FirstSeq = seq + 1
 		ms.state.FirstTime = time.Time{}
@@ -386,9 +396,6 @@ func (ms *memStore) SkipMsg(seq uint64) (uint64, error) {
 
 // Skip multiple msgs.
 func (ms *memStore) SkipMsgs(seq uint64, num uint64) error {
-	// Grab time.
-	now := time.Unix(0, ats.AccessTime()).UTC()
-
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -402,7 +409,10 @@ func (ms *memStore) SkipMsgs(seq uint64, num uint64) error {
 	lseq := seq + num - 1
 
 	ms.state.LastSeq = lseq
-	ms.state.LastTime = now
+	// Only update time if not already set.
+	if ms.state.LastTime.IsZero() {
+		ms.state.LastTime = time.Unix(0, ats.AccessTime()).UTC()
+	}
 	if ms.state.Msgs == 0 {
 		ms.state.FirstSeq, ms.state.FirstTime = lseq+1, time.Time{}
 	} else {
@@ -675,9 +685,11 @@ func (ms *memStore) filteredStateLocked(sseq uint64, filter string, lastPerSubje
 			if lastPerSubject {
 				tss, _ = ms.fss.Find(stringToBytes(sm.subj))
 			}
-			// If we are last per subject, make sure to only adjust if all messages are before our first.
-			if tss == nil || tss.Last < first {
+			if tss == nil {
 				adjust++
+			} else if tss.Last < first {
+				// If we are last per subject, make sure to only adjust if all messages are before our first.
+				adjust += tss.Msgs
 			}
 			if seen != nil {
 				seen[sm.subj] = true
@@ -806,10 +818,11 @@ func (ms *memStore) filterIsAll(filters []string) bool {
 		return false
 	}
 	// Sort so we can compare.
+	subjects := copyStrings(ms.cfg.Subjects)
 	slices.Sort(filters)
-	slices.Sort(ms.cfg.Subjects)
+	slices.Sort(subjects)
 	for i, subj := range filters {
-		if !subjectIsSubsetMatch(ms.cfg.Subjects[i], subj) {
+		if !subjectIsSubsetMatch(subjects[i], subj) {
 			return false
 		}
 	}
@@ -1027,9 +1040,11 @@ func (ms *memStore) NumPendingMulti(sseq uint64, sl *gsl.SimpleSublist, lastPerS
 			if lastPerSubject {
 				tss, _ = ms.fss.Find(stringToBytes(sm.subj))
 			}
-			// If we are last per subject, make sure to only adjust if all messages are before our first.
-			if tss == nil || tss.Last < first {
+			if tss == nil {
 				adjust++
+			} else if tss.Last < first {
+				// If we are last per subject, make sure to only adjust if all messages are before our first.
+				adjust += tss.Msgs
 			}
 			if seen != nil {
 				seen[sm.subj] = true
@@ -1411,23 +1426,21 @@ func (ms *memStore) runMsgScheduling() {
 // PurgeEx will remove messages based on subject filters, sequence and number of messages to keep.
 // Will return the number of purged messages.
 func (ms *memStore) PurgeEx(subject string, sequence, keep uint64) (purged uint64, err error) {
+	// sequence == 1 means "purge up to but not including 1", a no-op.
+	if sequence == 1 {
+		return 0, nil
+	}
 	if subject == _EMPTY_ || subject == fwcs {
 		if keep == 0 && sequence == 0 {
 			return ms.purge(0)
 		}
 		if sequence > 1 {
 			return ms.compact(sequence)
-		} else if keep > 0 {
-			ms.mu.RLock()
-			msgs, lseq := ms.state.Msgs, ms.state.LastSeq
-			ms.mu.RUnlock()
-			if keep >= msgs {
-				return 0, nil
-			}
-			return ms.compact(lseq - keep + 1)
 		}
-		return 0, nil
-
+		// Make sure to not leave subject if empty.
+		if subject == _EMPTY_ {
+			subject = fwcs
+		}
 	}
 	eq := compareFn(subject)
 	if ss := ms.FilteredState(1, subject); ss.Msgs > 0 {
@@ -1437,8 +1450,11 @@ func (ms *memStore) PurgeEx(subject string, sequence, keep uint64) (purged uint6
 			}
 			ss.Msgs -= keep
 		}
+		// "Purge up to but not including sequence": sequence == 0 means no
+		// sequence filter; sequence >= 1 clamps the upper bound to sequence-1
+		// (so sequence == 1 purges nothing).
 		last := ss.Last
-		if sequence > 1 {
+		if sequence >= 1 {
 			last = sequence - 1
 		}
 		ms.mu.Lock()
@@ -1541,6 +1557,10 @@ func (ms *memStore) compact(seq uint64) (uint64, error) {
 			purged = ms.state.Msgs
 		}
 		ms.state.Msgs -= purged
+		if ms.state.Msgs == 0 {
+			ms.state.FirstSeq = ms.state.LastSeq + 1
+			ms.state.FirstTime = time.Time{}
+		}
 		if bytes > ms.state.Bytes {
 			bytes = ms.state.Bytes
 		}
