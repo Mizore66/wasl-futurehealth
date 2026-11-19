@@ -13,6 +13,11 @@ import detailJson from "./fixtures/ledger_case_detail.json";
 import { syntheticCaseSummaries, WALL } from "./paging-fixtures";
 
 const { recordAction } = vi.hoisted(() => ({ recordAction: vi.fn() }));
+const { published } = vi.hoisted(() => ({ published: [] as unknown[] }));
+vi.mock("@/components/shell/today-counts", async (load) => ({
+  ...(await load<typeof import("@/components/shell/today-counts")>()),
+  publishTodayCounts: (c: unknown) => published.push(c),
+}));
 vi.mock("@/app/app/today/actions", () => ({ recordAction }));
 vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) => String(value) }));
 vi.mock("motion/react", async () => {
@@ -109,7 +114,7 @@ async function mount(items: WorkItem[], live = true) {
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   await act(async () => root!.render(createElement(TodayBoard, { items, now: 40, aside: null, live, undoMs: 0 })));
 }
-const open = () => host.querySelector<HTMLElement>('section[aria-label="Open patient"]')!;
+const open = () => host.querySelector<HTMLElement>('section[aria-label="Selected case"]')!;
 const button = (text: string) => Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((b) => b.textContent?.trim() === text);
 async function choose(label: string, value: string) {
   const select = Array.from(open().querySelectorAll("label")).find((l) => l.textContent?.startsWith(label))!.querySelector("select")!;
@@ -148,13 +153,12 @@ describe("Today board records notification then receipt (#197, live)", () => {
     const fact = { at: "2026-11-19T09:00:00Z", event: "n".repeat(64), occurred_at: "2026-11-19T08:55:00Z", channel: "phone" as const, template: TEMPLATE };
     const notified = item("no_acknowledgement", { canonical_dropoff: "never_notified", owner: "Practitioner/ahs-mushrif-nurse-1", api_overlay: overlay({ communication: { canonical_dropoff: "never_notified", obligation: "no_acknowledgement", understanding: "none", notification: fact } }) });
     await mount([notified]);
-    expect(host.textContent).toContain("To call 1");
+    expect(published.at(-1)).toEqual({ call: 1, waiting: 0, none: 0 });
     // The server action still carries the obligation for any action on a case with a recorded fact; the board must ignore it.
     recordAction.mockResolvedValueOnce({ ...saved("h1", "no_acknowledgement"), owner: "Dr Al Kaabi" });
     await act(async () => button("Hand to Dr Al Kaabi")!.click());
     expect(recordAction.mock.calls[0][2].action).toBe("assign_owner");
-    expect(host.textContent).toContain("To call 0");
-    expect(host.textContent).toContain("Waiting 1");
+    expect(published.at(-1)).toEqual({ call: 0, waiting: 1, none: 0 });
   });
 
   it("a refused record says why and changes nothing", async () => {

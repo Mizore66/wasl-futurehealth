@@ -282,6 +282,13 @@ function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<Na
   const params = useSearchParams();
   const raw = params.get("queue");
   const current = pathname === "/app/today" ? (isTodayQueue(raw) ? raw : "call") : null;
+  /* On Today, a queue link keeps the chosen programme and provider. */
+  const scoped = (q: TodayQueue) => {
+    const next = new URLSearchParams();
+    if (current) for (const k of ["programme", "provider"]) if (params.has(k)) next.set(k, params.get(k)!);
+    next.set("queue", q);
+    return `/app/today?${next.toString()}`;
+  };
   return (
     <ul className="m-0 mb-1 ml-[19px] list-none border-l border-limestone-400 p-0">
       {TODAY_QUEUES.map(([q, label]) => {
@@ -290,7 +297,7 @@ function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<Na
           <li key={q} className="relative">
             <span aria-hidden className="absolute left-0 top-1/2 h-px w-2.5 bg-limestone-400" />
             <Link
-              href={`/app/today?queue=${q}`}
+              href={scoped(q)}
               aria-current={on ? "page" : undefined}
               className={cx(
                 "ml-2.5 flex h-9 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline",

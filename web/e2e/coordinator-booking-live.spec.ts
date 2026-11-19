@@ -285,18 +285,18 @@ test.describe("coordinator simulated booking, live mock", () => {
     await page.request.post(`http://127.0.0.1:${MOCK_PORT}/mock/state`); // readback route remains available
     reset();
     await page.goto(`${NEXT_URL}/app/today`);
-    const open = page.getByRole("region", { name: "Open patient" });
+    const open = page.getByRole("region", { name: "Selected case" });
     await expect(open.getByTestId("booking-controls")).toBeVisible();
     await open.getByRole("button", { name: "Accept simulated slot", exact: true }).click();
     await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
-    await page.getByRole("tab", { name: /Waiting/ }).click();
-    await expect(page.getByRole("region", { name: "Your list" })).toContainText("Simulated slot reserved · Day 20");
-    await expect(page.getByRole("region", { name: "Open patient" })).toContainText("Simulated reservation confirmed");
-    await expect(page.getByRole("region", { name: "Open patient" })).toContainText("Simulated slot reserved · sim:colonoscopy:201:1");
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
+    await expect(page.getByTestId("today-sheet")).toContainText("Simulated slot reserved · Day 20");
+    await expect(page.getByRole("region", { name: "Selected case" })).toContainText("Simulated reservation confirmed");
+    await expect(page.getByRole("region", { name: "Case history" })).toContainText("Simulated slot reserved · sim:colonoscopy:201:1");
     await page.reload();
     await page.waitForLoadState("networkidle");
-    await page.getByRole("tab", { name: /Waiting/ }).click();
-    await expect(page.getByRole("region", { name: "Your list" })).toContainText("Simulated slot reserved · Day 20");
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
+    await expect(page.getByTestId("today-sheet")).toContainText("Simulated slot reserved · Day 20");
   });
 
   test("a synthetic no-show can be rebooked without changing canonical state", async ({ page }) => {

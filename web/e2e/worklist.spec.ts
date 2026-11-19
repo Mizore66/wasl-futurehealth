@@ -19,39 +19,67 @@ const aisha = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-
 const fatima = `/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1001")}`;
 
 test.describe("Today", () => {
-  test("finds the most urgent patient and opens them", async ({ page }) => {
+  const sheet = (page: Page) => page.getByTestId("today-sheet");
+  const open = (page: Page) => page.getByRole("region", { name: "Selected case" });
+  const rows = (page: Page) => sheet(page).locator("button[data-case-row]");
+  const row = (page: Page, id: string) => sheet(page).locator(`button[data-case-row="${id}"]`);
+  const queueLink = (page: Page, name: RegExp) => page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name });
+
+  test("opens To call on the most urgent case: the task is the heading, one primary action, contact shown", async ({ page }) => {
     await page.goto("/app/today");
-    await expect(page.getByTestId("finding")).toHaveText("AHS-sr-1002 is 77 days over 31: notified, hasn't confirmed. 7 more to call.");
-    await expect(page.getByRole("tab", { name: "To call 8" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tab", { name: "Waiting 6" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "No owner 2" })).toBeVisible();
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByTestId("lead-days")).toHaveAttribute("data-value", "108");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Today");
+    await expect(page.getByText(/Colorectal screening · Al Mushrif · run day 120/)).toBeVisible();
+    await expect(queueLink(page, /^To call/)).toHaveAttribute("aria-current", "page");
+    await expect(queueLink(page, /^To call/)).toContainText("8");
+    await expect(queueLink(page, /^Waiting/)).toContainText("6");
+    await expect(queueLink(page, /^No owner/)).toContainText("2");
+    await expect(sheet(page).getByRole("heading", { level: 2, name: /^To call/ })).toBeVisible();
+    await expect(rows(page)).toHaveCount(8);
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(open(page).getByRole("heading", { level: 2 })).toHaveText("Receipt outstanding");
+    await expect(open(page).getByText("Notified, hasn't confirmed. Call to confirm they received the result.")).toBeVisible();
+    await expect(open(page).getByTestId("lead-days")).toHaveAttribute("data-value", "108");
+    await expect(open(page).getByTestId("contact-status")).toHaveText("Contact permitted");
+    await expect(open(page).locator("[data-variant=cta]")).toHaveCount(1);
+    await expect(open(page).locator("[data-variant=cta]")).toHaveText("Log call · AHS-sr-1002");
     await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser (no live API)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
 
-  test("logging No answer keeps the patient open, offers Undo and the next patient", async ({ page }) => {
+  test("the case-details icon shows owner, contact permission and ids; the folder is unavailable without a record", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "No answer" }).click();
-    const status = open.getByRole("status");
+    const details = open(page).getByRole("button", { name: "Case details" });
+    await expect(details).toHaveAttribute("aria-expanded", "false");
+    await expect(open(page).getByTestId("case-facts")).toBeHidden();
+    await details.click();
+    await expect(details).toHaveAttribute("aria-expanded", "true");
+    const facts = open(page).getByTestId("case-facts");
+    await expect(facts).toContainText("OwnerNurse 6");
+    await expect(facts).toContainText("Contact permissionGranted");
+    await expect(facts).toContainText("CaseAHS-sr-1002");
+    await expect(facts).toContainText("Referred12 May");
+    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toBeDisabled();
+  });
+
+  test("logging No answer keeps the case open, offers Undo and the next case", async ({ page }) => {
+    await page.goto("/app/today");
+    await open(page).getByRole("button", { name: "No answer" }).click();
+    const status = open(page).getByRole("status");
     await expect(status).toContainText("Logged: No answer · AHS-sr-1002 moved to the end · Undo");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByText("Called, no answer")).toBeVisible();
-    await expect(page.getByRole("button", { name: /AHS-sr-1002/ }).first()).toContainText("No answer ×1 · retry tomorrow");
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(page.getByRole("region", { name: "Case history" }).getByText("Called, no answer")).toBeVisible();
+    await expect(row(page, "AHS-sr-1002")).toContainText("No answer ×1 · retry tomorrow");
     await shot(page, "today-logged");
 
     await status.getByRole("button", { name: "Undo" }).click();
-    await expect(open.getByRole("status")).toHaveCount(0);
-    await expect(open.getByText("Called, no answer")).toHaveCount(0);
-    await expect(open.getByRole("group", { name: "After the call" })).toBeVisible();
+    await expect(open(page).getByRole("status")).toHaveCount(0);
+    await expect(page.getByText("Called, no answer")).toHaveCount(0);
+    await expect(open(page).getByRole("group", { name: "After the call" })).toBeVisible();
 
-    await open.getByRole("button", { name: "No answer" }).click();
-    await open.getByRole("button", { name: "Next patient: AHS-sr-1023" }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
+    await open(page).getByRole("button", { name: "No answer" }).click();
+    await open(page).getByRole("button", { name: "Next case: AHS-sr-1023" }).click();
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1023");
   });
 
   test("Log call, then Reached offers Appointment agreed and Call back on…", async ({ page }) => {
@@ -59,44 +87,68 @@ test.describe("Today", () => {
     // call-back days are the dates of the wall-clock `until` that is saved, never the run's days (issue #37).
     await page.clock.setFixedTime(new Date("2026-11-10T23:59:30Z"));
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
-    await expect(open.getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
-    await expect(open.getByRole("group", { name: "How did it go?" })).toBeVisible();
+    await open(page).getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+    await expect(open(page).getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
+    await expect(open(page).getByRole("group", { name: "How did it go?" })).toBeVisible();
 
-    await open.getByRole("button", { name: "Reached" }).click();
-    const next = open.getByRole("group", { name: "What next?" });
+    await open(page).getByRole("button", { name: "Reached" }).click();
+    const next = open(page).getByRole("group", { name: "What next?" });
     await expect(next.getByRole("button")).toHaveText(["Appointment agreed", "Call back on…", "Done elsewhere…", "Declined"]);
-    await expect(open.getByRole("button", { name: /^Next patient/ })).toHaveCount(0);
+    await expect(open(page).getByRole("button", { name: /^Next case/ })).toHaveCount(0);
 
     await next.getByRole("button", { name: "Call back on…" }).click();
-    const days = open.getByRole("group", { name: "Call back on" });
+    const days = open(page).getByRole("group", { name: "Call back on" });
     await expect(days.getByRole("button")).toHaveText(["Wed 11 Nov", "Thu 12 Nov", "Fri 13 Nov"]);
     await days.getByRole("button", { name: "Wed 11 Nov" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Call back Wed 11 Nov");
-    await expect(open.getByRole("button", { name: /^Next patient/ })).toBeVisible();
+    await expect(open(page).getByRole("status")).toContainText("Logged: Call back Wed 11 Nov");
+    await expect(open(page).getByRole("button", { name: /^Next case/ })).toBeVisible();
     await shot(page, "today-callback");
   });
 
-  test("Appointment agreed moves the patient to Waiting, booking still needed; Take moves an unowned one to To call", async ({ page }) => {
+  // user-flows.html "Coordinate and verify a callback", Today steps, with the fixture case at the top of To call.
+  test("Log call → Reached → Appointment agreed moves the case to Waiting; the sidebar counts follow", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Reached" }).click();
-    await open.getByRole("button", { name: "Appointment agreed" }).click();
-    // The patient stays open with the outcome; the toast's "Open Waiting" follows them to their new tab.
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
-    await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Waiting 7" })).toBeVisible();
-    await open.getByRole("button", { name: "Open Waiting" }).click();
-    await expect(page.getByRole("tab", { name: "Waiting 7" })).toHaveAttribute("aria-selected", "true");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ })).toContainText("Booking needed · date to confirm");
+    await open(page).getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+    await open(page).getByRole("button", { name: "Reached" }).click();
+    await open(page).getByRole("button", { name: "Appointment agreed" }).click();
+    // The case stays open with the outcome; "Open Waiting" follows it to its new queue.
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(open(page).getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
+    await expect(queueLink(page, /^To call/)).toContainText("7");
+    await expect(queueLink(page, /^Waiting/)).toContainText("7");
+    await open(page).getByRole("button", { name: "Open Waiting" }).click();
+    await expect(page).toHaveURL(/queue=waiting/);
+    await expect(queueLink(page, /^Waiting/)).toHaveAttribute("aria-current", "page");
+    await expect(sheet(page).getByRole("heading", { level: 2, name: /^Waiting/ })).toBeVisible();
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(row(page, "AHS-sr-1002")).toContainText("Booking needed");
+    await expect(row(page, "AHS-sr-1002")).toHaveAttribute("aria-expanded", "true");
+    const history = page.getByRole("region", { name: "Case history" });
+    await expect(history.getByRole("button", { name: /^Referral issued/ })).toBeVisible();
+    await history.getByRole("button", { name: /^Appointment agreed/ }).click();
+    await expect(history.getByText("Recorded by This browser")).toBeVisible();
 
-    await page.getByRole("tab", { name: "No owner 2" }).click();
-    await open.getByRole("button", { name: "Take this patient" }).click();
-    await expect(page.getByRole("tab", { name: "To call 8" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "No owner 1" })).toBeVisible();
+    // The sidebar's queue links are soft navigations: the logged action survives switching queues.
+    await queueLink(page, /^To call/).click();
+    await expect(page).toHaveURL(/queue=call/);
+    await expect(rows(page)).toHaveCount(7);
+    await queueLink(page, /^Waiting/).click();
+    await expect(row(page, "AHS-sr-1002")).toContainText("Booking needed");
+  });
+
+  // user-flows.html "Take ownership with contact on hold": no fixture case is both unowned and on hold, so the
+  // unowned fixture case plays the role; the app's rule moves a taken case to To call, not Waiting.
+  test("No owner: taking a case makes it yours and moves it to To call", async ({ page }) => {
+    await page.goto("/app/today?queue=none");
+    await expect(sheet(page).getByRole("heading", { level: 2, name: /^No owner/ })).toBeVisible();
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1017");
+    await expect(open(page).getByTestId("contact-status")).toHaveText("Contact permitted");
+    await open(page).getByRole("button", { name: "Take this patient" }).click();
+    await expect(open(page).getByRole("status")).toContainText("Logged: Yours now · AHS-sr-1017 moved to To call");
+    await expect(queueLink(page, /^No owner/)).toContainText("1");
+    await expect(queueLink(page, /^To call/)).toContainText("9");
+    await open(page).getByRole("button", { name: "Case details" }).click();
+    await expect(open(page).getByTestId("case-facts")).toContainText("OwnerHessa Al Ali");
   });
 
   // Issue #36: nothing is booked and no dialer is connected, so no step of the workflow may say so.
@@ -104,7 +156,6 @@ test.describe("Today", () => {
     test(`no step says Book, Booked or On the call (${width}px)`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/app/today");
-      const open = page.getByRole("region", { name: "Open patient" });
       const seen: string[] = [];
       const look = async () => {
         seen.push(await page.locator("main").innerText());
@@ -112,16 +163,14 @@ test.describe("Today", () => {
         seen.push(...labels);
       };
       await look();
-      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
-      await expect(open.getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
+      await open(page).getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await expect(open(page).getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
       await look();
-      await open.getByRole("button", { name: "Reached" }).click();
+      await open(page).getByRole("button", { name: "Reached" }).click();
       await look();
-      await open.getByRole("button", { name: "Appointment agreed" }).click();
+      await open(page).getByRole("button", { name: "Appointment agreed" }).click();
       await look();
-      // Below lg the list and the open patient take turns.
-      if (width < 1024) await open.getByRole("button", { name: /^Your list/ }).click();
-      await page.getByRole("tab", { name: /^Waiting/ }).click();
+      await open(page).getByRole("button", { name: "Open Waiting" }).click();
       await look();
       const text = seen.join("\n");
       expect(text).toContain("Booking needed · date to confirm");
@@ -130,33 +179,57 @@ test.describe("Today", () => {
     });
   }
 
-  test("search narrows the list; Waiting opens Aisha's record", async ({ page }) => {
+  // user-flows.html "Search without acting on the wrong case".
+  test("search by id selects that row; no match clears the case actions; clearing restores the list", async ({ page }) => {
     await page.goto("/app/today");
-    await page.getByRole("searchbox").fill("1014");
-    await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { pressed: true })).toContainText("AHS-sr-1014");
-    await page.getByRole("searchbox").fill("");
-    await page.getByRole("tab", { name: "Waiting 6" }).click();
-    await page.getByRole("button", { name: /Aisha Al Mansoori/ }).click();
-    await page.getByRole("link", { name: "Open record" }).click();
-    await expect(page).toHaveURL(/AHS-sr-1011$/);
+    await page.locator("body").press("/");
+    const search = page.getByRole("searchbox", { name: "Find a case or task" });
+    await expect(search).toBeFocused();
+    await search.fill("1002");
+    await expect(rows(page)).toHaveCount(1);
+    await expect(row(page, "AHS-sr-1002")).toHaveAttribute("aria-expanded", "true");
+    await expect(open(page).getByRole("heading", { level: 2 })).toHaveText("Receipt outstanding");
+    await search.fill("99999");
+    await expect(rows(page)).toHaveCount(0);
+    await expect(open(page)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Log call/ })).toHaveCount(0);
+    await expect(sheet(page).getByText("No case matches this search.")).toBeVisible();
+    await search.fill("");
+    await expect(rows(page)).toHaveCount(8);
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+  });
+
+  test("the folder icon opens the full record and Audit trail its audit", async ({ page }) => {
+    await page.goto("/app/today?queue=waiting");
+    await row(page, "AHS-sr-1011").click();
+    await expect(open(page).getByTestId("case-who")).toContainText("Aisha Al Mansoori");
+    await expect(page.getByRole("region", { name: "Case history" }).getByRole("link", { name: "Audit trail" })).toHaveAttribute("href", /AHS-sr-1011\/audit$/);
+    await open(page).getByRole("link", { name: "Open full record" }).click();
+    await expect(page).toHaveURL(aisha);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
 
-  test("avatars open the record where there is one; elsewhere they select the row", async ({ page }) => {
+  test("phone: the selected case opens inline in its row; tapping the row folds it", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/app/today");
-    const list = page.getByRole("region", { name: "Your list" });
-    await expect(page.getByRole("link", { name: "Open AHS-sr-1003's record" })).toHaveCount(0);
-    const row = list.getByRole("button", { name: /AHS-sr-1003/ });
-    await row.locator("..").click({ position: { x: 22, y: 24 } });
-    await expect(row).toHaveAttribute("aria-pressed", "true");
-
-    await page.getByRole("tab", { name: "Waiting 6" }).click();
-    await list.getByRole("button", { name: /Aisha Al Mansoori/ }).click();
-    await expect(page.getByRole("region", { name: "Open patient" }).getByRole("link", { name: "Open Aisha Al Mansoori's record" })).toBeVisible();
-    await shot(page, "today-avatar-links");
+    const first = row(page, "AHS-sr-1002");
+    await expect(first).toHaveAttribute("aria-expanded", "true");
+    const [rowBox, caseBox, nextBox] = await Promise.all([first.boundingBox(), open(page).boundingBox(), row(page, "AHS-sr-1023").boundingBox()]);
+    expect(caseBox!.y).toBeGreaterThan(rowBox!.y);
+    expect(nextBox!.y).toBeGreaterThan(caseBox!.y + caseBox!.height - 1);
+    await expect(open(page).getByRole("button", { name: "Log call · AHS-sr-1002" })).toBeVisible();
+    const activity = page.getByRole("button", { name: "Activity" });
+    await expect(activity).toHaveAttribute("aria-expanded", "false");
+    await activity.click();
+    await expect(page.getByRole("region", { name: "Case history" }).getByText("Referral issued")).toBeVisible();
+    await shot(page, "today-phone");
     await noSeriousAxe(page);
-    await list.getByRole("link", { name: "Open Aisha Al Mansoori's record" }).click();
-    await expect(page).toHaveURL(aisha);
+    await first.click();
+    await expect(first).toHaveAttribute("aria-expanded", "false");
+    await expect(open(page)).toBeHidden();
+    await row(page, "AHS-sr-1023").click();
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1023");
+    await expect(open(page)).toBeVisible();
   });
 });
 
@@ -536,7 +609,7 @@ test.describe("Phone width, 390px", () => {
     await noSeriousAxe(page);
   });
 
-  test("Today: Call is in the first screen; the list takes its turn", async ({ page }) => {
+  test("Today: Call is in the first screen; the open case unfolds inline in the queue", async ({ page }) => {
     await page.goto("/app/today");
     await noSideScroll(page);
     const call = page.getByRole("button", { name: "Log call · AHS-sr-1002" });
@@ -546,16 +619,16 @@ test.describe("Phone width, 390px", () => {
     await shot(page, "today-390");
     await noSeriousAxe(page);
 
-    await page.getByRole("button", { name: /Your list/ }).click();
-    await expect(page.getByRole("region", { name: "Your list" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Open patient" })).toBeHidden();
+    // Folding the open row leaves the queue alone on the screen.
+    await page.locator('button[data-case-row="AHS-sr-1002"]').click();
+    await expect(page.getByRole("region", { name: "Selected case" })).toBeHidden();
     await noSideScroll(page);
     await targetsAre44(page);
     await shot(page, "today-list-390");
     await noSeriousAxe(page);
 
-    await page.getByRole("button", { name: /AHS-sr-1023/ }).click();
-    await expect(page.getByRole("heading", { level: 2, name: "AHS-sr-1023" })).toBeFocused();
+    await page.locator('button[data-case-row="AHS-sr-1023"]').click();
+    await expect(page.getByRole("region", { name: "Selected case" })).toHaveAttribute("data-case", "AHS-sr-1023");
     await expect(page.getByRole("button", { name: "Log call · AHS-sr-1023" })).toBeVisible();
   });
 
@@ -610,7 +683,9 @@ test.describe("Phone width, 390px", () => {
       const s = getComputedStyle(document.activeElement!);
       return { w: s.outlineWidth, style: s.outlineStyle };
     });
-    expect(outline).toEqual({ w: "2px", style: "solid" });
+    // The staff shell draws a 3px ring; anything solid and at least 2px is visible focus.
+    expect(outline.style).toBe("solid");
+    expect(parseFloat(outline.w)).toBeGreaterThanOrEqual(2);
   });
 });
 

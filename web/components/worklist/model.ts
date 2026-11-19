@@ -204,6 +204,8 @@ export type WorkItem = {
   overdue: boolean;
   referralDay: number;
   textsAllowed: boolean;
+  /** The canonical contact permission as the case list serves it (`unknown` when none is recorded). */
+  consent: CaseSummary["consent"];
   /** A recorded consent denial or opt-out: no new contact outcome may be logged, whatever the canonical consent. */
   contactBlocked: boolean;
   /** Patient denial/opt-out in the demo overlay makes simulated SMS unavailable immediately. */
@@ -443,6 +445,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     ...(communicationStep ? { communicationStep } : {}),
     ...(communicationStep === "notify" && c.notification_template ? { notificationTemplate: c.notification_template } : {}),
     textsAllowed: c.consent === "granted" && !contactBlocked,
+    consent: c.consent,
     contactBlocked,
     textsStopped,
     patient: c.api_patient,

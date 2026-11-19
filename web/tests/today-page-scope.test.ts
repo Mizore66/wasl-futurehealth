@@ -24,8 +24,9 @@ beforeEach(() => {
 
 async function render(sp: Record<string, string>) {
   // Server component unit test with mocked reads; not served HTTP or browser evidence.
-  const tree = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<{ children: ReactElement[] }>;
-  const [scope, board] = tree.props.children;
+  const tree = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<{ children: ReactElement<{ aside?: ReactElement }>[] }>;
+  const [header, board] = tree.props.children;
+  const scope = header.props.aside!;
   expect([scope.type, board.type]).toEqual([TodayScope, TodayBoard]);
   return { scope: scope.props as ComponentProps<typeof TodayScope>, board: board.props as ComponentProps<typeof TodayBoard> };
 }
@@ -51,4 +52,11 @@ it("gives an honest empty state for a programme and provider with no open cases"
   const { board, scope } = await render({ programme: "breast", provider: "ahs-mushrif" });
   expect(board.items).toEqual([]);
   expect(scope.count).toBe(0);
+});
+
+it("passes the URL's queue to the board, To call unless it names Waiting or No owner", async () => {
+  expect((await render({})).board.queue).toBe("call");
+  expect((await render({ queue: "waiting" })).board.queue).toBe("waiting");
+  expect((await render({ queue: "none", programme: "crc" })).board.queue).toBe("none");
+  expect((await render({ queue: "everything" })).board.queue).toBe("call");
 });

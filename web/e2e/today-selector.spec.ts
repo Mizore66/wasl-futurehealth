@@ -19,14 +19,19 @@ const PROGRAMMES = {
 } as const;
 
 const scope = (page: Page) => page.getByTestId("today-scope");
+/** The scope form folds into the page header; open it to change the choice. */
+async function openScope(page: Page) {
+  if (!(await scope(page).evaluate((d) => (d as HTMLDetailsElement).open))) await scope(page).getByText("Change scope").click();
+}
 const programmeSelect = (page: Page) => scope(page).getByLabel("Programme");
 const providerSelect = (page: Page) => scope(page).getByLabel("Provider");
-const list = (page: Page) => page.getByRole("region", { name: "Your list" });
+const list = (page: Page) => page.getByTestId("today-sheet");
 
-/** Total of the three saved views (To call, Waiting, No owner) = the queue the selection produced. */
+/** Total of the three queues (To call, Waiting, No owner) the sidebar counts for this board = the queue the selection produced. */
 async function queueSize(page: Page): Promise<number> {
+  const nav = page.getByRole("navigation", { name: "Main", exact: true });
   let n = 0;
-  for (const tab of await list(page).getByRole("tab").all()) n += Number((await tab.locator("span").innerText()).trim());
+  for (const name of [/^To call/, /^Waiting/, /^No owner/]) n += Number((await nav.getByRole("link", { name }).innerText()).match(/(\d+)\s*$/)?.[1] ?? NaN);
   return n;
 }
 
@@ -46,21 +51,25 @@ test.describe("Today programme and provider selection", () => {
       await expect(providerSelect(page)).toHaveValue("");
       await expect(page.getByText(new RegExp(`${name.replace(/[()]/g, "\\$&")} · all providers · run day`))).toBeVisible();
       const option = programmeSelect(page).locator(`option[value="${value}"]`);
-      const offered = Number((await option.innerText()).match(/\((\d+)\)$/)?.[1]);
+      const offered = Number((await option.textContent())?.match(/\((\d+)\)$/)?.[1]);
       expect(offered, `${value} is offered with an open-case count`).toBeGreaterThan(0);
-      expect(await queueSize(page), `${value}: queue size equals the offered count`).toBe(offered);
+      await expect.poll(() => queueSize(page), { message: `${value}: queue size equals the offered count` }).toBe(offered);
     }
   });
 
   test("the form puts the choice in the URL; reload and history keep it", async ({ page }) => {
     await page.goto("/app/today");
+    await openScope(page);
     await programmeSelect(page).selectOption("lung_nodule");
     await providerSelect(page).selectOption("");
     await scope(page).getByRole("button", { name: "Show queue" }).click();
     await expect(page).toHaveURL(/programme=lung_nodule/);
     await expect(page.getByText(/Lung nodule follow-up · all providers/)).toBeVisible();
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(list(page)).toBeVisible();
+    // A sidebar queue link keeps the chosen scope.
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
+    await expect(page).toHaveURL(/programme=lung_nodule&provider=&queue=waiting/);
+    await expect(page.getByText(/Lung nodule follow-up · all providers/)).toBeVisible();
 
     await page.reload();
     await expect(programmeSelect(page)).toHaveValue("lung_nodule");
@@ -87,6 +96,6 @@ test.describe("Today programme and provider selection", () => {
     await expect(page.getByTestId("today-scope-empty")).toHaveText(
       "No open cases for Breast screening · Al Mushrif. Choose another programme or provider.",
     );
-    expect(await queueSize(page)).toBe(0);
+    await expect.poll(() => queueSize(page)).toBe(0);
   });
 });

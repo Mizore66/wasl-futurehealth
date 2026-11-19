@@ -39,20 +39,30 @@ let root: ReturnType<typeof createRoot> | null = null;
 let host: HTMLDivElement;
 afterEach(async () => { if (root) await act(async () => root!.unmount()); root = null; vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); document.body.innerHTML = ""; });
 const button = (text: string) => Array.from(host.querySelectorAll("button")).find((b) => b.textContent?.includes(text))!;
+let props: Parameters<typeof TodayBoard>[0];
 const mount = async (items: CaseSummary[] = [initial]) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null, undoMs: 0 })));
+  props = { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null, undoMs: 0 };
+  await act(async () => root!.render(createElement(TodayBoard, props)));
 };
+/** The sidebar's queue links change `?queue=`; the rendered prop stands in for the URL here. */
+const queue = async (q: "call" | "waiting" | "none") => {
+  props = { ...props, queue: q };
+  await act(async () => root!.render(createElement(TodayBoard, props)));
+};
+/** Opens the case-details disclosure (owner, contact permission, texts). */
+const facts = async () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Case details"][aria-expanded="false"]')?.click());
+const rowButtons = () => Array.from(host.querySelectorAll<HTMLButtonElement>("button[data-case-row]"));
 const click = async (text: string) => act(async () => button(text).click());
 
 it("applies refreshed opt-out immediately, keeping contact history as history", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ ...response(blocked), entries: [{ what: "Earlier permitted contact", when: "Saved", who: "Coordinator", hash: "earlier" }] })));
   await mount();
   expect(button("Log call").disabled).toBe(true);
-  expect(host.textContent).not.toContain("Allowed");
+  expect(host.textContent).not.toContain("Contact permitted");
   expect(host.textContent).not.toContain("After the call");
-  expect(host.textContent).toContain("Contact blocked");
+  expect(host.textContent).toContain("Contact on hold");
   expect(host.textContent).toContain("Earlier permitted contact");
 });
 
@@ -61,8 +71,9 @@ for (const phase of ["live", "restarted"]) {
     const granted = CaseSummary.parse({ ...base, ...load(`contact_staff_regrant_${phase}.json`), review: base.review, owner: "someone", dropoff: "not_booked" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok(response(granted))));
     await mount([{ ...granted, contact_state: { status: "denied", contact_blocked: true } }]);
+    await facts();
     expect(button("Log call").disabled).toBe(false);
-    expect(host.textContent).toContain("Allowed");
+    expect(host.textContent).toContain("Contact permitted");
     expect(host.textContent).toContain(phase === "restarted" ? "What next?" : "After the call");
     if (phase === "restarted") {
       expect(button("Appointment agreed").disabled).toBe(false);
@@ -90,7 +101,7 @@ it("failed or malformed reads cannot turn blocked permission into a successful g
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(answer));
     await mount([blocked]);
     expect(button("Log call").disabled).toBe(true);
-    expect(host.textContent).not.toContain("Allowed");
+    expect(host.textContent).not.toContain("Contact permitted");
     expect(host.textContent).not.toContain("MALFORMED-CONCEALED");
     expect(host.textContent).toContain("Could not read the case ledger");
     await act(async () => root!.unmount()); root = null; host.remove();
@@ -101,7 +112,7 @@ it("an invalid prefix cannot authorize regrant", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok(response(initial, "invalid"))));
   await mount([blocked]);
   expect(button("Log call").disabled).toBe(true);
-  expect(host.textContent).not.toContain("Allowed");
+  expect(host.textContent).not.toContain("Contact permitted");
   expect(host.textContent).toContain("not trustworthy");
 });
 
@@ -110,7 +121,7 @@ it("aborted selection reads cannot change another case, reveal stale history, or
   const other = { ...initial, id: "ahs/ServiceRequest/OTHER", referral_day: initial.referral_day + 1 };
   const fetchMock = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise).mockReturnValueOnce(third.promise);
   vi.stubGlobal("fetch", fetchMock); await mount([initial, other]);
-  const selectOther = Array.from(host.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')).find((b) => b.textContent?.includes("OTHER"))!;
+  const selectOther = rowButtons().find((b) => b.textContent?.includes("OTHER"))!;
   await act(async () => selectOther.click());
   expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
   await act(async () => second.resolve(ok(response({ ...other, contact_state: blocked.contact_state }))));
@@ -118,7 +129,7 @@ it("aborted selection reads cannot change another case, reveal stale history, or
   await act(async () => first.resolve(ok({ ...response(initial), entries: [{ what: "STALE-CONCEALED", when: "Saved", who: "Hidden" }] })));
   expect(button("Log call").disabled).toBe(true);
   expect(host.textContent).not.toContain("STALE-CONCEALED");
-  const firstRow = Array.from(host.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')).find((b) => b.textContent?.includes(workItem(initial, 40, true, NOW).name))!;
+  const firstRow = rowButtons().find((b) => b.textContent?.includes(workItem(initial, 40, true, NOW).short))!;
   await act(async () => firstRow.click());
   await act(async () => third.resolve(ok(response(blocked))));
   expect(button("Log call").disabled).toBe(true);
@@ -146,6 +157,7 @@ it("a refreshed real patient opt-out hides persisted Reached follow-ups without 
     entries: [{ what: "Earlier permitted Reached call", when: "Saved", who: "Coordinator", hash: "earlier-reached" }],
   })));
   await mount([granted]);
+  await facts();
   expect(button("Log call").disabled).toBe(true);
   expect(host.textContent).toContain("Stopped by patient");
   expect(host.textContent).toContain("Earlier permitted Reached call");
@@ -165,14 +177,15 @@ it("a refreshed overlay regrant never borrows canonical permission from the stal
   const fetchMock = vi.fn().mockReturnValue(pending.promise);
   vi.stubGlobal("fetch", fetchMock);
   await mount([stale]);
+  await facts();
   expect(fetchMock).toHaveBeenCalledTimes(1);
   expect(fetchMock.mock.calls[0][0]).toBe(`/app/today/ledger?id=${encodeURIComponent(granted.id)}`);
-  expect(host.textContent).toContain("Allowed");
+  expect(host.textContent).toContain("Contact permitted");
   expect(host.textContent).not.toContain("Not allowed yet");
   await act(async () => pending.resolve(ok(response(granted))));
   expect(host.textContent).not.toContain("Could not read the case ledger");
   expect(host.textContent).toContain("Not allowed yet");
-  expect(host.textContent).not.toContain("Allowed");
+  expect(host.textContent).not.toContain("Contact permitted");
   expect(host.textContent).not.toContain("Stopped by patient");
   // This is only an affordance projection. The matching Go integration test proves
   // that a fresh overlay grant cannot authorize contact with canonical denial.
@@ -211,11 +224,12 @@ it("a live take retains the verified owner while an older contact read is fenced
   vi.stubGlobal("fetch", vi.fn().mockImplementation(() => new Promise(() => {})).mockReturnValueOnce(stale.promise));
   recordAction.mockResolvedValue({ ok: true, head: "taken-head", hash: "take-hash", actor: "coordinator-bound", owner: "coordinator-bound" });
   await mount([{ ...initial, owner: "" }]);
-  await click("No owner");
+  await queue("none");
   await click("Take this patient");
   expect(recordAction).toHaveBeenCalledWith(initial.id, "page-head", { action: "assign_owner" });
   await act(async () => stale.resolve(ok(response(blocked))));
-  await click("To call");
+  await queue("call");
+  await facts();
   expect(host.textContent).toContain("coordinator-bound");
   expect(host.textContent).not.toContain("Hessa Al Ali");
   expect(button("Log call").disabled).toBe(false);

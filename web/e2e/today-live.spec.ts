@@ -15,6 +15,8 @@ import { expect, test } from "@playwright/test";
  * It is a mock: the real handler's output is pinned separately by pipeline/api_ledger_contract_test.go.
  */
 const LIVE = !!process.env.TODAY_LIVE_MOCK;
+/** Today's queues are links under Today in the sidebar, each with its live count. */
+const queues = (page: import("@playwright/test").Page) => page.getByRole("navigation", { name: "Main", exact: true });
 // Overridable so parallel checkouts can run this spec at once; the server must point WASL_API_URL at the same port.
 const MOCK_PORT = Number(process.env.TODAY_LIVE_MOCK_PORT ?? 3294);
 
@@ -223,10 +225,10 @@ test.describe("Today, live mode against a mock API", () => {
 
     await page.goto("/app/today");
     await expect(page.locator("[data-honesty=built]")).toHaveText("Call log: saved to the case ledger");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open).toContainText("No contact on the case ledger yet");
-    await expect(page.getByRole("tab", { name: "To call 8" })).toBeVisible();
+    const open = page.getByRole("region", { name: "Selected case" });
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(page.getByTestId("today-open")).toContainText("No contact on the case ledger yet");
+    await expect(queues(page).getByRole("link", { name: "To call 8" })).toBeVisible();
 
     await open.getByRole("button", { name: "Reached" }).click();
     await expect(open.getByRole("status")).toContainText("Logged: Reached");
@@ -239,37 +241,37 @@ test.describe("Today, live mode against a mock API", () => {
 
     await page.reload();
     // Placement after the reload comes from the persisted outcome: the declined patient is not back in To call.
-    await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
-    const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ });
+    await expect(queues(page).getByRole("link", { name: "To call 7" })).toBeVisible();
+    await queues(page).getByRole("link", { name: /^Waiting/ }).click();
+    const row = page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1002/ });
     await expect(row).toContainText("Declined · GP to sign");
     await row.click();
-    const trail = open.getByRole("list").last();
-    await expect(open).toContainText("Reached (phone)");
-    await expect(open).toContainText("Declined the procedure (phone)");
-    await expect(open).toContainText("mock-coordinator");
-    await expect(open).not.toContainText("earlier action");
+    const trail = page.getByRole("region", { name: "Case history" }).getByRole("list");
+    await expect(page.getByTestId("today-open")).toContainText("Reached (phone)");
+    await expect(page.getByTestId("today-open")).toContainText("Declined the procedure (phone)");
+    await expect(page.getByTestId("today-open")).toContainText("mock-coordinator");
+    await expect(page.getByTestId("today-open")).not.toContainText("earlier action");
     await expect(trail).not.toContainText("This browser");
 
     // Another case's earlier note and outcome, written before this browser ever opened it.
-    await page.getByRole("tab", { name: /^To call/ }).click();
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
-    await expect(open).toContainText("Note: “Prefers a morning call”");
-    await expect(open).toContainText("Reached (phone): “Will check her diary”");
-    await expect(open).toContainText("seed-coordinator");
+    await queues(page).getByRole("link", { name: /^To call/ }).click();
+    await page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1023/ }).click();
+    await expect(page.getByTestId("today-open")).toContainText("Note: “Prefers a morning call”");
+    await expect(page.getByTestId("today-open")).toContainText("Reached (phone): “Will check her diary”");
+    await expect(page.getByTestId("today-open")).toContainText("seed-coordinator");
   });
 
   test("a saved Reached outcome keeps its follow-up choices after a reload and after switching patients (issue #131)", async ({ page }) => {
     const choices = ["Appointment agreed", "Call back on…", "Done elsewhere…", "Declined"];
     const outcomes = (id: string) => ledger.get(id)?.map((e) => e.data.outcome);
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    const list = page.getByRole("region", { name: "Your list" });
+    const open = page.getByRole("region", { name: "Selected case" });
+    const list = page.getByTestId("today-sheet");
     await open.getByRole("button", { name: "Reached" }).click();
     await expect(open.getByRole("group", { name: "What next?" }).getByRole("button")).toHaveText(choices);
 
     await page.reload();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1002");
     await expect(open.getByRole("group", { name: "What next?" }).getByRole("button")).toHaveText(choices);
     await expect(open.getByText("Reached (phone)")).toHaveCount(1);
 
@@ -283,7 +285,7 @@ test.describe("Today, live mode against a mock API", () => {
     expect(outcomes(first)).toEqual(["reached", "appointment_agreed"]);
 
     await page.reload();
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
+    await queues(page).getByRole("link", { name: /^Waiting/ }).click();
     await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
     await expect(open.getByRole("group", { name: "What next?" })).toHaveCount(0);
     await expect(open.getByRole("group", { name: "After the call" })).toBeVisible();
@@ -293,14 +295,14 @@ test.describe("Today, live mode against a mock API", () => {
     append(first, "contact_outcome", { outcome: "reached", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
     append(second, "contact_outcome", { outcome: "reached", channel: "phone" }, "seed-coordinator", "2026-11-09T08:00:00.000Z");
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
+    const open = page.getByRole("region", { name: "Selected case" });
     await open.getByRole("button", { name: "Call back on…" }).click();
     await open.getByRole("group", { name: "Call back on" }).getByRole("button").first().click();
     await expect(open.getByRole("status")).toContainText("Logged: Call back");
     expect(ledger.get(first)?.map((e) => e.kind)).toEqual(["contact_outcome", "snooze"]);
 
     await page.reload();
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1023/ }).click();
     await open.getByRole("button", { name: "Declined" }).click();
     await expect(open.getByTestId("removed-notice")).toContainText("Logged: Declined");
     expect(ledger.get(second)?.map((e) => e.data.outcome)).toEqual(["reached", "declined"]);
@@ -314,8 +316,8 @@ test.describe("Today, live mode against a mock API", () => {
       append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T08:00:00.000Z");
       append(first, "contact_outcome", { outcome: "no_answer", channel: "phone" }, "seed-coordinator", "2026-11-08T09:00:00.000Z");
       await page.goto("/app/today");
-      const open = page.getByRole("region", { name: "Open patient" });
-      const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ });
+      const open = page.getByRole("region", { name: "Selected case" });
+      const row = page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1002/ });
       await row.click();
       await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
       await expect(open.getByRole("group", { name: "How did it go?" }).getByRole("button")).toHaveText(["Reached", "No answer", "Voicemail", "Wrong number"]);
@@ -323,13 +325,13 @@ test.describe("Today, live mode against a mock API", () => {
       await open.getByRole("button", { name: label, exact: true }).click();
       await expect(open.getByRole("status")).toContainText(`Logged: ${label}`);
       await expect(row).toContainText(status);
-      await expect(open).toContainText(trail);
+      await expect(page.getByTestId("today-open")).toContainText(trail);
       expect(ledger.get(first)?.at(-1)).toMatchObject({ kind: "contact_outcome", data: { outcome, channel: "phone" }, actor: "mock-coordinator" });
 
       await page.reload();
       await expect(row).toContainText(status);
       await row.click();
-      await expect(open).toContainText(trail);
+      await expect(page.getByTestId("today-open")).toContainText(trail);
       await expect(open.getByText(trail)).toHaveCount(1);
       await expect(open.getByText("No answer (phone)")).toHaveCount(2);
 
@@ -348,41 +350,41 @@ test.describe("Today, live mode against a mock API", () => {
 
   test("Take this patient assigns the verified coordinator, not a fixed name (issue #148)", async ({ page }) => {
     await page.goto("/app/today");
-    await page.getByRole("tab", { name: /^No owner/ }).click();
-    const open = page.getByRole("region", { name: "Open patient" });
-    const heading = await open.getByRole("heading", { level: 2 }).innerText();
+    await queues(page).getByRole("link", { name: /^No owner/ }).click();
+    const open = page.getByRole("region", { name: "Selected case" });
+    const heading = (await open.getAttribute("data-case"))!;
     await open.getByRole("button", { name: "Take this patient" }).click();
     await expect(open.getByRole("status")).toContainText("Logged: Yours now");
     const events = [...ledger.values()].flat();
     expect(events.map((e) => [e.kind, e.data.owner, e.actor])).toEqual([["assign_owner", "mock-coordinator", "mock-coordinator"]]);
-    await expect(open).not.toContainText("Hessa");
+    await expect(page.getByTestId("today-open")).not.toContainText("Hessa");
 
     await page.reload();
-    await page.getByRole("tab", { name: /^To call/ }).click();
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: new RegExp(heading) }).click();
-    await expect(open).not.toContainText("Hessa");
+    await queues(page).getByRole("link", { name: /^To call/ }).click();
+    await page.locator("button[data-case-row]").filter({ hasText: new RegExp(heading) }).click();
+    await expect(page.getByTestId("today-open")).not.toContainText("Hessa");
   });
 
   test("a non-CRC case takes an owner, a contact outcome and a snooze through the same ledger action, and a reload restores them (issue #114)", async ({ page }) => {
     const breast = "bsu-screen/ServiceRequest/BSU-sr-15";
     await page.goto("/app/today?programme=breast&provider=bsu-screen");
     await expect(page.getByText(/Breast screening · .* · run day/)).toBeVisible();
-    await page.getByRole("tab", { name: /^No owner/ }).click();
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("BSU-sr-15");
-    await expect(open).toContainText("Breast screening");
+    await queues(page).getByRole("link", { name: /^No owner/ }).click();
+    const open = page.getByRole("region", { name: "Selected case" });
+    await expect(open).toHaveAttribute("data-case", "BSU-sr-15");
+    await expect(page.getByTestId("today-open")).toContainText("Breast screening");
 
     await open.getByRole("button", { name: "Take this patient" }).click();
     await expect(open.getByRole("status")).toContainText("Logged: Yours now");
-    await page.getByRole("tab", { name: /^To call/ }).click();
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /BSU-sr-15/ }).click();
+    await queues(page).getByRole("link", { name: /^To call/ }).click();
+    await page.locator("button[data-case-row]").filter({ hasText: /BSU-sr-15/ }).click();
     await open.getByRole("button", { name: /^Log call/ }).click();
     await open.getByRole("button", { name: "Reached" }).click();
     await expect(open.getByRole("status")).toContainText("Logged: Reached");
     await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
     await expect(open.getByRole("status")).toContainText("Logged: Snoozed to tomorrow");
     // The breast clock is the programme's 14-day assessment standard, not CRC's 31 days.
-    await expect(page.getByTestId("finding")).toContainText("BSU-sr-15 is 113 days over 14");
+    await expect(page.getByTestId("today-open")).toContainText("113 days over 14");
 
     // One chained ledger, written by the verified coordinator; each write named the head the one before it left.
     const evs = ledger.get(breast) ?? [];
@@ -397,24 +399,24 @@ test.describe("Today, live mode against a mock API", () => {
     await page.reload();
     await expect(page).toHaveURL(/programme=breast&provider=bsu-screen/);
     // The persisted snooze parks the patient until tomorrow; the owner keeps them off No owner.
-    await expect(page.getByRole("tab", { name: "No owner 0" })).toBeVisible();
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
-    const row = page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /BSU-sr-15/ });
+    await expect(queues(page).getByRole("link", { name: "No owner 0" })).toBeVisible();
+    await queues(page).getByRole("link", { name: /^Waiting/ }).click();
+    const row = page.locator("button[data-case-row]").filter({ hasText: /BSU-sr-15/ });
     await expect(row).toContainText("Snoozed to tomorrow");
     await row.click();
-    await expect(open).toContainText("Reached (phone)");
-    await expect(open).toContainText("mock-coordinator");
-    await expect(open).not.toContainText("Colorectal");
+    await expect(page.getByTestId("today-open")).toContainText("Reached (phone)");
+    await expect(page.getByTestId("today-open")).toContainText("mock-coordinator");
+    await expect(page.getByTestId("today-open")).not.toContainText("Colorectal");
   });
 
   test("result notification and receipt are separate, labelled actions; Reached records neither (issue #197)", async ({ page }) => {
     const id = "ahs-mushrif/ServiceRequest/AHS-sr-1003";
     await page.goto("/app/today");
-    const list = page.getByRole("region", { name: "Your list" });
+    const list = page.getByTestId("today-sheet");
     await list.getByRole("searchbox", { name: "Search" }).fill("AHS-sr-1003");
     await list.getByRole("button", { name: /AHS-sr-1003/ }).click();
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1003");
+    const open = page.getByRole("region", { name: "Selected case" });
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1003");
     const notifyForm = open.getByRole("region", { name: "Result notification" });
     const receiptForm = open.getByRole("region", { name: "Receipt of the result" });
     const notify = notifyForm.getByRole("button", { name: "Record result notification" });
@@ -454,7 +456,7 @@ test.describe("Today, live mode against a mock API", () => {
     await page.reload();
     await list.getByRole("searchbox", { name: "Search" }).fill("AHS-sr-1003");
     await list.getByRole("button", { name: /AHS-sr-1003/ }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1003");
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1003");
     await expect(notifyForm).toHaveCount(0);
     await expect(receiptForm).toHaveCount(0);
   });
@@ -462,16 +464,16 @@ test.describe("Today, live mode against a mock API", () => {
   test("a non-CRC case without contact permission refuses the outcome and records nothing (issue #114)", async ({ page }) => {
     const ifhas = "ifh-screen/ServiceRequest/IFH-sr-101";
     await page.goto("/app/today?programme=ifhas&provider=ifh-screen");
-    const list = page.getByRole("region", { name: "Your list" });
+    const list = page.getByTestId("today-sheet");
     await list.getByRole("searchbox", { name: "Search" }).fill("IFH-sr-101");
     const row = list.getByRole("button", { name: /IFH-sr-101/ });
     for (const tab of ["To call", "Waiting", "No owner"]) {
-      await list.getByRole("tab", { name: new RegExp(`^${tab}`) }).click();
+      await queues(page).getByRole("link", { name: new RegExp(`^${tab}`) }).click();
       if (await row.count()) break;
     }
     await row.click();
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("IFH-sr-101");
+    const open = page.getByRole("region", { name: "Selected case" });
+    await expect(open).toHaveAttribute("data-case", "IFH-sr-101");
     // The API refuses a contact outcome without contact permission; the board says so and records nothing.
     await open.getByRole("button", { name: "Reached" }).click();
     await expect(open.getByTestId("action-refused")).toContainText("Not saved: this patient has not given contact permission");
@@ -488,8 +490,8 @@ test.describe("Today, live mode against a mock API", () => {
     const board = page.getByTestId("ledger-invalid-board");
     await expect(board).toHaveAttribute("role", "alert");
     await expect(board).toContainText("nothing on this board is authoritative");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ }).click();
+    const open = page.getByRole("region", { name: "Selected case" });
+    await page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1002/ }).click();
     const warning = open.getByTestId("ledger-invalid");
     await expect(warning).toBeVisible();
     // The board banner is the one alert; the per-patient box adds detail without a second announcement.
@@ -498,14 +500,14 @@ test.describe("Today, live mode against a mock API", () => {
     await expect(page.getByRole("alert").filter({ hasText: /ledger/i })).toHaveCount(1);
     await expect(warning).toContainText("not authoritative");
     await expect(warning).toContainText("API: line 3: head does not follow the case's previous event");
-    await expect(open).toContainText("No answer (phone)");
-    await expect(open).toContainText("Note: “Left a message with her son”");
+    await expect(page.getByTestId("today-open")).toContainText("No answer (phone)");
+    await expect(page.getByTestId("today-open")).toContainText("Note: “Left a message with her son”");
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
     await expect(open.getByRole("button", { name: "Reached" })).toBeDisabled();
     await expect(open.getByRole("button", { name: /^Hand to/ })).toBeDisabled();
 
     // A row the open patient's detail never touched is no more authoritative, and the board still says so.
-    await page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1023/ }).click();
     await expect(board).toBeVisible();
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
 
@@ -518,10 +520,10 @@ test.describe("Today, live mode against a mock API", () => {
     unavailable.add(first);
 
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
+    const open = page.getByRole("region", { name: "Selected case" });
     const failed = open.getByTestId("ledger-read-failed");
     await expect(failed).toContainText("Could not read the case ledger");
-    await expect(open).not.toContainText("Prefers a morning call");
+    await expect(page.getByTestId("today-open")).not.toContainText("Prefers a morning call");
 
     // Retry while the API is still down fails again, and says so again.
     await failed.getByRole("button", { name: "Retry" }).click();
@@ -529,19 +531,19 @@ test.describe("Today, live mode against a mock API", () => {
 
     unavailable.delete(first);
     await failed.getByRole("button", { name: "Retry" }).click();
-    await expect(open).toContainText("Note: “Prefers a morning call”");
+    await expect(page.getByTestId("today-open")).toContainText("Note: “Prefers a morning call”");
     await expect(failed).toHaveCount(0);
 
     // Reselection reads a failed case again, without Retry.
     unavailable.add(second);
-    const list = page.getByRole("region", { name: "Your list" });
+    const list = page.getByTestId("today-sheet");
     await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
     await expect(failed).toBeVisible();
     unavailable.delete(second);
     await list.getByRole("button", { name: /AHS-sr-1002/ }).click();
     await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
     await expect(failed).toHaveCount(0);
-    await expect(open).toContainText("No contact on the case ledger yet");
+    await expect(page.getByTestId("today-open")).toContainText("No contact on the case ledger yet");
   });
 
   test("reselecting a failed case by search shows 'Reading…' while it is read again, not the old error", async ({ page }) => {
@@ -549,7 +551,7 @@ test.describe("Today, live mode against a mock API", () => {
     unavailable.add(first);
 
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
+    const open = page.getByRole("region", { name: "Selected case" });
     const failed = open.getByTestId("ledger-read-failed");
     await expect(failed).toContainText("Could not read the case ledger");
 
@@ -558,15 +560,15 @@ test.describe("Today, live mode against a mock API", () => {
     hold(first);
     const search = page.getByRole("searchbox", { name: "Search" });
     await search.fill("1023");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1023");
     await search.fill("");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open).toContainText("Reading the case ledger…");
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(page.getByTestId("today-open")).toContainText("Reading the case ledger…");
     await expect(failed).toHaveCount(0);
     await expect(open.getByRole("button", { name: "Retry" })).toHaveCount(0);
 
     release();
-    await expect(open).toContainText("Note: “Prefers a morning call”");
+    await expect(page.getByTestId("today-open")).toContainText("Note: “Prefers a morning call”");
     await expect(failed).toHaveCount(0);
   });
 
@@ -574,16 +576,16 @@ test.describe("Today, live mode against a mock API", () => {
     invalid = "append failed and the ledger file state is unknown: disk full";
     await page.goto("/app/today");
     const board = page.getByTestId("ledger-invalid-board");
-    const open = page.getByRole("region", { name: "Open patient" });
+    const open = page.getByRole("region", { name: "Selected case" });
     await expect(board).toBeVisible();
     await expect(open.getByTestId("ledger-invalid")).toContainText("API: append failed and the ledger file state is unknown");
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
 
     // An operator restores the ledger. The next read (selecting another case) clears the warning without a reload.
     invalid = null;
-    const list = page.getByRole("region", { name: "Your list" });
+    const list = page.getByTestId("today-sheet");
     await list.getByRole("button", { name: /AHS-sr-1023/ }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
+    await expect(open).toHaveAttribute("data-case", "AHS-sr-1023");
     await expect(board).toHaveCount(0);
     await expect(open.getByTestId("ledger-invalid")).toHaveCount(0);
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeEnabled();
@@ -598,8 +600,8 @@ test.describe("Today, live mode against a mock API", () => {
   test("a 401 on a write is a refusal that names the credential, not 'the API did not answer'", async ({ page }) => {
     refuseWrites = true;
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open).toContainText("No contact on the case ledger yet");
+    const open = page.getByRole("region", { name: "Selected case" });
+    await expect(page.getByTestId("today-open")).toContainText("No contact on the case ledger yet");
     await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
     const refused = open.getByTestId("action-refused");
     await expect(refused).toContainText("Not saved: the API did not accept this server's coordinator credential");
@@ -609,7 +611,7 @@ test.describe("Today, live mode against a mock API", () => {
 
   test("a valid ledger shows no board-level warning", async ({ page }) => {
     await page.goto("/app/today");
-    await expect(page.getByRole("region", { name: "Open patient" }).getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Selected case" }).getByRole("heading", { level: 2 })).toBeVisible();
     await expect(page.getByTestId("ledger-invalid-board")).toHaveCount(0);
   });
 });

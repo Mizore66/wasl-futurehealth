@@ -11,7 +11,7 @@ const WORKLISTS = new Set(["/app/today", "/app/referrals"]);
 export function focusWorklist(doc: Document = document): boolean {
   const list = doc.getElementById("worklist");
   if (!list) return false;
-  (list.querySelector<HTMLElement>("[role=tabpanel] button[aria-pressed]") ?? list).focus();
+  (list.querySelector<HTMLElement>("[role=tabpanel] button[aria-pressed], button[data-case-row]") ?? list).focus();
   return true;
 }
 
