@@ -75,7 +75,7 @@ for (const [label, viewport] of [
     await expect(page).toHaveURL(`${RECORD}/audit`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Audit trail");
     await expect(page.getByRole("main")).toContainText("AHS-sr-1011");
-    await page.getByRole("link", { name: /Back to the case/ }).click();
+    await page.getByRole("link", { name: /Back to (the )?case/ }).click();
     await expect(page).toHaveURL(RECORD);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
 

@@ -95,27 +95,39 @@ for (const name of NAMES) {
       const res = await page.goto(href(name, "/audit"));
       expect(res?.status()).toBe(200);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Audit trail");
+      await expect(page.getByRole("link", { name: "Back to case" })).toHaveAttribute("href", href(name, ""));
+
+      /* Verification: the score and one inspectable decision per returned signature. */
+      const matching = audit.decision_signatures.filter((s: { sig: string; recomputed: string }) => s.sig === s.recomputed).length;
+      const verify = page.getByRole("region", { name: "Verification" });
+      await expect(verify.getByTestId("signature-score")).toContainText(`${matching} / ${audit.decision_signatures.length}`);
+      await expect(verify.getByRole("radio")).toHaveCount(audit.decision_signatures.length);
+      const receipt = verify.getByTestId("decision-receipt");
+      await expect(receipt).toContainText(matching === audit.decision_signatures.length ? "Signature matched" : /Signature (matched|mismatch)/);
+      await receipt.getByText("Signature details").click();
+      await expect(receipt).toContainText(audit.decision_signatures[0].sig);
+
+      /* Hashes and sealed entries sit under Audit details. */
+      await verify.getByText("Audit details", { exact: true }).click();
       await expect(page.getByTestId("chain-verified")).toContainText(
         audit.chain_verified ? `Verified · ${audit.chain.length} of ${audit.chain_length} intact` : "Chain broken",
       );
       await expect(page.getByRole("region", { name: "Chain check" })).toContainText("recomputed every entry's hash");
-
       const entries = page.getByRole("list", { name: "Chain entries" }).getByRole("listitem");
       await expect(entries).toHaveCount(audit.chain.length);
       await expect(entries.first()).toContainText("Starts the chain");
-
       const sigs = page.getByRole("list", { name: "Decision signatures" }).getByRole("listitem");
       await expect(sigs).toHaveCount(audit.decision_signatures.length);
-      const matching = audit.decision_signatures.filter((s: { sig: string; recomputed: string }) => s.sig === s.recomputed).length;
       await expect(page.getByTestId("signature-count")).toHaveText(`${matching} of ${audit.decision_signatures.length} match`);
       await expect(sigs.first()).toContainText("Stored");
       await expect(sigs.first()).toContainText("Recomputed");
-      await expect(sigs.first()).toContainText(matching === audit.decision_signatures.length ? "Matches" : /Matches|Does not match/);
-
-      const history = page.getByRole("region", { name: "Review history" });
-      await expect(history).toBeVisible();
-      if (audit.history.length === 0) await expect(history).toContainText("Nobody has signed this case through the API yet");
       await expect(page.getByRole("region", { name: "Anchors" })).toContainText(audit.anchor_note);
+
+      /* Event history: every timeline record and ledger event, grouped by month. */
+      const history = page.getByRole("region", { name: "Event history" });
+      await expect(history).toBeVisible();
+      const counts = await history.locator("[data-month] > summary small").allInnerTexts();
+      expect(counts.reduce((n, t) => n + Number.parseInt(t, 10), 0)).toBe(detail.timeline.length + audit.history.length);
       await shot(page, `audit-${name}-1440`);
       await noSeriousAxe(page);
     });
@@ -181,13 +193,16 @@ test.describe("review desk on a phone", () => {
     await noSeriousAxe(page);
   });
 
-  test("the desk stacks, the answer is in the first screen and every target is 44px", async ({ page }) => {
+  test("the desk stacks the two records above the answer and every target is 44px", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(desk);
     await expectNoOverflow(page, 390);
     const same = page.getByRole("radio", { name: "Same patient", exact: true });
     const box = await same.boundingBox();
-    expect(box && box.y + box.height).toBeLessThanOrEqual(844);
+    const referral = await page.locator('[data-record="referral"]').boundingBox();
+    const report = await page.locator('[data-record="report"]').boundingBox();
+    expect(report!.y).toBeGreaterThan(referral!.y + referral!.height - 1);
+    expect(box!.y).toBeGreaterThan(report!.y + report!.height - 1);
     expect(await smallTargets(page, 44)).toEqual([]);
 
     // Answer both questions; the sign button is a target too.
@@ -245,10 +260,11 @@ test.describe("review desk on a phone", () => {
   });
 });
 
-test("the review desk at desktop width keeps the answer beside the evidence", async ({ page }) => {
+test("the review desk at desktop width puts the two records side by side", async ({ page }) => {
   await page.goto(href("review_hold").replace("/patients/", "/review/"));
-  const aside = await page.getByRole("complementary", { name: "Your answers" }).boundingBox();
-  const bridge = await page.getByRole("region", { name: "Is this the same person?" }).boundingBox();
-  expect(aside && bridge && aside.x).toBeGreaterThan(bridge!.x + bridge!.width - 1);
+  const referral = await page.locator('[data-record="referral"]').boundingBox();
+  const report = await page.locator('[data-record="report"]').boundingBox();
+  expect(report!.x).toBeGreaterThan(referral!.x + referral!.width - 1);
+  expect(Math.abs(report!.y - referral!.y)).toBeLessThan(2);
   await shot(page, "review-desk-1440");
 });
