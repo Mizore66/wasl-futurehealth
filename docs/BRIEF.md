@@ -1,6 +1,6 @@
 # FINAL BRIEF: Wasl (وصل), closing screening loops across Abu Dhabi providers
 
-**Challenge:** #5, Closing the Screening-to-Care Loop. **Submission due 21 Nov 2026** (team registered).
+**Challenge:** #5, Closing the Screening-to-Care Loop. **Submission closes 20 Nov 2026, 18:29 UTC (22:29 UAE)** (team registered).
 
 **Documents:**
 
@@ -13,9 +13,14 @@
 
 Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader, lung nodules), `pipeline/results/final/SUMMARY.md` (frozen evaluation), `booking/RESULTS.md`, `image/RESULTS.md`, `reader/RESULTS-gemma4b.md` and `docs/research/v7-gate-offline-results.md`.
 
+**Hosted demo (19 Nov, built):** the web app is public at https://wasl-topaz-mu.vercel.app and reads the Wasl API on
+Azure Container Apps. The audit agent runs on Azure AI Foundry using Gemma 3 4B, the on-device reader's file, served
+from a Modal GPU. CI/CD redeploys every changed part on merge to `main`. The API serves a run produced locally; the
+pipeline does not run in the cloud. Map and limits: [`LIVE.md`](LIVE.md).
+
 **Status (2 Nov):**
-- **Backend:** all 8 handoff stages and all 20 agents2 items are built and integrated locally; nothing has been pushed. This includes the one-command demo, v7 gate, live 4B reader, consent hold, HL7 v2, API, booking, frozen 5-seed eval, Learn-then-Test gate, image reader, five additional loop types, deployment and adversarial/scale tests. The encoder retrain is built and merged. X10/B8 hardening and fresh scale/B8 validation are complete; the final-code ten-lane frozen evaluation is complete at decision code `075abc5`. The seven-programme API samples have been refreshed.
-- **Left:** the Next.js frontend (Kai) and the demo video. The 43 reports now have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling. The submission draft and recording guide are prepared.
+- **Backend:** all 8 handoff stages and all 20 agents2 items are built and integrated; the repository is public and CI/CD deploys from `main` (see the hosted-demo line above). This includes the one-command demo, v7 gate, live 4B reader, consent hold, HL7 v2, API, booking, frozen 5-seed eval, Learn-then-Test gate, image reader, five additional loop types, deployment and adversarial/scale tests. The encoder retrain is built and merged. X10/B8 hardening and fresh scale/B8 validation are complete; the final-code ten-lane frozen evaluation is complete at decision code `075abc5`. The seven-programme API samples have been refreshed.
+- **Left (19 Nov):** the demo video. The Next.js frontend is built and hosted. The 43 reports now have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling. The submission draft and recording guide are prepared.
 - **Judging (23 Oct, before the build):** 5 simulated judge personas over many blind rounds; latest mean **47.2/60**, with about 9–11 points per judge attributed to build work that is now done.
 
 ## The problem in plain words
@@ -110,16 +115,16 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 | 9–12 | Contract. Primary: ADHDS vendor agreement (precedents: Orion, VitalHub, Digi7; DoH–ADHDS–Philips AI PoC). Fallback: DoH limited tender. Second door: on-premise for a provider network (HIE 4.3.13.2.1.3). | Contract signed |
 | 12+ | Cervical, then breast, then other loop types | Fixed cost (AED 0.54–1.39M year 1) falls toward ≈AED 5–28 per loop |
 
-## Plan to 21 Nov
+## Plan to 20 Nov
 
 | Item | Owner | Status |
 |---|---|---|
 | Backend stages 0–7 and the six depth items | Anas (backend) | Done |
 | Encoder retrain on real name pairs | Anas | Done |
 | Re-run the frozen 5-seed evaluation on the final code | Anas | Done at decision code `075abc5` |
-| Next.js dashboard and coordinator worklist on `docs/API.md` | Kai (frontend) | In progress |
+| Next.js dashboard and coordinator worklist on `docs/API.md` | Kai (frontend) | Built; hosted at https://wasl-topaz-mu.vercel.app on the live Azure API ([`LIVE.md`](LIVE.md)) |
 | Clinically verified model-assisted labelling of the 43 reports; report κ (`docs/labelling/`) | Both + clinician | Complete: κ = 1.000; not independent human double-labelling |
-| Record the 3-minute demo video | Both | After the frontend |
+| Record the 3-minute demo video | Both | **Not recorded**; the frontend is ready |
 | Condense the write-up into the submission document | Both | After the final evaluation |
 
 ## 3-minute demo

@@ -2,7 +2,7 @@
 
 **Evidence-backed follow-up tracking for Abu Dhabi screening programmes, across providers.**
 
-This is our entry to the [Future Health Digital Innovation Challenge](https://hack2skill.com/event/futurehealthchallenge/), challenge #5: *Closing the Screening-to-Care Loop*. **Due 21 Nov 2026.**
+This is our entry to the [Future Health Digital Innovation Challenge](https://hack2skill.com/event/futurehealthchallenge/), challenge #5: *Closing the Screening-to-Care Loop*. **Submission closes 20 Nov 2026, 18:29 UTC** (22:29 UAE).
 
 ## The problem
 A woman has a positive stool test (FIT+) at her clinic. Her colonoscopy, if it happens, may be at a different hospital, under a Latin spelling of her name and with no Emirates ID. Her clinic never finds out.
@@ -21,11 +21,26 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 - **Runs seven loop types:** incidental lung nodules (Fleischner 2017), diabetic retinopathy screening (DoH 2024 referral criteria, NHS DESP deadlines), breast screening recall (DoH 2025 breast standard, BI-RADS), lung cancer screening LDCT (ACR 2022 Lung-RADS) and IFHAS abnormal-result follow-up (DoH 2025) run on the same engine as CRC and cervical screening.
 - **Suggests the next step:** simulated booking decision support, direct-to-procedure pathways (DoH App 9 checklist) and bowel-prep risk (Dik 2015 score), always as suggestions a clinician confirms.
 
+## Live demo
+
+| | |
+|---|---|
+| **Web app** | https://wasl-topaz-mu.vercel.app (public; staff area at `/app`) |
+| API health | https://wasl-api.blackground-3bcaad60.japaneast.azurecontainerapps.io/healthz |
+| Gemma 3 4B server health | https://kaiz404--wasl-gemma-serve.us-east.modal.run/health |
+| Deploy runs | https://github.com/Mizore66/wasl-futurehealth/actions/workflows/deploy.yml |
+
+The web app runs on Vercel and reads the Wasl API on Azure Container Apps. An audit agent on Azure AI Foundry explains
+a case's audit trail with Gemma 3 4B, the same quantized file the on-device reader uses, served from a Modal GPU for
+the demo. Every merge to `main` redeploys the parts that changed. All data is synthetic. The architecture, every
+link, the credentials and the limits are in [`docs/LIVE.md`](docs/LIVE.md).
+
 ## Read first
 
 | | |
 |---|---|
-| [`docs/BRIEF.md`](docs/BRIEF.md) | **Start here.** Status, evidence, constraints, pilot plan, build plan to 21 Nov |
+| [`docs/BRIEF.md`](docs/BRIEF.md) | **Start here.** Status, evidence, constraints, pilot plan, build plan to 20 Nov |
+| [`docs/LIVE.md`](docs/LIVE.md) | **The hosted demo**: live links, architecture, CI/CD, credentials, limits |
 | [`docs/PITCH.md`](docs/PITCH.md) | Short pitch |
 | [`docs/WRITEUP.md`](docs/WRITEUP.md) | Full sourced write-up (to be condensed into the submission) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase 2–3 design: queue control, multi-loop engine, image reader, Learn-then-Test gate |

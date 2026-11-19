@@ -32,7 +32,9 @@ The **built patient layer** includes owner-named notices, teach-back, consultati
 
 A separate **built, hold-only image reader** assesses caecal landmarks and preparation photographs. It can hold a loop, flag a missing landmark or request a blinded endoscopist grade; it can never close one or upgrade a text label by itself.
 
-The **built API** exposes the materialised dashboard summary, filtered case lists, case detail, provenance audit and role-controlled append-only review actions, plus deterministic fixtures. It supports reported versus evidenced closure, drop-off reasons and review workload. A finished frontend is not claimed.
+The **built API** exposes the materialised dashboard summary, filtered case lists, case detail, provenance audit and role-controlled append-only review actions, plus deterministic fixtures. It supports reported versus evidenced closure, drop-off reasons and review workload.
+
+The **built hosted demo** runs at https://wasl-topaz-mu.vercel.app. A Next.js web app on Vercel reads this API on Azure Container Apps through server-side role tokens. An audit agent on Azure AI Foundry explains a case's redacted audit trail using Gemma 3 4B, the same quantized file as the on-device reader, served from a rented GPU that stands in for a hospital's own machine. Every merge to `main` redeploys the changed parts. All data is synthetic. The API serves a run produced locally; the pipeline itself does not run in the cloud, and the agent's explanations are unvalidated summaries, not findings.
 
 ## Evidence investigator: built experimental feature
 
@@ -117,7 +119,7 @@ A subsequent **designed live-outreach phase** would use a stepped-wedge across 6
 - A separate two-seed stress test with 2% wrong Emirates IDs produced **19 false closures with the optional demographic guard off and zero with it on**, with recall and review costs and residual linkage contamination. The guard remains off by default; two seeds do not establish a general safety guarantee.
 - The evidence-investigator sidecar is built and selected experimentally for the showcase, but validation did not run. Stress saved reviewer time while losing five closures against unguarded; it is not a validated recall improvement and has no live-NATS or clinical-effectiveness claim.
 - Malaffi connectivity is mock-tested only. Non-English notices require professional translation, back-translation and cognitive testing; teach-back has been tested only in English, Modern Standard Arabic, Gulf Arabic and Arabizi.
-- No finished frontend, recorded demonstration, clinician endorsement, procurement agreement, local care uplift or patient benefit is claimed.
+- No recorded demonstration, clinician endorsement, procurement agreement, local care uplift or patient benefit is claimed.
 
 ## Sources
 
