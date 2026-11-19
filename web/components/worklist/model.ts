@@ -15,6 +15,7 @@ import { caseDeadlineDays, isNoAction, nextScreenDays, overdueClockDays } from "
 import { reviewDateWords } from "@/components/disposition/model";
 import { isActionable, obligationWords, openObligation } from "./obligation";
 import { patientContestWords, patientTaskOverdue } from "./patient-tasks";
+import { languageWords } from "@/lib/domain/language";
 
 /*
  * Pure view-models for the worklist screens (Today, Patients, Referrals).
@@ -239,6 +240,8 @@ export type WorkItem = {
   programme: Programme | "";
   programmeName: string;
   providerName: string;
+  /** Recorded preferred language in words ("Arabic", "English"), or "Not recorded". */
+  languageName: string;
   /**
    * The communication step this case still owes (issue #197): `notify` while the result was never told, `receipt` while
    * the patient has not confirmed receiving it. Recorded by explicit staff actions only, never by a contact outcome.
@@ -442,6 +445,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     programme: c.programme,
     programmeName: c.programme ? PROGRAMME_NAMES[c.programme] : "Programme unavailable",
     providerName: providerLabel(c.provider),
+    languageName: languageWords(c.language),
     ...(communicationStep ? { communicationStep } : {}),
     ...(communicationStep === "notify" && c.notification_template ? { notificationTemplate: c.notification_template } : {}),
     textsAllowed: c.consent === "granted" && !contactBlocked,

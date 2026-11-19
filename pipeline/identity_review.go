@@ -3,7 +3,7 @@ package main
 import "strings"
 
 // regDemo is one registration's recorded demographics, read from the Patient resource contained in its FHIR events.
-type regDemo struct{ Name, Dob, Sex, Eid string }
+type regDemo struct{ Name, Dob, Sex, Eid, Phone string }
 
 func (d *regDemo) absorb(e *Event) {
 	if d.Name == "" {
@@ -18,6 +18,37 @@ func (d *regDemo) absorb(e *Event) {
 	if d.Eid == "" {
 		d.Eid = e.Eid
 	}
+	if d.Phone == "" {
+		d.Phone = e.Phone
+	}
+}
+
+// normPhone reduces a recorded UAE phone number to its national digits (leading 0), so +971 5x, 00971 5x and 05x
+// spellings of one number compare equal. Other characters (spaces, dashes, brackets) are dropped.
+func normPhone(p string) string {
+	var b strings.Builder
+	for _, r := range p {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	d := b.String()
+	switch {
+	case strings.HasPrefix(d, "00971"):
+		d = "0" + d[5:]
+	case strings.HasPrefix(d, "971") && len(d) >= 11:
+		d = "0" + d[3:]
+	}
+	return d
+}
+
+// maskPhone shows only the last three digits of the normalised number, like maskEID keeps only its ends.
+func maskPhone(p string) string {
+	d := normPhone(p)
+	if len(d) <= 3 {
+		return strings.Repeat("*", len(d))
+	}
+	return strings.Repeat("*", len(d)-3) + d[len(d)-3:]
 }
 
 func maskEID(e string) string {
@@ -56,7 +87,11 @@ func demoView(pk string, d regDemo) map[string]interface{} {
 	case !luhnOK(d.Eid):
 		eid = idField("invalid", maskEID(d.Eid))
 	}
-	return map[string]interface{}{"registration": pk, "name": name, "dob": dob, "sex": sex, "eid": eid}
+	phone := idField("missing", "")
+	if normPhone(d.Phone) != "" {
+		phone = idField("present", maskPhone(d.Phone))
+	}
+	return map[string]interface{}{"registration": pk, "name": name, "dob": dob, "sex": sex, "eid": eid, "phone": phone}
 }
 
 func verdictName(a, b regDemo) string {
@@ -101,6 +136,18 @@ func verdictEID(a, b regDemo) string {
 	case !luhnOK(a.Eid) || !luhnOK(b.Eid):
 		return "invalid"
 	case a.Eid == b.Eid:
+		return "match"
+	}
+	return "differ"
+}
+
+// verdictPhone compares normalised numbers. It is shown to the reviewer only; the linker and the guard do not use phone.
+func verdictPhone(a, b regDemo) string {
+	x, y := normPhone(a.Phone), normPhone(b.Phone)
+	switch {
+	case x == "" || y == "":
+		return "missing"
+	case x == y:
 		return "match"
 	}
 	return "differ"
@@ -158,6 +205,7 @@ func (s *apiServer) identityReview(c *apiCase, viewer apiPrincipal) []map[string
 		entry["records"] = []map[string]interface{}{demoView(it.Pair[0], a), demoView(it.Pair[1], b)}
 		entry["comparison"] = []map[string]string{
 			{"field": "name", "verdict": name}, {"field": "dob", "verdict": dob}, {"field": "sex", "verdict": sex}, {"field": "eid", "verdict": eid},
+			{"field": "phone", "verdict": verdictPhone(a, b)},
 		}
 		entry["guard"] = map[string]interface{}{"authoritative": false, "reason": "original_guard_context_unavailable", "visible_checks": identityGuard(dob, sex, eid, a, b)}
 		out = append(out, entry)

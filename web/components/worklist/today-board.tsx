@@ -756,6 +756,7 @@ export function TodayBoard({
           <Fact label="Texts" value={p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"} />
           <Fact label="Case" value={p.short} ltr />
           {p.named && <Fact label="Patient" value={p.name} />}
+          <Fact label="Preferred language" value={p.languageName} />
           <Fact label="Programme" value={`${p.programmeName} · ${p.providerName}`} />
           <Fact label="Referred" value={formatDay(p.referralDay)} />
           <Fact label="Deadline" value={p.deadline === null ? "Routine interval, no overdue clock" : `Day ${p.deadline} · ${formatDay(p.referralDay + p.deadline)}`} />

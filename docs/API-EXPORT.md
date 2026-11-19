@@ -106,6 +106,10 @@ array element or chain body: a future field must be added deliberately to the re
   remain. Server-generated operational fields such as review-item `reason`,
   hold `why`, escalation codes and image/review `hint` accept lower-case machine tokens, including single-token codes
   such as `capacity` and `unowned`. The fixed server sentence used for a not-applicable booking is explicitly allowed.
+  One field has its own, longer shape: `decision_signatures[].decision_id` in the audit accepts a server-built
+  decision id (`dec-` plus up to 240 characters of the same identifier set, for example
+  `dec-<provider>/ServiceRequest/<id>@<input event id>`), so the audit can name each signature's decision. Any other
+  value there, and long values in every other field, still drop (built; `TestExportKeepsLongDecisionIDsOnly`).
 - **Dynamic maps are bounded.** IFHAS domain-status/deadline maps accept only `bp`, `glyc`, `lipid` and `weight`.
   Audit anchors accept only the `fhir` key or partition-subject keys of the form `out.p<N>`; their hash values still
   pass the scalar shape check.

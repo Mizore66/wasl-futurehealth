@@ -273,7 +273,53 @@ func drawEID(p *Person, r *rand.Rand) string {
 }
 
 type reg struct {
-	pk, mrn, name, dob, sex, eid, script, lang string
+	pk, mrn, name, dob, sex, eid, script, lang, phone string
+}
+
+// uaeMobilePrefixes are the operator prefixes of synthetic UAE mobile numbers (05X followed by seven digits).
+var uaeMobilePrefixes = []byte("024568")
+
+// personMobile is a person's synthetic UAE mobile number, a pure function of the run seed and the person, so every
+// registration of one person starts from the same number.
+func personMobile(seed int64, p *Person) string {
+	r := rand.New(rand.NewSource(seed ^ int64(fnv32(p.Qid+"|mobile"))))
+	b := []byte{'0', '5', uaeMobilePrefixes[r.Intn(len(uaeMobilePrefixes))]}
+	for i := 0; i < 7; i++ {
+		b = append(b, byte('0'+r.Intn(10)))
+	}
+	return string(b)
+}
+
+// drawPhone: Patient.telecom capture at one registration, on its own hashed stream so the generator's main RNG and
+// every other field of the cohort are unchanged: 60% recorded as 05X, 12% in +971 international form, 22% missing,
+// 6% mistyped (one of the last seven digits).
+func drawPhone(seed int64, p *Person, pk string) string {
+	if p == nil || p.Qid == "" {
+		return ""
+	}
+	r := rand.New(rand.NewSource(seed ^ int64(fnv32(pk+"|telecom"))))
+	n := personMobile(seed, p)
+	switch x := r.Float64(); {
+	case x < .60:
+		return n
+	case x < .72:
+		return "+971 " + n[1:3] + " " + n[3:6] + " " + n[6:]
+	case x < .94:
+		return ""
+	default:
+		bs := []byte(n)
+		i := 3 + r.Intn(7)
+		bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
+		return string(bs)
+	}
+}
+
+// patientTelecom is the FHIR telecom list for a recorded phone, or nil.
+func patientTelecom(phone string) []interface{} {
+	if phone == "" {
+		return nil
+	}
+	return []interface{}{map[string]interface{}{"system": "phone", "value": phone, "use": "mobile"}}
 }
 
 type RepSrc struct {
@@ -447,6 +493,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			g.lang = langOf(p)
 		}
 		adv.register(g, p) // -wrongeid: maybe a relative's Emirates ID, own hashed stream
+		g.phone = drawPhone(seed, p, g.pk)
 		regs[k] = g
 		tr.PKQid[g.pk] = p.Qid
 		tr.PKCc[g.pk] = p.Cc
@@ -461,6 +508,9 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			"name": []interface{}{map[string]interface{}{"text": g.name}}, "gender": map[string]string{"M": "male", "F": "female"}[g.sex]}
 		if g.dob != "" {
 			pt["birthDate"] = g.dob
+		}
+		if tc := patientTelecom(g.phone); tc != nil {
+			pt["telecom"] = tc
 		}
 		if g.lang != "" {
 			pt["communication"] = []interface{}{map[string]interface{}{"language": map[string]interface{}{"coding": []interface{}{map[string]string{"system": "urn:ietf:bcp:47", "code": g.lang}}}, "preferred": true}}

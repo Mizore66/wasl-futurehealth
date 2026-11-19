@@ -16,12 +16,13 @@ type Field = { state: string; value: string };
 const f = (state: string, value = ""): Field => ({ state, value });
 const REFERRAL = "ahs-mushrif|AHS-MRN001006";
 const REPORT = "skmc-endo|SKM-MRN000409";
-const record = (registration: string, o: Partial<Record<"name" | "dob" | "sex" | "eid", Field>>) => ({
+const record = (registration: string, o: Partial<Record<"name" | "dob" | "sex" | "eid" | "phone", Field>>) => ({
   registration,
   name: o.name ?? f("present", "Synthetic Name"),
   dob: o.dob ?? f("present", "1980-03-04"),
   sex: o.sex ?? f("present", "F"),
   eid: o.eid ?? f("missing"),
+  ...(o.phone ? { phone: o.phone } : {}),
 });
 const withProjection = (identity_review: unknown) => CaseDetail.parse({ ...hold, identity_review });
 const entry = (a: ReturnType<typeof record>, b: ReturnType<typeof record>, comparison: Record<string, string>, failures: string[], met = false) => [
@@ -83,6 +84,21 @@ describe("second-identifier comparison shows the recorded identifiers", () => {
     );
     expect(row(d, "Emirates ID")).toMatchObject({ referral: "784*********123", report: "784*********987", verdict: "differ" });
     expect(reviewView(d).identityGuard).toEqual(["The Emirates IDs differ."]);
+  });
+
+  it("adds a masked phone row only when a record has a number, marked by the server verdict", () => {
+    const none = withProjection(entry(record(REFERRAL, {}), record(REPORT, {}), {}, []));
+    expect(row(none, "Phone")).toBeUndefined();
+    const bothMissing = withProjection(entry(record(REFERRAL, { phone: f("missing") }), record(REPORT, { phone: f("missing") }), { phone: "missing" }, []));
+    expect(row(bothMissing, "Phone")).toBeUndefined();
+    const oneSide = withProjection(entry(record(REFERRAL, { phone: f("present", "*******123") }), record(REPORT, { phone: f("missing") }), { phone: "missing" }, []));
+    expect(row(oneSide, "Phone")).toMatchObject({ referral: "*******123", report: "not recorded", verdict: "missing" });
+    expect(reviewView(oneSide).identity.map((r) => r.field)).toEqual(["Name", "Date of birth", "Sex", "Emirates ID", "Phone", "Record"]);
+    // Equal masked tails can still differ: the verdict comes from the server's full comparison, not the shown digits.
+    const differ = withProjection(entry(record(REFERRAL, { phone: f("present", "*******123") }), record(REPORT, { phone: f("present", "*******123") }), { phone: "differ" }, []));
+    expect(row(differ, "Phone")).toMatchObject({ verdict: "differ" });
+    const match = withProjection(entry(record(REFERRAL, { phone: f("present", "*******123") }), record(REPORT, { phone: f("present", "*******123") }), { phone: "match" }, []));
+    expect(row(match, "Phone")).toMatchObject({ verdict: "match" });
   });
 
   it("says so when the projection is absent or unavailable, and invents no values", () => {

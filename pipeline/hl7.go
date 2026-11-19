@@ -200,7 +200,8 @@ func EncodeHL7(prov string, res map[string]interface{}, ctl string) []byte {
 			}
 		}
 		dob := strings.ReplaceAll(gs(pt, "birthDate"), "-", "")
-		segs = append(segs, fmt.Sprintf("PID|1||%s||%s||%s|%s|||||||%s", strings.Join(ids, "~"), name, dob, sex, hl7Esc(lang)))
+		// PID-13 home phone; empty when the Patient has no telecom, so messages without one are byte-identical to before.
+		segs = append(segs, fmt.Sprintf("PID|1||%s||%s||%s|%s|||||%s||%s", strings.Join(ids, "~"), name, dob, sex, hl7Esc(patientPhone(pt)), hl7Esc(lang)))
 	}
 	switch rt {
 	case "ServiceRequest", "Task":
@@ -409,6 +410,13 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		pt["gender"] = map[string]string{"M": "male", "F": "female"}[fld(pid, 8)]
 		if pt["gender"] == "" {
 			pt["gender"] = "unknown"
+		}
+		raw13 := ""
+		if len(pid) > 13 { // PID-13 first component (XTN-1); repetitions and components past the number are ignored
+			raw13 = strings.Split(strings.Split(pid[13], "~")[0], "^")[0]
+		}
+		if ph := strings.TrimSpace(hl7Unesc(raw13)); ph != "" {
+			pt["telecom"] = []interface{}{map[string]interface{}{"system": "phone", "value": ph, "use": "mobile"}}
 		}
 	}
 	if err := m.applyClinicalOBR(res); err != nil {
