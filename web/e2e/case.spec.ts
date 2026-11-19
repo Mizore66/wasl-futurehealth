@@ -180,13 +180,16 @@ test.describe("review desk on a phone", () => {
     await noSeriousAxe(page);
   });
 
-  test("the desk stacks, the answer is in the first screen and every target is 44px", async ({ page }) => {
+  test("the desk stacks the two records above the answer and every target is 44px", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(desk);
     await expectNoOverflow(page, 390);
     const same = page.getByRole("radio", { name: "Same patient", exact: true });
     const box = await same.boundingBox();
-    expect(box && box.y + box.height).toBeLessThanOrEqual(844);
+    const referral = await page.locator('[data-record="referral"]').boundingBox();
+    const report = await page.locator('[data-record="report"]').boundingBox();
+    expect(report!.y).toBeGreaterThan(referral!.y + referral!.height - 1);
+    expect(box!.y).toBeGreaterThan(report!.y + report!.height - 1);
     expect(await smallTargets(page, 44)).toEqual([]);
 
     // Answer both questions; the sign button is a target too.
@@ -244,10 +247,11 @@ test.describe("review desk on a phone", () => {
   });
 });
 
-test("the review desk at desktop width keeps the answer beside the evidence", async ({ page }) => {
+test("the review desk at desktop width puts the two records side by side", async ({ page }) => {
   await page.goto(href("review_hold").replace("/patients/", "/review/"));
-  const aside = await page.getByRole("complementary", { name: "Your answers" }).boundingBox();
-  const bridge = await page.getByRole("region", { name: "Is this the same person?" }).boundingBox();
-  expect(aside && bridge && aside.x).toBeGreaterThan(bridge!.x + bridge!.width - 1);
+  const referral = await page.locator('[data-record="referral"]').boundingBox();
+  const report = await page.locator('[data-record="report"]').boundingBox();
+  expect(report!.x).toBeGreaterThan(referral!.x + referral!.width - 1);
+  expect(Math.abs(report!.y - referral!.y)).toBeLessThan(2);
   await shot(page, "review-desk-1440");
 });

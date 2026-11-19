@@ -4,11 +4,13 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { Check, Lock } from "lucide-react";
+import { cx } from "@/lib/cx";
 import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { ApiMode, ReviewSourceResult } from "@/lib/api/source";
-import type { ReviewState } from "@/lib/api/schema";
+import type { ReviewRead, ReviewState } from "@/lib/api/schema";
 import { allQuestionsResolved, finalDecisions, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
 import type { ReviewView } from "./case-view";
 import {
@@ -128,6 +130,22 @@ function previewTrail(view: ReviewView, draft: Draft, done: Done | undefined): C
 type Drafts = Record<string, { decision?: string; note?: string }>;
 type ClaimOperationResult = "success" | "busy" | "terminal" | "transient";
 
+/** A first read stays hidden until the second read is in, from its own author too: the desk then shows only that it was given. */
+export function shownReads(state: ReviewState) {
+  const reads = submittedReads(state);
+  return state.state === "awaiting_r2" ? reads.map((r): ReviewRead => ({ read: r.read, submitted: r.submitted })) : reads;
+}
+
+/** The locked state's title: which read is due, never the answers. */
+export function dueTitle(state: ReviewState): string {
+  if (state.state === "awaiting_r1") return "First read due";
+  if (state.state === "awaiting_r2") return "Second read due";
+  return stateHeadline(state).text;
+}
+
+const BTN_PRIMARY = "inline-flex min-h-11 items-center gap-1.5 rounded-control bg-cta px-4 font-semibold text-white hover:bg-jade-800 disabled:opacity-60 aria-disabled:opacity-60";
+const BTN_QUIET = "inline-flex min-h-11 items-center gap-1.5 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60";
+
 /** One card per (item, question): the server decides what is shown, what may be submitted and by whom. */
 function QuestionCard({
   state,
@@ -146,6 +164,7 @@ function QuestionCard({
   headingRef,
   locked,
   bound,
+  context,
 }: {
   state: ReviewState;
   view: ReviewView;
@@ -165,11 +184,13 @@ function QuestionCard({
   headingRef: (el: HTMLHeadingElement | null) => void;
   /** The server committed a read here but its fresh state could not be read: no form until a reload. */
   locked: boolean;
+  /** The item's context: the record pair (link) wraps the form; evidence context sits below it. */
+  context: (form: React.ReactNode, reveal: boolean) => React.ReactNode;
 }) {
   const id = useId();
   const link = state.question === "link";
   const headline = stateHeadline(state);
-  const reads = submittedReads(state);
+  const reads = shownReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
   const canAnswer = bound && canAnswerClaim(state) && next !== null && !terminal && !locked;
@@ -185,8 +206,145 @@ function QuestionCard({
   const title = link ? "Is it the same patient?" : crcItem?.title ?? view.evidenceQuestion;
   const needsNote = next === "r3" && !note.trim();
   const [sourceOk, setSourceOk] = useState(false);
+  const [blocked, setBlocked] = useState<string>();
+  const choices = useRef<HTMLFieldSetElement>(null);
   const withheld = !link && !sourceOk;
   const scoped = !link && Boolean(view.items.scoped);
+  const claims = !terminal && state.claim !== undefined && actions !== undefined;
+  const open = canAnswer && (!crcItem || crcItem.choices.length > 0);
+  /* Identifiers are on screen only while this viewer holds the claim, or once the question is resolved. */
+  const reveal = open || terminal;
+
+  function submit() {
+    if (withheld || busy) return;
+    if (!draft) {
+      setBlocked("Choose an answer before you submit.");
+      choices.current?.querySelector<HTMLInputElement>("input, select")?.focus();
+      return;
+    }
+    if (needsNote) {
+      setBlocked("Explain why to submit the senior resolution.");
+      document.getElementById(`${id}-note`)?.focus();
+      return;
+    }
+    setBlocked(undefined);
+    onSubmit();
+  }
+
+  const lease = claims && (
+    <p className="m-0 flex flex-wrap items-center gap-x-3 text-small" data-testid={`claim-status-${state.question}`}>
+      <span className={state.claim?.status === "expired" ? "text-warning" : "text-muted"}>{claimSummary(state)}</span>
+      {state.claim?.status === "active" && actions.renew && <span className="text-muted">Heartbeat every 60 seconds</span>}
+    </p>
+  );
+
+  const form = open && next && (
+    <div className="grid gap-3 p-[var(--rv-pad,16px)]">
+      {!link && <SourceReport caseId={view.caseId} item={state.item} onAvailable={setSourceOk} />}
+      <fieldset ref={choices} className="m-0 min-w-0 border-0 p-0" aria-describedby={`${id}-help`}>
+        <legend className="p-0 font-semibold">
+          {READ_LABEL[next]}: {link ? "same patient?" : "your evidence label"}
+        </legend>
+        <p id={`${id}-help`} className="m-0 mt-0.5 text-small text-muted">
+          {next === "r3"
+            ? "You are resolving a disagreement between two independent reads. Your answer is recorded as the senior resolution."
+            : next === "r2"
+              ? "Answer independently. You cannot see the first answer until you submit."
+              : "Answer first. The second reader will not see your answer until they have submitted theirs."}
+          {!link && view.disputed.length > 0 ? ` The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}.` : ""}
+          {scoped && view.disputed.length > 0 ? " Your answer settles only this question; the other checks stay open." : ""}
+        </p>
+        {link ? (
+          <Chips
+            name={`${id}-a`}
+            options={[
+              ["same", "Same patient"],
+              ["different", "Not the same patient"],
+            ]}
+            value={draft as IdentityAnswer | undefined}
+            onPick={(v) => {
+              setBlocked(undefined);
+              onDraft(v);
+            }}
+            disabled={busy}
+          />
+        ) : (
+          <EvidenceChoices
+            name={`${id}-a`}
+            programme={view.programme}
+            options={evidenceOptions}
+            value={draft}
+            onPick={(v) => {
+              setBlocked(undefined);
+              onDraft(v);
+            }}
+            disabled={busy}
+          />
+        )}
+      </fieldset>
+      <div>
+        <label htmlFor={`${id}-note`} className="block text-small font-semibold">
+          {next === "r3" ? "Rationale for the senior resolution (required)" : "Rationale (optional)"}
+        </label>
+        <textarea
+          id={`${id}-note`}
+          value={note}
+          onChange={(e) => {
+            if (e.target.value.trim()) setBlocked(undefined);
+            onNote(e.target.value);
+          }}
+          disabled={busy}
+          rows={2}
+          className="mt-1 block w-full rounded-control border border-limestone-600 bg-surface px-3 py-2 text-ink"
+        />
+      </div>
+      {blocked && (
+        <p role="alert" className="m-0 rounded-control bg-pill-warning-bg px-3 py-2 text-small font-semibold text-pill-warning-ink" data-testid={`blocked-${state.question}`}>
+          {blocked}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={submit} aria-disabled={busy || withheld || undefined} className={BTN_PRIMARY}>
+          <Check aria-hidden className="size-4" strokeWidth={2} />
+          {busy ? "Saving…" : SUBMIT_LABEL[next]}
+        </button>
+        {actions?.release && state.claim?.status === "active" && (
+          <button type="button" disabled={claimBusy} onClick={() => onClaim("release")} className={BTN_QUIET}>
+            {claimBusy ? "Releasing…" : "Release claim"}
+          </button>
+        )}
+        {actions?.renew && state.claim?.status === "active" && (
+          <button type="button" disabled={claimBusy} onClick={() => onClaim("renew")} className={BTN_QUIET}>
+            {claimBusy ? "Renewing…" : "Renew claim"}
+          </button>
+        )}
+      </div>
+      {lease}
+    </div>
+  );
+
+  const readList = reads.length > 0 && (
+    <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 list-none p-0 text-small">
+      {reads.map((r) => (
+        <li key={r.read} className="py-0.5" data-read={r.read}>
+          {readLine(r, state.question, scoped)}
+          {r.note && <span className="block text-muted">Rationale: &ldquo;{r.note}&rdquo;</span>}
+          {r.hash && (
+            <>
+              {" "}
+              <span className="font-mono text-muted" title={r.hash}>
+                {r.hash.slice(0, 12)}
+              </span>
+            </>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+
+  const ownFirst = state.state === "awaiting_r2" && submittedReads(state).some((r) => r.read === "r1" && r.decision !== undefined);
+  const mayClaim = Boolean(next && (actions?.claim || actions?.takeover));
+
   return (
     <section
       aria-labelledby={`${id}-h`}
@@ -194,162 +352,122 @@ function QuestionCard({
       data-item={state.item}
       data-question={state.question}
       data-state={state.state}
-      className={position > 0 ? "border-t border-rule pt-3" : undefined}
+      className="min-w-0 overflow-hidden rounded-card border border-line bg-surface [--rv-pad:14px] md:[--rv-pad:clamp(17px,2vw,32px)]"
     >
-      <h3 id={`${id}-h`} ref={headingRef} tabIndex={-1} className="m-0 text-body font-medium outline-offset-2">
-        {position + 1}. {title}
-      </h3>
-      <p className="m-0 mt-1 flex flex-wrap items-center gap-2" data-testid={`status-${state.question}`}>
-        <Pill tone={headline.tone}>{headline.text}</Pill>
-        <span className="text-small text-muted">
-          {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
-          {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
-        </span>
-      </p>
-
-      <p className="m-0 mt-1 text-small" data-testid={`subject-${state.question}`}>
-        {bound ? subject : "The case context for this item is not available, so it cannot be answered here."}
-      </p>
+      <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-rule px-[var(--rv-pad)] py-3">
+        <div className="min-w-0">
+          <h2 id={`${id}-h`} ref={headingRef} tabIndex={-1} className="staff-display m-0 text-[clamp(22px,2.1vw,30px)] leading-tight text-jade-900 outline-offset-2">
+            {total > 1 ? `${position + 1}. ` : ""}
+            {title}
+          </h2>
+          <p className="m-0 mt-1 text-small text-muted" data-testid={`subject-${state.question}`}>
+            {bound ? subject : "The case context for this item is not available, so it cannot be answered here."}
+          </p>
+        </div>
+        <p className="m-0 flex flex-wrap items-center gap-2" data-testid={`status-${state.question}`}>
+          <Pill tone={headline.tone} wrap>{headline.text}</Pill>
+          <span className="text-small text-muted">
+            {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
+            {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
+          </span>
+        </p>
+      </header>
 
       {!terminal && (state.claim === undefined || actions === undefined) && (
-        <p className="m-0 mt-2 text-small text-muted" data-testid={`claim-unavailable-${state.question}`}>
+        <p className="m-0 px-[var(--rv-pad)] pt-3 text-small text-muted" data-testid={`claim-unavailable-${state.question}`}>
           This API does not provide review claims, so this question is not actionable.
         </p>
       )}
-      {!terminal && state.claim !== undefined && actions !== undefined && (
-        <div className="m-0 mt-2 flex flex-wrap items-center gap-2 text-small" data-testid={`claim-status-${state.question}`}>
-          <span className={state.claim?.status === "expired" ? "text-warning" : "text-muted"}>{claimSummary(state)}</span>
-          {state.claim?.status === "active" && actions.renew && <span className="text-muted">Heartbeat every 60 seconds</span>}
-          {actions.claim && next && (
-            <button type="button" disabled={claimBusy} onClick={() => onClaim("claim")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
-              {claimBusy ? "Claiming…" : `Claim ${READ_LABEL[next].toLowerCase()}`}
-            </button>
-          )}
-          {actions.takeover && (
-            <button type="button" disabled={claimBusy} onClick={() => onClaim("takeover")} className="min-h-11 rounded-control bg-cta px-3 font-medium text-white hover:bg-ink disabled:opacity-60">
-              {claimBusy ? "Taking over…" : "Take over claim"}
-            </button>
-          )}
-          {actions.renew && state.claim?.status === "active" && (
-            <button type="button" disabled={claimBusy} onClick={() => onClaim("renew")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
-              {claimBusy ? "Renewing…" : "Renew claim"}
-            </button>
-          )}
-          {actions.release && state.claim?.status === "active" && (
-            <button type="button" disabled={claimBusy} onClick={() => onClaim("release")} className="min-h-11 rounded-control border border-control bg-surface px-3 text-ink hover:bg-active disabled:opacity-60">
-              {claimBusy ? "Releasing…" : "Release claim"}
-            </button>
-          )}
-        </div>
-      )}
 
-      {reads.length > 0 && (
-        <ol aria-label={`${link ? "Identity" : "Evidence"} reads`} className="m-0 mt-2 list-none p-0 text-small">
-          {reads.map((r) => (
-            <li key={r.hash ?? r.read} className="py-0.5" data-read={r.read}>
-              {readLine(r, state.question, scoped)}
-              {r.note && <span className="block text-muted">Rationale: &ldquo;{r.note}&rdquo;</span>}
-              {r.hash && (
-                <>
-                  {" "}
-                  <span className="font-mono text-muted" title={r.hash}>
-                    {r.hash.slice(0, 12)}
-                  </span>
-                </>
+      {link ? reveal && bound && context(open ? form : null, true) : null}
+
+      {!open && (
+        <div className={cx("grid justify-items-start gap-3 p-[var(--rv-pad)]", !terminal && "min-h-[180px] content-center")} data-testid={terminal ? undefined : `locked-${state.question}`}>
+          {!terminal && (
+            <>
+              <span aria-hidden className="grid size-10 place-items-center rounded-control bg-jade-100 text-jade-800">
+                {ownFirst ? <Check className="size-4" strokeWidth={2} /> : <Lock className="size-4" strokeWidth={2} />}
+              </span>
+              <h3 className="staff-display m-0 text-[clamp(22px,2.2vw,32px)] leading-tight text-jade-900">{dueTitle(state)}</h3>
+              <p className="m-0 text-muted">
+                {ownFirst
+                  ? "Your first read is in. A different reviewer is required; your answer stays hidden until then."
+                  : mayClaim
+                    ? link
+                      ? "Claim to view the identifiers."
+                      : "Claim to answer this question."
+                    : headline.text}
+              </p>
+              {lease}
+              {claims && (actions.claim || actions.takeover) && next && (
+                <div className="flex flex-wrap gap-2">
+                  {actions.claim && (
+                    <button type="button" disabled={claimBusy} onClick={() => onClaim("claim")} className={BTN_PRIMARY}>
+                      <Lock aria-hidden className="size-4" strokeWidth={2} />
+                      {claimBusy ? "Claiming…" : `Claim ${READ_LABEL[next].toLowerCase()}`}
+                    </button>
+                  )}
+                  {actions.takeover && (
+                    <button type="button" disabled={claimBusy} onClick={() => onClaim("takeover")} className={BTN_PRIMARY}>
+                      {claimBusy ? "Taking over…" : "Take over claim"}
+                    </button>
+                  )}
+                </div>
               )}
-            </li>
-          ))}
-        </ol>
-      )}
-
-      {state.state === "resolved_agreed" && state.final_decision && (
-        <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Both reads agree: {answerWords(state.final_decision, state.question, scoped)}. No senior form is needed.
-        </p>
-      )}
-      {state.state === "resolved_senior" && state.final_decision && (
-        <p className="m-0 mt-2" data-testid={`final-${state.question}`}>
-          Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
-        </p>
-      )}
-      {terminal && <p className="m-0 mt-1 text-small text-muted">Case data is unchanged: this is a demo overlay, not a canonical decision.</p>}
-      {locked && (
-        <p className="m-0 mt-2 text-small text-muted" data-testid="committed-lock">
-          Your read was recorded. This form is closed until the page is reloaded so the current state can be shown.
-        </p>
-      )}
-      {state.state === "awaiting_r3" && !canAnswer && !locked && (
-        <p className="m-0 mt-2 text-small text-muted" data-testid={`r3-note-${state.question}`}>{awaitingSeniorWords(actions)}</p>
-      )}
-      {state.state === "awaiting_r2" && !canAnswer && !locked && (
-        <p className="m-0 mt-2 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
-      )}
-      {state.state === "awaiting_r1" && !canAnswer && !locked && !actions?.claim && !actions?.takeover && !state.claim && (
-        <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
-      )}
-
-      {crcItem && crcItem.choices.length === 0 && <p>This obligation is blocked, already signed or superseded. No generic adequacy answer can resolve it.</p>}
-      {canAnswer && (!crcItem || crcItem.choices.length > 0) && (
-        <div className="mt-3">
-          {!link && <SourceReport caseId={view.caseId} item={state.item} onAvailable={setSourceOk} />}
-          <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${id}-help`}>
-            <legend className="p-0 text-small font-medium">
-              {READ_LABEL[next]}: {link ? "your answer" : "your evidence label"}
-            </legend>
-            <p id={`${id}-help`} className="m-0 mt-0.5 text-small text-muted">
-              {next === "r3"
-                ? "You are resolving a disagreement between two independent reads. Your answer is recorded as the senior resolution."
-                : next === "r2"
-                  ? "Answer independently. You cannot see the first answer until you submit."
-                  : "Answer first. The second reader will not see your answer until they have submitted theirs."}
-              {!link && view.disputed.length > 0 ? ` The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}.` : ""}
-              {scoped && view.disputed.length > 0 ? " Your answer settles only this question; the other checks stay open." : ""}
+              {claims && canAnswerClaim(state) && !open && (actions.renew || actions.release) && (
+                <div className="flex flex-wrap gap-2">
+                  {actions.renew && (
+                    <button type="button" disabled={claimBusy} onClick={() => onClaim("renew")} className={BTN_QUIET}>
+                      {claimBusy ? "Renewing…" : "Renew claim"}
+                    </button>
+                  )}
+                  {actions.release && (
+                    <button type="button" disabled={claimBusy} onClick={() => onClaim("release")} className={BTN_QUIET}>
+                      {claimBusy ? "Releasing…" : "Release claim"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          {readList}
+          {state.state === "resolved_agreed" && state.final_decision && (
+            <p className="m-0" data-testid={`final-${state.question}`}>
+              Both reads agree: {answerWords(state.final_decision, state.question, scoped)}. No senior form is needed.
             </p>
-            {link ? (
-              <Chips
-                name={`${id}-a`}
-                options={[
-                  ["same", "Same patient"],
-                  ["different", "Not the same patient"],
-                ]}
-                value={draft as IdentityAnswer | undefined}
-                onPick={onDraft}
-                disabled={busy}
-              />
-            ) : (
-              <EvidenceChoices name={`${id}-a`} programme={view.programme} options={evidenceOptions} value={draft} onPick={onDraft} disabled={busy} />
-            )}
-          </fieldset>
-          <label htmlFor={`${id}-note`} className="mt-3 block text-small font-medium">
-            {next === "r3" ? "Rationale for the senior resolution (required)" : "Rationale (optional)"}
-          </label>
-          <textarea
-            id={`${id}-note`}
-            value={note}
-            onChange={(e) => onNote(e.target.value)}
-            disabled={busy}
-            rows={3}
-            className="mt-1 block w-full rounded-control border border-control bg-surface px-3 py-2 text-ink"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!withheld) onSubmit();
-            }}
-            aria-disabled={busy || !draft || needsNote || withheld}
-            className="mt-3 min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
-          >
-            {busy ? "Saving…" : SUBMIT_LABEL[next]}
-          </button>
-          {!draft && <p className="m-0 mt-1 text-small text-muted">Choose an answer to submit.</p>}
-          {draft && needsNote && <p className="m-0 mt-1 text-small text-muted">Explain why to submit the senior resolution.</p>}
+          )}
+          {state.state === "resolved_senior" && state.final_decision && (
+            <p className="m-0" data-testid={`final-${state.question}`}>
+              Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
+            </p>
+          )}
+          {terminal && <p className="m-0 text-small text-muted">Case data is unchanged: this is a demo overlay, not a canonical decision.</p>}
+          {locked && (
+            <p className="m-0 text-small text-muted" data-testid="committed-lock">
+              Your read was recorded. This form is closed until the page is reloaded so the current state can be shown.
+            </p>
+          )}
+          {state.state === "awaiting_r3" && !locked && (
+            <p className="m-0 text-small text-muted" data-testid={`r3-note-${state.question}`}>{awaitingSeniorWords(actions)}</p>
+          )}
+          {state.state === "awaiting_r2" && !locked && !ownFirst && (
+            <p className="m-0 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
+          )}
+          {state.state === "awaiting_r1" && !locked && !actions?.claim && !actions?.takeover && !state.claim && (
+            <p className="m-0 text-small text-muted">Your credential cannot give the first read for this question.</p>
+          )}
+          {crcItem && crcItem.choices.length === 0 && <p className="m-0">This obligation is blocked, already signed or superseded. No generic adequacy answer can resolve it.</p>}
         </div>
       )}
+
+      {open && reads.length > 0 && <div className="border-t border-rule px-[var(--rv-pad)] py-3">{readList}</div>}
+      {!link && open && form}
       {error && (
-        <p role="alert" className="m-0 mt-2 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink">
+        <p role="alert" className="m-0 mx-[var(--rv-pad)] mb-3 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink">
           {error}
         </p>
       )}
+      {!link && context(null, reveal)}
     </section>
   );
 }
@@ -483,21 +601,6 @@ export function ReviewDesk({
     const v = viewFor(s.item);
     return Boolean(v) && (!itemViews || (s.question === "link" ? v!.context.link : v!.context.evidence));
   };
-  const contexts = [...new Set(current.map((s) => s.item))].flatMap((item) => {
-    const itemView = viewFor(item);
-    const own = { api_review_states: current.filter((s) => s.item === item) };
-    const evidenceFinal = finalDecisions(own, "evidence")[0];
-    return itemView
-      ? [{
-          item,
-          view: itemView,
-          link: own.api_review_states.some((s) => s.question === "link" && boundFor(s)),
-          evidence: own.api_review_states.some((s) => s.question === "evidence" && boundFor(s)),
-          linkAnswer: finalDecisions(own, "link")[0] as IdentityAnswer | undefined,
-          answerCell: evidenceFinal ? resolvedCell(evidenceFinal) : undefined,
-        }]
-      : [];
-  });
 
   const hasLink = Boolean(view.items.link);
   const hasEvidence = Boolean(view.items.evidence);
@@ -698,6 +801,22 @@ export function ReviewDesk({
   const progress = resolutionProgress({ api_review_states: current });
   const answerCell = outcome && { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` };
 
+  const previewControls = pending && sourceWithheld ? (
+    <p className="m-0 text-small text-muted" data-testid="source-withheld">
+      The evidence answer cannot be previewed until the source report it judges is shown.
+    </p>
+  ) : pending ? (
+    <button type="button" onClick={preview} className="min-h-11 justify-self-start rounded-control bg-cta px-4 font-semibold text-white hover:bg-jade-800">
+      {`Preview: ${outcomeFor(pending, view.purpose).commit}`}
+    </button>
+  ) : (
+    <p className="m-0 text-small text-muted">
+      {draft.identity === "same" && hasEvidence
+        ? view.programme === "crc" ? `Answer the ${view.pathology ? "pathology" : "colonoscopy"} report question to sign.` : `Answer the evidence question to sign.`
+        : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
+    </p>
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       {live && (
@@ -714,212 +833,246 @@ export function ReviewDesk({
           ))}
         </>
       )}
-      <div className="mt-4 grid items-start gap-3 md:mt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        {/* The decision comes first in reading order and on a phone; the evidence it rests on follows. On a wide screen it sits to the right. */}
-        <aside aria-labelledby="decision-h" className="min-w-0 rounded-card border border-line bg-surface p-4 md:p-6 xl:col-start-2 xl:row-start-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <h2 id="decision-h" className="m-0 text-section font-medium">
-              Your answers
-            </h2>
-            {live && <ReviewerSignOut caseId={view.caseId} />}
-          </div>
-          <p className="m-0 mt-0.5 text-small text-muted">
+      <section aria-label="Your answers" data-testid={live ? "question-cards" : undefined} className="mt-3 flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="m-0 max-w-[80ch] text-small text-muted">
             {live
               ? "Independent double review: two different credentials answer each question separately, and a disagreement goes to an authorised senior. Tokens show configured demo identities, not that separate people took part."
               : "A reconstruction: nothing here is appended or saved. Signing needs the live API."}
           </p>
+          {live && <ReviewerSignOut caseId={view.caseId} />}
+        </div>
 
-          {live && (
-            <div className="mt-4 flex flex-col gap-3" data-testid="question-cards">
-              {current.map((state, i) => {
-                const key = state.next_read ? draftKey(state.item, state.question, state.next_read) : "";
-                return (
-                  <QuestionCard
-                    key={`${state.item}:${state.question}`}
-                    state={state}
-                    view={viewFor(state.item) ?? view}
-                    bound={boundFor(state)}
-                    position={i}
-                    total={current.length}
-                    draft={drafts[key]?.decision}
-                    onDraft={(value) => {
-                      draftHeads.current[key] = state.claim_head;
-                      setDrafts((d) => ({ ...d, [key]: { ...d[key], decision: value } }));
-                      setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
-                    }}
-                    note={drafts[key]?.note ?? ""}
-                    onNote={(value) => {
-                      draftHeads.current[key] = state.claim_head;
-                      setDrafts((d) => ({ ...d, [key]: { ...d[key], note: value } }));
-                    }}
-                    busy={Boolean(busy[key] || busy[`claim:${state.item}:${state.question}`])}
-                    claimBusy={Boolean(busy[`claim:${state.item}:${state.question}`])}
-                    error={errors[`${state.item}:${state.question}`] || undefined}
-                    locked={Boolean(locked[`${state.item}:${state.question}`])}
-                    onSubmit={() => submitRead(state)}
-                    onClaim={(operation) => void changeClaim(state, operation)}
-                    headingRef={(el) => {
-                      headings.current[`${state.item}:${state.question}`] = el;
-                    }}
-                  />
-                );
-              })}
-              <p role="status" aria-live="polite" className="sr-only" data-testid="read-announcement">
-                {announcement}
+        {live &&
+          current.map((state, i) => {
+            const key = state.next_read ? draftKey(state.item, state.question, state.next_read) : "";
+            const itemView = viewFor(state.item);
+            const own = { api_review_states: current.filter((s) => s.item === state.item) };
+            const evidenceFinal = finalDecisions(own, "evidence")[0];
+            const context = (form: React.ReactNode) =>
+              !itemView || !boundFor(state) ? null : state.question === "link" ? (
+                <div data-context-item={state.item} data-context-question="link" className="border-b border-rule">
+                  <IdentityBridge view={itemView} answer={(finalDecisions(own, "link")[0] as IdentityAnswer | undefined) ?? (drafts[key]?.decision as IdentityAnswer | undefined)}>
+                    {form}
+                  </IdentityBridge>
+                </div>
+              ) : itemView.imageBacked || !itemView.pathology ? (
+                <div data-context-item={state.item} data-context-question="evidence" className="flex min-w-0 flex-col gap-3 border-t border-rule bg-limestone-100 p-[var(--rv-pad)]">
+                  {itemView.imageBacked && <ReviewPhotos view={itemView} revealModel={imageModelRevealed(current, itemView.items.evidence)} />}
+                  {!itemView.pathology && <ReadersTable view={itemView} signed={evidenceFinal ? resolvedCell(evidenceFinal) : undefined} />}
+                </div>
+              ) : null;
+            return (
+              <QuestionCard
+                key={`${state.item}:${state.question}`}
+                state={state}
+                view={itemView ?? view}
+                bound={boundFor(state)}
+                position={i}
+                total={current.length}
+                context={context}
+                draft={drafts[key]?.decision}
+                onDraft={(value) => {
+                  draftHeads.current[key] = state.claim_head;
+                  setDrafts((d) => ({ ...d, [key]: { ...d[key], decision: value } }));
+                  setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
+                }}
+                note={drafts[key]?.note ?? ""}
+                onNote={(value) => {
+                  draftHeads.current[key] = state.claim_head;
+                  setDrafts((d) => ({ ...d, [key]: { ...d[key], note: value } }));
+                }}
+                busy={Boolean(busy[key] || busy[`claim:${state.item}:${state.question}`])}
+                claimBusy={Boolean(busy[`claim:${state.item}:${state.question}`])}
+                error={errors[`${state.item}:${state.question}`] || undefined}
+                locked={Boolean(locked[`${state.item}:${state.question}`])}
+                onSubmit={() => submitRead(state)}
+                onClaim={(operation) => void changeClaim(state, operation)}
+                headingRef={(el) => {
+                  headings.current[`${state.item}:${state.question}`] = el;
+                }}
+              />
+            );
+          })}
+
+        {live && (
+          <>
+            <p role="status" aria-live="polite" className="sr-only" data-testid="read-announcement">
+              {announcement}
+            </p>
+            {notice && (
+              <p role="status" className="m-0 rounded-control bg-pill-warning-bg px-3 py-2 text-pill-warning-ink">
+                {notice}
               </p>
-              {notice && (
-                <p role="status" className="m-0 rounded-control bg-ground px-3 py-2">
-                  {notice}
-                </p>
-              )}
-              {progress && (
-                <p className="m-0 text-small text-muted" data-testid="progress">
-                  {progress}.{" "}
-                  {view.items.scoped
-                    ? resolved
-                      ? "This question is resolved. Histology and other checks still decide the case."
-                      : "The item stays open until this question is resolved."
-                    : resolved
-                      ? "Every question is resolved."
-                      : "The item stays open until every question is resolved."}
-                </p>
-              )}
-              {resolved && (
-                <Link
-                  href={next.href}
-                  className="inline-flex min-h-11 items-center self-start rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
-                >
-                  {next.label}
-                </Link>
-              )}
-            </div>
-          )}
+            )}
+            {progress && (
+              <p className="m-0 text-small text-muted" data-testid="progress">
+                {progress}.{" "}
+                {view.items.scoped
+                  ? resolved
+                    ? "This question is resolved. Histology and other checks still decide the case."
+                    : "The item stays open until this question is resolved."
+                  : resolved
+                    ? "Every question is resolved."
+                    : "The item stays open until every question is resolved."}
+              </p>
+            )}
+            {resolved && (
+              <Link
+                href={next.href}
+                className="inline-flex min-h-11 items-center self-start rounded-control bg-cta px-4 font-semibold text-white no-underline hover:bg-jade-800 hover:text-white"
+              >
+                {next.label}
+              </Link>
+            )}
+            {view.programme !== "crc" && sharedEvidence}
+          </>
+        )}
 
-          {!live && !done && (
-            <div ref={formRef} className="mt-4 flex flex-col gap-3">
-              <div aria-live="polite" className="sr-only">
-                {announce}
-              </div>
-              {hasLink && (
-                <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q1}-who`}>
-                  <legend className="p-0 text-body font-medium">1. Is it the same patient?</legend>
-                  <p id={`${q1}-who`} className="m-0 mt-0.5 text-small text-muted">
-                    Preview as reviewer: {SIGNER.name}.
-                  </p>
-                  <Chips
-                    name={`${q1}-identity`}
-                    options={[
-                      ["same", "Same patient"],
-                      ["different", "Not the same patient"],
-                    ]}
-                    value={draft.identity}
-                    onPick={pickIdentity}
-                    disabled={false}
-                  />
-                </fieldset>
-              )}
-              <AnimatePresence initial={false}>
-                {asks && (
-                  <motion.div key="q2" {...appear} className={hasLink ? "border-t border-rule pt-3" : undefined}>
-                    <fieldset
-                      className="m-0 min-w-0 border-0 p-0"
-                      aria-describedby={`${q2}-who${view.programme === "crc" && hasLink ? ` ${q2}-ask` : ""}`}
-                    >
-                      <legend className="p-0 text-body font-medium">
-                        {evidenceNumber}. {view.evidenceQuestion}
-                      </legend>
-                      <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
-                        {view.disputed.length > 0
-                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question; the other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
-                          : "Use the exact programme evidence label. "}
-                        Preview as clinician: {SIGNER.name}
-                        {hasLink ? ", the same person as question 1" : ""}.
-                      </p>
-                      {view.programme === "crc" && hasLink && (
-                        <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
-                          &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
+        {!live && (
+          <div ref={formRef} className="flex min-w-0 flex-col gap-3">
+            <div aria-live="polite" className="sr-only">
+              {announce}
+            </div>
+            {hasLink && (
+              <article aria-labelledby={`${q1}-h`} className="min-w-0 overflow-hidden rounded-card border border-line bg-surface [--rv-pad:14px] md:[--rv-pad:clamp(17px,2vw,32px)]">
+                <header className="border-b border-rule px-[var(--rv-pad)] py-3">
+                  <h2 id={`${q1}-h`} className="staff-display m-0 text-[clamp(22px,2.1vw,30px)] leading-tight text-jade-900">
+                    Is it the same patient?
+                  </h2>
+                </header>
+                <IdentityBridge view={view} answer={draft.identity}>
+                  {!done && (
+                    <div className="grid gap-3 p-[var(--rv-pad)]">
+                      <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q1}-who`}>
+                        <legend className="p-0 font-semibold">1. Is it the same patient?</legend>
+                        <p id={`${q1}-who`} className="m-0 mt-0.5 text-small text-muted">
+                          Preview as reviewer: {SIGNER.name}.
                         </p>
+                        <Chips
+                          name={`${q1}-identity`}
+                          options={[
+                            ["same", "Same patient"],
+                            ["different", "Not the same patient"],
+                          ]}
+                          value={draft.identity}
+                          onPick={pickIdentity}
+                          disabled={false}
+                        />
+                      </fieldset>
+                      {!hasEvidence && previewControls}
+                    </div>
+                  )}
+                </IdentityBridge>
+              </article>
+            )}
+            {(hasEvidence || (!hasLink && !hasEvidence)) && (
+              <article aria-labelledby={`${q2}-h`} className="min-w-0 overflow-hidden rounded-card border border-line bg-surface [--rv-pad:14px] md:[--rv-pad:clamp(17px,2vw,32px)]">
+                <header className="border-b border-rule px-[var(--rv-pad)] py-3">
+                  <h2 id={`${q2}-h`} className="staff-display m-0 text-[clamp(22px,2.1vw,30px)] leading-tight text-jade-900">
+                    {view.evidenceQuestion}
+                  </h2>
+                </header>
+                {!done && (
+                  <div className="grid gap-3 p-[var(--rv-pad)]">
+                    <AnimatePresence initial={false}>
+                      {asks && (
+                        <motion.div key="q2" {...appear} className="grid gap-3">
+                          <fieldset
+                            className="m-0 min-w-0 border-0 p-0"
+                            aria-describedby={`${q2}-who${view.programme === "crc" && hasLink ? ` ${q2}-ask` : ""}`}
+                          >
+                            <legend className="p-0 font-semibold">
+                              {evidenceNumber}. {view.evidenceQuestion}
+                            </legend>
+                            <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
+                              {view.disputed.length > 0
+                                ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question; the other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
+                                : "Use the exact programme evidence label. "}
+                              Preview as clinician: {SIGNER.name}
+                              {hasLink ? ", the same person as question 1" : ""}.
+                            </p>
+                            {view.programme === "crc" && hasLink && (
+                              <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
+                                &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
+                              </p>
+                            )}
+                            <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
+                          </fieldset>
+                          {view.items.evidence && <SourceReport caseId={view.caseId} item={view.items.evidence} onAvailable={setFixtureSourceOk} preloaded={fixtureSource} />}
+                        </motion.div>
                       )}
-                      <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
-                    </fieldset>
-                    {view.items.evidence && <SourceReport caseId={view.caseId} item={view.items.evidence} onAvailable={setFixtureSourceOk} preloaded={fixtureSource} />}
-                  </motion.div>
+                    </AnimatePresence>
+                    {!asks && hasLink && draft.identity !== "different" && (
+                      <p className="m-0 text-small text-muted">Answer question 1 first: this question is asked once the records are the same patient.</p>
+                    )}
+                    {previewControls}
+                  </div>
                 )}
-              </AnimatePresence>
-              {pending && sourceWithheld ? (
-                <p className="m-0 text-small text-muted" data-testid="source-withheld">
-                  The evidence answer cannot be previewed until the source report it judges is shown.
-                </p>
-              ) : pending ? (
+                <div className="flex min-w-0 flex-col gap-3 border-t border-rule bg-limestone-100 p-[var(--rv-pad)]">
+                  {view.imageBacked && <ReviewPhotos view={view} revealModel={Boolean(done)} />}
+                  {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
+                </div>
+              </article>
+            )}
+          </div>
+        )}
+
+        <AnimatePresence>
+          {!live && done && outcome && (
+            <motion.div key="result" {...appear} role="status" className="rounded-card border border-line bg-surface px-4 py-4 md:px-6">
+              <h3 ref={resultHeading} tabIndex={-1} className="m-0 text-body font-normal">
+                <Pill tone={outcome.tone}>{outcome.preview}</Pill>
+              </h3>
+              <div className="mt-2">
+                <HonestyLabel kind="designed">Reconstruction: nothing was saved</HonestyLabel>
+              </div>
+              <p className="m-0 mt-2">
+                No event was appended and no hash exists. If this were saved against the live API: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <Link
+                  href={done.next.href}
+                  className="inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-semibold text-white no-underline hover:bg-jade-800 hover:text-white"
+                >
+                  {done.next.label}
+                </Link>
                 <button
                   type="button"
-                  onClick={preview}
-                  className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink"
+                  onClick={() => {
+                    undone.current = true;
+                    setDone(undefined);
+                    setDraft({});
+                  }}
+                  className="min-h-11 rounded-control px-3 underline hover:bg-active"
                 >
-                  {`Preview: ${outcomeFor(pending, view.purpose).commit}`}
+                  Undo
                 </button>
-              ) : (
-                <p className="m-0 text-small text-muted">
-                  {draft.identity === "same" && hasEvidence
-                    ? view.programme === "crc" ? `Answer the ${view.pathology ? "pathology" : "colonoscopy"} report question to sign.` : `Answer the evidence question to sign.`
-                    : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
-                </p>
-              )}
-            </div>
+              </div>
+              {done.next.last && <p className="m-0 mt-2 text-small text-muted">That was the last case waiting.</p>}
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          <AnimatePresence>
-            {!live && done && outcome && (
-              <motion.div key="result" {...appear} role="status" className="mt-4 rounded-control bg-ground px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 ref={resultHeading} tabIndex={-1} className="m-0 text-body font-normal">
-                    <Pill tone={outcome.tone}>{outcome.preview}</Pill>
-                  </h3>
-                </div>
-                <div className="mt-2">
-                  <HonestyLabel kind="designed">Reconstruction: nothing was saved</HonestyLabel>
-                </div>
-                <p className="m-0 mt-2">
-                  No event was appended and no hash exists. If this were saved against the live API: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <Link
-                    href={done.next.href}
-                    className="inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
-                  >
-                    {done.next.label}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      undone.current = true;
-                      setDone(undefined);
-                      setDraft({});
-                    }}
-                    className="min-h-11 rounded-control px-3 underline hover:bg-active"
-                  >
-                    Undo
-                  </button>
-                </div>
-                {done.next.last && <p className="m-0 mt-2 text-small text-muted">That was the last case waiting.</p>}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <h3 className="m-0 mt-5 text-body font-medium">The case so far</h3>
-          <div aria-label="Key" className="mt-1 flex flex-wrap gap-3 text-small text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="size-2.5 rounded-full border-2 border-ink" />
-              Automatic
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="size-2.5 bg-ink" />
-              Signed
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="size-2.5 rounded-full bg-hue" />
-              Now
-            </span>
+        <section aria-labelledby="case-so-far-h" className="rounded-card border border-line bg-surface px-4 py-4 md:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <h2 id="case-so-far-h" className="m-0 text-body font-semibold">
+              The case so far
+            </h2>
+            <div aria-label="Key" className="flex flex-wrap gap-3 text-small text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="size-2.5 rounded-full border-2 border-ink" />
+                Automatic
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="size-2.5 bg-ink" />
+                Signed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="size-2.5 rounded-full bg-hue" />
+                Now
+              </span>
+            </div>
           </div>
           <SealedChain
             nodes={
@@ -929,29 +1082,8 @@ export function ReviewDesk({
             }
             className="mt-3"
           />
-        </aside>
-
-        <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
-          {live ? (
-            <>
-              {contexts.map((ctx) => (
-                <div key={ctx.item} data-context-item={ctx.item} className="flex min-w-0 flex-col gap-3">
-                  {ctx.link && <IdentityBridge view={ctx.view} answer={ctx.linkAnswer} />}
-                  {ctx.view.imageBacked && <ReviewPhotos view={ctx.view} revealModel={imageModelRevealed(current, ctx.view.items.evidence)} />}
-                  {ctx.evidence && !ctx.view.pathology && <ReadersTable view={ctx.view} signed={ctx.answerCell} />}
-                </div>
-              ))}
-              {view.programme !== "crc" && sharedEvidence}
-            </>
-          ) : (
-            <>
-              {hasLink && <IdentityBridge view={view} answer={draft.identity} />}
-              {view.imageBacked && <ReviewPhotos view={view} revealModel={Boolean(done)} />}
-              {view.programme === "crc" && !view.pathology ? <ReadersTable view={view} signed={answerCell} /> : sharedEvidence}
-            </>
-          )}
-        </div>
-      </div>
+        </section>
+      </section>
     </MotionConfig>
   );
 }

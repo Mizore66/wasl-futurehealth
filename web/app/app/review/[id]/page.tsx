@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { PageHeader } from "@/components/shell/page-header";
 import { HistoryCard } from "@/components/case/audit-view";
 import { Card, ProgrammeFindingCard, ReadersCard, SignoffsCard } from "@/components/case/sections";
 import { reviewItemViews, reviewView } from "@/components/review/case-view";
@@ -30,7 +31,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   if (!viewer.authenticated) {
     return (
       <>
-        <h1 className="m-0 text-title font-semibold">Review</h1>
+        <PageHeader title="Review desk" sub="Sign in to see the case." />
         <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} reason={viewer.reason === "anonymous" ? undefined : viewer.reason} />
       </>
     );
@@ -40,7 +41,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   const detail = queue?.cases.find((c) => c.case.id === id) ?? viewer.detail;
   if (!detail) notFound();
   if (detail.case.lifecycle === "retained") return <section>
-    <h1 className="text-title font-semibold">Retired case: review history only</h1>
+    <PageHeader title="Retired case: review history only" />
     <p>No new claim, clinical read or review work is available from this tracking request.</p>
     <Link href={caseHref("/app/patients", id)}>Open the retained case and authorized audit history</Link>
   </section>;
@@ -72,38 +73,32 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
 
   return (
     <>
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <RecordAvatar id={view.caseId} name={view.name} linked>
-              <Avatar {...view.faces.referral} size={40} label="" />
-            </RecordAvatar>
-            <h1 className="m-0 text-title font-semibold">{view.name}</h1>
-            {view.nameAr && (
-              <span lang="ar" dir="rtl" className="font-arabic text-section text-muted">
-                {view.nameAr}
+      <PageHeader
+        title={view.items.link ? "Identity review" : view.items.evidence ? "Evidence review" : "Review"}
+        sub={
+          <>
+            <span className="font-semibold text-ink">{view.shortId}</span>
+            {view.held && <span className="mt-1 block max-w-[72ch]">{view.held}</span>}
+          </>
+        }
+        aside={
+          <div className="flex flex-col gap-1 sm:items-end">
+            {/* Fixtures only: live review shows no patient identity before the viewer claims a read. */}
+            {!live && (
+              <RecordAvatar id={view.caseId} name={view.name} linked>
+                <Avatar {...view.faces.referral} size={36} label="" />
+              </RecordAvatar>
+            )}
+            {queue && at >= 0 && (
+              <span className="text-small text-muted">
+                Case {at + 1} of {total} waiting
               </span>
             )}
-            <span className="text-small text-muted">
-              {view.age > 0 && `${view.age} · `}
-              {view.shortId}
-            </span>
+            {queue && <QueueLabel source={queue.source} />}
+            <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
           </div>
-          <p className="m-0 mt-1 text-muted">
-            {view.held} Referred {view.referredOn}
-            {view.report.on && `, report ${view.report.on}`}.
-          </p>
-        </div>
-        <div className="flex flex-col gap-1 sm:items-end">
-          {queue && at >= 0 && (
-            <span className="text-small text-muted">
-              Case {at + 1} of {total} waiting
-            </span>
-          )}
-          {queue && <QueueLabel source={queue.source} />}
-          <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
-        </div>
-      </header>
+        }
+      />
       {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
       {view.guided ? (
         <ReviewDesk
@@ -116,7 +111,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           waiting={at >= 0}
           states={detail.api_review_states}
           settled={
-            <div className="mt-6 flex flex-col gap-3">
+            <div className="mt-3 flex flex-col gap-3">
               <Card id="not-waiting" title={settledWords(detail).title}>
                 <p className="m-0 mt-3 max-w-[72ch]">{settledWords(detail).body}</p>
                 <div className="mt-3 flex flex-wrap gap-3">
@@ -140,7 +135,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           }
         />
       ) : (
-        <div className="mt-6 grid items-start gap-3 lg:grid-cols-2">
+        <div className="mt-3 grid items-start gap-3 lg:grid-cols-2">
           <ProgrammeFindingCard detail={detail} />
           {detail.evidence.map((ev, i) => (
             <ReadersCard key={ev.report} detail={detail} ev={ev} id={`programme-readers-${i}`} />
