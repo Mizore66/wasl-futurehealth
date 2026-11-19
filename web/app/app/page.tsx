@@ -6,6 +6,8 @@ import { PatternLinks } from "@/components/programme/patterns";
 import { ProgrammeChart } from "@/components/programme/programme-chart";
 import { SourceHeading } from "@/components/programme/source-toggle";
 import { StallsChart } from "@/components/programme/stalls-chart";
+import { Workload } from "@/components/programme/workload";
+import { PageHeader } from "@/components/shell/page-header";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { getDashboard } from "@/lib/api/source";
 import { result } from "@/lib/results";
@@ -26,39 +28,37 @@ export default async function ProgrammePage() {
   const noPooling = enough.rows.find((r) => r.id.endsWith("skewed_no_travel"));
   const pooled = enough.rows.find((r) => r.id.endsWith("skewed_pool_60"));
   const programmeCases = view.programmes.reduce((t, p) => t + p.cases, 0);
+  const crc = view.programmes.find((p) => p.key === "crc");
   const programmeCount = NUMBER_WORD[view.programmes.length] ?? String(view.programmes.length);
 
   return (
     <>
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="m-0 text-title font-semibold">Programme</h1>
-          <p className="m-0 mt-1 text-body text-muted">Your 31-day rate is under-reported. Wasl finds the patients the Emirates ID misses.</p>
-        </div>
-        <HonestyLabel kind="simulated">Simulated cohort</HonestyLabel>
-      </header>
+      <article data-testid="programme-rail" className="@container overflow-hidden rounded-[8px] border border-rule bg-surface">
+        <PageHeader
+          title="Colorectal screening"
+          compact
+          aside={<HonestyLabel kind="simulated" className="bg-jade-50 text-jade-800">Synthetic run</HonestyLabel>}
+          className="mb-0 rounded-none border-0 border-b border-rule px-4 py-[17px] @min-[701px]:px-[clamp(19px,2.65cqi,42px)] @min-[701px]:py-[clamp(17px,2.2cqi,32px)]"
+        />
 
-      <div className="mt-6 grid items-start gap-gap lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <section aria-labelledby="kpi-h" className={card}>
-          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days of a positive FIT">
-            Simulated colorectal cohort. The reported rate counts a colonoscopy only when the Emirates ID on the report matches. Wasl also links
-            reports by name and date of birth. The true rate comes from the cohort&apos;s known outcomes. The target is the DoH 31-day standard.
-            The demo run is the run this dashboard serves; the five-seed mean is the frozen evaluation in results.json.
+        <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
+          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub="Positive FIT referrals" display>
+            Simulated colorectal cohort. Emirates ID only counts a colonoscopy only when the Emirates ID on the report matches. Wasl also links
+            reports by name and date of birth. Simulated truth comes from the cohort&apos;s known outcomes. The target is the DoH 31-day standard.
+            It is read from the run&apos;s KPI definition. The demo run is the run this dashboard serves; the five-seed mean is the frozen evaluation in
+            results.json.
           </SourceHeading>
 
           <KpiChart kpi={view.kpi} target={view.target} />
-
-          <div className="mt-6 flex items-center justify-between gap-3 border-t border-rule pt-5">
-            <p className="m-0 text-body">{view.chaseOneIn !== null && <>1 in {view.chaseOneIn} on your chase list is already done.</>}</p>
-            <Link
-              href="/app/today"
-              className="inline-flex h-control flex-none items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
-            >
-              Open today&apos;s list
-            </Link>
-          </div>
         </section>
 
+        <Workload
+          row={crc}
+          note={view.chaseOneIn !== null && <p className="m-0 text-small text-ink-soft">1 in {view.chaseOneIn} on your chase list is already done.</p>}
+        />
+      </article>
+
+      <div className="mt-gap grid items-start gap-gap">
         <section aria-labelledby="prog-h" className={card}>
           <SourceHeading id="prog-h" title="By programme">
             Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Still open is the programme&apos;s cases minus

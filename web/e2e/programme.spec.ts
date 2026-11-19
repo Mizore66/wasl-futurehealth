@@ -12,12 +12,12 @@ const SOURCE_CARDS = ["kpi-h", "prog-h", "stall-h", "cap-h"] as const;
 test.describe("Programme", () => {
   test("leads with reported vs measured, bars against the target and the truth line", async ({ page }) => {
     await page.goto("/app");
-    await expect(page.locator("h1")).toHaveText("Programme");
+    await expect(page.locator("h1")).toHaveText("Colorectal screening");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
     await expect(page.getByTestId("kpi-eid")).toContainText("11.3%");
     await expect(page.getByTestId("kpi-wasl")).toContainText("30.7%");
-    await expect(page.getByRole("group", { name: "On a 0 to 100% scale: reported 11.3%, measured by Wasl 30.7%, true 31.9%, target 90%." })).toBeVisible();
-    await expect(page.getByTestId("kpi-truth")).toHaveText("Within 1.2 points of the true rate (31.9%) in testing");
+    await expect(page.getByRole("group", { name: "On a 0 to 100% scale: Emirates ID only 11.3%, Wasl 30.7%, simulated truth 31.9%, target 90%." })).toBeVisible();
+    await expect(page.getByTestId("kpi-truth")).toHaveText("Wasl is within 1.2 points of the simulated truth (31.9%) in testing.");
     await expect(page.getByText("1 in 6 on your chase list is already done.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme.png", fullPage: true });
     await axe(page);
@@ -137,13 +137,13 @@ test.describe("Programme", () => {
     await expect(page).toHaveURL(/\/app\/patients\?dropoff=no_acknowledgement$/);
   });
 
-  test("Open today's list and See proof go where the board says", async ({ page }) => {
+  test("Open Today and See proof go where the board says", async ({ page }) => {
     await page.goto("/app");
     await expect(page.getByLabel("Safety")).toContainText("0 false closures in 3,035 tested.");
     await page.getByRole("link", { name: "See proof" }).click();
     await expect(page).toHaveURL(/\/app\/results$/);
     await page.goto("/app");
-    await page.getByRole("link", { name: "Open today's list" }).click();
+    await page.getByRole("link", { name: "Open Today" }).click();
     await expect(page).toHaveURL(/\/app\/today$/);
   });
 
@@ -203,9 +203,9 @@ test.describe("Programme charts", () => {
     await expect(mean).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("kpi-eid")).toContainText("12.2%");
     await expect(page.getByTestId("kpi-wasl")).toContainText("29.8%");
-    await expect(page.getByTestId("kpi-truth")).toContainText("Within 3.1 points of the true rate (32.9%)");
+    await expect(page.getByTestId("kpi-truth")).toContainText("within 3.1 points of the simulated truth (32.9%)");
     await expect(page.getByTestId("kpi-why")).toBeVisible();
-    await expect(page.getByRole("group", { name: /reported 12.2%, measured by Wasl 29.8%, true 32.9%, target 90%/ })).toBeVisible();
+    await expect(page.getByRole("group", { name: /Emirates ID only 12.2%, Wasl 29.8%, simulated truth 32.9%, target 90%/ })).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme-mean.png", fullPage: true });
     expect(await unsourced(page)).toEqual([]);
 
@@ -215,9 +215,9 @@ test.describe("Programme charts", () => {
 
   test("keyboard focus on a bar reveals its tooltip, and Escape closes it", async ({ page }) => {
     await page.goto("/app");
-    const bar = kpiCard(page).getByRole("button", { name: /Measured by Wasl/ }).first();
+    const bar = kpiCard(page).getByRole("button", { name: /^Wasl/ }).first();
     await bar.focus();
-    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Measured by Wasl: 30.7%" });
+    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Wasl: 30.7%" });
     await expect(tip).toBeVisible();
     await expect(tip).toContainText("408 of 1,331 eligible referrals");
     await page.keyboard.press("Escape");
@@ -292,7 +292,8 @@ test.describe("Programme charts", () => {
     await kpi.click();
     await expect(kpi).toHaveAttribute("aria-pressed", "true");
     await expect(kpiCard(page).getByRole("table")).toContainText("30.7%");
-    await expect(kpiCard(page).getByRole("row", { name: /True rate/ })).toContainText("424 of 1,331 eligible referrals");
+    await expect(kpiCard(page).getByRole("row", { name: /Simulated truth/ })).toContainText("424 of 1,331 eligible referrals");
+    await expect(kpiCard(page).getByRole("row", { name: /Target/ })).toContainText("90%");
 
     await progCard(page).getByRole("button", { name: "Show as table" }).click();
     const table = progCard(page).getByRole("table");
@@ -481,4 +482,33 @@ test.describe("Programme: provider links", () => {
       await context.close();
     });
   }
+});
+
+test.describe("Programme: target rail", () => {
+  test("one target line labelled once, three method bars, the CRC cohort strip and Open Today", async ({ page }) => {
+    await page.goto("/app");
+    const rail = page.getByTestId("programme-rail");
+    await expect(rail.locator('[data-honesty="simulated"]')).toHaveText("Synthetic run");
+    await expect(rail.getByRole("heading", { level: 2, name: "Colonoscopy within 31 days" })).toBeVisible();
+    await expect(rail.getByText("90% target")).toHaveCount(1);
+    await expect(rail.getByTestId("kpi-target")).toHaveCount(1);
+    for (const [arm, name, value] of [["eid", "Emirates ID only", "11.3%"], ["wasl", "Wasl", "30.7%"], ["truth", "Simulated truth", "31.9%"]] as const) {
+      const row = rail.locator(`li[data-method="${arm}"]`);
+      await expect(row).toContainText(name);
+      await expect(row).toContainText(value);
+    }
+    // The target line sits at 90% of the track, the same scale the bars use.
+    const track = (await rail.locator('li[data-method="wasl"] button > span').nth(1).boundingBox())!;
+    const line = (await rail.getByTestId("kpi-target").boundingBox())!;
+    expect(Math.abs(line.x - (track.x + track.width * 0.9))).toBeLessThan(2);
+
+    const strip = page.getByTestId("programme-workload");
+    await expect(strip.getByTestId("programme-cases")).toHaveText("1,500");
+    await expect(strip.getByTestId("programme-overdue")).toContainText("869");
+    await expect(strip.getByTestId("programme-open")).toContainText("Other open");
+    await expect(strip.getByTestId("programme-open")).toContainText("158");
+    await expect(strip.getByTestId("programme-closed")).toContainText("473");
+    await strip.getByRole("link", { name: "Open Today" }).click();
+    await expect(page).toHaveURL(/\/app\/today$/);
+  });
 });

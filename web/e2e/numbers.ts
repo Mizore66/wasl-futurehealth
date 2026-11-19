@@ -16,7 +16,7 @@ export function inSources(n: string): boolean {
 }
 
 /** Axis labels: layout, not data. */
-export const AXIS = new Set(["0%", "10%", "20%", "30%", "40%", "100%", "0.5%"]);
+export const AXIS = new Set(["0%", "10%", "20%", "25%", "30%", "40%", "50%", "75%", "100%", "0.5%"]);
 
 export async function numbersOn(page: Page): Promise<string[]> {
   const text = await page.locator("main").innerText();

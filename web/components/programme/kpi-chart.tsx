@@ -1,33 +1,113 @@
 "use client";
 
 import { useState } from "react";
-import { ChartFigure, FILL, Legend, Mark, Segmented, type FillName } from "./chart-kit";
+import { ChartFigure, Mark, Segmented } from "./chart-kit";
 import { pct, points, type KpiSet } from "./model";
 
 type Source = "demo" | "heldout";
 type Arm = "eid" | "wasl" | "truth";
 
-const ARMS: { arm: Arm; name: string; fill: FillName }[] = [
-  { arm: "eid", name: "Reported, Emirates ID only", fill: "muted" },
-  { arm: "wasl", name: "Measured by Wasl", fill: "solid" },
-  { arm: "truth", name: "True rate", fill: "outline" },
+/** One row per method. Every row is labelled on the chart, so the fills need no legend. */
+const ARMS: { arm: Arm; name: string; fill: string; emphasis?: boolean }[] = [
+  { arm: "eid", name: "Emirates ID only", fill: "bg-jade-300" },
+  { arm: "wasl", name: "Wasl", fill: "bg-jade-700", emphasis: true },
+  { arm: "truth", name: "Simulated truth", fill: "bg-jade-500" },
 ];
+
+const TICKS = [0, 25, 50, 75, 100];
 
 const SOURCES: Record<Source, { button: string; table: string; scope: string }> = {
   demo: { button: "This demo run", table: "This demo run", scope: "in testing" },
   heldout: { button: "Five-seed held-out mean", table: "Five-seed held-out mean", scope: "on held-out noise, mean of 5 seeds" },
 };
 
-/** The 31-day rate: reported, Wasl and true against the target, for one demo run or the five-seed held-out mean. */
+/** Label, track, value: the three columns every bar row and the axis share. */
+const COLS = "grid grid-cols-[minmax(87px,.8fr)_minmax(0,2fr)_minmax(42px,.38fr)] gap-[7px] @min-[701px]:grid-cols-[minmax(110px,.9fr)_minmax(0,4fr)_minmax(47px,.35fr)] @min-[701px]:gap-3";
+
+/**
+ * The target rail: the 31-day rate by each method on a 0 to 100% scale against the one target line,
+ * for one demo run or the five-seed held-out mean.
+ */
 export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target: number | null }) {
   const [source, setSource] = useState<Source>("demo");
   const set = kpi[source];
-  const { eid, wasl, truth } = set.rates;
-  const label = `On a 0 to 100% scale: reported ${pct(eid)}, measured by Wasl ${pct(wasl)}, true ${pct(truth)}${target === null ? "" : `, target ${target}%`}.`;
+  const { wasl, truth } = set.rates;
+  const label = `On a 0 to 100% scale: ${ARMS.map(({ arm, name }) => `${arm === "truth" ? name.toLowerCase() : name} ${pct(set.rates[arm])}`).join(", ")}${
+    target === null ? "" : `, target ${target}%`
+  }.`;
 
   return (
     <>
-      <div className="mt-5">
+      <ChartFigure
+        captionBelow
+        caption={
+          <>
+            Colonoscopy within 31 days of a positive FIT, by method, on a 0 to 100% scale. Hover or focus a bar for detail.{" "}
+            <span data-testid="kpi-why">
+              Why the two sources differ: the demo run is one run on training-time noise; the five-seed mean averages 5 seeds on held-out noise.
+            </span>
+          </>
+        }
+        table={{
+          caption: `31-day rate, ${SOURCES[source].table}`,
+          head: ["Method", "Rate", "Detail"],
+          rows: [...ARMS.map(({ arm, name }) => [name, pct(set.rates[arm]), set.detail[arm]]), ...(target === null ? [] : [["Target", `${target}%`, "DoH 31-day standard"]])],
+        }}
+      >
+        <div role="group" aria-label={label} className={`relative ${COLS} mt-8 @min-[701px]:mt-[clamp(31px,4cqi,53px)]`}>
+          {target !== null && (
+            <div aria-hidden className="pointer-events-none relative z-10 col-start-2 row-start-1">
+              <div data-testid="kpi-target" className="absolute inset-y-0 border-l border-dashed border-jade-500" style={{ left: `${target}%` }}>
+                <span className="absolute right-[5px] top-[-22px] whitespace-nowrap text-small font-semibold leading-[1.4] text-jade-800">{target}% target</span>
+              </div>
+            </div>
+          )}
+          <ul className="col-span-full row-start-1 m-0 grid list-none p-0">
+            {ARMS.map(({ arm, name, fill, emphasis }) => {
+              const v = set.rates[arm];
+              return (
+                <li key={arm} data-method={arm} className="border-b border-rule last:border-b-0">
+                  <Mark
+                    tip={
+                      <>
+                        <strong className="font-medium">
+                          {name}: {pct(v)}
+                        </strong>
+                        <br />
+                        {set.detail[arm]}
+                      </>
+                    }
+                    className={`${COLS} min-h-14 items-center @min-[701px]:min-h-[clamp(56px,6.4vw,100px)]`}
+                  >
+                    <span className={`text-[12px] leading-[1.35] @min-[701px]:text-body ${emphasis ? "font-bold text-jade-800" : "font-medium text-limestone-800"}`}>{name}</span>
+                    <span aria-hidden className="relative block h-[13px] min-w-0 rounded-[3px] bg-limestone-100 @min-[701px]:h-4">
+                      <span className={`block h-full rounded-[3px] ${fill} motion-safe:transition-[width] motion-safe:duration-300`} style={{ width: `${v}%`, minWidth: 4 }} />
+                    </span>
+                    <span data-testid={arm === "truth" ? "kpi-true" : `kpi-${arm}`} className={`text-right text-[12px] font-bold tabular-nums @min-[701px]:text-body ${emphasis ? "text-jade-800" : "text-ink"}`}>
+                      {pct(v)}
+                    </span>
+                  </Mark>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div aria-hidden className={`${COLS} mt-[7px]`}>
+          <div className="relative col-start-2 min-h-4 text-[10px] text-muted @min-[701px]:text-[12px]">
+            {TICKS.map((t, i) => (
+              <span
+                key={t}
+                className={`absolute tabular-nums ${i === 0 ? "" : i === TICKS.length - 1 ? "-translate-x-full" : "-translate-x-1/2"} ${i % 2 === 1 ? "hidden @min-[701px]:inline" : ""}`}
+                style={{ left: `${t}%` }}
+              >
+                {t}%
+              </span>
+            ))}
+          </div>
+        </div>
+      </ChartFigure>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <Segmented
           label="31-day rate source"
           value={source}
@@ -37,83 +117,10 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
             { value: "heldout", label: SOURCES.heldout.button },
           ]}
         />
+        <p data-testid="kpi-truth" className="m-0 text-small text-muted">
+          Wasl is within {points(truth, wasl)} of the simulated truth ({pct(truth)}) {SOURCES[source].scope}.
+        </p>
       </div>
-
-      <div className="mt-5 flex flex-wrap items-end gap-x-12 gap-y-3 tabular-nums">
-        <div data-testid="kpi-eid">
-          <div className="text-small text-muted">Reported, Emirates ID only</div>
-          <div className="mt-1 text-lead font-medium tracking-[-0.02em] text-muted">{pct(eid)}</div>
-        </div>
-        <div data-testid="kpi-wasl">
-          <div className="text-small text-muted">Measured by Wasl</div>
-          <div className="mt-1 text-lead font-bold tracking-[-0.02em] text-hue">{pct(wasl)}</div>
-        </div>
-      </div>
-
-      <ChartFigure
-        className="mt-6"
-        caption="Colonoscopy within 31 days of a positive FIT, three ways, on a 0 to 100% scale. Hover or focus a bar for detail."
-        table={{
-          caption: `31-day rate, ${SOURCES[source].table}`,
-          head: ["Measure", "Rate", "Detail"],
-          rows: ARMS.map(({ arm, name }) => [name, pct(set.rates[arm]), set.detail[arm]]),
-        }}
-      >
-        <div role="group" aria-label={label} className="relative pt-6">
-          {target !== null && (
-            <>
-              <span
-                aria-hidden
-                className="absolute top-0 -translate-x-full whitespace-nowrap pr-1.5 text-small leading-4 text-ink"
-                style={{ left: `${target}%` }}
-              >
-                Target {target}%
-              </span>
-              <span aria-hidden className="absolute bottom-0 top-5 w-0 -translate-x-px border-l-2 border-dashed border-ink" style={{ left: `${target}%` }} />
-            </>
-          )}
-          <ul className="m-0 list-none p-0">
-            {ARMS.map(({ arm, name, fill }) => {
-              const v = set.rates[arm];
-              return (
-                <li key={arm}>
-                  <Mark
-                    tip={
-                      <>
-                        <strong className="font-medium">{name}: {pct(v)}</strong>
-                        <br />
-                        {set.detail[arm]}
-                      </>
-                    }
-                    className="flex flex-col justify-center py-1"
-                  >
-                    <span className="text-small leading-4 text-ink-soft">{name}</span>
-                    <span className="relative mt-1 block h-4">
-                      <span
-                        className="absolute left-0 top-0 block h-4 rounded-[4px] motion-safe:transition-[width] motion-safe:duration-300"
-                        style={{ ...FILL[fill], width: `${v}%`, minWidth: 4 }}
-                      />
-                      <span className="absolute top-0 text-small font-medium leading-4" style={{ left: `calc(${v}% + 6px)` }}>
-                        {pct(v)}
-                      </span>
-                    </span>
-                  </Mark>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div className="mt-2">
-          <Legend items={ARMS.map(({ name, fill }) => ({ fill, label: name }))} />
-        </div>
-      </ChartFigure>
-
-      <p data-testid="kpi-truth" className="m-0 mt-3 text-small text-muted">
-        Within {points(truth, wasl)} of the true rate ({pct(truth)}) {SOURCES[source].scope}
-      </p>
-      <p data-testid="kpi-why" className="m-0 mt-2 text-small leading-[18px] text-ink-soft">
-        Why the two differ: the demo run is one run on training-time noise; the five-seed mean averages 5 seeds on held-out noise.
-      </p>
     </>
   );
 }
