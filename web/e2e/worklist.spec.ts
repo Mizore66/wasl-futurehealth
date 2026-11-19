@@ -209,6 +209,43 @@ test.describe("Today", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
 
+  test("Records: a case with held evidence shows its held count, the held report with its reason, and source events in Activity", async ({ page }) => {
+    await page.goto("/app/today?queue=waiting");
+    await row(page, "AHS-sr-1011").click();
+    const history = page.getByRole("region", { name: "Case history" });
+    const records = history.getByRole("tab", { name: /^Records/ });
+    await expect(history.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
+    await expect(records).toHaveAttribute("aria-selected", "false");
+    await expect(records.getByTestId("records-held")).toHaveText("1 held");
+    // Activity gains the source timeline in the Audit page's words.
+    await expect(history.getByRole("tabpanel", { name: "Activity" })).toContainText("Report issued");
+    await history.getByTestId("earlier-activity").getByText(/^Earlier activity/).click();
+    await expect(history.getByTestId("earlier-activity")).toContainText("Referral issued");
+    // Arrow keys move between the tabs.
+    await history.getByRole("tab", { name: "Activity" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(records).toBeFocused();
+    await expect(records).toHaveAttribute("aria-selected", "true");
+    const panel = history.getByRole("tabpanel", { name: /^Records/ });
+    const held = panel.locator("[data-testid=source-record][data-held]");
+    await expect(held).toHaveCount(1);
+    await expect(held).toContainText("Report, colonoscopy");
+    await expect(held).toContainText("Held");
+    await expect(held).toContainText("Noor endoscopy · 10 Jul 2026");
+    await expect(held.getByTestId("held-reason")).toHaveText("The report does not show the exam was complete, so the case stays open.");
+    await expect(panel.locator("[data-testid=source-record]:not([data-held])").first()).not.toContainText("Held");
+    await expect(history.getByRole("link", { name: "Full case record" })).toHaveAttribute("href", /AHS-sr-1011$/);
+    await noSeriousAxe(page);
+    // A case this demo has no detail record for says so, with no held count, and names why its links are missing.
+    await row(page, "AHS-sr-1022").click();
+    await expect(records.getByTestId("records-held")).toHaveCount(0);
+    await expect(panel.getByTestId("records-missing")).toHaveText("No source records to show: this demo has source records only for the showcase cases.");
+    await expect(history.getByTestId("record-unavailable")).toHaveText("Full case record: showcase cases only in this demo");
+    await history.getByRole("tab", { name: "Activity" }).click();
+    await expect(history.getByTestId("audit-unavailable")).toHaveText("Audit trail: showcase cases only in this demo");
+    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toHaveAttribute("title", /showcase cases/);
+  });
+
   test("phone: the selected case opens inline in its row; tapping the row folds it", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/app/today");

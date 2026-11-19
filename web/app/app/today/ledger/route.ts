@@ -1,19 +1,8 @@
 import type { NextRequest } from "next/server";
-import { ZodError } from "zod";
+import { readFailure } from "../read-failure";
 import { persistedLedger } from "@/components/worklist/ledger-trail";
-import { apiMode, ApiStatusError, getCase, MissingCredentialError } from "@/lib/api/source";
-
-/** Why a read failed, in words Today shows as given, and the status this route answers with. */
-function failure(e: unknown): { status: number; error: string } {
-  if (e instanceof MissingCredentialError) return { status: 500, error: "this server has no API read credential configured" };
-  // A 2xx body that is not JSON (res.json() throws SyntaxError) is an answer too, just not one this page can read.
-  if (e instanceof ZodError || e instanceof SyntaxError) return { status: 502, error: "the API answered in a shape this page does not recognise" };
-  if (e instanceof ApiStatusError) {
-    if (e.status === 401 || e.status === 403) return { status: 502, error: `the API refused this server's read credential (HTTP ${e.status})` };
-    return { status: 502, error: `the API answered HTTP ${e.status}` };
-  }
-  return { status: 502, error: "the API did not answer" };
-}
+import { todayRecords } from "@/components/worklist/today-records";
+import { apiMode, getCase } from "@/lib/api/source";
 
 /**
  * GET /app/today/ledger?id=<case id>: the persisted contact outcomes, notes and ledger status of ONE case, for the
@@ -21,6 +10,14 @@ function failure(e: unknown): { status: number; error: string } {
  * token. Today calls it only for the selected case, never for every row. A failure says which kind it was: no
  * credential configured here (500), an answer that does not parse, an API refusal or error status, or no answer (502).
  */
+function recordsOf(detail: Parameters<typeof todayRecords>[0]) {
+  try {
+    return todayRecords(detail);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const noStore = { "cache-control": "no-store" };
   if (apiMode() !== "live") return Response.json({ error: "no live API: Today keeps its log in this browser" }, { status: 404, headers: noStore });
@@ -32,9 +29,12 @@ export async function GET(request: NextRequest) {
     return Response.json({
       ...persistedLedger(detail),
       bookingPanel: detail.api_overlay ? { booking: detail.booking, overlay: detail.api_overlay, case: detail.case } : null,
+      // Today's Records and source Activity, from this same read, so the selected case's detail is read once. A detail
+      // Today cannot project leaves them out (Records then says so); it never costs the contact trail.
+      records: recordsOf(detail),
     }, { headers: noStore });
   } catch (e) {
-    const { status, error } = failure(e);
+    const { status, error } = readFailure(e);
     return Response.json({ error }, { status, headers: noStore });
   }
 }
