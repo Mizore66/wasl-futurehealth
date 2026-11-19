@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "22caeb6c4ca0965213ee043807fffc1a222d6bf0",
-    "committed_at": "2026-11-17T10:19:48Z"
+    "revision": "bd1541280d09ad77469077f263694f20b0bc2998",
+    "committed_at": "2026-11-19T23:32:17Z"
   },
   "scanner": {
     "name": "trivy",
@@ -37,8 +37,8 @@
     {
       "target": "deploy/nats/build/go.mod",
       "name": "github.com/antithesishq/antithesis-sdk-go",
-      "version": "v0.6.0-default-no-op",
-      "purl": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op",
+      "version": "v0.7.0-default-no-op",
+      "purl": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op",
       "development": false,
       "licenses": [
         "MIT"
@@ -69,8 +69,8 @@
     {
       "target": "deploy/nats/build/go.mod",
       "name": "github.com/minio/highwayhash",
-      "version": "v1.0.4-0.20251030100505-070ab1a87a76",
-      "purl": "pkg:golang/github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76",
+      "version": "v1.0.4",
+      "purl": "pkg:golang/github.com/minio/highwayhash@v1.0.4",
       "development": false,
       "licenses": [
         "Apache-2.0"
@@ -79,8 +79,8 @@
     {
       "target": "deploy/nats/build/go.mod",
       "name": "github.com/nats-io/jwt/v2",
-      "version": "v2.8.1",
-      "purl": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.1",
+      "version": "v2.8.2",
+      "purl": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.2",
       "development": false,
       "licenses": [
         "Apache-2.0"
@@ -89,8 +89,8 @@
     {
       "target": "deploy/nats/build/go.mod",
       "name": "github.com/nats-io/nats-server/v2",
-      "version": "v2.12.6",
-      "purl": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.6",
+      "version": "v2.12.12",
+      "purl": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.12",
       "development": false,
       "licenses": [
         "Apache-2.0"
@@ -99,8 +99,8 @@
     {
       "target": "deploy/nats/build/go.mod",
       "name": "github.com/nats-io/nkeys",
-      "version": "v0.4.15",
-      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.15",
+      "version": "v0.4.16",
+      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
       "development": false,
       "licenses": [
         "Apache-2.0"

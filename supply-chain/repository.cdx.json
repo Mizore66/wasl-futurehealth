@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:99a7081d-cea5-5ddd-ab95-829973f180b5",
+  "serialNumber": "urn:uuid:4bf6db19-323d-5b61-9426-bb40c7587480",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-17T10:19:48Z",
+    "timestamp": "2026-11-19T23:32:17Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "22caeb6c4ca0965213ee043807fffc1a222d6bf0"
+      "version": "bd1541280d09ad77469077f263694f20b0bc2998"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "22caeb6c4ca0965213ee043807fffc1a222d6bf0"
+        "value": "bd1541280d09ad77469077f263694f20b0bc2998"
       },
       {
         "name": "wasl:source-tree",
@@ -102,11 +102,11 @@
       ]
     },
     {
-      "bom-ref": "container:deploy/nats/Dockerfile:27:nats:2.12.6-alpine",
+      "bom-ref": "container:deploy/nats/Dockerfile:27:nats:2.12.12-alpine",
       "type": "container",
       "name": "nats",
-      "version": "2.12.6-alpine",
-      "purl": "pkg:docker/library/nats@2.12.6-alpine",
+      "version": "2.12.12-alpine",
+      "purl": "pkg:docker/library/nats@2.12.12-alpine",
       "properties": [
         {
           "name": "wasl:declared-in",
@@ -118,7 +118,7 @@
         },
         {
           "name": "wasl:reference",
-          "value": "nats:2.12.6-alpine"
+          "value": "nats:2.12.12-alpine"
         }
       ]
     },
@@ -144,10 +144,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op",
+      "bom-ref": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op",
       "type": "library",
       "name": "github.com/antithesishq/antithesis-sdk-go",
-      "version": "v0.6.0-default-no-op",
+      "version": "v0.7.0-default-no-op",
       "licenses": [
         {
           "license": {
@@ -155,11 +155,11 @@
           }
         }
       ],
-      "purl": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op",
+      "purl": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op"
+          "value": "github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -192,10 +192,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:golang/github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76",
+      "bom-ref": "pkg:golang/github.com/minio/highwayhash@v1.0.4",
       "type": "library",
       "name": "github.com/minio/highwayhash",
-      "version": "v1.0.4-0.20251030100505-070ab1a87a76",
+      "version": "v1.0.4",
       "licenses": [
         {
           "license": {
@@ -203,11 +203,11 @@
           }
         }
       ],
-      "purl": "pkg:golang/github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76",
+      "purl": "pkg:golang/github.com/minio/highwayhash@v1.0.4",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76"
+          "value": "github.com/minio/highwayhash@v1.0.4"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -216,10 +216,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.1",
+      "bom-ref": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.2",
       "type": "library",
       "name": "github.com/nats-io/jwt/v2",
-      "version": "v2.8.1",
+      "version": "v2.8.2",
       "licenses": [
         {
           "license": {
@@ -227,11 +227,11 @@
           }
         }
       ],
-      "purl": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.1",
+      "purl": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.2",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/nats-io/jwt/v2@v2.8.1"
+          "value": "github.com/nats-io/jwt/v2@v2.8.2"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -240,10 +240,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.6",
+      "bom-ref": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.12",
       "type": "library",
       "name": "github.com/nats-io/nats-server/v2",
-      "version": "v2.12.6",
+      "version": "v2.12.12",
       "licenses": [
         {
           "license": {
@@ -251,11 +251,11 @@
           }
         }
       ],
-      "purl": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.6",
+      "purl": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.12",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/nats-io/nats-server/v2@v2.12.6"
+          "value": "github.com/nats-io/nats-server/v2@v2.12.12"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -288,58 +288,6 @@
         {
           "name": "wasl:go-sum-module-hash",
           "value": "h1:vsXoOxjHp/GmPUN+EcI7uOf/uB+iAP+kEsAFNQN0yzA="
-        }
-      ]
-    },
-    {
-      "bom-ref": "pkg:golang/github.com/nats-io/nkeys@v0.4.15",
-      "type": "library",
-      "name": "github.com/nats-io/nkeys",
-      "version": "v0.4.15",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.15",
-      "properties": [
-        {
-          "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/nats-io/nkeys@v0.4.15"
-        },
-        {
-          "name": "aquasecurity:trivy:PkgType",
-          "value": "gomod"
-        }
-      ]
-    },
-    {
-      "bom-ref": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
-      "type": "library",
-      "name": "github.com/nats-io/nkeys",
-      "version": "v0.4.16",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
-      "properties": [
-        {
-          "name": "aquasecurity:trivy:PkgID",
-          "value": "github.com/nats-io/nkeys@v0.4.16"
-        },
-        {
-          "name": "aquasecurity:trivy:PkgType",
-          "value": "gomod"
-        },
-        {
-          "name": "wasl:go-sum-module-hash",
-          "value": "h1:rd5oAuLOb8mnAycB0xleuEBNS1pVVnN0fv/FF34Eypg="
         }
       ]
     },
@@ -23109,6 +23057,62 @@
       ]
     },
     {
+      "bom-ref": "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@deploy/nats/build/go.mod",
+      "type": "library",
+      "name": "github.com/nats-io/nkeys",
+      "version": "v0.4.16",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "github.com/nats-io/nkeys@v0.4.16"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "gomod"
+        },
+        {
+          "name": "wasl:go-sum-module-hash",
+          "value": "h1:rd5oAuLOb8mnAycB0xleuEBNS1pVVnN0fv/FF34Eypg="
+        }
+      ]
+    },
+    {
+      "bom-ref": "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@pipeline/go.mod",
+      "type": "library",
+      "name": "github.com/nats-io/nkeys",
+      "version": "v0.4.16",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "github.com/nats-io/nkeys@v0.4.16"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "gomod"
+        },
+        {
+          "name": "wasl:go-sum-module-hash",
+          "value": "h1:rd5oAuLOb8mnAycB0xleuEBNS1pVVnN0fv/FF34Eypg="
+        }
+      ]
+    },
+    {
       "bom-ref": "wasl:library:pkg:golang/github.com/nats-io/nuid@v1.0.1@deploy/nats/build/go.mod",
       "type": "library",
       "name": "github.com/nats-io/nuid",
@@ -23324,7 +23328,7 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op",
+      "ref": "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op",
       "dependsOn": []
     },
     {
@@ -23334,27 +23338,27 @@
       ]
     },
     {
-      "ref": "pkg:golang/github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76",
+      "ref": "pkg:golang/github.com/minio/highwayhash@v1.0.4",
       "dependsOn": [
         "wasl:library:pkg:golang/golang.org/x/sys@v0.49.0@deploy/nats/build/go.mod"
       ]
     },
     {
-      "ref": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.1",
+      "ref": "pkg:golang/github.com/nats-io/jwt/v2@v2.8.2",
       "dependsOn": [
-        "pkg:golang/github.com/nats-io/nkeys@v0.4.15"
+        "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@deploy/nats/build/go.mod"
       ]
     },
     {
-      "ref": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.6",
+      "ref": "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.12",
       "dependsOn": [
-        "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.6.0-default-no-op",
+        "pkg:golang/github.com/antithesishq/antithesis-sdk-go@v0.7.0-default-no-op",
         "pkg:golang/github.com/google/go-tpm@v0.9.8",
-        "pkg:golang/github.com/minio/highwayhash@v1.0.4-0.20251030100505-070ab1a87a76",
-        "pkg:golang/github.com/nats-io/jwt/v2@v2.8.1",
-        "pkg:golang/github.com/nats-io/nkeys@v0.4.15",
+        "pkg:golang/github.com/minio/highwayhash@v1.0.4",
+        "pkg:golang/github.com/nats-io/jwt/v2@v2.8.2",
         "pkg:golang/golang.org/x/time@v0.15.0",
         "wasl:library:pkg:golang/github.com/klauspost/compress@v1.20.0@deploy/nats/build/go.mod",
+        "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@deploy/nats/build/go.mod",
         "wasl:library:pkg:golang/github.com/nats-io/nuid@v1.0.1@deploy/nats/build/go.mod",
         "wasl:library:pkg:golang/golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2@deploy/nats/build/go.mod",
         "wasl:library:pkg:golang/golang.org/x/sys@v0.49.0@deploy/nats/build/go.mod"
@@ -23363,21 +23367,9 @@
     {
       "ref": "pkg:golang/github.com/nats-io/nats.go@v1.54.0",
       "dependsOn": [
-        "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
         "wasl:library:pkg:golang/github.com/klauspost/compress@v1.20.0@pipeline/go.mod",
+        "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@pipeline/go.mod",
         "wasl:library:pkg:golang/github.com/nats-io/nuid@v1.0.1@pipeline/go.mod"
-      ]
-    },
-    {
-      "ref": "pkg:golang/github.com/nats-io/nkeys@v0.4.15",
-      "dependsOn": [
-        "wasl:library:pkg:golang/golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2@deploy/nats/build/go.mod"
-      ]
-    },
-    {
-      "ref": "pkg:golang/github.com/nats-io/nkeys@v0.4.16",
-      "dependsOn": [
-        "wasl:library:pkg:golang/golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2@pipeline/go.mod"
       ]
     },
     {
@@ -23391,7 +23383,7 @@
     {
       "ref": "pkg:golang/wasl-nats-build",
       "dependsOn": [
-        "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.6"
+        "pkg:golang/github.com/nats-io/nats-server/v2@v2.12.12"
       ]
     },
     {
@@ -28802,6 +28794,18 @@
     {
       "ref": "wasl:library:pkg:golang/github.com/klauspost/compress@v1.20.0@pipeline/go.mod",
       "dependsOn": []
+    },
+    {
+      "ref": "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@deploy/nats/build/go.mod",
+      "dependsOn": [
+        "wasl:library:pkg:golang/golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2@deploy/nats/build/go.mod"
+      ]
+    },
+    {
+      "ref": "wasl:library:pkg:golang/github.com/nats-io/nkeys@v0.4.16@pipeline/go.mod",
+      "dependsOn": [
+        "wasl:library:pkg:golang/golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2@pipeline/go.mod"
+      ]
     },
     {
       "ref": "wasl:library:pkg:golang/github.com/nats-io/nuid@v1.0.1@deploy/nats/build/go.mod",
