@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Cache Components is off: pages read the API (or fixtures) per request, and the shell reads the pathname.
   cacheComponents: false,
+  experimental: {
+    // Vercel restores .next/cache between builds, and the restored Turbopack cache served the Tailwind CSS compiled
+    // from the previous globals.css (production lost the staff palette while the HTML was new). Build cold instead.
+    turbopackFileSystemCacheForBuild: false,
+  },
   // Lets parallel dev servers in one checkout keep separate build folders.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // Fixtures mode reads data/api with fs at request time, which the tracer cannot see.
