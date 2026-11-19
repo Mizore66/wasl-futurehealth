@@ -4,7 +4,6 @@ import { AppSidebar, type NavCounts } from "@/components/shell/app-sidebar";
 import { SIDEBAR_COOKIE } from "@/components/shell/sidebar-cookie";
 import { SkipLink } from "@/components/shell/skip-link";
 import { TopBar } from "@/components/shell/top-bar";
-import { todayQueueCounts } from "@/components/worklist/today-items";
 import { RunMetaScope } from "@/components/shell/run-meta-scope";
 import { RunMeta, RunMetaFallback } from "@/components/shell/run-meta";
 import { getCases } from "@/lib/api/source";
@@ -12,11 +11,8 @@ import { reviewerPersona } from "@/lib/api/reviewer-session";
 
 /** The Review queue is CRC only, so the badge counts open CRC reviews, not the dashboard's all-programme total. */
 async function navCounts(): Promise<NavCounts> {
-  const [{ total }, today] = await Promise.all([
-    getCases({ review: "open", programme: "crc", limit: 1 }),
-    todayQueueCounts().catch(() => undefined),
-  ]);
-  return { review: total > 0 ? total : undefined, today };
+  const { total } = await getCases({ review: "open", programme: "crc", limit: 1 });
+  return { review: total > 0 ? total : undefined };
 }
 
 export default async function AppLayout({ children }: LayoutProps<"/app">) {

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cx } from "@/lib/cx";
 import type { SessionPersona } from "@/lib/auth/session-persona";
-import { PERSONA_PREFIX, shellPersona, type ShellPersona } from "./persona";
+import { PERSONA_PREFIX, shellPersona, usesReviewSession, type ShellPersona } from "./persona";
 import { LAST_CASE_KEY } from "./remember-case";
 import { isTodayQueue, TODAY_QUEUES, useLiveTodayCounts, type TodayCounts, type TodayQueue } from "./today-counts";
 import { TopActions } from "./top-bar";
@@ -126,10 +126,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
   },
 ];
 
-export type NavCounts = Partial<Record<NonNullable<NavItem["countKey"]>, number>> & {
-  /** Server-side Today queue counts; the mounted Today board publishes live ones (today-counts.ts). */
-  today?: TodayCounts;
-};
+export type NavCounts = Partial<Record<NonNullable<NavItem["countKey"]>, number>>;
 
 function isActive(pathname: string, item: NavItem) {
   if (item.activeOn) return item.activeOn.test(pathname);
@@ -276,14 +273,36 @@ function NavLink({
   );
 }
 
-function QueueCount({ counts, q }: { counts: Promise<NavCounts>; q: TodayQueue }) {
+function QueueCount({ fetched, q }: { fetched: TodayCounts | null; q: TodayQueue }) {
   const live = useLiveTodayCounts();
-  const n = live?.[q] ?? use(counts).today?.[q];
+  const n = live?.[q] ?? fetched?.[q];
   return n === undefined ? null : <span className="ml-auto text-[12px] tabular-nums">{n}</span>;
 }
 
-function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<NavCounts> }) {
+/**
+ * The server's queue counts, read from the browser after the shell paints. Pages that act with a reviewer's own
+ * session skip the read, so they never trigger a shared-credential read of every case.
+ */
+function useFetchedTodayCounts(pathname: string): TodayCounts | null {
+  const skip = usesReviewSession(pathname);
+  const [counts, setCounts] = useState<TodayCounts | null>(null);
+  useEffect(() => {
+    if (skip) return;
+    const ctl = new AbortController();
+    fetch("/app/today-counts", { signal: ctl.signal, cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c: TodayCounts | null) => {
+        if (c) setCounts(c);
+      })
+      .catch(() => {});
+    return () => ctl.abort();
+  }, [skip, pathname]);
+  return counts;
+}
+
+function QueueLinks({ pathname }: { pathname: string }) {
   const params = useSearchParams();
+  const fetched = useFetchedTodayCounts(pathname);
   const raw = params.get("queue");
   const current = pathname === "/app/today" ? (isTodayQueue(raw) ? raw : "call") : null;
   return (
@@ -302,9 +321,7 @@ function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<Na
               )}
             >
               <span>{label}</span>
-              <Suspense fallback={null}>
-                <QueueCount counts={counts} q={q} />
-              </Suspense>
+              <QueueCount fetched={fetched} q={q} />
             </Link>
           </li>
         );
@@ -344,7 +361,7 @@ function Nav({
                 return (
                   <div key={item.label}>
                     <NavLink item={item} active={active && collapsed} counts={counts} collapsed={collapsed} />
-                    {!collapsed && <QueueLinks pathname={pathname} counts={counts} />}
+                    {!collapsed && <QueueLinks pathname={pathname} />}
                   </div>
                 );
               }
