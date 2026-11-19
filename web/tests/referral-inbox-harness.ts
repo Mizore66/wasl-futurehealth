@@ -22,6 +22,7 @@ export function mountInbox() {
   // happy-dom cancels Web Animations on unmount with an unhandled AbortError; motion falls back to its JS driver without them.
   Object.defineProperty(Element.prototype, "animate", { value: undefined, configurable: true, writable: true });
   history.replaceState(null, "", "/app/referrals");
+  sessionStorage.clear(); // fixtures-mode returns kept in this browser must not leak between tests
   push.mockReset();
   refresh.mockReset();
   const host = document.createElement("div");

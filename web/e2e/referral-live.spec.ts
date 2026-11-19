@@ -83,7 +83,8 @@ function drResponse(body: Entry) {
   return { status: 201, body: { meta, event, api_overlay: { ...drSummary().api_overlay, contact_outcomes: [], notes: [] }, note: "recorded in the review ledger" } };
 }
 
-function handoff(id: string) {
+/* Like pipeline/api.go overlayViewLocked: the unit's note to the GP is detail only; the list says has_note. */
+function handoff(id: string, full: boolean) {
   const c = cases[id];
   const r = c.referral;
   if (!r || r.response !== "return") return undefined;
@@ -92,17 +93,21 @@ function handoff(id: string) {
     clinical_priority: "urgent", responsible_clinician: "referring PCP, ahs-mushrif", decided_by: "skmc-endo", decided_at: 110, act_by: 112,
     medical_director_day: 116, status: "awaiting_referrer", event: r.event, destinations: ["skmc-endo", "noor-endo"],
   };
+  if (r.note) Object.assign(h, full ? { note: r.note } : { has_note: true });
   if (c.ack) h.acknowledgement = c.ack;
   if (c.resolved) Object.assign(h, { referrer_response: c.resolved, acted_at: 110, status: "referrer_acted" });
   return h;
 }
 
-function overlay(id: string) {
+function overlay(id: string, full = false) {
   const c = cases[id];
   const o: Entry = { ...base.case.api_overlay, head: c.head, actions: c.events.length, last_action_at: (c.events.at(-1)?.at as string) ?? "" };
   delete o.referral_response;
-  if (c.referral) o.referral_response = c.referral;
-  const h = handoff(id);
+  if (c.referral) {
+    const { note, ...rest } = c.referral;
+    o.referral_response = note && !full ? { ...rest, has_note: true } : c.referral;
+  }
+  const h = handoff(id, full);
   if (h) o.referral_handoff = h;
   return o;
 }
@@ -112,7 +117,7 @@ function summary(id: string) {
 }
 
 function detail(id: string) {
-  const o = overlay(id);
+  const o = overlay(id, true);
   return {
     ...base, case: summary(id), current: { ...base.current, loop: id }, api_reviews: cases[id].events,
     review_ledger: { status: "ok", events_applied: cases[id].events.length }, api_overlay: { ...o, contact_outcomes: [], notes: [], canonical_owner: "" },
@@ -137,11 +142,14 @@ function referralResponse(id: string, body: Entry) {
   if (c.referral) return conflict(id, "the receiving unit has already answered this referral", "referral_state");
   if (body.referral_id !== id || !["accept", "accept_with_conditions", "return"].includes(body.response as string)) return { status: 400, body: { meta, error: "malformed referral response" } };
   if (body.response === "return" && !RETURN_REASONS[body.reason as string]) return { status: 400, body: { meta, error: "return needs a supported reason" } };
+  const note = body.note;
+  if (note !== undefined && (body.response !== "return" || typeof note !== "string" || note !== note.trim() || !note || [...note].length > 500)) return { status: 400, body: { meta, error: "note must be 1 to 500 characters on a return" } };
   const data: Entry = { referral_id: id, response: body.response, conditions: [...((body.conditions as string[]) ?? [])].sort(), requested_info: [...((body.requested_info as string[]) ?? [])].sort() };
   if (body.response === "return") data.reason = body.reason;
+  if (note) data.note = note;
   const { event, entry } = append(id, "referral_response", "Dr Layla Haddad", { ...data, unit: "skmc-endo", run_day: 110 });
   c.referral = entry;
-  return { status: 201, body: { meta, event, api_overlay: overlay(id), note: "recorded in the review ledger" } };
+  return { status: 201, body: { meta, event, api_overlay: overlay(id, true), note: "recorded in the review ledger" } };
 }
 
 function referrerResponse(id: string, body: Entry) {
@@ -306,13 +314,18 @@ test.describe("referral answers, live mock", () => {
     pane = page.getByRole("region", { name: "Open referral" });
     await pane.getByRole("button", { name: "Return with reason" }).click();
     await pane.getByRole("radio", { name: "Blood thinner plan missing" }).check();
+    await pane.getByRole("textbox", { name: /Note to the GP/ }).fill("Please attach the FIT report.");
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
+    expect((await ledger())[ids[2]].referral?.note).toBe("Please attach the FIT report.");
     await expect(page.getByTestId("handoff-arrow")).toHaveAttribute("data-direction", "back");
     const gp = page.getByRole("region", { name: /GP, current$/ });
     await expect(gp).toContainText("Waiting on GP");
     await expect(gp).toContainText("Booking held");
     await expect(gp).toContainText("Returned to the GP: blood thinner plan missing");
+    // Read from the case detail: the list carries only has_note.
+    await expect(gp.getByTestId("return-note")).toHaveText("Note to the GP: Please attach the FIT report.");
+    await expect(gp).not.toContainText("Kept in this browser");
     await expect(pane).toContainText("Act on the return");
     await expect(pane.getByRole("button", { name: "Accept referral", exact: true })).toHaveCount(0);
 
@@ -323,6 +336,7 @@ test.describe("referral answers, live mock", () => {
     const card = page.getByRole("article");
     await expect(card).toContainText("Returned bySKMC endoscopy");
     await expect(card).toContainText("ReasonBlood thinner plan missing");
+    await expect(card).toContainText("Note from the unitPlease attach the FIT report.");
     await card.getByRole("button", { name: "Acknowledge the returned referral" }).click();
     await expect(card.getByRole("status")).toContainText("Acknowledged");
     await page.reload();
