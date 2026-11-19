@@ -54,7 +54,8 @@ const row = (markup: string, field: string) => {
   const start = markup.indexOf(`data-check="${field}"`);
   expect(start).toBeGreaterThan(-1);
   const end = markup.indexOf("data-check=", start + 10);
-  return markup.slice(start, end === -1 ? undefined : end);
+  /* The last row ends with its readers table; the desk's progress and trail follow it in the markup. */
+  return markup.slice(start, end === -1 ? markup.indexOf("</section>", start) : end);
 };
 const OWN = { completion_undocumented: "Caecum reached", prep_ungraded_day15: "Prep graded" } as const;
 

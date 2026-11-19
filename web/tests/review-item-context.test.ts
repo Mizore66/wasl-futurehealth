@@ -175,8 +175,10 @@ describe("review cards are bound to the item being judged", () => {
     expect(view.report).toMatchObject({ id: "CRC-dr-A", version: 2 });
     for (const slot of ["r1", "r2", "r3"] as const) {
       const c = await mount(detail, [state("rv-both", "link", slot), state("rv-both", "evidence", slot)]);
-      expect(context(c, "rv-both").textContent).toContain("revised quote");
-      expect(context(c, "rv-both").textContent).not.toContain("first version quote");
+      /* The combined item has a record-pair context in its identity card and the readers in its evidence card. */
+      const readers = c.querySelector<HTMLElement>('[data-context-item="rv-both"][data-context-question="evidence"]')!;
+      expect(readers.textContent).toContain("revised quote");
+      expect(c.textContent).not.toContain("first version quote");
       expect(card(c, "rv-both", "evidence").textContent).toContain("version 2");
       await act(async () => root!.unmount());
       container!.remove();

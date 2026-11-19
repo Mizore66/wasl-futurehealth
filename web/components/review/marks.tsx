@@ -42,9 +42,16 @@ const PILL: Record<Tone, string> = {
   muted: "bg-pill-neutral-bg text-pill-neutral-ink",
 };
 
-export function Pill({ tone, shape, children }: { tone: Tone; shape?: Shape; children: React.ReactNode }) {
+/** `wrap` lets a long status sentence break onto a second line on a narrow screen. */
+export function Pill({ tone, shape, children, wrap = false }: { tone: Tone; shape?: Shape; children: React.ReactNode; wrap?: boolean }) {
   return (
-    <span className={cn("inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-chip px-2 text-small font-medium", PILL[tone])}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-chip px-2 text-small font-medium",
+        wrap ? "min-h-[22px] max-w-full py-px" : "h-[22px] whitespace-nowrap",
+        PILL[tone],
+      )}
+    >
       {shape && (
         <svg
           aria-hidden

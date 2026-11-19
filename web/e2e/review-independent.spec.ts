@@ -304,7 +304,7 @@ test.describe("independent double review, live mock", () => {
     await expect(page.getByTestId("question-cards")).toBeVisible();
     return { context, page };
   }
-  const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
+  const rail = (page: Page) => page.getByRole("region", { name: "Your answers" });
   const card = (page: Page, question: "link" | "evidence") => rail(page).locator(`section[data-question="${question}"]`);
   async function acquire(page: Page, question: "link" | "evidence", slot: "first" | "second" | "senior" = "first") {
     const label = slot === "senior" ? "Claim senior resolution" : `Claim ${slot} read`;
@@ -382,7 +382,9 @@ test.describe("independent double review, live mock", () => {
     await card(page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link")).toContainText("Your first read is in");
-    await expect(card(page, "link")).toContainText("First read: Same patient");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
     // Only that question changed; the evidence draft area is untouched.
     await expect(card(page, "evidence")).toContainText("First read due");
 
@@ -392,8 +394,12 @@ test.describe("independent double review, live mock", () => {
     await expect(card(page, "evidence")).toContainText("Your first read is in");
 
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: Same patient");
-    await expect(card(page, "evidence")).toContainText("First read: Report not adequate");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "evidence")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "evidence")).toContainText("Second read due");
     await expect(card(page, "evidence")).not.toContainText("Submit second read");
     await expect(rail(page).getByTestId("progress")).toContainText("0 of 2 questions resolved");
     await expect(page.getByTestId("history-withheld")).toBeVisible();
@@ -534,7 +540,8 @@ test.describe("independent double review, live mock", () => {
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: Same patient");
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
     await expect(page.getByTestId("committed-lock")).toHaveCount(0);
     await noSeriousAxe(page);
     await context.close();
@@ -589,5 +596,46 @@ test.describe("independent double review, live mock", () => {
     await expect(history).not.toContainText("synthetic-");
     await noSeriousAxe(sr.page);
     await sr.context.close();
+  });
+
+  test("flow: submit an independent first read on the record pair, desktop and phone", async ({ browser }) => {
+    for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+      for (const q of Object.values(questions)) { q.reads.length = 0; q.claim = undefined; q.claimEvents.length = 0; }
+      const context = await browser.newContext({ viewport: { width, height } });
+      const page = await context.newPage();
+      await page.goto(desk);
+      await page.getByLabel("Review token").fill(tokens.r1);
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Identity review");
+      const link = card(page, "link");
+      await expect(link).toContainText("First read due");
+      await expect(link).toContainText("Claim to view the identifiers.");
+      await expect(page.getByText("1965-03-14", { exact: true })).toHaveCount(0);
+
+      await acquire(page, "link");
+      await expect(link.locator("[data-record]")).toHaveCount(2);
+      await expect(link.getByText("1965-03-14", { exact: true })).toBeVisible();
+      await expect(link.getByTestId("pair-checks")).toContainText("Date of birth");
+      const [referral, report] = await Promise.all([link.locator('[data-record="referral"]').boundingBox(), link.locator('[data-record="report"]').boundingBox()]);
+      // Side by side on a desktop, stacked on a phone.
+      if (width > 700) expect(report!.x).toBeGreaterThan(referral!.x + referral!.width - 1);
+      else expect(report!.y).toBeGreaterThan(referral!.y + referral!.height - 1);
+      await page.screenshot({ path: `test-results/screens/review-record-pair-${width}.png`, fullPage: true });
+
+      await link.getByRole("button", { name: "Submit first read" }).click();
+      await expect(link.getByRole("alert")).toHaveText("Choose an answer before you submit.");
+      expect(questions[LINK].reads).toHaveLength(0);
+      await link.getByRole("radio", { name: "Not the same patient" }).click();
+      await link.getByRole("button", { name: "Submit first read" }).click();
+      await expect(link).toContainText("Second read due");
+      await expect(link).toContainText("First read: submitted; the answer stays hidden until the second read");
+      await expect(link).not.toContainText("Not the same patient");
+      await expect(page.getByText("1965-03-14", { exact: true })).toHaveCount(0);
+      expect(questions[LINK].reads.map((r) => r.decision)).toEqual(["different"]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      await page.screenshot({ path: `test-results/screens/review-second-read-due-${width}.png`, fullPage: true });
+      await noSeriousAxe(page);
+      await context.close();
+    }
   });
 });

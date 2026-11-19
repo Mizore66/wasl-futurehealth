@@ -327,7 +327,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     expect(await page.content()).not.toContain(provider.clientSecret);
     return { context, page };
   }
-  const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
+  const rail = (page: Page) => page.getByRole("region", { name: "Your answers" });
   const card = (page: Page, question: "link" | "evidence") => rail(page).locator(`section[data-question="${question}"]`);
   async function acquire(page: Page, question: "link" | "evidence", slot: "first" | "second" | "senior" = "first") {
     const label = slot === "senior" ? "Claim senior resolution" : `Claim ${slot} read`;
@@ -361,7 +361,9 @@ test.describe("independent double review with synthetic OIDC", () => {
     await card(page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link")).toContainText("Your first read is in");
-    await expect(card(page, "link")).toContainText("First read: Same patient");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
     // Only that question changed; the evidence draft area is untouched.
     await expect(card(page, "evidence")).toContainText("First read due");
 
@@ -371,8 +373,12 @@ test.describe("independent double review with synthetic OIDC", () => {
     await expect(card(page, "evidence")).toContainText("Your first read is in");
 
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: Same patient");
-    await expect(card(page, "evidence")).toContainText("First read: Report not adequate");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
+    // The desk keeps the first reader's own answer hidden until the second read is in.
+    await expect(card(page, "evidence")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "evidence")).toContainText("Second read due");
     await expect(card(page, "evidence")).not.toContainText("Submit second read");
     await expect(rail(page).getByTestId("progress")).toContainText("0 of 2 questions resolved");
     await expect(page.getByTestId("history-withheld")).toBeVisible();
@@ -518,7 +524,8 @@ test.describe("independent double review with synthetic OIDC", () => {
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: Same patient");
+    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("Second read due");
     await expect(page.getByTestId("committed-lock")).toHaveCount(0);
     await noSeriousAxe(page);
     await context.close();

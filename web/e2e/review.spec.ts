@@ -17,7 +17,7 @@ async function noSeriousAxe(page: Page) {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
+const rail = (page: Page) => page.getByRole("region", { name: "Your answers" });
 const prepRow = (page: Page) => page.locator('[data-check="Prep graded"]');
 /** The one evidence item covers every check the readers could not settle: bowel prep and tissue taken. */
 const tissueRow = (page: Page) => page.locator('[data-check="Tissue taken"]');
@@ -30,7 +30,7 @@ test.describe("review, fixtures mode", () => {
 
   test("the queue is rebuilt from the review_hold case and says so", async ({ page }) => {
     await page.goto("/app/review");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review desk");
     await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
     await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
     const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
@@ -40,7 +40,7 @@ test.describe("review, fixtures mode", () => {
     await noSeriousAxe(page);
     await row.click();
     await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1079$/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Identity review");
   });
 
   test("the patient's avatar opens her record from the queue and the desk", async ({ page }) => {
@@ -55,7 +55,7 @@ test.describe("review, fixtures mode", () => {
 
   test("the desk shows both records, both readers and the quote", async ({ page }) => {
     await page.goto(desk);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Identity review");
     await expect(page.getByText("Case 1 of 1 waiting")).toBeVisible();
     await expect(page.getByText("Held: no second identifier is confirmed for the two records, and the two readers could not settle the bowel prep grade and whether tissue was taken.")).toBeVisible();
     await expect(page.getByText("not recorded", { exact: true })).toHaveCount(1);
@@ -89,7 +89,7 @@ test.describe("review, fixtures mode", () => {
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(r.locator('li[data-kind="current"]')).toContainText("your answers");
     await expect(r).toContainText("nothing here is appended or saved");
-    const bridge = page.getByRole("region", { name: "Is this the same person?" });
+    const bridge = page.getByRole("region", { name: "Record pair" });
     await expect(bridge.getByRole("img", { name: "Not yet confirmed as this patient" })).toHaveAttribute("data-state", "unknown");
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
