@@ -85,7 +85,7 @@ for (const name of NAMES) {
       await expect(page.getByRole("region", { name: /Why it (closed|is still open)/ })).toBeVisible();
       await expect(page.getByRole("region", { name: "Consent and messages" })).toBeVisible();
       await expect(page.getByRole("list", { name: "Timeline" }).getByRole("listitem")).toHaveCount(detail.timeline.length);
-      await expect(page.getByRole("link", { name: "Audit trail", exact: true })).toHaveAttribute("href", href(name, "/audit"));
+      await expect(page.locator("main").getByRole("link", { name: "Audit trail", exact: true })).toHaveAttribute("href", href(name, "/audit"));
       await shot(page, `detail-${name}-1440`);
       await noSeriousAxe(page);
     });

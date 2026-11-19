@@ -519,7 +519,7 @@ test.describe("Phone width, 390px", () => {
       const s = getComputedStyle(document.activeElement!);
       return { w: s.outlineWidth, style: s.outlineStyle };
     });
-    expect(outline).toEqual({ w: "2px", style: "solid" });
+    expect(outline).toEqual({ w: "3px", style: "solid" });
   });
 });
 

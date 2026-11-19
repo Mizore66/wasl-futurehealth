@@ -10,6 +10,7 @@ import {
   GovernanceHeader,
   LedgerControls,
   LedgerFacts,
+  LedgerTitle,
   SignaturesCard,
   VerifiedCard,
   ledgerGovernance,
@@ -170,6 +171,21 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         verifyNote={verifyNote}
         auditDetails={auditDetails}
       />
+      {status === "ok" && audit.history.length > 0 && (
+        <section aria-labelledby="review-history-h" className="mt-3 rounded-[8px] border border-line bg-surface px-[clamp(15px,2.1vw,36px)] py-3">
+          <h2 id="review-history-h" className="m-0 text-[14px] font-semibold">
+            Review history
+          </h2>
+          <p className="m-0 mt-0.5 text-[12px] text-muted">Every review and coordinator entry on the sealed chain, in order. Each also appears in the event history.</p>
+          <ol aria-label="Review history" className="m-0 mt-2 flex list-decimal flex-col gap-1 ps-5 text-[13px]">
+            {audit.history.map((r, i) => (
+              <li key={r.hash ?? i}>
+                <LedgerTitle r={r} programme={programme} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       {status === "ok" && !history.modelWithheld && (
         <div className="mt-3">
           <ExportCard caseId={caseId} />

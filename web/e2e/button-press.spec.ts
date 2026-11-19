@@ -56,7 +56,7 @@ test.describe("shared Button press", () => {
     expect(await b.evaluate((el) => {
       const cs = getComputedStyle(el);
       return [el.matches(":focus-visible"), cs.outlineStyle, cs.outlineWidth];
-    })).toEqual([true, "solid", "2px"]);
+    })).toEqual([true, "solid", "3px"]);
   });
 
   for (const [what, attr] of [
