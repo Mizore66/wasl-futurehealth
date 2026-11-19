@@ -56,8 +56,8 @@ function Scale({ title, use, tones }: { title: string; use: string; tones: [stri
   );
 }
 
-/** The shared Appearance control: the jade & limestone colour roles the workspace uses. */
-export function AppearanceButton() {
+/** The shared Appearance control: the jade & limestone colour roles the workspace uses. Audit labels it "Palette". */
+export function AppearanceButton({ label = "Appearance" }: { label?: string } = {}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -65,7 +65,7 @@ export function AppearanceButton() {
           type="button"
           className="min-h-9 rounded-[5px] border border-limestone-600 bg-limestone-50 px-3 text-[12px] font-semibold text-jade-700 hover:bg-jade-800 hover:text-limestone-50"
         >
-          Appearance
+          {label}
         </button>
       </DialogTrigger>
       <DialogContent className="staff-tokens max-h-[90dvh] w-[min(1180px,96vw)] max-w-[96vw] overflow-auto bg-limestone-200 sm:max-w-[min(1180px,96vw)]">
