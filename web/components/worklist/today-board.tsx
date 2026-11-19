@@ -686,7 +686,7 @@ export function TodayBoard({
       data-case={p.short}
       style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
       className={cn(
-        "min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:flex lg:flex-col lg:justify-center lg:px-[clamp(20px,2.4vw,40px)] lg:py-8",
+        "min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:sticky lg:top-[54px] lg:self-start lg:px-[clamp(20px,2.4vw,40px)] lg:py-8",
         fold,
       )}
     >
@@ -1024,7 +1024,7 @@ export function TodayBoard({
       key="case"
       data-testid="no-case"
       style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
-      className="min-w-0 px-4 py-4 lg:flex lg:flex-col lg:justify-center lg:px-[clamp(20px,2.4vw,40px)] lg:py-8"
+      className="min-w-0 px-4 py-4 lg:sticky lg:top-[54px] lg:self-start lg:px-[clamp(20px,2.4vw,40px)] lg:py-8"
     >
       {removedNotice}
       {items.length === 0 ? (
