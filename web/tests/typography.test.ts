@@ -25,6 +25,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "components/case/audit-view.tsx", line: /stored \{s\.sig\}/, why: "full stored signature" },
   { file: "components/case/audit-view.tsx", line: /recomputed \{s\.recomputed\}/, why: "full recomputed signature" },
   { file: "components/case/audit-view.tsx", line: /^\s*<code className="break-all font-mono">$/, why: "stream head, full value" },
+  { file: "components/case/audit-workspace.tsx", line: /<code className="select-all break-all font-mono/, why: "full stored and recomputed decision signatures" },
   // Code: system names, raw records, versions and machine traces
   { file: "app/(site)/experts/page.tsx", line: /whitespace-pre-wrap break-all .*font-mono text-\[14px\]/, why: "HL7 v2 message code block (<pre>)" },
   { file: "app/app/review/page.tsx", line: /<code className="font-mono">review_hold<\/code>/, why: "system name of the queue" },

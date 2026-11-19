@@ -80,9 +80,9 @@ export function ChainCard({ audit }: { audit: Audit }) {
             <div className="flex items-baseline gap-3">
               <span className="w-5 flex-none text-right tabular-nums text-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
-                <p className="m-0 font-medium">
+                <div className="font-medium">
                   <TechTerm id={e.type} label={entryLabel(e.type)} />
-                </p>
+                </div>
                 <p className="m-0 mt-1">{bodySummary(e)}</p>
                 <p className="m-0 mt-1 text-small leading-5">
                   <Hash label={e.prev === "genesis" ? "Starts the chain" : "After"} value={e.prev === "genesis" ? "genesis" : e.prev} />
@@ -163,20 +163,19 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
 /** Review actions that /undo accepts as targets; each keeps its own RBAC at the API. */
 const GOVERNED_ACTIONS = new Set(["signoff_link", "signoff_evidence", "record_consent"]);
 
-/** Review actions appended through the API: append-only, each linked to the one before. */
-export function HistoryCard({
-  audit,
-  programme,
-  governance,
-}: {
-  audit: Audit;
-  programme: Programme | "";
-  /**
-   * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
-   * `hostSignOut`: the host page already shows a sign-out for this session, so the history card does not repeat it.
-   */
-  governance?: { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean; mode?: ReviewAuthMode; expiresAt?: string };
-}) {
+/**
+ * `signedIn`: a reviewer-session token the API accepted for this case. Controls act only as that token.
+ * `hostSignOut`: the host page already shows a sign-out for this session, so the history does not repeat it.
+ */
+export type HistoryGovernance = { caseId: string; projection: UndoProjection; signedIn: boolean; hostSignOut?: boolean; mode?: ReviewAuthMode; expiresAt?: string };
+
+type LedgerRow = Audit["history"][number];
+
+/**
+ * Which events can be undone, contested or resolved. The page does not know the signed-in role: the API applies the
+ * target action's RBAC and the independent-actor rules, and its refusal is shown as-is.
+ */
+export function ledgerGovernance(audit: Audit, governance?: HistoryGovernance) {
   const status = new Map(governance?.projection.events.map((event) => [event.hash, event.status]));
   const rejectedContests = new Set(
     audit.history.flatMap((event) => {
@@ -185,20 +184,111 @@ export function HistoryCard({
       return contest?.ledger === "compensation" ? [contest.target] : [];
     }),
   );
-  /*
-   * Which events can be undone, contested or resolved. The page does not know the signed-in role: the API applies the
-   * target action's RBAC and the independent-actor rules, and its refusal is shown as-is.
-   */
-  const governable = (r: Audit["history"][number]): "review" | "contest" | undefined => {
+  const governable = (r: LedgerRow): "review" | "contest" | undefined => {
     if (!governance || (r.ledger !== "review" && r.ledger !== "compensation") || !GOVERNED_ACTIONS.has(r.action)) return undefined;
     const eventStatus = status.get(r.hash);
     if (r.ledger === "review" && !protocolRead(r) && eventStatus === "active") return "review";
     if (r.ledger === "compensation" && r.kind === "contest" && eventStatus === "open") return "contest";
     return undefined;
   };
-  const anyGovernable = audit.history.some((r) => governable(r));
-  const controls = !!governance?.signedIn;
+  return { status, rejectedContests, governable, anyGovernable: audit.history.some((r) => governable(r)), controls: !!governance?.signedIn };
+}
 
+/** The event's name as the history lists it. */
+export function LedgerTitle({ r, programme }: { r: LedgerRow; programme: Programme | "" }) {
+  return r.ledger === "review" ? (
+    <>
+      {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
+      {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
+    </>
+  ) : (
+    /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
+    <span className={cn(r.ledger === "unknown" && "text-warning")}>
+      <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
+    </span>
+  );
+}
+
+/** Who, when, note, links and hashes of one ledger event. */
+export function LedgerFacts({ audit, index, programme }: { audit: Audit; index: number; programme: Programme | "" }) {
+  const r = audit.history[index];
+  const target = r.ledger === "compensation" ? r.target : "";
+  const resolving = audit.history.filter((event) => event.ledger === "compensation" && event.target === r.hash);
+  return (
+    <>
+      {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
+        <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}; this history does not resolve a review item.</p>
+      )}
+      {/* The auditor's redacted history never names the actor or quotes the note. */}
+      <p className="m-0 text-muted">
+        {r.actor ? `${r.actor} · ` : ""}
+        {r.role ? roleWords(r.role) : "role not recorded"} · {r.at ? atWords(r.at) : "time not recorded"}
+      </p>
+      {r.ledger !== "unknown" && r.ledger !== "coordinator" && typeof r.note === "string" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+      {(target || resolving.length > 0) && (
+        <p className="m-0 mt-1 flex flex-wrap gap-x-3 gap-y-1 text-small">
+          {target && (
+            <a href={`#review-event-${target}`} className="underline">
+              {r.ledger === "compensation" && r.kind === "contest_resolution" ? "Contest event" : "Original event"}
+            </a>
+          )}
+          {resolving.map((event) => (
+            <a key={event.hash} href={`#review-event-${event.hash}`} className="underline">
+              Resolving event: {event.ledger === "compensation" ? event.kind.replaceAll("_", " ") : "event"}
+            </a>
+          ))}
+        </p>
+      )}
+      <p className="m-0 mt-1 text-small leading-5">
+        {r.prev && <Hash label={index === 0 ? "Continues the shared ledger after" : "After"} value={r.prev} />}
+        {r.hash && <Hash label="Hash" value={r.hash} />}
+      </p>
+    </>
+  );
+}
+
+/** The event's compensation status and, for a signed-in reviewer, its undo/contest/resolve controls. */
+export function LedgerControls({ r, governance, gov }: { r: LedgerRow; governance?: HistoryGovernance; gov: ReturnType<typeof ledgerGovernance> }) {
+  const eventStatus = gov.status.get(r.hash);
+  return (
+    <>
+      {eventStatus && (
+        <p className="m-0 mt-1 text-small font-medium" data-compensation-status={eventStatus}>
+          {r.ledger === "review" ? "Review" : r.ledger === "compensation" && r.kind === "contest" ? "Contest" : "Compensation"} status: {eventStatus}
+        </p>
+      )}
+      {governance && gov.controls && gov.governable(r) === "review" && (
+        <div className="mt-1 grid gap-2 sm:grid-cols-2">
+          <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" />
+          {!gov.rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" />}
+        </div>
+      )}
+      {governance && gov.controls && gov.governable(r) === "contest" && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="resolve" />}
+    </>
+  );
+}
+
+/** The projection line and the governance sign-in or identity, shown once above the history. */
+export function GovernanceHeader({ governance, gov }: { governance?: HistoryGovernance; gov: ReturnType<typeof ledgerGovernance> }) {
+  if (!governance) return null;
+  return (
+    <>
+      <p className="m-0 mt-3 max-w-[72ch] text-small text-muted" role="status">
+        Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
+      </p>
+      {gov.anyGovernable &&
+        (gov.controls ? (
+          <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} mode={governance.mode} expiresAt={governance.expiresAt} />
+        ) : (
+          <GovernanceSignIn caseId={governance.caseId} mode={governance.mode} />
+        ))}
+    </>
+  );
+}
+
+/** Review actions appended through the API: append-only, each linked to the one before. */
+export function HistoryCard({ audit, programme, governance }: { audit: Audit; programme: Programme | ""; governance?: HistoryGovernance }) {
+  const gov = ledgerGovernance(audit, governance);
   return (
     <Card
       id="history"
@@ -206,79 +296,28 @@ export function HistoryCard({
       aside={<HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
       note="Append-only: reviews, coordinator actions and undo/contest events share one chain. A new entry is added below; an old one is never edited."
     >
-      {governance && (
-        <p className="m-0 mt-3 max-w-[72ch] text-small text-muted" role="status">
-          Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
-        </p>
-      )}
-      {governance && anyGovernable && (controls ? <GovernanceIdentity caseId={governance.caseId} signOut={!governance.hostSignOut} mode={governance.mode} expiresAt={governance.expiresAt} /> : <GovernanceSignIn caseId={governance.caseId} mode={governance.mode} />)}
+      <GovernanceHeader governance={governance} gov={gov} />
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
           Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.
         </p>
       ) : (
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
-          {audit.history.map((r, i) => {
-            const eventStatus = status.get(r.hash);
-            const target = r.ledger === "compensation" ? r.target : "";
-            const resolving = audit.history.filter((event) => event.ledger === "compensation" && event.target === r.hash);
-            return (
-              <li key={r.hash || `unknown-${i}`} id={r.hash ? `review-event-${r.hash}` : undefined} className="scroll-mt-4 border-t border-rule py-3">
-                {r.ledger === "review" ? (
-                  <p className="m-0 font-medium">
-                    {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                    {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
-                  </p>
-                ) : (
-                  /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
-                  <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
-                    <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
-                  </div>
-                )}
-                {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
-                  <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}; this history does not resolve a review item.</p>
-                )}
-                {/* The auditor's redacted history never names the actor or quotes the note. */}
-                <p className="m-0 text-muted">
-                  {r.actor ? `${r.actor} · ` : ""}
-                  {r.role ? roleWords(r.role) : "role not recorded"} · {r.at ? atWords(r.at) : "time not recorded"}
+          {audit.history.map((r, i) => (
+            <li key={r.hash || `unknown-${i}`} id={r.hash ? `review-event-${r.hash}` : undefined} className="scroll-mt-4 border-t border-rule py-3">
+              {r.ledger === "review" ? (
+                <p className="m-0 font-medium">
+                  <LedgerTitle r={r} programme={programme} />
                 </p>
-                {r.ledger !== "unknown" && r.ledger !== "coordinator" && typeof r.note === "string" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
-                {eventStatus && (
-                  <p className="m-0 mt-1 text-small font-medium" data-compensation-status={eventStatus}>
-                    {r.ledger === "review" ? "Review" : r.ledger === "compensation" && r.kind === "contest" ? "Contest" : "Compensation"} status: {eventStatus}
-                  </p>
-                )}
-                {(target || resolving.length > 0) && (
-                  <p className="m-0 mt-1 flex flex-wrap gap-x-3 gap-y-1 text-small">
-                    {target && (
-                      <a href={`#review-event-${target}`} className="underline">
-                        {r.ledger === "compensation" && r.kind === "contest_resolution" ? "Contest event" : "Original event"}
-                      </a>
-                    )}
-                    {resolving.map((event) => (
-                      <a key={event.hash} href={`#review-event-${event.hash}`} className="underline">
-                        Resolving event: {event.ledger === "compensation" ? event.kind.replaceAll("_", " ") : "event"}
-                      </a>
-                    ))}
-                  </p>
-                )}
-                <p className="m-0 mt-1 text-small leading-5">
-                  {r.prev && <Hash label={i === 0 ? "Continues the shared ledger after" : "After"} value={r.prev} />}
-                  {r.hash && <Hash label="Hash" value={r.hash} />}
-                </p>
-                {governance && controls && governable(r) === "review" && (
-                  <div className="mt-1 grid gap-2 sm:grid-cols-2">
-                    <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" />
-                    {!rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" />}
-                  </div>
-                )}
-                {governance && controls && governable(r) === "contest" && (
-                  <GovernanceControls caseId={governance.caseId} target={r.hash} operation="resolve" />
-                )}
-              </li>
-            );
-          })}
+              ) : (
+                <div className="font-medium">
+                  <LedgerTitle r={r} programme={programme} />
+                </div>
+              )}
+              <LedgerFacts audit={audit} index={i} programme={programme} />
+              <LedgerControls r={r} governance={governance} gov={gov} />
+            </li>
+          ))}
         </ol>
       )}
     </Card>
