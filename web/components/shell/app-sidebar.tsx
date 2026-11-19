@@ -2,7 +2,8 @@
 
 import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { Mark } from "@/components/brand/mark";
 import { HonestyChip } from "@/components/wasl/honesty-chip";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
@@ -14,15 +15,21 @@ import {
 import { cx } from "@/lib/cx";
 import type { SessionPersona } from "@/lib/auth/session-persona";
 import { PERSONA_PREFIX, shellPersona, type ShellPersona } from "./persona";
+import { LAST_CASE_KEY } from "./remember-case";
+import { isTodayQueue, TODAY_QUEUES, useLiveTodayCounts, type TodayCounts, type TodayQueue } from "./today-counts";
+import { TopActions } from "./top-bar";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ReactNode;
-  countKey?: "today" | "review" | "referrals";
-  gapBefore?: boolean;
+  countKey?: "review" | "referrals";
   /** Shown as text next to the label, so it never relies on colour. */
   badge?: string;
+  /** Active on these paths too (the audit trail lives under a case). */
+  activeOn?: RegExp;
+  /** Never active on these paths (a case's audit is the Audit trail, not Patients). */
+  inactiveOn?: RegExp;
 };
 
 const icon = (children: React.ReactNode) => (
@@ -30,10 +37,10 @@ const icon = (children: React.ReactNode) => (
     aria-hidden
     width="16"
     height="16"
-    viewBox="0 0 16 16"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="1.5"
+    strokeWidth="1.6"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -41,101 +48,93 @@ const icon = (children: React.ReactNode) => (
   </svg>
 );
 
-const NAV: NavItem[] = [
+const AUDIT_PATH = /^\/app\/patients\/[^/]+\/audit(\/|$)/;
+
+const TODAY: NavItem = {
+  href: "/app/today",
+  label: "Today",
+  icon: icon(<path d="M3 5h18v16H3z M7 3v4m10-4v4M3 10h18" />),
+};
+
+/** Grouped as the approved design: the coordinator's workspace, then oversight, then the evidence behind it. */
+const GROUPS: { title: string; items: NavItem[] }[] = [
   {
-    href: "/app",
-    label: "Programme",
-    icon: icon(<path d="M3 13.5V8.5M8 13.5V2.5M13 13.5V6" />),
+    title: "Workspace",
+    items: [
+      TODAY,
+      {
+        href: "/app/patients",
+        label: "Patients",
+        inactiveOn: AUDIT_PATH,
+        icon: icon(<path d="M13 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2 M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M16 4.5a3 3 0 0 1 0 5.5 M21 20v-2a4 4 0 0 0-3-3.9" />),
+      },
+      {
+        href: "/app/referrals",
+        label: "Referrals",
+        countKey: "referrals",
+        icon: icon(<path d="M3 7h13m-4-4 5 4-5 4m9 6H8m4-4-5 4 5 4" />),
+      },
+      {
+        href: "/app/recovery",
+        label: "Recovery",
+        icon: icon(<path d="M5 9a8 8 0 1 1-1 6M4 3v6h6" />),
+      },
+    ],
   },
   {
-    href: "/app/today",
-    label: "Today",
-    countKey: "today",
-    icon: icon(<path d="M2.5 4h11M2.5 8h11M2.5 12h7" />),
+    title: "Oversight",
+    items: [
+      {
+        href: "/app",
+        label: "Programme",
+        icon: icon(<path d="M3 20h18M5 17v-5h3v5m3 0V7h3v10m3 0V3h3v14" />),
+      },
+      {
+        href: "/app/review",
+        label: "Review desk",
+        countKey: "review",
+        icon: icon(<path d="M4 4h12v16H4z M8 9h5m-5 4h3m5-4 4 1v11H8" />),
+      },
+      {
+        href: "/app/patients",
+        label: "Audit trail",
+        activeOn: AUDIT_PATH,
+        icon: icon(<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z m-4 8 3 3 5-6" />),
+      },
+    ],
   },
   {
-    href: "/app/recovery",
-    label: "Recovery",
-    icon: icon(
-      <>
-        <path d="M3 8a5 5 0 1 1 1.5 5.5" />
-        <path d="M3 3.5V8h4.5" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/review",
-    label: "Review",
-    countKey: "review",
-    icon: icon(
-      <>
-        <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
-        <path d="M5.5 8.2l1.8 1.8 3.2-4" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/patients",
-    label: "Patients",
-    icon: icon(
-      <>
-        <circle cx="8" cy="5.5" r="2.5" />
-        <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/referrals",
-    label: "Referrals",
-    countKey: "referrals",
-    icon: icon(
-      <>
-        <path d="M2.5 9.5h3l1 2h3l1-2h3" />
-        <path d="M4 3.5h8l1.5 6v3h-11v-3z" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/pipeline",
-    label: "Pipeline",
-    gapBefore: true,
-    icon: icon(
-      <>
-        <circle cx="3" cy="8" r="1.5" />
-        <circle cx="8" cy="8" r="1.5" />
-        <circle cx="13" cy="8" r="1.5" />
-        <path d="M4.5 8h2M9.5 8h2" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/results",
-    label: "Results",
-    icon: icon(
-      <>
-        <path d="M2.5 13.5h11" />
-        <path d="M3 10.5l3.5-3.5 2.5 2.5 4.5-5" />
-      </>,
-    ),
-  },
-  {
-    href: "/app/agent-review",
-    label: "Agent review",
-    badge: "Experimental",
-    icon: icon(
-      <>
-        <circle cx="8" cy="8" r="5.5" />
-        <path d="M8 5v3.2l2 1.3" />
-      </>,
-    ),
+    title: "Evidence",
+    items: [
+      {
+        href: "/app/pipeline",
+        label: "Pipeline",
+        icon: icon(<path d="M3 12h4m4 0h2m4 0h4 M7 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0 M13 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />),
+      },
+      {
+        href: "/app/results",
+        label: "Results",
+        icon: icon(<path d="M3 20h18 M4 15l5-5 4 4 7-8" />),
+      },
+      {
+        href: "/app/agent-review",
+        label: "Agent review",
+        badge: "Experimental",
+        icon: icon(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
+      },
+    ],
   },
 ];
 
-export type NavCounts = Partial<
-  Record<NonNullable<NavItem["countKey"]>, number>
->;
+export type NavCounts = Partial<Record<NonNullable<NavItem["countKey"]>, number>> & {
+  /** Server-side Today queue counts; the mounted Today board publishes live ones (today-counts.ts). */
+  today?: TodayCounts;
+};
 
-function isActive(pathname: string, href: string) {
+function isActive(pathname: string, item: NavItem) {
+  if (item.activeOn) return item.activeOn.test(pathname);
+  if (item.inactiveOn?.test(pathname)) return false;
+  const href = item.href;
   return href === "/app"
     ? pathname === "/app"
     : pathname === href || pathname.startsWith(`${href}/`);
@@ -153,14 +152,11 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
       )}
     >
       <Mark size={24} />
-      <span
-        className={cx(
-          "flex flex-col whitespace-nowrap",
-          collapsed && "sr-only",
-        )}
-      >
-        <span className="text-section font-semibold leading-5">Wasl</span>
-        <span className="text-small text-muted">ADPHC · screening follow-up</span>
+      <span className={cx("flex items-center gap-2.5 whitespace-nowrap", collapsed && "sr-only")}>
+        <span className="staff-display text-[31px] leading-none text-ink">Wasl</span>
+        <span lang="ar" dir="rtl" className="border-l border-limestone-400 pl-2.5 text-[22px] leading-none text-jade-700">
+          وصل
+        </span>
       </span>
     </Link>
   );
@@ -180,15 +176,12 @@ function Count({
   if (collapsed) {
     return (
       <>
-        <span
-          aria-hidden
-          className="absolute right-2 top-2 size-2 rounded-full bg-hue"
-        />
+        <span aria-hidden className="absolute right-2 top-2 size-2 rounded-full bg-jade-600" />
         <span className="sr-only">{n} open</span>
       </>
     );
   }
-  return <span className="ml-auto text-small tabular-nums text-muted">{n}</span>;
+  return <span className="ml-auto text-[12px] tabular-nums opacity-80">{n}</span>;
 }
 
 function TipCount({
@@ -202,6 +195,32 @@ function TipCount({
   return n ? <> · {n} open</> : null;
 }
 
+const linkClass = (active: boolean, collapsed: boolean) =>
+  cx(
+    "relative flex h-11 items-center gap-3 rounded-[4px] text-[14px] no-underline md:h-10",
+    collapsed ? "justify-center" : "px-3",
+    active
+      ? "bg-jade-700 font-semibold text-limestone-50 hover:bg-jade-800 hover:text-limestone-50"
+      : "text-ink hover:bg-jade-50 hover:text-ink",
+  );
+
+/** The sidebar's Audit trail opens the audit of the case opened last in this tab; with none yet, the case list. */
+function useAuditHref(fallback: string) {
+  const [href, setHref] = useState(fallback);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const id = sessionStorage.getItem(LAST_CASE_KEY);
+        setHref(id ? `/app/patients/${encodeURIComponent(id)}/audit` : fallback);
+      } catch {}
+    };
+    read();
+    window.addEventListener("wasl:last-case", read);
+    return () => window.removeEventListener("wasl:last-case", read);
+  }, [fallback]);
+  return href;
+}
+
 function NavLink({
   item,
   active,
@@ -213,23 +232,16 @@ function NavLink({
   counts: Promise<NavCounts>;
   collapsed: boolean;
 }) {
+  const auditHref = useAuditHref(item.href);
+  const href = item.activeOn ? auditHref : item.href;
   const link = (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      className={cx(
-        "relative flex h-11 items-center gap-2.5 rounded-control text-ink no-underline hover:bg-active hover:text-ink md:h-10",
-        collapsed ? "justify-center" : "px-2.5",
-        active ? "bg-active [&_svg]:text-ink-soft" : "[&_svg]:text-muted",
-        item.gapBefore && "mt-6",
-      )}
-    >
+    <Link href={href} aria-current={active ? "page" : undefined} className={linkClass(active, collapsed)}>
       {item.icon}
       <span className={cx("whitespace-nowrap", collapsed && "sr-only")}>{item.label}</span>
       {item.badge && (
         <span
           className={cx(
-            "ml-auto whitespace-nowrap rounded-full border border-control px-1.5 -mr-1 text-[11px] font-medium leading-4 text-muted",
+            "ml-auto whitespace-nowrap rounded-full border border-current px-1.5 -mr-1 text-[10px] font-medium leading-4 opacity-80",
             collapsed && "sr-only",
           )}
         >
@@ -260,6 +272,43 @@ function NavLink({
   );
 }
 
+function QueueCount({ counts, q }: { counts: Promise<NavCounts>; q: TodayQueue }) {
+  const live = useLiveTodayCounts();
+  const n = live?.[q] ?? use(counts).today?.[q];
+  return n === undefined ? null : <span className="ml-auto text-[12px] tabular-nums">{n}</span>;
+}
+
+function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<NavCounts> }) {
+  const params = useSearchParams();
+  const raw = params.get("queue");
+  const current = pathname === "/app/today" ? (isTodayQueue(raw) ? raw : "call") : null;
+  return (
+    <ul className="m-0 mb-1 ml-[19px] list-none border-l border-limestone-400 p-0">
+      {TODAY_QUEUES.map(([q, label]) => {
+        const on = current === q;
+        return (
+          <li key={q} className="relative">
+            <span aria-hidden className="absolute left-0 top-1/2 h-px w-2.5 bg-limestone-400" />
+            <Link
+              href={`/app/today?queue=${q}`}
+              aria-current={on ? "page" : undefined}
+              className={cx(
+                "ml-2.5 flex h-9 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline",
+                on ? "bg-jade-100 font-semibold text-jade-900" : "text-ink-soft hover:bg-jade-50 hover:text-ink",
+              )}
+            >
+              <span>{label}</span>
+              <Suspense fallback={null}>
+                <QueueCount counts={counts} q={q} />
+              </Suspense>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** The desktop aside and the mobile menu each render this nav; they carry different names so the DOM never holds two "Main" landmarks (issue #20). */
 function Nav({
   pathname,
@@ -273,15 +322,36 @@ function Nav({
   label?: "Main" | "Main (mobile)";
 }) {
   return (
-    <nav aria-label={label} className="flex flex-col gap-0.5">
-      {NAV.map((item) => (
-        <NavLink
-          key={item.href}
-          item={item}
-          active={isActive(pathname, item.href)}
-          counts={counts}
-          collapsed={collapsed}
-        />
+    <nav aria-label={label} className="flex flex-col">
+      {GROUPS.map((group, gi) => (
+        <div key={group.title} className={cx(gi > 0 && "mt-5")}>
+          <p
+            className={cx(
+              "m-0 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[1.45px] text-muted",
+              collapsed && "sr-only",
+            )}
+          >
+            {group.title}
+          </p>
+          <div className="flex flex-col gap-[3px]">
+            {group.items.map((item) => {
+              const active = isActive(pathname, item);
+              if (item === TODAY) {
+                return (
+                  <div key={item.label}>
+                    <NavLink item={item} active={active && collapsed} counts={counts} collapsed={collapsed} />
+                    {!collapsed && (
+                      <Suspense fallback={null}>
+                        <QueueLinks pathname={pathname} counts={counts} />
+                      </Suspense>
+                    )}
+                  </div>
+                );
+              }
+              return <NavLink key={item.label} item={item} active={active} counts={counts} collapsed={collapsed} />;
+            })}
+          </div>
+        </div>
       ))}
     </nav>
   );
@@ -302,7 +372,7 @@ function UserBlock({
     >
       <span
         aria-hidden
-        className="flex size-7 flex-none items-center justify-center rounded-full bg-active text-small font-medium text-ink-soft"
+        className="flex size-8 flex-none items-center justify-center rounded-full bg-jade-200 text-[12px] font-bold text-jade-900"
       >
         {user.initials}
       </span>
@@ -434,17 +504,17 @@ export function AppSidebar({
         aria-label="Wasl"
         data-collapsed={collapsed}
         className={cx(
-          "sticky top-0 hidden h-dvh flex-none flex-col overflow-x-hidden pb-5 pt-5 motion-safe:transition-[width] motion-safe:duration-200 md:flex",
-          collapsed ? "w-16 px-2" : "w-sidebar px-3",
+          "sticky top-0 hidden h-dvh flex-none flex-col overflow-y-auto overflow-x-hidden border-r border-line bg-surface pb-5 pt-7 motion-safe:transition-[width] motion-safe:duration-200 md:flex",
+          collapsed ? "w-16 px-2" : "w-[228px] px-3",
         )}
       >
         <Brand collapsed={collapsed} />
-        <div className="mt-5">
+        <div className="mt-7">
           <Nav pathname={pathname} counts={counts} collapsed={collapsed} />
         </div>
         <div
           className={cx(
-            "mt-auto flex flex-col gap-3",
+            "mt-auto flex flex-col gap-3 border-t border-line pt-4",
             collapsed && "items-center",
           )}
         >
@@ -458,14 +528,14 @@ export function AppSidebar({
                 aria-label={toggleLabel}
                 aria-keyshortcuts="["
                 className={cx(
-                  "flex h-10 items-center rounded-control text-muted hover:bg-active hover:text-ink",
+                  "flex h-10 items-center rounded-control text-muted hover:bg-jade-50 hover:text-ink",
                   collapsed ? "w-10 justify-center" : "w-full gap-2.5 px-2.5",
                 )}
               >
                 {icon(
                   <>
-                    <rect x="2.5" y="3" width="11" height="10" rx="2" />
-                    <path d="M6 3v10" />
+                    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+                    <path d="M9 4.5v15" />
                   </>,
                 )}
                 {!collapsed && <span>Collapse</span>}
@@ -489,7 +559,7 @@ export function AppSidebar({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-line bg-ground px-4 md:hidden">
+      <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between gap-2 border-b border-line bg-surface px-3 md:hidden">
         {menuOpen && (
           <div
             aria-hidden
@@ -497,18 +567,26 @@ export function AppSidebar({
             className="fixed inset-x-0 bottom-0 top-14 -z-10 bg-ink/20"
           />
         )}
-        <Brand />
-        <button
-          ref={triggerRef}
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-          onClick={() => setOpenFor(menuOpen ? null : pathname)}
-          className="flex h-11 min-w-11 items-center justify-center rounded-control px-3 text-ink hover:bg-active"
-        >
-          {menuOpen ? "Close" : "Menu"}
-          <span className="sr-only"> navigation</span>
-        </button>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <button
+            ref={triggerRef}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-label={menuOpen ? "Close menu" : "Menu"}
+            onClick={() => setOpenFor(menuOpen ? null : pathname)}
+            className="flex size-11 items-center justify-center rounded-control border border-limestone-400 text-ink hover:bg-jade-50"
+          >
+            {menuOpen ? <X aria-hidden className="size-5" strokeWidth={1.6} /> : <Menu aria-hidden className="size-5" strokeWidth={1.6} />}
+          </button>
+          <Link href="/app" className="flex items-center gap-1.5 text-jade-700 no-underline hover:text-jade-800">
+            <span className="staff-display text-[22px] leading-none">Wasl</span>
+            <span lang="ar" dir="rtl" className="text-[18px] leading-none max-[375px]:hidden">
+              وصل
+            </span>
+          </Link>
+        </div>
+        <TopActions />
         <div
           id="mobile-menu"
           ref={panelRef}

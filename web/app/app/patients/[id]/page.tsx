@@ -1,3 +1,4 @@
+import { RememberCase } from "@/components/shell/remember-case";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
@@ -110,6 +111,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
 
   return (
     <>
+      <RememberCase id={id} />
       <header className="flex flex-wrap items-start justify-between gap-gap">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar person={referralSeed(c.id)} size={56} label="" />
