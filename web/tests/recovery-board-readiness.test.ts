@@ -41,15 +41,16 @@ afterEach(() => {
 });
 
 describe("recovery board returned-referral readiness", () => {
-  it("shows a held returned referral as excluded without a Select case action", async () => {
+  it("shows a held returned referral as excluded without a backfill action", async () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
     await act(async () => root!.render(createElement(RecoveryBoard, { list, detail: held, readOnly: false })));
     const item = document.querySelector(`[data-eligible="false"]`);
     expect(item?.textContent).toContain("Excluded");
-    expect(item?.textContent).toContain("procedure_ready: fail");
-    expect(item?.textContent).toContain("returned referral unresolved");
-    expect([...(item?.querySelectorAll("button") ?? [])].some((node) => node.textContent === "Select case")).toBe(false);
+    expect(item?.querySelector("[data-testid=excluded-by]")?.textContent).toContain("Returned referral unresolved");
+    expect([...(item?.querySelectorAll("button") ?? [])].some((node) => /Confirm backfill|Choose/.test(node.textContent ?? ""))).toBe(false);
+    // With the only eligible case held, nobody is offered the slot.
+    expect([...document.querySelectorAll("button")].some((node) => /Confirm backfill|Choose/.test(node.textContent ?? ""))).toBe(false);
   });
 });

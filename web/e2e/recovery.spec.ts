@@ -9,14 +9,28 @@ async function noSeriousAxe(page: import("@playwright/test").Page) {
 test.describe("Recovery fixture mode", () => {
   test("shows synthetic provenance, ranking and exclusions while remaining read-only", async ({ page }) => {
     await page.goto("/app/recovery");
-    await expect(page.getByRole("heading", { name: "No-show recovery" })).toBeVisible();
-    await expect(page.getByText("Simulated released-capacity projection", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Colonoscopy" })).toBeVisible();
+    await expect(page.getByText("Al Mushrif · AD-1")).toBeVisible();
+    await expect(page.locator("[data-honesty=simulated]", { hasText: "Simulated" }).first()).toBeVisible();
+    const window = page.getByRole("list", { name: "Scheduling window" });
+    await expect(window).toContainText("Requested");
+    await expect(window).toContainText("Day 12");
+    await expect(window).toContainText("Slot");
+    await expect(window).toContainText("Day 40");
+    await expect(window).toContainText("Day 47");
+    await expect(page.getByTestId("recovery-gap")).toContainText("7 days");
     await expect(page.getByRole("heading", { name: /Rank 1/ })).toContainText("AHS-sr-910");
-    await expect(page.getByRole("heading", { name: /Excluded/ })).toContainText("AHS-sr-900");
-    await expect(page.getByText("Slot eligible; outreach not permitted.")).toBeVisible();
-    await page.getByText("Checks and explanations").first().click();
-    await expect(page.getByText(/programme_match: pass/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Select case" })).toHaveCount(0);
+    const excluded = page.locator("[data-eligible=false]");
+    await expect(excluded).toContainText("AHS-sr-900");
+    await excluded.getByText("Excluded").click();
+    await expect(excluded.getByTestId("excluded-by")).toHaveText("Source case for this release");
+    const outreach = page.getByTestId("recovery-outreach");
+    await expect(outreach).toContainText("Outreach held");
+    await expect(outreach).toContainText("Unknown");
+    await expect(outreach).toContainText("Unconfirmed");
+    await page.getByText("All checks (2)").first().click();
+    await expect(page.getByText(/Programme match: pass/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirm backfill", exact: true })).toBeDisabled();
     await expect(page.getByText(/Fixture mode is read-only/)).toBeVisible();
     await noSeriousAxe(page);
   });
@@ -27,7 +41,23 @@ test.describe("Recovery fixture mode", () => {
     await page.keyboard.press("Tab");
     await expect(page.locator(":focus")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    // The context panels start collapsed on a phone and open from their summaries.
+    await expect(page.getByText("Contact permission")).toBeHidden();
+    await page.getByText("Outreach held").click();
+    await expect(page.getByText("Contact permission")).toBeVisible();
+    await page.getByRole("button", { name: "Slot source" }).click();
+    await expect(page.getByText("Missed appointment")).toBeVisible();
     await noSeriousAxe(page);
+  });
+
+  test("keeps the window labels apart at 320 px", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.goto("/app/recovery");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    const boxes = await Promise.all(["requested", "slot", "due"].map((mark) => page.locator(`[data-mark=${mark}]`).boundingBox()));
+    const [requested, slot, due] = boxes.map((box) => box!);
+    expect(requested.x + requested.width).toBeLessThan(due.x);
+    expect(slot.y + slot.height).toBeLessThan(requested.y);
   });
 });
 
@@ -101,8 +131,8 @@ test.describe("Recovery live confirmation", () => {
       await competing.goto("/app/recovery");
       await competing.waitForLoadState("networkidle");
       for (const current of [page, competing]) {
-        await expect(current.getByRole("button", { name: "Select case" })).toBeVisible();
-        await current.getByRole("button", { name: "Select case" }).click();
+        await expect(current.getByRole("button", { name: "Confirm backfill", exact: true })).toBeVisible();
+        await current.getByRole("button", { name: "Confirm backfill", exact: true }).click();
         await expect(current.getByRole("dialog")).toBeVisible();
       }
       await Promise.all([
@@ -115,7 +145,10 @@ test.describe("Recovery live confirmation", () => {
       expect(outcomeText).toContain("Simulated backfill confirmed; no provider booking or message was made.");
       expect(outcomeText).toContain("Confirmation refused:");
       await page.reload();
-      await expect(page.getByText("filled", { exact: true }).first()).toBeVisible();
+      await expect(page.locator("[data-mark=slot]")).toContainText("Assigned");
+      await expect(page.getByTestId("recovery-slot-backfill")).toContainText("Backfill confirmed");
+      // Assignment does not release outreach: contact permission is still unknown.
+      await expect(page.getByTestId("recovery-outreach")).toContainText("Outreach held");
       expect(requests).toBe(2);
       expect(filled).toBe("ahs-mushrif/ServiceRequest/AHS-sr-910");
       await otherContext.close();
