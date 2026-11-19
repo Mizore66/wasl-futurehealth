@@ -1,15 +1,13 @@
 // @vitest-environment happy-dom
-import { act, createElement } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseSummary, CurrentDecision } from "@/lib/api/schema";
-import { ReferralInbox } from "@/components/worklist/referral-inbox";
+import { mountInbox, push, type Harness } from "./referral-inbox-harness";
 import { packetReferral, referralView, viewScope, type Referral } from "@/components/worklist/referrals";
 import { formatDay } from "@/lib/domain/day";
 import handoffs from "@/data/referral-handoff-synthetic.json";
 
-const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+vi.mock("next/navigation", async () => (await import("./referral-nav-mock")).navigationMock);
 
 const control = (suffix: string) => {
   const x = handoffs.find((h) => h.case.id.endsWith(suffix))!;
@@ -23,42 +21,28 @@ const LUNG = project("RAD-sr-9101");
 const DR = ["9201", "9202", "9203", "9204", "9205"].map((n) => project(`PHC-sr-${n}`));
 const CRC_COPY = /FIT|Day 31|SKMC|colonoscopy|endoscopy|\bGP\b/i;
 
-let host: HTMLDivElement;
-let root: Root;
+let h: Harness;
 function render(referrals: Referral[], scope: string) {
-  act(() => root.render(createElement(ReferralInbox, { referrals, window: 7, now: 120, q: "", aside: null, scope, referrer: "referrer" })));
+  h.render({ referrals, window: 7, now: 120, q: "", scope, referrer: "referrer" });
 }
-const pane = () => host.querySelector<HTMLElement>('section[aria-label="Open referral"]')!;
-const text = () => host.textContent ?? "";
-function button(name: string | RegExp, scope: ParentNode = host) {
-  const found = [...scope.querySelectorAll<HTMLButtonElement>("button")].filter((b) => {
-    const label = (b.getAttribute("aria-label") ?? b.textContent ?? "").trim();
-    return typeof name === "string" ? label === name : name.test(label);
-  });
-  expect(found, `button ${String(name)}`).toHaveLength(1);
-  return found[0];
-}
-const click = (name: string | RegExp, scope: ParentNode = host) => act(() => button(name, scope).click());
-const detail = (k: string) => [...pane().querySelectorAll("dt")].find((dt) => dt.textContent === k)?.nextElementSibling?.textContent;
-const current = () => pane().querySelector('[aria-live="polite"]')!.textContent ?? "";
+const pane = () => h.pane()!;
+const text = () => h.text();
+const click = (name: string | RegExp, scope?: ParentNode) => h.click(name, scope);
+const detail = (k: string) => [...pane().querySelectorAll("#rf-packet dt")].find((dt) => dt.textContent === k)?.nextElementSibling?.textContent;
+/** The hand-off activity, from the referral to where it waits now. */
+const current = () => pane().querySelector("#rf-activity")!.textContent ?? "";
 function show(r: Referral, all = [r]) {
   render(all, "programme=x&provider=y");
-  click(/^All \d+$/);
-  click(new RegExp(`^${r.name}`));
+  h.go(`/app/referrals?programme=x&provider=y&case=${encodeURIComponent(r.id)}`);
+  expect(h.openId()).toBe(r.id);
 }
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-  Object.defineProperty(Element.prototype, "animate", { value: undefined, configurable: true, writable: true });
-  push.mockReset();
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  h = mountInbox();
 });
 afterEach(() => {
-  act(() => root.unmount());
-  host.remove();
+  h.unmount();
   vi.unstubAllGlobals();
 });
 
@@ -71,7 +55,9 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     expect(detail("Returned by")).toBe("Radiology department, regional hospital");
     expect(detail("Reason")).toBe("Not the patient's network");
     expect(text()).not.toMatch(CRC_COPY);
-    expect(button(/^Waiting on referrer \d+$/)).toBeTruthy();
+    expect(h.count("waiting")).toBe(1);
+    expect(pane().textContent).toContain("Waiting on referrer");
+    expect(h.host.querySelector('[data-testid="handoff-arrow"]')!.getAttribute("data-direction")).toBe("back");
   });
 
   it("matches the DR packet: eye-clinic recommendation, reason, requested information, no-alternative advice and priority", () => {
@@ -98,8 +84,8 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     const r = DR[i];
     expect(r.handoff?.status).toBe(status);
     show(r);
-    expect(current()).toContain(`${owner} · ${what}`);
-    expect(current()).toContain(`${r.unit} · Returned the referral`);
+    expect(current()).toContain(`Now: ${what}${owner}`);
+    expect(current()).toContain(`Returned the referral: ${r.details.find(([k]) => k === "Reason")![1].toLowerCase()}${r.unit}`);
     expect([...pane().querySelectorAll("button")].some((b) => b.textContent?.startsWith("Re-refer"))).toBe(actionable);
     if (!actionable) expect(current()).not.toContain("Act on the return");
   });
@@ -107,13 +93,13 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
   it("records a session-only same-unit re-referral, keeps the canonical packet distinct, and Undo restores the exact view", async () => {
     show(DR[0], DR);
     const before = pane().innerHTML;
-    const row = () => [...host.querySelectorAll('section[aria-label="Referral list"] button[aria-pressed]')].map((b) => b.textContent);
+    const row = () => [...h.host.querySelectorAll('section[aria-label="Referral inbox"] li a')].map((a) => a.textContent);
     const rows = row();
     click("Re-refer to Eye clinic, regional hospital", pane());
     expect(pane().textContent).toContain("recorded in this session only. The canonical packet is unchanged and nothing is sent.");
     expect(current()).toContain("Re-referred to Eye clinic, regional hospital (this session)");
     expect(current()).toContain("The referrer has acted");
-    const step = [...pane().querySelectorAll("li")].find((li) => li.textContent?.includes("Re-referred to Eye clinic"))!.textContent;
+    const step = [...pane().querySelectorAll("#rf-activity li")].find((li) => li.textContent?.includes("Re-referred to Eye clinic"))!.textContent;
     expect(step).toContain(DR[0].referrer);
     expect(step).not.toContain("Dr Layla Haddad");
     expect(detail("Status")).toBe("Awaiting the referrer");
@@ -125,19 +111,21 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
 
   it("keeps the programme/provider selection on search", () => {
     render(DR, "programme=diabetic_retinopathy&provider=phc-retina");
+    h.go("/app/referrals?programme=diabetic_retinopathy&provider=phc-retina&view=inbox");
     expect(text()).toContain("Nothing is saved to the clinical record, booked or sent to the referrer.");
     expect(text()).not.toContain("${referrer}");
-    const field = host.querySelector<HTMLInputElement>('input[name="q"]')!;
+    const field = h.host.querySelector<HTMLInputElement>('input[name="q"]')!;
     expect([...field.form!.querySelectorAll<HTMLInputElement>('input[type="hidden"]')].map((i) => [i.name, i.value])).toEqual([
       ["programme", "diabetic_retinopathy"],
       ["provider", "phc-retina"],
+      ["view", "inbox"],
     ]);
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, " 9201 ");
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     act(() => field.form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
-    expect(push).toHaveBeenLastCalledWith("/app/referrals?programme=diabetic_retinopathy&provider=phc-retina&q=9201");
+    expect(push).toHaveBeenLastCalledWith("/app/referrals?programme=diabetic_retinopathy&provider=phc-retina&q=9201&view=inbox");
   });
 
   it("names a missing packet field as unavailable, never CRC content, and has no row without a packet", () => {

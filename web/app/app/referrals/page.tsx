@@ -53,45 +53,45 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
       scope={viewScope(programme, provider)}
       referrer={view?.referrer ?? "referrer"}
       respond={live && view?.programme === "crc" ? respondToReferral : undefined}
+      heading={view ? { title: view.title, indication: view.indication } : { title: "Referrals", indication: "" }}
       aside={
-        <div className="flex flex-col items-end gap-1.5">
-          {/* Below lg an open referral fills the screen, so the views give way to its controls; the list shows them. */}
-          <div className="flex flex-col items-end gap-1.5 max-lg:group-data-[open=true]/inbox:hidden">
-            <nav aria-label="Referral programme" className="flex flex-wrap justify-end gap-2">
-              {REFERRAL_VIEWS.map((v) => {
-                const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
-                return (
-                  <Link
-                    key={v.programme}
-                    href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
-                    aria-current={v === view ? "page" : undefined}
-                    className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small", v === view ? "border-ink bg-active text-ink" : "border-control text-muted hover:bg-ground")}
-                  >
-                    {v.label}
-                  </Link>
-                );
-              })}
-            </nav>
+        <>
+          <nav aria-label="Referral programme" className="flex flex-wrap gap-2">
+            {REFERRAL_VIEWS.map((v) => {
+              const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
+              return (
+                <Link
+                  key={v.programme}
+                  href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
+                  aria-current={v === view ? "page" : undefined}
+                  className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small no-underline", v === view ? "border-jade-700 bg-jade-100 text-jade-900" : "border-control bg-surface text-muted hover:bg-ground")}
+                >
+                  {v.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="flex flex-col items-start gap-1.5 sm:items-end">
             {view && (
               <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center text-small underline">
                 Returned referrals, referring {view.referrer === "GP" ? "GP" : "clinician"} view
               </Link>
             )}
+            <span className="text-small text-muted">
+              {view ? view.unit : "No referral workflow for this programme and provider"} · {simulatedRunDate(now)}
+            </span>
+            {view?.programme !== "crc" ? (
+              // The longest label on the page: let it wrap so a phone does not scroll sideways (#155).
+              <HonestyLabel kind="designed" className="h-auto min-h-6 max-w-full whitespace-normal py-0.5">
+                Returned packets: canonical, synthetic. Referrer answers: {live ? "built, on the referrer's page" : "need the live synthetic API"}. Re-referral here: designed, session only
+              </HonestyLabel>
+            ) : live ? (
+              <HonestyLabel kind="built">Referral answers: built, saved to the synthetic case ledger</HonestyLabel>
+            ) : (
+              <HonestyLabel kind="designed">Referral inbox: designed, not built</HonestyLabel>
+            )}
           </div>
-          <span className="text-small text-muted">
-            {view ? view.unit : "No referral workflow for this programme and provider"} · {simulatedRunDate(now)}
-          </span>
-          {view?.programme !== "crc" ? (
-            // The longest label on the page: let it wrap so a phone does not scroll sideways (#155).
-            <HonestyLabel kind="designed" className="h-auto min-h-6 max-w-full whitespace-normal py-0.5">
-              Returned packets: canonical, synthetic. Referrer answers: {live ? "built, on the referrer's page" : "need the live synthetic API"}. Re-referral here: designed, session only
-            </HonestyLabel>
-          ) : live ? (
-            <HonestyLabel kind="built">Referral answers: built, saved to the synthetic case ledger</HonestyLabel>
-          ) : (
-            <HonestyLabel kind="designed">Referral inbox: designed, not built</HonestyLabel>
-          )}
-        </div>
+        </>
       }
     />
   );

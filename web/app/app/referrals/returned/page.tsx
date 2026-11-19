@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { PageHeader } from "@/components/shell/page-header";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { safeInboxBack } from "@/components/worklist/inbox-url";
 import { ReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
 import { REFERRAL_VIEWS, referralView, referrerAnswerLabel, viewScope, type ReferralView } from "@/components/worklist/referrals";
 import { needsDetail, returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
@@ -53,36 +56,32 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
   const list = view ? (await packets(view)).sort(order) : [];
   const scope = viewScope(programme, provider);
   const label = referrerAnswerLabel(live, view ? hasCredential(view.credential) : false);
+  /* Opened from a referral's hand-off: that referral leads, and "Back to inbox" returns to the exact inbox state. */
+  const focus = first(params.case);
+  const back = safeInboxBack(first(params.back)) ?? (scope ? `/app/referrals?${scope}` : "/app/referrals");
+  const shown = focus ? [...list.filter((p) => p.id === focus), ...list.filter((p) => p.id !== focus)] : list;
   return (
     <div>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <h1 className="m-0 text-title font-semibold">Returned referrals</h1>
-          <p className="m-0 mt-1 text-muted">{view ? view.returned : "No referral workflow for this programme and provider."}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <nav aria-label="Referring provider" className="flex flex-wrap justify-end gap-2">
-            {REFERRAL_VIEWS.map((v) => {
-              const s = v === REFERRAL_VIEWS[0] ? "" : viewScope(v.programme, v.provider);
-              return (
-                <Link
-                  key={v.programme}
-                  href={s ? `/app/referrals/returned?${s}` : "/app/referrals/returned"}
-                  aria-current={v === view ? "page" : undefined}
-                  className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small", v === view ? "border-ink bg-active text-ink" : "border-control text-muted hover:bg-ground")}
-                >
-                  {v.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <Link href={scope ? `/app/referrals?${scope}` : "/app/referrals"} className="inline-flex min-h-11 items-center text-small underline">
-            Receiving unit inbox
-          </Link>
-          <HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>
-        </div>
-      </header>
-      {view && <ReferrerHandoffs packets={list} referrer={view.referrer} answer={live ? answerAsReferrerWith.bind(null, view.credential) : undefined} />}
+      <Link href={back} className="mb-2 inline-flex min-h-11 items-center gap-1.5 font-semibold text-jade-800 no-underline hover:underline">
+        <ChevronRight aria-hidden className="size-4 rotate-180" /> {first(params.back) ? "Back to inbox" : "Receiving unit inbox"}
+      </Link>
+      <PageHeader title="Returned referrals" sub={view ? view.returned : "No referral workflow for this programme and provider."} aside={<HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>} />
+      <nav aria-label="Referring provider" className="mb-3 flex flex-wrap gap-2">
+        {REFERRAL_VIEWS.map((v) => {
+          const s = v === REFERRAL_VIEWS[0] ? "" : viewScope(v.programme, v.provider);
+          return (
+            <Link
+              key={v.programme}
+              href={s ? `/app/referrals/returned?${s}` : "/app/referrals/returned"}
+              aria-current={v === view ? "page" : undefined}
+              className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small no-underline", v === view ? "border-jade-700 bg-jade-100 text-jade-900" : "border-control bg-surface text-muted hover:bg-ground")}
+            >
+              {v.label}
+            </Link>
+          );
+        })}
+      </nav>
+      {view && <ReferrerHandoffs packets={shown} referrer={view.referrer} focus={focus || undefined} answer={live ? answerAsReferrerWith.bind(null, view.credential) : undefined} />}
     </div>
   );
 }

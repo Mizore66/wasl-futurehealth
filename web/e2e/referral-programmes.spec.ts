@@ -29,18 +29,20 @@ test("the lung view is chosen by URL and survives search, reload and the referre
   await views(page).getByRole("link", { name: "Lung nodule work-up" }).click();
   await expect(page).toHaveURL(`/app/referrals?${LUNG}`);
   await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("tab", { name: /^Waiting on referrer 1/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /current$/ })).toContainText("Waiting on referrer");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nodule work-up referral");
 
+  await page.getByRole("link", { name: /^View all/ }).click();
   const box = page.getByRole("searchbox", { name: "Search case id" });
   await box.fill("9101");
   await box.press("Enter");
-  await expect(page).toHaveURL(`/app/referrals?${LUNG}&q=9101`);
+  await expect(page).toHaveURL(`/app/referrals?${LUNG}&q=9101&view=inbox`);
   await expect(box).toBeFocused();
   await page.reload();
   await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
-  await page.getByRole("tab", { name: /^All 1/ }).click();
-  await page.getByRole("region", { name: "Referral list" }).locator("button[aria-pressed]").first().click();
+  await page.locator("tbody a").first().click();
   const pane = page.getByRole("region", { name: "Open referral" });
+  await pane.getByRole("button", { name: "Referral packet" }).click();
   await expect(pane).toContainText("PriorityUrgent");
   await expect(pane).toContainText("PET/CT or tissue sampling for a solid nodule > 8 mm");
   await expect(pane).toContainText("Returned byRadiology department, regional hospital");
@@ -61,24 +63,24 @@ test("the lung view is chosen by URL and survives search, reload and the referre
 test("an unknown programme and provider pair and an empty search are honest, not CRC fallbacks", async ({ page }) => {
   await page.goto("/app/referrals?programme=lung_nodule&provider=ahs-mushrif");
   await expect(page.getByText("No referral workflow for this programme and provider")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Referral list" })).not.toContainText(/AHS-sr|Al Mansoori/);
+  await expect(page.locator("main")).not.toContainText(/AHS-sr|Al Mansoori/);
   await page.goto(`/app/referrals?${DR}&q=nothing-matches`);
   await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("tab", { name: /^All 0/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nothing to open" })).toBeVisible();
 });
 
 test("phone width: a DR packet opens without horizontal scroll and keeps its view", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/app/referrals?${DR}`);
   await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
-  // Below lg the list sits behind "All referrals", as in the CRC phone journey (worklist.spec.ts).
-  await page.getByRole("button", { name: /All referrals/ }).click();
-  await page.getByRole("tab", { name: /^All \d+/ }).click();
-  await page.getByRole("region", { name: "Referral list" }).locator("button[aria-pressed]").first().click();
+  await page.getByRole("link", { name: /^View all/ }).click();
+  await page.locator("tbody a").first().click();
+  await page.getByRole("button", { name: "Referral packet" }).click();
   const pane = page.getByRole("region", { name: "Open referral" });
   await expect(pane).toContainText("Other unitNone in the simulated network");
   await expect(pane).not.toContainText(CRC_COPY);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.reload();
-  await expect(page).toHaveURL(`/app/referrals?${DR}`);
+  await expect(page).toHaveURL(new RegExp(`/app/referrals\\?${DR}&from=inbox&case=`));
+  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
 });
