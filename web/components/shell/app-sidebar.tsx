@@ -293,7 +293,7 @@ function QueueLinks({ pathname, counts }: { pathname: string; counts: Promise<Na
               href={`/app/today?queue=${q}`}
               aria-current={on ? "page" : undefined}
               className={cx(
-                "ml-2.5 flex h-9 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline",
+                "ml-2.5 flex h-11 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline md:h-9",
                 on ? "bg-jade-100 font-semibold text-jade-900" : "text-ink-soft hover:bg-jade-50 hover:text-ink",
               )}
             >
@@ -340,11 +340,7 @@ function Nav({
                 return (
                   <div key={item.label}>
                     <NavLink item={item} active={active && collapsed} counts={counts} collapsed={collapsed} />
-                    {!collapsed && (
-                      <Suspense fallback={null}>
-                        <QueueLinks pathname={pathname} counts={counts} />
-                      </Suspense>
-                    )}
+                    {!collapsed && <QueueLinks pathname={pathname} counts={counts} />}
                   </div>
                 );
               }
@@ -591,9 +587,9 @@ export function AppSidebar({
           id="mobile-menu"
           ref={panelRef}
           hidden={!menuOpen}
-          className="absolute inset-x-0 top-full"
+          className="absolute left-2 top-full w-[min(280px,calc(100%-16px))]"
         >
-          <div className="flex max-h-[calc(100dvh-3.5rem)] flex-col gap-3 overflow-y-auto border-b border-line bg-surface p-3">
+          <div className="flex max-h-[min(75dvh,calc(100dvh-4.5rem))] flex-col gap-3 overflow-y-auto rounded-b-[7px] border border-t-0 border-line bg-surface p-2.5 shadow-[0_5px_18px_#20372e17]">
             <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <PersonaSlot pathname={pathname} session={session} />
