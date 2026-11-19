@@ -25,7 +25,7 @@ describe("authoritative shared contact projection", () => {
       const item = workItem(summary, 40, true, NOW);
       expect([item.contactBlocked, item.textsAllowed, item.textsStopped]).toEqual([false, true, false]);
       const html = renderToStaticMarkup(createElement(TodayBoard, { items: [item], now: 40, live: true, aside: null }));
-      expect(html).toContain("Allowed");
+      expect(html).toContain("Contact permitted");
       expect(html).toContain(phase === "restarted" ? "What next?" : "After the call");
       if (phase === "restarted") {
         expect(item.awaitingNext).toBe(true);

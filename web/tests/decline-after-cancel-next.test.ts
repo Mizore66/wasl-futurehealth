@@ -57,8 +57,18 @@ const item = (ov: ApiOverlay) => workItem({ ...workCase, api_overlay: ov }, 40, 
 let container: HTMLDivElement | undefined;
 let root: Root | undefined;
 
+/** The board's props as last rendered: a queue switch re-renders them with the new `queue`, as `?queue=` does. */
+let boardProps: Parameters<typeof TodayBoard>[0] | undefined;
+const QUEUES = { "To call": "call", Waiting: "waiting", "No owner": "none" } as const;
 const click = async (label: string, selector = "button") => {
-  const el = [...container!.querySelectorAll<HTMLElement>(selector)].find((candidate) => candidate.textContent?.trim().startsWith(label));
+  if (selector === "[role=tab]") {
+    boardProps = { ...boardProps!, queue: QUEUES[label as keyof typeof QUEUES] };
+    await act(async () => root!.render(createElement(TodayBoard, boardProps!)));
+    return;
+  }
+  // A queue row leads with its task; it is found by the case it names.
+  const row = selector === "button[data-case-row]";
+  const el = [...container!.querySelectorAll<HTMLElement>(selector)].find((candidate) => (row ? candidate.textContent?.includes(label) : candidate.textContent?.trim().startsWith(label)));
   expect(el, label).toBeDefined();
   await act(async () => el!.click());
 };
@@ -69,13 +79,13 @@ async function declineOnToday(loaded: WorkItemLike) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  await act(async () => root!.render(createElement(TodayBoard, { items: [loaded], now: 40, aside: null, live: true, undoMs: 0 })));
+  await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items: [loaded], now: 40, aside: null, live: true, undoMs: 0 }))));
   if (loaded.view === "waiting") await click("Waiting", "[role=tab]");
   await click("Log call");
   await click("Reached");
   await click("Declined");
   await click("Waiting", "[role=tab]");
-  await click(loaded.name, "button[aria-pressed]");
+  await click(loaded.name, "button[data-case-row]");
 }
 type WorkItemLike = ReturnType<typeof item>;
 
@@ -208,17 +218,17 @@ describe("booking flags follow the latest successful booking projection", () => 
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    await act(async () => root!.render(createElement(TodayBoard, { items, now: 40, aside: null, live: true, undoMs: 0 })));
+    await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items, now: 40, aside: null, live: true, undoMs: 0 }))));
   }
 
   async function declineSelected(tab: "To call" | "Waiting", name: string) {
     await click(tab, "[role=tab]");
-    await click(name, "button[aria-pressed]");
+    await click(name, "button[data-case-row]");
     await click("Log call");
     await click("Reached");
     await click("Declined");
     await click("Waiting", "[role=tab]");
-    await click(name, "button[aria-pressed]");
+    await click(name, "button[data-case-row]");
   }
 
   beforeEach(() => {
@@ -281,12 +291,12 @@ describe("booking flags follow the latest successful booking projection", () => 
   const packet = (id: string, ov: ApiOverlay, status = "ok") => ({
     status, detail: "", applied: 4, entries: [], bookingPanel: projectionOf(id, ov),
   });
-  const selectedName = () => container!.querySelector("h2")?.textContent;
+  const selectedName = () => container!.querySelector<HTMLElement>("section[data-case]")?.dataset.case;
   async function selectA() {
     // An accepted refresh may move A between tabs; that must not make the test act on the fallback case B.
     for (const tab of ["To call", "Waiting", "To call", "Waiting"]) {
       await click(tab, "[role=tab]");
-      const row = [...container!.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")].find((b) => b.textContent?.includes("EXP-sr-1"));
+      const row = [...container!.querySelectorAll<HTMLButtonElement>("button[data-case-row]")].find((b) => b.textContent?.includes("EXP-sr-1"));
       if (row) {
         await act(async () => row.click());
         if (selectedName() === "EXP-sr-1") return;
@@ -312,18 +322,18 @@ describe("booking flags follow the latest successful booking projection", () => 
       // Start a packet for A, leave it unresolved, then change A externally and return. The abandoned read ignores
       // abort deliberately so the production abort/revision fences, rather than the fetch mock, must discard it.
       await click("To call", "[role=tab]");
-      await click("EXP-sr-2", "button[aria-pressed]");
+      await click("EXP-sr-2", "button[data-case-row]");
       let resolveOld!: (value: Response) => void;
       const oldRead = new Promise<Response>((resolve) => { resolveOld = resolve; });
       vi.mocked(fetch).mockReturnValueOnce(oldRead);
       await click(locallyCancelled ? "To call" : "Waiting", "[role=tab]");
-      if (locallyCancelled) await click("EXP-sr-1", "button[aria-pressed]");
+      if (locallyCancelled) await click("EXP-sr-1", "button[data-case-row]");
       const oldSignal = vi.mocked(fetch).mock.calls.at(-1)![1]!.signal!;
       const oldOverlay = server.get(ID_A)!;
       const external = overlay(booking(externalStatus, REBOOKED), undefined, EXTERNAL_HEAD);
       server.set(ID_A, external);
       await click("To call", "[role=tab]");
-      await click("EXP-sr-2", "button[aria-pressed]");
+      await click("EXP-sr-2", "button[data-case-row]");
       await selectA();
       expect(oldSignal.aborted).toBe(true);
       await act(async () => resolveOld(new Response(JSON.stringify({ ...packet(ID_A, oldOverlay),
@@ -363,7 +373,7 @@ describe("booking flags follow the latest successful booking projection", () => 
       expect(server.get(ID_A)!.booking!.status).toBe(externalStatus);
       expect(server.get(ID_B)!.head).toBe(h("c"));
       await click("To call", "[role=tab]");
-      await click("EXP-sr-2", "button[aria-pressed]");
+      await click("EXP-sr-2", "button[data-case-row]");
       expect(nextField()).toBe("Choose another simulated slot");
       expect(container!.textContent).not.toContain(expectedNext);
     });
@@ -377,11 +387,11 @@ describe("booking flags follow the latest successful booking projection", () => 
       await click("Waiting", "[role=tab]");
       await bookingSave("Cancel simulated reservation");
       await selectA();
-      await click("EXP-sr-2", "button[aria-pressed]");
+      await click("EXP-sr-2", "button[data-case-row]");
       const invalidOverlay = { ...overlay(booking("reserved", REBOOKED), undefined, EXTERNAL_HEAD),
         ledger_status: invalidPart === "overlay" ? "invalid" as const : "ok" as const };
       vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify(packet(ID_A, invalidOverlay, invalidPart === "ledger" ? "invalid" : "ok")), { status: 200 }));
-      await click("EXP-sr-1", "button[aria-pressed]");
+      await click("EXP-sr-1", "button[data-case-row]");
       expect(nextField()).toBe("Choose another simulated slot");
       if (invalidPart === "ledger") {
         expect((docButton("Log call") as HTMLButtonElement).disabled).toBe(true);
@@ -409,7 +419,7 @@ describe("booking flags follow the latest successful booking projection", () => 
     expect(actions.recordAction.mock.calls[0][0]).toBe(ID_B);
     expect(actions.recordAction.mock.calls[0][1]).toBe(h("c")); // B keeps its own head, not A's refreshed one
     expect(nextField()).toBe(DECLINED_CANCELLED_NEXT);
-    await click("EXP-sr-1", "button[aria-pressed]");
+    await click("EXP-sr-1", "button[data-case-row]");
     expect(nextField()).toBe("Manage the simulated reservation");
   });
 });

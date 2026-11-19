@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactElement } from "react";
 import PatientsPage from "@/app/app/patients/page";
+import { referralDate } from "@/components/patients/calendar";
 import TodayPage from "@/app/app/today/page";
 import { statusWords, workItem } from "@/components/worklist/model";
 import { isActionable, ldctChildren, obligationWords, openObligation } from "@/components/worklist/obligation";
@@ -140,12 +141,16 @@ describe("Today worklist, deliberately scoped to open cases and due recalls", ()
 });
 
 describe("Patients", () => {
+  /** Every case's folder, read from the case files of each month the cases were referred in. */
   async function rows(): Promise<Map<string, { text: string; ob: string }>> {
-    const element = await PatientsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) });
-    const body = renderToStaticMarkup(element).split("<tbody")[1].split("</tbody>")[0];
     const text = (html: string) => html.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&");
     const out = new Map<string, { text: string; ob: string }>();
-    for (const tr of body.split("<tr").slice(1)) out.set(/[A-Z]+-sr-\d+/.exec(text(tr))![0], { text: text(tr), ob: text(/data-testid="obligation">(.*?)<\/p>/.exec(tr)?.[1] ?? "") });
+    for (const month of new Set(mocks.cases.map((c) => referralDate(c).slice(0, 7)))) {
+      const element = await PatientsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ files: month }) });
+      const body = renderToStaticMarkup(element).split('aria-label="Case files"')[1].split("</ul>")[0];
+      for (const li of body.split("<li").slice(1))
+        out.set(/[A-Z]+-sr-\d+/.exec(text(li))![0], { text: text(li), ob: text(/data-testid="obligation">(.*?)<\/span>/.exec(li)?.[1] ?? "") });
+    }
     return out;
   }
   const row = (all: Map<string, { text: string; ob: string }>, id: string) => all.get(id.slice(id.lastIndexOf("/") + 1))!;

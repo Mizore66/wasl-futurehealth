@@ -70,7 +70,7 @@ test.describe("agent review lane", () => {
   test("links back to the default review flow, which still works", async ({ page }) => {
     await page.getByRole("link", { name: "← Back to the default review flow" }).click();
     await expect(page).toHaveURL(/\/app\/review$/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review desk");
     await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
     await expect(page.locator("main").getByText(/Experimental|r1agent10/)).toHaveCount(0);
   });

@@ -27,8 +27,11 @@ export function ReferrerHandoffs({
   packets,
   answer,
   referrer = "GP",
+  focus,
 }: {
   packets: ReturnedPacket[];
+  /** The referral the user came from: its card is marked. */
+  focus?: string;
   answer?: (caseId: string, head: string, packet: string, response: ReferrerAnswer) => Promise<RespondResult>;
   /** Who the packet waits on, in words: "GP" for CRC, "referrer" for lung work-up and DR. */
   referrer?: string;
@@ -38,7 +41,7 @@ export function ReferrerHandoffs({
     <ul className="m-0 flex list-none flex-col gap-gap p-0">
       {packets.map((p) => (
         <li key={p.id}>
-          <PacketCard p={p} answer={answer} referrer={referrer} />
+          <PacketCard p={p} answer={answer} referrer={referrer} focused={p.id === focus} />
         </li>
       ))}
     </ul>
@@ -49,8 +52,10 @@ function PacketCard({
   p,
   answer,
   referrer,
+  focused = false,
 }: {
   p: ReturnedPacket;
+  focused?: boolean;
   answer?: (caseId: string, head: string, packet: string, response: ReferrerAnswer) => Promise<RespondResult>;
   referrer: string;
 }) {
@@ -84,7 +89,7 @@ function PacketCard({
   };
 
   return (
-    <article aria-labelledby={titleId} className="rounded-card border border-line bg-surface p-4 sm:p-pad">
+    <article aria-labelledby={titleId} aria-current={focused ? "true" : undefined} className={cn("rounded-card border bg-surface p-4 sm:p-pad", focused ? "border-jade-600 shadow-[inset_3px_0_var(--color-jade-600)]" : "border-line")}>
       <h2 id={titleId} className="m-0 text-section font-semibold">
         {heading.name}
         {heading.caseId && (

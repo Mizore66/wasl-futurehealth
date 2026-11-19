@@ -96,26 +96,42 @@ export function Mark({ tip, href, className, children }: { tip: React.ReactNode;
 export type TableData = { caption: string; head: string[]; rows: string[][] };
 
 /** A chart in a figure with its caption, and the same numbers as a table behind a toggle. */
-export function ChartFigure({ caption, table, children, className }: { caption: React.ReactNode; table: TableData; children: React.ReactNode; className?: string }) {
+export function ChartFigure({
+  caption,
+  table,
+  children,
+  className,
+  captionBelow = false,
+}: {
+  caption: React.ReactNode;
+  table: TableData;
+  children: React.ReactNode;
+  className?: string;
+  /** Put the caption and the table toggle under the chart, so the chart sits straight under its heading. */
+  captionBelow?: boolean;
+}) {
   const [asTable, setAsTable] = useState(false);
+  const head = (
+    <div className={cn("flex flex-wrap items-start justify-between gap-x-3 gap-y-1", captionBelow && "mt-5")}>
+      <figcaption className="min-w-0 flex-1 basis-48 text-small leading-4 text-muted">{caption}</figcaption>
+      <button
+        type="button"
+        aria-pressed={asTable}
+        onClick={() => setAsTable(!asTable)}
+        className={cn(
+          "inline-flex min-h-11 flex-none cursor-pointer items-center rounded-control border border-control px-3 text-small text-ink md:min-h-8",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue",
+          asTable ? "bg-active font-medium" : "bg-surface hover:bg-raised",
+        )}
+      >
+        Show as table
+      </button>
+    </div>
+  );
   return (
     <figure className={cn("m-0", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-        <figcaption className="min-w-0 flex-1 basis-48 text-small leading-4 text-muted">{caption}</figcaption>
-        <button
-          type="button"
-          aria-pressed={asTable}
-          onClick={() => setAsTable(!asTable)}
-          className={cn(
-            "inline-flex min-h-11 flex-none cursor-pointer items-center rounded-control border border-control px-3 text-small text-ink md:min-h-8",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue",
-            asTable ? "bg-active font-medium" : "bg-surface hover:bg-raised",
-          )}
-        >
-          Show as table
-        </button>
-      </div>
-      <div className="mt-3 tabular-nums">
+      {!captionBelow && head}
+      <div className={cn("tabular-nums", !captionBelow && "mt-3")}>
         {asTable ? (
           <table className="w-full border-collapse text-small">
             <caption className="sr-only">{table.caption}</caption>
@@ -150,6 +166,7 @@ export function ChartFigure({ caption, table, children, className }: { caption: 
           children
         )}
       </div>
+      {captionBelow && head}
     </figure>
   );
 }

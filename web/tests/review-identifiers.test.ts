@@ -147,12 +147,16 @@ describe("the comparison is on screen before an identity answer", () => {
     expect(c.querySelector('section[data-question="link"] input[type="radio"]')).not.toBeNull();
   });
 
-  it("keeps the first answer hidden from the second reader and still shows the comparison", async () => {
+  it("keeps the first answer hidden from the second reader and locks the identifiers until a claim", async () => {
     const c = await mount(CaseDetail.parse(hold), "r2");
     const card = c.querySelector<HTMLElement>('section[data-question="link"]')!;
     expect(card.textContent).toContain("first answer stays hidden");
+    expect(card.textContent).toContain("Second read due");
     expect(card.querySelector('input[type="radio"]')).toBeNull();
-    expect(c.querySelector('[data-context-item="rv-636161dc42837e08"]')!.textContent).toContain("1965-03-14");
+    /* Before this viewer claims, no identifier is on screen: the record pair appears only with the claim. */
+    expect(c.querySelector('[data-context-item="rv-636161dc42837e08"]')).toBeNull();
+    expect(c.textContent).not.toContain("1965-03-14");
+    expect(c.textContent).not.toContain("784*********123");
   });
 
   it("says the comparison is unavailable instead of showing placeholders", async () => {

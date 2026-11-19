@@ -73,7 +73,7 @@ describe("inputs and selects use the input boundary", () => {
   // Where each field's boundary is drawn: the class string on the element that carries the border.
   const FIELDS: [string, string, RegExp][] = [
     ["worklist search (Today, Referrals)", "components/worklist/search-field.tsx", /<label\s+className=\{cx\(\s*"([^"]*)"/],
-    ["Patients case-id search", "app/app/patients/page.tsx", /<label className="([^"]*)">\s*<span className="sr-only">Search case id/],
+    ["Patients search", "app/app/patients/page.tsx", /<div className="(pf-search [^"]*)">/],
     ["Patients refine selects", "components/patients/refine.tsx", /<select[^>]*?className="([^"]*)"/],
   ];
 

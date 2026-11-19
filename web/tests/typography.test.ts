@@ -13,7 +13,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   // Hashes and signatures
   { file: "components/wasl/sealed-chain.tsx", line: /\{n\.hash\}/, why: "full audit hash" },
   { file: "components/review/review-desk.tsx", line: /title=\{r\.hash\}/, why: "audit hash of each independent review read" },
-  { file: "app/app/patients/[id]/page.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
+  { file: "components/case/evidence-file.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.hash\)/, why: "agent ledger entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.prev\)/, why: "agent ledger previous hash" },
   { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },
@@ -25,6 +25,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "components/case/audit-view.tsx", line: /stored \{s\.sig\}/, why: "full stored signature" },
   { file: "components/case/audit-view.tsx", line: /recomputed \{s\.recomputed\}/, why: "full recomputed signature" },
   { file: "components/case/audit-view.tsx", line: /^\s*<code className="break-all font-mono">$/, why: "stream head, full value" },
+  { file: "components/case/audit-workspace.tsx", line: /<code className="select-all break-all font-mono/, why: "full stored and recomputed decision signatures" },
   // Code: system names, raw records, versions and machine traces
   { file: "app/(site)/experts/page.tsx", line: /whitespace-pre-wrap break-all .*font-mono text-\[14px\]/, why: "HL7 v2 message code block (<pre>)" },
   { file: "app/app/review/page.tsx", line: /<code className="font-mono">review_hold<\/code>/, why: "system name of the queue" },

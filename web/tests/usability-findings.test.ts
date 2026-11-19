@@ -85,13 +85,15 @@ describe("N8: why the case is still open sits above the timeline", () => {
   });
 
   it("renders the Why card before the step-by-step chain on the case page", () => {
-    const page = readFileSync(path.join(__dirname, "..", "app", "app", "patients", "[id]", "page.tsx"), "utf8");
+    // The case page and an open folder in the Referral calendar both render the shared Evidence File.
+    const page = readFileSync(path.join(__dirname, "..", "components", "case", "evidence-file.tsx"), "utf8");
     const why = page.indexOf("<ReasonCard detail={detail} />");
     expect(why).toBeGreaterThan(-1);
     expect(page.indexOf("<ReasonCard", why + 1)).toBe(-1);
     expect(why).toBeLessThan(page.indexOf("<SealedChain"));
-    // The last TimelineCard is the open-case layout's; the first belongs to the retired-case early return.
-    expect(why).toBeLessThan(page.lastIndexOf("<TimelineCard detail={detail} />"));
+    // In the Evidence File itself, the reason sits in the next step, above the activity timeline.
+    expect(page.indexOf('data-testid="why-summary"')).toBeGreaterThan(-1);
+    expect(page.indexOf('data-testid="why-summary"')).toBeLessThan(page.indexOf('aria-label="Timeline"'));
   });
 });
 

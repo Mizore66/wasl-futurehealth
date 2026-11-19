@@ -27,7 +27,7 @@ test.describe("sidebar (desktop)", () => {
     const aside = sidebar(page);
     await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
     await expect(toggle(page)).toHaveAttribute("aria-controls", "app-sidebar");
-    expect((await aside.boundingBox())?.width).toBe(240);
+    expect((await aside.boundingBox())?.width).toBe(228);
 
     await toggle(page).click();
     await expect(toggle(page)).toHaveAccessibleName("Expand sidebar");
@@ -73,11 +73,13 @@ test.describe("sidebar (desktop)", () => {
     await toggle(page).click();
     const nav = sidebar(page).getByRole("navigation", { name: "Main" });
     for (const name of [
-      "Programme",
       "Today",
-      "Review",
       "Patients",
       "Referrals",
+      "Recovery",
+      "Programme",
+      "Review desk",
+      "Audit trail",
       "Pipeline",
       "Results",
       "Agent review",
@@ -85,14 +87,14 @@ test.describe("sidebar (desktop)", () => {
       await expect(nav.getByRole("link", { name, exact: name !== "Agent review" })).toBeVisible();
     }
 
-    await nav.getByRole("link", { name: "Review", exact: true }).focus();
+    await nav.getByRole("link", { name: "Review desk", exact: true }).focus();
     await page.keyboard.press("Tab");
-    await expect(nav.getByRole("link", { name: "Patients" })).toBeFocused();
+    await expect(nav.getByRole("link", { name: "Audit trail" })).toBeFocused();
     await expect(
       page
         .locator('[data-slot="tooltip-content"]:not([data-state="closed"])')
         .first(),
-    ).toContainText("Patients");
+    ).toContainText("Audit trail");
 
     const axe = await new AxeBuilder({ page }).analyze();
     const serious = axe.violations.filter(
@@ -286,7 +288,7 @@ test("the nav lists Agent review with a text Experimental marker, and the brand 
   const link = sidebar(page).getByRole("link", { name: /Agent review/ });
   await expect(link).toHaveAttribute("href", "/app/agent-review");
   await expect(link).toContainText("Experimental");
-  await expect(sidebar(page)).toContainText("ADPHC · screening follow-up");
+  await expect(sidebar(page).getByRole("link", { name: /Wasl/ }).first()).toBeVisible();
   await expect(sidebar(page)).not.toContainText("CRC programme");
 });
 
@@ -309,7 +311,9 @@ const navNames = async (page: Page) => {
   return [...snap.matchAll(/^\s*- navigation(?: "([^"]*)")?/gm)].map((m) => m[1] ?? "");
 };
 const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
-const FOCUS_TEXT = ["Skip to main content", "WaslADPHC · screening follow-up", "Programme", "Today", "Recovery", "Review", "Patients", "Referrals", "Pipeline", "Results", "Agent reviewExperimental"];
+// The sidebar groups (redesign): Workspace with the Today queues nested under Today, then Oversight, then Evidence.
+// Queue and nav counts are stripped from the stop text (tabStop), so the order is checked without the data.
+const FOCUS_TEXT = ["Skip to main content", "Waslوصل", "Today", "To call", "Waiting", "No owner", "Patients", "Referrals", "Recovery", "Programme", "Review desk", "Audit trail", "Pipeline", "Results", "Agent reviewExperimental"];
 // Worklist pages (Today, Referrals) add a second skip link, "Skip to worklist", straight after "Skip to main content".
 const WORKLIST_ROUTES = new Set(["/app/today", "/app/referrals"]);
 const withWorklistSkip = (route: string, stops: string[]) =>
@@ -319,7 +323,8 @@ const tabStop = (page: Page) =>
   page.evaluate(() => {
     const el = document.activeElement as HTMLElement;
     const cs = getComputedStyle(el);
-    return { text: (el.textContent ?? "").replace(/\s+/g, " ").trim(), outline: cs.outlineStyle, width: cs.outlineWidth };
+    const text = el.getAttribute("aria-label") && !(el.textContent ?? "").trim() ? el.getAttribute("aria-label")! : el.textContent ?? "";
+    return { text: text.replace(/\s+/g, " ").trim().replace(/\s*\d+$/, ""), outline: cs.outlineStyle, width: cs.outlineWidth };
   });
 
 async function expectOneMain(page: Page, name: "Main" | "Main (mobile)" = "Main") {
@@ -348,7 +353,7 @@ for (const route of APP_ROUTES) {
         const f = await tabStop(page);
         seen.push(f.text);
         expect(f.outline, `focus ring on "${f.text}"`).not.toBe("none");
-        expect(f.width).toBe("2px");
+        expect(f.width).toBe("3px");
       }
       expect(seen).toEqual(expected);
     });
@@ -360,14 +365,14 @@ for (const route of APP_ROUTES) {
       await expect(page.locator("aside#app-sidebar")).toBeHidden();
       await expect(main(page)).toHaveCount(0);
       expect((await navNames(page)).filter((n) => n.startsWith("Main"))).toHaveLength(0);
-      const expectedClosed = withWorklistSkip(route, ["Skip to main content", "WaslADPHC · screening follow-up", "Menu navigation"]);
+      const expectedClosed = withWorklistSkip(route, ["Skip to main content", "Menu", "Waslوصل"]);
       const closed: string[] = [];
       for (let i = 0; i < expectedClosed.length; i++) {
         await page.keyboard.press("Tab");
         const f = await tabStop(page);
         closed.push(f.text);
         expect(f.outline).not.toBe("none");
-        expect(f.width).toBe("2px");
+        expect(f.width).toBe("3px");
       }
       expect(closed).toEqual(expectedClosed);
 

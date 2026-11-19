@@ -33,7 +33,7 @@ type Scenario = {
 };
 const key = (purpose: Purpose, answer: Answer) => `${purpose}:${answer}`;
 const href = (base: string, detail: CaseDetail) => `${base}/app/review/${encodeURIComponent(detail.case.id)}`;
-const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
+const rail = (page: Page) => page.getByRole("region", { name: "Your answers" });
 const card = (page: Page) => rail(page).locator('section[data-question="evidence"]');
 const summary = (page: Page) => page.locator("main > header").first();
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -258,7 +258,9 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       await expect(card(a.page)).toHaveAttribute("data-state", "awaiting_r2");
       await expect(card(a.page).getByRole("button", { name: "Claim second read", exact: true })).toHaveCount(0);
       await expect(a.page.getByTestId("read-announcement")).toContainText("Your first read for the evidence question was recorded.");
-      await expect(card(a.page)).toContainText(answer === "confirm" ? "Report adequate" : "Report not adequate");
+      // The first reader's own answer stays hidden on the desk until the second read is in.
+      await expect(card(a.page)).toContainText("First read: submitted; the answer stays hidden until the second read");
+      await expect(card(a.page)).toContainText("Second read due");
       await initialPurpose(a.page, purpose);
       expect(JSON.stringify(scenario.canonical)).toBe(original);
       const firstRead = scenario.reads[0];

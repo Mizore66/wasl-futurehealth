@@ -1,23 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Check, ChevronDown, FileText, TriangleAlert } from "lucide-react";
 import { Avatar, type AvatarState } from "@/components/avatar/avatar";
 import type { PersonSeed } from "@/lib/people/types";
-import { cn } from "@/lib/utils";
-import type { IdentityRow, ReviewView, Verdict } from "./case-view";
+import { cx } from "@/lib/cx";
+import type { IdentityRow, ReviewView } from "./case-view";
 import type { IdentityAnswer } from "./decision";
-import { Mark, type Shape, type Tone } from "./marks";
-
-const VERDICT: Record<Verdict, { shape: Shape; tone: Tone; word: string }> = {
-  match: { shape: "tick", tone: "positive", word: "match" },
-  differ: { shape: "cross", tone: "negative", word: "differ" },
-  missing: { shape: "dash", tone: "warning", word: "missing" },
-  placeholder: { shape: "dash", tone: "warning", word: "placeholder" },
-  unknown: { shape: "dash", tone: "warning", word: "unknown" },
-  invalid: { shape: "dash", tone: "warning", word: "invalid" },
-  unavailable: { shape: "dash", tone: "muted", word: "not compared" },
-  separate: { shape: "cross", tone: "muted", word: "separate" },
-};
+import { PAIR_WORD, pairChecks, pairState, type PairState } from "./pair-checks";
 
 const ARABIC = /[؀-ۿ]/;
 const LATIN = /[A-Za-z]/;
@@ -32,8 +22,6 @@ export function scriptHint(row: IdentityRow): string | undefined {
   const latin = [row.referral, row.report].map((v) => LATIN.test(v) && !ARABIC.test(v));
   return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts; compare transliteration" : undefined;
 }
-const CELL = "flex min-h-9 items-center border-t border-rule py-1 @2xl:h-9 @2xl:overflow-hidden @2xl:text-ellipsis @2xl:whitespace-nowrap @2xl:py-0";
-
 type Shown = { person: PersonSeed; state: AvatarState; label: string };
 
 /** The report's face follows the reviewer's answer: "?" until they choose, then the referral's face or a stranger's. */
@@ -44,45 +32,111 @@ function reportFace(view: ReviewView, answer: IdentityAnswer | undefined): Shown
   return { ...report, label: report.state === "unknown" ? "Not yet confirmed as this patient" : `Same patient as ${view.name}` };
 }
 
-function RecordCard({
-  name,
-  source,
-  fields,
-  values,
-  arabic,
-  face,
-}: {
-  name: string;
-  source: string;
-  fields: string[];
-  values: string[];
-  arabic?: boolean;
-  face: Shown;
-}) {
+const scriptOf = (v: string) => (ARABIC.test(v) ? { lang: "ar", dir: "rtl" as const } : {});
+
+/** One side of the pair: its source, the recorded name and every identifier, differences marked and matches quiet. */
+function RecordColumn({ side, view, face, second }: { side: "referral" | "report"; view: ReviewView; face: Shown; second?: boolean }) {
+  const rows = view.identity;
+  const nameRow = rows.find((r) => r.field === "Name");
+  const name = (nameRow?.[side] || (side === "referral" ? view.referralName : view.reportName)) ?? "";
+  const nameState = nameRow ? pairState(nameRow) : "unclear";
   return (
-    <div className="min-w-0 rounded-control border border-line px-4">
-      <div className="flex h-16 items-center gap-3">
-        <Avatar person={face.person} state={face.state} size={40} label={face.label} />
-        <div className="flex min-w-0 flex-col justify-center">
-          <div
-            lang={arabic ? "ar" : undefined}
-            dir={arabic ? "rtl" : undefined}
-            className={cn("truncate font-medium", arabic ? "pb-1 text-left font-arabic text-[22px] leading-[30px]" : "text-[20px] leading-7")}
+    <section
+      aria-label={side === "referral" ? "Referral record" : "Report record"}
+      data-record={side}
+      className={cx(
+        "flex min-w-0 flex-col gap-4 p-[var(--rv-pad)]",
+        second && "border-t border-rule bg-limestone-100 @2xl:border-l @2xl:border-t-0",
+      )}
+    >
+      <h3 className="m-0 flex min-w-0 items-center gap-2 text-small font-semibold text-ink">
+        <FileText aria-hidden className="size-4 flex-none text-jade-700" strokeWidth={1.75} />
+        <span className="min-w-0 break-words">{side === "referral" ? view.referralSource : view.reportSource}</span>
+      </h3>
+      <div className="flex min-w-0 items-center gap-3">
+        <Avatar person={face.person} state={face.state} size={36} label={face.label} />
+        <div className="min-w-0">
+          <p
+            {...scriptOf(name)}
+            className={cx(
+              "m-0 break-words text-[clamp(20px,2.3vw,32px)] leading-[1.15]",
+              ARABIC.test(name) ? "font-arabic text-left" : "staff-display",
+              nameState === "differ" ? "text-ochre-ink" : "text-jade-900",
+            )}
           >
-            {name}
-          </div>
-          <div className="truncate text-small text-muted">{source}</div>
+            {name || "not recorded"}
+          </p>
+          {nameState === "differ" && <p className="m-0 mt-0.5 text-small font-semibold text-ochre-ink">Name differs</p>}
         </div>
       </div>
-      {values.map((v, i) => (
-        <div key={i} className={cn(CELL, v.startsWith("not recorded") || v === "unknown" ? "text-muted" : "text-ink")}>
-          <span className="mr-2 flex-none text-small text-muted @2xl:hidden">{fields[i]}</span>
-          <span lang={ARABIC.test(v) ? "ar" : undefined} dir={ARABIC.test(v) ? "rtl" : undefined} className={cn(ARABIC.test(v) && "font-arabic")}>
-            {v}
-          </span>
-        </div>
-      ))}
-    </div>
+      <dl className="m-0 border-t border-rule">
+        {rows
+          .filter((r) => r !== nameRow)
+          .map((r) => {
+            const state = pairState(r);
+            const value = r[side];
+            const absent = value.startsWith("not recorded") || value === "unknown";
+            return (
+              <div
+                key={r.field}
+                data-pair={state}
+                className={cx(
+                  "flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-b border-rule px-2 py-1.5",
+                  state === "differ" && "bg-ochre-wash text-ochre-ink",
+                )}
+              >
+                <dt className={cx("text-small", state === "differ" ? "font-semibold" : "text-muted")}>
+                  {r.field}
+                  {state === "differ" && <span className="ml-1.5">· differs</span>}
+                </dt>
+                <dd
+                  {...scriptOf(value)}
+                  className={cx(
+                    "m-0 min-w-0 break-words text-right tabular-nums",
+                    ARABIC.test(value) && "font-arabic",
+                    r.verdict === "separate" ? "text-small text-muted" : absent ? "text-muted" : "font-semibold",
+                  )}
+                >
+                  {value}
+                </dd>
+              </div>
+            );
+          })}
+      </dl>
+    </section>
+  );
+}
+
+const CHECK_TONE: Record<PairState, string> = {
+  differ: "text-ochre-ink",
+  match: "text-ink",
+  missing: "text-muted",
+  unclear: "text-muted",
+  separate: "text-muted",
+};
+
+/** The pair-checks summary: one line per identifier, the word always beside its mark. */
+export function PairChecks({ view }: { view: ReviewView }) {
+  const id = useId();
+  const checks = pairChecks(view.identity);
+  return (
+    <section aria-labelledby={`${id}-h`} className="min-w-0 p-[var(--rv-pad)]" data-testid="pair-checks">
+      <h3 id={`${id}-h`} className="m-0 text-small font-semibold text-ink">
+        Checks
+      </h3>
+      <dl className="m-0 mt-1 grid grid-cols-1">
+        {checks.map((k) => (
+          <div key={k.field} data-pair={k.state} className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 border-t border-rule">
+            <dt className="text-muted">{k.field}</dt>
+            <dd className={cx("m-0 inline-flex items-center gap-1.5 font-semibold", CHECK_TONE[k.state])}>
+              {k.state === "match" && <Check aria-hidden className="size-4 text-jade-600" strokeWidth={2} />}
+              {k.state === "differ" && <TriangleAlert aria-hidden className="size-4" strokeWidth={2} />}
+              {PAIR_WORD[k.state]}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -99,7 +153,7 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
       <div className="absolute inset-x-0 top-[22px] h-1 rounded-sm bg-control" />
       <div className="absolute top-3.5 h-5 w-0.5 -ml-px bg-ink" style={{ left: at(line) }} />
       <div
-        className={cn("absolute -top-0.5 whitespace-nowrap text-small", line > 0.975 ? "mr-1.5 text-right" : "ml-1.5")}
+        className={cx("absolute -top-0.5 whitespace-nowrap text-small", line > 0.975 ? "mr-1.5 text-right" : "ml-1.5")}
         style={line > 0.975 ? { right: `calc(100% - ${at(line)})` } : { left: at(line) }}
       >
         auto-close line {line}
@@ -111,118 +165,70 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
   );
 }
 
-export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: IdentityAnswer }) {
+/**
+ * The record pair: the two records side by side (stacked on a narrow screen), the pair-checks summary beside the
+ * answer form (`children`), and the source notes beneath. The desk renders it only when the viewer may see identifiers.
+ */
+export function IdentityBridge({ view, answer, children }: { view: ReviewView; answer?: IdentityAnswer; children?: React.ReactNode }) {
   const [why, setWhy] = useState(false);
   const suffix = view.items.link ?? "case";
-  const joined = answer === "same" || (!answer && view.faces.report.state === "known");
   return (
-    <section aria-labelledby={`bridge-h-${suffix}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-3">
-        <h2 id={`bridge-h-${suffix}`} className="m-0 text-section font-medium">
-          Is this the same person?
-        </h2>
+    <section aria-label="Record pair" className="@container min-w-0 [--rv-pad:14px] @2xl:[--rv-pad:clamp(17px,2.4cqi,32px)]">
+      <div className="grid grid-cols-1 @2xl:grid-cols-2">
+        <RecordColumn side="referral" view={view} face={{ ...view.faces.referral, label: view.name }} />
+        <RecordColumn side="report" view={view} face={reportFace(view, answer)} second />
+      </div>
+      <div className="border-t border-rule px-[var(--rv-pad)] py-3">
+        {view.identity.flatMap((r) => {
+          const hint = scriptHint(r);
+          return hint ? [<p key={r.field} className="m-0 mb-2 text-small" data-testid="script-hint">{r.field}: {hint}.</p>] : [];
+        })}
+        <p className="m-0 font-medium">{view.identitySummary}</p>
+        {view.identityGuard.length > 0 && (
+          <ul aria-label="Visible identifier field limitations" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
+            {view.identityGuard.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        )}
+        <p role="note" aria-label="Identifier source context" className="m-0 mt-2 text-small text-muted">{view.identityContext}</p>
         <button
           type="button"
           aria-expanded={why}
           aria-controls={`why-held-${suffix}`}
           onClick={() => setWhy(!why)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 hover:bg-active"
+          className="-ml-2 mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-small font-semibold text-jade-800 hover:bg-active"
         >
           <span>{why ? "Hide why" : "Why it was held"}</span>
-          <svg
-            aria-hidden
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={cn(why && "rotate-180")}
-          >
-            <path d="M3 4.5l3 3 3-3" />
-          </svg>
+          <ChevronDown aria-hidden className={cx("size-3.5 transition-transform", why && "rotate-180")} strokeWidth={2} />
         </button>
-      </div>
-
-      <div className="mt-3 grid gap-3 @2xl:grid-cols-[minmax(0,1fr)_176px_minmax(0,1fr)]">
-        <RecordCard
-          name={view.referralName}
-          source={view.referralSource}
-          fields={view.identity.map((r) => r.field)}
-          values={view.identity.map((r) => r.referral)}
-          arabic
-          face={{ ...view.faces.referral, label: view.name }}
-        />
-        <div>
-          <div aria-hidden className="relative hidden h-16 @2xl:block">
-            <div
-              className={cn(
-                "absolute -inset-x-3 top-[31px] h-0.5 transition-colors",
-                joined ? "bg-hue" : answer === "different" ? "border-t-2 border-dashed border-control bg-transparent" : "bg-ink",
-              )}
-            />
-            <div
-              className={cn("absolute left-1/2 top-[27px] -ml-[5px] size-2.5 rounded-full border-2", joined ? "border-hue bg-hue" : "border-ink bg-surface")}
-            />
-            <div className={cn("absolute inset-x-0 top-[42px] text-center text-small", joined ? "font-medium text-hue" : "text-muted")}>
-              {answer === "same" ? "same patient" : answer === "different" ? "not the same" : joined ? "confirmed link" : "proposed link"}
-            </div>
-          </div>
-          {view.identity.map((r) => (
-            <div key={r.field} className="flex h-9 items-center gap-1.5 border-t border-rule px-1">
-              <span className="flex-1 whitespace-nowrap">{r.field}</span>
-              <Mark shape={VERDICT[r.verdict].shape} tone={VERDICT[r.verdict].tone} className={cn("text-small", r.verdict === "missing" && "text-warning")}>
-                {VERDICT[r.verdict].word}
-              </Mark>
-            </div>
-          ))}
-        </div>
-        <RecordCard
-          name={view.reportName}
-          source={view.reportSource}
-          fields={view.identity.map((r) => r.field)}
-          values={view.identity.map((r) => r.report)}
-          face={reportFace(view, answer)}
-        />
-      </div>
-
-      {view.identity.flatMap((r) => {
-        const hint = scriptHint(r);
-        return hint ? [<p key={r.field} className="m-0 mt-3 text-small" data-testid="script-hint">{r.field}: {hint}.</p>] : [];
-      })}
-      <p role="note" aria-label="Identifier source context" className="m-0 mt-4 text-small text-muted">{view.identityContext}</p>
-      <p className="m-0 mt-2 font-medium">{view.identitySummary}</p>
-      {view.identityGuard.length > 0 && (
-        <ul aria-label="Visible identifier field limitations" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
-          {view.identityGuard.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      )}
-
-      {why && (
-        <div id={`why-held-${suffix}`} className="mt-3 rounded-control bg-ground p-4">
-          <div className="flex items-baseline justify-between">
-            <span className="font-medium">Link score</span>
-            <span>
-              {view.link.score.toFixed(3)}{" "}
-              <span className="text-small text-muted">
-                on {view.link.basis}, auto-close line {view.link.line}
+        {why && (
+          <div id={`why-held-${suffix}`} className="mt-2 rounded-control bg-ground p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="font-medium">Link score</span>
+              <span>
+                {view.link.score.toFixed(3)}{" "}
+                <span className="text-small text-muted">
+                  on {view.link.basis}, auto-close line {view.link.line}
+                </span>
               </span>
-            </span>
+            </div>
+            <ScoreTrack score={view.link.score} line={view.link.line} />
+            <p className="m-0 mt-2 text-small leading-[18px] text-muted">
+              This score describes the displayed link context. The original configured guard result is unavailable.
+            </p>
+            <p className="m-0 mt-1 text-small leading-[18px] text-muted">
+              Readers: the rules reader applies the DoH closure checklist word for word; the second reader is a language model ({view.readerModel}). Both must
+              agree for a report to close a case.
+            </p>
           </div>
-          <ScoreTrack score={view.link.score} line={view.link.line} />
-          <p className="m-0 mt-2 text-small leading-[18px] text-muted">
-            This score describes the displayed link context. The original configured guard result is unavailable.
-          </p>
-          <p className="m-0 mt-1 text-small leading-[18px] text-muted">
-            Readers: the rules reader applies the DoH closure checklist word for word; the second reader is a language model ({view.readerModel}). Both must
-            agree for a report to close a case.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
+      <div className={cx("grid grid-cols-1 border-t border-rule", children ? "@2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.55fr)]" : undefined)}>
+        <PairChecks view={view} />
+        {children && <div className="min-w-0 border-t border-rule bg-limestone-100 @2xl:border-l @2xl:border-t-0">{children}</div>}
+      </div>
+
     </section>
   );
 }

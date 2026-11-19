@@ -2,15 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import NumberFlow from "@number-flow/react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Avatar } from "@/components/avatar/avatar";
+import { ArrowRight, Check, ChevronDown, CircleAlert, Folder, IdCard, Phone, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
+import { isTodayQueue, publishTodayCounts, type TodayQueue } from "@/components/shell/today-counts";
 import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
-import { simulatedRunDate } from "@/lib/domain/staff-time";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, clockWords } from "./days";
@@ -23,8 +21,7 @@ import { CommunicationForm } from "./communication-form";
 import { ElsewhereForm } from "./elsewhere-form";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
-import { SearchField } from "./search-field";
-import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
+import { CONSENT_WORDS, contactWords, taskSentence, taskTitle } from "./today-task";
 import { recordAction } from "@/app/app/today/actions";
 import { ApiOverlay, Booking, CasePatient, CaseSummary, RETRIEVAL_OUTCOMES, type CaseAction } from "@/lib/api/schema";
 import { z } from "zod";
@@ -45,15 +42,23 @@ import { paginate, pageWith, pageStatusText, pagerFocusAfter, type PagerControl 
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
 type Contact = TrailEntry;
-type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped">;
+type ContactProjection = Pick<WorkItem, "contactBlocked" | "textsAllowed" | "textsStopped" | "consent">;
 type Patch = Partial<ContactProjection> & { view?: View; status?: string; next?: string; snoozed?: boolean; noAnswer?: number; awaitingNext?: boolean; owner?: string; head?: string; reserved?: boolean; cancelled?: boolean; retrieval?: WorkItem["retrieval"]; communicationStep?: WorkItem["communicationStep"]; log: Contact[] };
 type Stage = "reached" | "callback" | "elsewhere";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
   tab: View;
+  /** The last `?queue=` this board saw: a new one from outside (sidebar, history) moves `tab`. */
+  seen: View;
   page: number;
-  /** Below lg the list and the open patient take turns; from lg up both show. */
-  mobile: "list" | "detail";
+  /** Phone only: the selected row's inline case is folded away (from lg up the case always shows beside the queue). */
+  collapsed: boolean;
+  /** The case-details disclosure (person-card icon). */
+  facts: boolean;
+  /** Phone only: the Activity panel under the inline case is open. */
+  hist: boolean;
+  /** The activity event whose note is open. */
+  note: string | null;
   sel: string | null;
   q: string;
   calling: string | null;
@@ -82,7 +87,7 @@ type LedgerSnapshot = z.infer<typeof LedgerResponse>;
 type LedgerRead = LedgerSnapshot | { error: string };
 const isLedger = (l: LedgerRead | undefined): l is LedgerSnapshot => !!l && !("error" in l);
 const contactProjection = (item: WorkItem): ContactProjection => ({
-  contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped,
+  contactBlocked: item.contactBlocked, textsAllowed: item.textsAllowed, textsStopped: item.textsStopped, consent: item.consent,
 });
 /** Keep the row's booking workflow and action-driving flags on the same projection as its write head. */
 const bookingRowProjection = (item: WorkItem) => ({
@@ -162,6 +167,7 @@ export function TodayBoard({
   live = false,
   scope = "Al Mushrif Healthcare Centre",
   undoMs = LIVE_UNDO_MS,
+  queue = "call",
 }: {
   items: WorkItem[];
   now: number;
@@ -170,8 +176,14 @@ export function TodayBoard({
   scope?: string;
   /** Live API: the Undo window before a held-back write is sent; 0 sends at once. */
   undoMs?: number;
+  /** The queue the server rendered from `?queue=`; the URL's current value wins once mounted. */
+  queue?: TodayQueue;
 }) {
-  const [s, setS] = useState<State>({ tab: "call", page: 1, mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
+  const params = useSearchParams();
+  const fromUrl = params?.get("queue");
+  /* The sidebar's queue links and this board's own moves both change `?queue=`; the URL is the one source. */
+  const urlTab: View = isTodayQueue(fromUrl) ? fromUrl : queue;
+  const [s, setS] = useState<State>({ tab: urlTab, seen: urlTab, page: 1, collapsed: false, facts: false, hist: false, note: null, sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const heldWrite = useHeldWrite<Pending>();
@@ -201,37 +213,44 @@ export function TodayBoard({
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const rowRef = useRef<HTMLButtonElement>(null);
-  const prevPane = useRef(s.mobile);
+  const searchRef = useRef<HTMLInputElement>(null);
+  /* `/` focuses the queue search from anywhere on the page that is not already taking text. */
   useEffect(() => {
-    if (prevPane.current === s.mobile) return;
-    prevPane.current = s.mobile;
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
-    (s.mobile === "detail" ? headingRef : rowRef).current?.focus();
-  }, [s.mobile]);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
   const root = useRef<HTMLDivElement>(null);
   const [want, setWant] = useState<{ k: string } | null>(null);
   useEffect(() => {
     if (!want) return;
-    // A delayed action may finish after returning to the phone list. Use the mounted pane,
-    // not the action's old state; direct pager requests keep their existing focus policy.
-    const phoneList = !want.k.startsWith("pager-") &&
-      root.current?.querySelector('section[aria-label="Open patient"]')?.classList.contains("hidden") &&
-      !window.matchMedia("(min-width: 1024px)").matches;
-    const target = phoneList
-      ? rowRef.current ?? root.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
-      : root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`);
-    target?.focus();
+    root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
   }, [want]);
 
-  const roving = useRovingTabs({
-    ids: TABS.map(([id]) => id),
-    selected: s.tab,
-    onSelect: (id) => setS((prev) => ({ ...prev, tab: id, page: 1, sel: null, calling: null, stage: null, last: null })),
-    prefix: "today",
-  });
+  /* A queue change from outside (the sidebar, history) starts that queue at its top, as a tab change did. */
+  if (s.seen !== urlTab) {
+    setS((prev) =>
+      prev.seen === urlTab ? prev
+        : prev.tab === urlTab ? { ...prev, seen: urlTab }
+          : { ...prev, seen: urlTab, tab: urlTab, page: 1, sel: null, collapsed: false, calling: null, stage: null, last: null },
+    );
+  }
+  const tab = s.tab;
+  /** Move to another queue from the board, keeping `sel` open there; the URL keeps the scope and records the queue. */
+  const goQueue = (to: View, sel: string | null) => {
+    setS((prev) => ({ ...prev, tab: to, page: 1, sel, collapsed: false }));
+    const next = new URLSearchParams(window.location.search);
+    next.set("queue", to);
+    window.history.pushState(null, "", `${window.location.pathname}?${next.toString()}`);
+  };
 
   /* An all-programmes queue names each row's programme; a single-programme queue says it once, in the scope. */
   const mixed = new Set(items.map((it) => it.programme)).size > 1;
@@ -242,15 +261,14 @@ export function TodayBoard({
   const inView = (v: View) => all.filter((p) => p.view === v).sort(byUrgency);
   const q = s.q.trim().toLowerCase();
   const matches = (x: Row) => !q || x.name.toLowerCase().includes(q) || x.short.toLowerCase().includes(q);
-  const list = inView(s.tab).filter(matches);
-  const toCall = inView("call");
+  const list = inView(tab).filter(matches);
   /*
    * The open patient is one of the visible results, so Call, Snooze and Hand-off never act on someone filtered out.
    * The one exception: a patient the last action moved to another tab stays open (named, with a link to that tab)
    * until the user moves on, so the outcome is seen where it was recorded. A search that excludes them lets go too.
    */
   const paging = paginate(list, pageWith(list, s.sel, s.page));
-  const held = s.last ? all.find((x) => x.id === s.last!.id && x.view !== s.tab && matches(x)) : undefined;
+  const held = s.last ? all.find((x) => x.id === s.last!.id && x.view !== tab && matches(x)) : undefined;
   const p = held ?? paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
   if (s.page !== paging.page) setS((prev) => (prev.page === paging.page ? prev : { ...prev, page: paging.page }));
   const fresh = { calling: null, stage: null, last: null };
@@ -364,15 +382,13 @@ export function TodayBoard({
   const boardInvalid = live && (lastStatus ? lastStatus === "invalid" : listLedgerInvalid(items));
   const ledgerInvalid = !!p && boardInvalid;
 
-  const top = toCall[0];
-  const finding = !top
-    ? { name: "Nobody", rest: "is left to call." }
-    : {
-        name: top.name,
-        rest:
-          `${clockWords(top).over ? `is ${clockWords(top).long}` : top.deadline === null ? "has no overdue clock" : `has ${clockWords(top).long}`}: ${top.status.toLowerCase()}.` +
-          ` ${toCall.length - 1} more to call.`,
-      };
+  /* The sidebar's queue counts follow this board, including actions logged in this browser. */
+  const counts = { call: 0, waiting: 0, none: 0 };
+  for (const r of all) counts[r.view] += 1;
+  useEffect(() => {
+    publishTodayCounts({ call: counts.call, waiting: counts.waiting, none: counts.none });
+  }, [counts.call, counts.waiting, counts.none]);
+  useEffect(() => () => publishTodayCounts(null), []);
 
   const apply = (row: Row, entry: Contact, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null) => {
     setWant({ k: stage ? "chips" : "undo" });
@@ -630,508 +646,610 @@ export function TodayBoard({
       : ledgerError
         ? "Could not read the case ledger"
         : "No contact on the case ledger yet";
-  const trail: ChainNode[] = p
+  /** Activity, earliest to latest: the referral, every logged contact, then the next step. Each event opens its note. */
+  type Activity = { id: string; what: string; when: string; note: string; current?: boolean };
+  const activity: Activity[] = p
     ? [
-        ...entries.map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: c.who, what: c.what, when: c.when })),
-        { id: "next", kind: "current", who: "Next", what: p.next, when: entries.length ? "Now" : nothingYet },
+        { id: "referral", what: "Referral issued", when: formatDay(p.referralDay), note: `${p.programmeName} · ${p.providerName}` },
+        ...entries.map((c, i) => ({ id: `log-${i}`, what: c.what, when: c.when, note: `Recorded by ${c.who}${c.hash ? ` · ledger ${c.hash.slice(0, 12)}` : ""}` })),
+        { id: "next", what: `Next: ${p.next}`, when: entries.length ? "Now" : nothingYet, note: p.status, current: true },
       ]
     : [];
 
-  const showList = s.mobile === "list";
+  const queueLabel = TABS.find(([id]) => id === tab)![1];
+  const phone = () => !window.matchMedia("(min-width: 1024px)").matches;
+  const pick = (r: Row) => {
+    if (p?.id === r.id) {
+      // On a phone the open row folds and unfolds; beside the queue the case simply stays open. Either way the row is
+      // now the explicit selection, so a search or page change keeps it.
+      const fold = phone();
+      setS((prev) => ({ ...prev, sel: r.id, collapsed: fold ? !prev.collapsed : false }));
+      return;
+    }
+    retryLedger(r.id);
+    setS((prev) => ({ ...prev, sel: r.id, collapsed: false, note: null, ...fresh }));
+  };
+  const contact = p ? contactWords(p) : null;
+  const caseId = "today-case";
+  /* The grid places the open case in the left column from lg up; in the DOM it follows its row, so a phone reads it inline. */
+  const rightRows = 1 + Math.max(1, paging.rows.length) + 2;
+  const openAt = !p || held ? -1 : paging.rows.findIndex((r) => r.id === p.id);
+  const fold = s.collapsed ? "max-lg:hidden" : "";
+  const right = "lg:col-start-2 lg:border-l lg:border-line lg:bg-limestone-100";
+  const rowAt = (i: number): React.CSSProperties => ({ gridRow: i + 2 });
 
-  return (
-    <div ref={root}>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <h1 className="m-0 text-title font-semibold">Today</h1>
-          <p className="m-0 mt-1 text-muted" data-testid="finding">
-            <span className="font-medium text-ink">{finding.name}</span> {finding.rest}
-          </p>
-        </div>
-        <div className="flex flex-col gap-1.5 sm:items-end">
-          <span className="text-small text-muted">
-            {scope} · {simulatedRunDate(now)}
-          </span>
-          {aside}
-        </div>
-      </header>
-
-      {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-6" />}
-      {pendingNotice}
-
-      <div className="flex flex-wrap items-stretch gap-gap">
-        <section
-          id="worklist"
+  const casePane = p ? (
+    <section
+      key="case"
+      id={caseId}
+      aria-label="Selected case"
+      data-case={p.short}
+      style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
+      className={cn(
+        "min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:flex lg:flex-col lg:justify-center lg:px-[clamp(20px,2.4vw,40px)] lg:py-8",
+        fold,
+      )}
+    >
+      {removedNotice}
+      <p className="m-0 hidden text-small text-muted lg:block" data-testid="case-who">
+        {p.named ? (
+          <>
+            {p.name}
+            {p.nameAr && (
+              <span lang="ar" dir="rtl" className="ml-2">
+                {p.nameAr}
+              </span>
+            )}
+            {" · "}
+          </>
+        ) : null}
+        <span dir="ltr">{p.short}</span>
+      </p>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 lg:mt-2 lg:grid-cols-[minmax(0,max-content)_auto_1fr]">
+        <h2
+          ref={headingRef}
+          data-focus="heading"
           tabIndex={-1}
-          aria-label="Your list"
-          className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_384px]", showList ? "flex" : "hidden")}
+          className="staff-display m-0 text-[clamp(30px,3vw,46px)] font-medium leading-[1.06] tracking-[-0.03em] text-jade-900 outline-none max-lg:sr-only lg:col-start-1 lg:row-start-1"
         >
-          <div {...roving.listProps} aria-label="Saved views" className="flex gap-4 overflow-x-auto border-b border-line px-4">
-            {TABS.map(([id, label]) => {
-              const on = s.tab === id;
-              return (
-                <button
-                  key={id}
-                  {...roving.tabProps(id)}
-                  onClick={() => setS((prev) => ({ ...prev, tab: id, page: 1, sel: null, ...fresh }))}
-                  className={cn(
-                    "-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-body",
-                    TAB_FOCUS,
-                    on ? "border-ink font-medium text-ink" : "border-transparent text-muted",
-                  )}
-                >
-                  {label} <span className="text-small text-muted">{inView(id).length}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="px-4 pb-2 pt-3">
-            <SearchField label="Search" placeholder="Name or case id" value={s.q} onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value, page: 1 }))} />
-          </div>
-          <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(s.tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
-            {paging.rows.map((r) => {
-              const on = p?.id === r.id;
-              const clock = clockWords(r);
-              return (
-                <div key={r.id} className={cn("relative flex min-h-[68px] items-start gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
-                  <div className="flex size-11 flex-none items-center justify-center">
-                    <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord} className="relative z-10 size-11 items-center justify-center">
-                      <Avatar person={r.seed} size={24} label="" />
-                    </RecordAvatar>
-                  </div>
-                  <button
-                    ref={on ? rowRef : undefined}
-                    aria-pressed={on}
-                    onClick={() => {
-                      retryLedger(r.id);
-                      setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }));
-                    }}
-                    className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 pr-2 text-left after:absolute after:inset-0 after:rounded-control"
-                  >
-                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                      <span className="font-semibold">{r.name}</span>
-                      {r.nameAr && (
-                        <span lang="ar" dir="rtl" className="text-muted">
-                          {r.nameAr}
-                        </span>
-                      )}
-                      <span className={cn("ml-auto whitespace-nowrap text-small", clock.over ? "font-medium text-negative" : "text-muted")}>
-                        {r.days} days · {clock.short}
-                      </span>
-                    </span>
-                    <span className="mt-0.5 block text-muted">{r.status}</span>
-                    {r.teachBackCallback && (
-                      <span className="mt-0.5 block text-small text-warning" data-testid="row-callback">
-                        {r.status === r.teachBackCallback.status ? "" : `${r.teachBackCallback.status} · `}Patient ref <span dir="ltr">{r.teachBackCallback.ref}</span>
-                      </span>
-                    )}
-                    {mixed && (
-                      <span className="mt-0.5 block text-small text-muted" data-testid="row-programme">
-                        {r.programmeName} · {r.providerName}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-            {list.length === 0 && <p className="m-2 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">Nobody left in this view.</p>}
-          </div>
-          <Pager paging={paging} label="Your list pages" testId="page-range" onPage={goPage} />
-          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
-          <div className="border-t border-rule px-4 py-3 text-small text-muted">
-            {s.tab === "call"
-              ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
-              : s.tab === "waiting"
-                ? `${list.length} waiting on someone else`
-                : `${list.length} with no owner`}
-          </div>
-        </section>
-
-        {p ? (
-          <section
-            aria-label="Open patient"
-            className={cn("min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-4 sm:p-pad lg:flex", showList ? "hidden" : "flex")}
+          {taskTitle(p)}
+        </h2>
+        <div className="col-start-2 row-start-1 flex gap-1 rounded-control bg-limestone-100 p-0.5 lg:self-center" role="group" aria-label="Case">
+          <button
+            type="button"
+            aria-label="Case details"
+            aria-expanded={s.facts}
+            aria-controls="today-facts"
+            onClick={() => setS((prev) => ({ ...prev, facts: !prev.facts }))}
+            className={cn("inline-flex size-11 cursor-pointer items-center justify-center rounded-control bg-transparent text-jade-700 hover:bg-jade-50 lg:size-9", s.facts && "bg-jade-100")}
           >
-            {removedNotice}
-            <button
-              onClick={() => setS((prev) => ({ ...prev, mobile: "list" }))}
-              className="-mt-1 mb-3 flex min-h-11 cursor-pointer items-center gap-2 self-start rounded-control bg-transparent pr-3 text-body text-ink lg:hidden"
+            <IdCard aria-hidden className="size-[18px]" strokeWidth={1.6} />
+          </button>
+          {p.hasRecord ? (
+            <Link
+              href={caseHref("/app/patients", p.id)}
+              aria-label="Open full record"
+              title="Open full record"
+              className="inline-flex size-11 items-center justify-center rounded-control text-jade-700 hover:bg-jade-50 lg:size-9"
             >
-              <span aria-hidden>‹</span>
-              Your list · {list.length}
+              <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled
+              aria-label="Full record not available for this case"
+              title="Full record not available for this case"
+              className="inline-flex size-11 items-center justify-center rounded-control bg-transparent text-limestone-500 lg:size-9"
+            >
+              <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
             </button>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="flex min-w-0 items-start gap-4">
-                <RecordAvatar id={p.id} name={p.name} linked={p.hasRecord}>
-                  <Avatar person={p.seed} size={56} label="" />
-                </RecordAvatar>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-x-3">
-                    <h2 ref={headingRef} data-focus="heading" tabIndex={-1} className="m-0 text-title font-semibold outline-none">
-                      {p.name}
-                    </h2>
-                    {p.nameAr && (
-                      <span lang="ar" dir="rtl" className="text-section text-muted">
-                        {p.nameAr}
-                      </span>
-                    )}
-                  </div>
-                  <p className="m-0 mt-1 text-muted">{[p.age, p.named ? p.short : null, p.programmeName, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}</p>
-                  {p.hasRecord && (
-                    <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center underline">
-                      Open record
-                    </Link>
-                  )}
-                </div>
-              </div>
-              <div className="sm:flex-none sm:text-right">
-                <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", clockWords(p).over ? "text-negative" : "text-ink")}>
-                    <NumberFlow value={p.days} />
-                  </span>
-                  <span className="text-muted">days since referral</span>
-                </div>
-                <div className={cn("mt-0.5 text-body sm:text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
-                  {clockWords(p).long}
-                </div>
-              </div>
-            </div>
+          )}
+        </div>
+        <p className="col-start-1 row-start-1 m-0 pt-2 text-body text-ink-soft lg:col-span-full lg:row-start-2 lg:mt-3 lg:max-w-[68ch] lg:pt-0">{taskSentence(p)}</p>
+      </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-gap">
-              <Button
-                variant="cta"
-                size="touch"
-                disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
-                onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
-                className={cn("h-12 w-full px-5 text-section sm:h-11 sm:w-auto", callingNow && "bg-ink-soft")}
-              >
-                <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5.5 2.5l1.5 3-1.5 1c.8 1.6 2 2.8 3.5 3.5l1-1.5 3 1.5-.5 2c-.2.6-.8 1-1.4.9C6.6 12.4 3.6 9.4 3.1 4.9c-.1-.6.3-1.2.9-1.4z" />
-                </svg>
-                {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
-                {callingNow ? (
-                  <span>Logging call · {first}</span>
-                ) : (
-                  <span>
-                    Log call<span className="sr-only"> · {first}</span>
-                  </span>
-                )}
-              </Button>
-              <span className="hidden flex-1 sm:block" />
+      {(
+        <dl id="today-facts" data-testid="case-facts" hidden={!s.facts} className="m-0 mt-3 grid max-w-[560px] grid-cols-1 gap-x-6 gap-y-1.5 rounded-card border border-line bg-surface p-3 text-small sm:grid-cols-2">
+          <Fact label="Owner" value={p.owner} />
+          <Fact label="Contact permission" value={p.contactBlocked ? "On hold · denial or opt-out recorded" : CONSENT_WORDS[p.consent]} warn={p.contactBlocked || p.consent !== "granted"} />
+          <Fact label="Texts" value={p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"} />
+          <Fact label="Case" value={p.short} ltr />
+          {p.named && <Fact label="Patient" value={p.name} />}
+          <Fact label="Programme" value={`${p.programmeName} · ${p.providerName}`} />
+          <Fact label="Referred" value={formatDay(p.referralDay)} />
+          <Fact label="Deadline" value={p.deadline === null ? "Routine interval, no overdue clock" : `Day ${p.deadline} · ${formatDay(p.referralDay + p.deadline)}`} />
+          <Fact label="Next" value={p.next} />
+        </dl>
+      )}
+
+      <p className={cn("m-0 mt-2 text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
+        <span data-testid="lead-days" data-value={p.days} className="tabular-nums">
+          {p.days}
+        </span>{" "}
+        days since referral · {clockWords(p).long}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Button
+          variant="cta"
+          size="touch"
+          disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
+          onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
+          className={cn("px-5", callingNow && "bg-ink-soft")}
+        >
+          <Phone aria-hidden strokeWidth={1.8} />
+          {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
+          {callingNow ? (
+            <span>Logging call · {first}</span>
+          ) : (
+            <span>
+              Log call<span className="sr-only"> · {first}</span>
+            </span>
+          )}
+        </Button>
+        {contact && (
+          <span data-testid="contact-status" className={cn("inline-flex items-center gap-1.5 text-small", contact.tone === "ok" ? "text-jade-700" : "font-medium text-warning")}>
+            {contact.tone === "ok" ? <Check aria-hidden className="size-4" /> : <CircleAlert aria-hidden className="size-4" />}
+            {contact.label}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          variant="quiet"
+          size="touch"
+          disabled={writing || ledgerInvalid}
+          onClick={() =>
+            deferred(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
+              action: "snooze",
+              until: fromNow(1),
+              reason: "Snoozed to tomorrow",
+            })
+          }
+        >
+          Snooze to tomorrow
+        </Button>
+        {p.view === "none" ? (
+          <Button
+            variant="quiet"
+            size="touch"
+            disabled={writing || ledgerInvalid}
+            onClick={() =>
+              log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
+                action: "assign_owner",
+              })
+            }
+          >
+            Take this patient
+          </Button>
+        ) : (
+          <Button
+            variant="quiet"
+            size="touch"
+            disabled={writing || ledgerInvalid}
+            onClick={() =>
+              deferred(
+                p,
+                `Handed to ${HANDOFF_OWNER}`,
+                { view: "waiting", status: `With ${HANDOFF_OWNER}`, owner: HANDOFF_OWNER },
+                `Logged: Handed to ${HANDOFF_OWNER}`,
+                `${first} moved to Waiting`,
+                { action: "assign_owner", owner: HANDOFF_OWNER },
+              )
+            }
+          >
+            Hand to {HANDOFF_OWNER}
+          </Button>
+        )}
+      </div>
+
+      {ledgerInvalid && (
+        /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
+        <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
+          <p className="m-0 font-medium text-warning">Case ledger not trustworthy: this patient&rsquo;s state here is not authoritative</p>
+          <p className="m-0 mt-1">
+            The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
+            {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
+            operator restores the ledger.
+          </p>
+          {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
+        </div>
+      )}
+
+      {refusal?.id === p.id && (
+        <p role="alert" className="m-0 mt-4 text-warning" data-testid="action-refused">
+          {refusal.text}
+        </p>
+      )}
+
+      <AnimatePresence initial={false}>
+        {last && (
+          <motion.div
+            key="logged"
+            role="status"
+            initial={reduce ? false : { opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduce ? 0 : 0.15 }}
+            className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
+          >
+            <span>
+              <span className="font-medium">{last.head}</span> · {last.move}
+              {live ? (
+                <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+              ) : (
+                <>
+                  {" "}·{" "}
+                  <button
+                    data-focus="undo"
+                    onClick={() => undoLast(last)}
+                    className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
+                  >
+                    Undo
+                  </button>
+                </>
+              )}
+            </span>
+            {held && held.id === p.id && (
               <Button
                 variant="quiet"
                 size="touch"
-                className="max-sm:flex-1"
-                disabled={writing || ledgerInvalid}
-                onClick={() =>
-                  deferred(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true, awaitingNext: false }, "Logged: Snoozed to tomorrow", toEnd, {
-                    action: "snooze",
-                    until: fromNow(1),
-                    reason: "Snoozed to tomorrow",
-                  })
-                }
-              >
-                Snooze to tomorrow
-              </Button>
-              {p.view === "none" ? (
-                <Button
-                  variant="quiet"
-                  size="touch"
-                  className="max-sm:flex-1"
-                  disabled={writing || ledgerInvalid}
-                  onClick={() =>
-                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: SESSION_OWNER }, "Logged: Yours now", `${first} moved to To call`, {
-                      action: "assign_owner",
-                    })
-                  }
-                >
-                  Take this patient
-                </Button>
-              ) : (
-                <Button
-                  variant="quiet"
-                  size="touch"
-                  className="max-sm:flex-1"
-                  disabled={writing || ledgerInvalid}
-                  onClick={() =>
-                    deferred(
-                      p,
-                      `Handed to ${HANDOFF_OWNER}`,
-                      { view: "waiting", status: `With ${HANDOFF_OWNER}`, owner: HANDOFF_OWNER },
-                      `Logged: Handed to ${HANDOFF_OWNER}`,
-                      `${first} moved to Waiting`,
-                      { action: "assign_owner", owner: HANDOFF_OWNER },
-                    )
-                  }
-                >
-                  Hand to {HANDOFF_OWNER}
-                </Button>
-              )}
-            </div>
-
-            {ledgerInvalid && (
-              /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
-              <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-                <p className="m-0 font-medium text-warning">Case ledger not trustworthy: this patient&rsquo;s state here is not authoritative</p>
-                <p className="m-0 mt-1">
-                  The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
-                  {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
-                  operator restores the ledger.
-                </p>
-                {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
-              </div>
-            )}
-
-            {refusal?.id === p.id && (
-              <p role="alert" className="m-0 mt-4 text-warning" data-testid="action-refused">
-                {refusal.text}
-              </p>
-            )}
-
-            <AnimatePresence initial={false}>
-              {last && (
-                <motion.div
-                  key="logged"
-                  role="status"
-                  initial={reduce ? false : { opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduce ? 0 : 0.15 }}
-                  className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
-                >
-                  <span>
-                    <span className="font-medium">{last.head}</span> · {last.move}
-                    {live ? (
-                      <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
-                    ) : (
-                      <>
-                        {" "}·{" "}
-                        <button
-                          data-focus="undo"
-                          onClick={() => undoLast(last)}
-                          className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
-                        >
-                          Undo
-                        </button>
-                      </>
-                    )}
-                  </span>
-                  {held && held.id === p.id && (
-                    <Button
-                      variant="quiet"
-                      size="touch"
-                      data-testid="open-destination"
-                      onClick={() => {
-                        setWant({ k: "heading" });
-                        setS((prev) => ({ ...prev, tab: held.view, page: 1, sel: held.id }));
-                      }}
-                    >
-                      Open {TABS.find(([id]) => id === held.view)![1]}
-                    </Button>
-                  )}
-                  {!stage && nextUp && (
-                    <Button
-                      variant="quiet"
-                      size="touch"
-                      className="sm:ml-auto"
-                      onClick={() => {
-                        setWant({ k: "heading" });
-                        setS((prev) => ({ ...prev, sel: nextUp.id, ...fresh }));
-                      }}
-                    >
-                      Next patient: {nextUp.name}
-                    </Button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {p && stage === "elsewhere" && !p.retrieval && (
-              <div className="mt-4">
-                <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
-                  Done elsewhere
-                </h3>
-                <ElsewhereForm
-                  owner={p.owner === "No owner" ? "" : p.owner}
-                  procedure={p.procedure ?? ""}
-                  nowMs={s.callbackFrom}
-                  disabled={writing || ledgerInvalid}
-                  onCancel={() => setS((prev) => ({ ...prev, calling: null, stage: "reached" }))}
-                  onRecord={(action) => {
-                    const words = reconciliationWords(action, new Date().toISOString().slice(0, 10));
-                    log(
-                      p,
-                      `Reported done elsewhere: ${action.procedure} at ${action.provider}`,
-                      { view: "waiting", status: words.status, next: words.next, awaitingNext: false, retrieval: { owner: action.retrieval_owner, due: action.retrieval_due, overdue: words.overdue } },
-                      "Logged: Done elsewhere",
-                      `${first} moved to Waiting for the record`,
-                      action,
-                    );
-                  }}
-                />
-              </div>
-            )}
-
-            {p.communicationStep && !p.contactBlocked && !p.retrieval && stage !== "elsewhere" && (
-              <CommunicationForm
-                key={`${p.id}-${p.communicationStep}`}
-                step={p.communicationStep}
-                template={p.notificationTemplate}
-                disabled={writing || ledgerInvalid}
-                onRecord={(action) => {
-                  const notify = action.action === "initial_notification";
-                  log(
-                    p,
-                    communicationWords(action.action, action),
-                    notify
-                      ? { status: "Result told · receipt not confirmed yet", next: "Call to confirm they received the result", communicationStep: "receipt", awaitingNext: false }
-                      : { status: "Receipt confirmed · understanding not checked", communicationStep: undefined, awaitingNext: false },
-                    notify ? "Logged: Result notification" : "Logged: Receipt acknowledged",
-                    notify ? "Next: confirm they received it" : "Next: the following step on the referral",
-                    action,
-                  );
+                data-testid="open-destination"
+                onClick={() => {
+                  setWant({ k: "heading" });
+                  goQueue(held.view, held.id);
                 }}
-              />
+              >
+                Open {TABS.find(([id]) => id === held.view)![1]}
+              </Button>
             )}
-
-            {chips.length > 0 && stage !== "elsewhere" && (
-              <div className="mt-4">
-                <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
-                  {chipsTitle}
-                </h3>
-                <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
-                  {chips.map(([label, pick]) => (
-                    <Button
-                      key={label}
-                      variant="chip"
-                      size="touch"
-                      disabled={writing || ledgerInvalid}
-                      onClick={pick}
-                      className={chipsLive ? "border-ink" : "border-control"}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            {!stage && nextUp && (
+              <Button
+                variant="quiet"
+                size="touch"
+                onClick={() => {
+                  setWant({ k: "heading" });
+                  setS((prev) => ({ ...prev, sel: nextUp.id, note: null, ...fresh }));
+                }}
+              >
+                Next case: {nextUp.short}
+              </Button>
             )}
-
-            {p.teachBackCallback && (
-              <div data-testid="teach-back-callback" className="mt-4 rounded-card border border-warning p-3">
-                <p className="m-0 font-medium text-warning">
-                  {p.teachBackCallback.status} · patient ref <span dir="ltr">{p.teachBackCallback.ref}</span>
-                </p>
-                <p className="m-0 mt-1">
-                  Call to explain the next step. Logging a call does not resolve this task;{" "}
-                  {p.hasRecord ? (
-                    <Link href={`${caseHref("/app/patients", p.id)}#teach-back-callbacks`} className="underline">
-                      record the consultation outcome on the case page
-                    </Link>
-                  ) : (
-                    "record the consultation outcome on the case page"
-                  )}
-                  .
-                </p>
-              </div>
-            )}
-
-            <Track days={p.days} deadline={p.deadline} referralDay={p.referralDay} />
-
-            <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
-              <Field label="Texts" value={p.textsStopped ? "Stopped by patient" : p.contactBlocked ? "Contact blocked · denial or opt-out recorded" : p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
-              <Field label="Owner" value={p.owner} />
-              <Field label="Next" value={p.next} />
-            </dl>
-
-            {ledgerRead?.patient && (
-              <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
-                <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
-                <p className="m-0 mt-1 text-muted">
-                  Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
-                </p>
-                {ledgerRead.patient.slot_selection.status === "selected" && (
-                  <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
-                )}
-              </section>
-            )}
-
-            {live && ledgerRead?.bookingPanel && (
-              <div className="mt-6" aria-label="Simulated booking">
-                <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live retrievalPending={!!p.retrieval} onProjection={(projection) => bookingProjection(p.id, projection)} />
-              </div>
-            )}
-
-            <div className="mt-7">
-              <h3 data-focus="contacts" tabIndex={-1} className="m-0 mb-3 text-section font-medium outline-none">
-                Contacts
-              </h3>
-              {ledgerError && (
-                <div role="status" data-testid="ledger-read-failed" className="mb-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-                  <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
-                  <Button
-                    variant="quiet"
-                    size="touch"
-                    onClick={() => {
-                      // The button goes while the ledger is read again; focus stays in the Contacts section.
-                      setWant({ k: "contacts" });
-                      retryLedger(p.id);
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              )}
-              <div aria-live="polite">
-                <SealedChain nodes={trail} />
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section aria-label="Open patient" className={cn("min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-4 sm:p-pad lg:block", showList ? "hidden" : "block")}>
-            <button onClick={() => setS((prev) => ({ ...prev, mobile: "list" }))} className="mb-3 flex min-h-11 cursor-pointer items-center gap-2 bg-transparent text-body text-ink lg:hidden">
-              <span aria-hidden>‹</span>
-              Your list
-            </button>
-            {removedNotice}
-            <h2 className="m-0 text-section font-medium">Nobody to open</h2>
-            <p className="m-0 mt-2 text-muted">This view is empty. Choose another tab.</p>
-          </section>
+          </motion.div>
         )}
+      </AnimatePresence>
+
+      {stage === "elsewhere" && !p.retrieval && (
+        <div className="mt-4">
+          <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
+            Done elsewhere
+          </h3>
+          <ElsewhereForm
+            owner={p.owner === "No owner" ? "" : p.owner}
+            procedure={p.procedure ?? ""}
+            nowMs={s.callbackFrom}
+            disabled={writing || ledgerInvalid}
+            onCancel={() => setS((prev) => ({ ...prev, calling: null, stage: "reached" }))}
+            onRecord={(action) => {
+              const words = reconciliationWords(action, new Date().toISOString().slice(0, 10));
+              log(
+                p,
+                `Reported done elsewhere: ${action.procedure} at ${action.provider}`,
+                { view: "waiting", status: words.status, next: words.next, awaitingNext: false, retrieval: { owner: action.retrieval_owner, due: action.retrieval_due, overdue: words.overdue } },
+                "Logged: Done elsewhere",
+                `${first} moved to Waiting for the record`,
+                action,
+              );
+            }}
+          />
+        </div>
+      )}
+
+      {p.communicationStep && !p.contactBlocked && !p.retrieval && stage !== "elsewhere" && (
+        <CommunicationForm
+          key={`${p.id}-${p.communicationStep}`}
+          step={p.communicationStep}
+          template={p.notificationTemplate}
+          disabled={writing || ledgerInvalid}
+          onRecord={(action) => {
+            const notify = action.action === "initial_notification";
+            log(
+              p,
+              communicationWords(action.action, action),
+              notify
+                ? { status: "Result told · receipt not confirmed yet", next: "Call to confirm they received the result", communicationStep: "receipt", awaitingNext: false }
+                : { status: "Receipt confirmed · understanding not checked", communicationStep: undefined, awaitingNext: false },
+              notify ? "Logged: Result notification" : "Logged: Receipt acknowledged",
+              notify ? "Next: confirm they received it" : "Next: the following step on the referral",
+              action,
+            );
+          }}
+        />
+      )}
+
+      {chips.length > 0 && stage !== "elsewhere" && (
+        <div className="mt-4">
+          <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
+            {chipsTitle}
+          </h3>
+          <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
+            {chips.map(([label, choose]) => (
+              <Button key={label} variant="chip" size="touch" disabled={writing || ledgerInvalid} onClick={choose} className={chipsLive ? "border-ink" : "border-control"}>
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {p.teachBackCallback && (
+        <div data-testid="teach-back-callback" className="mt-4 rounded-card border border-warning p-3">
+          <p className="m-0 font-medium text-warning">
+            {p.teachBackCallback.status} · patient ref <span dir="ltr">{p.teachBackCallback.ref}</span>
+          </p>
+          <p className="m-0 mt-1">
+            Call to explain the next step. Logging a call does not resolve this task;{" "}
+            {p.hasRecord ? (
+              <Link href={`${caseHref("/app/patients", p.id)}#teach-back-callbacks`} className="underline">
+                record the consultation outcome on the case page
+              </Link>
+            ) : (
+              "record the consultation outcome on the case page"
+            )}
+            .
+          </p>
+        </div>
+      )}
+
+      {ledgerRead?.patient && (
+        <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
+          <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
+          <p className="m-0 mt-1 text-muted">
+            Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
+          </p>
+          {ledgerRead.patient.slot_selection.status === "selected" && (
+            <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
+          )}
+        </section>
+      )}
+
+      {live && ledgerRead?.bookingPanel && (
+        <div className="mt-6" aria-label="Simulated booking">
+          <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live retrievalPending={!!p.retrieval} onProjection={(projection) => bookingProjection(p.id, projection)} />
+        </div>
+      )}
+    </section>
+  ) : (
+    <div
+      key="case"
+      data-testid="no-case"
+      style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
+      className="min-w-0 px-4 py-4 lg:flex lg:flex-col lg:justify-center lg:px-[clamp(20px,2.4vw,40px)] lg:py-8"
+    >
+      {removedNotice}
+      {items.length === 0 ? (
+        <p className="m-0 text-body" role="status" data-testid="today-scope-empty">
+          No open cases for {scope}. Choose another programme or provider.
+        </p>
+      ) : (
+        <>
+          <h2 className="staff-display m-0 text-[clamp(24px,2.2vw,32px)] font-medium text-jade-900">{q ? "No case matches" : "Nothing in this queue"}</h2>
+          <p className="m-0 mt-2 text-muted">{q ? "Change or clear the search to choose a case." : "Choose another queue under Today."}</p>
+        </>
+      )}
+    </div>
+  );
+
+  const activityPane = p && (
+    <section
+      key="activity"
+      aria-label="Case history"
+      style={{ gridColumn: "1 / -1", gridRow: rightRows + 1 }}
+      className={cn("min-w-0 border-line max-lg:bg-jade-50 max-lg:px-4 max-lg:pb-3 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:border-t lg:px-[clamp(20px,2.4vw,40px)] lg:pb-8 lg:pt-2", fold)}
+    >
+      <button
+        type="button"
+        aria-expanded={s.hist}
+        aria-controls="today-activity"
+        onClick={() => setS((prev) => ({ ...prev, hist: !prev.hist }))}
+        className="flex min-h-11 w-full cursor-pointer items-center gap-2 bg-transparent text-left text-body font-medium text-jade-800 lg:hidden"
+      >
+        <ChevronDown aria-hidden className={cn("size-4 transition-transform", !s.hist && "-rotate-90")} />
+        Activity
+      </button>
+      <div id="today-activity" className={cn(!s.hist && "max-lg:hidden")}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule">
+          <h3 data-focus="contacts" tabIndex={-1} className="-mb-px m-0 border-b-2 border-jade-700 py-2.5 text-body font-semibold text-jade-900 outline-none">
+            Activity
+          </h3>
+          {p.hasRecord && (
+            <Link href={`${caseHref("/app/patients", p.id)}/audit`} className="inline-flex min-h-11 items-center gap-1.5 text-small font-medium text-jade-700">
+              Audit trail
+              <ArrowRight aria-hidden className="size-4" />
+            </Link>
+          )}
+        </div>
+        {ledgerError && (
+          <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+            <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+            <Button
+              variant="quiet"
+              size="touch"
+              onClick={() => {
+                // The button goes while the ledger is read again; focus stays in the Activity section.
+                setWant({ k: "contacts" });
+                retryLedger(p.id);
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+        <ol aria-live="polite" className="m-0 mt-4 list-none p-0 lg:grid lg:auto-cols-[minmax(180px,1fr)] lg:grid-flow-col lg:overflow-x-auto lg:pb-1">
+          {activity.map((ev, i) => {
+            const open = s.note === ev.id;
+            return (
+              <li key={ev.id} className="relative min-w-0 pb-3 pl-6 lg:pl-0 lg:pr-4 lg:pt-6">
+                {/* The rail: down the side on a phone, across the top from lg up. */}
+                <span aria-hidden className={cn("absolute bg-jade-300 max-lg:bottom-0 max-lg:left-[5px] max-lg:top-2 max-lg:w-px lg:left-0 lg:right-0 lg:top-[5px] lg:h-px", i === activity.length - 1 && "max-lg:hidden lg:right-auto lg:w-2")} />
+                <span aria-hidden className={cn("absolute left-0 top-1.5 size-[11px] rounded-full border border-jade-400 lg:top-0", ev.current ? "bg-jade-800 ring-2 ring-jade-200" : "bg-jade-50")} />
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() => setS((prev) => ({ ...prev, note: prev.note === ev.id ? null : ev.id }))}
+                  className="block w-full min-w-0 cursor-pointer bg-transparent p-0 text-left"
+                >
+                  <span className="block font-medium text-ink">{ev.what}</span>
+                  <span className="mt-0.5 flex min-h-6 items-center gap-1 text-small text-muted">
+                    {ev.when}
+                    <ChevronDown aria-hidden className={cn("size-3.5 flex-none transition-transform", open && "rotate-180")} />
+                  </span>
+                </button>
+                <p hidden={!open} className="m-0 mt-1 text-small text-ink-soft">
+                  {ev.note}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
       </div>
+    </section>
+  );
+
+  const rowEls = paging.rows.map((r, i) => {
+    const on = p?.id === r.id;
+    const title = taskTitle(r);
+    const over = clockWords(r).over;
+    return (
+      <div key={r.id} style={rowAt(i)} className={cn("min-w-0 border-t border-rule", right, on && "lg:bg-jade-100")}>
+        <button
+          data-case-row={r.short}
+          aria-expanded={on && !s.collapsed}
+          aria-controls={on ? caseId : undefined}
+          onClick={() => pick(r)}
+          className={cn(
+            "flex min-h-[52px] w-full cursor-pointer items-start gap-2 bg-transparent px-4 py-2.5 text-left hover:bg-jade-50",
+            on && "bg-jade-50 shadow-[inset_3px_0_var(--color-jade-600)] lg:bg-jade-100",
+          )}
+        >
+          <ChevronDown aria-hidden className={cn("mt-1 size-4 flex-none text-muted transition-transform lg:hidden", on && !s.collapsed && "rotate-180")} />
+          <span className="min-w-0 flex-1">
+            <span className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
+              <span className="font-semibold text-ink">{title}</span>
+              <span dir="ltr" className="whitespace-nowrap text-small tabular-nums text-muted">
+                {r.short}
+              </span>
+            </span>
+            {(r.named || r.status !== title || over) && (
+              <span className="mt-0.5 block text-small text-muted">
+                {r.named && (
+                  <>
+                    {r.name}
+                    {r.nameAr && (
+                      <span lang="ar" dir="rtl" className="ml-1.5">
+                        {r.nameAr}
+                      </span>
+                    )}
+                    {" · "}
+                  </>
+                )}
+                {r.status !== title && <>{r.status}</>}
+                {over && <span className="text-negative">{r.status !== title || r.named ? " · " : ""}{clockWords(r).short}</span>}
+              </span>
+            )}
+            {r.teachBackCallback && (
+              <span className="mt-0.5 block text-small text-warning" data-testid="row-callback">
+                {r.status === r.teachBackCallback.status ? "" : `${r.teachBackCallback.status} · `}Patient ref <span dir="ltr">{r.teachBackCallback.ref}</span>
+              </span>
+            )}
+            {mixed && (
+              <span className="mt-0.5 block text-small text-muted" data-testid="row-programme">
+                {r.programmeName} · {r.providerName}
+              </span>
+            )}
+          </span>
+        </button>
+      </div>
+    );
+  });
+
+  /* The open case and its activity follow the open row (or lead the list when the open case was moved off it). */
+  const at = openAt >= 0 ? openAt + 1 : 0;
+  // One wrapper, laid out as if absent, so the open case and its history read as one unit wherever the grid puts them.
+  const opened = (
+    <div key="opened" data-testid="today-open" className="contents">
+      {casePane}
+      {activityPane}
+    </div>
+  );
+  const listBody = [...rowEls.slice(0, at), opened, ...rowEls.slice(at)];
+
+  return (
+    <div ref={root}>
+      {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-4" />}
+      {pendingNotice}
+
+      <div
+        id="worklist"
+        tabIndex={-1}
+        data-testid="today-sheet"
+        style={{ gridTemplateRows: `repeat(${rightRows - 1}, auto) minmax(0, 1fr) auto` }}
+        className="flex flex-col overflow-clip rounded-card border border-line bg-surface lg:grid lg:min-h-[560px] lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,1fr)]"
+      >
+        <div style={{ gridRow: 1 }} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", right)}>
+          <h2 id="today-queue" className="staff-display m-0 whitespace-nowrap text-[22px] font-medium text-jade-900">
+            {queueLabel} <span className="sr-only">· {list.length}</span>
+          </h2>
+          <label className="flex min-w-[150px] flex-1 items-center gap-2 rounded-control border border-input bg-surface px-2.5 focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue">
+            <Search aria-hidden className="size-4 flex-none text-muted" />
+            <span className="sr-only">Find a case or task</span>
+            <input
+              ref={searchRef}
+              type="search"
+              placeholder="Find a case or task"
+              aria-keyshortcuts="/"
+              value={s.q}
+              onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value, page: 1, collapsed: false }))}
+              className="h-11 min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-hidden placeholder:text-muted placeholder:opacity-100 lg:h-10"
+            />
+            <kbd aria-hidden className="hidden rounded-chip border border-line bg-limestone-100 px-1.5 text-small text-muted sm:inline">
+              /
+            </kbd>
+          </label>
+        </div>
+        <div className="contents">
+          {listBody}
+          {list.length === 0 && (
+            <p style={rowAt(0)} className={cn("m-0 border-t border-rule px-4 py-3 text-muted", right)}>
+              {q ? "No case matches this search." : "Nobody left in this queue."}
+            </p>
+          )}
+        </div>
+        <div style={{ gridRow: rightRows }} className={cn("min-h-0", right, "max-lg:hidden")} aria-hidden />
+        <div style={{ gridRow: rightRows - 1 }} className={cn("border-t border-rule", right)}>
+          <Pager paging={paging} label="Queue pages" testId="page-range" onPage={goPage} />
+          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
+          <p className="m-0 px-4 py-3 text-small text-muted" data-testid="queue-summary">
+            {tab === "call"
+              ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
+              : tab === "waiting"
+                ? `${list.length} waiting on someone else`
+                : `${list.length} with no owner`}
+          </p>
+        </div>
+      </div>
+      {aside && <div className="mt-2">{aside}</div>}
     </div>
   );
 }
 
-function Track({ days, deadline, referralDay }: { days: number; deadline: number | null; referralDay: number }) {
-  if (deadline === null) {
-    return <p className="m-0 mt-5 text-small text-muted">Referred {formatDay(referralDay)} · routine interval, no overdue clock</p>;
-  }
-  const SCALE = Math.round((deadline * 40) / 31);
-  const fill = (Math.min(days, deadline) / SCALE) * 100;
-  const over = (Math.min(Math.max(0, days - deadline), SCALE - deadline) / SCALE) * 100;
-  const tick = (deadline / SCALE) * 100;
+function Fact({ label, value, warn = false, ltr = false }: { label: string; value: string; warn?: boolean; ltr?: boolean }) {
   return (
-    <div role="img" aria-label={`Day ${days} of ${deadline} since referral${days > deadline ? `, ${days - deadline} over` : ""}`} className="mt-5">
-      <div className="relative h-4">
-        <span className="absolute inset-x-0 top-1 h-2 rounded-chip bg-raised" />
-        <span className="absolute left-0 top-1 h-2 rounded-l-chip bg-hue" style={{ width: `${fill}%` }} />
-        <span className="absolute top-1 h-2 rounded-r-chip bg-negative" style={{ left: `${tick}%`, width: `${over}%` }} />
-        <span className="absolute top-0 h-4 w-0.5 bg-ink" style={{ left: `${tick}%` }} />
-      </div>
-      <div className="relative mt-1.5 h-4 text-small tabular-nums text-muted">
-        <span className="absolute left-0">Referred {formatDay(referralDay)}</span>
-        <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${tick}%` }}>
-          Day {deadline} · {formatDay(referralDay + deadline)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
-  return (
-    <div>
-      <dt className="text-small text-muted">{label}</dt>
-      <dd className={cn("m-0 mt-1 font-medium", warn ? "text-warning" : "text-ink")}>{value}</dd>
+    <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
+      <dt className="text-muted">{label}</dt>
+      <dd dir={ltr ? "ltr" : undefined} className={cn("m-0 text-right font-medium", warn ? "text-warning" : "text-ink")}>
+        {value}
+      </dd>
     </div>
   );
 }

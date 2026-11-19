@@ -265,7 +265,7 @@ test.describe("referral answers, live mock", () => {
 
     pane = await open(page, "770");
     await expect(pane.getByRole("button", { name: "Accept referral", exact: true })).toHaveCount(0);
-    await expect(page.getByRole("tab", { name: /^Accepted 1/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "SKMC endoscopy, current" })).toContainText("Accepted");
     await noSeriousAxe(page);
   });
 
@@ -279,33 +279,46 @@ test.describe("referral answers, live mock", () => {
     await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
     expect((await ledger())[ids[1]].referral?.conditions).toEqual(["arabic_interpreter", "female_endoscopist"]);
     pane = await open(page, "771");
-    await page.getByRole("tab", { name: /^Accepted 1/ }).click();
     await expect(pane).toContainText("Arabic interpreter");
     await expect(pane).toContainText("Female endoscopist");
   });
 
   test("a stale Return is refused without changing the inbox; a fresh one hands the packet to the GP, who answers it", async ({ page }) => {
     let pane = await open(page, "772");
+    await pane.getByRole("button", { name: "Return with reason" }).click();
     await pane.getByRole("button", { name: "Return to GP" }).click();
-    await pane.getByRole("button", { name: "Blood thinner plan missing" }).click();
+    await expect(pane.getByRole("alert")).toHaveText("Choose a reason before you return it. Nothing was sent.");
+    expect((await ledger())[ids[2]].events).toHaveLength(0);
+    await pane.getByRole("radio", { name: "Blood thinner plan missing" }).check();
     await fetch(`http://127.0.0.1:${MOCK_PORT}/mock/fail-next`, { method: "POST", body: JSON.stringify({ status: 409 }) });
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByRole("alert")).toContainText("Not saved");
     expect((await ledger())[ids[2]].events).toHaveLength(0);
 
-    pane = await open(page, "772");
-    await pane.getByRole("button", { name: "Return to GP" }).click();
-    await pane.getByRole("button", { name: "Blood thinner plan missing" }).click();
+    // The user flow: from the full inbox, searched, into the referral and back.
+    await page.goto(`${NEXT_URL}/app/referrals?view=inbox`);
+    const box = page.getByRole("searchbox", { name: "Search case id" });
+    await box.fill("772");
+    await box.press("Enter");
+    await expect(page).toHaveURL(/q=772&view=inbox$/);
+    await expect(page.getByTestId("page-range")).toHaveText("1 referral");
+    await page.getByRole("link", { name: "AHS-sr-772" }).click();
+    pane = page.getByRole("region", { name: "Open referral" });
+    await pane.getByRole("button", { name: "Return with reason" }).click();
+    await pane.getByRole("radio", { name: "Blood thinner plan missing" }).check();
     await pane.getByRole("button", { name: "Return to GP" }).click();
     await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
-    pane = await open(page, "772");
-    await page.getByRole("tab", { name: /^Waiting on GP 1/ }).click();
-    await expect(pane).toContainText("Returned to the GP: blood thinner plan missing");
+    await expect(page.getByTestId("handoff-arrow")).toHaveAttribute("data-direction", "back");
+    const gp = page.getByRole("region", { name: /GP, current$/ });
+    await expect(gp).toContainText("Waiting on GP");
+    await expect(gp).toContainText("Booking held");
+    await expect(gp).toContainText("Returned to the GP: blood thinner plan missing");
     await expect(pane).toContainText("Act on the return");
     await expect(pane.getByRole("button", { name: "Accept referral", exact: true })).toHaveCount(0);
 
-    // The responsible referrer's view of the same packet.
-    await page.goto(`${NEXT_URL}/app/referrals/returned`);
+    // The responsible referrer's view of the same packet, opened from the hand-off.
+    await gp.getByRole("link", { name: "Open the GP view" }).click();
+    await expect(page).toHaveURL(/\/app\/referrals\/returned\?case=/);
     await expect(page.locator("[data-honesty=built]")).toContainText("Referrer answers: built");
     const card = page.getByRole("article");
     await expect(card).toContainText("Returned bySKMC endoscopy");
@@ -316,6 +329,13 @@ test.describe("referral answers, live mock", () => {
     await expect(page.getByRole("article")).toContainText("AcknowledgedYes");
     // Acknowledgement alone leaves the hand-off waiting on the GP.
     await expect(page.getByRole("article")).toContainText("Act on the return");
+    // Back to the same inbox state: the search is kept and the row shows the acknowledgement.
+    await page.getByRole("link", { name: "Back to inbox" }).click();
+    await expect(page).toHaveURL(/q=772&view=inbox&case=/);
+    await expect(page.getByRole("searchbox", { name: "Search case id" })).toHaveValue("772");
+    await expect(page.getByRole("row", { name: /AHS-sr-772/ })).toContainText("Acknowledged by GP");
+    await noSeriousAxe(page);
+    await page.goto(`${NEXT_URL}/app/referrals/returned`);
     await page.getByRole("radio", { name: "Manage in primary care" }).check();
     await page.getByRole("button", { name: "Send answer" }).click();
     await expect(page.getByRole("article").getByRole("alert")).toBeVisible();
@@ -328,7 +348,7 @@ test.describe("referral answers, live mock", () => {
     expect((await ledger())[ids[2]].events).toHaveLength(3);
 
     pane = await open(page, "772");
-    await expect(page.getByRole("tab", { name: /^Waiting on GP 0/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: /GP, current$/ })).toContainText("The GP has acted");
     await noSeriousAxe(page);
   });
 
@@ -365,9 +385,7 @@ test.describe("referral answers, live mock", () => {
 
     // The receiving unit's view of the same packet: the referrer has acted, the canonical packet stays as it was.
     await page.goto(`${NEXT_URL}/app/referrals?${scope}`);
-    await expect(page.getByRole("tab", { name: /^Waiting on referrer 0/ })).toBeVisible();
-    await page.getByRole("tab", { name: /^All 1/ }).click();
-    await page.getByText(/Returned by Eye clinic, regional hospital · the referrer has acted/).click();
+    await expect(page.getByRole("region", { name: /current$/ })).toContainText("The referrer has acted");
     const pane = page.getByRole("region", { name: "Open referral" });
     await expect(pane).toContainText("The referrer has acted");
     await expect(pane).toContainText("Send the information requested. Answered");

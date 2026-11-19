@@ -11,16 +11,36 @@ const DISCLOSE = { duration: 0.16, ease: [0.2, 0.7, 0.2, 1] } as const;
  * DOM so aria-controls always resolves; while closed or closing it is inert (out of the tab order and
  * the accessibility tree) and ends hidden.
  */
-export function SourceHeading({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+export function SourceHeading({
+  id,
+  title,
+  sub,
+  display = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  /** A short line under the heading. */
+  sub?: React.ReactNode;
+  /** The staff display face, for a card's lead heading. */
+  display?: boolean;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const noteId = useId();
   const reduce = useReducedMotionConfig();
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id={id} className="m-0 text-section font-medium">
-          {title}
-        </h2>
+        <div className="min-w-0">
+          <h2
+            id={id}
+            className={display ? "staff-display m-0 text-[clamp(23px,2.2vw,36px)] leading-[1.1] text-jade-900" : "m-0 text-section font-medium"}
+          >
+            {title}
+          </h2>
+          {sub && <p className="m-0 mt-1 text-small text-muted">{sub}</p>}
+        </div>
         {/* Touch widths get a 44px hit area of transparent padding; the negative margin keeps the row's compact height. */}
         <button
           type="button"

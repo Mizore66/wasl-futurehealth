@@ -56,6 +56,34 @@
   --font-sans: "Geist", var(--font-plex-arabic), var(--font-geist), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
   --font-arabic: var(--font-plex-arabic), "IBM Plex Sans Arabic", sans-serif;
+  /* Staff workspace display face (titles and headings): the approved jade & limestone design. */
+  --font-display: "Iowan Old Style", "Baskerville", Georgia, serif;
+
+  /* Jade & limestone (approved staff redesign, wasl-ui-study/appearance.css). Roles in the comments. */
+  --color-jade-50: #f0f6f0; /* hover wash */
+  --color-jade-100: #dfebdf; /* selected row */
+  --color-jade-200: #c1d8ca; /* selection edge */
+  --color-jade-300: #98bda9; /* data fill */
+  --color-jade-400: #70a38a; /* timeline */
+  --color-jade-500: #51826b; /* focus ring */
+  --color-jade-600: #346b53; /* links */
+  --color-jade-700: #18533e; /* primary action */
+  --color-jade-800: #124534; /* hover action */
+  --color-jade-900: #0d3429; /* pressed action */
+  --color-limestone-50: #fffef8; /* card surface */
+  --color-limestone-100: #f8f6ed; /* input surface */
+  --color-limestone-200: #f2efe5; /* page ground */
+  --color-limestone-300: #e7e3d5; /* inset surface */
+  --color-limestone-400: #d6d2c2; /* divider */
+  --color-limestone-500: #b9b6a6; /* disabled edge */
+  --color-limestone-600: #858578; /* control edge */
+  --color-limestone-700: #62665a; /* secondary text */
+  --color-limestone-800: #454d42; /* body text */
+  --color-limestone-900: #20372e; /* heading ink */
+  --color-ochre-wash: #f8ecd4;
+  --color-ochre-ink: #735019;
+  --color-clay-wash: #f5e5df;
+  --color-clay-ink: #854330;
 }
 
 /* shadcn/ui variables mapped onto the ledger tokens. */
@@ -144,4 +172,116 @@
   .wasl-pulse {
     animation: wasl-pulse 1.2s ease-in-out infinite;
   }
+}
+
+/*
+ * Staff workspace (/app): the approved jade & limestone redesign. The existing tokens are remapped inside .staff, so
+ * every component that uses bg-surface, text-ink, bg-cta and the pills picks up the palette without a rewrite.
+ * The public site and the patient journey keep sand and thread.
+ * .staff-tokens carries the palette alone, for portalled layers (dialogs, popovers) rendered outside .staff.
+ */
+.staff,
+.staff-tokens {
+  --color-ground: var(--color-limestone-200);
+  --color-surface: var(--color-limestone-50);
+  --color-raised: var(--color-limestone-100);
+  --color-active: var(--color-jade-100);
+  --color-line: var(--color-limestone-400);
+  --color-rule: var(--color-limestone-300);
+  --color-control: var(--color-limestone-500);
+  --color-ink: var(--color-limestone-900);
+  --color-ink-soft: var(--color-limestone-800);
+  --color-muted: var(--color-limestone-700);
+  --color-cta: var(--color-jade-700);
+  --color-hue: var(--color-jade-600);
+  --color-positive: var(--color-jade-700);
+  --color-negative: var(--color-clay-ink);
+  --color-warning: var(--color-ochre-ink);
+  --color-pill-positive-bg: var(--color-jade-100);
+  --color-pill-positive-ink: var(--color-jade-800);
+  --color-pill-negative-bg: var(--color-clay-wash);
+  --color-pill-negative-ink: var(--color-clay-ink);
+  --color-pill-warning-bg: var(--color-ochre-wash);
+  --color-pill-warning-ink: var(--color-ochre-ink);
+  --color-pill-neutral-bg: var(--color-limestone-300);
+  --color-pill-neutral-ink: var(--color-limestone-800);
+  --color-mint: var(--color-jade-100);
+  --background: var(--color-ground);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --popover: var(--color-surface);
+  --primary: var(--color-cta);
+  --primary-foreground: var(--color-limestone-50);
+  --secondary: var(--color-limestone-300);
+  --accent: var(--color-jade-50);
+  --border: var(--color-line);
+  --input: var(--color-limestone-600);
+  --ring: var(--color-jade-500);
+  --pattern-wash: color-mix(in srgb, var(--color-limestone-200) 76%, transparent);
+  color: var(--color-ink);
+}
+.staff {
+  background-color: var(--color-limestone-200);
+  /* The continuous teal-accented pattern over limestone. */
+  background-image: linear-gradient(var(--pattern-wash), var(--pattern-wash)), url("/staff/workspace-pattern-tile.png");
+  background-size: auto, 144px 144px;
+  background-repeat: repeat;
+}
+@layer base {
+.staff a,
+.staff-tokens a {
+  color: var(--color-jade-600);
+}
+.staff a:hover {
+  color: var(--color-jade-800);
+}
+.staff :focus-visible,
+.staff-tokens :focus-visible {
+  outline: 3px solid var(--color-jade-500);
+  outline-offset: 2px;
+}
+}
+
+@layer components {
+/* Title header: limestone to jade wash with the calligraphy pen strokes on the right. */
+.staff-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--color-limestone-400);
+  border-radius: 8px;
+  background: linear-gradient(100deg, var(--color-limestone-50) 42%, var(--color-jade-100));
+  padding: clamp(14px, 1.6vw, 24px) clamp(16px, 2vw, 28px);
+}
+.staff-heading::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 37%;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("/staff/pen-strokes.svg");
+  background-size: 196px 116px;
+  background-position: right center;
+  mask-image: linear-gradient(90deg, transparent, #000 67%);
+  opacity: 0.6;
+}
+@media (max-width: 670px) {
+  .staff-heading::before {
+    left: 60%;
+    opacity: 0.55;
+    background-size: 145px 86px;
+  }
+}
+.staff .font-display,
+.staff-tokens .font-display,
+.staff-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+}
+
+/* The jade sidebar: a limestone focus ring, since the jade ring would vanish on jade. */
+.staff .staff-rail :focus-visible {
+  outline-color: var(--color-limestone-50);
 }

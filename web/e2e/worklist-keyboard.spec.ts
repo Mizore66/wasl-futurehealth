@@ -77,172 +77,157 @@ async function controlRing(input: Locator) {
 
 /* ---------- Today ---------- */
 
-const TODAY_TABS = ["To call", "Waiting", "No owner"];
+const open = (page: Page) => page.getByRole("region", { name: "Selected case" });
+const caseRow = (page: Page, id: string) => page.locator(`button[data-case-row="${id}"]`);
+const searchbox = (page: Page) => page.getByRole("searchbox", { name: "Find a case or task" });
 
-test.describe("Today: tabs", () => {
-  test("one tab in the Tab order; arrows, Home and End move and select; the panel is the result list", async ({ page }) => {
+test.describe("Today: queue keyboard access", () => {
+  test("the sidebar's queue links switch queues; / focuses the search; Enter on a row opens its case", async ({ page }) => {
     await page.goto("/app/today");
-    const tabs = page.getByRole("tablist", { name: "Saved views" }).getByRole("tab");
-    await expect(tabs).toHaveCount(3);
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.getAttribute("aria-controls")))).toEqual(Array(3).fill("today-panel"));
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.tabIndex))).toEqual([0, -1, -1]);
-    const panel = page.getByRole("tabpanel");
-    await expect(panel).toHaveAttribute("aria-labelledby", "today-tab-call");
+    const nav = page.getByRole("navigation", { name: "Main", exact: true });
+    await nav.getByRole("link", { name: /^Waiting/ }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/queue=waiting/);
+    await expect(page.getByRole("heading", { level: 2, name: /^Waiting/ })).toBeVisible();
+    await expect(caseRow(page, "AHS-sr-1011")).toBeVisible();
 
-    await tabs.nth(0).focus();
-    await page.keyboard.press("ArrowRight");
-    await focused(page, tabs.nth(1));
-    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
-    await expect(panel).toHaveAttribute("aria-labelledby", "today-tab-waiting");
-    await expect(page.getByRole("button", { name: /Aisha Al Mansoori/ }).first()).toBeVisible();
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.tabIndex))).toEqual([-1, 0, -1]);
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    await focused(page, searchbox(page));
+    // Typing a slash in the field types it; it does not jump anywhere.
+    await page.keyboard.type("/");
+    await expect(searchbox(page)).toHaveValue("/");
+    await searchbox(page).fill("");
 
-    await page.keyboard.press("End");
-    await focused(page, tabs.nth(2));
-    await page.keyboard.press("ArrowRight");
-    await focused(page, tabs.nth(0));
-    await page.keyboard.press("ArrowLeft");
-    await focused(page, tabs.nth(2));
-    await page.keyboard.press("Home");
-    await focused(page, tabs.nth(0));
-    await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.textContent?.replace(/\s*\d+$/, "")))).toEqual(TODAY_TABS);
-
-    // Tab leaves the tablist in one press: into the search field, not the next tab.
+    await caseRow(page, "AHS-sr-1011").focus();
+    await page.keyboard.press("Enter");
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1011");
+    await expect(caseRow(page, "AHS-sr-1011")).toHaveAttribute("aria-expanded", "true");
+    // The open case follows its row in the reading order: Tab goes into the case's own controls.
     await page.keyboard.press("Tab");
-    await focused(page, page.getByRole("searchbox"));
-    await page.keyboard.press("Shift+Tab");
-    await focused(page, tabs.nth(0));
+    await expect(open(page).getByRole("button", { name: "Case details" })).toBeFocused();
   });
 });
 
 test.describe("Today: stale patient actions (issue #12)", () => {
-  const actions = (page: Page) => {
-    const open = page.getByRole("region", { name: "Open patient" });
-    return open.getByRole("button", { name: /^(Log call|Logging call|Snooze to tomorrow|Hand to Dr Al Kaabi|Take this patient)/ });
-  };
+  const actions = (page: Page) => page.getByRole("button", { name: /^(Log call|Logging call|Snooze to tomorrow|Hand to Dr Al Kaabi|Take this patient)/ });
 
-  test("Hand-off keeps the patient open with a way on to the next; a no-match search leaves no patient actions, only Undo", async ({ page }) => {
+  test("Hand-off keeps the case open with a way on to the next; a no-match search leaves no case actions, only Undo", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Hand to Dr Al Kaabi" }).click();
-    // The handed-off patient stays open (they are now in Waiting), with Undo, a way to their tab and to the next patient.
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("status")).toContainText("Logged: Handed to Dr Al Kaabi · AHS-sr-1002 moved to Waiting");
-    await expect(open.getByTestId("removed-notice")).toHaveCount(0);
-    await focused(page, open.getByRole("button", { name: "Undo" }));
-    await expect(open.getByTestId("open-destination")).toHaveText("Open Waiting");
-    await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ })).toHaveCount(0);
-    await expect(open.getByRole("button", { name: "Next patient: AHS-sr-1023" })).toBeVisible();
+    await open(page).getByRole("button", { name: "Hand to Dr Al Kaabi" }).click();
+    // The handed-off case stays open (it is now in Waiting), with Undo, a way to its queue and to the next case.
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(open(page).getByRole("status")).toContainText("Logged: Handed to Dr Al Kaabi · AHS-sr-1002 moved to Waiting");
+    await expect(open(page).getByTestId("removed-notice")).toHaveCount(0);
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
+    await expect(open(page).getByTestId("open-destination")).toHaveText("Open Waiting");
+    await expect(caseRow(page, "AHS-sr-1002")).toHaveCount(0);
+    await expect(open(page).getByRole("button", { name: "Next case: AHS-sr-1023" })).toBeVisible();
     await shot(page, "today-handoff");
 
-    // A search that excludes the held patient lets go of them: the way back is all that is left.
-    await page.getByRole("searchbox").fill("zzzz-no-match");
-    await expect(page.getByText("Nobody left in this view.")).toBeVisible();
+    // A search that excludes the held case lets go of it: the way back is all that is left.
+    await searchbox(page).fill("zzzz-no-match");
+    await expect(page.getByText("No case matches this search.")).toBeVisible();
     await expect(page.getByText("0 to call")).toBeVisible();
     await expect(actions(page)).toHaveCount(0);
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("Nobody to open");
+    await expect(open(page)).toHaveCount(0);
     await shot(page, "today-empty-search");
 
     // The only live control left is the way back.
-    await open.getByRole("button", { name: "Undo" }).click();
-    await page.getByRole("searchbox").fill("");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("button", { name: "Hand to Dr Al Kaabi" })).toBeVisible();
+    await page.getByTestId("removed-notice").getByRole("button", { name: "Undo" }).click();
+    await searchbox(page).fill("");
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(open(page).getByRole("button", { name: "Hand to Dr Al Kaabi" })).toBeVisible();
   });
 
-  test("Snooze, then a search that excludes the snoozed patient, never leaves their actions", async ({ page }) => {
+  test("Snooze, then a search that excludes the snoozed case, never leaves its actions", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Snooze to tomorrow" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Snoozed to tomorrow · AHS-sr-1002 moved to the end");
-    await focused(page, open.getByRole("button", { name: "Undo" }));
+    await open(page).getByRole("button", { name: "Snooze to tomorrow" }).click();
+    await expect(open(page).getByRole("status")).toContainText("Logged: Snoozed to tomorrow · AHS-sr-1002 moved to the end");
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
 
-    await page.getByRole("searchbox").fill("1023");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
-    await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toHaveCount(1);
-    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
+    await searchbox(page).fill("1023");
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1023");
+    await expect(open(page).getByRole("button", { name: "Snooze to tomorrow" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
 
-    await page.getByRole("searchbox").fill("zzzz-no-match");
+    await searchbox(page).fill("zzzz-no-match");
     await expect(actions(page)).toHaveCount(0);
-    await expect(page.getByText("Nobody left in this view.")).toBeVisible();
+    await expect(page.getByText("No case matches this search.")).toBeVisible();
   });
 
-  test("No answer, then a filter change, never leaves the patient's actions outside the results", async ({ page }) => {
+  test("No answer, then a queue change, never leaves the case's actions outside the results", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "No answer" }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await open(page).getByRole("button", { name: "No answer" }).click();
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
 
-    await page.getByRole("searchbox").fill("zzzz-no-match");
+    await searchbox(page).fill("zzzz-no-match");
     await expect(actions(page)).toHaveCount(0);
-    await page.getByRole("searchbox").fill("");
-    await page.getByRole("tab", { name: /^Waiting/ }).click();
-    await expect(open.getByRole("heading", { level: 2 })).not.toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
-    await page.getByRole("searchbox").fill("1002");
+    await searchbox(page).fill("");
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
+    await expect(page).toHaveURL(/queue=waiting/);
+    await expect(open(page)).not.toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(page.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
+    await searchbox(page).fill("1002");
     await expect(actions(page)).toHaveCount(0);
-    await expect(page.getByText("Nobody left in this view.")).toBeVisible();
+    await expect(page.getByText("No case matches this search.")).toBeVisible();
   });
 });
 
 test.describe("Today: focus through the call workflow (issue #14)", () => {
   test("Reached moves focus to the next group; Appointment agreed lands on Undo and Tab stays in the workflow", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).focus();
+    await open(page).getByRole("button", { name: "Log call · AHS-sr-1002" }).focus();
     await page.keyboard.press("Enter");
-    await expect(open.getByRole("group", { name: "How did it go?" })).toBeVisible();
-    await open.getByRole("button", { name: "Reached" }).focus();
+    await expect(open(page).getByRole("group", { name: "How did it go?" })).toBeVisible();
+    await open(page).getByRole("button", { name: "Reached" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("heading", { name: "What next?" }));
-    await tabStaysIn(page, open);
-    await focused(page, open.getByRole("button", { name: "Appointment agreed" }));
+    await focused(page, open(page).getByRole("heading", { name: "What next?" }));
+    await tabStaysIn(page, open(page));
+    await focused(page, open(page).getByRole("button", { name: "Appointment agreed" }));
 
     await page.keyboard.press("Enter");
-    // The patient moves to Waiting but stays open, so the outcome is seen where it was recorded.
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
-    await focused(page, open.getByRole("button", { name: "Undo" }));
-    await tabStaysIn(page, open);
-    await focused(page, open.getByTestId("open-destination"));
+    // The case moves to Waiting but stays open, so the outcome is seen where it was recorded.
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
+    await expect(open(page).getByRole("status")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
+    await tabStaysIn(page, open(page));
+    await focused(page, open(page).getByTestId("open-destination"));
   });
 
-  test("No answer lands on Undo; Tab continues in the patient panel; Undo returns to the patient heading", async ({ page }) => {
+  test("No answer lands on Undo; Tab continues in the case; Undo returns to the task heading", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "No answer" }).focus();
+    await open(page).getByRole("button", { name: "No answer" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("button", { name: "Undo" }));
-    await tabStaysIn(page, open);
-    await focused(page, open.getByRole("button", { name: /^Next patient/ }));
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
+    await tabStaysIn(page, open(page));
+    await focused(page, open(page).getByRole("button", { name: /^Next case/ }));
     await page.keyboard.press("Shift+Tab");
-    await focused(page, open.getByRole("button", { name: "Undo" }));
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("heading", { level: 2, name: "AHS-sr-1002" }));
-    await tabStaysIn(page, open);
+    await focused(page, open(page).getByRole("heading", { level: 2, name: "Receipt outstanding" }));
+    await tabStaysIn(page, open(page));
   });
 
   test("Call back on… moves focus to its group; picking a day lands on Undo", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Reached" }).focus();
+    await open(page).getByRole("button", { name: "Reached" }).focus();
     await page.keyboard.press("Enter");
-    await open.getByRole("button", { name: "Call back on…" }).focus();
+    await open(page).getByRole("button", { name: "Call back on…" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("heading", { name: "Call back on" }));
+    await focused(page, open(page).getByRole("heading", { name: "Call back on" }));
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("button", { name: "Undo" }));
+    await focused(page, open(page).getByRole("button", { name: "Undo" }));
   });
 
-  test("Next patient hands focus to the next patient's heading", async ({ page }) => {
+  test("Next case hands focus to the next case's task heading", async ({ page }) => {
     await page.goto("/app/today");
-    const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "No answer" }).click();
-    await open.getByRole("button", { name: /^Next patient/ }).focus();
+    await open(page).getByRole("button", { name: "No answer" }).click();
+    await open(page).getByRole("button", { name: /^Next case/ }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, open.getByRole("heading", { level: 2, name: "AHS-sr-1023" }));
+    await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1023");
+    await focused(page, open(page).getByRole("heading", { level: 2, name: "Receipt outstanding" }));
   });
 });
 
@@ -255,9 +240,8 @@ for (const [label, viewport] of [
 
     test("focus ring surrounds the whole control; placeholder reaches 4.5:1 in every state", async ({ page }) => {
       await page.goto("/app/today");
-      if (viewport.width < 1024) await page.getByRole("button", { name: /Your list/ }).click();
-      const input = page.getByRole("searchbox", { name: "Search" });
-      await expect(input).toHaveAttribute("placeholder", "Name or case id");
+      const input = searchbox(page);
+      await expect(input).toHaveAttribute("placeholder", "Find a case or task");
 
       expect(await placeholderContrast(input)).toBeGreaterThanOrEqual(4.5);
       const idle = await controlRing(input);
@@ -275,7 +259,7 @@ for (const [label, viewport] of [
         return { wider: l.width > i.width + 20, taller: l.height >= i.height };
       });
       expect(box).toEqual({ wider: true, taller: true });
-      await page.getByRole("searchbox").hover();
+      await input.hover();
       expect(await placeholderContrast(input)).toBeGreaterThanOrEqual(4.5);
       await shot(page, `today-search-focus-${viewport.width}`);
 
@@ -292,41 +276,24 @@ for (const [label, viewport] of [
 
 /* ---------- Referrals ---------- */
 
-test.describe("Referrals: tabs", () => {
-  test("one tab in the Tab order; arrows, Home and End move and select; the panel is the result list", async ({ page }) => {
-    await page.goto("/app/referrals");
-    const tabs = page.getByRole("tablist", { name: "Saved views" }).getByRole("tab");
-    await expect(tabs).toHaveCount(4);
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.getAttribute("aria-controls")))).toEqual(Array(4).fill("referrals-panel"));
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.tabIndex))).toEqual([0, -1, -1, -1]);
-    const panel = page.getByRole("tabpanel");
-    await expect(panel).toHaveAttribute("aria-labelledby", "referrals-tab-needs");
-
-    await tabs.nth(0).focus();
-    await page.keyboard.press("ArrowRight");
-    await focused(page, tabs.nth(1));
-    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
-    await expect(panel).toHaveAttribute("aria-labelledby", "referrals-tab-all");
-    await page.keyboard.press("End");
-    await focused(page, tabs.nth(3));
-    await expect(tabs.nth(3)).toHaveAttribute("aria-selected", "true");
-    await page.keyboard.press("ArrowRight");
-    await focused(page, tabs.nth(0));
-    await page.keyboard.press("ArrowLeft");
-    await focused(page, tabs.nth(3));
-    await page.keyboard.press("Home");
-    await focused(page, tabs.nth(0));
-    expect(await tabs.evaluateAll((els) => els.map((e) => e.tabIndex))).toEqual([0, -1, -1, -1]);
+test.describe("Referrals: the inbox by keyboard", () => {
+  test("rows are links in the Tab order; a row opens the referral; Back to inbox returns focus to that row", async ({ page }) => {
+    await page.goto("/app/referrals?view=inbox");
+    const first = page.getByRole("link", { name: "AHS-sr-9003" });
+    await first.focus();
     await page.keyboard.press("Tab");
-    await focused(page, page.getByRole("searchbox"));
+    await focused(page, page.getByRole("link", { name: "AHS-sr-9002" }));
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/from=inbox&case=/);
+    await focused(page, page.getByRole("heading", { level: 1 }).locator("[data-focus=heading]"));
+    await page.getByRole("link", { name: "Back to inbox" }).focus();
+    await page.keyboard.press("Enter");
+    await focused(page, page.getByRole("link", { name: "AHS-sr-9002" }));
   });
 });
 
 test.describe("Referrals: focus through the decision workflow (issue #14)", () => {
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("Accept referral lands on Undo; Tab continues in the panel; Undo returns to the heading", async ({ page }) => {
+  test("Accept referral lands on Undo; Undo returns to the heading", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
     await pane.getByRole("button", { name: "Accept referral" }).focus();
@@ -334,44 +301,25 @@ test.describe("Referrals: focus through the decision workflow (issue #14)", () =
     await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
     await focused(page, pane.getByRole("button", { name: "Undo" }));
     await shiftTabStaysIn(page, page.locator("main"));
+    await pane.getByRole("button", { name: "Undo" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, pane.getByRole("heading", { level: 2, name: "AHS-sr-1004" }));
-    await tabStaysIn(page, pane);
+    await focused(page, pane.locator("[data-focus=heading]"));
   });
 
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("the inline Accept button in the list hands focus to Undo", async ({ page }) => {
-    await page.goto("/app/referrals");
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-1004" }).focus();
-    await page.keyboard.press("Enter");
-    await focused(page, page.getByRole("region", { name: "Open referral" }).getByRole("button", { name: "Undo" }));
-  });
-
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("Accept with conditions: focus goes to the group heading, then the first choice; Cancel returns to the opener", async ({ page }) => {
+  test("Accept with conditions: focus goes to the group heading, then the first choice; Cancel returns to the opener", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
     await pane.getByRole("button", { name: "Accept with conditions" }).focus();
     await page.keyboard.press("Enter");
     await focused(page, pane.getByRole("heading", { name: "Accept on these conditions" }));
-    await expect(pane.getByRole("group", { name: "Conditions" })).toBeVisible();
     await page.keyboard.press("Tab");
     await focused(page, pane.getByRole("button", { name: "Hold blood thinners as advised" }));
     await page.keyboard.press("Space");
     await expect(pane.getByRole("button", { name: "Hold blood thinners as advised" })).toHaveAttribute("aria-pressed", "true");
-    await focused(page, pane.getByRole("button", { name: "Hold blood thinners as advised" }));
     await shot(page, "referrals-conditions-focus");
-
     await pane.getByRole("button", { name: "Cancel" }).focus();
     await page.keyboard.press("Enter");
     await focused(page, pane.getByRole("button", { name: "Accept with conditions" }));
-    await tabStaysIn(page, pane);
-
-    await pane.getByRole("button", { name: "Accept with conditions" }).focus();
     await page.keyboard.press("Enter");
     await pane.getByRole("button", { name: "Female endoscopist" }).focus();
     await page.keyboard.press("Enter");
@@ -380,40 +328,28 @@ test.describe("Referrals: focus through the decision workflow (issue #14)", () =
     await focused(page, pane.getByRole("button", { name: "Undo" }));
   });
 
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("Return to GP: focus goes to the reason heading, then the first reason; sending lands on Undo", async ({ page }) => {
+  test("Return: focus goes to the reason group, then the first reason; sending lands on Undo; Cancel goes back to Return", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await pane.getByRole("button", { name: "Return to GP" }).focus();
+    await pane.getByRole("button", { name: "Return with reason" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, pane.getByRole("heading", { name: "Why return this referral?" }));
+    await focused(page, pane.getByText("Reason for return", { exact: true }));
     await page.keyboard.press("Tab");
-    await focused(page, pane.getByRole("button", { name: "Needs a clinic visit first" }));
+    await focused(page, pane.getByRole("radio", { name: "Needs a clinic visit first" }));
     await page.keyboard.press("Space");
     await pane.getByRole("button", { name: "Return to GP" }).focus();
     await page.keyboard.press("Enter");
     await expect(pane.getByRole("status")).toContainText("Returned to the Al Mushrif GP. Reason: needs a clinic visit first.");
     await focused(page, pane.getByRole("button", { name: "Undo" }));
-    await shiftTabStaysIn(page, page.locator("main"));
-  });
-
-  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
-  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
-  // The controls are designed, not built; this test comes back when a sample carries such a referral.
-  test.fixme("Cancel from the return reasons goes back to Return to GP", async ({ page }) => {
-    await page.goto("/app/referrals");
-    const pane = page.getByRole("region", { name: "Open referral" });
-    await pane.getByRole("button", { name: "Return to GP" }).click();
+    await page.keyboard.press("Enter");
+    await pane.getByRole("button", { name: "Return with reason" }).click();
     await pane.getByRole("button", { name: "Cancel" }).focus();
     await page.keyboard.press("Enter");
-    await focused(page, pane.getByRole("button", { name: "Return to GP" }));
+    await focused(page, pane.getByRole("button", { name: "Return with reason" }));
   });
 
   test("grading the prep lands on Undo", async ({ page }) => {
-    await page.goto("/app/referrals");
-    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+    await page.goto("/app/referrals?status=report");
     const pane = page.getByRole("region", { name: "Open referral" });
     await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: /^2\s*Mostly seen$/ }).focus();
     await page.keyboard.press("Enter");
@@ -429,8 +365,7 @@ for (const [label, viewport] of [
     test.use({ viewport });
 
     test("focus ring surrounds the whole control; placeholder reaches 4.5:1; focus survives Enter", async ({ page }) => {
-      await page.goto("/app/referrals");
-      if (viewport.width < 1024) await page.getByRole("button", { name: /All referrals/ }).click();
+      await page.goto("/app/referrals?view=inbox");
       const input = page.getByRole("searchbox", { name: "Search case id" });
       await expect(input).toHaveAttribute("placeholder", "Case id, then Enter");
 
@@ -445,9 +380,9 @@ for (const [label, viewport] of [
 
       await page.keyboard.type("1011");
       await page.keyboard.press("Enter");
-      await expect(page).toHaveURL(/\/app\/referrals\?q=1011$/);
+      await expect(page).toHaveURL(/\/app\/referrals\?q=1011&view=inbox$/);
       await expect(page.getByRole("searchbox", { name: "Search case id" })).toHaveValue("1011");
-      // The query is a client navigation, so the field keeps focus and the list pane stays open at every width.
+      // The query is a client navigation, so the field keeps focus at every width.
       await focused(page, page.getByRole("searchbox", { name: "Search case id" }));
     });
   });
