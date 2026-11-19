@@ -126,7 +126,7 @@ test.describe("Today", () => {
     const history = page.getByRole("region", { name: "Case history" });
     await expect(history.getByRole("button", { name: /^Referral issued/ })).toBeVisible();
     await history.getByRole("button", { name: /^Appointment agreed/ }).click();
-    await expect(history.getByText("Recorded by This browser")).toBeVisible();
+    await expect(history.getByText("Recorded by This browser").filter({ visible: true })).toBeVisible();
 
     // The sidebar's queue links are soft navigations: the logged action survives switching queues.
     await queueLink(page, /^To call/).click();
