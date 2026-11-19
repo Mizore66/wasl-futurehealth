@@ -25,7 +25,7 @@ test.describe("Patients owner filter, live web with the real Go API", () => {
 
   test("an assigned case leaves No owner, appears under its saved owner, and the counts match the API", async ({ page, request }) => {
     const read = { headers: { authorization: `Bearer ${token("WASL_API_WEB_REVIEWER_TOKEN")}` } };
-    const unowned = async () => (await (await request.get(`${API}/api/cases?unowned=true&limit=500`, read)).json()) as { total: number; cases: { id: string; owner: string; api_overlay: { owner: string; head: string } }[] };
+    const unowned = async () => (await (await request.get(`${API}/api/cases?unowned=true&limit=500`, read)).json()) as { total: number; cases: { id: string; owner: string; referral_day: number; api_overlay: { owner: string; head: string } }[] };
 
     const before = await unowned();
     expect(before.total).toBeGreaterThan(0);
@@ -50,7 +50,10 @@ test.describe("Patients owner filter, live web with the real Go API", () => {
     await expect(page.getByTestId("showing")).toHaveText(`${after.total} ${noun(after.total)}: no owner`);
     await page.goto(`/app/patients?owner=${encodeURIComponent(SAVED)}`);
     await expect(page.getByTestId("showing")).toContainText(`: owner ${SAVED}`);
-    await expect(page.locator("tbody")).toContainText(SAVED);
+    // The case files of the date it was referred (UTC, from the cohort epoch of 1 May 2026) show the saved owner.
+    const referred = new Date(Date.UTC(2026, 4, 1) + Math.round(target.referral_day * 86_400_000)).toISOString().slice(0, 10);
+    await page.goto(`/app/patients?owner=${encodeURIComponent(SAVED)}&files=${referred}`);
+    await expect(page.locator(`[data-pf-case="${target.id}"]`)).toContainText(SAVED);
 
     await page.goto(`/app/patients/${encodeURIComponent(target.id)}`);
     await expect(page.getByText(`owner ${SAVED}`)).toBeVisible();

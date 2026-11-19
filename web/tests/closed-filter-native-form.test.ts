@@ -3,6 +3,7 @@ import { Window } from "happy-dom";
 import { describe, expect, it, vi } from "vitest";
 import Page from "@/app/app/patients/page";
 import { parseCaseFilters } from "@/components/worklist/filters";
+import { referralDate } from "@/components/patients/calendar";
 import { CaseList, type CaseSummary } from "@/lib/api/schema";
 import { matches, type CaseQuery } from "@/lib/api/source";
 import { loadSample, sampleFiles } from "./samples";
@@ -58,9 +59,18 @@ async function expectView(params: Params, closed: boolean) {
   const expected = ALL.filter((c) => matches(c, { ...(filters.programme && { programme: filters.programme }), ...(filters.provider && { provider: filters.provider }), ...(filters.overdue !== undefined && { overdue: filters.overdue }), ...(filters.review && { review: filters.review }), ...(filters.q && { q: filters.q }), closed }));
   expect(text(doc, "showing")).toContain(`${expected.length} ${expected.length === 1 ? "case" : "cases"}: `);
   expect(text(doc, "showing")).toContain(closed ? "closed" : "not closed");
-  const rows = [...doc.querySelectorAll("tbody tr")];
-  expect(rows).toHaveLength(Math.min(expected.length, 25));
-  for (const r of rows) expect(/Closed day/.test(r.textContent!)).toBe(closed);
+  if (expected.length === 0) {
+    expect(doc.querySelector('[data-testid="month-total"]')).toBeNull();
+    return doc;
+  }
+  // The calendar opens on the latest month holding a match; its files are the cases referred that month.
+  const month = expected.map(referralDate).sort().at(-1)!.slice(0, 7);
+  const inMonth = expected.filter((c) => referralDate(c).startsWith(month));
+  expect(text(doc, "month-total")).toBe(`${inMonth.length} ${inMonth.length === 1 ? "referral" : "referrals"}`);
+  const files = await render({ ...params, files: month });
+  const folders = [...files.querySelectorAll("[data-pf-case]")];
+  expect(folders).toHaveLength(Math.min(inMonth.length, 25));
+  for (const f of folders) expect(/Closed day/.test(f.textContent!)).toBe(closed);
   return doc;
 }
 

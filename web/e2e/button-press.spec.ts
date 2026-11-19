@@ -50,7 +50,7 @@ test.describe("shared Button press", () => {
 
   test("keeps the keyboard focus outline", async ({ page }) => {
     const b = search(page);
-    await page.getByRole("searchbox", { name: "Search case id" }).focus();
+    await page.getByRole("searchbox", { name: "Find a case, task or owner" }).focus();
     await page.keyboard.press("Tab");
     await expect(b).toBeFocused();
     expect(await b.evaluate((el) => {
