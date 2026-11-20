@@ -14,7 +14,7 @@ import { MarkShape, PlaybackControls } from "./controls";
 import { PipelineHeading, type PipelineHead } from "./heading";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
 import { TechnicalDetail } from "./technical";
-import { stepAnnouncement } from "./health";
+import { stepAnnouncement } from "./announce";
 import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
 import { profileOf, type RulesBySha } from "./profile";
@@ -51,7 +51,7 @@ const FEED_PITCH = 72;
 
 type Open = (caseId: string) => void;
 
-export function PipelineReplay({ heading, tamper, rules, health }: { heading: PipelineHead; tamper: TamperDemo; rules: RulesBySha; health?: React.ReactNode }) {
+export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHead; tamper: TamperDemo; rules: RulesBySha }) {
   const profile = useProfileParam();
   const play = usePlayback(track, TICK_MS, profile.id !== null);
   const shown = useMemo(() => (profile.id ? profileOf(replay, play.frame, profile.id, rules) : null), [profile.id, play.frame, rules]);
@@ -248,7 +248,6 @@ export function PipelineReplay({ heading, tamper, rules, health }: { heading: Pi
           </TechnicalDetail>
         </section>
       </div>
-      {health}
       <PersonSheet profile={shown} onClose={profile.close} />
     </>
   );
