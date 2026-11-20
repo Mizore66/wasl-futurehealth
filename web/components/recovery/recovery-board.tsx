@@ -86,7 +86,7 @@ export function RecoveryBoard({ list, detail, readOnly, view = NO_VIEW }: { list
           attached
           compact
           title={<span id="rc-page">Recovery</span>}
-          sub={`Released capacity from missed appointments · run day ${Math.floor(list.as_of_day)}`}
+          sub={`Released capacity from missed appointments, as of run day ${Math.floor(list.as_of_day)}`}
         />
         <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[clamp(280px,30%,400px)_minmax(0,1fr)]">
           <nav aria-labelledby="rc-slots" className="flex min-h-0 min-w-0 flex-col border-b border-line bg-limestone-100 lg:border-r lg:border-b-0">

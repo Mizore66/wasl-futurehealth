@@ -154,7 +154,7 @@ test.describe("Recovery live confirmation", () => {
       const messages = [page, competing];
       await expect.poll(async () => (await Promise.all(messages.map((current) => current.locator("[role=status]").allTextContents()))).flat().filter((text) => text.includes("backfill") || text.includes("refused")).length).toBeGreaterThan(0);
       const outcomeText = (await Promise.all(messages.map((current) => current.locator("[role=status]").allTextContents()))).flat().join("\n");
-      expect(outcomeText).toContain("Simulated backfill confirmed; no provider booking or message was made.");
+      expect(outcomeText).toContain("Simulated backfill confirmed. No provider booking or message was made.");
       expect(outcomeText).toContain("Confirmation refused:");
       await page.reload();
       await expect(page.locator("[data-mark=slot]")).toContainText("Assigned");

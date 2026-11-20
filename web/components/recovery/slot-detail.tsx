@@ -206,14 +206,14 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       setReleasing(false);
       if (result.ok) {
         setLedgerHash(result.response.event.hash);
-        setMessage("Simulated backfill cancelled; the synthetic seat is released. The confirmation remains in the ledger.");
+        setMessage("Simulated backfill cancelled. The synthetic seat is released. The confirmation stays in the ledger.");
       } else {
         setMessage(`Cancellation refused: ${result.error}`);
       }
       router.refresh();
     } catch {
       setReleasing(false);
-      setMessage("Cancellation could not be completed. Reload the projection before retrying; no release was recorded in this browser.");
+      setMessage("Cancellation could not be completed. Reload the projection before retrying. No release was recorded in this browser.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -245,7 +245,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       if (result.ok) {
         setConfirming(null);
         setLedgerHash(result.response.event.hash);
-        setMessage("Simulated backfill confirmed; no provider booking or message was made.");
+        setMessage("Simulated backfill confirmed. No provider booking or message was made.");
         router.refresh();
       } else {
         // Never retain stale heads or optimistic success after a refusal.
@@ -255,7 +255,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       }
     } catch {
       setConfirming(null);
-      setMessage("Confirmation could not be completed. Reload the projection before retrying; no success was recorded in this browser.");
+      setMessage("Confirmation could not be completed. Reload the projection before retrying. No success was recorded in this browser.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -292,7 +292,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
               </div>
             </dl>
           </div>
-          <p className="m-0 mt-1 text-small text-ink-soft">Outreach is decided apart from the slot assignment; no message is ever sent.</p>
+          <p className="m-0 mt-1 text-small text-ink-soft">Outreach is decided apart from the slot assignment. No message is ever sent.</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {isAssigned ? (
@@ -325,7 +325,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
             Open case
           </Link>
         </div>
-        {isAssigned && <p className="m-0 text-small text-ink-soft">Simulated: no provider booking or message was made.</p>}
+        {isAssigned && <p className="m-0 text-small text-ink-soft">No provider booking or message was made in this simulation.</p>}
         <div className="-my-2">
           <AllChecks candidate={candidate} />
         </div>
@@ -567,7 +567,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
         <DialogContent className="staff-tokens max-h-[90dvh] overflow-y-auto bg-surface text-ink" showCloseButton={!pending}>
           <DialogHeader>
             <DialogTitle>Cancel simulated backfill</DialogTitle>
-            <DialogDescription>Releases the synthetic seat so the case can be rebooked. A compensating ledger event references the confirmation; nothing is deleted.</DialogDescription>
+            <DialogDescription>Releases the synthetic seat so the case can be rebooked. A compensating ledger event references the confirmation. Nothing is deleted.</DialogDescription>
           </DialogHeader>
           <label className="flex flex-col gap-1 text-small">
             <span>Reason (required)</span>
@@ -613,14 +613,14 @@ function ConfirmDialog({
         </DialogHeader>
         {selected && (
           <div className="text-small">
-            <p><strong>Slot:</strong> day {slot.day} · {slot.unit}, released by {shortId(slot.source_case)}.</p>
+            <p><strong>Slot:</strong> day {slot.day} at {slot.unit}, released by {shortId(slot.source_case)}.</p>
             <p><strong>Case:</strong> {shortId(selected.case_id)}, requested day {Math.floor(selected.requested_day)}, due day {Math.floor(selected.deadline_day)}.</p>
             {warnings.length > 0 && <div><strong>Warnings</strong><ul className="list-disc pl-5">{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div>}
             <label className="mt-4 flex min-h-11 items-start gap-2">
               <input type="checkbox" checked={outreach} disabled={!selected.outreach.allowed || pending} onChange={(event) => setOutreach(event.target.checked)} />
               <span>
                 Record a simulated outreach intent (never sent)
-                {!selected.outreach.allowed && ` — held: ${selected.outreach.reason_codes.map(words).join(", ")}`}
+                {!selected.outreach.allowed && `. Held: ${selected.outreach.reason_codes.map(words).join(", ")}`}
               </span>
             </label>
           </div>
