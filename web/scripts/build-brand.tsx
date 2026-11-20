@@ -11,8 +11,8 @@ import { BRAND, Mark } from "../components/brand/mark";
 const root = join(__dirname, "..");
 const svg = (el: React.ReactElement) => renderToStaticMarkup(el).replace(/ (class|data-brand|aria-hidden)="[^"]*"/g, "");
 
-/** The bare mark's stroked bounds span 29.2 of its 32 units. */
-const BARE_FILL = 29.2 / 32;
+/** The bare word spans 31 of its 32 units (x 0.5 to 31.5). */
+const BARE_FILL = 31 / 32;
 
 function fullBleed(side: number, markShare: number) {
   const size = Math.round((side * markShare) / BARE_FILL);
@@ -52,7 +52,7 @@ async function main() {
   for (const size of [16, 32, 48]) favicon.push({ size, png: await png(svg(<Mark size={size} />)) });
   await writeFile(join(root, "app/favicon.ico"), ico(favicon));
 
-  const darkTab = `<style>@media (prefers-color-scheme:dark){rect{fill:${BRAND.mint}}path{stroke:${BRAND.ink}}}</style>`;
+  const darkTab = `<style>@media (prefers-color-scheme:dark){rect{fill:${BRAND.mint}}path{fill:${BRAND.ink}}}</style>`;
   await writeFile(join(root, "app/icon.svg"), svg(<Mark size={16} />).replace(/(<svg[^>]*>)/, `$1${darkTab}`) + "\n");
 
   await writeFile(join(root, "app/apple-icon.png"), await png(fullBleed(180, 0.6)));
