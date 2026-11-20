@@ -32,7 +32,7 @@ export function mountInbox() {
   const h = {
     host,
     render(props: Partial<InboxProps>) {
-      last = { referrals: [], window: 7, now: 120, q: "", aside: null, ...last, ...props } as InboxProps;
+      last = { referrals: [], window: 7, now: 120, q: "", scopeBar: null, ...last, ...props } as InboxProps;
       act(() => root.render(createElement(ReferralInbox, last!)));
     },
     unmount() {

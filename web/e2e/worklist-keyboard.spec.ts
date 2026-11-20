@@ -107,7 +107,7 @@ test.describe("Today: queue keyboard access", () => {
     await expect(caseRow(page, "AHS-sr-1011")).toHaveAttribute("aria-expanded", "true");
     // The open case follows its row in the reading order: Tab goes into the case's own controls.
     await page.keyboard.press("Tab");
-    await expect(open(page).getByRole("button", { name: "Case details" })).toBeFocused();
+    await expect(open(page).getByRole("button", { name: "Patient details" })).toBeFocused();
   });
 });
 

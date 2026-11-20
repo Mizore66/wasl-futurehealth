@@ -42,7 +42,6 @@ export function personDisplay(journey: PersonJourney) {
   return {
     name: fixture?.display_name ?? `Person ${journey.person.id.slice(7, 15)}`,
     arabic: fixture?.display_name_ar,
-    synthetic: Boolean(fixture),
   };
 }
 
@@ -57,7 +56,7 @@ export function lifecycleLabel(lifecycle: "released" | "held" | "withheld" | "re
     case "held":
       return "Held by a safety check";
     case "withheld":
-      return "Withheld; no action needed";
+      return "Withheld, no action needed";
     case "recorded":
       return "Planned";
   }

@@ -7,7 +7,6 @@ import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySec
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { DispositionCard } from "@/components/disposition/disposition-card";
 import { dispositionContext } from "@/components/disposition/model";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
@@ -24,13 +23,15 @@ import { formatDayYear } from "@/lib/domain/day";
 import { languageWords } from "@/lib/domain/language";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
-import { personForLoop, showsSimulatedName } from "@/lib/people";
+import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
 import { closureReason, entryLabel, eventWords } from "@/components/case/words";
 import { chainCheck } from "@/components/case/audit-view";
 import { StageMarks } from "@/components/case/stage-marks";
 import { SourceSwitch } from "./source-switch";
+import { AskSpecialist, ConsultTimelineRows } from "./ask-specialist";
+import { runClock } from "@/components/worklist/run-clock";
 
 type Evidence = CaseDetail["evidence"][number];
 
@@ -207,6 +208,9 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
   const docs = sources(detail);
   const events = [...detail.timeline].sort((a, b) => (a.arrival_day ?? a.day) - (b.arrival_day ?? b.day) || (a.seq ?? 0) - (b.seq ?? 0));
   const words = statusWords(c);
+  /* The run clock Today uses, so a consult is overdue on both pages on the same day. */
+  const now: number = await runClock().catch(() => (typeof detail.current.now === "number" ? detail.current.now : c.referral_day));
+  const caseLabel = person?.display_name ?? shortId(c.id);
 
   return (
     <div className={cn("pf-record", back && "pf-record-in-folder")}>
@@ -215,7 +219,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
       {back}
 
       <section className="rs-card live-record" aria-label={`Evidence file for ${shortId(c.id)}`}>
-        {/* The card does not clip (the Run metadata drop-down hangs over it), so the band rounds the corners the folder tab leaves. */}
+        {/* The card does not clip, so the band rounds the corners the folder tab leaves. */}
         <PageHeader
           attached
           className={back ? "rounded-se-[6px]!" : "rounded-t-[6px]!"}
@@ -253,7 +257,6 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
               </span>
             </>
           }
-          aside={showsSimulatedName(c.id) ? <HonestyLabel kind="simulated">Simulated names</HonestyLabel> : undefined}
         />
         <div className="record-work">
           <div className="rs-browser">
@@ -302,6 +305,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   View all programmes
                 </Link>
               )}
+              {!c.closed && <AskSpecialist caseId={c.id} caseLabel={caseLabel} now={now} />}
             </div>
             {audit && (
               <p className="m-0 mt-2 text-small text-muted" data-testid="audit-teaser">
@@ -333,6 +337,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   </li>
                 );
               })}
+              <ConsultTimelineRows caseId={c.id} now={now} />
             </ol>
           </details>
           <Link href={auditHref} className="record-audit" aria-label="Audit trail" title="Audit trail">

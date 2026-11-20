@@ -45,7 +45,7 @@ export async function appendGovernanceAction(input: unknown): Promise<Governance
   }
   const parsed = GovernanceInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Choose an action, choose a resolution where asked, and enter a reason." };
-  if (apiMode() !== "live") return { ok: false, error: "Governance actions need the live API; fixtures cannot append events." };
+  if (apiMode() !== "live") return { ok: false, error: "Governance actions need the live API. Fixtures cannot append events." };
   const token = await session.reviewerToken();
   if (!token) return { ok: false, error: SIGN_IN, signIn: true };
 
@@ -69,7 +69,7 @@ export async function appendGovernanceAction(input: unknown): Promise<Governance
     operation === "undo"
       ? "Compensation appended as your signed-in credential. The original event and canonical decision are unchanged."
       : operation === "contest"
-        ? "Contest appended as your signed-in credential. A different actor, signed in separately, must resolve it; the canonical decision is unchanged."
+        ? "Contest appended as your signed-in credential. A different actor, signed in separately, must resolve it. The canonical decision is unchanged."
         : "Contest resolution appended as your signed-in credential. The canonical decision is unchanged.";
   return { ok: true, hash: result.response?.event.hash ?? "", message };
 }

@@ -29,13 +29,13 @@ export function patientContestWords(c: CaseSummary): { status: string; next: str
     const due = revision.due_at ? ` ${revision.overdue ? "overdue since" : "due"} ${staffDueTime(revision.due_at)}` : "";
     return {
       status: `Patient contest · decision to be revised${due}`,
-      next: "A senior clinician replaces the questioned decision; automatic closure stays held until then",
+      next: "A senior clinician replaces the questioned decision. Automatic closure stays held until then",
     };
   }
   if (!contest) return null;
   const due = contest.due_at ? ` ${contest.overdue ? "overdue since" : "due"} ${staffDueTime(contest.due_at)}` : "";
   return {
     status: `Patient contest · independent review${due}`,
-    next: "A senior clinician who did not sign this case reviews the contest; automatic closure is held until then",
+    next: "A senior clinician who did not sign this case reviews the contest. Automatic closure stays held until then",
   };
 }

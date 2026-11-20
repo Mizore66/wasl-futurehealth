@@ -76,7 +76,7 @@ export function ReviewerLogin({
         </h2>
         <p className="m-0 mt-1 text-muted">
           {mode === "oidc"
-            ? "Sign in with your organisation account. Your account decides your role; you cannot pick one here. "
+            ? "Sign in with your organisation account. Your account decides your role. You cannot pick one here. "
             : mode === "persona"
               ? `${DEMO_PERSONA_WORDS} `
               : "Enter the review token assigned to you. Your token decides who you are and what you may answer. "}

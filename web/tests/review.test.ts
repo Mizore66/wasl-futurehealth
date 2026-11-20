@@ -66,7 +66,7 @@ describe("review decision", () => {
     const signatures = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
     expect(signatures).toEqual([{ item: "rv-evidence", decision: "adequate" }]);
     expect(recordedOutcome("close", signatures)).toEqual({
-      recordedText: "Report adequate was saved in the demo. The case still shows as open; closure is not confirmed.",
+      recordedText: "Report adequate was saved in the demo. The case still shows as open. Closure is not confirmed.",
       recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     });
     expect(OUTCOMES.close.next("Noor endoscopy", false)).toEqual({ who: "The case", what: "no further change shown" });
@@ -82,7 +82,7 @@ describe("review decision", () => {
   });
 
   it.each([
-    { report: "adequate", outcome: "close", remaining: "The case still shows as open; closure is not confirmed." },
+    { report: "adequate", outcome: "close", remaining: "The case still shows as open. Closure is not confirmed." },
     { report: "inadequate", outcome: "inadequate", remaining: "No repeat booking is confirmed." },
   ] as const)("records only identity for a link-only $outcome outcome", ({ report, outcome, remaining }) => {
     const linkOnly = { link: "rv-link" };
@@ -109,7 +109,7 @@ describe("review decision", () => {
 
   it("keeps the complete close and inadequate wording when both answers were recorded", () => {
     expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items))).toEqual({
-      recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open; closure is not confirmed.",
+      recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open. Closure is not confirmed.",
       recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     });
     expect(recordedOutcome("inadequate", signaturesFor({ identity: "same", report: "inadequate" }, items))).toEqual({
@@ -215,7 +215,7 @@ describe("multi-report evidence selection", () => {
     expect(selected.quote).toBe("later report quote");
     expect(selected.held).toBe("Held: eye exam report readers disagree.");
     expect(selected.trail.map((node) => node.what)).toContain("eye exam report EYE-dr-83");
-    expect(selected.trail.map((node) => node.what)).toContain("eye exam report readers disagree; needs a person");
+    expect(selected.trail.map((node) => node.what)).toContain("eye exam report readers disagree, needs a person");
   });
 });
 

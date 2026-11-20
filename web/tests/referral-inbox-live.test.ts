@@ -95,7 +95,7 @@ describe("persisted referral answers", () => {
   it("places an accepted answer in Accepted with its structured conditions, after a reload", () => {
     const r = referralFrom(answered({ response: "accept_with_conditions", conditions: ["female_endoscopist", "hold_anticoagulants"] }), NOW, false)!;
     expect(r.state).toBe("accepted");
-    expect(r.answer).toBe("Accepted with conditions: Female endoscopist; Hold blood thinners as advised");
+    expect(r.answer).toBe("Accepted with conditions: Female endoscopist, Hold blood thinners as advised");
   });
 
   it("places a return in Waiting on GP with the projected hand-off clock, the arrow pointing back to the GP", () => {

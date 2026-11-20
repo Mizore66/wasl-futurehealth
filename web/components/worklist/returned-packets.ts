@@ -50,9 +50,9 @@ export type ReturnedPacket = {
 
 /** What a resolved hand-off leaves the case waiting for, after the referrer's answer. */
 export function afterAnswerWords(code: Disposition | undefined): string {
-  if (code === "close") return "Nothing else is needed from you; the referral is closed and no procedure is expected through it.";
-  if (code === "manage_in_primary_care") return "Nothing else is needed from you; the patient is managed in primary care, so no procedure is expected through this referral.";
-  return "Nothing else is needed from you; the case stays open until its procedure evidence arrives.";
+  if (code === "close") return "Nothing else is needed from you. The referral is closed and no procedure is expected through it.";
+  if (code === "manage_in_primary_care") return "Nothing else is needed from you. The patient is managed in primary care, so no procedure is expected through this referral.";
+  return "Nothing else is needed from you. The case stays open until its procedure evidence arrives.";
 }
 
 /**

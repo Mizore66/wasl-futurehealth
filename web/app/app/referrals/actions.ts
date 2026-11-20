@@ -15,7 +15,7 @@ const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min
 export async function respondToReferral(caseId: string, head: string, response: ReferralAnswer): Promise<RespondResult> {
   if (apiMode() !== "live") return { ok: false, status: 503, error: "This demo cannot save answers. Nothing was recorded." };
   const args = Args.safeParse({ caseId, head, response });
-  if (!args.success) return { ok: false, status: 400, error: "this answer could not be read; try again" };
+  if (!args.success) return { ok: false, status: 400, error: "this answer could not be read. Try again" };
   const res = await postReferralResponse(args.data.caseId, args.data.response, args.data.head);
   if (!res.ok) return { ok: false, status: res.status, error: res.error, conflict: res.conflict };
   revalidatePath("/app/referrals");
@@ -44,7 +44,7 @@ export async function answerAsReferrer(caseId: string, head: string, packet: str
 export async function answerAsReferrerWith(credential: ReferrerCredential, caseId: string, head: string, packet: string, response: ReferrerAnswer): Promise<RespondResult> {
   if (apiMode() !== "live") return { ok: false, status: 503, error: "This demo cannot save answers. Nothing was recorded." };
   const args = ReferrerArgs.safeParse({ credential, caseId, head, packet, response });
-  if (!args.success) return { ok: false, status: 400, error: "this answer could not be read; try again" };
+  if (!args.success) return { ok: false, status: 400, error: "this answer could not be read. Try again" };
   const res = await postReferrerResponse(args.data.caseId, args.data.packet, args.data.response, args.data.head, args.data.credential);
   if (!res.ok) return { ok: false, status: res.status, error: res.error, conflict: res.conflict };
   revalidatePath("/app/referrals", "layout");

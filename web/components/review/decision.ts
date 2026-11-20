@@ -92,7 +92,7 @@ export const signWords = (decision: string, scoped = false) =>
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   close: {
     commit: "Close the case",
-    pill: "Demo answers saved; case open",
+    pill: "Demo answers saved, case open",
     preview: "Would close the case",
     tone: "positive",
     text: (name, _unit, hasLink = true) =>
@@ -100,7 +100,7 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
         ? `Same patient, report adequate. ${name}’s case closes with both answers and the report quote in her record.`
         : "Report adequate would be saved. No identity answer is assumed.",
     next: (_unit, hasLink = true) => (hasLink ? { who: "Closed", what: "with both answers recorded" } : { who: "The case", what: "no further change shown" }),
-    recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open; closure is not confirmed.",
+    recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open. Closure is not confirmed.",
     recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     answerCell: { word: "adequate, signed", tone: "positive" },
   },
@@ -236,7 +236,7 @@ export function recordedOutcome(
       recordedText:
         outcome === "close"
           ? "Audit agreement was saved in the demo. The case is not changed here."
-          : "Audit disagreement was saved in the demo. The case is not changed here; reopening is not confirmed until the case shows it.",
+          : "Audit disagreement was saved in the demo. The case is not changed here. Reopening is not confirmed until the case shows it.",
       recordedAnswerCell: recorded.recordedAnswerCell,
     };
   }
@@ -266,7 +266,7 @@ export function recordedOutcome(
     const remaining = outcome === "close" && confirmedClosed
       ? "The case now shows as closed."
       : outcome === "close"
-        ? "The case still shows as open; closure is not confirmed."
+        ? "The case still shows as open. Closure is not confirmed."
         : "No repeat booking is confirmed.";
     return {
       recordedText: `${answer} saved in the demo. ${remaining}`,
@@ -277,7 +277,7 @@ export function recordedOutcome(
   const remaining = outcome === "close" && confirmedClosed
     ? "The case now shows as closed."
     : outcome === "close"
-      ? "The case still shows as open; closure is not confirmed."
+      ? "The case still shows as open. Closure is not confirmed."
       : "No repeat booking is confirmed.";
   return {
     recordedText:
@@ -366,7 +366,7 @@ export function stateHeadline(s: ReviewState): { text: string; tone: "positive" 
       return actionable ? { text: "First read due", tone: "warning" } : { text: "Waiting for a first read", tone: "muted" };
     case "awaiting_r2":
       if (actionable) return { text: "Second read due", tone: "warning" };
-      return { text: own ? "Your first read is in; waiting for a different reviewer" : "Waiting for a second read", tone: "muted" };
+      return { text: own ? "Your first read is in. Waiting for a different reviewer" : "Waiting for a second read", tone: "muted" };
     case "awaiting_r3":
       return actionable ? { text: "Disagreement: senior resolution due", tone: "warning" } : { text: "Disagreement: waiting for a senior", tone: "negative" };
     case "resolved_agreed":
@@ -405,7 +405,7 @@ export function submittedReads(s: ReviewState): ReviewRead[] {
 
 export function readLine(r: ReviewRead, question: Question, scoped = false): string {
   const label = READ_LABEL[r.read];
-  return r.decision === undefined ? `${label}: submitted; the answer stays hidden until the second read` : `${label}: ${answerWords(r.decision, question, scoped)}`;
+  return r.decision === undefined ? `${label}: submitted. The answer stays hidden until the second read` : `${label}: ${answerWords(r.decision, question, scoped)}`;
 }
 
 /** The disputed-rows cell once the evidence question is final. Never set before a terminal state. */

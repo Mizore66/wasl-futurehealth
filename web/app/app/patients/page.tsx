@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { loadCaseRecord, renderEvidenceFile } from "@/components/case/evidence-file";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
-import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
+import { facetValueLabel, facets as buildFacets } from "@/components/patients/facets";
 import { clearRefineHref, NativeRefine, refineMenus } from "@/components/patients/refine";
 import { FolderTab, RememberFiles } from "@/components/patients/back-to-files";
 import { CaseFiles, ReferralCalendar, type Row } from "@/components/patients/referral-calendar";
@@ -21,16 +21,17 @@ import {
   searchMatches,
   type CalendarView,
 } from "@/components/patients/calendar";
-import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
+import { filtersHref, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
 import { DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { ldctChildren, openObligation } from "@/components/worklist/obligation";
+import { PagerLinks } from "@/components/worklist/pager";
+import { paginate } from "@/components/worklist/paging";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { apiMode, getCases, matches, type CaseQuery } from "@/lib/api/source";
+import { getCases, matches, type CaseQuery } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
-import { cn } from "@/lib/utils";
 import { FilterMenu } from "@/components/ui/filters/filter-menu";
 import { FilterSheet } from "@/components/ui/filters/filter-sheet";
 import { SearchField } from "@/components/ui/filters/search-field";
@@ -82,7 +83,7 @@ const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
   q: keep.q,
 });
 
-/** Cases the calendar reads at most: 20 API pages of 500. Past that the view says it is partial. */
+/** Cases the calendar reads at most: 20 API pages of 500. */
 const CALENDAR_CAP = 10_000;
 
 /** Every case matching the filters, page by page (the API serves up to 500 at a time). */
@@ -123,10 +124,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       count: searchedAll.filter((c) => matches(c, query)).length,
     };
   });
-  const inView = programmesInView(searchedAll, apiFilters);
-  const partialCounts = everything.total > everything.cases.length;
-  const partialCalendar = matched.total > matched.cases.length;
-  const sample = apiMode() === "fixtures";
   // Replay failure is server-wide, so any case the API listed saying so makes every status here a partial view.
   const ledgerPartial = listLedgerInvalid(rows.map((r) => r.it)) || everything.cases.some((c) => c.api_overlay?.ledger_status === "invalid");
 
@@ -150,7 +147,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       <div className="pf-folder-open pf-record-in-folder">
         <FolderTab href={back} />
         <section className="rs-card" aria-label="Record not available">
-          {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
           <PageHeader
             attached
             className="rounded-se-[6px]!"
@@ -187,25 +183,21 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
 
   const scope = view.files;
   const inScope = scope ? rows.filter((r) => r.date.startsWith(scope)).sort((a, b) => a.date.localeCompare(b.date) || a.c.id.localeCompare(b.c.id, "en", { numeric: true })) : [];
-  const pages = Math.max(1, Math.ceil(inScope.length / PAGE_SIZE));
-  if (scope && page > pages) redirect(calendarHref(filters, { files: scope, page: pages }));
-  const shown = inScope.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const from = shown.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = (page - 1) * PAGE_SIZE + shown.length;
+  const paging = paginate(inScope, page);
+  if (scope && page > paging.pages) redirect(calendarHref(filters, { files: scope, page: paging.pages }));
   const month = chooseMonth(months, view);
   const filesView: CalendarView = { files: scope, page: page > 1 ? page : undefined };
-  const chip = "inline-flex min-h-11 items-center rounded-chip border px-3 text-body no-underline";
   const searchLabel = scope ? "Filter these files" : "Find a case, task or owner";
 
   return (
     <>
       {ledgerPartial && <LedgerInvalidBanner what="this list" className="mb-3" />}
 
-      <section className="pf-directory" aria-labelledby="pf-view-heading">
+      <section className="pf-directory" aria-labelledby="pf-title">
         <PageHeader
           attached
           className="pf-hero"
-          title="Patients"
+          title={<span id="pf-title">Patients</span>}
           sub={
             <ResultCount data-testid="showing" count={rows.length} one="case">
               : {describe(filters)}
@@ -246,17 +238,14 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           <NativeRefine facets={choices} filters={filters} />
         </Toolbar>
 
-        <header className="pf-toolbar">
-          <div>
-            {scope && (
-              <Link href={calendarHref(filters, { month: scope.slice(0, 7) })} className="pf-back">
-                <ArrowLeft aria-hidden="true" />
-                Calendar
-              </Link>
-            )}
-            <h2 id="pf-view-heading">{scope ? "Case files" : "Referral calendar"}</h2>
+        {scope && (
+          <div className="pf-toolbar">
+            <Link href={calendarHref(filters, { month: scope.slice(0, 7) })} className="pf-back">
+              <ArrowLeft aria-hidden="true" />
+              Calendar
+            </Link>
           </div>
-        </header>
+        )}
 
         <div id="pf-results">
           {rows.length === 0 ? (
@@ -273,33 +262,15 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           ) : scope ? (
             <>
               <div className="pf-files-head">
-                <h3>{scopeLabel(scope)}</h3>
+                <h2>{scopeLabel(scope)}</h2>
                 <small>{plural(inScope.length, "file")}</small>
               </div>
               {inScope.length === 0 ? (
                 <p className="pf-empty m-0">No referrals were received {scope.length === 10 ? "on this date" : "in this month"}{q ? " that match the search" : ""}.</p>
               ) : (
-                <CaseFiles rows={shown} view={filesView} filters={filters} />
+                <CaseFiles rows={paging.rows} view={filesView} filters={filters} />
               )}
-              {inScope.length > PAGE_SIZE && (
-                <nav aria-label="Pages" className="pf-pager">
-                  <p className="m-0 text-muted" data-testid="range">
-                    Showing {from}–{to} of {inScope.length}
-                  </p>
-                  <div className="flex gap-2">
-                    {page > 1 && (
-                      <Link href={calendarHref(filters, { files: scope, page: page - 1 })} rel="prev" className={cn(chip, "border-control text-ink hover:bg-ground")}>
-                        Previous
-                      </Link>
-                    )}
-                    {page < pages && (
-                      <Link href={calendarHref(filters, { files: scope, page: page + 1 })} rel="next" className={cn(chip, "border-control text-ink hover:bg-ground")}>
-                        Next
-                      </Link>
-                    )}
-                  </div>
-                </nav>
-              )}
+              <PagerLinks paging={paging} label="Pages" testId="range" hrefFor={(p) => calendarHref(filters, { files: scope, page: p })} className="pf-pager" />
             </>
           ) : (
             month && <ReferralCalendar month={month} months={months} byDate={dates} filters={filters} />
@@ -307,25 +278,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
         </div>
       </section>
 
-      <footer className="pf-notes">
-        <p className="m-0" data-testid="programmes-in-view">
-          {inView.length === 0
-            ? "No programme in view."
-            : `${inView.length === 1 ? "Programme" : "Programmes"} in view: ${inView.map((p) => `${p.name} (${p.count})`).join(", ")}.`}
-        </p>
-        <p className="m-0" data-testid="count-basis">
-          {sample
-            ? `Counts cover a sample of ${everything.total} simulated cases.`
-            : partialCounts
-              ? `Filter counts cover the first ${everything.cases.length} of ${everything.total} cases.`
-              : `Filter counts cover all ${everything.total} cases.`}
-        </p>
-        {partialCalendar && <p className="m-0">The calendar shows the first {matched.cases.length} of {matched.total} referrals. Add a filter to see the rest.</p>}
-        {rows.some((r) => !r.it.hasRecord) && <p className="m-0">In this demo only some cases have a full record. The rest open as a summary.</p>}
-        <p className="m-0">
-          Today is {formatDay(now)} (simulated). Dates show when the referral was received.
-        </p>
-      </footer>
     </>
   );
 }

@@ -57,7 +57,6 @@ for (const vp of [
     await gp.getByRole("link", { name: "Open the GP view" }).click();
     await expect(page).toHaveURL(/\/app\/referrals\/returned\?case=/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Returned referrals");
-    await expect(page.locator("[data-honesty=designed]").first()).toHaveText("Acknowledgement: kept in this browser only");
     const card = page.getByRole("article");
     await expect(card).toHaveCount(1);
     await expect(card).toHaveAttribute("aria-current", "true");

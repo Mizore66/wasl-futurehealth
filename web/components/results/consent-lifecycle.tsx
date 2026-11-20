@@ -1,4 +1,5 @@
 import { CountBars } from "@/components/results/charts";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 
 const fmt = (n: number | undefined) => (n === undefined ? "not reported" : n.toLocaleString("en-US"));
 
@@ -51,7 +52,9 @@ export function ConsentLifecycle({ timing }: { timing: Record<string, number> })
       <h2 id="consent-h" className="m-0 text-section font-medium">
         Consent: held, released, cancelled
       </h2>
-      <p className="m-0 mt-1 text-small text-muted">Simulated planned messages, not patients. No message was sent.</p>
+      <p className="m-0 mt-1 text-small text-muted">
+        <HonestyLabel plain kind="simulated">Simulated planned messages, not patients.</HonestyLabel> No message was sent.
+      </p>
 
       <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-5 lg:grid-cols-2">
         <div className="min-w-0">

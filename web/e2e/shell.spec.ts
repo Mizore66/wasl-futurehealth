@@ -6,7 +6,7 @@ import { ROUTES } from "./routes";
 
 const meta = JSON.parse(
   readFileSync(path.join(process.cwd(), "data/api/dashboard.json"), "utf8"),
-).meta as { run: string; loaded_at: string; reader_model: string };
+).meta as { run: string; reader_model: string };
 
 const sidebar = (page: Page) => page.locator("aside#app-sidebar");
 const toggle = (page: Page) =>
@@ -107,18 +107,12 @@ test.describe("sidebar (desktop)", () => {
     ).toEqual([]);
   });
 
-  test("the top bar carries the one simulated-data notice, with no run time or details disclosure, and adds no h1", async ({ page }) => {
+  test("the top bar carries only the breadcrumb and help, with no run notice", async ({ page }) => {
     await page.goto("/app/pipeline");
-    const strip = page.getByRole("region", { name: "About this data" }).filter({ visible: true });
-    await expect(strip).toHaveCount(1);
-    await expect(strip).toHaveText("Simulated data");
-    await expect(strip.locator("details, time")).toHaveCount(0);
-    await expect(page.locator("body")).not.toContainText(/Data loaded|Data as of/);
-    // The sidebar no longer repeats it, and no page header carries a generic synthetic chip.
-    await expect(page.locator("#app-sidebar")).not.toContainText("Synthetic data");
-    // Chips carry a status dot; plain muted provenance text in a subtitle has none.
-    await expect(page.locator("main header.staff-heading [data-dot]")).toHaveCount(0);
-    await expect(page.locator("h1")).toHaveCount(1);
+    const bar = page.getByRole("navigation", { name: "Breadcrumb" }).locator("..");
+    await expect(bar.locator('[data-tour="help"]')).toBeVisible();
+    await expect(page.getByRole("region", { name: "Run metadata" })).toHaveCount(0);
+    await expect(bar).not.toContainText(/Simulated data|Run loaded|Snapshot|Details/);
   });
 
   test("the Evidence page shows no run internals (run id, reader model)", async ({ page }) => {
@@ -206,15 +200,6 @@ test.describe("mobile (390px)", () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(390);
-  });
-
-  test("the phone header carries the one simulated-data notice and fits", async ({ page }) => {
-    await page.goto("/app");
-    const strip = page.getByRole("region", { name: "About this data" }).filter({ visible: true });
-    await expect(strip).toHaveCount(1);
-    await expect(strip).toHaveText("Simulated data");
-    await expect(page.locator("main header.staff-heading [data-dot]")).toHaveCount(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 });
 

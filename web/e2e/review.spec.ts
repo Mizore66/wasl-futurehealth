@@ -31,7 +31,7 @@ test.describe("review, fixtures mode", () => {
   test("the queue is rebuilt from the review_hold case and says so", async ({ page }) => {
     await page.goto("/app/review");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review desk");
-    await expect(page.getByText("Simulated queue: a practice case")).toBeVisible();
+    await expect(page.getByText("Simulated queue, a practice case")).toBeVisible();
     await expect(page.getByText(/No cases are waiting in this demo/)).toContainText("2 questions");
     const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
     await expect(row).toContainText("Identity · Colonoscopy report");
@@ -88,7 +88,7 @@ test.describe("review, fixtures mode", () => {
     await expect(r.getByRole("group", { name: /colonoscopy report/ })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(r.locator('li[data-kind="current"]')).toContainText("your answers");
-    await expect(r).toContainText("nothing here is saved");
+    await expect(r).toContainText("Nothing here is saved");
     const bridge = page.getByRole("region", { name: "Record pair" });
     await expect(bridge.getByRole("img", { name: "Not yet confirmed as this patient" })).toHaveAttribute("data-state", "unknown");
 
@@ -115,7 +115,7 @@ test.describe("review, fixtures mode", () => {
     await expect(result).toContainText("Would close the case");
     await expect(result).not.toContainText("Closed with");
     await expect(result.getByTestId("signature-squares")).toHaveCount(0);
-    await expect(result.getByText("Practice only: nothing was saved")).toBeVisible();
+    await expect(result.getByText("Practice only. Nothing was saved")).toBeVisible();
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(previewNodes(page).nth(0)).toContainText("preview, not saved: same patient (as reviewer)");
     await expect(previewNodes(page).nth(1)).toContainText("preview, not saved: report adequate (as clinician)");

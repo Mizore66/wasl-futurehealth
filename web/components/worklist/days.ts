@@ -35,7 +35,7 @@ type Clocked = { days: number; deadline: number | null };
 const daysLeft = (r: Clocked) => (r.deadline === null ? Infinity : r.deadline - r.days);
 
 export function clockWords(r: Clocked): { over: boolean; short: string; long: string } {
-  if (r.deadline === null) return { over: false, short: "routine interval", long: "Routine interval · no overdue clock" };
+  if (r.deadline === null) return { over: false, short: "routine interval", long: "Routine interval, no overdue clock" };
   const left = r.deadline - r.days;
   return left < 0
     ? { over: true, short: `${-left} over`, long: `${-left} days over ${r.deadline}` }

@@ -77,14 +77,4 @@ export function facets(all: CaseSummary[], f: CaseFilters): Facets {
   return out;
 }
 
-/** The programmes among the cases that match `f`, with how many of each. Order follows PROGRAMME_NAMES. */
-export function programmesInView(all: CaseSummary[], f: CaseFilters): { programme: Programme; name: string; count: number }[] {
-  const q = toCaseQuery(f);
-  const counts = new Map<Programme, number>();
-  for (const c of all) if (c.programme !== "" && matches(c, q)) counts.set(c.programme, (counts.get(c.programme) ?? 0) + 1);
-  return (Object.keys(PROGRAMME_NAMES) as Programme[])
-    .filter((p) => counts.has(p))
-    .map((p) => ({ programme: p, name: PROGRAMME_NAMES[p], count: counts.get(p)! }));
-}
-
 export { labelOf as facetValueLabel };

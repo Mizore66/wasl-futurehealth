@@ -35,7 +35,7 @@ it("rendered Waiting board places superseded snoozes by urgency but preserves la
   const host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  const board = (queue: "call" | "waiting") => createElement(TodayBoard, { items: [b, c, a], now: 40, aside: null, live: true, queue });
+  const board = (queue: "call" | "waiting") => createElement(TodayBoard, { items: [b, c, a], now: 40, live: true, queue });
   await act(async () => root!.render(board("waiting")));
   const rows = () => Array.from(host.querySelectorAll<HTMLElement>("button[data-case-row]"));
   expect(rows().map((r) => r.dataset.caseRow)).toEqual([a.short, b.short, c.short]);

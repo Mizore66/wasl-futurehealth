@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
-import { RunMeta } from "./run-meta";
 import { TourButton } from "./guided-tour";
 
 const CRUMBS: [RegExp, string][] = [
@@ -54,7 +53,7 @@ export function TopbarActionsPortal({ children }: { children: React.ReactNode })
   return slot ? createPortal(children, slot) : null;
 }
 
-/** Desktop bar above the page: where you are on the left; the run notice and any page controls on the right. */
+/** Desktop bar above the page: where you are on the left; any page controls and help on the right. */
 export function TopBar() {
   const pathname = usePathname();
   return (
@@ -67,11 +66,7 @@ export function TopBar() {
           {crumbFor(pathname)}
         </b>
       </nav>
-      {/* Positioned, so the notice's drop-down anchors to the bar's right edge. */}
-      <div className="relative flex min-w-0 items-center justify-end gap-2">
-        <div data-tour="run" className="min-w-0">
-          <RunMeta />
-        </div>
+      <div className="flex min-w-0 items-center justify-end gap-2">
         <TopActions />
         <TourButton />
       </div>

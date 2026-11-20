@@ -4,11 +4,11 @@ import { PageHeader } from "@/components/shell/page-header";
 import { SegmentedFilter } from "@/components/ui/filters/toolbar";
 import { safeInboxBack } from "@/components/worklist/inbox-url";
 import { ReferrerHandoffs, SessionReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
-import { REFERRAL_VIEWS, referralView, referrerAnswerLabel, viewScope, type ReferralView } from "@/components/worklist/referrals";
+import { REFERRAL_VIEWS, referralView, viewScope, type ReferralView } from "@/components/worklist/referrals";
 import { needsDetail, returnedPacket, type ReturnedPacket } from "@/components/worklist/returned-packets";
 import { syntheticHandoffs } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
-import { apiMode, getCase, hasCredential } from "@/lib/api/source";
+import { apiMode, getCase } from "@/lib/api/source";
 import { mapSettledBounded } from "@/lib/domain/bounded";
 import { answerAsReferrerWith } from "../actions";
 
@@ -60,7 +60,6 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
   const scope = viewScope(programme, provider);
   /* Fixtures mode, CRC: the unit's returns from this browser session, which the GP can acknowledge in this browser. */
   const session = !live && view?.programme === "crc";
-  const label = referrerAnswerLabel(live, view ? hasCredential(view.credential) : false, session);
   /* Opened from a referral's hand-off: that referral leads, and "Back to inbox" returns to the exact inbox state. */
   const focus = first(params.case);
   const back = safeInboxBack(first(params.back)) ?? (scope ? `/app/referrals?${scope}` : "/app/referrals");
@@ -70,21 +69,11 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
       <Link href={back} className="mb-2 inline-flex min-h-11 items-center gap-1.5 font-semibold text-jade-800 no-underline hover:underline">
         <ChevronRight aria-hidden className="size-4 rotate-180" /> {first(params.back) ? "Back to inbox" : "Receiving unit inbox"}
       </Link>
-      {/* Not clipped: an empty list is shorter than the run notice's drop-down, so the band rounds its own corners. */}
       <section aria-labelledby="returned-title" className="rounded-card border border-line bg-surface">
         <PageHeader
           attached
-         
           title={<span id="returned-title">Returned referrals</span>}
-          sub={
-            <>
-              {view ? view.returned : "No referral workflow for this programme and provider."}{" "}
-              <span data-honesty={label.kind} className="text-muted">
-                {label.text}
-              </span>
-              .
-            </>
-          }
+          sub={view ? view.returned : "No referral workflow for this programme and provider."}
         />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad">
           <SegmentedFilter

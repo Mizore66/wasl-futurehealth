@@ -91,8 +91,8 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
           </div>
 
           <div className="flex flex-col gap-6 px-6 py-5">
-            <HonestyLabel kind="replay">
-              Replay of a recorded run · {p.person.source === "generated" ? "generated name" : "demo cast name"}
+            <HonestyLabel plain kind="replay">
+              Replay of a recorded run. {p.person.source === "generated" ? "The name is generated." : "The name is from the demo cast."}
             </HonestyLabel>
 
             <Section title="Now">
@@ -162,7 +162,7 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
               </Button>
             ) : (
               <p className="m-0 text-small text-muted">
-                No patient record: this person was made up for the replay.
+                No patient record. This person was made up for the replay.
               </p>
             )}
           </div>

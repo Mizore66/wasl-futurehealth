@@ -40,7 +40,7 @@ export type RecoveryResult =
 
 /** The API derives coordinator identity from its token; no actor or role is accepted from this client. */
 async function postRecovery(slotID: string, action: "confirm" | "cancel", body: unknown): Promise<RecoveryResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "Fixture mode is read-only; no backfill was changed" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "Fixture mode is read-only. No backfill was changed" };
   const response = await fetch(
     `${liveBase()}/api/recovery/slots/${encodeURIComponent(slotID)}/${action}`,
     authenticated(

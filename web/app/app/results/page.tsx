@@ -114,7 +114,7 @@ function Readers() {
   const corpora = result("reader.corpora");
   return (
     <section aria-labelledby="read-h" className={card}>
-      <CardHead id="read-h" title={`3 of ${corpora.value} new report sets exposed an unsafe reading; each was fixed`} />
+      <CardHead id="read-h" title={`3 of ${corpora.value} new report sets exposed an unsafe reading, and each was fixed`} />
       <div className="mt-3">
         <UnitChart total={corpora.value} hit={3} label="Each set holds 300 test reports from 4 different AI writers, locked before any reader saw them" />
       </div>

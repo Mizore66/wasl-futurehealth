@@ -6,7 +6,7 @@
 const notices = new Map<string, string>();
 
 export const SESSION_REJECTED =
-  "Nothing was appended: your sign-in was not accepted or has ended, so you were signed out. Sign in again to continue.";
+  "Nothing was appended. Your sign-in was not accepted or has ended, so you were signed out. Sign in again to continue.";
 
 export function setSignedOutNotice(caseId: string, message: string): void {
   notices.set(caseId, message);
