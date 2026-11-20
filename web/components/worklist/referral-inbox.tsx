@@ -9,7 +9,7 @@ import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/page-header";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { FilterMenu } from "@/components/ui/filters/filter-menu";
 import { SearchField } from "@/components/ui/filters/search-field";
 import { Toolbar } from "@/components/ui/filters/toolbar";
@@ -204,7 +204,7 @@ export function ReferralInbox({
       x,
       conds.length ? { response: "accept_with_conditions", conditions: conds } : { response: "accept" },
       "accepted",
-      conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
+      conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join(", ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
   const returnToGp = (x: Referral, reason: ReferralReturnReason, noteText: string) => {
@@ -499,7 +499,7 @@ export function ReferralInbox({
 
       {(r.note || r.hasNote) && (
         <p className="m-0 max-w-prose whitespace-pre-line break-words text-start" data-testid="return-note">
-          <span className="font-medium">Note to the {referrer}:</span> {r.note ?? "could not load this case's detail; reload to try again"}
+          <span className="font-medium">Note to the {referrer}:</span> {r.note ?? "could not load this case's detail. Reload to try again."}
         </p>
       )}
       {r.acknowledged && (
@@ -524,12 +524,12 @@ export function ReferralInbox({
       </Link>
       {!respond && r.kind === "crc" && r.kept === "browser" && (
         <p className="m-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-small text-muted max-md:justify-start">
-          <HonestyLabel kind="designed">Kept in this browser only</HonestyLabel>
-          <span>The {referrer} view in this browser shows this return; nothing is sent or saved.</span>
+          <HonestyLabel kind="designed" className={HONESTY_PLAIN}>Kept in this browser only.</HonestyLabel>
+          <span>The {referrer} view in this browser shows this return. Nothing is sent or saved.</span>
         </p>
       )}
       {!respond && r.kind === "crc" && over[r.id] && r.kept !== "browser" && (
-        <p className="m-0 text-small text-muted">This browser could not keep the return, so the {referrer} view cannot show it; it stays on this page only.</p>
+        <p className="m-0 text-small text-muted">This browser could not keep the return, so the {referrer} view cannot show it. It stays on this page only.</p>
       )}
     </div>
   );

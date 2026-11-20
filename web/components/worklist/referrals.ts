@@ -255,7 +255,7 @@ export function withSessionReturn(r: Referral, s: SessionReturn | undefined): Re
 
 function answerWords(a: NonNullable<NonNullable<CaseSummary["api_overlay"]>["referral_response"]>): string {
   if (a.response === "return") return `Returned to the GP: ${a.reason ? REASON_LABELS[a.reason].toLowerCase() : "no reason recorded"}`;
-  if (a.response === "accept_with_conditions") return `Accepted with conditions: ${a.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}`;
+  if (a.response === "accept_with_conditions") return `Accepted with conditions: ${a.conditions.map((c) => CONDITION_LABELS[c]).join(", ")}`;
   return "Accepted the referral";
 }
 

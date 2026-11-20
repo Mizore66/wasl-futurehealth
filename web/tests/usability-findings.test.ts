@@ -79,8 +79,8 @@ describe("N8: why the case is still open sits above the timeline", () => {
   const open: CaseDetail = { ...held, case: { ...held.case, closed: false }, signoffs: [], api_reviews: [], api_review_states: [] } as CaseDetail;
 
   it("names the identity-in-review reason in the Why card", () => {
-    expect(openReviewReasons(open)[0]).toBe("Identity in review: no second identifier is confirmed for the two records.");
-    expect(text(renderToStaticMarkup(ReasonCard({ detail: open })))).toContain("Identity in review: no second identifier is confirmed");
+    expect(openReviewReasons(open)[0]).toBe("Identity in review. No second identifier is confirmed for the two records.");
+    expect(text(renderToStaticMarkup(ReasonCard({ detail: open })))).toContain("Identity in review. No second identifier is confirmed");
     expect(openReviewReasons(held)).toEqual([]);
   });
 

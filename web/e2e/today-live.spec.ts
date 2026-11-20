@@ -488,7 +488,7 @@ test.describe("Today, live mode against a mock API", () => {
     // Replay failure is server-wide: the board says so before any patient's detail is read.
     const board = page.getByTestId("ledger-invalid-board");
     await expect(board).toHaveAttribute("role", "alert");
-    await expect(board).toContainText("nothing on this board is authoritative");
+    await expect(board).toContainText("Nothing on this board is authoritative");
     const open = page.getByRole("region", { name: "Selected case" });
     await page.locator("button[data-case-row]").filter({ hasText: /AHS-sr-1002/ }).click();
     const warning = open.getByTestId("ledger-invalid");
@@ -511,7 +511,7 @@ test.describe("Today, live mode against a mock API", () => {
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toBeDisabled();
 
     await page.goto("/app/patients");
-    await expect(page.getByTestId("ledger-invalid-board")).toContainText("nothing on this list is authoritative");
+    await expect(page.getByTestId("ledger-invalid-board")).toContainText("Nothing on this list is authoritative");
   });
 
   test("a failed ledger read is not kept: Retry and reselecting the case read it again", async ({ page }) => {

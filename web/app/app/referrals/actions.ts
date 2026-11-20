@@ -13,7 +13,7 @@ const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min
 
 /** Appends the receiving unit's answer with the server-side clinician credential. Nothing is recorded unless this returns ok. */
 export async function respondToReferral(caseId: string, head: string, response: ReferralAnswer): Promise<RespondResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: nothing was recorded" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API, so nothing was recorded" };
   const args = Args.safeParse({ caseId, head, response });
   if (!args.success) return { ok: false, status: 400, error: "malformed referral response" };
   const res = await postReferralResponse(args.data.caseId, args.data.response, args.data.head);
@@ -42,7 +42,7 @@ export async function answerAsReferrer(caseId: string, head: string, packet: str
  * actor refers this case; the browser never chooses an actor.
  */
 export async function answerAsReferrerWith(credential: ReferrerCredential, caseId: string, head: string, packet: string, response: ReferrerAnswer): Promise<RespondResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: nothing was recorded" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API, so nothing was recorded" };
   const args = ReferrerArgs.safeParse({ credential, caseId, head, packet, response });
   if (!args.success) return { ok: false, status: 400, error: "malformed referrer response" };
   const res = await postReferrerResponse(args.data.caseId, args.data.packet, args.data.response, args.data.head, args.data.credential);

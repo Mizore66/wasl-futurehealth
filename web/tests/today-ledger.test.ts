@@ -163,7 +163,7 @@ describe("board position from persisted outcomes", () => {
     expect(listLedgerInvalid([])).toBe(false);
     const html = renderToStaticMarkup(LedgerInvalidBanner({ what: "this board" }));
     expect(html).toContain('role="alert"');
-    expect(html).toContain("nothing on this board is authoritative");
+    expect(html).toContain("Nothing on this board is authoritative");
     // pipeline/api.go sets ledgerErr on a failed replay, an indeterminate append and a ledger changed by another writer:
     // the banner must not claim it was a replay that stopped.
     expect(html).not.toContain("stopped replaying");

@@ -38,7 +38,7 @@ describe("referral answers in the case history", () => {
     expect(html).not.toContain("Unrecognised ledger event");
 
     const conditional = renderToStaticMarkup(LedgerCard({ detail: accepted }));
-    expect(conditional).toContain("accepted the referral with conditions: Arabic interpreter on the day; Hold blood thinners as advised");
+    expect(conditional).toContain("accepted the referral with conditions: Arabic interpreter on the day, Hold blood thinners as advised");
   });
 
   it("the audit history keeps the return and both GP answers without free text", () => {

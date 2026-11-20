@@ -36,9 +36,9 @@ describe("todayRecords", () => {
     const d: CaseDetail = { ...trap, signoffs: [] };
     const r = todayRecords(d);
     const appt = r.sources.find((s) => s.id === "noor-endo/Appointment/NOO-appt-364")!;
-    expect(appt.held).toEqual(["Identity in review: no second identifier is confirmed for the two records."]);
+    expect(appt.held).toEqual(["Identity in review. No second identifier is confirmed for the two records."]);
     const report = r.sources.find((s) => s.id === "noor-endo/DiagnosticReport/NOO-dr-316")!;
-    expect(report.held).toEqual([holdWords(trap.holds[0]), "Evidence in review: a person must check what the report shows."]);
+    expect(report.held).toEqual([holdWords(trap.holds[0]), "Evidence in review. A person must check what the report shows."]);
     const noItems = todayRecords({ ...trap, review_items: [], signoffs: [] });
     expect(noItems.sources.find((s) => s.id === report.id)!.held).toEqual([holdWords(trap.holds[0]), "The two readers disagree."]);
     const firstFree = r.sources.findIndex((s) => s.held.length === 0);
@@ -125,6 +125,6 @@ describe("RecordsPanel", () => {
     const html = render({ ok: true, records: todayRecords({ ...trap, signoffs: [] }) });
     expect(html).toContain(`Held Noor`);
     expect(html).toContain(holdWords(trap.holds[0]));
-    expect(html).toContain("Identity in review: no second identifier is confirmed for the two records.");
+    expect(html).toContain("Identity in review. No second identifier is confirmed for the two records.");
   });
 });

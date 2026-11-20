@@ -139,9 +139,9 @@ export function openReviewReasons(d: CaseDetail): string[] {
   return [
     link &&
       (link.reason === "second_identifier"
-        ? "Identity in review: no second identifier is confirmed for the two records."
-        : "Identity in review: a person must confirm the two records are the same patient."),
-    evidence && "Evidence in review: a person must check what the report shows.",
+        ? "Identity in review. No second identifier is confirmed for the two records."
+        : "Identity in review. A person must confirm the two records are the same patient."),
+    evidence && "Evidence in review. A person must check what the report shows.",
   ].filter((r): r is string => !!r);
 }
 
@@ -391,7 +391,7 @@ function referralResponseWords(d: { response?: string; conditions?: ReferralCond
   const unit = d.unit ? providerLabel(d.unit) : "Receiving unit";
   if (d.response === "accept") return `${unit} accepted the referral`;
   if (d.response === "accept_with_conditions") {
-    return d.conditions?.length ? `${unit} accepted the referral with conditions: ${d.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}` : `${unit} accepted the referral with conditions`;
+    return d.conditions?.length ? `${unit} accepted the referral with conditions: ${d.conditions.map((c) => CONDITION_LABELS[c]).join(", ")}` : `${unit} accepted the referral with conditions`;
   }
   if (d.response === "return") {
     const reason = d.reason && d.reason in REASON_LABELS ? REASON_LABELS[d.reason as keyof typeof REASON_LABELS].toLowerCase() : "";

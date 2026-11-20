@@ -32,11 +32,11 @@ function patientActivity(event: Extract<CaseDetail["api_reviews"][number], { led
     case "teach_back_completed":
       return "Patient completed teach-back";
     case "teach_back_answered":
-      return "Patient teach-back not yet understood · nurse callback";
+      return "Patient teach-back not yet understood, nurse callback";
     case "contact_permission_changed":
       return `Patient contact permission: ${event.data.permission ?? "changed"}`;
     case "slot_selected":
-      return "Patient selected a simulated slot · coordinator review needed";
+      return "Patient selected a simulated slot, coordinator review needed";
     case "preparation_changed":
       return `Patient preparation ${event.data.item_id === "escort_home" ? "escort home" : "clear fluids and prep"}: ${event.data.completed ? "complete" : "not complete"}`;
   }

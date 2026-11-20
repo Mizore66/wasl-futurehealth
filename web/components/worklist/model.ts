@@ -56,7 +56,7 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
-  if (c.lifecycle === "retained") return { status: "Retired", next: "Authorized history only; no current care action" };
+  if (c.lifecycle === "retained") return { status: "Retired", next: "Authorized history only, no current care action" };
   if (c.crc) {
     if (c.crc.care_state === "ongoing") return { status: "Screening complete, care ongoing", next: "Track each confirmed care pathway" };
     if (c.crc.care_state === "awaiting_confirmation") return { status: "Care pathways need confirmation", next: "Review each obligation separately" };
@@ -316,7 +316,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const words = due ? obligationWords(due) : { ...statusWords(c) };
   if (c.api_patient?.slot_selection.status === "selected") {
     words.status = "Patient selected a simulated slot · coordinator review needed";
-    words.next = "Review the preferred time; no appointment is reserved";
+    words.next = "Review the preferred time. No appointment is reserved";
   }
   const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";
   const ov = c.api_overlay;
@@ -404,7 +404,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
       words.next = `Contact the patient about the simulated recovery slot on day ${backfill.day}`;
     } else {
       view = "waiting";
-      words.next = "Patient contact is not permitted; the simulated slot has not been offered";
+      words.next = "Patient contact is not permitted, so the simulated slot was not offered";
     }
   }
   const communication = ov?.communication;

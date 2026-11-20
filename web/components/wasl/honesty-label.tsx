@@ -4,6 +4,9 @@ import { HONESTY, type HonestyKind } from "@/lib/honesty";
 const CHIP_BOX =
   "inline-flex h-6 items-center gap-1.5 self-start whitespace-nowrap rounded-chip bg-raised px-2 text-small font-medium text-ink-soft";
 
+/** An honesty label read as plain text: no chip box, no status dot. */
+export const HONESTY_PLAIN = "inline h-auto whitespace-normal bg-transparent px-0 text-small font-normal text-muted [&>[data-dot]]:hidden";
+
 const dotClass = (kind: HonestyKind) =>
   cn(
     "size-1.5 flex-none rounded-full",

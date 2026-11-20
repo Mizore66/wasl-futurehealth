@@ -20,7 +20,7 @@ const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min
  * unless this returns ok.
  */
 export async function recordAction(caseId: string, head: string, action: z.input<typeof CaseAction>): Promise<RecordResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: this action stays in this browser" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API, so this action stays in this browser" };
   const args = Args.safeParse({ caseId, head, action });
   if (!args.success) return { ok: false, status: 400, error: "malformed action" };
   const res = await postAction(args.data.caseId, args.data.action, args.data.head);

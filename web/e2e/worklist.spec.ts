@@ -438,7 +438,7 @@ test.describe("Referrals", () => {
     await pane(page).getByRole("button", { name: "Arabic interpreter on the day" }).click();
     await pane(page).getByRole("button", { name: "Female endoscopist" }).click();
     await pane(page).getByRole("button", { name: "Accept with 2 conditions" }).click();
-    await expect(pane(page).getByRole("status")).toContainText("Accepted with conditions. Arabic interpreter on the day; Female endoscopist.");
+    await expect(pane(page).getByRole("status")).toContainText("Accepted with conditions. Arabic interpreter on the day, Female endoscopist.");
   });
 
   test("Return to GP clocks the GP from the return day and Undo clears it", async ({ page }) => {

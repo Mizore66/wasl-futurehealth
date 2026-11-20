@@ -128,7 +128,7 @@ const SESSION_OWNER = "Hessa Al Ali";
 const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
   404: "the API does not know this case",
-  409: "someone changed this case first; reload to see it",
+  409: "someone changed this case first. Reload to see it",
   500: "the case ledger failed validation, so the API refuses new actions",
   503: "no live API",
 };
@@ -934,7 +934,7 @@ export function TodayBoard({
               type="button"
               aria-disabled="true"
               aria-describedby="today-no-record"
-              title="Case file not available: this demo has case files only for the showcase cases"
+              title="Case file not available. This demo has case files only for the showcase cases."
               className={cn(caseViewButton, "cursor-not-allowed border-dashed bg-transparent text-limestone-700 hover:bg-transparent")}
             >
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
@@ -956,7 +956,7 @@ export function TodayBoard({
         <div className="grid grid-cols-1 divide-y divide-rule @xl:grid-cols-3 @xl:divide-x @xl:divide-y-0">
           <FactGroup title="Contact">
             <Fact label="Permission" warn={p.contactBlocked || p.consent !== "granted"}>
-              {p.contactBlocked ? "On hold · denial or opt-out recorded" : CONSENT_WORDS[p.consent]}
+              {p.contactBlocked ? "On hold, denial or opt-out recorded" : CONSENT_WORDS[p.consent]}
             </Fact>
             <Fact label="Texts">{p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"}</Fact>
             <Fact label="Language">{p.languageName}</Fact>
@@ -1105,7 +1105,7 @@ export function TodayBoard({
       {ledgerInvalid && (
         /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
         <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-          <p className="m-0 font-medium text-warning">Case ledger not trustworthy: this patient&rsquo;s state here is not authoritative</p>
+          <p className="m-0 font-medium text-warning">Case ledger not trustworthy. This patient&rsquo;s state here is not authoritative.</p>
           <p className="m-0 mt-1">
             The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
             {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
@@ -1251,7 +1251,7 @@ export function TodayBoard({
             Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
           </p>
           {ledgerRead.patient.slot_selection.status === "selected" && (
-            <p className="m-0 mt-1">Patient selected a simulated slot · coordinator review needed. No appointment is reserved.</p>
+            <p className="m-0 mt-1">Patient selected a simulated slot. Coordinator review is needed. No appointment is reserved.</p>
           )}
         </section>
       )}
@@ -1424,7 +1424,7 @@ export function TodayBoard({
               <p className={cn("m-0 px-4 pb-3 text-center text-small text-muted tabular-nums", paging.pages === 1 && "pt-3")} data-testid="queue-summary">
                 {paging.pages > 1 && `${paging.from}–${paging.to} of `}
                 {tab === "call"
-                  ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
+                  ? `${list.length} to call, ${list.filter((r) => clockWords(r).over).length} past their deadline`
                   : tab === "waiting"
                     ? `${list.length} waiting on someone else`
                     : `${list.length} with no owner`}
