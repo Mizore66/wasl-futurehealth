@@ -19,12 +19,13 @@ for (const route of ROUTES) {
   });
 }
 
-test("the shell marks the current page and carries the synthetic-data chip", async ({ page }) => {
+test("the shell marks the current page and shows the persona without a synthetic-data chip", async ({ page }) => {
   await page.goto("/app/pipeline/matching");
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link", { name: "Pipeline" })).toHaveAttribute("aria-current", "page");
   await expect(nav.locator("[aria-current]")).toHaveCount(1);
-  await expect(page.getByText("Synthetic data · demo").first()).toBeVisible();
+  await expect(page.getByTestId("shell-persona").first()).toBeVisible();
+  await expect(page.locator("aside#app-sidebar")).not.toContainText("Synthetic data");
   await nav.getByRole("link", { name: "Review desk", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/review$/);
   await expect(nav.getByRole("link", { name: "Review desk", exact: true })).toHaveAttribute("aria-current", "page");

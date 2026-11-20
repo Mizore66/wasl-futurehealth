@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Mark } from "@/components/brand/mark";
-import { HonestyChip } from "@/components/wasl/honesty-chip";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
 import {
   Tooltip,
@@ -440,8 +439,6 @@ function PersonaSlot({
   );
 }
 
-const SYNTHETIC = "Synthetic data · demo";
-
 function typingTarget(t: EventTarget | null) {
   return (
     t instanceof HTMLElement &&
@@ -569,9 +566,6 @@ export function AppSidebar({
             )}
           >
             <PersonaSlot pathname={pathname} session={session} collapsed={collapsed} />
-            <HonestyChip kind="simulated" compact={collapsed}>
-              <span className={cx(collapsed && "sr-only")}>{SYNTHETIC}</span>
-            </HonestyChip>
           </div>
         </div>
       </aside>
@@ -614,7 +608,6 @@ export function AppSidebar({
             <Nav pathname={pathname} counts={counts} label="Main (mobile)" onQueue={() => setOpenFor(null)} />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <PersonaSlot pathname={pathname} session={session} />
-              <HonestyChip kind="simulated">{SYNTHETIC}</HonestyChip>
             </div>
           </div>
         </div>
