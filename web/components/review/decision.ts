@@ -419,7 +419,7 @@ export function resolvedCell(decision: string): { word: string; tone: "positive"
 export function readFailureSentence(failure: { status: number; error: string }): string {
   switch (failure.status) {
     case 401:
-      return "Not saved: sign in with your reviewer token to continue.";
+      return "Not saved: sign in to continue.";
     case 403:
       return "Not saved: this credential cannot submit the next read for this question.";
     case 404:

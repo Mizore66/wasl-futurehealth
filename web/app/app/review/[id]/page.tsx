@@ -116,7 +116,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
           help={["reads", "canonical", "overlay"]}
         />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
-          {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
+          {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "demo" ? null : await reviewerPersona()} />}
           {view.guided ? (
             <ReviewDesk
               view={view}

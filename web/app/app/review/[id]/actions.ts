@@ -28,6 +28,11 @@ export async function signInReviewer(caseId: string, token: string): Promise<Sig
   return session.signInReviewer(caseId, token);
 }
 
+/* Open-demo persona pick: the browser names a persona, the server holds and uses its token. */
+export async function signInAsDemoPersona(caseId: string, credential: string): Promise<SignInResult> {
+  return session.signInAsDemoPersona(caseId, credential);
+}
+
 export async function signOutReviewer(caseId: string): Promise<void> {
   return session.signOutReviewer(caseId);
 }

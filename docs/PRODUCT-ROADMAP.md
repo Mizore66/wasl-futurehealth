@@ -41,6 +41,9 @@ Seven programmes (colorectal, cervical, breast, lung LDCT, lung nodule, diabetic
 - **Add loops, in order:** lung LDCT → incidental lung nodules → diabetic retinopathy → IFHAS abnormal results (≈50–110k loops a year across the emirate).
 - **Expand:** NABIDH (Dubai) and Riayati (federal) as later markets.
 
+### Authentication in production
+Staff sign in through the provider's SSO or UAE Pass, and every sign-off is bound to a named clinician. The open demo persona switcher, where any visitor can act as a demo reviewer or clinician, exists only in the hosted demo. **Designed**; the web app's OIDC sign-in mode is built and tested against a synthetic provider.
+
 ## 3. How each phase answers the assessment
 
 | Criterion | Evidence now | Next proof |

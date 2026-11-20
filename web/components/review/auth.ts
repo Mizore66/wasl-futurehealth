@@ -26,6 +26,22 @@ export const REVIEW_COOKIE_PATH = "/app";
 export const REVIEW_COOKIE_MAX_AGE = 8 * 60 * 60;
 export const REVIEW_TOKEN_PATTERN = /^\S{16,4096}$/;
 
+/*
+ * The open demo's personas (WASL_REVIEW_AUTH_MODE=persona). The cookie names a persona, never a token: the web server
+ * looks up that persona's token (WASL_API_<CREDENTIAL>_TOKEN) and signs with it, so no token reaches the browser.
+ * "clinician" is left out on purpose: in the hosted demo that token is the receiving unit's shared clinician.
+ */
+export const DEMO_PERSONA_COOKIE = "wasl_demo_persona";
+export const DEMO_PERSONAS = [
+  { credential: "reviewer", name: "Reviewer A", role: "Reviewer" },
+  { credential: "reviewer_2", name: "Reviewer B", role: "Reviewer" },
+  { credential: "reviewer_3", name: "Senior reviewer", role: "Senior reviewer" },
+  { credential: "clinician_2", name: "Clinician", role: "Clinician" },
+  { credential: "clinician_3", name: "Senior clinician", role: "Senior clinician" },
+] as const;
+export type DemoPersona = (typeof DEMO_PERSONAS)[number];
+export const demoPersona = (credential: unknown): DemoPersona | undefined => DEMO_PERSONAS.find((p) => p.credential === credential);
+
 export const isReviewToken = (token: unknown): token is string => typeof token === "string" && REVIEW_TOKEN_PATTERN.test(token);
 
 export type ReviewSessionInfo = { method: ReviewAuthMode; expiresAt?: string };
@@ -55,5 +71,6 @@ export function oidcStartHref(caseId: string, returnTo = `/app/review/${encodeUR
 
 /** How a clinician signs in, in words that match the configured mode (OIDC deployments have no tokens to hand out). */
 export function clinicianSignInWords(mode: ReviewAuthMode): string {
-  return mode === "oidc" ? "Sign in with your organisation’s OIDC account." : "Sign in with the clinician token assigned to you.";
+  if (mode === "oidc") return "Sign in with your organisation’s OIDC account.";
+  return mode === "persona" ? "Pick a demo clinician persona to act as." : "Sign in with the clinician token assigned to you.";
 }

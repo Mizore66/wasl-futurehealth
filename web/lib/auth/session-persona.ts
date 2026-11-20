@@ -3,7 +3,7 @@
  * The API binds each bearer token to an actor and role; the web server can name that actor only when it holds the same
  * token map (WASL_API_TOKENS, "token:role:actor,…", as scripts/demo.sh exports it). Otherwise it names the credential.
  */
-export type SessionPersona = { actor: string; role: string; method: "demo" | "oidc" };
+export type SessionPersona = { actor: string; role: string; method: "demo" | "persona" | "oidc" };
 
 type Env = Record<string, string | undefined>;
 
@@ -54,6 +54,11 @@ export function personaFromToken(token: string, env: Env = process.env): Session
     }
   }
   return { actor: "Pasted reviewer token", role: "Demo token · actor bound by the API", method: "demo" };
+}
+
+/** An open-demo persona session: the persona's name, labelled as a demo persona (the API still binds the actor). */
+export function personaFromDemo(name: string, role: string): SessionPersona {
+  return { actor: name, role: `${role} · demo persona`, method: "persona" };
 }
 
 /** An OIDC session: the identity provider's subject, acting with its mapped credential. */

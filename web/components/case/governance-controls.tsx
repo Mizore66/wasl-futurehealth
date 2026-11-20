@@ -2,9 +2,10 @@
 
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
-import { appendGovernanceAction, signInForGovernance, signOutForGovernance } from "@/lib/api/governance-actions";
+import { appendGovernanceAction, signInForGovernance, signInPersonaForGovernance, signOutForGovernance } from "@/lib/api/governance-actions";
 import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 import { oidcStartHref } from "@/components/review/auth";
+import { DEMO_PERSONA_WORDS, DemoPersonaPicker } from "@/components/review/demo-persona-picker";
 import { clearSignedOutNotice, SESSION_REJECTED, setSignedOutNotice, signedOutNotice } from "@/components/review/signed-out-notice";
 
 export type GovernanceOperation = "undo" | "contest" | "resolve";
@@ -97,6 +98,7 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
 
 const INDEPENDENCE = {
   demo: "Independence holds only when each actor signs in separately, in their own session, with a distinct token the operator issued to them. A token proves a configured demo identity, not that a separate person is present; one person holding several tokens defeats it.",
+  persona: "In this open demo anyone can pick any persona, so a different persona proves a different configured actor, not a different person.",
   oidc: "Independence requires separately authenticated provider subjects. OIDC maps a verified subject to a configured actor; it does not by itself prove separate real-world people.",
 } as const;
 
@@ -146,8 +148,16 @@ export function GovernanceSignIn({
         Sign in to {purpose}
       </h3>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-        {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} {acts} only as that signed-in credential;
-        this page never offers a role or credential choice. {INDEPENDENCE[mode]}
+        {mode === "persona" ? (
+          <>
+            {DEMO_PERSONA_WORDS} {acts} only as the persona you pick. {INDEPENDENCE[mode]}
+          </>
+        ) : (
+          <>
+            {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} {acts} only as that signed-in
+            credential; this page never offers a role or credential choice. {INDEPENDENCE[mode]}
+          </>
+        )}
       </p>
       {notice && (
         <p role="status" className="m-0 mt-2 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
@@ -158,6 +168,8 @@ export function GovernanceSignIn({
         <Link href={oidcStartHref(caseId)} className="mt-3 inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white">
           Sign in with OIDC
         </Link>
+      ) : mode === "persona" ? (
+        <DemoPersonaPicker caseId={caseId} signIn={signInPersonaForGovernance} />
       ) : (
         <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
           <div>
@@ -220,7 +232,9 @@ export function GovernanceIdentity({
       <p className="m-0 max-w-[64ch] text-small text-muted">
         {mode === "oidc"
           ? `${acts} as your OIDC-mapped credential; the API decides your role and actor from it.`
-          : `${acts} as the token you signed in with; the API decides your role and actor from it.`}
+          : mode === "persona"
+            ? `${acts} as the demo persona you picked, recorded as a demo sign-off; the API decides its role and actor.`
+            : `${acts} as the token you signed in with; the API decides your role and actor from it.`}
         {expiresAt && <> Session expires at <time dateTime={expiresAt}>{expiresAt}</time>.</>}
         {!signOut && " To act as someone else, use Sign out on the review desk."} {INDEPENDENCE[mode]}
       </p>

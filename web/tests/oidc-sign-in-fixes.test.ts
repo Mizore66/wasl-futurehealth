@@ -223,7 +223,7 @@ describe("fix 5: who you are, and returnTo stays under /app", () => {
 
   it("both pages pass reviewerPersona() to the session line", () => {
     for (const page of [read("app", "app", "review", "[id]", "page.tsx"), read("app", "app", "patients", "[id]", "disposition", "page.tsx")]) {
-      expect(page).toContain('persona={viewer.session.method === "oidc" ? await reviewerPersona() : null}');
+      expect(page).toContain('persona={viewer.session.method === "demo" ? null : await reviewerPersona()}');
     }
   });
 
