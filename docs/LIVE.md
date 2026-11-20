@@ -96,8 +96,8 @@ flowchart TB
   ["Continuous deployment"](../deploy/azure/README.md#continuous-deployment). Run it by hand from the Actions page,
   for `all` or a single target, to redeploy without a code change.
 - **Proof.** All four jobs passed on GitHub on 18 Nov by manual dispatch (runs 44336690733 and 44346100602). The
-  merge of #249 ran the workflow from a push and correctly deployed nothing. No push to `main` has yet deployed a
-  changed target.
+  merges of #251 to #255 (19 and 20 Nov) each deployed the changed web app, and twice the API, from a push to
+  `main` with no manual step.
 
 ## Identities and secrets
 
