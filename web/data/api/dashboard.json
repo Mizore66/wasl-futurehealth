@@ -297,6 +297,120 @@
    "rbac_denied_consent": 12,
    "rbac_denied_signoff": 6
   },
+  "on_time_by_programme": [
+   {
+    "eligible": 1331,
+    "on_time": 408,
+    "programme": "crc",
+    "share": 0.3065,
+    "window_days": 31
+   },
+   {
+    "eligible": 53,
+    "on_time": 4,
+    "programme": "cervical",
+    "share": 0.0755,
+    "window_days": 14
+   },
+   {
+    "eligible": 168,
+    "on_time": 42,
+    "programme": "cervical",
+    "share": 0.25,
+    "window_days": 28
+   },
+   {
+    "eligible": 233,
+    "on_time": 98,
+    "programme": "cervical",
+    "share": 0.4206,
+    "window_days": 56
+   },
+   {
+    "eligible": 67,
+    "on_time": 24,
+    "programme": "lung_nodule",
+    "share": 0.3582,
+    "window_days": 91
+   },
+   {
+    "eligible": 220,
+    "on_time": 76,
+    "programme": "lung_nodule",
+    "share": 0.3455,
+    "window_days": 183
+   },
+   {
+    "eligible": 42,
+    "on_time": 16,
+    "programme": "lung_nodule",
+    "share": 0.381,
+    "window_days": 365
+   },
+   {
+    "eligible": 25,
+    "on_time": 9,
+    "programme": "lung_nodule",
+    "share": 0.36,
+    "window_days": 396
+   },
+   {
+    "eligible": 42,
+    "on_time": 17,
+    "programme": "diabetic_retinopathy",
+    "share": 0.4048,
+    "window_days": 42
+   },
+   {
+    "eligible": 52,
+    "on_time": 21,
+    "programme": "diabetic_retinopathy",
+    "share": 0.4038,
+    "window_days": 91
+   },
+   {
+    "eligible": 4,
+    "on_time": 2,
+    "programme": "breast",
+    "share": 0.5,
+    "window_days": 14
+   },
+   {
+    "eligible": 6,
+    "on_time": 6,
+    "programme": "lung_ldct",
+    "share": 1,
+    "window_days": 30
+   },
+   {
+    "eligible": 2,
+    "on_time": 2,
+    "programme": "lung_ldct",
+    "share": 1,
+    "window_days": 121
+   },
+   {
+    "eligible": 11,
+    "on_time": 6,
+    "programme": "lung_ldct",
+    "share": 0.5455,
+    "window_days": 213
+   },
+   {
+    "eligible": 6,
+    "on_time": 3,
+    "programme": "ifhas",
+    "share": 0.5,
+    "window_days": 10
+   },
+   {
+    "eligible": 231,
+    "on_time": 113,
+    "programme": "ifhas",
+    "share": 0.4892,
+    "window_days": 59
+   }
+  ],
   "provenance": {
    "closed_chains": 4091,
    "hash_verified": 4091,

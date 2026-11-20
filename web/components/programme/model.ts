@@ -21,6 +21,25 @@ export type ProgrammeRow = {
   open: number | null;
   /** The patient list for this programme (the API filters on `programme`). */
   href: string;
+  /** Follow-up on time against the programme's own deadline, as Wasl measured it; null when no referral's deadline has passed. */
+  onTime: OnTime | null;
+};
+
+/** One deadline window: referrals whose deadline has passed, and those whose follow-up step Wasl recorded on or before it. */
+export type OnTimeWindow = { days: number; eligible: number; onTime: number; /** Percent, 0 to 100, one decimal. */ share: number };
+
+export type OnTime = {
+  /** The follow-up step that counts, in plain words, lower case to sit mid-sentence ("follow-up CT"). */
+  step: string;
+  /** Summed over the programme's windows. */
+  eligible: number;
+  onTime: number;
+  /** Percent, 0 to 100, one decimal: onTime / eligible. */
+  share: number;
+  /** Shortest window first. More than one when the deadline depends on the referral (urgency, Fleischner window). */
+  windows: OnTimeWindow[];
+  /** "within 31 days", "within 14, 28 or 56 days". */
+  within: string;
 };
 
 export type StallGroup = { pathway: string; stalls: Stall[] };
@@ -50,6 +69,8 @@ export type ProgrammeView = {
   programmes: ProgrammeRow[];
   /** Every sourced stall, by pathway, largest first within a pathway. */
   allStalls: StallGroup[];
+  /** Whether the run serves `metrics.on_time_by_programme` at all (runs served before it do not). */
+  onTimeMeasured: boolean;
   /** null when the run has no capacity block this page can read. */
   capacity: CapacityView | null;
   /** Provider and origin patterns from the dashboard's small-cell suppressed tables. */
@@ -111,6 +132,45 @@ export const PROGRAMME_NAME: Record<Programme, string> = {
   lung_ldct: "Lung screening (LDCT)",
   ifhas: "IFHAS cardiometabolic",
 };
+
+/** The step each programme's on-time figure counts (pipeline/api_ontime.go). */
+const ON_TIME_STEP: Record<Programme, string> = {
+  crc: "colonoscopy",
+  cervical: "colposcopy",
+  lung_nodule: "follow-up CT",
+  diabetic_retinopathy: "eye-clinic exam",
+  breast: "assessment outcome",
+  lung_ldct: "follow-up LDCT or work-up",
+  ifhas: "follow-up documented",
+};
+
+const share = (on: number, of: number) => pctOf(of > 0 ? on / of : 0);
+
+/** "31", "14 or 28", "14, 28 or 56". */
+function dayList(days: number[]): string {
+  const n = days.map(num);
+  return n.length < 2 ? (n[0] ?? "") : `${n.slice(0, -1).join(", ")} or ${n[n.length - 1]}`;
+}
+
+/**
+ * The served on-time rows, grouped by programme. A row the schema cannot read, or with no eligible referral, is left out;
+ * so is a programme this page has no name for. The share is recomputed from the counts, never read from `share`.
+ */
+export function onTimeByProgramme(d: Dashboard): Map<Programme, OnTime> {
+  const out = new Map<Programme, OnTime>();
+  const rows = d.metrics.on_time_by_programme ?? [];
+  for (const key of Object.keys(PROGRAMME_NAME) as Programme[]) {
+    const windows = rows
+      .filter((r) => r.programme === key && r.eligible > 0 && r.on_time <= r.eligible)
+      .map((r) => ({ days: r.window_days, eligible: r.eligible, onTime: r.on_time, share: share(r.on_time, r.eligible) }))
+      .sort((a, b) => a.days - b.days);
+    if (windows.length === 0) continue;
+    const eligible = windows.reduce((t, w) => t + w.eligible, 0);
+    const onTime = windows.reduce((t, w) => t + w.onTime, 0);
+    out.set(key, { step: ON_TIME_STEP[key], eligible, onTime, share: share(onTime, eligible), windows, within: `within ${dayList(windows.map((w) => w.days))} days` });
+  }
+  return out;
+}
 
 const REGION_NAME: Record<string, string> = { AA: "Al Ain", AD: "Abu Dhabi", DH: "Al Dhafra" };
 
@@ -195,11 +255,23 @@ export function programmeView(d: Dashboard): ProgrammeView {
     .slice(0, 3);
 
 
+  const onTime = onTimeByProgramme(d);
   const programmes = (Object.keys(PROGRAMME_NAME) as Programme[]).flatMap((key) => {
     const p = d.by_programme[key];
     if (!p) return [];
     const open = p.cases - p.closed - p.overdue;
-    return [{ key, name: PROGRAMME_NAME[key], cases: p.cases, closed: p.closed, overdue: p.overdue, open: open >= 0 ? open : null, href: `/app/patients?programme=${key}` }];
+    return [
+      {
+        key,
+        name: PROGRAMME_NAME[key],
+        cases: p.cases,
+        closed: p.closed,
+        overdue: p.overdue,
+        open: open >= 0 ? open : null,
+        href: `/app/patients?programme=${key}`,
+        onTime: onTime.get(key) ?? null,
+      },
+    ];
   });
 
   const label = (k: Dropoff) => STALL_LABEL[k] ?? OTHER_STALL_LABEL[k];
@@ -219,6 +291,7 @@ export function programmeView(d: Dashboard): ProgrammeView {
     kpi: { demo, heldout: heldoutSet() },
     programmes,
     allStalls,
+    onTimeMeasured: d.metrics.on_time_by_programme !== undefined,
     capacity: capacityView(d),
     patterns: patternsView(d),
     levers: leverView(d),

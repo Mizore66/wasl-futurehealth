@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import dashboardJson from "@/data/api/dashboard.json";
 import { Dashboard } from "@/lib/api/schema";
-import { points, poolingRuns, programmeView, stallScope } from "@/components/programme/model";
+import { onTimeByProgramme, points, poolingRuns, programmeView, stallScope } from "@/components/programme/model";
 import { result } from "@/lib/results";
 
 const dashboard = Dashboard.parse(dashboardJson);
@@ -58,6 +58,71 @@ describe("programmeView: the two 31-day sources", () => {
   it("explains each bar from its source: counts for the demo run, the 95% range for the mean", () => {
     expect(view.kpi.demo.detail.wasl).toBe("408 of 1,331 eligible referrals");
     expect(view.kpi.heldout.detail.eid).toBe("Mean of 5 seeds, 95% range 11.4% to 13.1%");
+  });
+});
+
+describe("programmeView: on time by programme", () => {
+  const view = programmeView(dashboard);
+  const byKey = Object.fromEntries(view.programmes.map((p) => [p.key, p.onTime]));
+
+  it("gives every programme in the sample its own on-time share, window and step", () => {
+    expect(view.onTimeMeasured).toBe(true);
+    expect(view.programmes.every((p) => p.onTime !== null)).toBe(true);
+    expect(byKey.crc).toEqual({
+      step: "colonoscopy",
+      eligible: 1331,
+      onTime: 408,
+      share: 30.7,
+      windows: [{ days: 31, eligible: 1331, onTime: 408, share: 30.7 }],
+      within: "within 31 days",
+    });
+    expect(byKey.diabetic_retinopathy).toMatchObject({ step: "eye-clinic exam", eligible: 94, onTime: 38, share: 40.4, within: "within 42 or 91 days" });
+    expect(byKey.breast).toMatchObject({ eligible: 4, onTime: 2, share: 50, within: "within 14 days" });
+    expect(byKey.lung_ldct).toMatchObject({ eligible: 19, onTime: 14, share: 73.7, within: "within 30, 121 or 213 days" });
+    expect(byKey.ifhas).toMatchObject({ eligible: 237, onTime: 116, share: 48.9, within: "within 10 or 59 days" });
+  });
+
+  it("sums a programme's windows and keeps each window's own share", () => {
+    expect(byKey.cervical).toMatchObject({ step: "colposcopy", eligible: 454, onTime: 144, share: 31.7, within: "within 14, 28 or 56 days" });
+    expect(byKey.cervical?.windows.map((w) => [w.days, w.onTime, w.eligible, w.share])).toEqual([
+      [14, 4, 53, 7.5],
+      [28, 42, 168, 25],
+      [56, 98, 233, 42.1],
+    ]);
+    expect(byKey.lung_nodule).toMatchObject({ step: "follow-up CT", eligible: 354, onTime: 125, share: 35.3, within: "within 91, 183, 365 or 396 days" });
+  });
+
+  it("agrees with the colorectal 31-day figure Wasl measured", () => {
+    const arm = dashboard.metrics.crc_kpi_31d.wasl_live;
+    expect([byKey.crc?.onTime, byKey.crc?.eligible]).toEqual([arm.within_31d, arm.eligible_referrals]);
+    expect(byKey.crc?.share).toBe(view.kpi.demo.rates.wasl);
+  });
+
+  it("recomputes the share from the counts and drops rows it cannot use", () => {
+    const metrics = {
+      ...dashboard.metrics,
+      on_time_by_programme: [
+        { programme: "breast", window_days: 21, eligible: 3, on_time: 1, share: 0.9 },
+        { programme: "breast", window_days: 14, eligible: 0, on_time: 0, share: 0 },
+        { programme: "prostate", window_days: 30, eligible: 5, on_time: 5, share: 1 },
+      ],
+    };
+    const got = onTimeByProgramme({ ...dashboard, metrics });
+    expect([...got.keys()]).toEqual(["breast"]);
+    expect(got.get("breast")).toMatchObject({ eligible: 3, onTime: 1, share: 33.3, windows: [{ days: 21, eligible: 3, onTime: 1, share: 33.3 }] });
+  });
+
+  it("says nothing on time for a run that does not serve the metric, and parses that run", () => {
+    const old = Dashboard.parse({ ...dashboardJson, metrics: { ...dashboardJson.metrics, on_time_by_programme: undefined } });
+    expect(old.metrics.on_time_by_programme).toBeUndefined();
+    const v = programmeView(old);
+    expect(v.onTimeMeasured).toBe(false);
+    expect(v.programmes.every((p) => p.onTime === null)).toBe(true);
+  });
+
+  it("rejects a served row whose counts are not counts", () => {
+    const bad = { ...dashboardJson, metrics: { ...dashboardJson.metrics, on_time_by_programme: [{ programme: "crc", window_days: 31, eligible: -1, on_time: 0, share: 0 }] } };
+    expect(Dashboard.safeParse(bad).success).toBe(false);
   });
 });
 

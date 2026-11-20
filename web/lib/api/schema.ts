@@ -1429,6 +1429,20 @@ export const Dashboard = withMeta({
       with_human_signoff: z.number(),
     }),
     consent_timing: z.record(z.string(), z.number()),
+    // Per programme and deadline window: referrals whose deadline has passed (eligible) and those whose follow-up step
+    // Wasl recorded on or before it (pipeline/api_ontime.go). Wasl-measured only, no comparison arm. Optional: runs
+    // served before this field have none.
+    on_time_by_programme: z
+      .array(
+        z.looseObject({
+          programme: z.string(),
+          window_days: z.number().int().positive(),
+          eligible: z.number().int().nonnegative(),
+          on_time: z.number().int().nonnegative(),
+          share: z.number().min(0).max(1),
+        }),
+      )
+      .optional(),
   }),
   capacity: z.looseObject({ status: z.string(), data_mode: z.string() }),
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { Fragment, useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /*
@@ -93,7 +93,13 @@ export function Mark({ tip, href, className, children }: { tip: React.ReactNode;
   );
 }
 
-export type TableData = { caption: string; head: string[]; rows: string[][] };
+export type TableData = {
+  caption: string;
+  head: string[];
+  rows: string[][];
+  /** Optional one line per row, shown under it across every column (so a narrow screen gets no extra column). */
+  details?: (string | null)[];
+};
 
 /** A chart in a figure with its caption, and the same numbers as a table behind a toggle. */
 export function ChartFigure({
@@ -145,21 +151,34 @@ export function ChartFigure({
               </tr>
             </thead>
             <tbody>
-              {table.rows.map((row) => (
-                <tr key={row[0]}>
-                  {row.map((cell, i) =>
-                    i === 0 ? (
-                      <th key={i} scope="row" className="border-b border-rule px-1 py-2 text-left font-normal">
-                        {cell}
-                      </th>
-                    ) : (
-                      <td key={i} className="border-b border-rule px-1 py-2 text-right">
-                        {cell}
-                      </td>
-                    ),
-                  )}
-                </tr>
-              ))}
+              {table.rows.map((row, r) => {
+                const detail = table.details?.[r] ?? null;
+                const edge = detail === null ? "border-b border-rule" : "";
+                return (
+                  <Fragment key={row[0]}>
+                    <tr>
+                      {row.map((cell, i) =>
+                        i === 0 ? (
+                          <th key={i} scope="row" className={cn(edge, "px-1 py-2 text-left font-normal")}>
+                            {cell}
+                          </th>
+                        ) : (
+                          <td key={i} className={cn(edge, "px-1 py-2 text-right")}>
+                            {cell}
+                          </td>
+                        ),
+                      )}
+                    </tr>
+                    {detail !== null && (
+                      <tr>
+                        <td colSpan={table.head.length} className="border-b border-rule px-1 pb-2 text-left text-ink-soft">
+                          {detail}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         ) : (
