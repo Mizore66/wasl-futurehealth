@@ -26,7 +26,9 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
       <PageHeader
         title="Today"
         sub={`${scope} · ${simulatedRunDate(now)}`}
-        aside={<TodayScope selection={selection} options={{ programme, provider }} count={items.length} />}
+        // The scope menu opens below the band, so the band must not clip it (and stacks above the board).
+        className="relative z-10 overflow-visible!"
+        aside={<TodayScope selection={selection} options={{ programme, provider }} count={items.length} queue={queue} />}
       />
       {/* Keyed by scope only: switching queue keeps this browser's logged actions. */}
       <TodayBoard key={scope} items={items} now={now} aside={honesty} live={live} scope={scope} queue={queue} />

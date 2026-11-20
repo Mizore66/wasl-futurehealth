@@ -99,3 +99,27 @@ test.describe("Today programme and provider selection", () => {
     await expect.poll(() => queueSize(page)).toBe(0);
   });
 });
+
+test.describe("Today scope menu is usable", () => {
+  for (const [label, viewport] of [["desktop", { width: 1440, height: 900 }], ["phone", { width: 390, height: 844 }]] as const) {
+    test(`its controls are not clipped by the header and a new scope keeps the queue (${label})`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/app/today?queue=waiting");
+      await openScope(page);
+      // Every control in the open menu is the element a click at its centre reaches (nothing covers or clips it).
+      for (const control of [programmeSelect(page), providerSelect(page), scope(page).getByRole("button", { name: "Show queue" })]) {
+        await control.scrollIntoViewIfNeeded();
+        const reached = await control.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return hit === el || el.contains(hit);
+        });
+        expect(reached).toBe(true);
+      }
+      await programmeSelect(page).selectOption("cervical");
+      await scope(page).getByRole("button", { name: "Show queue" }).click();
+      await expect(page).toHaveURL(/programme=cervical/);
+      await expect(page).toHaveURL(/queue=waiting/);
+    });
+  }
+});
