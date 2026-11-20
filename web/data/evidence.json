@@ -1,0 +1,912 @@
+{
+ "generated": {
+  "revision": "075abc5ad04ae14dff01dc7b9ddd1cedd5671d51",
+  "frozen_at": "2026-11-02T04:33:36.064230Z",
+  "source": "pipeline/results/final/summary.json",
+  "generated_by": "scripts/evidence.py"
+ },
+ "impact": {
+  "per_1000": [
+   {
+    "row": "Completions seen within 31 days (frozen v2 five-seed mean)",
+    "eid_only": 122.4,
+    "wasl": 298.0,
+    "truth": 329.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Share of true completions seen (frozen v2 five-seed mean)",
+    "eid_only": 37.2,
+    "wasl": 90.6,
+    "truth": 100.0,
+    "unit": "%"
+   },
+   {
+    "row": "Patients wrongly flagged 'not followed up' (frozen v2 five-seed mean)",
+    "eid_only": 206.6,
+    "wasl": 31.0,
+    "truth": 0.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist size (patients to chase) (frozen v2 five-seed mean)",
+    "eid_only": 877.6,
+    "wasl": 702.0,
+    "truth": 671.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist precision (share of listed patients truly not done) (frozen v2 five-seed mean)",
+    "eid_only": 76.5,
+    "wasl": 95.6,
+    "truth": null,
+    "unit": "%"
+   },
+   {
+    "row": "Completions seen within 31 days (frozen v1 five-seed mean)",
+    "eid_only": 128.4,
+    "wasl": 313.4,
+    "truth": 323.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Share of true completions seen (frozen v1 five-seed mean)",
+    "eid_only": 39.8,
+    "wasl": 97.0,
+    "truth": 100.0,
+    "unit": "%"
+   },
+   {
+    "row": "Patients wrongly flagged 'not followed up' (frozen v1 five-seed mean)",
+    "eid_only": 194.6,
+    "wasl": 9.6,
+    "truth": 0.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist size (patients to chase) (frozen v1 five-seed mean)",
+    "eid_only": 871.6,
+    "wasl": 686.6,
+    "truth": 677.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist precision (share of listed patients truly not done) (frozen v1 five-seed mean)",
+    "eid_only": 77.7,
+    "wasl": 98.6,
+    "truth": null,
+    "unit": "%"
+   },
+   {
+    "row": "Completions seen within 31 days (deployed demo run)",
+    "eid_only": 113.0,
+    "wasl": 307.0,
+    "truth": 319.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Share of true completions seen (deployed demo run)",
+    "eid_only": 35.4,
+    "wasl": 96.2,
+    "truth": 100.0,
+    "unit": "%"
+   },
+   {
+    "row": "Patients wrongly flagged 'not followed up' (deployed demo run)",
+    "eid_only": 206.0,
+    "wasl": 12.0,
+    "truth": 0.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist size (patients to chase) (deployed demo run)",
+    "eid_only": 887.0,
+    "wasl": 693.0,
+    "truth": 681.0,
+    "unit": "per 1,000 positive FITs"
+   },
+   {
+    "row": "Worklist precision (share of listed patients truly not done) (deployed demo run)",
+    "eid_only": 76.8,
+    "wasl": 98.3,
+    "truth": null,
+    "unit": "%"
+   }
+  ],
+  "calibration": {
+   "label": "Abu Dhabi FIT+ patients with a follow-up colonoscopy (SEHA ambulatory clinics, 2015-16)",
+   "value": 0.305,
+   "source": "BMC Cancer 2021",
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343888/",
+   "caveat": "No fixed 31-day window (median 72 days), and only colonoscopies inside SEHA's own network were counted, so it may undercount completions done elsewhere. The simulated truth sitting near it is a plausibility check, not a validation."
+  },
+  "modelled": {
+   "label": "Modelled benefit, modelled, conditional on navigation acting on the corrected list. Worst case is the measurement benefit alone. Tornado output: cancers found per 1,000 positive FITs, base case 0.75 (3 pp uplift, 2.5%). Per year = per 1,000 x positive FITs a year / 1,000 (1,000-10,000 a year, ASSUMED).",
+   "scenarios": [
+    {
+     "name": "worst",
+     "uplift_pp": 0,
+     "ppv": 0.025,
+     "extra_colonoscopies_per_1000": 0,
+     "cancers_found_per_1000": 0
+    },
+    {
+     "name": "base",
+     "uplift_pp": 3,
+     "ppv": 0.025,
+     "extra_colonoscopies_per_1000": 30,
+     "cancers_found_per_1000": 0.75
+    },
+    {
+     "name": "best",
+     "uplift_pp": 11,
+     "ppv": 0.055,
+     "extra_colonoscopies_per_1000": 110,
+     "cancers_found_per_1000": 6.05
+    }
+   ],
+   "tornado": [
+    {
+     "input": "Navigation uplift (INTL)",
+     "low": "3 pp",
+     "high": "11 pp",
+     "out_low": 0.75,
+     "out_high": 2.75
+    },
+    {
+     "input": "CRC found per colonoscopy (UAE low, INTL high)",
+     "low": "2.5%",
+     "high": "5.5%",
+     "out_low": 0.75,
+     "out_high": 1.65
+    }
+   ],
+   "parameters": [
+    {
+     "name": "FIT+ patients with a follow-up colonoscopy, SEHA ambulatory clinics 2015-16",
+     "value": "30.5%",
+     "scope": "UAE",
+     "source": "Abu Dhabi SEHA cohort, BMC Cancer 2021",
+     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343888/"
+    },
+    {
+     "name": "31-day standard: colonoscopy within 31 days of referral after FIT+",
+     "value": "31 days",
+     "scope": "UAE",
+     "source": "DoH colorectal cancer screening specification, Appendix 2",
+     "url": "https://www.doh.gov.ae/-/media/980F1D8087214B6D9E630B457B85E4B9.ashx"
+    },
+    {
+     "name": "Navigation uplift in colonoscopy completion (low)",
+     "value": "3 pp",
+     "scope": "INTL",
+     "source": "Selby et al. 2021, J Med Screen: about 3 points per extra intervention",
+     "url": "https://doi.org/10.1177/0969141320904977"
+    },
+    {
+     "name": "Navigation uplift in colonoscopy completion (high)",
+     "value": "11 pp",
+     "scope": "INTL",
+     "source": "Selby et al. 2021, J Med Screen: programmes with navigators, 6-month completion",
+     "url": "https://doi.org/10.1177/0969141320904977"
+    },
+    {
+     "name": "CRC found per completed colonoscopy after FIT+ (low)",
+     "value": "2.5%",
+     "scope": "UAE",
+     "source": "SEHA cohort, 11 cancers in 436 colonoscopies (team's arithmetic)",
+     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343888/"
+    },
+    {
+     "name": "CRC found per completed colonoscopy after FIT+ (high)",
+     "value": "5.5%",
+     "scope": "INTL",
+     "source": "Korean national programme",
+     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5832343/"
+    },
+    {
+     "name": "Positive FITs per year in the illustrative scenarios",
+     "value": "1,000-10,000",
+     "scope": "ASSUMED",
+     "source": "Illustrative. SEHA had about 685 positives a year in one network (team's annualisation); ADPHC reports screenings up more than 280% in 2025",
+     "url": "https://menafn.com/1111766961/Abu-Dhabi-Records-More-Than-280-Increase-in-Cancer-Screenings-and-Strengthens-Adoption-of-Preventive-Health-Behaviours"
+    },
+    {
+     "name": "Navigator minutes per chase contact",
+     "value": "5-20 min",
+     "scope": "ASSUMED",
+     "source": "No Abu Dhabi figure exists; varied as an assumption",
+     "url": ""
+    },
+    {
+     "name": "Malaffi unique patient profiles vs emirate population",
+     "value": "14 million vs 4.14 million",
+     "scope": "UAE",
+     "source": "Malaffi progress report; SCAD 2024 population. Suggests identity fragmentation (inference, not a duplicate rate)",
+     "url": "https://www.malaffi.ae/malaffi-progress-report/"
+    }
+   ]
+  }
+ },
+ "accuracy": {
+  "definitions": [
+   {
+    "term": "False closure (primary safety error)",
+    "meaning": "A loop Wasl's final live decision marks closed while the simulator's hidden truth says it is not closed. Counted per programme on loops Wasl closed (report7 closure.<programme>.wasl_live_with_review.false_closures; pipeline/report7.go closureStatsDecisions, pipeline/analyze.go closureStatsProg), pooled over seeds, with a Clopper-Pearson 95% upper bound (scripts/final_aggregate.py). The frozen run counts false outcomes only; the later evidence-ownership check (#193) is not part of it. The patient drops off the worklist, so this is the dangerous error."
+   },
+   {
+    "term": "False open (missed closure)",
+    "meaning": "A loop the truth says is closed but Wasl leaves open (closure 'missed'). Rate = 1 - closure recall. It creates extra review or chase work; the patient stays visible."
+   },
+   {
+    "term": "Wrong-patient merge",
+    "meaning": "Two registrations of different people placed in one linker cluster (report7 linkage.false_merge_pairs; pipeline/audit.go linkMetrics). Pair false-match rate = 1 - pair precision. Its clinical consequences are measured separately as false closures and as wrong-patient messages released (an outreach message whose triggering record belongs to someone other than the loop's patient; pipeline/sweep.go govMetrics)."
+   },
+   {
+    "term": "Missed match",
+    "meaning": "Two registrations of the same person left in different clusters. Pair missed-match rate = 1 - pair recall over all true same-person pairs."
+   },
+   {
+    "term": "Closure false-match / missed-match rate",
+    "meaning": "The same two rates at the level of each programme's loops: 1 - closure precision and 1 - closure recall, with the evaluation's 95% t-intervals over five seeds."
+   },
+   {
+    "term": "Review band",
+    "meaning": "Items routed to a human reviewer instead of an automatic decision, per 100 loops, and simulated reviewer hours per 1,000 loops."
+   },
+   {
+    "term": "Pre-registration",
+    "meaning": "Code revision 075abc5ad04a with thresholds, policy v7strict, model and data hashes and seeds [11, 23, 37, 41, 59] recorded in pipeline/results/final/manifest.json, frozen 2026-11-02T04:33Z before the held-out runs. v2 noise was never used for training, calibration or rule design; the v7 rules were designed on earlier v1-noise seeds."
+   }
+  ],
+  "linkage": [
+   {
+    "noise": "v1",
+    "metric": "Colorectal (CRC): closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Colorectal (CRC): closure missed-match rate (1 - recall)",
+    "value": 0.156,
+    "low": 0.1374,
+    "high": 0.1746
+   },
+   {
+    "noise": "v1",
+    "metric": "Cervical: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Cervical: closure missed-match rate (1 - recall)",
+    "value": 0.0308,
+    "low": 0.0166,
+    "high": 0.045
+   },
+   {
+    "noise": "v1",
+    "metric": "Incidental lung nodule: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Incidental lung nodule: closure missed-match rate (1 - recall)",
+    "value": 0.0184,
+    "low": 0.0088,
+    "high": 0.028
+   },
+   {
+    "noise": "v1",
+    "metric": "Diabetic retinopathy: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Diabetic retinopathy: closure missed-match rate (1 - recall)",
+    "value": 0.0026,
+    "low": 0.0012,
+    "high": 0.004
+   },
+   {
+    "noise": "v1",
+    "metric": "Breast recall: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Breast recall: closure missed-match rate (1 - recall)",
+    "value": 0.0028,
+    "low": -0.005,
+    "high": 0.0106
+   },
+   {
+    "noise": "v1",
+    "metric": "Lung screening (LDCT): closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "Lung screening (LDCT): closure missed-match rate (1 - recall)",
+    "value": 0.0022,
+    "low": -0.0039,
+    "high": 0.0083
+   },
+   {
+    "noise": "v1",
+    "metric": "IFHAS abnormal result: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v1",
+    "metric": "IFHAS abnormal result: closure missed-match rate (1 - recall)",
+    "value": 0.0116,
+    "low": 0.0069,
+    "high": 0.0163
+   },
+   {
+    "noise": "v1",
+    "metric": "Linkage pairs: false-match rate (1 - pair precision)",
+    "value": 0.011,
+    "low": 0.0082,
+    "high": 0.0138
+   },
+   {
+    "noise": "v1",
+    "metric": "Linkage pairs: missed-match rate (1 - pair recall)",
+    "value": 0.0298,
+    "low": 0.028,
+    "high": 0.0316
+   },
+   {
+    "noise": "v1",
+    "metric": "Review band: review items per 100 loops",
+    "value": 36.8898,
+    "low": 36.1299,
+    "high": 37.6497
+   },
+   {
+    "noise": "v1",
+    "metric": "Review band: reviewer hours per 1,000 loops",
+    "value": 12.82,
+    "low": 12.4863,
+    "high": 13.1537
+   },
+   {
+    "noise": "v1",
+    "metric": "Linkage pair F1 (not comparable across linkers)",
+    "value": 0.9794,
+    "low": 0.978,
+    "high": 0.9808
+   },
+   {
+    "noise": "v2",
+    "metric": "Colorectal (CRC): closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Colorectal (CRC): closure missed-match rate (1 - recall)",
+    "value": 0.215,
+    "low": 0.2021,
+    "high": 0.2279
+   },
+   {
+    "noise": "v2",
+    "metric": "Cervical: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Cervical: closure missed-match rate (1 - recall)",
+    "value": 0.0938,
+    "low": 0.0636,
+    "high": 0.124
+   },
+   {
+    "noise": "v2",
+    "metric": "Incidental lung nodule: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Incidental lung nodule: closure missed-match rate (1 - recall)",
+    "value": 0.048,
+    "low": 0.0365,
+    "high": 0.0595
+   },
+   {
+    "noise": "v2",
+    "metric": "Diabetic retinopathy: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Diabetic retinopathy: closure missed-match rate (1 - recall)",
+    "value": 0.0058,
+    "low": 0.0019,
+    "high": 0.0097
+   },
+   {
+    "noise": "v2",
+    "metric": "Breast recall: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Breast recall: closure missed-match rate (1 - recall)",
+    "value": 0.0058,
+    "low": -0.0041,
+    "high": 0.0157
+   },
+   {
+    "noise": "v2",
+    "metric": "Lung screening (LDCT): closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "Lung screening (LDCT): closure missed-match rate (1 - recall)",
+    "value": 0.002,
+    "low": -0.0018,
+    "high": 0.0058
+   },
+   {
+    "noise": "v2",
+    "metric": "IFHAS abnormal result: closure false-match rate (1 - precision)",
+    "value": 0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   {
+    "noise": "v2",
+    "metric": "IFHAS abnormal result: closure missed-match rate (1 - recall)",
+    "value": 0.0312,
+    "low": 0.0257,
+    "high": 0.0367
+   },
+   {
+    "noise": "v2",
+    "metric": "Linkage pairs: false-match rate (1 - pair precision)",
+    "value": 0.0092,
+    "low": 0.0074,
+    "high": 0.011
+   },
+   {
+    "noise": "v2",
+    "metric": "Linkage pairs: missed-match rate (1 - pair recall)",
+    "value": 0.1014,
+    "low": 0.0953,
+    "high": 0.1075
+   },
+   {
+    "noise": "v2",
+    "metric": "Review band: review items per 100 loops",
+    "value": 33.5584,
+    "low": 32.3128,
+    "high": 34.804
+   },
+   {
+    "noise": "v2",
+    "metric": "Review band: reviewer hours per 1,000 loops",
+    "value": 11.6316,
+    "low": 10.9639,
+    "high": 12.2993
+   },
+   {
+    "noise": "v2",
+    "metric": "Linkage pair F1 (not comparable across linkers)",
+    "value": 0.9422,
+    "low": 0.9381,
+    "high": 0.9463
+   }
+  ],
+  "safety": [
+   {
+    "metric": "[v1] Colorectal (CRC) false closures",
+    "events": 0,
+    "denominator": 3161,
+    "upper_95": 0.00117
+   },
+   {
+    "metric": "[v1] Cervical false closures",
+    "events": 0,
+    "denominator": 1407,
+    "upper_95": 0.00262
+   },
+   {
+    "metric": "[v1] Incidental lung nodule false closures",
+    "events": 0,
+    "denominator": 2022,
+    "upper_95": 0.00182
+   },
+   {
+    "metric": "[v1] Diabetic retinopathy false closures",
+    "events": 0,
+    "denominator": 5634,
+    "upper_95": 0.00065
+   },
+   {
+    "metric": "[v1] Breast recall false closures",
+    "events": 0,
+    "denominator": 345,
+    "upper_95": 0.01064
+   },
+   {
+    "metric": "[v1] Lung screening (LDCT) false closures",
+    "events": 0,
+    "denominator": 1398,
+    "upper_95": 0.00264
+   },
+   {
+    "metric": "[v1] IFHAS abnormal result false closures",
+    "events": 0,
+    "denominator": 3480,
+    "upper_95": 0.00106
+   },
+   {
+    "metric": "[v1] DR referral-loop false closures",
+    "events": 0,
+    "denominator": 267,
+    "upper_95": 0.01372
+   },
+   {
+    "metric": "[v1] Breast recall-loop false closures",
+    "events": 0,
+    "denominator": 31,
+    "upper_95": 0.11219
+   },
+   {
+    "metric": "[v1] LDCT action-loop false closures",
+    "events": 0,
+    "denominator": 109,
+    "upper_95": 0.03328
+   },
+   {
+    "metric": "[v1] IFHAS follow-up-loop false closures",
+    "events": 0,
+    "denominator": 1140,
+    "upper_95": 0.00323
+   },
+   {
+    "metric": "[v1] Lung surveillance-CT false closures",
+    "events": 0,
+    "denominator": 41,
+    "upper_95": 0.08604
+   },
+   {
+    "metric": "[v1] Rejected-referral hand-off false closures",
+    "events": 0,
+    "denominator": 88,
+    "upper_95": 0.04105
+   },
+   {
+    "metric": "[v1] Wrong-patient messages released",
+    "events": 0,
+    "denominator": 17063,
+    "upper_95": 0.00022
+   },
+   {
+    "metric": "[v1] Messages released without granted consent",
+    "events": 0,
+    "denominator": 11828,
+    "upper_95": 0.00031
+   },
+   {
+    "metric": "[v1] Duplicate or lost pipeline outputs (process and broker kills)",
+    "events": 0,
+    "denominator": 220789,
+    "upper_95": 2e-05
+   },
+   {
+    "metric": "[v1] Forged events with any effect",
+    "events": 0,
+    "denominator": 110,
+    "upper_95": null
+   },
+   {
+    "metric": "[v1] Tamper attacks not detected",
+    "events": 0,
+    "denominator": 85,
+    "upper_95": null
+   },
+   {
+    "metric": "[v1] Wrong-patient merge pairs in linker clusters (not zero; see definitions)",
+    "events": 578,
+    "denominator": null,
+    "upper_95": null
+   },
+   {
+    "metric": "[v2] Colorectal (CRC) false closures",
+    "events": 0,
+    "denominator": 3035,
+    "upper_95": 0.00121
+   },
+   {
+    "metric": "[v2] Cervical false closures",
+    "events": 0,
+    "denominator": 1303,
+    "upper_95": 0.00283
+   },
+   {
+    "metric": "[v2] Incidental lung nodule false closures",
+    "events": 0,
+    "denominator": 1907,
+    "upper_95": 0.00193
+   },
+   {
+    "metric": "[v2] Diabetic retinopathy false closures",
+    "events": 0,
+    "denominator": 5627,
+    "upper_95": 0.00066
+   },
+   {
+    "metric": "[v2] Breast recall false closures",
+    "events": 0,
+    "denominator": 338,
+    "upper_95": 0.01085
+   },
+   {
+    "metric": "[v2] Lung screening (LDCT) false closures",
+    "events": 0,
+    "denominator": 1413,
+    "upper_95": 0.00261
+   },
+   {
+    "metric": "[v2] IFHAS abnormal result false closures",
+    "events": 0,
+    "denominator": 3392,
+    "upper_95": 0.00109
+   },
+   {
+    "metric": "[v2] DR referral-loop false closures",
+    "events": 0,
+    "denominator": 233,
+    "upper_95": 0.01571
+   },
+   {
+    "metric": "[v2] Breast recall-loop false closures",
+    "events": 0,
+    "denominator": 23,
+    "upper_95": 0.14819
+   },
+   {
+    "metric": "[v2] LDCT action-loop false closures",
+    "events": 0,
+    "denominator": 121,
+    "upper_95": 0.03003
+   },
+   {
+    "metric": "[v2] IFHAS follow-up-loop false closures",
+    "events": 0,
+    "denominator": 1047,
+    "upper_95": 0.00352
+   },
+   {
+    "metric": "[v2] Lung surveillance-CT false closures",
+    "events": 0,
+    "denominator": 32,
+    "upper_95": 0.10888
+   },
+   {
+    "metric": "[v2] Rejected-referral hand-off false closures",
+    "events": 0,
+    "denominator": 86,
+    "upper_95": 0.04199
+   },
+   {
+    "metric": "[v2] Wrong-patient messages released",
+    "events": 0,
+    "denominator": 16486,
+    "upper_95": 0.00022
+   },
+   {
+    "metric": "[v2] Messages released without granted consent",
+    "events": 0,
+    "denominator": 11650,
+    "upper_95": 0.00032
+   },
+   {
+    "metric": "[v2] Duplicate or lost pipeline outputs (process and broker kills)",
+    "events": 0,
+    "denominator": 217009,
+    "upper_95": 2e-05
+   },
+   {
+    "metric": "[v2] Forged events with any effect",
+    "events": 0,
+    "denominator": 106,
+    "upper_95": null
+   },
+   {
+    "metric": "[v2] Tamper attacks not detected",
+    "events": 0,
+    "denominator": 85,
+    "upper_95": null
+   },
+   {
+    "metric": "[v2] Wrong-patient merge pairs in linker clusters (not zero; see definitions)",
+    "events": 448,
+    "denominator": null,
+    "upper_95": null
+   }
+  ],
+  "worst": [
+   {
+    "label": "[v1] CRC closure recall, worst and best seed",
+    "value": "0.818 (seed 37) to 0.855 (seed 41)"
+   },
+   {
+    "label": "[v1] Linkage pair recall, worst and best seed",
+    "value": "0.968 (seed 41) to 0.972 (seed 23)"
+   },
+   {
+    "label": "[v1] Largest Wasl 31-day KPI gap to truth, by seed",
+    "value": "1.1 points (seed 11: Wasl 0.324, truth 0.335, EID-only 0.131)"
+   },
+   {
+    "label": "[v1] CRC recall by age band, worst stratum",
+    "value": "40-59: 0.815 (range 0.815 to 0.867); false closures 0 in every stratum"
+   },
+   {
+    "label": "[v1] CRC recall by sex, worst stratum",
+    "value": "M: 0.834 (range 0.834 to 0.848); false closures 0 in every stratum"
+   },
+   {
+    "label": "[v1] Review load by name origin, heaviest group",
+    "value": "south_asian: 37.9 items per 100 loops (max/min 1.0481, p = 0.451; by programme 1.0993, p = 0.01)"
+   },
+   {
+    "label": "[v2] CRC closure recall, worst and best seed",
+    "value": "0.767 (seed 41) to 0.792 (seed 59)"
+   },
+   {
+    "label": "[v2] Linkage pair recall, worst and best seed",
+    "value": "0.891 (seed 41) to 0.904 (seed 23)"
+   },
+   {
+    "label": "[v2] Largest Wasl 31-day KPI gap to truth, by seed",
+    "value": "3.4 points (seed 11: Wasl 0.289, truth 0.323, EID-only 0.117)"
+   },
+   {
+    "label": "[v2] CRC recall by age band, worst stratum",
+    "value": "<40: 0.766 (range 0.766 to 0.798); false closures 0 in every stratum"
+   },
+   {
+    "label": "[v2] CRC recall by sex, worst stratum",
+    "value": "F: 0.785 (range 0.785 to 0.786); false closures 0 in every stratum"
+   },
+   {
+    "label": "[v2] Review load by name origin, heaviest group",
+    "value": "filipino: 35.4 items per 100 loops (max/min 1.124, p = 0.007; by programme 1.0653, p = 0.185)"
+   }
+  ]
+ },
+ "benchmarks": [],
+ "claims": [
+  {
+   "id": "C1",
+   "claim": "Emirates-ID-only matching under-counts 31-day colonoscopy completion; Wasl raises the measured rate toward the true rate",
+   "status": "simulated",
+   "evidence": "pipeline/results/final/SUMMARY.md (kpi_eid_only, kpi_wasl, kpi_truth)",
+   "reproduce": "make verify SEED=<n>; full run: scripts/final_eval.sh"
+  },
+  {
+   "id": "C2",
+   "claim": "No false closures in any of the seven programmes in the frozen held-out evaluation (for example CRC 0/3,035 under v2 noise, 95% upper bound 0.121%)",
+   "status": "simulated",
+   "evidence": "docs/EVIDENCE.md#safety; pipeline/results/final/summary.json",
+   "reproduce": "make verify SEED=<n>"
+  },
+  {
+   "id": "C3",
+   "claim": "Thresholds, error definitions and metric code were frozen at 075abc5ad04a on 2026-11-02T04:33Z before the held-out runs",
+   "status": "built",
+   "evidence": "pipeline/results/final/manifest.json; scripts/final_eval.sh; scripts/final_manifest.py",
+   "reproduce": "git show 075abc5ad04a --stat; python3 -m json.tool pipeline/results/final/manifest.json"
+  },
+  {
+   "id": "C4",
+   "claim": "Links records across Arabic and Latin spellings with a self-trained name encoder, HNSW candidates and a calibrated scorer",
+   "status": "built",
+   "evidence": "encoder/RESULTS.md (held-out Wikidata eval split); pipeline/linker.go; pipeline/ann.go",
+   "reproduce": "cd pipeline && go test ./..."
+  },
+  {
+   "id": "C5",
+   "claim": "A loop closes only when DoH rules and a model reader agree on the report; anything uncertain goes to human review",
+   "status": "built",
+   "evidence": "pipeline/v7.go; pipeline/evidence.go; pipeline/RESULTS.md",
+   "reproduce": "scripts/demo.sh test"
+  },
+  {
+   "id": "C6",
+   "claim": "Ingests FHIR R4 and HL7 v2.5.1 over MLLP into one event model",
+   "status": "built",
+   "evidence": "pipeline/hl7.go; pipeline/hl7_test.go",
+   "reproduce": "cd pipeline && go test -run MLLP ./... && go test -run HL7 ./..."
+  },
+  {
+   "id": "C7",
+   "claim": "Exactly-once processing under process and broker kills: 0 duplicate or lost outputs in all frozen runs",
+   "status": "simulated",
+   "evidence": "docs/EVIDENCE.md#safety (duplicate_or_lost_outputs)",
+   "reproduce": "make verify SEED=<n>"
+  },
+  {
+   "id": "C8",
+   "claim": "Hash-chained provenance detects tampering: 85/85 attacks detected, 0 false alarms per noise model",
+   "status": "simulated",
+   "evidence": "pipeline/results/final/*/tamper.json",
+   "reproduce": "scripts/demo.sh tamper"
+  },
+  {
+   "id": "C9",
+   "claim": "No message is released without granted contact consent (0/11,650 under v2 noise)",
+   "status": "simulated",
+   "evidence": "docs/EVIDENCE.md#safety",
+   "reproduce": "make verify SEED=<n>"
+  },
+  {
+   "id": "C10",
+   "claim": "Seven loop types run on the same engine (CRC, cervical, lung nodule, DR, breast, LDCT, IFHAS)",
+   "status": "built",
+   "evidence": "pipeline/results/final/SUMMARY.md; docs/BACKEND-HANDOFF.md (Seven loop types)",
+   "reproduce": "WASL_LDCT=300 WASL_IFHAS=800 scripts/demo.sh final"
+  },
+  {
+   "id": "C11",
+   "claim": "Review load by name origin is measured: pooled max/min 1.05 under v1 (p = 0.451) and 1.12 under v2 (p = 0.007); 1.07 under v2 after standardising by programme (p = 0.185)",
+   "status": "simulated",
+   "evidence": "docs/EVIDENCE.md#worst-seed-and-worst-stratum",
+   "reproduce": "make verify SEED=<n>"
+  },
+  {
+   "id": "C12",
+   "claim": "Hosted demo with a staff worklist, case evidence and audit trail on synthetic data",
+   "status": "built",
+   "evidence": "https://wasl-topaz-mu.vercel.app (staff area /app); docs/LIVE.md",
+   "reproduce": "Open the web app, then /app, then any case and its audit trail"
+  },
+  {
+   "id": "C13",
+   "claim": "Queue control (direct-to-procedure plus prep targeting) adds about +13 pp 31-day completion at 1.2 slots per FIT+",
+   "status": "simulated",
+   "evidence": "booking/RESULTS.md",
+   "reproduce": "scripts/demo.sh booking"
+  },
+  {
+   "id": "C14",
+   "claim": "Extra colonoscopies and cancers found if navigation acts on the corrected list (modelled, conditional on navigation acting on the corrected list)",
+   "status": "designed",
+   "evidence": "docs/EVIDENCE.md#modelled-benefit",
+   "reproduce": "python3 scripts/evidence.py"
+  }
+ ]
+}
