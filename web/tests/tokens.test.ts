@@ -72,8 +72,7 @@ describe("input boundary token (WCAG 1.4.11)", () => {
 describe("inputs and selects use the input boundary", () => {
   // Where each field's boundary is drawn: the class string on the element that carries the border.
   const FIELDS: [string, string, RegExp][] = [
-    ["worklist search (Today, Referrals)", "components/worklist/search-field.tsx", /<label\s+className=\{cx\(\s*"([^"]*)"/],
-    ["filter toolbar search (Patients)", "components/ui/filters/search-field.tsx", /<div\s+className=\{cn\(\s*"([^"]*)"/],
+    ["filter toolbar search (Patients, Referrals)","components/ui/filters/search-field.tsx", /<div[^>]*?\sclassName=\{cn\(\s*"([^"]*)"/],
     ["Patients refine selects", "components/patients/refine.tsx", /<select[^>]*?className="([^"]*)"/],
   ];
 
@@ -87,9 +86,7 @@ describe("inputs and selects use the input boundary", () => {
     expect(classes.some((c) => /border-input\//.test(c) || /opacity/.test(c))).toBe(false);
   });
 
-  it("keeps the worklist search's focus indicator", () => {
-    expect(read("components/worklist/search-field.tsx")).toContain(
-      "focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue",
-    );
+  it("keeps the toolbar search's focus indicator", () => {
+    expect(read("components/ui/filters/search-field.tsx")).toContain("focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue");
   });
 });

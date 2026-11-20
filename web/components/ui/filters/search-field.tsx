@@ -52,6 +52,7 @@ export function SearchField({ label, defaultValue = "", clearHref, submitLabel, 
 
   return (
     <div
+      data-search-control
       className={cn(
         "flex min-h-11 min-w-0 items-center rounded-control border border-input bg-surface ps-3 text-muted",
         "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue",

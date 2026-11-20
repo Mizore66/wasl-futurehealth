@@ -72,7 +72,7 @@ it("restores the page, search, status and the opened row when going back to the 
 
   h.link("Back to inbox");
   expect(current()).toBe("3");
-  expect(h.host.querySelector<HTMLSelectElement>("select")!.value).toBe("needs");
+  expect(h.host.querySelector('[aria-haspopup="listbox"]')!.textContent).toBe("Status: Needs response");
   const marked = h.host.querySelector('tbody a[aria-current="true"]')!;
   expect(marked.textContent).toBe(opened);
   expect(document.activeElement).toBe(marked);
