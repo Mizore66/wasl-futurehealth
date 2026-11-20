@@ -267,8 +267,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertFalse(self.jobs["playwright"]["strategy"]["fail-fast"])
         chromium = [a for a in shards if a.startswith("--project=chromium ")]
         self.assertEqual(sorted(chromium), [f"--project=chromium --shard={i}/{len(chromium)}" for i in range(1, len(chromium) + 1)])
-        rest = [a for a in shards if a not in chromium]
-        self.assertEqual(rest, ["--project=landing --project=perf --no-deps --workers=1"])
+        rest = sorted(a for a in shards if a not in chromium)
+        self.assertEqual(rest, [
+            "--project=landing --no-deps --workers=1 --shard=1/2",
+            "--project=landing --no-deps --workers=1 --shard=2/2",
+            "--project=perf --no-deps --workers=1",
+        ])
 
     def test_pull_requests_run_fast_lanes_and_main_runs_every_lane(self):
         trigger = self.doc.get("on", self.doc.get(True))
