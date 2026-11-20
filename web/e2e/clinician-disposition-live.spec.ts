@@ -207,7 +207,7 @@ test.describe("clinician disposition, live mock", () => {
       await page.goto(caseURL(id));
       const card = page.getByRole("region", { name: "Clinician disposition" });
       await expect(card).toContainText(holdWords);
-      await expect(card).toContainText("Waiting on a clinician: no plan recorded yet");
+      await expect(card).toContainText("Waiting on a clinician. No plan recorded yet");
       await expect(page.getByRole("link", { name: /Review programme evidence|Open in Review/ })).toHaveCount(0);
       await card.getByRole("link", { name: "Record clinician disposition" }).click();
       await expect(page).toHaveURL(new RegExp(`/disposition$`));

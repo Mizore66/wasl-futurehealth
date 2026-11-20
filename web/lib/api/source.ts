@@ -368,9 +368,9 @@ export type ActionResult =
   | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
 
 /** Today's words for a 401 on a coordinator action: the API did not accept the server-side coordinator token. */
-export const COORDINATOR_TOKEN_REFUSED = "the API did not accept this server's coordinator credential; an operator must fix the server configuration";
+export const COORDINATOR_TOKEN_REFUSED = "the API did not accept this server's coordinator credential. An operator must fix the server configuration";
 /** Today's words when this server has no coordinator token at all, so nothing was sent. */
-export const COORDINATOR_TOKEN_MISSING = "this server has no coordinator credential configured, so nothing was sent; an operator must fix the server configuration";
+export const COORDINATOR_TOKEN_MISSING = "this server has no coordinator credential configured, so nothing was sent. An operator must fix the server configuration";
 
 /**
  * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
@@ -411,12 +411,12 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
 }
 
 /** Words for a 401 or a missing token on a referral response: the server's receiving-unit clinician credential. */
-export const CLINICIAN_TOKEN_REFUSED = "the API did not accept this server's clinician credential; an operator must fix the server configuration";
-export const CLINICIAN_TOKEN_MISSING = "this server has no clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+export const CLINICIAN_TOKEN_REFUSED = "the API did not accept this server's clinician credential. An operator must fix the server configuration";
+export const CLINICIAN_TOKEN_MISSING = "this server has no clinician credential configured, so nothing was sent. An operator must fix the server configuration";
 
 /** Words for a 401 or a missing token on a referrer's hand-off answer: the server's referring-clinician credential. */
-export const REFERRER_TOKEN_REFUSED = "the API did not accept this server's referring-clinician credential; an operator must fix the server configuration";
-export const REFERRER_TOKEN_MISSING = "this server has no referring-clinician credential configured, so nothing was sent; an operator must fix the server configuration";
+export const REFERRER_TOKEN_REFUSED = "the API did not accept this server's referring-clinician credential. An operator must fix the server configuration";
+export const REFERRER_TOKEN_MISSING = "this server has no referring-clinician credential configured, so nothing was sent. An operator must fix the server configuration";
 
 /**
  * The receiving unit's answer to a referral, appended to the API ledger with the server-side clinician credential

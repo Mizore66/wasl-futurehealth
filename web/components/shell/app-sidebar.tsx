@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Mark } from "@/components/brand/mark";
-import { RunMeta } from "./run-meta";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
 import {
   Tooltip,
@@ -598,11 +597,7 @@ export function AppSidebar({
             </span>
           </Link>
         </div>
-        {/* The top bar is hidden on a phone, so its one "Simulated data" notice sits here. */}
-        <div className="flex min-w-0 items-center gap-2">
-          <RunMeta />
-          <TopActions />
-        </div>
+        <TopActions />
         <div
           id="mobile-menu"
           ref={panelRef}

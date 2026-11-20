@@ -171,7 +171,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
               })}
             </ol>
             <p className="m-0 mt-3 flex flex-wrap items-center gap-2 text-small text-ink-soft">
-              <HonestyLabel kind="illustrative" />
+              <HonestyLabel plain kind="illustrative" />
               The other names, their ages and all similarity bars are examples. The matched pair, its score and the line are real.
             </p>
           </section>
@@ -307,8 +307,8 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
               role="img"
               aria-label={
                 calibrated
-                  ? `Match score ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; at ${C.tau} or above a match closes by itself.`
-                  : `No match score yet; at ${C.tau} or above a match closes by itself.`
+                  ? `Match score ${C.p.toFixed(3)} on a scale from 0.95 to 1.00. At ${C.tau} or above, a match closes by itself.`
+                  : `No match score yet. At ${C.tau} or above, a match closes by itself.`
               }
               className="relative mt-2 h-16 tabular-nums"
             >

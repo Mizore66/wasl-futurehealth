@@ -4,8 +4,8 @@ import type { GlossaryKey } from "@/lib/domain/glossary";
 
 /**
  * The staff title header: limestone-to-jade wash with the faded وصل calligraphy (globals.css .staff-heading).
- * One h1 per page. The header holds the title and a one-line subtitle, and nothing sits over the artwork: the
- * simulated-data notice is the top bar's (the phone header's below md), `help` is a quiet "Terms used here" link at
+ * One h1 per page. The header holds the title and a one-line subtitle, and nothing sits over the artwork.
+ * `help` is a quiet "Terms used here" link at
  * the end of the subtitle, and `aside` (a scope control, a back link) sits under the subtitle in the text column.
  * `attached` makes it the top band of the page's main card: put it first inside that card.
  */

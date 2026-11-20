@@ -52,7 +52,7 @@ export function PipelineHeading({ title, question, current, note, controls, chil
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-1">
           <p className="m-0 flex flex-wrap items-center gap-2 text-small text-ink-soft">
-            <HonestyLabel kind="replay" />
+            <HonestyLabel plain kind="replay" />
             <span>{REPLAY_LINE}</span>
           </p>
           {note && (

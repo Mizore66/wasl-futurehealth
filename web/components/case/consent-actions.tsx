@@ -146,7 +146,7 @@ export function ConsentActions({
         <div className="mt-3 flex flex-col gap-2" aria-label="Record demo contact permission">
           {optedOut && (
             <p className="m-0 text-small text-muted">
-              The patient has opted out of contact. Consent can no longer be granted or denied here; only another opt-out can be
+              The patient has opted out of contact. Consent can no longer be granted or denied here. Only another opt-out can be
               recorded.
             </p>
           )}

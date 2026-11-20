@@ -11,8 +11,8 @@ import type { CaseDetail } from "@/lib/api/schema";
  */
 
 export const CLINICIAN_HOLDS = {
-  clinician_decision_no_fundal_view: { programme: "diabetic_retinopathy", label: "No fundal view: the eye clinic could not assess the retina" },
-  clinician_decision_outside_fleischner: { programme: "lung_nodule", label: "Outside Fleischner: the guideline does not apply to this patient" },
+  clinician_decision_no_fundal_view: { programme: "diabetic_retinopathy", label: "No fundal view. The eye clinic could not assess the retina." },
+  clinician_decision_outside_fleischner: { programme: "lung_nodule", label: "Outside Fleischner. The guideline does not apply to this patient." },
 } as const;
 export type ClinicianHold = keyof typeof CLINICIAN_HOLDS;
 

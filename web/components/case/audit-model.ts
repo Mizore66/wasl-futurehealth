@@ -125,7 +125,7 @@ const COORDINATOR_KIND: Record<string, AuditEventKind> = {
 export function ledgerLabel(r: LedgerRow, prior: LedgerRow[], programme: Programme | ""): string {
   if (r.ledger === "review") {
     const read = protocolRead(r);
-    const base = isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action);
+    const base = isNonbindingLegacyHistory(r) ? "Legacy history, nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action);
     return read ? `${READ_LABEL[read]}: ${base}` : base;
   }
   return ledgerWordsWithHistory(r, prior);
@@ -243,7 +243,7 @@ export function decisionExplanation(dec: Decision, prev: Decision | undefined, t
   parts.push(dec.owner ? `Owner: ${ownerLabel(dec.owner)}.` : "No owner yet.");
   if (dec.overdue) parts.push("The follow-up window had passed.");
   const fresh = dec.escalations.filter((e) => !prev?.escalations.includes(e));
-  if (fresh.length) parts.push(`Raised: ${fresh.map((e) => escalationWords(e).toLowerCase()).join("; ")}.`);
+  if (fresh.length) parts.push(`Raised: ${fresh.map((e) => escalationWords(e).toLowerCase()).join(", ")}.`);
   return parts.join(" ");
 }
 

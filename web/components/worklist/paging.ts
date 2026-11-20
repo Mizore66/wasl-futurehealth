@@ -1,6 +1,8 @@
 import { PAGE_SIZE } from "./filters";
 
-export type PagerControl = "first" | "prev" | "next" | "last";
+/** A chevron, or a numbered page button. */
+export type PagerControl = "prev" | "next" | number;
+export type PageSlot = number | "gap";
 export type Paging<T> = { rows: T[]; page: number; pages: number; total: number; from: number; to: number; size: number };
 
 function checkSize(size: number) {
@@ -36,14 +38,25 @@ export function pageStatusText(p: Paging<unknown>, complete = true): string {
   return `Page ${p.page}${complete ? ` of ${p.pages}` : ""}, showing ${p.from} to ${p.to}${complete ? ` of ${p.total}` : ""}.`;
 }
 
-export function pagerTargets(p: Paging<unknown>): Record<PagerControl, number | null> {
-  return { first: p.page > 1 ? 1 : null, prev: p.page > 1 ? p.page - 1 : null,
-    next: p.page < p.pages ? p.page + 1 : null, last: p.page < p.pages ? p.pages : null };
+export function pagerTargets(p: Paging<unknown>): Record<"prev" | "next", number | null> {
+  return { prev: p.page > 1 ? p.page - 1 : null, next: p.page < p.pages ? p.page + 1 : null };
 }
 
-/** Keep focus on the activated control, or its surviving opposite at an end. */
+/**
+ * The numbered pages to show: all of them up to five, otherwise always five slots with the first and last page
+ * reachable, so the pager keeps one width while paging through a narrow column.
+ */
+export function pageWindow(page: number, pages: number): PageSlot[] {
+  if (pages <= 5) return Array.from({ length: pages }, (_, i) => i + 1);
+  if (page <= 3) return [1, 2, 3, "gap", pages];
+  if (page >= pages - 2) return [1, "gap", pages - 2, pages - 1, pages];
+  return [1, "gap", page, "gap", pages];
+}
+
+/** Keep focus on the activated control: a page number becomes the current page, a chevron disabled at an end hands over to the other. */
 export function pagerFocusAfter(pressed: PagerControl, to: Paging<unknown>): PagerControl | null {
+  if (typeof pressed === "number") return to.pages > 1 ? to.page : null;
   const targets = pagerTargets(to);
-  if (targets[pressed] !== null) return pressed;
-  return (["prev", "next", "first", "last"] as const).find((key) => targets[key] !== null) ?? null;
+  const other = pressed === "prev" ? "next" : "prev";
+  return targets[pressed] !== null ? pressed : targets[other] !== null ? other : null;
 }

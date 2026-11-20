@@ -24,7 +24,7 @@ describe("authoritative shared contact projection", () => {
       expect(summary.api_patient?.contact_permission.status).toBe("denied");
       const item = workItem(summary, 40, true, NOW);
       expect([item.contactBlocked, item.textsAllowed, item.textsStopped]).toEqual([false, true, false]);
-      const html = renderToStaticMarkup(createElement(TodayBoard, { items: [item], now: 40, live: true, aside: null }));
+      const html = renderToStaticMarkup(createElement(TodayBoard, { items: [item], now: 40, live: true }));
       expect(html).toContain("Contact permitted");
       expect(html).toContain(phase === "restarted" ? "What next?" : "After the call");
       if (phase === "restarted") {

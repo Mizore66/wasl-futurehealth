@@ -63,7 +63,7 @@ export function claimAnnouncement(question: ReviewState["question"], operation: 
  */
 export function awaitingSeniorWords(actions: ReviewState["claim_actions"]): string {
   if (actions?.claim || actions?.takeover) return "The two reviewers disagree. Claim this question to give the deciding answer.";
-  return "The two reviewers disagree. A senior reviewer will decide; you cannot give a third answer.";
+  return "The two reviewers disagree. A senior reviewer will decide. You cannot give a third answer.";
 }
 
 /** A second read reveals the first, so the page's withheld-history notice must be re-rendered from the server. */
@@ -252,7 +252,7 @@ function QuestionCard({
               ? "Answer independently. You cannot see the first answer until you submit."
               : "Answer first. The second reader will not see your answer until they have submitted theirs."}
           {!link && view.disputed.length > 0 ? ` The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}.` : ""}
-          {scoped && view.disputed.length > 0 ? " Your answer settles only this question; the other checks stay open." : ""}
+          {scoped && view.disputed.length > 0 ? " Your answer settles only this question. The other checks stay open." : ""}
         </p>
         {link ? (
           <Chips
@@ -383,7 +383,7 @@ function QuestionCard({
               <h3 className="staff-display m-0 text-[clamp(22px,2.2vw,32px)] leading-tight text-jade-900">{dueTitle(state)}</h3>
               <p className="m-0 text-muted">
                 {ownFirst
-                  ? "Your first answer is in. A different reviewer answers next; yours stays hidden until then."
+                  ? "Your first answer is in. A different reviewer answers next. Yours stays hidden until then."
                   : mayClaim
                     ? link
                       ? "Claim to see the patient details."
@@ -433,7 +433,7 @@ function QuestionCard({
               Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
             </p>
           )}
-          {terminal && <p className="m-0 text-small text-muted">Demo only: this answer does not change the case.</p>}
+          {terminal && <p className="m-0 text-small text-muted">Demo only. This answer does not change the case.</p>}
           {locked && (
             <p className="m-0 text-small text-muted" data-testid="committed-lock">
               Your answer was saved. Reload the page to continue.
@@ -723,7 +723,7 @@ export function ReviewDesk({
             lockedAt.current[qk] = state.head;
             setLocked((l) => ({ ...l, [qk]: true }));
           }
-          setNotice("Your answer was saved, but the page could not update. Do not submit again; reload the page.");
+          setNotice("Your answer was saved, but the page could not update. Do not submit again. Reload the page.");
         }
         const label = state.question === "link" ? "identity" : "evidence";
         setAnnouncement(`Your ${READ_LABEL[res.read as "r1" | "r2" | "r3"]?.toLowerCase() ?? "read"} for the ${label} question was saved. The question status has been updated.`);
@@ -830,7 +830,7 @@ export function ReviewDesk({
           <p className="m-0 max-w-[80ch] text-small text-muted">
             {live
               ? "Two different reviewers answer each question separately. If they disagree, a senior reviewer decides. Demo sign-ins do not prove that separate people took part."
-              : "Practice only: nothing here is saved."}
+              : "Practice only. Nothing here is saved."}
           </p>
           {live && <ReviewerSignOut caseId={view.caseId} />}
         </div>
@@ -979,14 +979,14 @@ export function ReviewDesk({
                             </legend>
                             <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
                               {view.disputed.length > 0
-                                ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question; the other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
+                                ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question. The other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
                                 : "Choose the label that matches the report. "}
                               Preview as clinician: {SIGNER.name}
                               {hasLink ? ", the same person as question 1" : ""}.
                             </p>
                             {view.programme === "crc" && hasLink && (
                               <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
-                                &ldquo;Ask the unit&rdquo; is not available yet: it saves the identity answer only and sends nothing.
+                                &ldquo;Ask the unit&rdquo; is not available yet. It saves the identity answer only and sends nothing.
                               </p>
                             )}
                             <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
@@ -996,7 +996,7 @@ export function ReviewDesk({
                       )}
                     </AnimatePresence>
                     {!asks && hasLink && draft.identity !== "different" && (
-                      <p className="m-0 text-small text-muted">Answer question 1 first: this question is asked once the records are the same patient.</p>
+                      <p className="m-0 text-small text-muted">Answer question 1 first. This question is asked once the records are the same patient.</p>
                     )}
                     {previewControls}
                   </div>
@@ -1017,7 +1017,7 @@ export function ReviewDesk({
                 <Pill tone={outcome.tone}>{outcome.preview}</Pill>
               </h3>
               <div className="mt-2">
-                <HonestyLabel kind="designed">Practice only: nothing was saved</HonestyLabel>
+                <HonestyLabel plain kind="designed">Practice only. Nothing was saved</HonestyLabel>
               </div>
               <p className="m-0 mt-2">
                 If this were saved: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}

@@ -60,7 +60,7 @@ describe("review purpose", () => {
   it("reports only the appended answer unless refreshed data confirms a change", () => {
     const sigs = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
     expect(recordedOutcome("close", sigs, false, "shadow_confirm").recordedText).toBe(
-      "Report adequate was saved in the demo. The case still shows as open; closure is not confirmed.",
+      "Report adequate was saved in the demo. The case still shows as open. Closure is not confirmed.",
     );
     expect(recordedOutcome("close", sigs, true, "shadow_confirm").recordedText).toContain("The case now shows as closed.");
     const agree = recordedOutcome("close", sigs, false, "auto_audit").recordedText;
@@ -68,7 +68,7 @@ describe("review purpose", () => {
     expect(agree).toMatch(/not changed/);
     const disagree = recordedOutcome("inadequate", signaturesFor({ report: "inadequate" }, { evidence: "rv-evidence" }), false, "auto_audit").recordedText;
     expect(disagree).toMatch(/saved in the demo/);
-    expect(disagree).toMatch(/reopening is not confirmed/);
+    expect(disagree).toMatch(/Reopening is not confirmed/);
   });
 
   it.each(["shadow_confirm", "auto_audit"] as const)("renders the %s desk without the generic close copy", (reason) => {

@@ -362,7 +362,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link")).toContainText("Your first read is in");
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     // Only that question changed; the evidence draft area is untouched.
     await expect(card(page, "evidence")).toContainText("First read due");
@@ -374,10 +374,10 @@ test.describe("independent double review with synthetic OIDC", () => {
 
     await page.reload();
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "evidence")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "evidence")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "evidence")).toContainText("Second read due");
     await expect(card(page, "evidence")).not.toContainText("Submit second read");
     await expect(rail(page).getByTestId("progress")).toContainText("0 of 2 questions resolved");
@@ -398,7 +398,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     const { context, page } = await viewer(browser, "r2");
     for (const q of ["link", "evidence"] as const) {
       await expect(card(page, q)).toContainText("Second read due");
-      await expect(card(page, q)).toContainText("the answer stays hidden until the second read");
+      await expect(card(page, q)).toContainText("The answer stays hidden until the second read");
     }
     const html = await page.content();
     expect(html).not.toContain(hash(LINK, "r1"));
@@ -524,7 +524,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     await expect(page.getByTestId("committed-lock")).toHaveCount(0);
     await noSeriousAxe(page);

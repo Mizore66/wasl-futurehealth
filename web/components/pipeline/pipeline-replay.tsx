@@ -91,7 +91,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
               Case flow
             </h2>
             <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-              Left to right. A report shows the name as written, and &ldquo;?&rdquo;, until it is matched. The ringed one just moved; open anyone to
+              Left to right. A report shows the name as written, and &ldquo;?&rdquo;, until it is matched. The ringed one just moved. Open anyone to
               see their steps.
             </p>
           </div>
@@ -202,7 +202,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
                 {tamper.title}
               </h2>
               <div className="flex flex-wrap items-center gap-2">
-                <HonestyLabel kind="simulated">Simulated edit</HonestyLabel>
+                <HonestyLabel plain kind="simulated">Simulated edit</HonestyLabel>
                 <span
                   role="status"
                   className={cn(
@@ -224,7 +224,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
           <SealedChain nodes={tampered ? tamper.tampered : tamper.intact} className="mt-4" />
           <p aria-live="polite" className="m-0 mt-3 max-w-[72ch] text-small text-muted">
             {tampered
-              ? `${tamper.changed} Simulated here; in a recorded test, ${facts.tamperDetected} of ${facts.tamperAttacks} attempts to change records were caught.`
+              ? `${tamper.changed} Simulated here. In a recorded test, ${facts.tamperDetected} of ${facts.tamperAttacks} attempts to change records were caught.`
               : `In a recorded test, ${facts.tamperDetected} of ${facts.tamperAttacks} attempts to change records were caught: deleted, reordered, cut short or rewritten.`}
           </p>
         </section>

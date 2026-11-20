@@ -12,7 +12,7 @@ export function RecoveryCard({ detail }: { detail: CaseDetail }) {
       <p className="text-small text-muted">Simulated reuse of slots freed by no-shows. Clinical decisions and the original booking are unchanged.</p>
       {backfill && (
         <div data-testid="case-recovery-backfill">
-          <p><strong>Simulated slot confirmed</strong> · day {backfill.day}</p>
+          <p><strong>Simulated slot confirmed</strong> for day {backfill.day}</p>
           <p className="text-small">No provider booking or message was made. Outreach: {OUTREACH_WORDS[backfill.outreach_status]}.</p>
                     <Link href={`/app/recovery?slot=${backfill.slot_id}`} className="inline-flex min-h-11 items-center">Open slot recovery</Link>
         </div>

@@ -29,7 +29,7 @@ function sourced(shown: string): boolean {
 async function pageNumbers(page: Page): Promise<string[]> {
   const text = await page.locator("main").evaluate((main) => {
     const copy = main.cloneNode(true) as HTMLElement;
-    copy.querySelectorAll("[data-axis], code, [aria-label='About this data'], [data-testid='verify-run']").forEach((el) => el.remove());
+    copy.querySelectorAll("[data-axis], code").forEach((el) => el.remove());
     document.body.append(copy);
     const t = copy.innerText;
     copy.remove();
@@ -48,9 +48,9 @@ test.describe("Evidence", () => {
     const cancers = scen.map((x) => x.cancers_found_per_1000);
     expect(h2).toEqual([
       "Wasl raises the measured rate toward the true rate",
-      "No false closures in any programme; misses stay visible",
+      "No false closures in any programme, and misses stay visible",
       "Ahead of the published baseline on public data",
-      `If navigators act on the list: ${Math.min(...cancers)} to ${Math.max(...cancers)} more cancers found per 1,000`,
+      `${Math.min(...cancers)} to ${Math.max(...cancers)} more cancers found per 1,000 if navigators act on the list`,
       `${evidence.claims.length} claims, each with its evidence and a rerun`,
       "Verify it yourself in two minutes",
     ]);

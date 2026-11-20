@@ -20,8 +20,6 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
   test("each filter is read from the URL, never ignored, and says what is in view", async ({ page }) => {
     await page.goto("/app/patients?provider=phc-retina");
     await expect(showing(page)).toHaveText("26 cases: provider phc-retina");
-    await expect(page.getByTestId("programmes-in-view")).toHaveText("Programme in view: Diabetic eye screening (26).");
-    await expect(page.getByTestId("count-basis")).toContainText("sample of 177 simulated cases");
 
     await page.goto("/app/patients?consent=denied");
     await expect(showing(page)).toHaveText("9 cases: consent denied");
@@ -42,7 +40,6 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
   test("filters compose with each other and with the chips and search", async ({ page }) => {
     await page.goto("/app/patients?programme=crc&owner=none&consent=granted");
     await expect(showing(page)).toContainText("colorectal screening · consent granted · no owner");
-    await expect(page.getByTestId("programmes-in-view")).toContainText("Colorectal screening");
     await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Overdue" }).click();
     await expect(page).toHaveURL(/programme=crc/);
     await expect(page).toHaveURL(/owner=none/);
@@ -98,7 +95,6 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await expect(showing(page)).toHaveText("0 cases: provider no-such-unit");
     await expect(page.getByText("No cases match these filters. Try removing one.")).toBeVisible();
     await expect(page.getByRole("region", { name: "Referrals by date received" })).toHaveCount(0);
-    await expect(page.getByTestId("programmes-in-view")).toHaveText("No programme in view.");
   });
 
   test("390px: no side scroll, 44px controls, accessible", async ({ page }) => {

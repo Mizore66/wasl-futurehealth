@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { Pill } from "@/components/review/marks";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
 import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
@@ -487,7 +487,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
               </>
             )}
           </p>
-          {need.interval_days !== undefined && <p>Surveillance interval: {need.interval_days} days; next due {need.due_day === undefined ? "date not recorded" : formatDayYear(need.due_day)}.</p>}
+          {need.interval_days !== undefined && <p>Surveillance interval: {need.interval_days} days. Next due {need.due_day === undefined ? "date not recorded" : formatDayYear(need.due_day)}.</p>}
         </li>)}
       </ul>
     </Card>;
@@ -524,7 +524,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
             <>
               <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
               <FindingRow label="Timing">
-                Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `; overdue after ${f.rec.deadline_days} days` : "; no deadline"}
+                Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `, overdue after ${f.rec.deadline_days} days` : ", no overdue clock"}
               </FindingRow>
             </>
           )}
@@ -594,7 +594,7 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
   const consent = consentRows(detail);
   const out = outreachRows(detail);
   return (
-    <Card id="consent" title="Consent and messages" aside={<HonestyLabel kind="simulated">Simulated messages</HonestyLabel>}>
+    <Card id="consent" title="Consent and messages" note={<HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Messages here are simulated.</HonestyLabel>}>
       <p className="m-0 mt-3">
         Current consent: <span className="font-medium">{consentNow(detail.case.consent)}</span>
       </p>
@@ -652,8 +652,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
     <Card
       id="signoffs"
       title="Human sign-offs"
-      aside={<HonestyLabel kind="simulated">Simulated reviewers</HonestyLabel>}
-      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review. A first or second read is not a final sign-off; only an agreed or senior-resolved question is."
+      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review. A first or second read is not a final sign-off. Only an agreed or senior-resolved question is."
     >
       {resolutionProgress(detail) && (
         <p className="m-0 mt-3 text-small text-muted" data-testid="resolution-progress">
@@ -708,7 +707,7 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
     <Card
       id="ledger"
       title="Coordinator actions"
-      aside={<HonestyLabel kind="simulated">Simulated data</HonestyLabel>}
+      aside={<HonestyLabel plain kind="simulated">Simulated data</HonestyLabel>}
       note="These actions never change a decision, consent or signature. Nothing was sent to the patient."
     >
       {events.length === 0 ? (
@@ -801,7 +800,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
   const slot = d.booking;
   const risk = d.prep_risk;
   return (
-    <Card id="booking" title="Booking" aside={<HonestyLabel kind="simulated">Simulated decision support</HonestyLabel>}>
+    <Card id="booking" title="Booking" aside={<HonestyLabel plain kind="simulated">Simulated decision support</HonestyLabel>}>
       <p className="m-0 mt-3 flex flex-wrap items-center gap-2">
         <Pill tone={b.status === "suggested" ? "positive" : "muted"}>{BOOKING_STATUS[b.status] ?? plain(b.status)}</Pill>
       </p>

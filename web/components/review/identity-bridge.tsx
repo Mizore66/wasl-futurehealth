@@ -20,7 +20,7 @@ export function scriptHint(row: IdentityRow): string | undefined {
   if (row.field !== "Name" || row.verdict !== "differ") return undefined;
   const arabic = [row.referral, row.report].map((v) => ARABIC.test(v) && !LATIN.test(v));
   const latin = [row.referral, row.report].map((v) => LATIN.test(v) && !ARABIC.test(v));
-  return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts; compare transliteration" : undefined;
+  return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts, compare transliteration" : undefined;
 }
 type Shown = { person: PersonSeed; state: AvatarState; label: string };
 
@@ -216,7 +216,7 @@ export function IdentityBridge({ view, answer, children }: { view: ReviewView; a
             <ScoreTrack score={view.link.score} line={view.link.line} />
             <p className="m-0 mt-2 text-small leading-[18px] text-muted">This score is for the records as they stand now.</p>
             <p className="m-0 mt-1 text-small leading-[18px] text-muted">
-              Two readers check each report: one follows the DoH closure checklist, the other is an AI model. Both must agree for a report to close a case.
+              Two readers check each report. One follows the DoH closure checklist, and the other is an AI model. Both must agree for a report to close a case.
             </p>
           </div>
         )}

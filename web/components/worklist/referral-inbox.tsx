@@ -35,7 +35,8 @@ import {
 } from "./referrals";
 import { removeSessionReturn, saveSessionReturn, useSessionReturns } from "./session-returns";
 import { inboxHref, readInboxUrl, shallowGo, type InboxUrl } from "./inbox-url";
-import { paginate, pageOfId, pageStatusText, type Paging } from "./paging";
+import { PagerLinks } from "./pager";
+import { paginate, pageOfId, pageStatusText } from "./paging";
 
 /* With `respond` (live API), answers are appended to the case ledger and the inbox shows the server's projection after
    a refresh. Without it (fixtures), answers and prep grades are session state; a CRC return (reason and note) is also
@@ -79,7 +80,7 @@ export function ReferralInbox({
   window,
   now,
   q,
-  aside,
+  scopeBar,
   respond,
   scope = "",
   referrer = "GP",
@@ -93,8 +94,8 @@ export function ReferralInbox({
   /** The run day: a return is decided on it. */
   now: number;
   q: string;
-  /** The programme views, the referrer's view link and the honesty label, under the referral. */
-  aside: React.ReactNode;
+  /** The page-level programme switcher and the referrer's view link, above the card. */
+  scopeBar: React.ReactNode;
   /** The programme/provider query that every inbox URL keeps; empty for the CRC default. */
   scope?: string;
   /** Who returned referrals wait on, in words. */
@@ -203,7 +204,7 @@ export function ReferralInbox({
       x,
       conds.length ? { response: "accept_with_conditions", conditions: conds } : { response: "accept" },
       "accepted",
-      conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
+      conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join(", ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
   const returnToGp = (x: Referral, reason: ReferralReturnReason, noteText: string) => {
@@ -254,18 +255,12 @@ export function ReferralInbox({
 
   const searchHref = (next: string) => href({ q: next.trim(), view: url.view === "inbox" ? "inbox" : undefined, caseId: undefined, page: undefined, from: url.from });
 
-  const footer = (
-    <div className="mt-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">{aside}</div>
-      <p className="m-0 text-small text-muted">
-        {respond ? "Accept and return answers are saved to the simulated case record. Prep grades are not saved. Nothing is booked or sent to the GP." : `Decisions are not saved. A return and the ${referrer}'s acknowledgement are kept in this browser so the ${referrer} view can show them. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines: 2 working days for urgent referrals, 5 for routine, not counting weekends and UAE holidays. These are not DoH requirements.
-      </p>
-    </div>
-  );
+  const top = <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">{scopeBar}</div>;
 
   if (url.view === "inbox") {
     return (
       <div ref={root}>
+        {top}
         <Directory
           list={list}
           searched={sorted}
@@ -278,7 +273,6 @@ export function ReferralInbox({
           search={(next) => router.push(searchHref(next))}
           clearSearch={searchHref("")}
         />
-        {footer}
       </div>
     );
   }
@@ -286,12 +280,11 @@ export function ReferralInbox({
   if (!r) {
     return (
       <div ref={root}>
+        {top}
         {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
-        {/* Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners. */}
         <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
           <PageHeader
             attached
-           
             title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>}
           />
           <div className="p-4 sm:p-pad">
@@ -306,7 +299,6 @@ export function ReferralInbox({
             )}
           </div>
         </section>
-        {footer}
       </div>
     );
   }
@@ -507,7 +499,7 @@ export function ReferralInbox({
 
       {(r.note || r.hasNote) && (
         <p className="m-0 max-w-prose whitespace-pre-line break-words text-start" data-testid="return-note">
-          <span className="font-medium">Note to the {referrer}:</span> {r.note ?? "could not load this case's detail; reload to try again"}
+          <span className="font-medium">Note to the {referrer}:</span> {r.note ?? "could not load this case's detail. Reload to try again."}
         </p>
       )}
       {r.acknowledged && (
@@ -532,7 +524,7 @@ export function ReferralInbox({
       </Link>
       {!respond && r.kind === "crc" && r.kept === "browser" && (
         <p className="m-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-small text-muted max-md:justify-start">
-          <HonestyLabel kind="designed">Kept in this browser only</HonestyLabel>
+          <HonestyLabel plain kind="designed">Kept in this browser only</HonestyLabel>
           <span>The {referrer} view in this browser shows this return. Nothing is sent or saved.</span>
         </p>
       )}
@@ -548,6 +540,7 @@ export function ReferralInbox({
 
   return (
     <div ref={root}>
+      {top}
       {url.from && <BackLink href={backUrl} />}
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
@@ -657,7 +650,6 @@ export function ReferralInbox({
           <Activity r={r} over={over[r.id]} referrer={referrer} />
         </div>
       </section>
-      {footer}
     </div>
   );
 }
@@ -830,11 +822,9 @@ function Directory({
     counts[k] = (counts[k] ?? 0) + 1;
   }
   return (
-    // Not clipped: a short or empty list is shorter than the run notice's drop-down, so the band rounds its own corners.
     <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="rounded-card border border-line bg-surface outline-none">
       <PageHeader
         attached
-       
         title={
           <span data-focus="heading" tabIndex={-1} className="outline-none">
             Referral inbox
@@ -938,53 +928,23 @@ function Directory({
           </tbody>
         </table>
       )}
-      <div className="flex min-h-14 flex-wrap items-center justify-between gap-2.5 px-[clamp(14px,2.4vw,32px)] py-2 text-small text-muted">
-        <span data-testid="page-range" aria-live="polite" aria-atomic="true">
-          {list.length > INBOX_PAGE ? `${paging.from}–${paging.to} of ` : ""}
-          {list.length} {list.length === 1 ? "referral" : "referrals"}
-        </span>
-        <PageLinks paging={paging} hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })} />
+      <div className="flex min-h-14 items-center px-[clamp(14px,2.4vw,32px)] py-2 text-small text-muted">
+        {paging.pages > 1 ? (
+          <PagerLinks
+            paging={paging}
+            label="Inbox pages"
+            testId="page-range"
+            summary={<span aria-live="polite" aria-atomic="true">{`${paging.from}–${paging.to} of ${list.length} referrals`}</span>}
+            hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })}
+            onFollow={shallow}
+          />
+        ) : (
+          <span data-testid="page-range" aria-live="polite" aria-atomic="true">
+            {list.length} {list.length === 1 ? "referral" : "referrals"}
+          </span>
+        )}
       </div>
     </section>
   );
 }
 
-/** Numbered pages around the current one, with the first and last always reachable; a gap stands for the rest. */
-export function pageNumbers(current: number, pages: number): number[] {
-  return [...new Set([1, current - 1, current, current + 1, pages])].filter((n) => n > 0 && n <= pages).sort((a, b) => a - b);
-}
-
-function PageLinks({ paging, hrefFor }: { paging: Paging<unknown>; hrefFor: (page: number) => string }) {
-  if (paging.pages < 2) return null;
-  const nums = pageNumbers(paging.page, paging.pages);
-  const link = (n: number, label: string, body: React.ReactNode) => {
-    const target = hrefFor(n);
-    return (
-      <a key={label} href={target} aria-label={label} onClick={shallow(target)} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] px-1 font-semibold text-jade-800 no-underline hover:bg-jade-100">
-        {body}
-      </a>
-    );
-  };
-  return (
-    <nav aria-label="Inbox pages" className="flex flex-wrap items-center gap-0.5">
-      {paging.page > 1 && link(paging.page - 1, "Previous page", <ChevronRight aria-hidden className="size-4 rotate-180" />)}
-      {nums.map((n, i) => (
-        <span key={n} className="contents">
-          {i > 0 && n - nums[i - 1] > 1 && (
-            <span aria-hidden className="px-1">
-              …
-            </span>
-          )}
-          {n === paging.page ? (
-            <span aria-current="page" aria-label={`Page ${n}`} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] bg-jade-100 font-semibold text-jade-800">
-              {n}
-            </span>
-          ) : (
-            link(n, `Page ${n}`, n)
-          )}
-        </span>
-      ))}
-      {paging.page < paging.pages && link(paging.page + 1, "Next page", <ChevronRight aria-hidden className="size-4" />)}
-    </nav>
-  );
-}

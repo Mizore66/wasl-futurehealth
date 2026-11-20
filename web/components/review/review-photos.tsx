@@ -17,11 +17,11 @@ function ModelRead({ view }: { view: ReviewView }) {
       <p className="m-0 text-small font-medium">AI reading of the photos (not a clinician answer)</p>
       <p className="m-0 mt-1 text-small text-muted">
         Caecal photo {m.caecal} · bowel prep from the photos: {m.prep}
-        {m.hint === "prep_grade_one_click" && ". It suggests the prep is adequate; you still grade it."}
+        {m.hint === "prep_grade_one_click" && ". It suggests the prep is adequate, but you still grade it."}
       </p>
       {conflict && (
         <p className="m-0 mt-1 text-small">
-          Conflict: the report text grades the prep {m.textPrep}, but the photos read {m.prep}. The AI can only hold the case; it cannot decide it.
+          Conflict: the report text grades the prep {m.textPrep}, but the photos read {m.prep}. The AI can only hold the case. It cannot decide it.
         </p>
       )}
     </div>
@@ -36,7 +36,7 @@ export function ReviewPhotos({ view, revealModel }: { view: ReviewView; revealMo
       <h2 id={`photos-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">
         Photos filed with this report
       </h2>
-      <p className="m-0 mt-1 text-small text-muted">Synthetic images, shown as filed by the unit. Judge them yourself; nothing is preselected.</p>
+      <p className="m-0 mt-1 text-small text-muted">Synthetic images, shown as filed by the unit. Judge them yourself. Nothing is preselected.</p>
       {shown.length === 0 ? (
         <p className="m-0 mt-3" role="status">
           No photos are available for this item here, so none can be judged from this page. Nothing was assumed from the AI reading.

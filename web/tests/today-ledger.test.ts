@@ -252,30 +252,30 @@ describe("GET /app/today/ledger", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const missing = await GET(req("?id=x"));
-    expect([missing.status, (await missing.json()).error]).toEqual([500, "this site is not set up to read cases; contact support"]);
+    expect([missing.status, (await missing.json()).error]).toEqual([500, "this site is not set up to read cases. Contact support"]);
     expect(fetchMock).not.toHaveBeenCalled();
 
     vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ meta: {}, case: "not a case" }), { status: 200 }));
     const shape = await GET(req("?id=x"));
-    expect([shape.status, (await shape.json()).error]).toEqual([502, "the case could not be read; contact support"]);
+    expect([shape.status, (await shape.json()).error]).toEqual([502, "the case could not be read. Contact support"]);
 
     // A 200 whose body is not JSON at all is an answer this page does not recognise, not "no answer".
     fetchMock.mockResolvedValueOnce(new Response("<html>proxy error page</html>", { status: 200 }));
     const notJson = await GET(req("?id=x"));
-    expect([notJson.status, (await notJson.json()).error]).toEqual([502, "the case could not be read; contact support"]);
+    expect([notJson.status, (await notJson.json()).error]).toEqual([502, "the case could not be read. Contact support"]);
 
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "authentication required" }), { status: 401 }));
     const refused = await GET(req("?id=x"));
-    expect([refused.status, (await refused.json()).error]).toEqual([502, "this site is not allowed to read cases; contact support"]);
+    expect([refused.status, (await refused.json()).error]).toEqual([502, "this site is not allowed to read cases. Contact support"]);
 
     fetchMock.mockResolvedValueOnce(new Response("{}", { status: 503 }));
     const down = await GET(req("?id=x"));
-    expect([down.status, (await down.json()).error]).toEqual([502, "the case system returned an error; try again"]);
+    expect([down.status, (await down.json()).error]).toEqual([502, "the case system returned an error. Try again"]);
 
     fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
     const silent = await GET(req("?id=x"));
-    expect([silent.status, (await silent.json()).error]).toEqual([502, "the case system did not respond; try again"]);
+    expect([silent.status, (await silent.json()).error]).toEqual([502, "the case system did not respond. Try again"]);
   });
 
   it("is not available without a live API, and needs an id", async () => {

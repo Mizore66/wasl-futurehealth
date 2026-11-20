@@ -18,6 +18,9 @@ const NUMBER_WORD: Record<number, string> = { 3: "three", 4: "four", 5: "five", 
 
 const card = "rounded-card border border-line bg-surface p-pad";
 
+/** An honesty label read as plain text: no chip, no status dot. */
+const PLAIN = "inline h-auto whitespace-normal bg-transparent px-0 text-small font-normal text-muted [&>[data-dot]]:hidden";
+
 export default async function ProgrammePage() {
   const dash = await getDashboard();
   const view = programmeView(dash);
@@ -33,12 +36,15 @@ export default async function ProgrammePage() {
   const word = (k: number) => NUMBER_WORD[k] ?? String(k);
 
   // Takeaway lines, computed from the numbers the charts draw so they stay true for any run.
+  const { eid, wasl, truth } = view.kpi.demo.rates;
+  const kpiTakeaway =
+    eid < truth && Math.abs(wasl - truth) < Math.abs(eid - truth) ? "Wasl's rate is close to the simulated truth. Emirates ID alone undercounts." : null;
   const [first, second] = byOverdueShare(view.programmes);
   const withOnTime = view.programmes.filter((p) => p.onTime);
   const underHalf = withOnTime.filter((p) => p.onTime!.share < 50).length;
   const progTakeaway = first && second
     ? `${first.name} and ${second.name.charAt(0).toLowerCase()}${second.name.slice(1)} carry the largest overdue shares${
-        view.onTimeMeasured && withOnTime.length ? `; on time is under half in ${word(underHalf)} of ${word(withOnTime.length)}` : ""
+        view.onTimeMeasured && withOnTime.length ? `. On time is under half in ${word(underHalf)} of ${word(withOnTime.length)}` : ""
       }.`
     : null;
   const stallGroup = view.allStalls[0];
@@ -54,10 +60,10 @@ export default async function ProgrammePage() {
         />
 
         <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
-          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub="Share of completed colonoscopies each method can see." display>
+          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<><HonestyLabel kind="simulated" className={PLAIN}>Positive FIT referrals in a simulated run.</HonestyLabel>{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
             Simulated colorectal data, positive FIT referrals. &quot;Emirates ID only&quot; counts a colonoscopy only when the report carries the
-            matching Emirates ID. Wasl also matches reports by name and date of birth. Each bar is that method&apos;s 31-day rate as a share of the
-            simulated truth, what really happened to each simulated patient. The target is the DoH 31-day standard.
+            matching Emirates ID. Wasl also matches reports by name and date of birth. The simulated truth is what really happened to each
+            simulated patient. The target is the DoH 31-day standard. The shaded gap runs from the simulated truth to the target.
           </SourceHeading>
 
           <KpiChart kpi={view.kpi} target={view.target} />
@@ -80,13 +86,13 @@ export default async function ProgrammePage() {
                 On time is the share of referrals past their deadline whose follow-up step was done by the deadline. Each programme has its
                 own step and deadline (colonoscopy 31 days; colposcopy 14, 28 or 56 days by priority; follow-up CT within the Fleischner window;
                 eye-clinic exam for a referable grade; breast assessment outcome; follow-up LDCT or work-up; IFHAS follow-up for each abnormal
-                result). There is no target line: no official target exists for these.
+                result). There is no target line. No official target exists for these.
               </>
             )}
           </SourceHeading>
           {view.onTimeMeasured ? (
             <div className="mt-2">
-              <HonestyLabel plain kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
+              <HonestyLabel kind="simulated" className={PLAIN}>Wasl measures on time in a simulated run.</HonestyLabel>
             </div>
           ) : (
             <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available yet.</p>
@@ -106,12 +112,12 @@ export default async function ProgrammePage() {
             sub={
               stallGroup && (
                 <span data-testid="stall-scope" className="text-body font-medium text-ink">
-                  {stallGroup.pathway}: the {word(view.stalls.length)} largest of {word(stallGroup.stalls.length)} stalls
+                  The {word(view.stalls.length)} largest of {word(stallGroup.stalls.length)} {stallGroup.pathway.toLowerCase()} stalls
                 </span>
               )
             }
           >
-            Simulated data: {view.cases.toLocaleString("en-US")} colorectal and cervical cases. The three largest stalls are shown.
+            {view.cases.toLocaleString("en-US")} simulated colorectal and cervical cases. The three largest stalls are shown.
             &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS programmes.
           </SourceHeading>
           <div className="mt-3">
@@ -174,7 +180,7 @@ export default async function ProgrammePage() {
         <div className="min-w-0">
           <p className="m-0 text-body font-semibold">false closures</p>
           <p className="m-0 text-small text-ink-soft">
-            in {safety.denominator?.toLocaleString("en-US")} tested · every closure has evidence or two signatures ·{" "}
+            in {safety.denominator?.toLocaleString("en-US")} tested. Every closure has evidence or two signatures.{" "}
             <Link href="/app/results" className="font-medium no-underline">
               See proof
             </Link>

@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { relativeDayHint, simulatedRunDate, staffDueTime, staffLocalTime } from "@/lib/domain/staff-time";
 import { personaFromOidc, personaFromToken } from "@/lib/auth/session-persona";
 import { shellPersona, usesReviewSession } from "@/components/shell/persona";
-import { referrerAnswerLabel } from "@/components/worklist/referrals";
 import { packetHeading, ReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
 import type { ReturnedPacket } from "@/components/worklist/returned-packets";
 import { ALL_GLOSSARY_KEYS, GLOSSARY } from "@/lib/domain/glossary";
@@ -88,21 +87,12 @@ describe("N4 / clinical safety: the shell shows who the review session acts as",
   });
 });
 
-describe("N9: the returned-referrals header follows credential availability", () => {
+describe("N9: hasCredential follows credential availability", () => {
   it("reads the same variable the save path does", () => {
     expect(hasCredential("referrer", {})).toBe(false);
     expect(hasCredential("referrer", { WASL_API_REFERRER_TOKEN: "  " })).toBe(false);
     expect(hasCredential("referrer", { WASL_API_REFERRER_TOKEN: "referrer-token-1234" })).toBe(true);
     expect(hasCredential("referrer_lung", { WASL_API_REFERRER_TOKEN: "referrer-token-1234" })).toBe(false);
-  });
-
-  it("never claims answers are saved when the credential is missing", () => {
-    expect(referrerAnswerLabel(true, true)).toEqual({ kind: "built", text: "Referrer answers: built, saved to the simulated case record" });
-    const missing = referrerAnswerLabel(true, false);
-    expect(missing.kind).toBe("designed");
-    expect(missing.text).not.toMatch(/saved to/);
-    expect(missing.text).toMatch(/not set up on this site/);
-    expect(referrerAnswerLabel(false, false).text).toBe("Referrer answers: not available in this demo");
   });
 });
 

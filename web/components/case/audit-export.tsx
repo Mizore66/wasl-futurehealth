@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { getExportHashes } from "@/lib/api/export";
 import { caseHref } from "@/lib/domain/ids";
 
@@ -17,7 +17,7 @@ export async function ExportCard({ caseId }: { caseId: string }) {
         <h2 id="export-h" className="m-0 text-section font-medium">
           Redacted evidence export
         </h2>
-        <HonestyLabel kind="simulated">Simulated data</HonestyLabel>
+        <HonestyLabel plain kind="simulated">Simulated data</HonestyLabel>
       </div>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
         A copy of this case&apos;s record and audit trail for internal audit, with some details removed. It can still

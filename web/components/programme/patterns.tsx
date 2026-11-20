@@ -72,7 +72,7 @@ export function PatternLinks({ patterns, className }: { patterns: Patterns; clas
         <h2 id="patterns-h" className="m-0 text-section font-medium">
           By provider
         </h2>
-        <HonestyLabel kind="simulated">Simulated data</HonestyLabel>
+        <HonestyLabel plain kind="simulated">Simulated data</HonestyLabel>
       </div>
       <p data-testid="provider-takeaway" className="m-0 mt-1 text-small text-muted">
         Share of each provider&apos;s cases closed with evidence.

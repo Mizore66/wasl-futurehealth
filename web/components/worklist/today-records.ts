@@ -58,9 +58,9 @@ const TYPE_WORDS: Record<string, string> = {
   Encounter: "Clinic visit",
 };
 
-const IDENTITY_SECOND = "Identity in review: no second identifier is confirmed for the two records.";
-const IDENTITY = "Identity in review: a person must confirm the two records are the same patient.";
-const EVIDENCE = "Evidence in review: a person must check what the report shows.";
+const IDENTITY_SECOND = "Identity in review. No second identifier is confirmed for the two records.";
+const IDENTITY = "Identity in review. A person must confirm the two records are the same patient.";
+const EVIDENCE = "Evidence in review. A person must check what the report shows.";
 const SPLIT = "The two automatic report checks disagree.";
 
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);

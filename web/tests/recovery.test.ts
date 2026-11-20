@@ -107,9 +107,9 @@ describe("recovery case projection", () => {
 
   it.each([
     ["none", "granted", "call", "Simulated slot confirmed · no outreach recorded", "Contact the patient about the simulated recovery slot on day 40"],
-    ["none", "denied", "waiting", "Simulated slot confirmed · no outreach recorded", "Patient contact is not permitted; the simulated slot has not been offered"],
+    ["none", "denied", "waiting", "Simulated slot confirmed · no outreach recorded", "Patient contact is not permitted, so the simulated slot was not offered"],
     ["recorded_not_dispatched", "granted", "waiting", "Simulated slot confirmed · outreach recorded, not sent", "Wait for the simulated appointment day"],
-    ["cancelled_consent", "granted", "waiting", "Simulated slot confirmed · outreach cancelled after consent withdrawal", "Patient contact is not permitted; the simulated slot has not been offered"],
+    ["cancelled_consent", "granted", "waiting", "Simulated slot confirmed · outreach cancelled after consent withdrawal", "Patient contact is not permitted, so the simulated slot was not offered"],
   ] as const)("projects outreach %s with consent %s after reload", (outreach, consent, view, status, next) => {
     const item = project(outreach, consent);
     expect([item.view, item.status, item.next]).toEqual([view, status, next]);

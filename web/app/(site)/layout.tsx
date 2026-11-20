@@ -1,6 +1,6 @@
 import { Hanken_Grotesk } from "next/font/google";
 import { SkipLink } from "@/components/shell/skip-link";
-import { SiteHeader } from "@/components/site/header";
+import { LandingStickyNav, SiteHeader } from "@/components/site/header";
 
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -31,6 +31,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     >
       <SkipLink />
       <SiteHeader />
+      <LandingStickyNav />
       <main id="main" tabIndex={-1} className="focus:outline-none">{children}</main>
     </div>
   );

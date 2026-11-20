@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ActiveCaseSummary } from "@/lib/api/schema";
 import { PAGE_SIZE } from "@/components/worklist/filters";
-import { paginate, pageOfId, pageWith, rangeText, pageStatusText, pagerTargets, pagerFocusAfter, type PagerControl } from "@/components/worklist/paging";
+import { paginate, pageOfId, pageWith, rangeText, pageStatusText, pagerTargets, pagerFocusAfter, pageWindow } from "@/components/worklist/paging";
 import { personForLoop } from "@/lib/people";
 import { allCallWorkItems, allNewReferrals, syntheticCaseSummaries, syntheticReferrals, syntheticWorkItems } from "./paging-fixtures";
 
@@ -71,17 +71,42 @@ describe("pure paging over the complete ordered input", () => {
     expect(pageStatusText(p)).toBe("Page 2 of 49, showing 26 to 50 of 1201.");
     expect(pageStatusText(p, false)).toBe("Page 2, showing 26 to 50.");
   });
-  it("omits end controls and preserves focus on every surviving control or its opposite", () => {
-    const controls: PagerControl[] = ["first", "prev", "next", "last"];
+  it("disables a chevron at its end and keeps focus on the pressed control, the other chevron, or the new current page", () => {
+    const steps = ["prev", "next"] as const;
     const cases = [
-      { p: paginate(rows, 1), targets: [null, null, 2, 49], focus: ["next", "next", "next", "last"] },
-      { p: paginate(rows, 2), targets: [1, 1, 3, 49], focus: controls },
-      { p: paginate(rows, 49), targets: [1, 48, null, null], focus: ["first", "prev", "prev", "prev"] },
-      { p: paginate([], 1), targets: [null, null, null, null], focus: [null, null, null, null] },
+      { p: paginate(rows, 1), targets: [null, 2], focus: ["next", "next"] },
+      { p: paginate(rows, 2), targets: [1, 3], focus: ["prev", "next"] },
+      { p: paginate(rows, 49), targets: [48, null], focus: ["prev", "prev"] },
+      { p: paginate([], 1), targets: [null, null], focus: [null, null] },
     ];
     for (const { p, targets, focus } of cases) {
-      expect(controls.map((k) => pagerTargets(p)[k])).toEqual(targets);
-      expect(controls.map((k) => pagerFocusAfter(k, p))).toEqual(focus);
+      expect(steps.map((k) => pagerTargets(p)[k])).toEqual(targets);
+      expect(steps.map((k) => pagerFocusAfter(k, p))).toEqual(focus);
+    }
+    expect(pagerFocusAfter(49, paginate(rows, 49))).toBe(49);
+    expect(pagerFocusAfter(1, paginate([], 1))).toBeNull();
+  });
+  it("windows the numbered pages: first and last always shown, five slots once past five pages", () => {
+    expect(pageWindow(1, 1)).toEqual([1]);
+    expect(pageWindow(2, 3)).toEqual([1, 2, 3]);
+    expect(pageWindow(5, 5)).toEqual([1, 2, 3, 4, 5]);
+    expect(pageWindow(1, 43)).toEqual([1, 2, 3, "gap", 43]);
+    expect(pageWindow(3, 43)).toEqual([1, 2, 3, "gap", 43]);
+    expect(pageWindow(4, 43)).toEqual([1, "gap", 4, "gap", 43]);
+    expect(pageWindow(20, 43)).toEqual([1, "gap", 20, "gap", 43]);
+    expect(pageWindow(41, 43)).toEqual([1, "gap", 41, 42, 43]);
+    expect(pageWindow(43, 43)).toEqual([1, "gap", 41, 42, 43]);
+    expect(pageWindow(3, 6)).toEqual([1, 2, 3, "gap", 6]);
+    expect(pageWindow(4, 6)).toEqual([1, "gap", 4, 5, 6]);
+    for (const pages of [6, 7, 8, 49, 500]) {
+      for (let page = 1; page <= pages; page++) {
+        const slots = pageWindow(page, pages);
+        expect(slots).toHaveLength(5);
+        expect(slots).toContain(page);
+        const shown = slots.filter((x): x is number => x !== "gap");
+        expect(shown).toEqual([...shown].sort((a, b) => a - b));
+        slots.forEach((x, i) => x === "gap" && expect((slots[i + 1] as number) - (slots[i - 1] as number)).toBeGreaterThan(2));
+      }
     }
   });
   it("rejects invalid sizes consistently", () => {

@@ -41,7 +41,7 @@ export function DispositionCard({ ctx, link = true }: { ctx: DispositionContext;
                 <Row label="Review date">{reviewDateWords(holdPlan.review_date)}</Row>
               </dl>
             ) : (
-              <p className="m-0 mt-1">Waiting on a clinician: no plan recorded yet. The case stays open.</p>
+              <p className="m-0 mt-1">Waiting on a clinician. No plan recorded yet. The case stays open.</p>
             )}
           </div>
         )}
@@ -49,7 +49,7 @@ export function DispositionCard({ ctx, link = true }: { ctx: DispositionContext;
           <div data-testid="disposition-decline">
             {decline && !decline.answered && (
               <p className="m-0 font-medium">
-                Patient declined{decline.at ? ` (${decline.at.slice(0, 10)})` : ""}, reported by the coordinator · GP to sign the informed refusal
+                Patient declined{decline.at ? ` (${decline.at.slice(0, 10)})` : ""}, reported by the coordinator. GP to sign the informed refusal.
               </p>
             )}
             {declinePlan && (

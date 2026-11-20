@@ -20,9 +20,9 @@ const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min
  * unless this returns ok.
  */
 export async function recordAction(caseId: string, head: string, action: z.input<typeof CaseAction>): Promise<RecordResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "This demo cannot save changes; the action stays in this browser" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "This demo cannot save changes. The action stays in this browser" };
   const args = Args.safeParse({ caseId, head, action });
-  if (!args.success) return { ok: false, status: 400, error: "this action could not be read; try again" };
+  if (!args.success) return { ok: false, status: 400, error: "this action could not be read. Try again" };
   const res = await postAction(args.data.caseId, args.data.action, args.data.head);
   if (!res.ok) return { ok: false, status: res.status, error: res.error, conflict: res.conflict, currentHead: res.currentHead };
   revalidatePath("/app/today");

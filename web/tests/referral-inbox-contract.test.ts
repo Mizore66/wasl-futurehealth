@@ -63,8 +63,6 @@ afterEach(() => { h.unmount(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe("#119 held prep is independent of genuine acceptance", () => {
   it.each([0, 1, 2, 3])("Aisha grade %i stays Needs you, survives search, regrades and undoes", async (n) => {
     render(); counts(4, 16);
-    expect(h.text()).toContain("Decisions are not saved");
-    expect(h.text()).toContain("These are not DoH requirements");
     open(aisha); grade(n);
     expect(content()).toContain(`Graded ${n},`);
     expect(content()).toContain(`Graded the prep ${n}`);

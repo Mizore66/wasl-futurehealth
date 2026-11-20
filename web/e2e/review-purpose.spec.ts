@@ -167,8 +167,8 @@ test.afterAll(async () => {
 
 async function initialPurpose(page: Page, purpose: Purpose) {
   const text = purpose === "shadow_confirm"
-    ? "Suggested automatic closure to confirm. The case is open. Confirming permits closure; a different answer is followed instead."
-    : "Post-closure audit of an automatic closure. The case is closed. Agreeing leaves it closed; disagreeing reopens it.";
+    ? "Suggested automatic closure to confirm. The case is open. Confirming permits closure. A different answer is followed instead."
+    : "Post-closure audit of an automatic closure. The case is closed. Agreeing leaves it closed. Disagreeing reopens it.";
   await expect(summary(page)).toContainText(text);
   await expect(summary(page)).not.toContainText(/Held:|could not settle|readers disagree|Nothing closes without/i);
   await expect(page.getByText(/Nothing closes without/i)).toHaveCount(0);
@@ -231,7 +231,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
     await expect(heading).toBeFocused();
     const result = rail(page).getByRole("status");
     await expect(result).toContainText(copy.explanation);
-    await expect(result).toContainText("Practice only: nothing was saved");
+    await expect(result).toContainText("Practice only. Nothing was saved");
     await expect(result).not.toContainText(/Would close the case|Closed with|Refreshed case data confirms/);
     await expect(rail(page).locator('li[data-kind="human"]')).toHaveCount(0);
     await initialPurpose(page, purpose);
@@ -258,7 +258,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       await expect(card(a.page).getByRole("button", { name: "Claim second read", exact: true })).toHaveCount(0);
       await expect(a.page.getByTestId("read-announcement")).toContainText("Your first read for the evidence question was saved.");
       // The first reader's own answer stays hidden on the desk until the second read is in.
-      await expect(card(a.page)).toContainText("First read: submitted; the answer stays hidden until the second read");
+      await expect(card(a.page)).toContainText("First read: submitted. The answer stays hidden until the second read");
       await expect(card(a.page)).toContainText("Second read due");
       await initialPurpose(a.page, purpose);
       expect(JSON.stringify(scenario.canonical)).toBe(original);
@@ -267,7 +267,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       expect(firstRead.event.role).toBe("clinician");
 
       await b.page.reload();
-      await expect(card(b.page)).toContainText("the answer stays hidden until the second read");
+      await expect(card(b.page)).toContainText("The answer stays hidden until the second read");
       await expect(card(b.page)).not.toContainText(firstRead.hash.slice(0, 12));
       await expect(card(b.page)).not.toContainText(/First read: Report (not )?adequate/);
       await expect(b.page.getByTestId("history-withheld")).toBeVisible();
@@ -276,7 +276,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       await card(b.page).getByRole("button", { name: "Submit second read", exact: true }).click();
       await expect(card(b.page)).toHaveAttribute("data-state", "resolved_agreed");
       await expect(b.page.getByTestId("final-evidence")).toContainText(answer === "confirm" ? "Report adequate" : "Report not adequate");
-      await expect(card(b.page)).toContainText("Demo only: this answer does not change the case.");
+      await expect(card(b.page)).toContainText("Demo only. This answer does not change the case.");
       await expect(b.page.getByTestId("progress")).toContainText("Every question is resolved");
       await initialPurpose(b.page, purpose);
       expect(JSON.stringify(scenario.canonical)).toBe(original);

@@ -138,9 +138,9 @@ export function openReviewReasons(d: CaseDetail): string[] {
   return [
     link &&
       (link.reason === "second_identifier"
-        ? "Identity in review: no second identifier is confirmed for the two records."
-        : "Identity in review: a person must confirm the two records are the same patient."),
-    evidence && "Evidence in review: a person must check what the report shows.",
+        ? "Identity in review. No second identifier is confirmed for the two records."
+        : "Identity in review. A person must confirm the two records are the same patient."),
+    evidence && "Evidence in review. A person must check what the report shows.",
   ].filter((r): r is string => !!r);
 }
 
@@ -226,7 +226,7 @@ const EVIDENCE_LABEL: Record<Programme, string> = {
 
 const LDCT_WORKUP_WORDS: Record<string, string> = {
   wk_treatment: "LDCT work-up: treatment referral",
-  wk_benign: "LDCT work-up: benign; return to annual screening",
+  wk_benign: "LDCT work-up: benign, return to annual screening",
   wk_surveillance: "LDCT work-up: surveillance CT plan",
   wk_incomplete: "LDCT work-up: incomplete",
   wk_dna: "LDCT work-up: did not attend",
@@ -353,7 +353,7 @@ type LedgerLike =
 
 /** Patient rights requests (pipeline/api_patient_request.go, type `patient_request`): a labelled event, not an unrecognised one. */
 const PATIENT_REQUEST_WORDS: Record<string, string> = {
-  "patient_request/contest_submitted": "Patient questioned the decision · closure held until a senior clinician reviews it",
+  "patient_request/contest_submitted": "Patient questioned the decision. Closure held until a senior clinician reviews it",
   "patient_request/explanation_requested": "Patient asked for an explanation of the decision",
   "patient_request/contest_resolved": "Patient's contest resolved by a senior clinician",
 };
@@ -390,7 +390,7 @@ function referralResponseWords(d: { response?: string; conditions?: ReferralCond
   const unit = d.unit ? providerLabel(d.unit) : "Receiving unit";
   if (d.response === "accept") return `${unit} accepted the referral`;
   if (d.response === "accept_with_conditions") {
-    return d.conditions?.length ? `${unit} accepted the referral with conditions: ${d.conditions.map((c) => CONDITION_LABELS[c]).join("; ")}` : `${unit} accepted the referral with conditions`;
+    return d.conditions?.length ? `${unit} accepted the referral with conditions: ${d.conditions.map((c) => CONDITION_LABELS[c]).join(", ")}` : `${unit} accepted the referral with conditions`;
   }
   if (d.response === "return") {
     const reason = d.reason && d.reason in REASON_LABELS ? REASON_LABELS[d.reason as keyof typeof REASON_LABELS].toLowerCase() : "";
@@ -417,7 +417,7 @@ function referrerResponseWords(d: { response?: string; destination?: string }): 
  * non-procedure end state. Never worded as a completed procedure.
  */
 export function dispositionWords(d: { plan?: string; follow_up_owner?: string; next_review?: string }): { status: string; next: string } {
-  if (d.plan === "closed_declined") return { status: "Declined · informed refusal recorded, no procedure", next: "GP documented informed refusal; no procedure was done and no screening result exists" };
+  if (d.plan === "closed_declined") return { status: "Declined · informed refusal recorded, no procedure", next: "GP documented informed refusal. No procedure was done and no screening result exists" };
   const on = d.next_review ?? "a date not recorded";
   return { status: `Declined · GP review ${on}`, next: `${d.follow_up_owner ?? "The GP"} reviews on ${on}` };
 }
@@ -462,8 +462,8 @@ export function ledgerWords(e: LedgerLike): string {
     }
     if (e.kind === "decline_disposition") return `GP disposition of the decline · ${dispositionWords(d).next}`;
     if (e.kind === "completed_elsewhere") return `Reported done elsewhere: ${d.procedure ?? "procedure"} at ${d.provider ?? "another provider"} · ${d.retrieval_owner ?? "coordinator"} to retrieve the record by ${d.retrieval_due ?? "a date not recorded"}`;
-    if (e.kind === "retrieval_outcome") return `Record retrieval ended: ${retrievalOutcomeWords(d.outcome)} · follow-up resumes`;
-    if (e.kind === "retrieved_report") return `Retrieved report from ${d.provider ?? "another provider"} sent for identity and evidence review · not a closure`;
+    if (e.kind === "retrieval_outcome") return `Record retrieval ended: ${retrievalOutcomeWords(d.outcome)}. Follow-up resumes`;
+    if (e.kind === "retrieved_report") return `Retrieved report from ${d.provider ?? "another provider"} sent for identity and evidence review. This is not a closure`;
     if (e.kind === "initial_notification" || e.kind === "receipt_acknowledgement") return communicationWords(e.kind, d);
     return `Coordinator action: ${plain(e.kind)}`;
   }

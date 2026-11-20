@@ -45,8 +45,8 @@ describe("booking controls after a conditional referral acceptance", () => {
       readiness: { ready: true, requirements },
     });
     expect(html).toContain("Receiving unit&#x27;s acceptance conditions");
-    expect(html).toContain("Female endoscopist<span class=\"text-muted\"> · checked against the chosen slot</span>");
-    expect(html).toContain("Hold blood thinners as advised<span class=\"text-muted\"> · arrange before the procedure; Wasl cannot check this</span>");
+    expect(html).toContain("Female endoscopist<span class=\"text-muted\">. Checked against the chosen slot.</span>");
+    expect(html).toContain("Hold blood thinners as advised<span class=\"text-muted\">. Arrange before the procedure. Wasl cannot check this.</span>");
   });
 
   it("does not claim an interpreter is arranged when only the slot's Arabic flag is checked", () => {
@@ -54,7 +54,7 @@ describe("booking controls after a conditional referral acceptance", () => {
       suggested_slot_id: "sim:colonoscopy:201:1", reservable: true, eligible_slots: [slot(201, true, true)],
       readiness: { ready: true, requirements: [interpreter] },
     });
-    expect(html).toContain("Arabic interpreter on the day<span class=\"text-muted\"> · Arabic-speaking session checked against the chosen slot; interpreter not confirmed</span>");
+    expect(html).toContain("Arabic interpreter on the day<span class=\"text-muted\">. Arabic-speaking session checked against the chosen slot. Interpreter not confirmed.</span>");
   });
 
   it("refuses the suggestion that misses a slot condition and offers only slots that meet it", () => {

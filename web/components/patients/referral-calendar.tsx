@@ -57,7 +57,7 @@ export function ReferralCalendar({
         <div className="pf-month-nav">
           {step(months[pos - 1], "prev")}
           <div className="pf-month-label">
-            <h3 id="pf-month-heading">{monthLabel(month)}</h3>
+            <h2 id="pf-month-heading">{monthLabel(month)}</h2>
             <small className="pf-phone-total">{plural(total, "referral")}</small>
           </div>
           {step(months[pos + 1], "next")}

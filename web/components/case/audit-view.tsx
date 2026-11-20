@@ -87,7 +87,7 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
           {matching} of {rows.length} match
         </span>
       }
-      note="Each decision is signed when it is made. It is checked again now; the two must match."
+      note="Each decision is signed when it is made. It is checked again now, and the two must match."
     >
       {rows.length === 0 ? (
         <p className="m-0 mt-3 text-muted">No decisions are signed for this case.</p>
@@ -245,8 +245,8 @@ export function HistoryCard({ audit, programme, governance }: { audit: Audit; pr
     <Card
       id="history"
       title="Review history"
-      aside={<HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
-      note="Reviews, coordinator actions, undos and contests are listed in order. New entries are added below; old ones are never edited."
+      aside={<HonestyLabel plain kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
+      note="Reviews, coordinator actions, undos and contests are listed in order. New entries are added below. Old ones are never edited."
     >
       <GovernanceHeader governance={governance} gov={gov} />
       {audit.history.length === 0 ? (
@@ -283,7 +283,7 @@ const streamWords = (k: string) => STREAM_WORDS[k] ?? (/^out\.p\d+$/.test(k) ? `
 export function AnchorsCard({ audit }: { audit: Audit }) {
   const entries = Object.entries(audit.anchors);
   return (
-    <Card id="anchors" title="Daily record seals" aside={<HonestyLabel kind="designed">Designed, not checked here</HonestyLabel>}>
+    <Card id="anchors" title="Daily record seals" aside={<HonestyLabel plain kind="designed">Designed, not checked here</HonestyLabel>}>
       {entries.length === 0 ? (
         <p className="m-0 mt-3 text-muted">No daily seals for this case.</p>
       ) : (
