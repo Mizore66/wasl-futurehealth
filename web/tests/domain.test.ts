@@ -175,7 +175,7 @@ describe("programme-specific case evidence", () => {
 
   it.each([
     { decision: "wk_treatment", words: "LDCT work-up: treatment referral" },
-    { decision: "wk_benign", words: "LDCT work-up: benign; return to annual screening" },
+    { decision: "wk_benign", words: "LDCT work-up: benign, return to annual screening" },
     { decision: "wk_surveillance", words: "LDCT work-up: surveillance CT plan" },
   ] as const)("labels the $decision sign-off as a work-up outcome, not a Lung-RADS category", ({ decision, words }) => {
     const detail = programmeDetail("lung_ldct");

@@ -143,7 +143,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
   return (
     <Section
       id="accuracy"
-      title={anyClosure ? "False closures were seen: read the counts below" : "No false closures in any programme; misses stay visible"}
+      title={anyClosure ? "False closures were seen in the counts below" : "No false closures in any programme, and misses stay visible"}
       aside={<HonestyLabel plain kind="simulated">Simulated patients, 5 runs</HonestyLabel>}
     >
       <Terms ev={ev} />
@@ -155,7 +155,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
           </div>
         </div>
         <div className="min-w-0">
-          <h3 className={h3}>Wrong matches are rare; missed matches stay open for review</h3>
+          <h3 className={h3}>Wrong matches are rare, and missed matches stay open for review</h3>
           <div className="mt-2">
             <RateChart falseMatch={rates.falseMatch} missed={rates.missed} />
           </div>
@@ -261,7 +261,7 @@ function Modelled({ ev }: { ev: Evidence }) {
   return (
     <Section
       id="modelled"
-      title={`If navigators act on the list: ${num(Math.min(...cancers))} to ${num(Math.max(...cancers))} more cancers found per 1,000`}
+      title={`${num(Math.min(...cancers))} to ${num(Math.max(...cancers))} more cancers found per 1,000 if navigators act on the list`}
       aside={<HonestyLabel plain kind="illustrative">Modelled, not measured</HonestyLabel>}
     >
       <p data-testid="modelled-label" className="m-0 mt-2 flex flex-wrap gap-2 text-small">

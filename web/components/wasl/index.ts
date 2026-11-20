@@ -1,4 +1,4 @@
-export { HonestyLabel } from "./honesty-label";
+export { HONESTY_PLAIN, HonestyLabel } from "./honesty-label";
 export { RecordAvatar } from "./record-avatar";
 export { SealedChain, type ChainNode, type ChainNodeKind } from "./sealed-chain";
 export { Stat } from "./stat";

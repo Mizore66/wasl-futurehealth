@@ -140,7 +140,7 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
               {decision.consent_log.length > 0 && (
                 <ul className="m-0 mt-1 list-disc ps-5 text-small">
                   {decision.consent_log.map((transition, transitionIndex) => (
-                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent changed to {transition.to}; contact {transition.contact ?? "unknown"}</li>
+                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent changed to {transition.to}, contact {transition.contact ?? "unknown"}</li>
                   ))}
                 </ul>
               )}
@@ -182,7 +182,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
         />
         <section aria-labelledby="identity-provenance" className="p-4 md:p-pad">
           <h2 id="identity-provenance" className="m-0 text-section font-semibold">Linked records</h2>
-          <p>Names are simulated. Only confirmed record links are shown; uncertain matches stay separate.</p>
+          <p>Names are simulated. Only confirmed record links are shown. Uncertain matches stay separate.</p>
           <h3 className="m-0 mt-3 text-body font-semibold">Linked record numbers</h3>
           <ul className="m-0 mt-1 list-disc ps-5">
             {journey.person.registrations.map((registration) => <li key={registration.registration}><code className="break-all">{registration.registration}</code> · {registration.providers.join(", ")}</li>)}
@@ -222,7 +222,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
                   {flag.intents.map((intent) => (
                     <li key={`${intent.case_id}-${intent.outreach.kind}-${intent.outreach.ev}`}>
                       <CaseLink caseID={intent.case_id}>{programmeLabels[intent.programme]}: {shortId(intent.case_id)}</CaseLink>
-                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? " · Past only; no action needed" : ""}</div>
+                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? " · Past only, no action needed" : ""}</div>
                     </li>
                   ))}
                 </ul>

@@ -129,7 +129,7 @@ const SESSION_OWNER = "Hessa Al Ali";
 const REFUSED: Record<number, string> = {
   403: "your role cannot do this",
   404: "this case could not be found",
-  409: "someone changed this case first; reload to see it",
+  409: "someone changed this case first. Reload to see it",
   500: "saving is paused while the case history is checked",
   503: "this demo cannot save changes",
 };
@@ -171,7 +171,6 @@ export function TodayBoard({
   items,
   now,
   head,
-  aside,
   live = false,
   scope = "Al Mushrif Healthcare Centre",
   undoMs = LIVE_UNDO_MS,
@@ -181,7 +180,6 @@ export function TodayBoard({
   now: number;
   /** The page header, drawn as the sheet's top band. */
   head?: React.ReactNode;
-  aside: React.ReactNode;
   live?: boolean;
   scope?: string;
   /** Live API: the Undo window before a held-back write is sent; 0 sends at once. */
@@ -319,7 +317,7 @@ export function TodayBoard({
           if (!parsed.success) throw new ReadError("the case history could not be read");
           const panel = parsed.data.bookingPanel;
           if (panel && (panel.case.id !== selId || panel.case.api_overlay?.head !== panel.overlay.head)) {
-            throw new ReadError("the case changed while loading; try again");
+            throw new ReadError("the case changed while loading. Try again");
           }
           return parsed.data;
         }
@@ -355,7 +353,7 @@ export function TodayBoard({
       })
       .catch((e: unknown) => {
         if (stale()) return;
-        const error = e instanceof ReadError ? e.message : "no response; check your connection";
+        const error = e instanceof ReadError ? e.message : "no response. Check your connection";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
@@ -469,7 +467,7 @@ export function TodayBoard({
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
-      .catch(() => setRefusal({ id: row.id, text: "Not saved: no response; try again" }))
+      .catch(() => setRefusal({ id: row.id, text: "Not saved: no response. Try again" }))
       .finally(() => setBusy(false));
   };
 
@@ -890,88 +888,121 @@ export function TodayBoard({
       className={cn("min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:px-[clamp(20px,2.4vw,40px)] lg:py-8", side, fold)}
     >
       {removedNotice}
-      <p className="m-0 hidden text-small text-muted lg:block" data-testid="case-who">
-        {p.named ? (
-          <>
-            {p.name}
-            {p.nameAr && (
-              <span lang="ar" dir="rtl" className="ml-2">
-                {p.nameAr}
-              </span>
-            )}
-            {" · "}
-          </>
-        ) : null}
-        <span dir="ltr">{p.short}</span>
-      </p>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 lg:mt-2 lg:grid-cols-[minmax(0,max-content)_auto_1fr]">
+      <div className="grid grid-cols-1 items-center gap-x-4 gap-y-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-y-2">
+        <p className="m-0 hidden text-small text-muted lg:col-start-1 lg:row-start-1 lg:block" data-testid="case-who">
+          {p.named ? (
+            <>
+              {p.name}
+              {p.nameAr && (
+                <span lang="ar" dir="rtl" className="ml-2">
+                  {p.nameAr}
+                </span>
+              )}
+              {" · "}
+            </>
+          ) : null}
+          <span dir="ltr">{p.short}</span>
+        </p>
         <h2
           ref={headingRef}
           data-focus="heading"
           tabIndex={-1}
-          className="staff-display m-0 text-[clamp(30px,3vw,46px)] font-medium leading-[1.06] tracking-[-0.03em] text-jade-900 outline-none max-lg:sr-only lg:col-start-1 lg:row-start-1"
+          className="staff-display m-0 text-[clamp(30px,3vw,46px)] font-medium leading-[1.06] tracking-[-0.03em] text-jade-900 outline-none max-lg:sr-only lg:col-span-full lg:row-start-2"
         >
           {taskTitle(p)}
         </h2>
-        <div className="col-start-2 row-start-1 flex gap-1 rounded-control bg-limestone-100 p-0.5 lg:self-center" role="group" aria-label="Case">
+        <p className="m-0 pt-2 text-body text-ink-soft lg:col-span-full lg:row-start-3 lg:mt-1 lg:max-w-[68ch] lg:pt-0">{taskSentence(p)}</p>
+        <div role="group" aria-label="Case views" className="flex flex-wrap gap-2 lg:col-start-2 lg:row-start-1">
           <button
             type="button"
-            aria-label="Case details"
             aria-expanded={s.facts}
             aria-controls="today-facts"
             onClick={() => setS((prev) => ({ ...prev, facts: !prev.facts }))}
-            className={cn("inline-flex size-11 cursor-pointer items-center justify-center rounded-control bg-transparent text-jade-700 hover:bg-jade-50 lg:size-9", s.facts && "bg-jade-100")}
+            className={cn(caseViewButton, "group cursor-pointer aria-expanded:border-jade-600 aria-expanded:bg-jade-100 aria-expanded:text-jade-900")}
           >
             <IdCard aria-hidden className="size-[18px]" strokeWidth={1.6} />
+            Patient details
+            <ChevronDown aria-hidden className="size-4 transition-transform group-aria-expanded:rotate-180" />
           </button>
           {p.hasRecord ? (
-            <Link
-              href={caseHref("/app/patients", p.id)}
-              aria-label="Open full record"
-              title="Open full record"
-              className="inline-flex size-11 items-center justify-center rounded-control text-jade-700 hover:bg-jade-50 lg:size-9"
-            >
+            <Link href={caseHref("/app/patients", p.id)} className={caseViewButton}>
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
+              Open case file
             </Link>
           ) : (
             // Fixtures mode only (the live API has a record for every case): focusable, so the reason can be read.
             <button
               type="button"
               aria-disabled="true"
-              aria-label="Full record not available for this case"
               aria-describedby="today-no-record"
-              title="Full record not available: this demo has full records for a few sample patients only"
-              className="inline-flex size-11 cursor-not-allowed items-center justify-center rounded-control bg-transparent text-limestone-500 lg:size-9"
+              title="Case file not available. This demo has case files for a few sample patients only."
+              className={cn(caseViewButton, "cursor-not-allowed border-dashed bg-transparent text-limestone-700 hover:bg-transparent")}
             >
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
-              <span id="today-no-record" className="sr-only">This demo has full records for a few sample patients only.</span>
+              No case file
+              <span id="today-no-record" className="sr-only">This demo has case files for a few sample patients only.</span>
             </button>
           )}
         </div>
-        <p className="col-start-1 row-start-1 m-0 pt-2 text-body text-ink-soft lg:col-span-full lg:row-start-2 lg:mt-3 lg:max-w-[68ch] lg:pt-0">{taskSentence(p)}</p>
       </div>
 
-      {(
-        <dl id="today-facts" data-testid="case-facts" hidden={!s.facts} className="m-0 mt-3 grid max-w-[560px] grid-cols-1 gap-x-6 gap-y-1.5 rounded-card border border-line bg-surface p-3 text-small sm:grid-cols-2">
-          <Fact label="Owner" value={p.owner} />
-          <Fact label="Contact permission" value={p.contactBlocked ? "On hold · denial or opt-out recorded" : CONSENT_WORDS[p.consent]} warn={p.contactBlocked || p.consent !== "granted"} />
-          <Fact label="Texts" value={p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"} />
-          <Fact label="Case" value={p.short} ltr />
-          {p.named && <Fact label="Patient" value={p.name} />}
-          <Fact label="Preferred language" value={p.languageName} />
-          <Fact label="Programme" value={`${p.programmeName} · ${p.providerName}`} />
-          <Fact label="Referred" value={formatDay(p.referralDay)} />
-          <Fact label="Deadline" value={p.deadline === null ? "Routine interval, no overdue clock" : `Day ${p.deadline} · ${formatDay(p.referralDay + p.deadline)}`} />
-          <Fact label="Next" value={p.next} />
+      <div id="today-facts" data-testid="case-facts" hidden={!s.facts} className="@container mt-3 max-w-[760px] overflow-hidden rounded-card border border-line bg-surface text-small">
+        <dl className="m-0 flex items-start gap-2 border-b border-jade-200 bg-jade-50 px-3 py-2.5">
+          <ArrowRight aria-hidden className="mt-0.5 size-4 shrink-0 text-jade-700" />
+          <div className="grid min-w-0 grid-cols-1 gap-x-3 @md:grid-cols-[auto_minmax(0,1fr)] @md:items-baseline">
+            <dt className="font-semibold text-jade-800">Next step</dt>
+            <dd className="m-0 text-body font-medium text-ink">{p.next}</dd>
+          </div>
         </dl>
-      )}
+        <div className="grid grid-cols-1 divide-y divide-rule @xl:grid-cols-3 @xl:divide-x @xl:divide-y-0">
+          <FactGroup title="Contact">
+            <Fact label="Permission" warn={p.contactBlocked || p.consent !== "granted"}>
+              {p.contactBlocked ? "On hold, denial or opt-out recorded" : CONSENT_WORDS[p.consent]}
+            </Fact>
+            <Fact label="Texts">{p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"}</Fact>
+            <Fact label="Language">{p.languageName}</Fact>
+          </FactGroup>
+          <FactGroup title="Timeline">
+            <Fact label="Referred">
+              {formatDay(p.referralDay)}
+              <span className="block font-normal text-muted">
+                <span className="tabular-nums">{p.days}</span> days ago
+              </span>
+            </Fact>
+            <Fact label="Deadline">
+              {p.deadline === null ? (
+                "Routine interval, no overdue clock"
+              ) : (
+                <>
+                  Day {p.deadline} · {formatDay(p.referralDay + p.deadline)}
+                  <span className={cn("flex items-center gap-1", clockWords(p).over ? "text-negative" : "font-normal text-muted")}>
+                    {clockWords(p).over && <CircleAlert aria-hidden className="size-3.5 shrink-0" />}
+                    {clockWords(p).long}
+                  </span>
+                </>
+              )}
+            </Fact>
+          </FactGroup>
+          <FactGroup title="Case">
+            {p.named && <Fact label="Patient">{p.name}</Fact>}
+            <Fact label="Owner">{p.owner}</Fact>
+            <Fact label="Programme">
+              {p.programmeName}
+              <span className="block font-normal text-muted">{p.providerName}</span>
+            </Fact>
+          </FactGroup>
+        </div>
+      </div>
 
-      <p className={cn("m-0 mt-2 text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
-        <span data-testid="lead-days" data-value={p.days} className="tabular-nums">
-          {p.days}
-        </span>{" "}
-        days since referral · {clockWords(p).long}
-      </p>
+      {/* Open, the details carry the clock in their Timeline, so it is not said twice. */}
+      {!s.facts && (
+        <p className={cn("m-0 mt-2 text-small", clockWords(p).over ? "text-negative" : "text-muted")}>
+          <span data-testid="lead-days" data-value={p.days} className="tabular-nums">
+            {p.days}
+          </span>{" "}
+          days since referral · {clockWords(p).long}
+        </p>
+      )}
 
       {/*
        * The case's one job, in order: call, then record how it went. Both live in this panel, so the call is the single
@@ -1075,7 +1106,7 @@ export function TodayBoard({
       {ledgerInvalid && (
         /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
         <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-          <p className="m-0 font-medium text-warning">Case history needs checking: this patient&rsquo;s details may be out of date</p>
+          <p className="m-0 font-medium text-warning">Case history needs checking. This patient&rsquo;s details may be out of date.</p>
           <p className="m-0 mt-1">
             The contacts and status shown here may be wrong. Saving is paused until support fixes the case history.
           </p>
@@ -1218,7 +1249,7 @@ export function TodayBoard({
             Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} done · contact permission: {CONSENT_WORDS[ledgerRead.patient.contact_permission.status].toLowerCase()}
           </p>
           {ledgerRead.patient.slot_selection.status === "selected" && (
-            <p className="m-0 mt-1">Patient picked a preferred time (simulated). Check it; no appointment is booked yet.</p>
+            <p className="m-0 mt-1">Patient picked a preferred time (simulated). Check it. No appointment is booked yet.</p>
           )}
         </section>
       )}
@@ -1387,11 +1418,12 @@ export function TodayBoard({
               )}
             </div>
             <div className="border-t border-rule lg:mt-auto">
-              <Pager paging={paging} label="Queue pages" testId="page-range" onPage={goPage} />
+              <Pager paging={paging} label="Queue pages" onPage={goPage} className="px-2 pt-1.5" />
               {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
-              <p className="m-0 px-4 py-3 text-small text-muted" data-testid="queue-summary">
+              <p className={cn("m-0 px-4 pb-3 text-center text-small text-muted tabular-nums", paging.pages === 1 && "pt-3")} data-testid="queue-summary">
+                {paging.pages > 1 && `${paging.from}–${paging.to} of `}
                 {tab === "call"
-                  ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
+                  ? `${list.length} to call, ${list.filter((r) => clockWords(r).over).length} past their deadline`
                   : tab === "waiting"
                     ? `${list.length} waiting on someone else`
                     : `${list.length} with no owner`}
@@ -1400,18 +1432,27 @@ export function TodayBoard({
           </div>
         </div>
       </div>
-      {aside && <div className="mt-2 lg:flex-none">{aside}</div>}
     </div>
   );
 }
 
-function Fact({ label, value, warn = false, ltr = false }: { label: string; value: string; warn?: boolean; ltr?: boolean }) {
+const caseViewButton =
+  "inline-flex h-11 items-center gap-2 rounded-control border border-line bg-surface px-3 text-small font-medium whitespace-nowrap text-jade-800 transition-colors hover:bg-jade-50 lg:h-9";
+
+function FactGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
+    <div className="min-w-0 px-3 py-2.5">
+      <h3 className="m-0 text-[12px] font-semibold tracking-[0.06em] text-muted uppercase">{title}</h3>
+      <dl className="m-0 mt-1.5 grid gap-y-2">{children}</dl>
+    </div>
+  );
+}
+
+function Fact({ label, warn = false, children }: { label: string; warn?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-x-3 @xl:grid-cols-1">
       <dt className="text-muted">{label}</dt>
-      <dd dir={ltr ? "ltr" : undefined} className={cn("m-0 text-right font-medium", warn ? "text-warning" : "text-ink")}>
-        {value}
-      </dd>
+      <dd className={cn("m-0 font-medium", warn ? "text-warning" : "text-ink")}>{children}</dd>
     </div>
   );
 }

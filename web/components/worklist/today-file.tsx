@@ -48,7 +48,7 @@ export function useTodayRecords(id: string | undefined) {
         const b = body as { error?: unknown; missing?: unknown } | null;
         return { ok: false, error: typeof b?.error === "string" ? b.error : "the system returned an error", missing: r.status === 404 && b?.missing === true };
       })
-      .catch((): RecordsRead | null => (ac.signal.aborted ? null : { ok: false, error: "no response; check your connection", missing: false }))
+      .catch((): RecordsRead | null => (ac.signal.aborted ? null : { ok: false, error: "no response. Check your connection", missing: false }))
       .then((read) => {
         if (!read || ac.signal.aborted) return;
         if (read.ok || read.missing) kept.current.add(id);

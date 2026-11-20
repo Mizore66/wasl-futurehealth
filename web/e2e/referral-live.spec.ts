@@ -253,7 +253,6 @@ test.describe("referral answers, live mock", () => {
 
   const open = async (page: Page, n: string) => {
     await page.goto(`${NEXT_URL}/app/referrals?q=${n}`);
-    await expect(page.locator("[data-honesty=built]")).toHaveText("Referral answers: built, saved to the simulated case record");
     return page.getByRole("region", { name: "Open referral" });
   };
   const ledger = async () => (await fetch(`http://127.0.0.1:${MOCK_PORT}/mock/state`).then((r) => r.json())) as Record<string, CaseState>;
@@ -332,7 +331,6 @@ test.describe("referral answers, live mock", () => {
     // The responsible referrer's view of the same packet, opened from the hand-off.
     await gp.getByRole("link", { name: "Open the GP view" }).click();
     await expect(page).toHaveURL(/\/app\/referrals\/returned\?case=/);
-    await expect(page.locator("[data-honesty=built]")).toContainText("Referrer answers: built");
     const card = page.getByRole("article");
     await expect(card).toContainText("Returned bySKMC endoscopy");
     await expect(card).toContainText("ReasonBlood thinner plan missing");

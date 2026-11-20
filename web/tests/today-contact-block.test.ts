@@ -14,7 +14,7 @@ const withContact = (status: "none" | "granted" | "denied" | "opted_out", contac
   ...granted,
   contact_state: { status, contact_blocked },
 });
-const board = (c: CaseSummary) => renderToStaticMarkup(createElement(TodayBoard, { items: [workItem(c, 40, true, NOW)], now: 40, aside: null, live: true }));
+const board = (c: CaseSummary) => renderToStaticMarkup(createElement(TodayBoard, { items: [workItem(c, 40, true, NOW)], now: 40, live: true }));
 
 describe("Today follows the effective contact state", () => {
   it("canonical-granted consent with a recorded denial or opt-out is not texts-allowed", () => {

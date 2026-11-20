@@ -42,24 +42,29 @@ test.describe("Today", () => {
     await expect(open(page).getByTestId("contact-status")).toHaveText("Contact permitted");
     await expect(open(page).locator("[data-variant=cta]")).toHaveCount(1);
     await expect(open(page).locator("[data-variant=cta]")).toHaveText("Log call · AHS-sr-1002");
-    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser only (demo)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
 
-  test("the case-details icon shows owner, contact permission and ids; the folder is unavailable without a record", async ({ page }) => {
+  test("Patient details groups contact, timeline and case facts; the case file is unavailable without a record", async ({ page }) => {
     await page.goto("/app/today");
-    const details = open(page).getByRole("button", { name: "Case details" });
+    const details = open(page).getByRole("button", { name: "Patient details" });
     await expect(details).toHaveAttribute("aria-expanded", "false");
     await expect(open(page).getByTestId("case-facts")).toBeHidden();
+    await expect(open(page).getByTestId("lead-days")).toBeVisible();
     await details.click();
     await expect(details).toHaveAttribute("aria-expanded", "true");
     const facts = open(page).getByTestId("case-facts");
+    await expect(facts.getByRole("heading", { level: 3 })).toHaveText(["Contact", "Timeline", "Case"]);
+    await expect(facts).toContainText("Next stepCall to confirm they received the result");
+    await expect(facts).toContainText("PermissionGranted");
     await expect(facts).toContainText("OwnerNurse 6");
-    await expect(facts).toContainText("Contact permissionGranted");
-    await expect(facts).toContainText("CaseAHS-sr-1002");
-    await expect(facts).toContainText("Referred12 May");
-    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toBeDisabled();
+    await expect(facts).toContainText("Referred12 May108 days ago");
+    await expect(facts).toContainText("DeadlineDay 31 · 12 Jun77 days over 31");
+    // Open, the clock lives in the Timeline group only.
+    await expect(open(page).getByTestId("lead-days")).toHaveCount(0);
+    await expect(open(page).getByRole("button", { name: "No case file" })).toBeDisabled();
+    await noSeriousAxe(page);
   });
 
   test("logging No answer keeps the case open, offers Undo and the next case", async ({ page }) => {
@@ -147,7 +152,7 @@ test.describe("Today", () => {
     await expect(open(page).getByRole("status")).toContainText("Logged: Yours now · AHS-sr-1017 moved to To call");
     await expect(queueLink(page, /^No owner/)).toContainText("1");
     await expect(queueLink(page, /^To call/)).toContainText("9");
-    await open(page).getByRole("button", { name: "Case details" }).click();
+    await open(page).getByRole("button", { name: "Patient details" }).click();
     await expect(open(page).getByTestId("case-facts")).toContainText("OwnerHessa Al Ali");
   });
 
@@ -199,12 +204,12 @@ test.describe("Today", () => {
     await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
   });
 
-  test("the folder icon opens the full record and Audit trail its audit", async ({ page }) => {
+  test("Open case file opens the full record and Audit trail its audit", async ({ page }) => {
     await page.goto("/app/today?queue=waiting");
     await row(page, "AHS-sr-1011").click();
     await expect(open(page).getByTestId("case-who")).toContainText("Aisha Al Mansoori");
     await expect(page.getByRole("region", { name: "Case history" }).getByRole("link", { name: "Audit trail" })).toHaveAttribute("href", /AHS-sr-1011\/audit$/);
-    await open(page).getByRole("link", { name: "Open full record" }).click();
+    await open(page).getByRole("link", { name: "Open case file" }).click();
     await expect(page).toHaveURL(aisha);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
@@ -243,7 +248,7 @@ test.describe("Today", () => {
     await expect(history.getByTestId("record-unavailable")).toHaveText("Full case record: not available in this demo");
     await history.getByRole("tab", { name: "Activity" }).click();
     await expect(history.getByTestId("audit-unavailable")).toHaveText("Audit trail: not available in this demo");
-    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toHaveAttribute("title", /sample patients only/);
+    await expect(open(page).getByRole("button", { name: "No case file" })).toHaveAttribute("title", /sample patients only/);
   });
 
   test("phone: the selected case opens inline in its row; tapping the row folds it", async ({ page }) => {
@@ -275,7 +280,7 @@ test.describe("Patients", () => {
     await page.goto("/app/patients?dropoff=never_notified&overdue=true");
     await expect(page.getByTestId("showing")).toHaveText("7 cases: never notified · overdue");
     await expect(page.getByRole("region", { name: "Referrals by date received" })).toBeVisible();
-    await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: /^All\b/ })).not.toHaveAttribute("aria-current", "true");
     await shot(page, "patients-filtered");
     await noSeriousAxe(page);
 
@@ -365,7 +370,6 @@ test.describe("Referrals", () => {
     await expect(page.getByRole("region", { name: "Referral inbox" }).getByRole("listitem")).toHaveCount(3);
     await expect(page.getByRole("link", { name: "View all 21 referrals" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Hand-off activity" })).toContainText("Referral sent");
-    await expect(page.locator("[data-honesty=designed]")).toHaveText("Referral inbox: designed, not built");
     await shot(page, "referrals");
     await noSeriousAxe(page);
   });
@@ -434,7 +438,7 @@ test.describe("Referrals", () => {
     await pane(page).getByRole("button", { name: "Arabic interpreter on the day" }).click();
     await pane(page).getByRole("button", { name: "Female endoscopist" }).click();
     await pane(page).getByRole("button", { name: "Accept with 2 conditions" }).click();
-    await expect(pane(page).getByRole("status")).toContainText("Accepted with conditions. Arabic interpreter on the day; Female endoscopist.");
+    await expect(pane(page).getByRole("status")).toContainText("Accepted with conditions. Arabic interpreter on the day, Female endoscopist.");
   });
 
   test("Return to GP clocks the GP from the return day and Undo clears it", async ({ page }) => {
@@ -637,8 +641,8 @@ test.describe("Patients: paging and filters", () => {
     await page.goto("/app/patients?files=2026-05");
     await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 39");
     await expect(page.locator("[data-pf-case]")).toHaveCount(25);
-    await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
-    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
+    await expect(page.getByRole("link", { name: "Previous page" })).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next page" }).click();
     await expect(page).toHaveURL(/page=2/);
     await expect(page.getByTestId("range")).toHaveText("Showing 26–39 of 39");
 

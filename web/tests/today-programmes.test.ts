@@ -36,7 +36,7 @@ describe("Today clocks follow each programme's rule", () => {
     expect(overdueClockDays(annual)).toBeNull();
     const row = at(annual, 400);
     expect(row.deadline).toBeNull();
-    expect(clockWords(row)).toEqual({ over: false, short: "routine interval", long: "Routine interval · no overdue clock" });
+    expect(clockWords(row)).toEqual({ over: false, short: "routine interval", long: "Routine interval, no overdue clock" });
   });
 
   it("words the countdown against the case's deadline", () => {

@@ -56,6 +56,7 @@ describe("recovery board backfill cancellation", () => {
       response: { event: { hash: "cancel-hash", at: "2026-11-14T00:00:00Z", type: "waitlist_recovery" }, case_head: "cancel-hash", canonical_unchanged: true, dispatched: false, duplicate: false },
     });
     await mount(false);
+    await act(async () => button("Slot source")!.click());
     expect(document.querySelector("[data-testid=recovery-slot-history]")?.textContent).toContain("confirm backfill");
     await act(async () => button("Cancel backfill")!.click());
     const submit = button("Cancel simulated backfill")!;
@@ -70,7 +71,7 @@ describe("recovery board backfill cancellation", () => {
     const [slotId, input] = vi.mocked(cancelBackfill).mock.calls[0];
     expect(slotId).toBe(filled.slot.slot_id);
     expect(input).toMatchObject({ case_id: target.case_id, expected_slot_head: "filled-slot-head", expected_case_head: target.case_head, reason: "Patient cannot attend" });
-    expect(document.body.textContent).toContain("the seat is free again");
+    expect(document.body.textContent).toContain("The seat is free again");
     expect(refresh).toHaveBeenCalled();
   });
 

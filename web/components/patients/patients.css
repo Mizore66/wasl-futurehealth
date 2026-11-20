@@ -28,7 +28,6 @@
     padding: 14px clamp(14px, 1.7vw, 26px);
     border-bottom: 1px solid var(--color-limestone-300);
   }
-  .pf-toolbar > div,
   .pf-month-nav,
   .pf-month-files,
   .pf-link,
@@ -36,15 +35,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-  .pf-toolbar h2 {
-    margin: 0;
-    color: var(--color-jade-900);
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(24px, 2.2vw, 34px);
-    line-height: 1.1;
-    letter-spacing: -0.035em;
   }
   .staff .pf-back,
   .staff .pf-link {
@@ -66,10 +56,6 @@
     width: 15px;
     height: 15px;
   }
-  .pf-toolbar .pf-back {
-    padding-right: 12px;
-    border-right: 1px solid var(--color-limestone-300);
-  }
 
   .pf-filters {
     padding: 10px clamp(14px, 1.7vw, 26px);
@@ -87,8 +73,8 @@
   .pf-month-nav {
     gap: 4px;
   }
-  .pf-month-nav h3,
-  .pf-files-head h3 {
+  .pf-month-nav h2,
+  .pf-files-head h2 {
     margin: 0;
     color: var(--color-limestone-900);
     font-size: 16px;
@@ -339,25 +325,11 @@
     color: var(--color-limestone-700);
   }
   .pf-pager {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     padding: 12px clamp(14px, 1.7vw, 26px);
     border-top: 1px solid var(--color-limestone-300);
   }
   .pf-empty {
     padding: 20px clamp(14px, 1.7vw, 26px);
-  }
-  .pf-notes {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 10px;
-    padding: 0 4px;
-    color: var(--color-limestone-800);
-    font-size: 12px;
   }
 
   /* The open folder: a jade tab above the record card, which takes the top border. */
@@ -666,9 +638,6 @@
       gap: 10px;
       padding: 12px;
     }
-    .pf-toolbar h2 {
-      font-size: 25px;
-    }
     .pf-filters {
       padding: 10px 12px;
     }
@@ -683,7 +652,7 @@
     .pf-month-nav {
       gap: 0;
     }
-    .pf-month-nav h3 {
+    .pf-month-nav h2 {
       font-size: 14px;
     }
     .pf-month-label {

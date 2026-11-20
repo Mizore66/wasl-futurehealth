@@ -42,7 +42,7 @@ const items = allCallWorkItems(3);
 async function mount(live = false) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live, undoMs: 0 })));
+  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, live, undoMs: 0 })));
 }
 const history = () => host.querySelector<HTMLElement>('section[aria-label="Case history"]')!;
 const tab = (name: string) => Array.from(history().querySelectorAll<HTMLButtonElement>("[role=tab]")).find((t) => t.textContent!.startsWith(name))!;
@@ -76,13 +76,13 @@ it("fixtures mode: reads the selected case's records once, shows the held count,
 
 it("fixtures mode: no held count without a hold, a missing record says so, a failure says why and Retry reads again", async () => {
   const fetchMock = vi.fn()
-    .mockResolvedValueOnce(failed(502, { error: "the case system did not respond; try again" }))
+    .mockResolvedValueOnce(failed(502, { error: "the case system did not respond. Try again" }))
     .mockResolvedValueOnce(ok({ sources: [], caseHeld: [], events: [] }));
   vi.stubGlobal("fetch", fetchMock);
   await mount();
   await flush();
   expect(history().querySelector('[data-testid="records-held"]')).toBeNull();
-  expect(panel("activity").textContent).toContain("Some history not shown: the case system did not respond; try again");
+  expect(panel("activity").textContent).toContain("Some history not shown: the case system did not respond. Try again");
   const retry = Array.from(panel("activity").querySelectorAll("button")).find((b) => b.textContent === "Retry")!;
   await act(async () => retry.click());
   await flush();

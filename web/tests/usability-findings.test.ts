@@ -79,8 +79,8 @@ describe("N8: why the case is still open sits above the timeline", () => {
   const open: CaseDetail = { ...held, case: { ...held.case, closed: false }, signoffs: [], api_reviews: [], api_review_states: [] } as CaseDetail;
 
   it("names the identity-in-review reason in the Why card", () => {
-    expect(openReviewReasons(open)[0]).toBe("Identity in review: no second identifier is confirmed for the two records.");
-    expect(text(renderToStaticMarkup(ReasonCard({ detail: open })))).toContain("Identity in review: no second identifier is confirmed");
+    expect(openReviewReasons(open)[0]).toBe("Identity in review. No second identifier is confirmed for the two records.");
+    expect(text(renderToStaticMarkup(ReasonCard({ detail: open })))).toContain("Identity in review. No second identifier is confirmed");
     expect(openReviewReasons(held)).toEqual([]);
   });
 
@@ -109,8 +109,8 @@ describe("Identity comparison across scripts", () => {
   const row = (referral: string, report: string, verdict: IdentityRow["verdict"] = "differ"): IdentityRow => ({ field: "Name", referral, report, verdict });
 
   it("hints at transliteration for an Arabic-script vs Latin-script name that differs", () => {
-    expect(scriptHint(row("فاطمة الزعابي", "Fatima Al Zaabi"))).toBe("different scripts; compare transliteration");
-    expect(scriptHint(row("Fatima Al Zaabi", "فاطمة الزعابي"))).toBe("different scripts; compare transliteration");
+    expect(scriptHint(row("فاطمة الزعابي", "Fatima Al Zaabi"))).toBe("different scripts, compare transliteration");
+    expect(scriptHint(row("Fatima Al Zaabi", "فاطمة الزعابي"))).toBe("different scripts, compare transliteration");
   });
 
   it("adds nothing for same-script names, matches, or other fields", () => {

@@ -150,7 +150,7 @@ export function BookingControls({
       setMode(null);
     } catch {
       setLocked(true);
-      setNotice("We couldn't confirm the save. Reload the page before trying again; it won't be booked twice.");
+      setNotice("We couldn't confirm the save. Reload the page before trying again. It won't be booked twice.");
       setMode(null);
     } finally {
       setPending(false);
@@ -163,7 +163,7 @@ export function BookingControls({
         {active
           ? "Simulated reservation confirmed"
           : summary?.status === "cancelled"
-            ? "Simulated reservation cancelled · rebook"
+            ? "Simulated reservation cancelled. Rebook."
             : "No simulated reservation"}
       </p>
       {summary?.slot && (
@@ -186,10 +186,10 @@ export function BookingControls({
                 {CONDITION_LABELS[r.code as ReferralCondition] ?? r.code}
                 <span className="text-muted">
                   {r.check !== "slot"
-                    ? " · arrange before the procedure; Wasl cannot check this"
+                    ? ". Arrange before the procedure. Wasl cannot check this."
                     : r.code === "arabic_interpreter"
-                      ? " · Arabic-speaking session checked against the chosen slot; interpreter not confirmed"
-                      : " · checked against the chosen slot"}
+                      ? ". Arabic-speaking session checked against the chosen slot. Interpreter not confirmed."
+                      : ". Checked against the chosen slot."}
                 </span>
               </li>
             ))}

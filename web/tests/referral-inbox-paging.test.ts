@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { INBOX_PAGE, pageNumbers } from "@/components/worklist/referral-inbox";
+import { INBOX_PAGE } from "@/components/worklist/referral-inbox";
 import { inboxHref, readInboxUrl, safeInboxBack } from "@/components/worklist/inbox-url";
 import { allNewReferrals, syntheticReferrals } from "./paging-fixtures";
 import { mountInbox, type Harness } from "./referral-inbox-harness";
@@ -49,7 +49,7 @@ it("renders one page of a 5000-referral queue and reaches any page from the URL"
   h.go("/app/referrals?view=inbox&page=377");
   expect(h.rows()).toHaveLength(INBOX_PAGE);
   expect(range()).toBe("3761–3770 of 5000 referrals");
-  expect(pageNumbers(377, 500)).toEqual([1, 376, 377, 378, 500]);
+  expect([...h.host.querySelectorAll('nav[aria-label="Inbox pages"] [aria-label^="Page "]')].map((x) => x.textContent)).toEqual(["1", "377", "500"]);
   h.go("/app/referrals?view=inbox&page=9999");
   expect(current()).toBe("500");
 });

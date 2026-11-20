@@ -17,9 +17,9 @@ export function obligationConfirmationWords(need: Obligation, detail: Pick<CaseD
     case "resolved_senior":
       return "Confirmed by two independent clinicians on the review desk. The main record updates after final sign-off.";
     case "awaiting_r2":
-      return "One of two independent clinician confirmations is in; a second clinician confirms it on the review desk.";
+      return "One of two independent clinician confirmations is in. A second clinician confirms it on the review desk.";
     case "awaiting_r3":
-      return "The two clinician reads differ; a senior clinician resolves it on the review desk.";
+      return "The two clinician reads differ. A senior clinician resolves it on the review desk.";
     default:
       return "Needs confirmation by two independent clinicians on the review desk.";
   }

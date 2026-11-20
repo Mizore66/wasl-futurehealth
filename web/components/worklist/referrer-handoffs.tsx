@@ -37,7 +37,7 @@ export function SessionReferrerHandoffs({ referrer = "GP", focus }: { referrer?:
   return (
     <section aria-label="Returns kept in this browser" className="flex flex-col gap-gap">
       <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-muted">
-        <HonestyLabel kind="designed">Kept in this browser only</HonestyLabel>
+        <HonestyLabel plain kind="designed">Kept in this browser only</HonestyLabel>
         <span>Returns made in the referral inbox in this browser. An acknowledgement here stays in this browser too. Nothing is sent to the {referrer} or saved.</span>
       </p>
       {packets.length ? (
@@ -129,13 +129,13 @@ function PacketCard({
         {(
           [
             ...(p.source === "canonical"
-              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail; reload to try again" : (p.recommendation ?? "Not recorded")]] as const)
+              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail. Reload to try again." : (p.recommendation ?? "Not recorded")]] as const)
               : []),
             ["Priority", p.urgent ? "Urgent" : "Routine"],
             ["Returned by", p.unit],
             ["Reason", p.reason],
             ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not recorded")]] as const) : []),
-            ...(p.hasNote || p.note ? ([["Note from the unit", p.note ?? "Could not load this case's detail; reload to try again"]] as const) : []),
+            ...(p.hasNote || p.note ? ([["Note from the unit", p.note ?? "Could not load this case's detail. Reload to try again."]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
             ["Acknowledged", p.acknowledged ? "Yes" : "Not yet"],
@@ -220,7 +220,7 @@ function PacketCard({
             </Button>
             {tried && !built.ok && <span role="alert" className="text-negative">{built.missing}</span>}
           </div>
-          <p className="m-0 mt-2 text-small text-muted">Respond by {formatDay(p.actBy)}. Answering hands the referral back; it does not close the case or book anything.</p>
+          <p className="m-0 mt-2 text-small text-muted">Respond by {formatDay(p.actBy)}. Answering hands the referral back. It does not close the case or book anything.</p>
         </div>
       )}
       {saved && !error && (

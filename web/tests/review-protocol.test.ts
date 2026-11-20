@@ -177,7 +177,7 @@ describe("blinded review desk markup", () => {
     expect(html).not.toContain("aaaaaaaaaaaa");
     expect(html).toContain("No senior form is needed");
     expect(html).not.toContain("Submit senior resolution");
-    expect(html).toContain("Demo only: this answer does not change the case.");
+    expect(html).toContain("Demo only. This answer does not change the case.");
   });
 
   it("disagreement shows both answers and only an authorised senior sees the r3 form", () => {
@@ -222,7 +222,7 @@ describe("blinded review desk markup", () => {
 
   it("fixtures mode stays a non-persisting preview with no sign-out or submit control", () => {
     const html = renderToStaticMarkup(createElement(ReviewDesk, { view: reviewView(open()), mode: "fixtures", next }));
-    expect(html).toContain("nothing here is saved");
+    expect(html).toContain("Nothing here is saved");
     expect(html).not.toContain("Sign out");
     expect(html).not.toContain("Submit first read");
   });

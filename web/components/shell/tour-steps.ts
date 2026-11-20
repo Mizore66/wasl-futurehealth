@@ -102,7 +102,7 @@ export const TOUR_STEPS: TourStep[] = [
     page: "/app",
     target: 'section[aria-labelledby="kpi-h"]',
     title: "The headline number",
-    body: "How many of the colonoscopies done within 31 days each method can see: Emirates ID alone, or Wasl's matching. Under it, the programme's own on-time rate against the DoH target.",
+    body: "Share of positive FIT referrals that reached a colonoscopy within 31 days, the DoH standard. It is counted three ways: by Emirates ID alone, by Wasl's matching, and against the simulated truth.",
   },
   {
     section: "Programme",
@@ -117,12 +117,6 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'section[aria-labelledby="stall-h"]',
     title: "Where patients stall",
     body: "The three steps where most patients get stuck. Each one links to the patients stuck there.",
-  },
-  {
-    section: "Finish",
-    target: '[data-tour="run"]',
-    title: "Which data you are seeing",
-    body: "Every number comes from one run. This notice says whether it is simulated and when it was taken. Open Details for the run, policy and model.",
   },
   {
     section: "Finish",
