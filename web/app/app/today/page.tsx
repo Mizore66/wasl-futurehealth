@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { parseTodayQueue, parseTodaySelection } from "@/components/worklist/filters";
 import { TodayBoard } from "@/components/worklist/today-board";
 import { scopeWords, TodayScope } from "@/components/worklist/today-scope";
@@ -15,11 +14,6 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
   const queue = parseTodayQueue(sp);
   const { items, now, programme, provider } = await todayItems(selection);
   const live = apiMode() === "live";
-  const honesty = live ? (
-    <HonestyLabel kind="built">Call log: saved to the case ledger</HonestyLabel>
-  ) : (
-    <HonestyLabel kind="illustrative">Call log: kept in this browser (no live API)</HonestyLabel>
-  );
   const scope = scopeWords(selection);
   const head = (
     <PageHeader
@@ -31,5 +25,5 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
     />
   );
   // Keyed by scope only: switching queue keeps this browser's logged actions.
-  return <TodayBoard key={scope} head={head} items={items} now={now} aside={honesty} live={live} scope={scope} queue={queue} />;
+  return <TodayBoard key={scope} head={head} items={items} now={now} live={live} scope={scope} queue={queue} />;
 }

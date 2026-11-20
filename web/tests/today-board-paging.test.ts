@@ -37,7 +37,7 @@ async function mount(items = allCallWorkItems(1201), live = false) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   published.length = 0;
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  props = { items, now: 120, aside: null, live, undoMs: 0 };
+  props = { items, now: 120, live, undoMs: 0 };
   await act(async () => root!.render(createElement(TodayBoard, props)));
 }
 /** The sidebar's queue links change `?queue=`; here the server-rendered prop stands in for the URL. */

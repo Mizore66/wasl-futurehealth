@@ -170,7 +170,6 @@ export function TodayBoard({
   items,
   now,
   head,
-  aside,
   live = false,
   scope = "Al Mushrif Healthcare Centre",
   undoMs = LIVE_UNDO_MS,
@@ -180,7 +179,6 @@ export function TodayBoard({
   now: number;
   /** The page header, drawn as the sheet's top band. */
   head?: React.ReactNode;
-  aside: React.ReactNode;
   live?: boolean;
   scope?: string;
   /** Live API: the Undo window before a held-back write is sent; 0 sends at once. */
@@ -1435,7 +1433,6 @@ export function TodayBoard({
           </div>
         </div>
       </div>
-      {aside && <div className="mt-2 lg:flex-none">{aside}</div>}
     </div>
   );
 }

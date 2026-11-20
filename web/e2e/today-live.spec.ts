@@ -224,7 +224,6 @@ test.describe("Today, live mode against a mock API", () => {
     append(second, "contact_outcome", { outcome: "reached", channel: "phone", note: "Will check her diary" }, "seed-coordinator", "2026-11-09T08:05:00.000Z");
 
     await page.goto("/app/today");
-    await expect(page.locator("[data-honesty=built]")).toHaveText("Call log: saved to the case ledger");
     const open = page.getByRole("region", { name: "Selected case" });
     await expect(open).toHaveAttribute("data-case", "AHS-sr-1002");
     await expect(page.getByTestId("today-open")).toContainText("No contact on the case ledger yet");

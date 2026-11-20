@@ -55,7 +55,7 @@ async function mount(items: WorkItem[], live = false) {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live })));
+  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, live })));
 }
 const list = () => host.querySelector<HTMLElement>('[data-testid="today-sheet"]')!;
 const open = () => host.querySelector<HTMLElement>('section[aria-label="Selected case"]')!;

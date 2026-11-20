@@ -42,7 +42,7 @@ const items = allCallWorkItems(3);
 async function mount(live = false) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, aside: null, live, undoMs: 0 })));
+  await act(async () => root!.render(createElement(TodayBoard, { items, now: 120, live, undoMs: 0 })));
 }
 const history = () => host.querySelector<HTMLElement>('section[aria-label="Case history"]')!;
 const tab = (name: string) => Array.from(history().querySelectorAll<HTMLButtonElement>("[role=tab]")).find((t) => t.textContent!.startsWith(name))!;

@@ -79,7 +79,7 @@ async function declineOnToday(loaded: WorkItemLike) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items: [loaded], now: 40, aside: null, live: true, undoMs: 0 }))));
+  await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items: [loaded], now: 40, live: true, undoMs: 0 }))));
   if (loaded.view === "waiting") await click("Waiting", "[role=tab]");
   await click("Log call");
   await click("Reached");
@@ -218,7 +218,7 @@ describe("booking flags follow the latest successful booking projection", () => 
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items, now: 40, aside: null, live: true, undoMs: 0 }))));
+    await act(async () => root!.render(createElement(TodayBoard, (boardProps = { items, now: 40, live: true, undoMs: 0 }))));
   }
 
   async function declineSelected(tab: "To call" | "Waiting", name: string) {

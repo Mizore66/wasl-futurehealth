@@ -43,7 +43,7 @@ let props: Parameters<typeof TodayBoard>[0];
 const mount = async (items: CaseSummary[] = [initial]) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-  props = { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, aside: null, undoMs: 0 };
+  props = { items: items.map((c) => workItem(c, 40, true, NOW)), now: 40, live: true, undoMs: 0 };
   await act(async () => root!.render(createElement(TodayBoard, props)));
 };
 /** The sidebar's queue links change `?queue=`; the rendered prop stands in for the URL here. */

@@ -42,7 +42,6 @@ test.describe("Today", () => {
     await expect(open(page).getByTestId("contact-status")).toHaveText("Contact permitted");
     await expect(open(page).locator("[data-variant=cta]")).toHaveCount(1);
     await expect(open(page).locator("[data-variant=cta]")).toHaveText("Log call · AHS-sr-1002");
-    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser (no live API)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
