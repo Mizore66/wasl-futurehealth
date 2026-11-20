@@ -7,7 +7,6 @@ import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, PatientJourneySec
 import { RecoveryCard } from "@/components/case/recovery-card";
 import { DispositionCard } from "@/components/disposition/disposition-card";
 import { dispositionContext } from "@/components/disposition/model";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays, isNoAction } from "@/components/worklist/days";
 import { LedgerInvalidBanner } from "@/components/worklist/ledger-banner";
@@ -24,7 +23,7 @@ import { formatDayYear } from "@/lib/domain/day";
 import { languageWords } from "@/lib/domain/language";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
-import { personForLoop, showsSimulatedName } from "@/lib/people";
+import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
 import { closureReason, entryLabel, eventWords } from "@/components/case/words";
@@ -215,10 +214,9 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
       {back}
 
       <section className="rs-card live-record" aria-label={`Evidence file for ${shortId(c.id)}`}>
-        {/* The card does not clip (the Run metadata drop-down hangs over it), so the band rounds the corners the folder tab leaves. */}
+        {/* The card does not clip, so the band rounds the corners the folder tab leaves. */}
         <PageHeader
           attached
-          run
           className={back ? "rounded-se-[6px]!" : "rounded-t-[6px]!"}
           title={person?.display_name ?? shortId(c.id)}
           titleAside={
@@ -254,7 +252,6 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
               </span>
             </>
           }
-          aside={showsSimulatedName(c.id) ? <HonestyLabel kind="simulated">Simulated names</HonestyLabel> : undefined}
         />
         <div className="record-work">
           <div className="rs-browser">
