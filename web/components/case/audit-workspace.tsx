@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { dayLabel, groupByMonth, type AuditEvent, type AuditEventKind, type DecisionView } from "./audit-model";
 
 const ICON: Record<AuditEventKind, LucideIcon> = {
@@ -184,23 +185,16 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
         className="relative grid min-w-0 flex-1 grid-cols-[minmax(0,1.36fr)_minmax(300px,1fr)] max-md:flex max-md:flex-col"
         data-audit-view={view}
       >
-        <div role="group" aria-label="Audit view" className="hidden items-center gap-4 border-b border-line px-[15px] max-md:flex">
-          {(["history", "verification"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              aria-label={v === "history" ? "Event history" : undefined}
-              onClick={() => setView(v)}
-              className={cn(
-                "min-h-12 border-b-2 px-px text-[14px] font-[550]",
-                view === v ? "border-jade-700 text-jade-800" : "border-transparent text-muted",
-              )}
-            >
-              {v === "history" ? "History" : "Verification"}
-            </button>
-          ))}
-        </div>
+        <SegmentedToggle
+          label="Audit view"
+          value={view}
+          onChange={setView}
+          items={[
+            { value: "history", label: "History", ariaLabel: "Event history" },
+            { value: "verification", label: "Verification" },
+          ]}
+          className="hidden px-[15px] max-md:flex"
+        />
 
         <section
           aria-labelledby="au-history-h"
