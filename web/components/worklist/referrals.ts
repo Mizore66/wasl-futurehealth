@@ -335,17 +335,6 @@ export function referrerAnswerWords(r: { response: Exclude<ReferrerResponseCode,
 /** The packet's reason code in words, or the code itself when it has no words. */
 export const packetReasonWords = (code: string) => PACKET_REASONS[code] ?? code;
 
-/**
- * The returned-referrals header label. It follows the same credential check as the save error
- * (REFERRER_TOKEN_MISSING), so the header never claims answers are saved when this server cannot send them.
- */
-export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean, browserAcknowledge = false): { kind: "built" | "designed"; text: string } {
-  if (!live && browserAcknowledge) return { kind: "designed", text: "Acknowledgement: kept in this browser only" };
-  if (!live) return { kind: "designed", text: "Referrer answers: need the live synthetic API" };
-  if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not available on this server (no referring-clinician credential configured)" };
-  return { kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" };
-}
-
 /** A referral's place in the inbox, as one status a filter can name. */
 export type ReferralStatus = "needs" | "report" | "waiting" | "acknowledged" | "acted" | "escalated" | "accepted" | "closed";
 export type StatusTone = "pending" | "held" | "done";

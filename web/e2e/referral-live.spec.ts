@@ -331,7 +331,6 @@ test.describe("referral answers, live mock", () => {
     // The responsible referrer's view of the same packet, opened from the hand-off.
     await gp.getByRole("link", { name: "Open the GP view" }).click();
     await expect(page).toHaveURL(/\/app\/referrals\/returned\?case=/);
-    await expect(page.locator("[data-honesty=built]")).toContainText("Referrer answers: built");
     const card = page.getByRole("article");
     await expect(card).toContainText("Returned bySKMC endoscopy");
     await expect(card).toContainText("ReasonBlood thinner plan missing");

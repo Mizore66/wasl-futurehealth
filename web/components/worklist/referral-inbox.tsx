@@ -282,12 +282,9 @@ export function ReferralInbox({
       <div ref={root}>
         {top}
         {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
-        {/* Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners. */}
         <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
           <PageHeader
             attached
-            run
-           
             title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>}
           />
           <div className="p-4 sm:p-pad">
@@ -548,7 +545,6 @@ export function ReferralInbox({
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
           title={
             <span data-focus="heading" tabIndex={-1} aria-label={`${heading.title}, ${r.short}`} className="outline-none">
               {heading.title}
@@ -826,12 +822,9 @@ function Directory({
     counts[k] = (counts[k] ?? 0) + 1;
   }
   return (
-    // Not clipped: a short or empty list is shorter than the run notice's drop-down, so the band rounds its own corners.
     <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="rounded-card border border-line bg-surface outline-none">
       <PageHeader
         attached
-        run
-       
         title={
           <span data-focus="heading" tabIndex={-1} className="outline-none">
             Referral inbox
