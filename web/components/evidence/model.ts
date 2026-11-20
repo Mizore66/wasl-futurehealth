@@ -137,3 +137,118 @@ export function frozenWords(iso: string): string {
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
   return `${date}, ${time} UTC`;
 }
+
+/* ---------- Chart shapes ---------- */
+
+export type RunKey = "v2" | "v1" | "deployed";
+export const RUN_LABEL: Record<RunKey, string> = { v2: "Held-out (v2)", v1: "Tuned-on (v1)", deployed: "Demo run" };
+
+/** "Worklist size (patients to chase) (frozen v2 five-seed mean)" → metric "Worklist size (patients to chase)", run "v2". */
+export function splitRun(row: string): { metric: string; run: RunKey | null; runText: string } {
+  const m = row.match(/^(.*)\s+\(([^()]*)\)\s*$/);
+  if (!m) return { metric: row, run: null, runText: "" };
+  const t = m[2];
+  const run: RunKey | null = /\bv2\b/.test(t) ? "v2" : /\bv1\b/.test(t) ? "v1" : /deployed|demo/i.test(t) ? "deployed" : null;
+  return run ? { metric: m[1], run, runText: t } : { metric: row, run: null, runText: "" };
+}
+
+export type GapRow = EvidencePer1000Row & { metric: string };
+
+/** The per-1,000 rows grouped by run, in the order v2, v1, deployed (only runs present). */
+export function gapRuns(rows: EvidencePer1000Row[]): { run: RunKey; runText: string; rows: GapRow[] }[] {
+  const out = new Map<RunKey, { run: RunKey; runText: string; rows: GapRow[] }>();
+  for (const r of rows) {
+    const { metric, run, runText } = splitRun(r.row);
+    if (!run) continue;
+    const g = out.get(run) ?? { run, runText, rows: [] };
+    g.rows.push({ ...r, metric });
+    out.set(run, g);
+  }
+  return (["v2", "v1", "deployed"] as RunKey[]).flatMap((k) => (out.has(k) ? [out.get(k)!] : []));
+}
+
+export const isPer1000 = (r: EvidencePer1000Row) => /1,?000/.test(r.unit);
+
+/** "[v2] Colorectal (CRC) false closures" → { noise: "v2", name: "Colorectal (CRC) false closures" }. */
+export function noiseOf(metric: string): { noise: "v1" | "v2" | null; name: string } {
+  const m = metric.match(/^\[(v1|v2)\]\s*(.*)$/);
+  return m ? { noise: m[1] as "v1" | "v2", name: m[2] } : { noise: null, name: metric };
+}
+
+export type SafetyPair = { name: string; v1: EvidenceSafety | null; v2: EvidenceSafety | null };
+
+/** Safety rows paired by name across noise models: false closures first, then the rest, each in file order. */
+export function safetyPairs(rows: EvidenceSafety[]): { closures: SafetyPair[]; other: SafetyPair[] } {
+  const by = new Map<string, SafetyPair>();
+  for (const r of rows) {
+    const { noise, name } = noiseOf(r.metric);
+    const p = by.get(name) ?? { name, v1: null, v2: null };
+    p[noise ?? "v2"] = r;
+    by.set(name, p);
+  }
+  const all = [...by.values()];
+  return { closures: all.filter((p) => isFalseClosure(p.name)), other: all.filter((p) => !isFalseClosure(p.name)) };
+}
+
+/** "Colorectal (CRC) false closures" → "Colorectal (CRC)". */
+export const closureName = (name: string) => name.replace(/\s*false closures$/i, "");
+
+export type RatePair = { name: string; v1: EvidenceLinkage | null; v2: EvidenceLinkage | null };
+
+/**
+ * Linkage rates as two panels on one share axis: false-match and missed-match, one row per programme plus the
+ * pair-level linkage row. Rows that are not shares (review load, F1) come back separately for stat tiles.
+ */
+export function ratePanels(rows: EvidenceLinkage[]) {
+  const pairs = linkageRows(rows);
+  const panel = (re: RegExp): RatePair[] =>
+    pairs
+      .filter((p) => re.test(p.metric) && isShareMetric(p.metric) && !/F1/.test(p.metric))
+      .map((p) => ({ name: p.metric.split(":")[0].trim(), v1: p.v1, v2: p.v2 }));
+  return {
+    falseMatch: panel(/false-match/i),
+    missed: panel(/missed-match/i),
+    other: pairs.filter((p) => !/false-match|missed-match/i.test(p.metric)),
+  };
+}
+
+export type WorstRange = { label: string; noise: "v1" | "v2" | null; low: number; high: number; lowWhat: string; highWhat: string; value: string };
+
+/**
+ * Worst-case rows that state a range of a share: "0.818 (seed 37) to 0.855 (seed 41)" or
+ * "40-59: 0.815 (range 0.815 to 0.867); …". Rows in another shape (points, items per 100 loops) are left out.
+ */
+export function worstRanges(rows: { label: string; value: string }[]): WorstRange[] {
+  const out: WorstRange[] = [];
+  for (const r of rows) {
+    const { noise, name } = noiseOf(r.label);
+    const seeds = r.value.match(/^(0\.\d+) \((seed \d+)\) to (0\.\d+) \((seed \d+)\)/);
+    const strata = r.value.match(/^([^:]+): (0\.\d+) \(range (0\.\d+) to (0\.\d+)\)/);
+    if (seeds) out.push({ label: name, noise, low: +seeds[1], high: +seeds[3], lowWhat: seeds[2], highWhat: seeds[4], value: r.value });
+    else if (strata) out.push({ label: name, noise, low: +strata[3], high: +strata[4], lowWhat: strata[1].trim(), highWhat: "best stratum", value: r.value });
+  }
+  return out;
+}
+
+/** Worst rows that are not a share range, for stat tiles: the label and the leading figure of its value. */
+export function worstOthers(rows: { label: string; value: string }[]) {
+  const ranged = new Set(worstRanges(rows).map((w) => w.value));
+  return rows
+    .filter((r) => !ranged.has(r.value))
+    .map((r) => {
+      const { noise, name } = noiseOf(r.label);
+      const lead = r.value.match(/^(?:([A-Za-z_]+): )?(\d+(?:\.\d+)?) ([a-z]+)/);
+      return { name, noise, value: r.value, lead: lead ? `${lead[2]} ${lead[3]}` : r.value, who: lead?.[1] ?? null };
+    });
+}
+
+/** Claim counts by status, in the order built, simulated, designed. */
+export function claimCounts(claims: { status: "built" | "simulated" | "designed" }[]) {
+  return (["built", "simulated", "designed"] as const).map((s) => ({ status: s, count: claims.filter((c) => c.status === s).length }));
+}
+
+/** The first URL in a free-text source line. */
+export const firstUrl = (s: string | null) => s?.match(/https?:\/\/\S+/)?.[0]?.replace(/[).,]+$/, "") ?? null;
+
+/** A share as a percent for chart labels: 0.978983 → "97.9%", 0.0134 → "1.34%". */
+export const pctLabel = (share: number) => sharePct(share);

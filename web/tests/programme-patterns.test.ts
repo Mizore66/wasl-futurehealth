@@ -50,7 +50,7 @@ describe("patternsView over the dashboard fixture", () => {
   it("prints the ahs-mushrif line from its fixture numbers", () => {
     const row = view.providers.find((r) => r.key === "ahs-mushrif")!;
     expect(loopsText(row.loops)).toBe("1,606 cases");
-    expect(row.patterns.map(patternText)).toEqual(["523 of 1,606 closed", "largest stall: No acknowledgement, 293 of 1,606"]);
+    expect(row.patterns.map(patternText)).toEqual(["523 of 1,606 closed with evidence", "largest stall: No acknowledgement, 293 of 1,606"]);
   });
 
   it("links each provider, its closure and its largest stall to the matching Patients filters", () => {
@@ -77,7 +77,7 @@ describe("patternsView: small cells", () => {
     const closed = pattern(breast, "closed")!;
     expect(closed.cell).toEqual({ kind: "suppressed", below: 5 });
     expect(closed.href).toBeNull();
-    expect(patternText(closed)).toBe("fewer than 5 of 70 closed");
+    expect(patternText(closed)).toBe("fewer than 5 of 70 closed with evidence");
   });
 
   it("names no largest stall when every recorded one is suppressed", () => {
@@ -109,7 +109,7 @@ describe("patternsView: zero counts and missing data", () => {
   it("prints zero counts out of the provider's cases and never links them", () => {
     const d = { ...dashboard, providers: [{ provider: "z", loops: 12, evidenced_closed: 0, dropoff: { "": 12 } }] };
     const [row] = patternsView(d).providers;
-    expect(row.patterns.map(patternText)).toEqual(["0 of 12 closed", "no stall recorded"]);
+    expect(row.patterns.map(patternText)).toEqual(["0 of 12 closed with evidence", "no stall recorded"]);
     expect(row.patterns.every((p) => p.href === null)).toBe(true);
     expect(row.href).toBe("/app/patients?provider=z");
   });

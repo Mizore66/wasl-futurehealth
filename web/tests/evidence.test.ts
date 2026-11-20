@@ -3,6 +3,13 @@ import data from "@/data/evidence.json";
 import {
   asPercent,
   boundPct,
+  claimCounts,
+  gapRuns,
+  ratePanels,
+  safetyPairs,
+  splitRun,
+  worstOthers,
+  worstRanges,
   calibrationPer1000,
   evidenceHref,
   frozenWords,
@@ -143,5 +150,55 @@ describe("evidence model", () => {
   it("words the frozen timestamp in UTC", () => {
     expect(frozenWords("2026-11-02T04:33:36.064230Z")).toBe("2 Nov 2026, 04:33 UTC");
     expect(frozenWords("not a date")).toBe("not a date");
+  });
+});
+
+describe("evidence chart data", () => {
+  const ev = loadEvidence();
+
+  it("groups the per-1,000 rows by run, held-out v2 first, with the hero row in each", () => {
+    expect(splitRun("Worklist size (patients to chase) (frozen v2 five-seed mean)")).toEqual({
+      metric: "Worklist size (patients to chase)",
+      run: "v2",
+      runText: "frozen v2 five-seed mean",
+    });
+    const runs = gapRuns(ev.impact.per_1000);
+    expect(runs.map((r) => r.run)).toEqual(["v2", "v1", "deployed"]);
+    for (const r of runs) expect(r.rows.some((x) => /wrongly flagged/i.test(x.metric))).toBe(true);
+    const flagged = runs[0].rows.find((x) => /wrongly flagged/i.test(x.metric))!;
+    // The hero reads "207 → 31": the file's v2 values rounded.
+    expect([Math.round(flagged.eid_only!), Math.round(flagged.wasl!)]).toEqual([207, 31]);
+  });
+
+  it("pairs every safety counter across noise models, false closures first", () => {
+    const { closures, other } = safetyPairs(ev.accuracy.safety);
+    expect(closures[0].name).toMatch(/CRC/);
+    expect(closures[0].v2).toMatchObject({ events: 0, denominator: 3035, upper_95: 0.00121 });
+    expect(closures[0].v1).toMatchObject({ events: 0, denominator: 3161 });
+    expect(closures.length + other.length).toBe(ev.accuracy.safety.length / 2);
+    expect(closures.every((p) => /false closures/i.test(p.name))).toBe(true);
+  });
+
+  it("splits linkage rates into false-match and missed-match panels with v1 and v2 per programme", () => {
+    const p = ratePanels(ev.accuracy.linkage);
+    expect(p.falseMatch.map((r) => r.name)).toEqual(p.missed.map((r) => r.name));
+    expect(p.missed.find((r) => r.name === "Colorectal (CRC)")).toMatchObject({ v2: { value: 0.215 }, v1: { value: 0.156 } });
+    expect(p.other.map((r) => r.metric)).toEqual(expect.arrayContaining([expect.stringMatching(/F1/), expect.stringMatching(/per 100 loops/)]));
+  });
+
+  it("reads worst seeds and strata as ranges, and the rest as tiles", () => {
+    const r = worstRanges(ev.accuracy.worst);
+    expect(r.find((x) => x.noise === "v2" && /CRC closure recall/.test(x.label))).toMatchObject({ low: 0.767, high: 0.792, lowWhat: "seed 41" });
+    expect(r.find((x) => x.noise === "v2" && /age band/.test(x.label))).toMatchObject({ low: 0.766, high: 0.798, lowWhat: "<40" });
+    const t = worstOthers(ev.accuracy.worst);
+    expect(t.find((x) => x.noise === "v2" && /KPI gap/.test(x.name))?.lead).toBe("3.4 points");
+    expect(t.find((x) => x.noise === "v2" && /Review load/.test(x.name))).toMatchObject({ lead: "35.4 items", who: "filipino" });
+    expect(r.length + t.length).toBe(ev.accuracy.worst.length);
+  });
+
+  it("counts claims by status", () => {
+    const counts = claimCounts(ev.claims);
+    expect(counts.map((c) => c.status)).toEqual(["built", "simulated", "designed"]);
+    expect(counts.reduce((a, c) => a + c.count, 0)).toBe(ev.claims.length);
   });
 });

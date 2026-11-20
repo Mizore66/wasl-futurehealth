@@ -19,7 +19,15 @@ export function inSources(n: string): boolean {
 export const AXIS = new Set(["0%", "10%", "20%", "25%", "30%", "40%", "50%", "75%", "100%", "0.5%"]);
 
 export async function numbersOn(page: Page): Promise<string[]> {
-  const text = await page.locator("main").innerText();
+  // Axis ticks (data-axis) are layout, not data: left out like the AXIS labels below.
+  const text = await page.locator("main").evaluate((main) => {
+    const copy = main.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll("[data-axis]").forEach((el) => el.remove());
+    document.body.append(copy);
+    const t = copy.innerText;
+    copy.remove();
+    return t;
+  });
   return [...new Set(text.match(/\d[\d,]*(\.\d+)?%?/g) ?? [])];
 }
 
@@ -66,6 +74,30 @@ function derived(): Set<string> {
 }
 
 const DERIVED = derived();
+for (const v of chartDerived()) DERIVED.add(v);
+
+/**
+ * Figures the chart-first Programme charts print, each computed here from the dashboard with the page's formula:
+ *  - each programme's share of its cases finished, overdue and still open, as a whole percent (the strip's blocks);
+ *  - each region's slots minus open cases needing one ("29 short", "86 spare");
+ *  - each provider's evidenced closures over its cases, as a whole percent.
+ */
+function chartDerived(): string[] {
+  const out: string[] = [];
+  const whole = (a: number, b: number) => String(Math.round((100 * a) / b));
+  for (const p of Object.values(dashboard.by_programme)) {
+    const open = p.cases - p.closed - p.overdue;
+    for (const v of [p.closed, p.overdue, open]) if (v >= 0 && p.cases > 0) out.push(whole(v, p.cases));
+  }
+  const regions = (dashboard.capacity as { condition?: { by_region?: Record<string, { slots: number; cases: number }> } }).condition?.by_region ?? {};
+  for (const r of Object.values(regions)) {
+    out.push(Math.abs(r.slots - r.cases).toLocaleString("en-US"));
+  }
+  for (const p of dashboard.providers as { loops: unknown; evidenced_closed: unknown }[]) {
+    if (typeof p.loops === "number" && typeof p.evidenced_closed === "number" && p.loops > 0) out.push(whole(p.evidenced_closed, p.loops));
+  }
+  return out;
+}
 
 /** Numbers on the Programme page that are neither axis labels nor in a source file nor a named derivation. */
 export async function unsourced(page: Page): Promise<string[]> {
