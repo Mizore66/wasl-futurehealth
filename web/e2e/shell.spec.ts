@@ -83,9 +83,8 @@ test.describe("sidebar (desktop)", () => {
       "Evidence",
       "Pipeline",
       "Results",
-      "Agent review",
     ]) {
-      await expect(nav.getByRole("link", { name, exact: name !== "Agent review" })).toBeVisible();
+      await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
     }
 
     await nav.getByRole("link", { name: "Review desk", exact: true }).focus();
@@ -284,26 +283,6 @@ test.describe("unknown URLs", () => {
   });
 });
 
-test("the nav lists Agent review with a text Experimental marker, and the brand subtitle is not CRC-only", async ({ page }) => {
-  await page.goto("/app");
-  const link = sidebar(page).getByRole("link", { name: /Agent review/ });
-  await expect(link).toHaveAttribute("href", "/app/agent-review");
-  await expect(link).toContainText("Experimental");
-  await expect(sidebar(page).getByRole("link", { name: /Wasl/ }).first()).toBeVisible();
-  await expect(sidebar(page)).not.toContainText("CRC programme");
-});
-
-test("the run strip says Agent review is a separate run, and is unchanged elsewhere", async ({ page }) => {
-  await page.goto("/app/agent-review");
-  const strip = page.getByRole("region", { name: "Run metadata" });
-  await expect(strip).toHaveCount(1);
-  await expect(strip).toContainText("separate experimental run");
-  await expect(strip).not.toContainText(meta.run);
-  await page.goto("/app/pipeline");
-  await expect(page.getByRole("region", { name: "Run metadata" })).toContainText("Simulated data");
-  await expect(page.getByRole("region", { name: "Run metadata" })).toContainText(meta.run);
-});
-
 // Landmarks (issue #20): the desktop aside's nav is "Main" and the mobile menu's is "Main (mobile)", so the DOM never holds
 // two navs with one name; only one of them is in the accessibility tree at a time (the other is display:none).
 const APP_ROUTES = ROUTES.filter((r) => r === "/app" || r.startsWith("/app/"));
@@ -314,7 +293,7 @@ const navNames = async (page: Page) => {
 const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
 // The sidebar groups (redesign): Workspace with the Today queues nested under Today, then Oversight, then Evidence.
 // Queue and nav counts are stripped from the stop text (tabStop), so the order is checked without the data.
-const FOCUS_TEXT = ["Skip to main content", "Waslوصل", "Today", "To call", "Waiting", "No owner", "Patients", "Referrals", "Recovery", "Programme", "Review desk", "Audit trail", "Evidence", "Pipeline", "Results", "Agent reviewExperimental"];
+const FOCUS_TEXT = ["Skip to main content", "Waslوصل", "Today", "To call", "Waiting", "No owner", "Patients", "Referrals", "Recovery", "Programme", "Review desk", "Audit trail", "Evidence", "Pipeline", "Results"];
 // Worklist pages (Today, Referrals) add a second skip link, "Skip to worklist", straight after "Skip to main content".
 const WORKLIST_ROUTES = new Set(["/app/today", "/app/referrals"]);
 const withWorklistSkip = (route: string, stops: string[]) =>

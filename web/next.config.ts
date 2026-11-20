@@ -10,8 +10,12 @@ const nextConfig: NextConfig = {
   },
   // Lets parallel dev servers in one checkout keep separate build folders.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
-  // Fixtures mode reads data/api with fs at request time, which the tracer cannot see.
-  outputFileTracingIncludes: { "/app/**": ["./data/api/**"] },
+  // Fixtures mode reads data/api with fs at request time, which the tracer cannot see; the landing evidence reads it too.
+  outputFileTracingIncludes: { "/app/**": ["./data/api/**"], "/": ["./data/api/**"] },
+  // The expert page now lives under the landing story.
+  async redirects() {
+    return [{ source: "/experts", destination: "/#evidence", permanent: false }];
+  },
   async headers() {
     const patientHeaders = [
       { key: "Cache-Control", value: "no-store" },
