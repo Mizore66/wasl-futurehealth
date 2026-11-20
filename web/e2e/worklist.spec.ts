@@ -280,7 +280,7 @@ test.describe("Patients", () => {
     await page.goto("/app/patients?dropoff=never_notified&overdue=true");
     await expect(page.getByTestId("showing")).toHaveText("7 cases: never notified · overdue");
     await expect(page.getByRole("region", { name: "Referrals by date received" })).toBeVisible();
-    await expect(page.locator("[data-honesty]").first()).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: /^All\b/ })).not.toHaveAttribute("aria-current", "true");
     await shot(page, "patients-filtered");
     await noSeriousAxe(page);
 

@@ -2,15 +2,18 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { ROUTES, screenName } from "./routes";
 
+/** Working screens whose honesty pills the product owner removed as clutter. */
+const NO_LABEL = new Set<string>(["/app/today", "/app/patients", "/app/referrals"]);
+
 for (const route of ROUTES) {
-  test(`${route} renders its heading and an honesty label`, async ({ page }) => {
+  test(`${route} renders its heading${NO_LABEL.has(route) ? "" : " and an honesty label"}`, async ({ page }) => {
     // Axe must see the settled screen, not a replay row mid-fade.
     await page.emulateMedia({ reducedMotion: "reduce" });
     const res = await page.goto(route);
     expect(res?.status()).toBe(200);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("h1")).toBeVisible();
-    await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
+    if (!NO_LABEL.has(route)) await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
     await page.screenshot({ path: `test-results/screens/${screenName(route)}.png`, fullPage: true });
 
     const axe = await new AxeBuilder({ page }).analyze();
