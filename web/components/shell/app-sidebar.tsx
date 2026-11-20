@@ -121,12 +121,6 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
         label: "Results",
         icon: icon(<path d="M3 20h18 M4 15l5-5 4 4 7-8" />),
       },
-      {
-        href: "/app/agent-review",
-        label: "Agent review",
-        badge: "Experimental",
-        icon: icon(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
-      },
     ],
   },
 ];

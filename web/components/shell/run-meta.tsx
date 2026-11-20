@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, Suspense, use } from "react";
-import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { DismissableDetails } from "@/components/ui/dismissable-details";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
@@ -20,17 +19,8 @@ const FRAME = "text-small";
 /**
  * Whether the numbers on this screen are simulated and when they were taken, in plain words (issue #50), at the end of
  * the page header. The run, policy, reader model and API version open in a drop-down, one click away for reproducibility.
- * Agent review shows a separate experimental run, so there it says so instead of presenting the main run as its source.
  */
 export function RunMeta() {
-  const pathname = usePathname() ?? "";
-  if (pathname === "/app/agent-review" || pathname.startsWith("/app/agent-review/")) {
-    return (
-      <section aria-label="Run metadata" className="max-w-[46ch] text-small text-ink-soft">
-        The main dashboard run is not the source of this page. Agent review shows a separate experimental run, described in the banner below.
-      </section>
-    );
-  }
   return (
     <Suspense fallback={<div aria-hidden className="h-11 w-96 max-w-full" />}>
       <Notice />

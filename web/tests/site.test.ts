@@ -10,33 +10,25 @@ import { buildCity, buildClinic, buildHospital, laneAt, lanesFor, makeRoad, type
 import { JOIN_SAYS } from "@/components/story/copy";
 import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt, pageAt, storyAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
-import { ownerLabel } from "@/components/worklist/model";
 import { result } from "@/lib/results";
 import { PRODUCTION_URL, siteUrl } from "@/lib/site-url";
 
 const repo = path.resolve(import.meta.dirname, "../..");
 const read = (file: string) => readFileSync(path.join(repo, file), "utf8").replace(/\r\n/g, "\n");
 
-describe("Experts ownership copy", () => {
-  it("describes assigned-owner coverage and the existing unowned-case workflow", () => {
-    const experts = read("web/app/(site)/experts/page.tsx");
-    const noOwner = ownerLabel("");
-
-    expect(noOwner).toBe("No owner");
-    expect(experts).toContain(
-      `Ownership coverage case by case: assigned owners are named, while cases without one show ${noOwner} and can be isolated with the unowned filter.`,
-    );
-    expect(experts).not.toContain("A named owner on every case");
-  });
-});
-
-describe("Experts current demo sources", () => {
+describe("Landing evidence sources", () => {
   it("uses the served dashboard for its demo KPI and drop-off scope, not stale generated demo results", () => {
-    const experts = read("web/app/(site)/experts/page.tsx");
-    expect(experts).toContain("stallScope(dash)");
-    expect(experts).toContain("view.kpi.demo");
-    expect(experts).not.toContain('result("kpi31.demo.');
-    expect(experts).not.toContain("missedByIdOnly()");
+    const evidence = read("web/components/site/evidence.tsx");
+    expect(evidence).toContain("stallScope(dash)");
+    expect(evidence).toContain("view.kpi.demo");
+    expect(evidence).toContain('ownerLabel("")');
+    expect(evidence).not.toContain('result("kpi31.demo.');
+    expect(evidence).not.toContain("missedByIdOnly()");
+  });
+
+  it("can quote one kappa for all five scored fields", () => {
+    const kappas = new Set(["caecum", "prep", "polyps", "histology", "state"].map((f) => result(`labelling.kappa.${f}`).display));
+    expect(kappas.size).toBe(1);
   });
 });
 
