@@ -7,7 +7,7 @@ This is our entry to the [Future Health Digital Innovation Challenge](https://ha
 ## Verify it yourself in two minutes
 
 1. **Click:** open https://wasl-topaz-mu.vercel.app, go to `/app`. The Programme KPI shows the deployed demo run: Emirates ID only **11.3%**, Wasl **30.7%**, simulated truth **31.9%**. Open any case, then its audit trail.
-2. **Run:** `make verify` (runs `scripts/verify.sh`) regenerates held-out cohorts, checks the committed hashes and prints PASS or FAIL per ledger row. `make verify SEED=<any integer>` does the same on a cohort nobody has seen.
+2. **Run:** `make verify` (runs `scripts/verify.sh`, about 80 s) checks the frozen results against committed SHA-256 hashes, recomputes every aggregate from the per-seed results, runs the named safety tests and prints PASS or FAIL per claim. `make verify SEED=<any integer>` reruns the frozen code end to end on a fresh held-out cohort nobody has seen (reduced to 600 CRC + 240 cervical loops, about 5 minutes; needs `bin/nats-server`) and prints the accuracy and safety table.
 3. **Trace:** `python3 scripts/evidence.py --check && python3 -m unittest scripts/test_evidence.py` checks that every number in [`docs/EVIDENCE.md`](docs/EVIDENCE.md) comes from the frozen evaluation or a cited parameter.
 
 **Measured headline** (frozen held-out evaluation, independent v2 noise, per 1,000 positive FITs): Emirates-ID-only matching wrongly flags about **207** patients as "not followed up" who completed colonoscopy within 31 days; Wasl about **31**. Wasl raises the measured rate toward the true rate; the real rate moves only if someone acts on the list. **0/3,035 CRC false closures** (95% upper bound 0.121%). Error definitions, intervals, worst seed and worst stratum: [`docs/EVIDENCE.md`](docs/EVIDENCE.md).
