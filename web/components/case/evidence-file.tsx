@@ -31,6 +31,8 @@ import { closureReason, entryLabel, eventWords } from "@/components/case/words";
 import { chainCheck } from "@/components/case/audit-view";
 import { StageMarks } from "@/components/case/stage-marks";
 import { SourceSwitch } from "./source-switch";
+import { AskSpecialist, ConsultTimelineRows } from "./ask-specialist";
+import { runClock } from "@/components/worklist/run-clock";
 
 type Evidence = CaseDetail["evidence"][number];
 
@@ -207,6 +209,9 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
   const docs = sources(detail);
   const events = [...detail.timeline].sort((a, b) => (a.arrival_day ?? a.day) - (b.arrival_day ?? b.day) || (a.seq ?? 0) - (b.seq ?? 0));
   const words = statusWords(c);
+  /* The run clock Today uses, so a consult is overdue on both pages on the same day. */
+  const now: number = await runClock().catch(() => (typeof detail.current.now === "number" ? detail.current.now : c.referral_day));
+  const caseLabel = person?.display_name ?? shortId(c.id);
 
   return (
     <div className={cn("pf-record", back && "pf-record-in-folder")}>
@@ -302,6 +307,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   View all programmes
                 </Link>
               )}
+              {!c.closed && <AskSpecialist caseId={c.id} caseLabel={caseLabel} now={now} />}
             </div>
             {audit && (
               <p className="m-0 mt-2 text-small text-muted" data-testid="audit-teaser">
@@ -333,6 +339,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   </li>
                 );
               })}
+              <ConsultTimelineRows caseId={c.id} now={now} />
             </ol>
           </details>
           <Link href={auditHref} className="record-audit" aria-label="Audit trail" title="Audit trail">
