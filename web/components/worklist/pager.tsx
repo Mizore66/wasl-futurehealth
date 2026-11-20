@@ -18,18 +18,21 @@ function Frame({ paging, label, testId, complete = true, className, render }: Fr
   const targets = pagerTargets(paging);
   const step = (key: "prev" | "next") => render({ key, to: targets[key], ...STEPS[key], body: STEPS[key].icon });
   return (
-    <nav aria-label={label} className={cn("flex items-center justify-between gap-3", className)}>
-      {testId && <p data-testid={testId} className="m-0 min-w-0 text-small text-muted tabular-nums">{rangeText(paging, complete)}</p>}
-      <div className="flex shrink-0 items-center gap-0.5">
-        {step("prev")}
-        {complete && pageWindow(paging.page, paging.pages).map((slot, i) =>
-          slot === "gap" ? (
-            <span key={`gap-${i}`} aria-hidden className="inline-grid w-9 place-items-center text-muted">…</span>
-          ) : (
-            render({ key: slot, to: slot, label: `Page ${slot}`, body: slot, current: slot === paging.page })
-          ),
-        )}
-        {step("next")}
+    <nav aria-label={label} className={cn("@container", className)}>
+      {/* Too narrow for the range beside the controls (a list column), the range drops under them. */}
+      <div className="flex flex-col-reverse items-center justify-center gap-x-3 gap-y-0.5 @md:flex-row @md:has-[>p]:justify-between">
+        {testId && <p data-testid={testId} className="m-0 min-w-0 text-small text-muted tabular-nums">{rangeText(paging, complete)}</p>}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {step("prev")}
+          {complete && pageWindow(paging.page, paging.pages).map((slot, i) =>
+            slot === "gap" ? (
+              <span key={`gap-${i}`} aria-hidden className="inline-grid w-9 place-items-center text-muted">…</span>
+            ) : (
+              render({ key: slot, to: slot, label: `Page ${slot}`, body: slot, current: slot === paging.page })
+            ),
+          )}
+          {step("next")}
+        </div>
       </div>
     </nav>
   );

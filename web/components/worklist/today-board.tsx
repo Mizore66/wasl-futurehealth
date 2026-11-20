@@ -1419,7 +1419,7 @@ export function TodayBoard({
               )}
             </div>
             <div className="border-t border-rule lg:mt-auto">
-              <Pager paging={paging} label="Queue pages" onPage={goPage} className="justify-center px-2 pt-1.5" />
+              <Pager paging={paging} label="Queue pages" onPage={goPage} className="px-2 pt-1.5" />
               {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
               <p className={cn("m-0 px-4 pb-3 text-center text-small text-muted tabular-nums", paging.pages === 1 && "pt-3")} data-testid="queue-summary">
                 {paging.pages > 1 && `${paging.from}–${paging.to} of `}

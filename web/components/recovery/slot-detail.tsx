@@ -538,7 +538,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       </div>
 
       <div ref={pager} className="flex-none border-t border-line">
-        <Pager paging={paging} label={`${SET_WORDS[set]} candidate pages`} testId="candidate-page-range" onPage={goPage} />
+        <Pager paging={paging} label={`${SET_WORDS[set]} candidate pages`} testId="candidate-page-range" onPage={goPage} className="px-4 py-1.5" />
         {paging.pages > 1 && (
           <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
             {pageStatusText(paging)}
