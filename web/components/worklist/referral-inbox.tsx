@@ -35,7 +35,8 @@ import {
 } from "./referrals";
 import { removeSessionReturn, saveSessionReturn, useSessionReturns } from "./session-returns";
 import { inboxHref, readInboxUrl, shallowGo, type InboxUrl } from "./inbox-url";
-import { paginate, pageOfId, pageStatusText, type Paging } from "./paging";
+import { PagerLinks } from "./pager";
+import { paginate, pageOfId, pageStatusText } from "./paging";
 
 /* With `respond` (live API), answers are appended to the case ledger and the inbox shows the server's projection after
    a refresh. Without it (fixtures), answers and prep grades are session state; a CRC return (reason and note) is also
@@ -946,48 +947,9 @@ function Directory({
           {list.length > INBOX_PAGE ? `${paging.from}–${paging.to} of ` : ""}
           {list.length} {list.length === 1 ? "referral" : "referrals"}
         </span>
-        <PageLinks paging={paging} hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })} />
+        <PagerLinks paging={paging} label="Inbox pages" hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })} onFollow={shallow} />
       </div>
     </section>
   );
 }
 
-/** Numbered pages around the current one, with the first and last always reachable; a gap stands for the rest. */
-export function pageNumbers(current: number, pages: number): number[] {
-  return [...new Set([1, current - 1, current, current + 1, pages])].filter((n) => n > 0 && n <= pages).sort((a, b) => a - b);
-}
-
-function PageLinks({ paging, hrefFor }: { paging: Paging<unknown>; hrefFor: (page: number) => string }) {
-  if (paging.pages < 2) return null;
-  const nums = pageNumbers(paging.page, paging.pages);
-  const link = (n: number, label: string, body: React.ReactNode) => {
-    const target = hrefFor(n);
-    return (
-      <a key={label} href={target} aria-label={label} onClick={shallow(target)} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] px-1 font-semibold text-jade-800 no-underline hover:bg-jade-100">
-        {body}
-      </a>
-    );
-  };
-  return (
-    <nav aria-label="Inbox pages" className="flex flex-wrap items-center gap-0.5">
-      {paging.page > 1 && link(paging.page - 1, "Previous page", <ChevronRight aria-hidden className="size-4 rotate-180" />)}
-      {nums.map((n, i) => (
-        <span key={n} className="contents">
-          {i > 0 && n - nums[i - 1] > 1 && (
-            <span aria-hidden className="px-1">
-              …
-            </span>
-          )}
-          {n === paging.page ? (
-            <span aria-current="page" aria-label={`Page ${n}`} className="inline-grid min-h-11 min-w-[38px] place-items-center rounded-[4px] bg-jade-100 font-semibold text-jade-800">
-              {n}
-            </span>
-          ) : (
-            link(n, `Page ${n}`, n)
-          )}
-        </span>
-      ))}
-      {paging.page < paging.pages && link(paging.page + 1, "Next page", <ChevronRight aria-hidden className="size-4" />)}
-    </nav>
-  );
-}

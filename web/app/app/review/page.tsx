@@ -109,7 +109,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
           </div>
         )}
 
-        <PagerLinks paging={paging} label="Pages above the list" testId="range-top" hrefFor={hrefFor} complete={complete} />
+        <PagerLinks paging={paging} label="Pages above the list" testId="range-top" hrefFor={hrefFor} complete={complete} className="mt-4" />
         <ol className="m-0 mt-3 flex list-none flex-col gap-2 p-0" aria-label="Record pairs waiting">
           {paging.rows.map(({ detail, view }) => {
             const kinds = detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : view.purpose ? PURPOSE_LABEL[view.purpose] : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence"));
@@ -173,7 +173,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
             );
           })}
         </ol>
-        <PagerLinks paging={paging} label="Pages below the list" testId="range-bottom" hrefFor={hrefFor} complete={complete} />
+        <PagerLinks paging={paging} label="Pages below the list" testId="range-bottom" hrefFor={hrefFor} complete={complete} className="mt-4" />
       </div>
     </section>
   );

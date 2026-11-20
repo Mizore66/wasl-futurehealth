@@ -63,7 +63,17 @@ function button(text: string, scope: ParentNode = host) {
   expect(found, `button ${text}`).toBeDefined(); return found!;
 }
 const click = async (text: string, scope: ParentNode = host) => act(async () => button(text, scope).click());
-const pager = (text: string) => click(text, list().querySelector("nav")!);
+const pagerButton = (label: string) => {
+  const found = list().querySelector<HTMLButtonElement>(`nav button[aria-label="${label}"]`);
+  expect(found, `pager ${label}`).not.toBeNull(); return found!;
+};
+/** Chevrons by direction, numbers by page; "Last" is the last numbered page button. */
+const pager = async (control: "Next" | "Previous" | "First" | "Last") => {
+  const nav = list().querySelector("nav")!;
+  const target = control === "Next" ? pagerButton("Next page") : control === "Previous" ? pagerButton("Previous page")
+    : control === "First" ? pagerButton("Page 1") : [...nav.querySelectorAll<HTMLButtonElement>('button[aria-label^="Page "]')].at(-1)!;
+  await act(async () => target.click());
+};
 const assertMounted = () => expect(names()).toContain(heading());
 async function search(value: string) {
   const input = list().querySelector<HTMLInputElement>('input[aria-label="Search"], input[type="search"]')!;
@@ -97,11 +107,12 @@ it("traverses all 1201 mounted rows exactly once in urgency/stable-tie order wit
   expect(new Set(seen).size).toBe(1201);
   await pager("Previous"); expect(status()).toContain("Page 48 of 49");
   await pager("First"); expect(names()[0]).toBe(items[0].name);
-  expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-next");
+  expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-1");
+  expect(pagerButton("Page 1").getAttribute("aria-current")).toBe("page"); expect(pagerButton("Previous page").disabled).toBe(true);
   await pager("Next"); await pager("Previous");
   expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-next");
   await pager("Last"); expect(names()).toEqual([items[1200].name]);
-  expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-prev");
+  expect(document.activeElement?.getAttribute("data-focus")).toBe("pager-49"); expect(pagerButton("Next page").disabled).toBe(true);
   expect(list().querySelectorAll('[role="status"]')).toHaveLength(1);
   expect(open().querySelector('[data-testid="page-status"]')).toBeNull();
 }, 30_000); // 48 page renders of a 1201-row board; the 5 s default timed out on a loaded CI runner at 5.05 s.
@@ -242,16 +253,15 @@ it.each([
   await mount(items, true); await click(action);
   expect(recordAction).toHaveBeenCalledExactlyOnceWith(items[0].id, items[0].head, expect.objectContaining({ action: kind }));
   await pager("Next");
-  const focusedPager = button(count === 26 ? "Previous" : "Next", list().querySelector("nav")!);
+  const focusedPager = pagerButton(count === 26 ? "Previous page" : "Next page");
   expect(document.activeElement).toBe(focusedPager);
   expect(heading()).toBe(items[25].name);
   await act(async () => saved.resolve({ ok: true, head: "synthetic-phone-saved-head", hash: "synthetic-phone-write-hash", actor: "Synthetic coordinator" }));
   expect(heading()).toBe(items[0].name);
   // A hand-off moves the patient to Waiting but keeps them open (N1); a snooze keeps them in To call.
   if (kind === "snooze") assertMounted(); else expect(names()).not.toContain(heading());
-  if (page) expect(status()).toBe(`${page}, showing 1201 to 1201 of 1201.`);
-  else { expect(status()).toBeUndefined(); expect(list().querySelector("nav")).toBeNull(); }
-  expect(focusedPager.isConnected).toBe(false);
+  if (page) { expect(status()).toBe(`${page}, showing 1201 to 1201 of 1201.`); expect(focusedPager.disabled).toBe(true); }
+  else { expect(status()).toBeUndefined(); expect(list().querySelector("nav")).toBeNull(); expect(focusedPager.isConnected).toBe(false); }
   expect(document.activeElement).toBe(open().querySelector('[data-focus="undo"]'));
   expect(open().textContent).toContain("saved to the case ledger");
   expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();

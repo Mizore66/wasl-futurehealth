@@ -1421,9 +1421,10 @@ export function TodayBoard({
               )}
             </div>
             <div className="border-t border-rule lg:mt-auto">
-              <Pager paging={paging} label="Queue pages" testId="page-range" onPage={goPage} />
+              <Pager paging={paging} label="Queue pages" onPage={goPage} className="justify-center px-2 pt-1.5" />
               {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
-              <p className="m-0 px-4 py-3 text-small text-muted" data-testid="queue-summary">
+              <p className={cn("m-0 px-4 pb-3 text-center text-small text-muted tabular-nums", paging.pages === 1 && "pt-3")} data-testid="queue-summary">
+                {paging.pages > 1 && `${paging.from}–${paging.to} of `}
                 {tab === "call"
                   ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
                   : tab === "waiting"

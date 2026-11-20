@@ -21,16 +21,17 @@ import {
   searchMatches,
   type CalendarView,
 } from "@/components/patients/calendar";
-import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
+import { filtersHref, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
 import { DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { ldctChildren, openObligation } from "@/components/worklist/obligation";
+import { PagerLinks } from "@/components/worklist/pager";
+import { paginate } from "@/components/worklist/paging";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
 import { getCases, matches, type CaseQuery } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
-import { cn } from "@/lib/utils";
 import { FilterMenu } from "@/components/ui/filters/filter-menu";
 import { FilterSheet } from "@/components/ui/filters/filter-sheet";
 import { SearchField } from "@/components/ui/filters/search-field";
@@ -182,14 +183,10 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
 
   const scope = view.files;
   const inScope = scope ? rows.filter((r) => r.date.startsWith(scope)).sort((a, b) => a.date.localeCompare(b.date) || a.c.id.localeCompare(b.c.id, "en", { numeric: true })) : [];
-  const pages = Math.max(1, Math.ceil(inScope.length / PAGE_SIZE));
-  if (scope && page > pages) redirect(calendarHref(filters, { files: scope, page: pages }));
-  const shown = inScope.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const from = shown.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = (page - 1) * PAGE_SIZE + shown.length;
+  const paging = paginate(inScope, page);
+  if (scope && page > paging.pages) redirect(calendarHref(filters, { files: scope, page: paging.pages }));
   const month = chooseMonth(months, view);
   const filesView: CalendarView = { files: scope, page: page > 1 ? page : undefined };
-  const chip = "inline-flex min-h-11 items-center rounded-chip border px-3 text-body no-underline";
   const searchLabel = scope ? "Filter these files" : "Find a case, task or owner";
 
   return (
@@ -271,27 +268,9 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               {inScope.length === 0 ? (
                 <p className="pf-empty m-0">No referrals were received {scope.length === 10 ? "on this date" : "in this month"}{q ? " that match the search" : ""}.</p>
               ) : (
-                <CaseFiles rows={shown} view={filesView} filters={filters} />
+                <CaseFiles rows={paging.rows} view={filesView} filters={filters} />
               )}
-              {inScope.length > PAGE_SIZE && (
-                <nav aria-label="Pages" className="pf-pager">
-                  <p className="m-0 text-muted" data-testid="range">
-                    Showing {from}–{to} of {inScope.length}
-                  </p>
-                  <div className="flex gap-2">
-                    {page > 1 && (
-                      <Link href={calendarHref(filters, { files: scope, page: page - 1 })} rel="prev" className={cn(chip, "border-control text-ink hover:bg-ground")}>
-                        Previous
-                      </Link>
-                    )}
-                    {page < pages && (
-                      <Link href={calendarHref(filters, { files: scope, page: page + 1 })} rel="next" className={cn(chip, "border-control text-ink hover:bg-ground")}>
-                        Next
-                      </Link>
-                    )}
-                  </div>
-                </nav>
-              )}
+              <PagerLinks paging={paging} label="Pages" testId="range" hrefFor={(p) => calendarHref(filters, { files: scope, page: p })} className="pf-pager" />
             </>
           ) : (
             month && <ReferralCalendar month={month} months={months} byDate={dates} filters={filters} />

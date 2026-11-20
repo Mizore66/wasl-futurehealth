@@ -643,8 +643,8 @@ test.describe("Patients: paging and filters", () => {
     await page.goto("/app/patients?files=2026-05");
     await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 39");
     await expect(page.locator("[data-pf-case]")).toHaveCount(25);
-    await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
-    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
+    await expect(page.getByRole("link", { name: "Previous page" })).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next page" }).click();
     await expect(page).toHaveURL(/page=2/);
     await expect(page.getByTestId("range")).toHaveText("Showing 26–39 of 39");
 

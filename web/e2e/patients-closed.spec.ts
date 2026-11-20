@@ -62,7 +62,7 @@ for (const closed of [true, false]) {
     const busy = months(rows).find((m) => rows.filter((c) => referred(c).startsWith(m)).length > 25);
     if (busy) {
       await page.goto(`/app/patients?closed=${closed}&files=${busy}`);
-      await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next", exact: true }).click();
+      await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next page", exact: true }).click();
       await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("page") === "2");
       await page.goto(`/app/patients?closed=${closed}`);
     }
