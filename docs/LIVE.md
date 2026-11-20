@@ -40,7 +40,9 @@ only ever receives synthetic data. No frontier model is in any request path.
 - **Web.** The browser talks only to Vercel. The Next.js server calls the API with role tokens held in Vercel's
   production settings ([`DEPLOY.md`, "Hosted frontend"](DEPLOY.md#hosted-frontend-vercel)), so no token reaches the
   browser. Coordinator and referral actions append to the hash-chained review ledger on Azure Files, which survives
-  restarts. Reviewers sign in with their own personal tokens.
+  restarts. The review desk runs in open demo persona mode (`WASL_REVIEW_AUTH_MODE=persona`): a visitor picks
+  Reviewer A, Reviewer B, Senior reviewer, Clinician or Senior clinician, and the web server signs with that persona's
+  token. No token is typed or sent to the browser.
 - **Agent.** Given a case id, the agent reads the auditor token and the Gemma key from Key Vault, makes one
   `GET /api/cases/{id}/audit`, and asks Gemma once for a plain-language explanation with a provenance line. It sends
   nothing to any write route ([`deploy/azure/agent/README.md`](../deploy/azure/agent/README.md)).
@@ -107,8 +109,8 @@ flowchart TB
 | GitHub variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | Repository variables | Deploy workflow | Only if the resources change |
 | `VERCEL_TOKEN`, scoped to "Kai's projects" | GitHub secret | Web job | **Expires 30 days after creation (about 18 Dec 2026)** |
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub secrets | Model job | **Expires about 18 Dec 2026** |
-| API role tokens (`WASL_API_TOKENS`) | Container Apps secret `wasl-api-tokens`; the five the web server reads are Vercel production variables; the auditor token is also in Key Vault | API, web, agent | Rotate all copies together ([`DEPLOY.md`](DEPLOY.md#hosted-frontend-vercel)) |
-| Personal reviewer and clinician tokens | Outside the repository, with the person who deployed (Kai) | People signing in to review | Ask Kai |
+| API role tokens (`WASL_API_TOKENS`) | Container Apps secret `wasl-api-tokens`; the ten the web server reads (five role tokens, five persona tokens) are Vercel production variables; the auditor token is also in Key Vault | API, web, agent | Rotate all copies together ([`DEPLOY.md`](DEPLOY.md#hosted-frontend-vercel)) |
+| Persona reviewer and clinician tokens | Entries in the Container Apps secret `wasl-api-tokens` (actors `hosted-reviewer-1`, `-2`, `-3`, `hosted-clinician-2`, `-3`), copied to Vercel production as `WASL_API_REVIEWER_TOKEN`, `WASL_API_REVIEWER_2_TOKEN`, `WASL_API_REVIEWER_3_TOKEN`, `WASL_API_CLINICIAN_2_TOKEN`, `WASL_API_CLINICIAN_3_TOKEN` | Web server, for the demo personas | Read with `az containerapp secret show -n wasl-api -g rg-wasl-demo --secret-name wasl-api-tokens`; never print it. Rotate with the other role tokens |
 | Gemma server key | Modal secret `wasl-gemma-key` and Key Vault `gemma-api-key` | Gemma server, agent | Change both together |
 
 To renew the GitHub tokens, run `bash deploy/azure/ci_setup.sh` on a machine with `az`, `vercel link`, `gh` and the
