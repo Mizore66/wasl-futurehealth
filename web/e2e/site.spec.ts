@@ -715,3 +715,13 @@ test("evidence: /experts redirects to the landing section", async ({ page }) => 
   await page.goto("/experts");
   await expect(page).toHaveURL(/\/#evidence$/);
 });
+
+test("landing: a compact nav with the dashboard link appears once the story ends", async ({ page }) => {
+  await page.goto("/");
+  const bar = page.getByRole("navigation", { name: "Site" });
+  await expect(bar.locator("..")).not.toHaveAttribute("data-shown");
+  await page.getByTestId("evidence").evaluate((el) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + 200, behavior: "instant" }));
+  await expect(bar.locator("..")).toHaveAttribute("data-shown", "true");
+  await expect(bar.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
+  await expect(bar.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
+});
