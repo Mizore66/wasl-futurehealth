@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
-import { AppearanceButton } from "./appearance-button";
 
 const CRUMBS: [RegExp, string][] = [
   [/^\/app\/today/, "Today"],
@@ -31,11 +30,11 @@ export function isAuditRoute(pathname: string): boolean {
 
 export const TOPBAR_SLOT = "data-topbar-slot";
 
-/** The right-hand end of the bar: Appearance, or the slot a page portals its own controls into. */
+/** The right-hand end of the bar: the slot a page portals its own controls into (only Audit has any). */
 export function TopActions() {
   const pathname = usePathname();
   if (isAuditRoute(pathname)) return <div {...{ [TOPBAR_SLOT]: "" }} className="flex items-center gap-2" />;
-  return <AppearanceButton />;
+  return null;
 }
 
 /** Portals page controls into whichever top-bar slot is visible at this width (desktop bar or phone header). */

@@ -15,9 +15,9 @@ import {
 import { cx } from "@/lib/cx";
 import type { SessionPersona } from "@/lib/auth/session-persona";
 import { PERSONA_PREFIX, shellPersona, usesReviewSession, type ShellPersona } from "./persona";
-import { LAST_CASE_KEY } from "./remember-case";
 import { isTodayQueue, TODAY_QUEUES, useLiveTodayCounts, type TodayCounts, type TodayQueue } from "./today-counts";
 import { TopActions } from "./top-bar";
+import { LinkPending } from "./link-pending";
 
 type NavItem = {
   href: string;
@@ -48,7 +48,7 @@ const icon = (children: React.ReactNode) => (
   </svg>
 );
 
-const AUDIT_PATH = /^\/app\/patients\/[^/]+\/audit(\/|$)/;
+const AUDIT_PATH = /^\/app\/(patients\/[^/]+\/)?audit(\/|$)/;
 
 const TODAY: NavItem = {
   href: "/app/today",
@@ -96,7 +96,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
         icon: icon(<path d="M4 4h12v16H4z M8 9h5m-5 4h3m5-4 4 1v11H8" />),
       },
       {
-        href: "/app/patients",
+        href: "/app/audit",
         label: "Audit trail",
         activeOn: AUDIT_PATH,
         icon: icon(<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z m-4 8 3 3 5-6" />),
@@ -205,23 +205,6 @@ const linkClass = (active: boolean, collapsed: boolean) =>
       : "text-limestone-100 hover:bg-jade-800 hover:text-limestone-50",
   );
 
-/** The sidebar's Audit trail opens the audit of the case opened last in this tab; with none yet, the case list. */
-function useAuditHref(fallback: string) {
-  const [href, setHref] = useState(fallback);
-  useEffect(() => {
-    const read = () => {
-      try {
-        const id = sessionStorage.getItem(LAST_CASE_KEY);
-        setHref(id ? `/app/patients/${encodeURIComponent(id)}/audit` : fallback);
-      } catch {}
-    };
-    read();
-    window.addEventListener("wasl:last-case", read);
-    return () => window.removeEventListener("wasl:last-case", read);
-  }, [fallback]);
-  return href;
-}
-
 function NavLink({
   item,
   active,
@@ -233,10 +216,8 @@ function NavLink({
   counts: Promise<NavCounts>;
   collapsed: boolean;
 }) {
-  const auditHref = useAuditHref(item.href);
-  const href = item.activeOn ? auditHref : item.href;
   const link = (
-    <Link href={href} aria-current={active ? "page" : undefined} className={linkClass(active, collapsed)}>
+    <Link href={item.href} aria-current={active ? "page" : undefined} className={linkClass(active, collapsed)}>
       {item.icon}
       <span className={cx("whitespace-nowrap", collapsed && "sr-only")}>{item.label}</span>
       {item.badge && (
@@ -254,6 +235,7 @@ function NavLink({
           <Count counts={counts} k={item.countKey} collapsed={collapsed} />
         </Suspense>
       )}
+      <LinkPending />
     </Link>
   );
   // Radix opens on hover and on keyboard focus; the open prop pins it shut while the label is already visible.
@@ -300,7 +282,7 @@ function useFetchedTodayCounts(pathname: string): TodayCounts | null {
   return counts;
 }
 
-function QueueLinks({ pathname }: { pathname: string }) {
+function QueueLinks({ pathname, onQueue }: { pathname: string; onQueue?: () => void }) {
   const params = useSearchParams();
   const fetched = useFetchedTodayCounts(pathname);
   const raw = params.get("queue");
@@ -322,13 +304,22 @@ function QueueLinks({ pathname }: { pathname: string }) {
             <Link
               href={scoped(q)}
               aria-current={on ? "page" : undefined}
+              onClick={(e) => {
+                // Already on Today, the board holds every queue: switch in the browser (the board follows ?queue=)
+                // instead of asking the server to re-read every case for the same page.
+                if (!current || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                window.history.pushState(null, "", scoped(q));
+                onQueue?.();
+              }}
               className={cx(
-                "ml-2.5 flex h-11 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline md:h-9",
+                "relative ml-2.5 flex h-11 items-center gap-2 rounded-[4px] px-2.5 text-[13px] no-underline md:h-9",
                 on ? "bg-jade-900 font-semibold text-limestone-50 hover:text-limestone-50" : "text-jade-100 hover:bg-jade-800 hover:text-limestone-50",
               )}
             >
               <span>{label}</span>
               <QueueCount fetched={fetched} q={q} />
+              <LinkPending />
             </Link>
           </li>
         );
@@ -343,11 +334,14 @@ function Nav({
   counts,
   collapsed = false,
   label = "Main",
+  onQueue,
 }: {
   pathname: string;
   counts: Promise<NavCounts>;
   collapsed?: boolean;
   label?: "Main" | "Main (mobile)";
+  /** Called after a queue switch that stays on Today (no route change), so the phone menu can close. */
+  onQueue?: () => void;
 }) {
   return (
     <nav aria-label={label} className="flex flex-col">
@@ -368,7 +362,7 @@ function Nav({
                 return (
                   <div key={item.label}>
                     <NavLink item={item} active={active && collapsed} counts={counts} collapsed={collapsed} />
-                    {!collapsed && <QueueLinks pathname={pathname} />}
+                    {!collapsed && <QueueLinks pathname={pathname} onQueue={onQueue} />}
                   </div>
                 );
               }
@@ -618,7 +612,7 @@ export function AppSidebar({
           className="absolute left-2 top-full w-[min(280px,calc(100%-16px))]"
         >
           <div className="flex max-h-[min(75dvh,calc(100dvh-4.5rem))] flex-col gap-3 overflow-y-auto rounded-b-[7px] border border-t-0 border-jade-800 bg-jade-700 p-2.5 text-limestone-50 shadow-[0_5px_18px_#20372e33] staff-rail">
-            <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
+            <Nav pathname={pathname} counts={counts} label="Main (mobile)" onQueue={() => setOpenFor(null)} />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <PersonaSlot pathname={pathname} session={session} />
               <HonestyChip kind="simulated">{SYNTHETIC}</HonestyChip>
