@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { ExportCard } from "@/components/case/audit-export";
 import { decisionViews, ledgerEvents, signatureTally, timelineEvents } from "@/components/case/audit-model";
 import { AuditTopbarControls } from "@/components/case/audit-topbar";
 import {
@@ -188,11 +187,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
             ))}
           </ol>
         </section>
-      )}
-      {status === "ok" && !history.modelWithheld && (
-        <div className="mt-3">
-          <ExportCard caseId={caseId} />
-        </div>
       )}
     </div>
   );
