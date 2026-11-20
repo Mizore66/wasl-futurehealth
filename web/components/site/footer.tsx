@@ -27,8 +27,8 @@ export function SiteFooter({
         {qualifier}
       </HonestyLabel>{" "}
       {rest}{" "}
-      <Link href="/experts" className="inline-flex min-h-11 items-center text-(--teal) underline underline-offset-[0.18em] hover:text-(--ink)">
-        The evidence, for experts
+      <Link href="/#evidence" className="inline-flex min-h-11 items-center text-(--teal) underline underline-offset-[0.18em] hover:text-(--ink)">
+        The evidence
       </Link>
       .
     </p>
