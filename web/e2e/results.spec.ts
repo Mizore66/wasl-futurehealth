@@ -3,26 +3,42 @@ import dashboard from "../data/api/dashboard.json";
 import { AXIS, axe, inSources, numbersOn } from "./numbers";
 
 test.describe("Results", () => {
-  test("shows the held-out figures, the demo cohort on its own line, and the review comparison", async ({ page }) => {
+  test("shows the held-out figures as charts with table views, the demo run as its own bar, and the review comparison", async ({ page }) => {
     await page.goto("/app/results");
     await expect(page.locator("h1")).toHaveText("Results");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
     await expect(page.getByText("Frozen evaluation at code 075abc5")).toBeVisible();
     await expect(page.getByTestId("lead-figure")).toHaveText("0 of 3,035");
-    await expect(page.getByRole("img", { name: /95% upper bound 0\.12%/ })).toBeVisible();
-    await expect(page.getByText("Recall 0.785 (0.772–0.798).")).toBeVisible();
-    await expect(page.getByText(/0 of 16,486 wrong-patient messages and 0 of 11,650 sent without consent/)).toBeVisible();
+    // False closures: a whisker per zero-event counter to its 95% upper bound, on one axis.
+    await expect(page.getByTestId("bound-crc")).toContainText("0 of 3,035");
+    await expect(page.getByTestId("bound-crc")).toContainText("≤ 0.12%");
+    await expect(page.getByTestId("bound-wrong-patient")).toContainText("0 of 16,486");
+    await expect(page.getByTestId("bound-consent")).toContainText("0 of 11,650");
+    await expect(page.getByTestId("recall-chart")).toContainText("0.785");
+    // Hover shows the exact interval.
+    const recall = page.getByTestId("recall-chart").getByRole("button");
+    await recall.hover();
+    await expect(page.locator(`[id="${await recall.getAttribute("aria-describedby")}"]`)).toContainText("0.785 (0.772–0.798)");
+    // The 31-day number: held-out and demo run as bar groups against the truth.
     await expect(page.getByTestId("kpi-error")).toHaveText("3.1 points off");
-    await expect(page.getByText("Emirates ID only: 20.7 points off")).toBeVisible();
-    await expect(page.getByRole("img", { name: "Within 31 days, held-out noise: Emirates ID only 12.2%, Wasl 29.8%, truth 32.9%." })).toBeVisible();
-    await expect(page.getByTestId("demo-cohort")).toHaveText("Emirates ID only 11.3%, Wasl 30.7%, truth 31.9%.");
-    await expect(page.getByTestId("kpi-heldout-h")).toHaveText("Five-seed held-out mean");
-    await expect(page.getByTestId("kpi-why")).toBeVisible();
-    await expect(page.getByTestId("kpi-why")).toHaveText("One seed, on the noise Wasl was tuned on. Quote the held-out mean.");
-    await expect(page.getByText("3 of 7")).toBeVisible();
-    await expect(page.getByTestId("double-review")).toHaveText("0in 8,422");
-    await expect(page.getByTestId("single-review")).toHaveText("21");
-    await expect(page.getByText(/On 12,600 calibration cases/)).toBeVisible();
+    await expect(page.getByTestId("kpi-error-eid")).toHaveText("Emirates ID only: 20.7 points off");
+    const kpi = page.getByTestId("kpi-row");
+    await expect(kpi).toHaveCount(2);
+    await expect(kpi.nth(0)).toContainText("Held-out mean, 5 seeds");
+    await expect(kpi.nth(0)).toContainText("12.2%");
+    await expect(kpi.nth(0)).toContainText("29.8%");
+    await expect(kpi.nth(1)).toContainText("11.3%");
+    await expect(kpi.nth(1)).toContainText("30.7%");
+    await expect(page.getByTestId("kpi-why")).toHaveText("Demo run: one seed, tuned-on noise. Quote the held-out mean.");
+    const kpiSection = page.locator(`section[aria-labelledby="kpi-h"]`);
+    await kpiSection.getByRole("button", { name: "Show as table" }).click();
+    const kpiTable = kpiSection.getByRole("table", { name: "31-day completion by method" });
+    for (const v of ["12.2%", "29.8%", "32.9%", "11.3%", "30.7%", "31.9%"]) await expect(kpiTable).toContainText(v);
+    await expect(page.getByRole("img", { name: "3 of 7 corpora found an unsafe phrasing" })).toBeVisible();
+    await expect(page.getByTestId("double-review")).toContainText("in 8,422");
+    await expect(page.getByTestId("double-review")).toContainText("0");
+    await expect(page.getByTestId("single-review")).toContainText("21");
+    await expect(page.getByTestId("ltt")).toContainText("12,600 calibration cases");
     await page.screenshot({ path: "test-results/screens/results.png", fullPage: true });
     await axe(page);
   });
@@ -43,19 +59,30 @@ test.describe("Results", () => {
     await expect(section.getByTestId("consent-intents_ever_held_for_consent")).toContainText(t.intents_ever_held_for_consent.toLocaleString("en-US"));
   });
 
-  test("every number on the screen is in results.json", async ({ page }) => {
+  test("every number on the screen is in results.json, tables open or closed", async ({ page }) => {
     await page.goto("/app/results");
+    expect((await numbersOn(page)).filter((n) => !AXIS.has(n) && !inSources(n))).toEqual([]);
+    const toggles = page.locator("main").getByRole("button", { name: "Show as table" });
+    const n = await toggles.count();
+    expect(n).toBeGreaterThanOrEqual(6);
+    for (let i = 0; i < n; i++) await toggles.nth(i).click();
+    await expect(page.locator("main table")).toHaveCount(n);
     expect((await numbersOn(page)).filter((n) => !AXIS.has(n) && !inSources(n))).toEqual([]);
   });
 });
 
 test.describe("Results on a phone", () => {
-  test("fits 390px, shows the explanation line, and has no controls to mislead", async ({ page }) => {
+  test("fits 390px, shows the explanation line, and its only controls are chart marks and table toggles", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/app/results");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await expect(page.getByTestId("kpi-why")).toBeVisible();
-    await expect(page.locator("main button")).toHaveCount(0);
+    // Buttons are chart marks (tooltips) and "Show as table" toggles, nothing that changes data.
+    for (const b of await page.locator("main button").all()) {
+      const describedBy = await b.getAttribute("aria-describedby");
+      if (!describedBy) await expect(b).toHaveText("Show as table");
+      expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
     await expect(page.getByTestId("consent-lifecycle")).toBeVisible();
     for (const el of await page.getByTestId("consent-lifecycle").locator("summary").all()) expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await page.screenshot({ path: "test-results/screens/pipe2-results-390.png", fullPage: true });

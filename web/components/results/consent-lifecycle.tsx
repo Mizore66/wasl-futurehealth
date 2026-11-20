@@ -1,5 +1,6 @@
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechnicalDetail } from "@/components/pipeline/technical";
+import { CountBars } from "@/components/results/charts";
 
 const fmt = (n: number | undefined) => (n === undefined ? "not reported" : n.toLocaleString("en-US"));
 
@@ -53,53 +54,33 @@ export function ConsentLifecycle({ timing }: { timing: Record<string, number> })
         </h2>
         <HonestyLabel kind="simulated">Simulated messages</HonestyLabel>
       </div>
-      <p className="m-0 text-small text-muted">
-        Planned reminder and recall messages in this simulated run. No message was sent to anyone. Counts are message intents, not patients.
+      <p className="m-0 mt-1 flex flex-wrap gap-2 text-small">
+        <span className="rounded-chip bg-raised px-2 py-0.5 text-ink-soft">No message was sent to anyone</span>
+        <span className="rounded-chip bg-raised px-2 py-0.5 text-ink-soft">Counts are message intents, not patients</span>
       </p>
 
-      <ol aria-label="Message intents by consent outcome" className="m-0 mt-4 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-3">
-        {LIFECYCLE.map((s, i) => (
-          <li key={s.key} data-testid={`consent-${s.key}`} className="relative min-w-0 rounded-control bg-ground px-4 py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-body font-medium">{s.label}</span>
-              <span className="text-title font-medium tabular-nums">{fmt(timing[s.key])}</span>
-            </div>
-            <span className="block text-small text-muted">{s.what}</span>
-            {i < LIFECYCLE.length - 1 && (
-              <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" className="absolute -bottom-[14px] left-1/2 z-10 -translate-x-1/2 rotate-90 text-control md:-right-[14px] md:bottom-auto md:left-auto md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:rotate-0">
-                <path d="M5 2l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </li>
-        ))}
-      </ol>
-      <p className="m-0 mt-2 text-small text-muted">
-        The counts overlap. An intent held and then released is in both.
-      </p>
-
-      <div className="mt-5 grid grid-cols-1 gap-x-10 gap-y-5 border-t border-rule pt-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-5 lg:grid-cols-2">
         <div className="min-w-0">
-          <h3 className="m-0 text-body font-medium">Safety counters</h3>
-          <p className="m-0 text-small text-muted">Read each zero against the released and cancelled counts above.</p>
-          <dl className="m-0 mt-3 flex flex-col gap-3">
-            {GUARDS.map((g) => (
-              <div key={g.key} data-testid={`consent-${g.key}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4">
-                <dt className="min-w-0 text-body">
-                  {g.label}
-                  <span className="block text-small text-muted">{g.what}</span>
-                </dt>
-                <dd className="m-0 text-title font-medium tabular-nums">{fmt(timing[g.key])}</dd>
-              </div>
-            ))}
-          </dl>
+          <CountBars
+            caption="Message intents by consent outcome (the counts overlap: held then released is in both)"
+            tableHead={["Outcome", "Message intents"]}
+            rows={LIFECYCLE.map((s) => ({ label: s.label, sub: s.what, count: timing[s.key] ?? 0, testId: `consent-${s.key}` }))}
+          />
         </div>
         <div className="min-w-0">
-          <h3 className="m-0 text-body font-medium">Opt-outs</h3>
-          <div data-testid="consent-opted_out_loops" className="mt-1 flex items-baseline gap-3">
-            <span className="text-title font-medium tabular-nums">{fmt(timing.opted_out_loops)}</span>
-            <span className="text-body">loops with an opt-out</span>
-          </div>
-          <p className="m-0 text-small text-muted">This counts loops (one referral followed to its end), not message intents.</p>
+          <h3 className="m-0 text-body font-medium">Safety counters, read against the counts</h3>
+          <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+            {GUARDS.map((g) => (
+              <li key={g.key} data-testid={`consent-${g.key}`} title={g.what} className="flex items-baseline justify-between gap-3 rounded-control bg-raised px-3 py-1.5 text-small">
+                <span className="min-w-0 text-ink-soft">{g.label}</span>
+                <span className="text-section font-semibold tabular-nums text-ink">{fmt(timing[g.key])}</span>
+              </li>
+            ))}
+            <li data-testid="consent-opted_out_loops" className="flex items-baseline justify-between gap-3 rounded-control bg-raised px-3 py-1.5 text-small">
+              <span className="min-w-0 text-ink-soft">loops with an opt-out (this counts loops, not message intents)</span>
+              <span className="text-section font-semibold tabular-nums text-ink">{fmt(timing.opted_out_loops)}</span>
+            </li>
+          </ul>
         </div>
       </div>
 

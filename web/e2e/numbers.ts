@@ -19,7 +19,15 @@ export function inSources(n: string): boolean {
 export const AXIS = new Set(["0%", "10%", "20%", "25%", "30%", "40%", "50%", "75%", "100%", "0.5%"]);
 
 export async function numbersOn(page: Page): Promise<string[]> {
-  const text = await page.locator("main").innerText();
+  // Axis ticks (data-axis) are layout, not data: left out like the AXIS labels below.
+  const text = await page.locator("main").evaluate((main) => {
+    const copy = main.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll("[data-axis]").forEach((el) => el.remove());
+    document.body.append(copy);
+    const t = copy.innerText;
+    copy.remove();
+    return t;
+  });
   return [...new Set(text.match(/\d[\d,]*(\.\d+)?%?/g) ?? [])];
 }
 
