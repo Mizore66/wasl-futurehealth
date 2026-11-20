@@ -99,7 +99,10 @@ describe("evidence model", () => {
     const ev = loadEvidence();
     const h = headline(ev.impact.per_1000);
     expect(h.chart?.row).toMatch(/Completions/);
-    expect(h.flagged?.eid_only).toBe(206);
+    // The first row whose label names the wrongly flagged patients, whatever the generator's numbers are.
+    const expected = ev.impact.per_1000.find((r) => /flag|not followed/i.test(r.row));
+    expect(h.flagged?.eid_only).toBe(expected?.eid_only);
+    expect(h.flagged?.eid_only).toBeGreaterThan(h.flagged?.wasl ?? Infinity);
     expect(headline([])).toEqual({ chart: null, flagged: null });
   });
 
