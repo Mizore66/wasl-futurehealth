@@ -451,7 +451,7 @@ test.describe("Programme: provider links", () => {
     const n = sampleCount({ provider: "rad-imaging", dropoff: "no_followup_ct" });
     expect(n).toBeGreaterThan(0);
     await expect(page.getByTestId("showing")).toHaveText(`${casesWord(n)}: provider rad-imaging · no follow-up ct booked`);
-    await expect(page.getByTestId("active-filters")).toContainText("Provider: rad-imaging");
+    await expect(page.getByRole("group", { name: "Filter patients" }).getByRole("button", { name: "Provider: rad-imaging" })).toBeVisible();
   });
 
   test("by keyboard, a closure link lands on Patients filtered to that provider's closed cases", async ({ page }) => {

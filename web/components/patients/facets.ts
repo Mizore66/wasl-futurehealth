@@ -87,13 +87,4 @@ export function programmesInView(all: CaseSummary[], f: CaseFilters): { programm
     .map((p) => ({ programme: p, name: PROGRAMME_NAMES[p], count: counts.get(p)! }));
 }
 
-/** One phrase per active refine filter, for the summary line: ["Colorectal screening", "Provider: Al Mushrif", ...]. */
-export function activeRefinements(f: CaseFilters): { key: FacetKey; text: string }[] {
-  return KEYS.flatMap((k) => {
-    const v = f[k];
-    if (!v) return [];
-    return [{ key: k, text: k === "programme" ? labelOf(k, v) : `${FACET_LABELS[k]}: ${labelOf(k, v)}` }];
-  });
-}
-
 export { labelOf as facetValueLabel };

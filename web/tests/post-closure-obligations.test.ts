@@ -99,6 +99,8 @@ describe("LDCT follow-up tracked by its own child loop", () => {
 const mocks = vi.hoisted(() => ({ all: vi.fn(), cases: [] as CaseSummary[] }));
 vi.mock("@/lib/api/all-cases", () => ({ getAllCases: mocks.all }));
 vi.mock("@/components/worklist/run-clock", () => ({ runClock: async () => 120, hasRecord: () => false }));
+// The Patients filter menus and search are client components; static rendering has no app router to hand them.
+vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/api/source", async (original) => ({
   ...(await original<typeof import("@/lib/api/source")>()),
   getCases: async (query: CaseQuery = {}) => {

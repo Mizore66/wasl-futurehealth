@@ -55,36 +55,42 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await expect(page).toHaveURL(/q=10/);
   });
 
-  test("the selects list what the data holds, with counts that match the result", async ({ page }) => {
+  test("the filter menus list what the data holds, with counts that match the result", async ({ page }) => {
     await page.goto("/app/patients");
-    await page.getByText("Filter by programme, provider, consent, review or owner").click();
-    const programme = page.getByRole("combobox", { name: /^Programme/ });
-    await expect(programme.locator("option")).toHaveCount(8);
-    await expect(programme.locator("option").first()).toHaveText("All programmes (177)");
-    const provider = page.getByRole("combobox", { name: /^Provider/ });
-    await expect(provider).toContainText("Al Mushrif (51)");
-    await expect(provider).toContainText("rad-imaging (25)");
+    const menu = (name: string) => page.getByRole("button", { name, exact: true });
+    await menu("Programme").click();
+    await expect(page.getByRole("listbox", { name: "Programme" }).getByRole("option")).toHaveCount(7);
+    await page.keyboard.press("Escape");
+    await expect(menu("Programme")).toBeFocused();
+    await menu("Provider").click();
+    const provider = page.getByRole("listbox", { name: "Provider" });
+    await expect(provider.getByRole("option", { name: "Al Mushrif 51" })).toBeVisible();
+    await expect(provider.getByRole("option", { name: "rad-imaging 25" })).toBeVisible();
+    await page.keyboard.press("Escape");
 
-    await page.getByRole("combobox", { name: /^Owner/ }).selectOption("none");
-    await page.getByRole("button", { name: "Apply filters" }).click();
+    await menu("Owner").click();
+    await page.getByRole("listbox", { name: "Owner" }).getByRole("option", { name: /^No owner / }).click();
     await expect(page).toHaveURL(/owner=none/);
     await expect(showing(page)).toHaveText("136 cases: no owner");
+    await expect(menu("Owner: No owner")).toBeVisible();
     // Counts now reflect the other active filters: the programme choices split the 136 unowned cases.
-    await expect(page.getByRole("combobox", { name: /^Programme/ })).toContainText("All programmes (136)");
+    await menu("Programme").click();
+    const counts = await page.getByRole("listbox", { name: "Programme" }).getByRole("option").evaluateAll((os) => os.map((o) => Number(o.lastElementChild!.textContent)));
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(136);
   });
 
-  test("active filters are summarised and can be removed or cleared", async ({ page }) => {
+  test("set filters show as chips that can be removed or cleared", async ({ page }) => {
     await page.goto("/app/patients?programme=lung_nodule&consent=granted&review=none");
-    const summary = page.getByTestId("active-filters");
-    await expect(summary).toContainText("Lung nodule follow-up");
-    await expect(summary).toContainText("Consent: Granted");
-    await summary.getByRole("link", { name: /Consent: Granted/ }).click();
+    const filters = page.getByRole("group", { name: "Filter patients" });
+    await expect(filters.getByRole("button", { name: "Programme: Lung nodule follow-up" })).toBeVisible();
+    await expect(filters.getByRole("button", { name: "Consent: Granted" })).toBeVisible();
+    await filters.getByRole("link", { name: "Remove Consent filter" }).click();
     await expect(page).not.toHaveURL(/consent=/);
     await expect(page).toHaveURL(/programme=lung_nodule/);
-    await page.getByRole("link", { name: "Clear these filters" }).click();
+    await filters.getByRole("link", { name: "Clear all" }).click();
     await expect(page).toHaveURL(/\/app\/patients$/);
     await expect(showing(page)).toHaveText("177 cases: all cases");
-    await expect(page.getByTestId("active-filters")).toHaveCount(0);
+    await expect(filters.getByRole("link", { name: "Clear all" })).toHaveCount(0);
   });
 
   test("an empty combination says so and a stale value is not silently dropped", async ({ page }) => {
@@ -102,8 +108,8 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     expect(overflow).toBeLessThanOrEqual(0);
     const small = await page.evaluate(() => {
       const out: string[] = [];
-      const root = document.querySelector("[data-testid=refine]")!;
-      for (const el of root.querySelectorAll("summary, select, button, a")) {
+      const root = document.querySelector('[role=group][aria-label="Filter patients"]')!;
+      for (const el of root.querySelectorAll("input, button, a")) {
         const r = el.getBoundingClientRect();
         if (r.width > 0 && r.height < 43.5) out.push(`${el.tagName} ${el.textContent?.slice(0, 30)} ${Math.round(r.height)}`);
       }
