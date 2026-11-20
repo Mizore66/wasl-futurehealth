@@ -58,7 +58,7 @@ test.describe("Recovery fixture mode", () => {
     const source = page.getByRole("button", { name: "Slot source" });
     await expect(source).toHaveAttribute("aria-expanded", "false");
     await source.click();
-    await expect(page.getByText("Missed appointment")).toBeVisible();
+    await expect(page.locator("#rc-source")).toContainText("Missed appointment");
     await noSeriousAxe(page);
   });
 
