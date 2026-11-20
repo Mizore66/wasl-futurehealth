@@ -63,6 +63,19 @@ second; cold starts took 135 s after a fresh deploy and 68 s and 74 s after scal
 answer took 12 s. Evidence is in [`DEPLOY.md`, "Azure"](DEPLOY.md#azure) and
 [`deploy/azure/decisions.tsv`](../deploy/azure/decisions.tsv).
 
+### Regions
+
+| Part | Region | Why there |
+|---|---|---|
+| Everything on Azure: API, Azure Files, Key Vault, registry, Foundry agent | `japaneast` (Tokyo) | The subscription allows only five Asian regions, and only `japaneast` and `koreacentral` offer both hosted agents and the model quota |
+| Web app server functions | Vercel `hnd1` (Tokyo), set in [`web/vercel.json`](../web/vercel.json) | Next to the API, so a page's many API calls are same-city hops |
+| Web app edge | Vercel's nearest edge to the visitor | Vercel routes it automatically |
+| Gemma server | Modal US East | Modal's default. The agent calls it once per answer, so the extra distance adds roughly 0.15 s (estimate), far less than generation time or a cold start |
+
+The functions ran in Vercel's default `iad1` (Washington, D.C.) until 20 Nov 2026. Moving them to `hnd1` cut median
+time to first byte, three samples per page from Malaysia, from 3.33 to 1.32 s on `/app/today`, 3.56 to 1.50 s on
+`/app/patients`, and 4.76 to 1.52 s on `/app/referrals`. Keep the functions in the API's region if either moves.
+
 ## CI/CD
 
 ```mermaid
@@ -83,8 +96,8 @@ flowchart TB
   ["Continuous deployment"](../deploy/azure/README.md#continuous-deployment). Run it by hand from the Actions page,
   for `all` or a single target, to redeploy without a code change.
 - **Proof.** All four jobs passed on GitHub on 18 Nov by manual dispatch (runs 44336690733 and 44346100602). The
-  merge of #249 ran the workflow from a push and correctly deployed nothing. No push to `main` has yet deployed a
-  changed target.
+  merges of #251 to #255 (19 and 20 Nov) each deployed the changed web app, and twice the API, from a push to
+  `main` with no manual step.
 
 ## Identities and secrets
 
