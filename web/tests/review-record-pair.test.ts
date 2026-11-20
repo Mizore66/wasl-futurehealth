@@ -86,7 +86,7 @@ describe("the record pair desk", () => {
   it("locks the identifiers before a claim and offers the claim", async () => {
     const card = await mount(linkState({ slot: "r1", claimed: false }));
     expect(card.textContent).toContain("First read due");
-    expect(card.textContent).toContain("Claim to view the identifiers.");
+    expect(card.textContent).toContain("Claim to see the patient details.");
     expect([...card.querySelectorAll("button")].map((b) => b.textContent)).toContain("Claim first read");
     expect(container.textContent).not.toContain("1965-03-14");
     expect(card.querySelector('input[type="radio"]')).toBeNull();

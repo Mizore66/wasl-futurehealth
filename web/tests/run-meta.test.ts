@@ -18,18 +18,18 @@ describe("runStripCopy", () => {
 
   it("shows plain words for the published snapshot, with no identifiers or ISO timestamp", () => {
     const copy = runStripCopy(meta, "fixtures");
-    expect(copy).toEqual({ data: "Simulated data", when: "Snapshot 6 Nov 2026, 13:56 UTC" });
+    expect(copy).toEqual({ data: "Simulated data", when: "Data as of 6 Nov 2026, 13:56 UTC" });
     const visible = `${copy.data} ${copy.when}`;
     expect(visible).not.toContain(meta.run);
     expect(visible).not.toContain("data_mode");
     expect(visible).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("says when a live run was loaded rather than calling it a snapshot", () => {
-    expect(runStripCopy(meta, "live").when).toBe("Run loaded 6 Nov 2026, 13:56 UTC");
+  it("says when live data was loaded", () => {
+    expect(runStripCopy(meta, "live").when).toBe("Data loaded 6 Nov 2026, 13:56 UTC");
   });
 
   it("does not relabel a data mode other than simulated", () => {
-    expect(runStripCopy({ ...meta, data_mode: "demo" }, "live").data).toBe("Data mode: demo");
+    expect(runStripCopy({ ...meta, data_mode: "demo" }, "live").data).toBe("Data: demo");
   });
 });

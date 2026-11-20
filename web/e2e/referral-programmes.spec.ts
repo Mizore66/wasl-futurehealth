@@ -42,7 +42,7 @@ test("the lung view is chosen by URL and survives search, reload and the referre
   await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "true");
   await page.locator("tbody a").first().click();
   const pane = page.getByRole("region", { name: "Open referral" });
-  await pane.getByRole("button", { name: "Referral packet" }).click();
+  await pane.getByRole("button", { name: "Referral details" }).click();
   await expect(pane).toContainText("PriorityUrgent");
   await expect(pane).toContainText("PET/CT or tissue sampling for a solid nodule > 8 mm");
   await expect(pane).toContainText("Returned byRadiology department, regional hospital");
@@ -75,9 +75,9 @@ test("phone width: a DR packet opens without horizontal scroll and keeps its vie
   await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "true");
   await page.getByRole("link", { name: /^View all/ }).click();
   await page.locator("tbody a").first().click();
-  await page.getByRole("button", { name: "Referral packet" }).click();
+  await page.getByRole("button", { name: "Referral details" }).click();
   const pane = page.getByRole("region", { name: "Open referral" });
-  await expect(pane).toContainText("Other unitNone in the simulated network");
+  await expect(pane).toContainText("Other unitNone suggested");
   await expect(pane).not.toContainText(CRC_COPY);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.reload();

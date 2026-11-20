@@ -12,9 +12,7 @@ import { personForLoop } from "@/lib/people";
 
 export const metadata = { title: "Pipeline" };
 
-const short = (hash: string) => hash.slice(0, 12);
-
-/** One audit entry in plain words; `body` is the backend's own record. The raw entry type goes behind the screen's Technical detail, not in the step line. */
+/** One audit entry in plain words; `body` is the backend's own record. */
 function node(e: ChainEntry, i: number): ChainNode {
   const b = e.body as Record<string, unknown>;
   const step = `step ${i + 1}`;
@@ -23,28 +21,28 @@ function node(e: ChainEntry, i: number): ChainNode {
       return {
         id: e.hash,
         kind: "system",
-        who: "Linker",
-        what: `matched report ${String(b.downstream_event).split("/").at(-1)} · p ${Number(b.path_p_cal).toFixed(3)}`,
-        when: `${step} · ${short(e.hash)}`,
+        who: "Matching",
+        what: `report ${String(b.downstream_event).split("/").at(-1)} matched to the right patient`,
+        when: step,
       };
     case "evidence":
       return {
         id: e.hash,
         kind: "system",
         who: "Two readers",
-        what: `${b.agree ? "agree" : "disagree"} · prep ${b.label}`,
-        when: `${step} · ${short(e.hash)}`,
+        what: `${b.agree ? "agree" : "disagree"} · bowel prep ${b.label}`,
+        when: step,
       };
     case "closure_decision":
       return {
         id: e.hash,
         kind: "system",
-        who: "Safety gate",
+        who: "Safety check",
         what: `${b.state === "closed" ? "closed with evidence" : plain(String(b.state))} · ${formatDay(Number(b.closed_day))}`,
-        when: `${step} · ${short(e.hash)}`,
+        when: step,
       };
     default:
-      return { id: e.hash, kind: "system", who: "System", what: plain(e.type), when: `${step} · ${short(e.hash)}` };
+      return { id: e.hash, kind: "system", who: "System", what: plain(e.type), when: step };
   }
 }
 
@@ -56,7 +54,7 @@ function tamperDemo(loop: string, chain: ChainEntry[]): TamperDemo {
   const label = String((evidence.body as Record<string, unknown>).label);
   const tampered = intact.map((n, i) =>
     i === at
-      ? { ...n, what: n.what.replace(`prep ${label}`, "prep inadequate"), when: `step ${i + 1} · hash no longer matches ${short(evidence.hash)}`, broken: true }
+      ? { ...n, what: n.what.replace(`bowel prep ${label}`, "bowel prep inadequate"), when: `step ${i + 1} · changed after it was saved`, broken: true }
       : i === at + 1
         ? { ...n, when: `step ${i + 1} · follows a changed record`, broken: true }
         : n,
@@ -67,8 +65,7 @@ function tamperDemo(loop: string, chain: ChainEntry[]): TamperDemo {
     intact,
     tampered,
     step: at + 1,
-    technical: chain.map((e, i) => `step ${i + 1} · ${e.type} · ${short(e.hash)}`),
-    changed: `The readers' step was set to "inadequate". Its hash no longer matches ${short(evidence.hash)}, so it and the closure after it are flagged.`,
+    changed: `The readers' step was changed to "inadequate". It no longer matches what was saved, so it and the closure after it are flagged.`,
   };
 }
 

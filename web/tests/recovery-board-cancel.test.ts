@@ -70,7 +70,7 @@ describe("recovery board backfill cancellation", () => {
     const [slotId, input] = vi.mocked(cancelBackfill).mock.calls[0];
     expect(slotId).toBe(filled.slot.slot_id);
     expect(input).toMatchObject({ case_id: target.case_id, expected_slot_head: "filled-slot-head", expected_case_head: target.case_head, reason: "Patient cannot attend" });
-    expect(document.body.textContent).toContain("synthetic seat is released");
+    expect(document.body.textContent).toContain("the seat is free again");
     expect(refresh).toHaveBeenCalled();
   });
 

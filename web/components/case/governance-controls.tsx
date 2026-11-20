@@ -11,7 +11,7 @@ import { clearSignedOutNotice, SESSION_REJECTED, setSignedOutNotice, signedOutNo
 export type GovernanceOperation = "undo" | "contest" | "resolve";
 
 const OPERATION_WORDS = {
-  undo: "Append compensation",
+  undo: "Undo this review",
   contest: "Contest review",
   resolve: "Resolve contest",
 } as const;
@@ -58,16 +58,16 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
       <form ref={form} onSubmit={submit} className="mt-2 flex flex-col gap-3 border-t border-rule pt-3">
         <p className="m-0 text-small text-muted">
           {operation === "resolve"
-            ? "You act as your signed-in credential. It must be a different authorised actor from both the original reviewer and the contester; the API refuses a same-actor resolution."
-            : "You act as your signed-in credential. Original event remains unchanged: this appends to the review ledger and does not change the canonical decision."}
+            ? "You act under your own sign-in. You must be a different person from the original reviewer and from whoever contested it."
+            : "You act under your own sign-in. The original review stays on record. This adds a new entry and does not change the original decision."}
         </p>
         {operation === "resolve" && (
           <label className="flex flex-col gap-1 text-small font-medium">
             Resolution
             <select name="resolution" required defaultValue="" disabled={pending} className="min-h-11 rounded-control border border-control bg-surface px-3 font-normal">
               <option value="">Choose a resolution</option>
-              <option value="upheld">Uphold contest — compensate the original review</option>
-              <option value="rejected">Reject contest — return the original review to active</option>
+              <option value="upheld">Uphold contest — undo the original review</option>
+              <option value="rejected">Reject contest — keep the original review</option>
             </select>
           </label>
         )}
@@ -84,7 +84,7 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
           />
         </label>
         <button type="submit" disabled={pending} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink disabled:opacity-60">
-          {pending ? "Appending…" : OPERATION_WORDS[operation]}
+          {pending ? "Saving…" : OPERATION_WORDS[operation]}
         </button>
         {result && (
           <p role={result.ok ? "status" : "alert"} className={result.ok ? "m-0 text-small text-positive" : "m-0 text-small text-negative"}>
@@ -97,9 +97,9 @@ export function GovernanceControls({ caseId, target, operation }: { caseId: stri
 }
 
 const INDEPENDENCE = {
-  demo: "Independence holds only when each actor signs in separately, in their own session, with a distinct token the operator issued to them. A token proves a configured demo identity, not that a separate person is present; one person holding several tokens defeats it.",
-  persona: "In this open demo anyone can pick any persona, so a different persona proves a different configured actor, not a different person.",
-  oidc: "Independence requires separately authenticated provider subjects. OIDC maps a verified subject to a configured actor; it does not by itself prove separate real-world people.",
+  demo: "Independent review needs each person to sign in separately with their own token. One person using several tokens does not count.",
+  persona: "In this open demo anyone can act as anyone, so a different demo name does not prove a different person.",
+  oidc: "Independent review needs each person to sign in separately with their own account. Sign-in alone does not prove they are different people.",
 } as const;
 
 /**
@@ -150,12 +150,12 @@ export function GovernanceSignIn({
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
         {mode === "persona" ? (
           <>
-            {DEMO_PERSONA_WORDS} {acts} only as the persona you pick. {INDEPENDENCE[mode]}
+            {DEMO_PERSONA_WORDS} {acts} only as the person you pick. {INDEPENDENCE[mode]}
           </>
         ) : (
           <>
-            {mode === "oidc" ? "Use OIDC to authenticate a provider subject mapped on the server." : "Enter the token assigned to you."} {acts} only as that signed-in
-            credential; this page never offers a role or credential choice. {INDEPENDENCE[mode]}
+            {mode === "oidc" ? "Sign in with your organisation account." : "Enter the token assigned to you."} {acts} under your own sign-in only.{" "}
+            {INDEPENDENCE[mode]}
           </>
         )}
       </p>
@@ -231,10 +231,10 @@ export function GovernanceIdentity({
     <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-control bg-ground px-3 py-3" data-testid="governance-identity">
       <p className="m-0 max-w-[64ch] text-small text-muted">
         {mode === "oidc"
-          ? `${acts} as your OIDC-mapped credential; the API decides your role and actor from it.`
+          ? `${acts} under your organisation sign-in. Your role comes from your account.`
           : mode === "persona"
-            ? `${acts} as the demo persona you picked, recorded as a demo sign-off; the API decides its role and actor.`
-            : `${acts} as the token you signed in with; the API decides your role and actor from it.`}
+            ? `${acts} as the demo name you picked, recorded as a demo sign-off. Your role comes from that choice.`
+            : `${acts} under the token you signed in with. Your role comes from that token.`}
         {expiresAt && <> Session expires at <time dateTime={expiresAt}>{expiresAt}</time>.</>}
         {!signOut && " To act as someone else, use Sign out on the review desk."} {INDEPENDENCE[mode]}
       </p>

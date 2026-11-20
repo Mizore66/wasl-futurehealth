@@ -98,7 +98,7 @@ describe("recordDisposition server action", () => {
     reply(201, { meta: {}, event: { hash: "a".repeat(64), at: "2026-11-17T00:00:00Z", actor: "clinician-one" }, api_overlay: { head: "a".repeat(64) } });
     const res = await recordDisposition({ caseId: "case/1", expectedHead: HEAD, disposition: holdPlan });
     expect(res.ok).toBe(true);
-    expect(res.ok && res.message).toMatch(/hold stays open/);
+    expect(res.ok && res.message).toMatch(/hold stays until the results arrive/);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://127.0.0.1:8088/api/cases/case%2F1/actions");
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer signed-in-clinician-token-0001");
@@ -127,7 +127,7 @@ describe("recordDisposition server action", () => {
 
   it("refuses in fixtures mode", async () => {
     vi.stubEnv("WASL_API_URL", "");
-    expect(await recordDisposition({ caseId: "c", expectedHead: HEAD, disposition: holdPlan })).toMatchObject({ ok: false, error: expect.stringMatching(/live API/) });
+    expect(await recordDisposition({ caseId: "c", expectedHead: HEAD, disposition: holdPlan })).toMatchObject({ ok: false, error: expect.stringMatching(/can't be saved/) });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -150,7 +150,7 @@ describe("DispositionCard copy", () => {
       decline_disposition: { at: "t", event: "e".repeat(64), role: "clinician", actor: "dr-hamdan", decline_event: DECLINE, plan: "closed_declined", reason: "procedure_anxiety", counselling: "Explained the risks", safety_net: "Return with bleeding", fit_reoffer: "offered_declined" },
     };
     const html = renderToStaticMarkup(createElement(DispositionCard, { ctx: dispositionContext(detail({ programme: "crc", overlay })) }));
-    for (const want of ["dr-hamdan (clinician)", `event ${DECLINE.slice(0, 12)}`, "Anxiety about the procedure", "Explained the risks", "Return with bleeding", "FIT re-offered and declined", "no procedure was done"]) {
+    for (const want of ["dr-hamdan (clinician)", "Answers decline", "recorded 2026-11-10", "Anxiety about the procedure", "Explained the risks", "Return with bleeding", "FIT re-offered and declined", "no procedure was done"]) {
       expect(html).toContain(want);
     }
     expect(html).not.toMatch(/GP to sign|loop closed|procedure done|care completed|\bclosed\b/i);

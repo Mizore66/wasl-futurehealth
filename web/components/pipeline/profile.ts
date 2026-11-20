@@ -19,13 +19,12 @@ export type Profile = {
   now: string;
   /** Whether the report is matched to its referral in the current frame; until then the face shows "?". */
   matched: boolean;
-  history: { step: number; text: string; note: string; tech: string; played: boolean }[];
+  history: { step: number; text: string; note: string; played: boolean }[];
   fields: ProfileField[];
   latencyS: string;
-  model: string;
   /** Whether the rules reader's answer for this report is on record (only the demo cast's reports). */
   rulesOnRecord: boolean;
-  decision: { word: string; label: string; note: string; gatePassed: boolean };
+  decision: { word: string; note: string; gatePassed: boolean };
   /** The patient record, for a demo cast member the API also serves. Generated people have none. */
   record: string | null;
 };
@@ -34,9 +33,9 @@ export type Profile = {
 const quoteOf = (q: string) => (/[A-Za-z]{3}/.test(q) ? q.trim() : "");
 
 /** Start-of-work events the decision feed leaves out; the profile lists every step. */
-const START_LINE: Partial<Record<ReplayEvent["type"], { text: string; note: string; tech: string }>> = {
-  matching: { text: "Matching identity", note: "Arabic and Latin names", tech: "Arabic and Latin names" },
-  reading: { text: "Reading the report", note: "Two readers check it", tech: "rules reader + Gemma 3 4B" },
+const START_LINE: Partial<Record<ReplayEvent["type"], { text: string; note: string }>> = {
+  matching: { text: "Matching to the right patient", note: "Names in Arabic or English" },
+  reading: { text: "Reading the report", note: "Two readers check it" },
 };
 
 export function profileOf(replay: Replay, state: ReplayState, caseId: string, rules: RulesBySha): Profile | null {
@@ -46,13 +45,13 @@ export function profileOf(replay: Replay, state: ReplayState, caseId: string, ru
   const history = replay.events.flatMap((e, i) => {
     if (!("caseId" in e) || e.caseId !== caseId) return [];
     const l = line(e, c) ?? START_LINE[e.type];
-    return l ? [{ step: i + 1, text: l.text, note: l.note, tech: l.tech, played: i < state.cursor }] : [];
+    return l ? [{ step: i + 1, text: l.text, note: l.note, played: i < state.cursor }] : [];
   });
 
   const progress = state.cases[caseId];
   const now = progress
     ? (ROWS.find((r) => r.id === place(progress).row)?.label ?? progress.phase)
-    : `Not in this loop yet. The report arrives at step ${history[0]?.step ?? "?"}.`;
+    : `Not here yet. The report arrives at step ${history[0]?.step ?? "?"}.`;
 
   const r = c.read;
   const rulesAnswer = rules[r.reportSha];
@@ -71,9 +70,8 @@ export function profileOf(replay: Replay, state: ReplayState, caseId: string, ru
     history,
     fields,
     latencyS: `${(r.latencyMs / 1000).toFixed(1)} s`,
-    model: r.modelVersion.split("/")[0],
     rulesOnRecord: !!rulesAnswer,
-    decision: { word: OUTCOME_LINE[c.outcome].text, label: `${r.state} · ${r.reason}`, note: plain(r.reason), gatePassed: c.gatePassed },
+    decision: { word: OUTCOME_LINE[c.outcome].text, note: plain(r.reason), gatePassed: c.gatePassed },
     record: recordOf(c.person),
   };
 }

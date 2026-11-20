@@ -235,7 +235,7 @@ test.describe("clinician disposition, live mock", () => {
       await form2.getByLabel("Responsible owner (required)").fill("Dr Synthetic");
       await form2.getByLabel("Review date (required)").fill("2026-12-01");
       await form2.getByRole("button", { name: "Save clinician plan" }).click();
-      await expect(form2.getByTestId("disposition-saved")).toContainText("The hold stays open until qualifying evidence arrives");
+      await expect(form2.getByTestId("disposition-saved")).toContainText("The hold stays until the results arrive");
       /* The hold persists, so a later revised plan stays possible; the card shows the one recorded. */
       await expect(page.getByTestId("disposition-hold")).toContainText("Plan recorded, not completed care: A different diagnostic test");
       expect(cases.get(id)!.events.map((e) => [e.kind, e.role, e.actor])).toEqual([["clinician_disposition", "clinician", "dr-synthetic-clinician"]]);
@@ -282,7 +282,7 @@ test.describe("clinician disposition, live mock", () => {
     await page.goto(caseURL(CRC));
     await page.reload();
     const saved = page.getByRole("region", { name: "Clinician disposition" });
-    for (const text of ["dr-synthetic-clinician (clinician)", `event ${String(cases.get(CRC)!.events[0].hash).slice(0, 12)}`, "Anxiety about the procedure", "FIT re-offered and declined", "no procedure was done"]) {
+    for (const text of ["dr-synthetic-clinician (clinician)", "Answers decline", "Anxiety about the procedure", "FIT re-offered and declined", "no procedure was done"]) {
       await expect(saved).toContainText(text);
     }
     await expect(saved).not.toContainText("GP to sign");

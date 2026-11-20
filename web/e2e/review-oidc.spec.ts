@@ -317,11 +317,11 @@ test.describe("independent double review with synthetic OIDC", () => {
     const page = await context.newPage();
     provider.subject = `synthetic-${kind}`;
     await page.goto(desk);
-    await expect(page.getByRole("link", { name: "Sign in with OIDC" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in with your organisation account" })).toBeVisible();
     await expect(page.getByLabel("Review token")).toHaveCount(0);
-    await page.getByRole("link", { name: "Sign in with OIDC" }).click();
+    await page.getByRole("link", { name: "Sign in with your organisation account" }).click();
     await expect(page.getByTestId("question-cards")).toBeVisible();
-    await expect(page.getByTestId("reviewer-session")).toContainText("Signed in with OIDC");
+    await expect(page.getByTestId("reviewer-session")).toContainText("Signed in");
     await expect(page.getByTestId("reviewer-session")).toContainText("Session expires at");
     expect(await page.content()).not.toContain(tokens[kind]);
     expect(await page.content()).not.toContain(provider.clientSecret);
@@ -338,7 +338,7 @@ test.describe("independent double review with synthetic OIDC", () => {
   test("an unauthenticated viewer gets OIDC only, no credential choice and no case data", async ({ page }) => {
     await page.goto(desk);
     await expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in with OIDC" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in with your organisation account" })).toBeVisible();
     await expect(page.getByLabel("Review token")).toHaveCount(0);
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(page.getByText("Mariam Al Shamsi")).toHaveCount(0);
@@ -456,7 +456,7 @@ test.describe("independent double review with synthetic OIDC", () => {
 
     await acquire(page, "evidence", "senior");
     await card(page, "evidence").getByRole("radio", { name: "Not adequate", exact: true }).click();
-    await card(page, "evidence").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
+    await card(page, "evidence").getByLabel("Reason for your decision (required)").fill("Synthetic senior rationale.");
     await card(page, "evidence").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(page, "evidence")).toContainText("Resolved by a senior");
     await expect(card(page, "evidence")).toContainText("Senior resolution: Report not adequate");
@@ -501,7 +501,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link").getByRole("alert")).toContainText("the review changed while you were answering");
     await expect(card(page, "link")).toContainText("Second read due");
-    await expect(page.getByTestId("read-announcement")).toContainText("changed on the server");
+    await expect(page.getByTestId("read-announcement")).toContainText("changed by someone else");
     // No success claim, and no write reached the ledger.
     expect(questions[LINK].reads).toHaveLength(1);
     await noSeriousAxe(page);
@@ -520,7 +520,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     await expect(card(page, "link").getByRole("button", { name: /Submit/ })).toHaveCount(0);
     await expect(card(page, "link").getByRole("radio")).toHaveCount(0);
     await expect(page.getByText(/Do not submit again/)).toBeVisible();
-    await expect(page.getByTestId("read-announcement")).toContainText("was recorded");
+    await expect(page.getByTestId("read-announcement")).toContainText("was saved");
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
@@ -570,7 +570,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     const sr = await viewer(browser, "senior");
     await acquire(sr.page, "link", "senior");
     await card(sr.page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
-    await card(sr.page, "link").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
+    await card(sr.page, "link").getByLabel("Reason for your decision (required)").fill("Synthetic senior rationale.");
     await card(sr.page, "link").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(sr.page, "link")).toContainText("Resolved by a senior");
     await sr.page.goto(audit);
@@ -600,7 +600,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     await expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();
     expect(reviewGets).toBe(before);
 
-    await page.getByRole("link", { name: "Sign in with OIDC" }).click();
+    await page.getByRole("link", { name: "Sign in with your organisation account" }).click();
     await expect(page.getByTestId("question-cards")).toBeVisible();
     const rotated = (await context.cookies()).find((cookie) => cookie.name === "__Secure-wasl_review_session");
     expect(rotated?.value).not.toBe(original!.value);

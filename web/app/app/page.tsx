@@ -58,10 +58,9 @@ export default async function ProgrammePage() {
 
         <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
           <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<>Positive FIT referrals.{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
-            Simulated colorectal cohort. Emirates ID only counts a colonoscopy only when the Emirates ID on the report matches. Wasl also links
-            reports by name and date of birth. Simulated truth comes from the cohort&apos;s known outcomes. The target is the DoH 31-day standard.
-            It is read from the run&apos;s KPI definition. The demo run is the run this dashboard serves; the five-seed mean is the frozen evaluation in
-            results.json.
+            Simulated colorectal data. &quot;Emirates ID only&quot; counts a colonoscopy only when the report carries the matching Emirates ID. Wasl
+            also matches reports by name and date of birth. &quot;Simulated truth&quot; is what really happened to each simulated patient. The target
+            is the DoH 31-day standard.
           </SourceHeading>
 
           <KpiChart kpi={view.kpi} target={view.target} />
@@ -76,18 +75,15 @@ export default async function ProgrammePage() {
       <div className="mt-gap grid items-start gap-gap">
         <section aria-labelledby="prog-h" className={card}>
           <SourceHeading id="prog-h" title="By programme" sub={progTakeaway && <span data-testid="prog-takeaway" className="text-body font-medium text-ink">{progTakeaway}</span>}>
-            Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Finished counts cases closed with
-            evidence and cases that needed no follow-up (no follow-up, referral or recall needed). Still open is the programme&apos;s cases minus those
-            finished and those overdue.
+            Simulated data: {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Finished means closed with evidence,
+            or no follow-up, referral or recall needed. Still open is the programme&apos;s cases that are neither finished nor overdue.
             {view.onTimeMeasured && (
               <>
                 {" "}
-                On time is measured by Wasl from each case&apos;s final decision: of the referrals whose deadline has passed by the end of the
-                run, the share whose follow-up step Wasl recorded on or before it. Each programme keeps its own rule&apos;s step and deadline
-                (colonoscopy 31 days; colposcopy 14, 28 or 56 days by priority; follow-up CT by the end of the Fleischner window; eye-clinic exam
-                for a referable grade; breast assessment outcome; follow-up LDCT or work-up; IFHAS follow-up within every abnormal result&apos;s
-                clock). There is no Emirates ID or simulated-truth comparison for these figures, and no target line: the app has no sourced
-                target for them.
+                On time is the share of referrals past their deadline whose follow-up step was done by the deadline. Each programme has its
+                own step and deadline (colonoscopy 31 days; colposcopy 14, 28 or 56 days by priority; follow-up CT within the Fleischner window;
+                eye-clinic exam for a referable grade; breast assessment outcome; follow-up LDCT or work-up; IFHAS follow-up for each abnormal
+                result). There is no target line: no official target exists for these.
               </>
             )}
           </SourceHeading>
@@ -96,7 +92,7 @@ export default async function ProgrammePage() {
               <HonestyLabel plain kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
             </div>
           ) : (
-            <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available for this run.</p>
+            <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available yet.</p>
           )}
           <div className="mt-3">
             <ProgrammeChart rows={view.programmes} onTimeMeasured={view.onTimeMeasured} />
@@ -118,9 +114,8 @@ export default async function ProgrammePage() {
               )
             }
           >
-            Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together (run {dash.meta.run}). The three largest stalls are shown.
-            The run&apos;s drop-off counts cover all {programmeCount} programmes; these stall labels are the colorectal and cervical pathway&apos;s.
-            &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS pathways.
+            Simulated data: {view.cases.toLocaleString("en-US")} colorectal and cervical cases. The three largest stalls are shown.
+            &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS programmes.
           </SourceHeading>
           <div className="mt-3">
             <StallsChart top={view.stalls} groups={view.allStalls} />
@@ -133,8 +128,8 @@ export default async function ProgrammePage() {
         {capacity && (
           <section aria-labelledby="cap-h" className={card}>
             <SourceHeading id="cap-h" title="Booking capacity">
-              {capacity.note} The optimiser is greedy: it suggests a slot for each case in turn and does not search for a best plan. The pooling
-              test comes from booking/sim/pool_test.json, a separate simulation of 30 draws with capacity placed in the wrong regions.
+              {capacity.note} Slots are suggested one patient at a time, not as a best overall plan. The figures on sharing slots come from a
+              separate simulation with slots placed in the wrong regions.
             </SourceHeading>
             <div className="mt-2">
               <HonestyLabel plain kind="simulated">Simulated decision support</HonestyLabel>
@@ -167,7 +162,7 @@ export default async function ProgrammePage() {
 
             {levers && (
               <p data-testid="capacity-levers" className="m-0 mt-4 text-body text-ink-soft tabular-nums">
-                <span className="font-medium text-ink">Queue levers:</span>{" "}
+                <span className="font-medium text-ink">Ways to shorten the queue:</span>{" "}
                 {[
                   levers.direct && `${cellText(levers.direct.cell, levers.direct.of)} suggested direct to colonoscopy`,
                   levers.highPrepRisk && `${cellText(levers.highPrepRisk.cell, levers.highPrepRisk.of)} at high risk of failed bowel prep`,
@@ -176,7 +171,7 @@ export default async function ProgrammePage() {
                   .join("; ")}
                 . Counted over the{" "}
                 {[levers.direct, levers.highPrepRisk].every((l) => !l || l.of === capacity.openCases) && `${capacity.openCases.toLocaleString("en-US")} `}
-                open colorectal cases needing a colonoscopy slot. The patient list cannot filter by pathway or prep risk, so these counts do not link.
+                open colorectal cases needing a colonoscopy slot. These counts are not linked to the patient list.
                 {levers.requiresClinicianOrder && " A prep regimen change needs a clinician’s order."}
               </p>
             )}
@@ -186,14 +181,14 @@ export default async function ProgrammePage() {
             </div>
 
             <div className="mt-6 border-t border-rule pt-5">
-              <h3 className="m-0 text-body font-medium">What pooling changes</h3>
+              <h3 className="m-0 text-body font-medium">Sharing slots across regions</h3>
               <p className="m-0 mt-1 text-body text-ink-soft">
-                Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.
+                Sharing moves existing slots between regions. It cannot create slots, so it does not help when every region is short.
               </p>
               {noPooling && pooled && (
                 <p data-testid="pooling-result" className="m-0 mt-2 text-body">
-                  Measured in the simulated booking test, with {enough.slotsPerCase} slots per FIT+ in total: {noPooling.display} within 31 days
-                  without cross-site booking, {pooled.display} with network pooling.
+                  In the simulated booking test, with {enough.slotsPerCase} slots per FIT+ patient: {noPooling.display} within 31 days without
+                  sharing, {pooled.display} with sharing across regions.
                 </p>
               )}
               <div className="mt-3">
@@ -229,7 +224,7 @@ export default async function ProgrammePage() {
           </p>
           {safety.upper95 && (
             <p data-testid="safety-bound" className="m-0 text-small text-muted">
-              95% upper bound on the true rate: {Number(parseFloat(safety.upper95).toPrecision(2))}%
+              The true rate is likely at most {Number(parseFloat(safety.upper95).toPrecision(2))}%
             </p>
           )}
         </div>

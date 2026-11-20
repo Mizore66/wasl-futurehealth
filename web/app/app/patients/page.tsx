@@ -158,7 +158,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             sub={openRow?.it.named ? shortId(view.open) : undefined}
           />
           <div className="p-4 md:p-pad">
-            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
+            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case found."}</p>
             {openRow && (
               <dl className="rs-referral-facts">
                 <div>
@@ -315,15 +315,15 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
         </p>
         <p className="m-0" data-testid="count-basis">
           {sample
-            ? `Counts are over the published sample of ${everything.total} cases (simulated), not the whole run.`
+            ? `Counts cover a sample of ${everything.total} simulated cases.`
             : partialCounts
               ? `Filter counts cover the first ${everything.cases.length} of ${everything.total} cases.`
-              : `Filter counts cover all ${everything.total} cases in this run.`}
+              : `Filter counts cover all ${everything.total} cases.`}
         </p>
         {partialCalendar && <p className="m-0">The calendar shows the first {matched.cases.length} of {matched.total} referrals. Add a filter to see the rest.</p>}
         {rows.some((r) => !r.it.hasRecord) && <p className="m-0">In this demo only some cases have a full record. The rest open as a summary.</p>}
         <p className="m-0">
-          Run day {Math.floor(now)}, {formatDay(now)}. Dates are when the referral was received (UTC).
+          Today is {formatDay(now)} (simulated). Dates show when the referral was received.
         </p>
       </footer>
     </>

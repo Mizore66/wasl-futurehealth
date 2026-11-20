@@ -6,7 +6,7 @@ import { DEMO_PERSONAS, type SignInResult } from "./auth";
 
 /** What the open demo is, said once wherever a visitor picks a persona. */
 export const DEMO_PERSONA_WORDS =
-  "This is an open demo: pick a demo persona to act as. Each sign-off is recorded against the persona you pick, as a demo sign-off in the shared synthetic record that other visitors also see. The two-person rule still holds: a second read must come from a different persona, so sign out and pick another to give it. In production, staff sign in through their provider’s SSO and every sign-off is bound to a named clinician.";
+  "This is an open demo: pick who to act as. Each sign-off is saved under that name, as a demo sign-off in a shared record of made-up patients that other visitors also see. Two different people must still answer: to give the second answer, sign out and pick someone else. In real use, staff sign in with their organisation account and every sign-off belongs to a named clinician.";
 
 /**
  * The open demo's sign-in (WASL_REVIEW_AUTH_MODE=persona). The browser sends only a persona name; the web server signs

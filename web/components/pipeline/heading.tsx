@@ -9,10 +9,10 @@ const VIEWS = [
   { href: "/app/pipeline/reading", label: "Report reading" },
 ] as const;
 
-export const REPLAY_LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
+export const REPLAY_LINE = "Simulated patients with made-up names and faces · real report texts";
 
 /** Shown when a live run carries no showcase fixtures and the screen replays the published snapshot instead. */
-export const SNAPSHOT_NOTE = "This live run has no showcase cases, so this view replays the published fixture snapshot, not the live ledger.";
+export const SNAPSHOT_NOTE = "This live system has no demo cases, so this shows the published demo instead.";
 
 export type PipelineHead = {
   title: string;

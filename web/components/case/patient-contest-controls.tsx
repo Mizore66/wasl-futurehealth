@@ -29,7 +29,7 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
       }
       setResult({
         ok: response.ok,
-        message: response.ok ? (response.hash ? `${response.message} Event ${response.hash.slice(0, 12)}.` : response.message) : `Not saved: ${response.error}`,
+        message: response.ok ? response.message : `Not saved: ${response.error}`,
       });
       if (response.ok) form.current?.reset();
     });
@@ -40,8 +40,8 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
       <summary className="min-h-8 cursor-pointer font-medium">Resolve patient contest</summary>
       <form ref={form} onSubmit={submit} className="mt-2 flex flex-col gap-3 border-t border-rule pt-3" aria-label="Resolve patient contest">
         <p className="m-0 text-small text-muted">
-          You act as your signed-in credential, which must be a senior clinician who did not sign this case
-          {excluded.length > 0 ? ` (not ${excluded.join(", ")})` : ""}. The API refuses anyone else. Prior evidence and signatures are not rewritten.
+          Only a senior clinician who did not sign this case can resolve it
+          {excluded.length > 0 ? ` (not ${excluded.join(", ")})` : ""}. Earlier evidence and sign-offs are not changed.
         </p>
         <label className="flex flex-col gap-1 text-small font-medium">
           Outcome
@@ -57,7 +57,7 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
           <span className="font-normal text-muted">Recorded with your sign-in, the outcome and the time. Staff see it; the patient sees the outcome.</span>
         </label>
         <button type="submit" disabled={pending} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink disabled:opacity-60">
-          {pending ? "Appending…" : "Record contest outcome"}
+          {pending ? "Saving…" : "Record contest outcome"}
         </button>
         {result && (
           <p role={result.ok ? "status" : "alert"} className={result.ok ? "m-0 text-small text-positive" : "m-0 text-small text-negative"}>

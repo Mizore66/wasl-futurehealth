@@ -93,7 +93,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
     <ChartFigure
       caption={
         <>
-          <span className="font-medium text-ink">Pooling restores on-time booking only when the network has enough slots.</span> Share of FIT+ patients with a
+          <span className="font-medium text-ink">Sharing slots across regions helps only when there are enough slots overall.</span> Share of FIT+ patients with a
           colonoscopy within 31 days, with capacity placed in the wrong regions.
         </>
       }
@@ -137,7 +137,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
         ))}
       </div>
       <div className="mt-3">
-        <Key items={[{ color: SLOTS, label: "Network pooling (60% willing)" }, { color: CHROME.deemphasis, label: "Other scenarios" }]} />
+        <Key items={[{ color: SLOTS, label: "Sharing across regions (60% willing)" }, { color: CHROME.deemphasis, label: "Other scenarios" }]} />
       </div>
     </ChartFigure>
   );

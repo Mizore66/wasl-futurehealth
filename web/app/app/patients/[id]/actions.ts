@@ -23,9 +23,9 @@ export async function recordConsent(
   event: z.input<typeof ConsentEventName>,
   note = "",
 ): Promise<ConsentActionResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: consent events cannot be appended" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "Consent can't be saved in this demo." };
   const args = Args.safeParse({ caseId, expectedHead, event, note });
-  if (!args.success) return { ok: false, status: 400, error: "Malformed consent event" };
+  if (!args.success) return { ok: false, status: 400, error: "Consent update not recognised. Nothing was saved." };
 
   const result = await postConsent(args.data.caseId, {
     event: args.data.event,
@@ -46,7 +46,7 @@ export async function recordConsent(
       ok: true,
       contact: null,
       expectedHead: "",
-      warning: "Consent event saved, but the updated case could not be read. Reload before another action.",
+      warning: "Consent saved. Reload the page before doing anything else.",
     };
   }
   return { ok: true, contact: detail.api_contact, expectedHead: detail.api_contact.overlay.revision };
@@ -60,9 +60,9 @@ const CallbackArgs = z.strictObject({
 
 /** Record the outcome of a failed teach-back callback as the server's coordinator credential. */
 export async function recordTeachBackCallback(input: unknown): Promise<TeachBackCallbackResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: callback outcomes cannot be appended" };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "Call outcomes can't be saved in this demo." };
   const args = CallbackArgs.safeParse(input);
-  if (!args.success) return { ok: false, status: 400, error: "Malformed callback outcome" };
+  if (!args.success) return { ok: false, status: 400, error: "Call outcome not recognised. Nothing was saved." };
   const result = await postTeachBackCallback(args.data.caseId, args.data.callback, args.data.outcome);
   if (result.ok) {
     const path = `/app/patients/${encodeURIComponent(args.data.caseId)}`;

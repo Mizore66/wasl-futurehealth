@@ -12,8 +12,8 @@ const STEPS: Step[] = [
   { target: "oversight", title: "Oversight", body: "Programme shows how screening is going. Review desk is where cases wait for a second signature. Audit trail records every decision." },
   { target: "evidence", title: "The evidence", body: "Evidence, Pipeline and Results show how Wasl reached its numbers, so you can check them yourself." },
   { target: "breadcrumb", title: "Where you are", body: "The bar shows which screen you are on." },
-  { target: "run", title: "Which data you are seeing", body: "Every number comes from one run. This notice says whether it is simulated and when it was taken. Open it for the details." },
-  { target: "page", title: "This screen", body: "The page itself. Each panel's heading has a source note that says where its numbers come from." },
+  { target: "run", title: "Which data you are seeing", body: "This label tells you the numbers come from simulated patients, not real ones." },
+  { target: "page", title: "This screen", body: "The page itself. Each panel says where its numbers come from." },
   { target: "help", title: "Come back anytime", body: "Lost? Click here to replay this tour." },
 ];
 

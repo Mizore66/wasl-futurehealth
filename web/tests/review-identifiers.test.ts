@@ -108,7 +108,7 @@ describe("second-identifier comparison shows the recorded identifiers", () => {
       expect(v.identityAvailable).toBe(false);
       expect(v.identity.map((r) => r.field)).toEqual(["Name", "Record"]);
       expect(v.identityGuard).toEqual([]);
-      expect(v.identitySummary).toMatch(/not available/);
+      expect(v.identitySummary).toMatch(/cannot be compared/);
       expect(v.identity.flatMap((r) => [r.referral, r.report]).join("|")).not.toMatch(/on record|not confirmed|not recorded|unknown/);
     }
   });
@@ -178,7 +178,7 @@ describe("the comparison is on screen before an identity answer", () => {
   it("says the comparison is unavailable instead of showing placeholders", async () => {
     const c = await mount(CaseDetail.parse({ ...hold, identity_review: undefined }), "r1");
     const ctx = c.querySelector<HTMLElement>('[data-context-item="rv-636161dc42837e08"]')!;
-    expect(ctx.textContent).toMatch(/identifier comparison is not available/);
+    expect(ctx.textContent).toMatch(/two records cannot be compared on this page/);
     expect(ctx.textContent).not.toMatch(/on record|not confirmed/);
   });
 });

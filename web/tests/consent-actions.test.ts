@@ -86,8 +86,8 @@ it("blocks a stale-head retry until refreshed case state is mounted", async () =
   });
   const text = container!.textContent;
   expect(text).toContain("Reload and review the latest case before retrying");
-  expect(text).toContain("Consent actions are paused. Reload the latest case before recording another event.");
-  expect(text).not.toContain("head signature is missing");
+  expect(text).toContain("Reload the page before recording another change.");
+  expect(text).not.toContain("Consent can't be recorded for this case right now");
   expect(text).not.toContain("has opted out");
   expect(actions.recordConsent).toHaveBeenCalledTimes(1);
 
@@ -147,10 +147,10 @@ it("reports the opt-out refusal accurately and keeps the repeat opt-out availabl
     confirmButton("Confirm consent denied").click();
   });
   const text = container!.textContent;
-  expect(text).toContain("the patient has opted out of contact in this demo flow, so consent cannot be granted or denied");
+  expect(text).toContain("the patient has opted out of contact, so consent cannot be granted or denied");
   expect(text).not.toContain("Reload and review the latest case");
-  expect(text).not.toContain("head signature is missing");
-  expect(text).not.toContain("Consent actions are paused");
+  expect(text).not.toContain("Consent can't be recorded for this case right now");
+  expect(text).not.toContain("Reload the page before recording another change");
   expect(offered()).toEqual(["Record opt-out"]);
   expect(confirmButton("Confirm opt-out").disabled).toBe(false);
 

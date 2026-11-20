@@ -21,8 +21,8 @@ async function render() {
 
 describe("review queue page with rejected reviewer credentials", () => {
   it.each([
-    [401, /sign-in was not accepted/],
-    [403, /not allowed to read/],
+    [401, /sign-in has ended/],
+    [403, /cannot open them/],
     [404, /could not be loaded/],
   ] as const)("shows an explicit %s error instead of the practice or empty-work claim", async (status, message) => {
     session.token = "stored-token-1234567890";
@@ -30,7 +30,7 @@ describe("review queue page with rejected reviewer credentials", () => {
     const markup = await render();
     expect(markup).toMatch(message);
     expect(markup).toContain('role="alert"');
-    expect(markup).not.toContain("no open review items");
+    expect(markup).not.toContain("No cases are waiting in this demo");
     expect(markup).not.toContain("Practice queue");
     expect(markup).not.toContain("0 cases wait");
     expect(markup).not.toContain("Open review items from the API");
@@ -52,7 +52,7 @@ describe("review queue page with rejected reviewer credentials", () => {
     session.token = "stored-token-1234567890";
     queue.reviewQueue.mockResolvedValue({ cases: [CaseDetail.parse(hold)], source: "rebuilt" });
     const markup = await render();
-    expect(markup).toContain("no open review items");
+    expect(markup).toContain("No cases are waiting in this demo");
     expect(markup).toContain("Practice queue");
   });
 

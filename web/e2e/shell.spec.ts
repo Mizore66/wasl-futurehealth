@@ -109,11 +109,11 @@ test.describe("sidebar (desktop)", () => {
 
   test("the top bar carries the one simulated-data notice, with no run time or details disclosure, and adds no h1", async ({ page }) => {
     await page.goto("/app/pipeline");
-    const strip = page.getByRole("region", { name: "Run metadata" }).filter({ visible: true });
+    const strip = page.getByRole("region", { name: "About this data" }).filter({ visible: true });
     await expect(strip).toHaveCount(1);
     await expect(strip).toHaveText("Simulated data");
     await expect(strip.locator("details, time")).toHaveCount(0);
-    await expect(page.locator("body")).not.toContainText(/Run loaded|Snapshot \d/);
+    await expect(page.locator("body")).not.toContainText(/Data loaded|Data as of/);
     // The sidebar no longer repeats it, and no page header carries a generic synthetic chip.
     await expect(page.locator("#app-sidebar")).not.toContainText("Synthetic data");
     // Chips carry a status dot; plain muted provenance text in a subtitle has none.
@@ -121,14 +121,11 @@ test.describe("sidebar (desktop)", () => {
     await expect(page.locator("h1")).toHaveCount(1);
   });
 
-  test("the run internals moved to the Evidence page's verify section", async ({ page }) => {
+  test("the Evidence page shows no run internals (run id, reader model)", async ({ page }) => {
     await page.goto("/app/evidence");
-    const run = page.getByTestId("verify-run");
-    await expect(run.getByText(meta.run)).toBeHidden();
-    await run.locator("summary").click();
-    await expect(run.getByText(meta.run)).toBeVisible();
-    await expect(run).toContainText("Published snapshot of the API");
-    await expect(run).toContainText(meta.reader_model);
+    await expect(page.getByTestId("verify-run")).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText(meta.run);
+    await expect(page.locator("main")).not.toContainText(meta.reader_model);
   });
 
   test("page headers hold a title and subtitle only: nothing sits over the header art", async ({ page }) => {
@@ -213,7 +210,7 @@ test.describe("mobile (390px)", () => {
 
   test("the phone header carries the one simulated-data notice and fits", async ({ page }) => {
     await page.goto("/app");
-    const strip = page.getByRole("region", { name: "Run metadata" }).filter({ visible: true });
+    const strip = page.getByRole("region", { name: "About this data" }).filter({ visible: true });
     await expect(strip).toHaveCount(1);
     await expect(strip).toHaveText("Simulated data");
     await expect(page.locator("main header.staff-heading [data-dot]")).toHaveCount(0);

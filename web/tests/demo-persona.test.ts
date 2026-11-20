@@ -54,7 +54,7 @@ describe("open-demo personas", () => {
   it("acts with the picked persona's own server-side token and names the persona", async () => {
     jar.get.mockImplementation(cookie({ [DEMO_PERSONA_COOKIE]: "reviewer" }));
     expect(await resolveReviewer()).toEqual({ ok: true, token: TOKENS.WASL_API_REVIEWER_TOKEN, method: "persona", credential: "reviewer" });
-    expect(await reviewerPersona()).toEqual({ actor: "Reviewer A", role: "Reviewer · demo persona", method: "persona" });
+    expect(await reviewerPersona()).toEqual({ actor: "Reviewer A", role: "Reviewer · demo", method: "persona" });
   });
 
   it("refuses unknown, unconfigured and shared credentials, and never falls back to a pasted token", async () => {
@@ -81,10 +81,10 @@ describe("open-demo personas", () => {
     ]) {
       expect(html).not.toMatch(/type="password"|[Tt]oken/);
       for (const persona of DEMO_PERSONAS) expect(html).toContain(`Act as ${persona.name}`);
-      expect(html).toContain("two-person rule still holds");
+      expect(html).toContain("Two different people must still answer");
     }
     const status = renderToStaticMarkup(
-      createElement(ReviewerSessionStatus, { session: { method: "persona" }, persona: { actor: "Reviewer B", role: "Reviewer · demo persona", method: "persona" } }),
+      createElement(ReviewerSessionStatus, { session: { method: "persona" }, persona: { actor: "Reviewer B", role: "Reviewer · demo", method: "persona" } }),
     );
     expect(status).toContain("Demo sign-off as");
     expect(status).toContain("Reviewer B");

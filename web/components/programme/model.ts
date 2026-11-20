@@ -194,6 +194,11 @@ const CONDITION_WORDS: Record<string, string> = {
   short_overall: "Short overall: fewer slots than open cases",
 };
 
+/** Plain words for the dashboard's pooling note, by capacity condition. */
+const POOLING_WORDS: Record<string, string> = {
+  misallocated: "slots exist in another region: sharing slots across regions can use them",
+};
+
 const Capacity = z.object({
   condition: z.object({
     condition: z.string(),
@@ -220,7 +225,7 @@ function capacityView(d: Dashboard): CapacityView | null {
   return {
     condition: c.condition,
     conditionWords: CONDITION_WORDS[c.condition] ?? c.condition.replaceAll("_", " "),
-    poolingNote: c.pooling_note,
+    poolingNote: POOLING_WORDS[c.condition] ?? c.pooling_note,
     poolingRelevant: c.pooling_relevant,
     slots: c.slots,
     openCases: c.open_cases_needing_slot,
@@ -234,7 +239,7 @@ function heldoutSet(): KpiSet {
   const one = (arm: string) => {
     const r = result(`kpi31.heldout.${arm}`);
     const [lo, hi] = r.ci95 ?? [];
-    return { rate: pctOf(r.value), detail: lo === undefined || hi === undefined ? "Mean of 5 seeds" : `Mean of 5 seeds, 95% range ${pct(pctOf(lo))} to ${pct(pctOf(hi))}` };
+    return { rate: pctOf(r.value), detail: lo === undefined || hi === undefined ? "Average of 5 test runs" : `Average of 5 test runs, likely range ${pct(pctOf(lo))} to ${pct(pctOf(hi))}` };
   };
   const [eid, wasl, truth] = [one("eid_only"), one("wasl"), one("truth")];
   return { rates: { eid: eid.rate, wasl: wasl.rate, truth: truth.rate }, detail: { eid: eid.detail, wasl: wasl.detail, truth: truth.detail } };
@@ -532,10 +537,10 @@ export type PoolRow = { id: string; label: string; short: string; share: number;
 export type PoolRun = { slotsPerCase: string; enough: boolean; rows: PoolRow[] };
 
 const POOL_ROWS = [
-  ["balanced_30", "Balanced network", "Balanced"],
-  ["skewed_no_travel", "Misallocated, no cross-site booking", "No pooling"],
+  ["balanced_30", "Slots in the right regions", "Balanced"],
+  ["skewed_no_travel", "Misallocated, no sharing", "No sharing"],
   ["skewed_30", "Misallocated, 30% willing to travel", "30% travel"],
-  ["skewed_pool_60", "Misallocated, network pooling (60% willing)", "Pooling"],
+  ["skewed_pool_60", "Misallocated, sharing across regions (60% willing)", "Sharing"],
 ] as const;
 
 /**

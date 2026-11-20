@@ -16,7 +16,7 @@ const STATE: Record<TeachBackCallback["state"], string> = {
 
 export function callbackStatus(cb: TeachBackCallback): string {
   if (cb.status === "resolved") return `Resolved${cb.resolved_by ? ` by ${cb.resolved_by}` : ""}${cb.resolved_at ? ` ${atWords(cb.resolved_at)}` : ""}`;
-  if (!cb.due_at) return `Open · ${cb.owner} callback, no due date (engine escalation)`;
+  if (!cb.due_at) return `Open · ${cb.owner} callback, no due date`;
   return `${cb.overdue ? "Overdue" : "Open"} · ${cb.owner} callback due ${staffDueTime(cb.due_at)}`;
 }
 
@@ -49,12 +49,12 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
     setMessage(null);
     startTransition(async () => {
       const result = await recordTeachBackCallback({ caseId, callback, outcome }).catch(() => null);
-      if (!result) return setMessage({ error: true, text: "The API did not answer. Reload before retrying." });
+      if (!result) return setMessage({ error: true, text: "We couldn't confirm the save. Reload the page before trying again." });
       if (!result.ok) return setMessage({ error: true, text: `Not saved: ${result.error}` });
       setRecorded({ base: callbacks, list: afterOutcome(shown, callback, outcome, result.callbacks) });
       setMessage({
         error: false,
-        text: outcome === "understood_on_call" ? "Callback resolved. The canonical decision is unchanged." : "Another explanation recorded. The callback stays open.",
+        text: outcome === "understood_on_call" ? "Callback resolved. The case decision is unchanged." : "Another explanation recorded. The callback stays open.",
       });
     });
   }
@@ -71,7 +71,7 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
             <p className="m-0 font-medium">{STATE[cb.state]}</p>
             <p className="m-0 mt-1">{callbackStatus(cb)}</p>
             <p className="m-0 mt-1 text-small text-muted">
-              {cb.source === "engine" ? "Canonical engine escalation" : `Patient link${cb.opened_at ? ` · opened ${atWords(cb.opened_at)}` : ""}`} · {cb.escalation}
+              {cb.source === "engine" ? "Raised automatically" : `Patient link${cb.opened_at ? ` · opened ${atWords(cb.opened_at)}` : ""}`} · {cb.escalation}
             </p>
             {(cb.consultations ?? []).map((k) => (
               <p key={k.event} className="m-0 mt-1 text-small">
@@ -91,7 +91,7 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
           </li>
         ))}
       </ol>
-      {!live && <p className="m-0 mt-2 text-small text-muted">Recording a consultation outcome needs the live API. This snapshot is read-only.</p>}
+      {!live && <p className="m-0 mt-2 text-small text-muted">Call outcomes can&apos;t be recorded here. This view is read-only.</p>}
       <div className="min-h-6" aria-live="polite">
         {message && <p role={message.error ? "alert" : "status"} className={message.error ? "m-0 mt-2 text-negative" : "m-0 mt-2"}>{message.text}</p>}
       </div>

@@ -117,7 +117,7 @@ describe("non-CRC evidence review opens the item's own source report before sign
     actions.readReviewSource.mockResolvedValue({ ok: false, status: 409, sourceStatus: "missing" });
     await mount(c);
     const alert = container.querySelector('[data-testid="source-report"][role="alert"]')!;
-    expect(alert.textContent).toContain("Evidence signing is withheld");
+    expect(alert.textContent).toContain("You cannot sign until the report is shown");
     expect(alert.textContent).not.toContain(c.text);
     await pick(SIGNED[programme]);
     const button = await submit();

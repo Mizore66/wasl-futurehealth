@@ -101,7 +101,7 @@ describe("review rationale", () => {
 
   it("shows no rationale for a concealed first read", async () => {
     await mount([concealed]);
-    expect(container.querySelector('[data-read="r1"]')!.textContent).not.toMatch(/Rationale/);
+    expect(container.querySelector('[data-read="r1"]')!.textContent).not.toMatch(/Reason/);
   });
 
   it("shows an ordinary API review note in Human sign-offs with its provenance", () => {

@@ -41,14 +41,14 @@ describe("B8: a patient contest holding closure never reads as closed", () => {
 
 describe("B2/B3/B4 review desk wording", () => {
   it("tells an eligible senior to claim, and only an ineligible viewer that a third read is not accepted", () => {
-    expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).not.toMatch(/not accepted/);
-    expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).toMatch(/Claim the senior resolution/);
-    expect(awaitingSeniorWords({ claim: false, renew: false, release: false, takeover: false })).toMatch(/a third read from you is not accepted/);
-    expect(awaitingSeniorWords(undefined)).toMatch(/not accepted/);
+    expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).not.toMatch(/cannot give a third answer/);
+    expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).toMatch(/Claim this question to give the deciding answer/);
+    expect(awaitingSeniorWords({ claim: false, renew: false, release: false, takeover: false })).toMatch(/you cannot give a third answer/);
+    expect(awaitingSeniorWords(undefined)).toMatch(/cannot give a third answer/);
   });
 
   it("announces a claim once, never 'claim claim'", () => {
-    expect(claimAnnouncement("link", "claim")).toBe("Identity question claimed. The current server state is shown.");
+    expect(claimAnnouncement("link", "claim")).toBe("Identity question claimed. The page is up to date.");
     expect(claimAnnouncement("link", "claim")).not.toMatch(/claim claim/i);
   });
 
@@ -68,9 +68,9 @@ describe("B5: CRC obligation confirmation agrees with the review desk", () => {
     expect(obligationConfirmationWords(need, {})).toMatch(/two independent clinicians on the review desk/);
     expect(obligationConfirmationWords(need, { api_review_states: [state("awaiting_r2")] })).toMatch(/One of two/);
     const done = obligationConfirmationWords(need, { api_review_states: [state("resolved_agreed")] });
-    expect(done).toMatch(/Independently confirmed/);
-    expect(done).toMatch(/canonical record still shows the obligation awaiting/);
-    expect(obligationConfirmationWords({ ...need, confirmation: "rv-713", reviewer: "c1" }, {})).toBe("Confirmed by c1; signature rv-713.");
+    expect(done).toMatch(/Confirmed by two independent clinicians/);
+    expect(done).toMatch(/main record updates after final sign-off/);
+    expect(obligationConfirmationWords({ ...need, confirmation: "rv-713", reviewer: "c1" }, {})).toBe("Confirmed by c1.");
     expect(obligationConfirmationWords({ ...need, state: "blocked", blockers: ["specimen"] }, {})).toMatch(/holds/);
   });
 
@@ -100,7 +100,7 @@ describe("B10: staff copy without raw identifiers", () => {
     expect(ledgerWords({ ledger: "unknown", label: "patient_request/contest_submitted" })).toMatch(/Patient questioned the decision/);
     expect(ledgerWords({ ledger: "unknown", label: "patient_request/explanation_requested" })).toMatch(/explanation/);
     expect(ledgerWords({ ledger: "unknown", label: "patient_request/contest_resolved" })).toMatch(/resolved/);
-    expect(ledgerWords({ ledger: "unknown", label: "mystery/x" })).toBe("Unrecognised ledger event (mystery/x)");
+    expect(ledgerWords({ ledger: "unknown", label: "mystery/x" })).toBe("Unrecognised entry");
   });
 
   it("names roles in words and rounds run days", () => {
@@ -110,16 +110,16 @@ describe("B10: staff copy without raw identifiers", () => {
     expect(dayNumber(undefined)).toBe("not recorded");
   });
 
-  it("has no stray comma in the system-identifier disclosure", () => {
+  it("shows the plain words only, never the system identifier", () => {
     const html = renderToStaticMarkup(createElement(TechTerm, { id: "review_claim/claim", label: "Review question claimed" }));
-    expect(html).not.toContain(">, show");
-    expect(html).toContain("(show the system identifier)");
+    expect(html).toContain("Review question claimed");
+    expect(html).not.toContain("review_claim/claim");
   });
 });
 
 describe("Booking: an unreservable slot says why", () => {
   it("explains elapsed slots and a past suggestion", () => {
-    expect(slotUnavailableWords([{ slot_id: "a", availability: "elapsed" }, { slot_id: "b", availability: "elapsed" }], "a", true)).toMatch(/already past/);
+    expect(slotUnavailableWords([{ slot_id: "a", availability: "elapsed" }, { slot_id: "b", availability: "elapsed" }], "a", true)).toMatch(/already passed/);
     expect(slotUnavailableWords([{ slot_id: "a", availability: "elapsed" }, { slot_id: "b", availability: "available" }], "a", false)).toMatch(/suggested slot is already past/);
     expect(slotUnavailableWords([{ slot_id: "a", availability: "available" }], "a", true)).toBe("");
   });

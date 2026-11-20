@@ -223,7 +223,7 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
           )}
         >
           <HonestyLabel kind="simulated" className="h-auto bg-transparent px-0 text-[12px] font-normal text-inherit [&>[data-dot]]:hidden">
-            Synthetic people · simulated results
+            Made-up people · simulated results
           </HonestyLabel>
         </a>
       </div>

@@ -25,10 +25,10 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
   const ticks = ticksTo(max, 2);
   return (
     <ChartFigure
-      caption="Cases checked (bar) and how many were wrong; under each count, the 95% upper bound on the true rate. 5 seeds pooled"
+      caption="Cases checked (bar) and how many were wrong. Under each count, the highest the true rate is likely to be. 5 test runs combined"
       table={{
-        caption: "Safety counters with 95% upper bounds",
-        head: ["Counter", "Wrong of checked", "95% upper bound"],
+        caption: "Safety errors and the highest likely rate",
+        head: ["Error", "Wrong of checked", "Highest likely rate"],
         rows: rows.map((r) => [r.label, `${r.events} of ${fmt(r.denominator)}`, pctText(r.upper)]),
       }}
     >
@@ -40,7 +40,7 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
             sub={
               <>
                 <ZeroFigure events={r.events} of={r.denominator} className="mt-0.5" />
-                <span className="block">≤ {pctText(r.upper)} at 95%</span>
+                <span className="block">likely ≤ {pctText(r.upper)}</span>
               </>
             }
             labelWidth="11rem"
@@ -53,7 +53,7 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
                   { color: SERIES.wasl, name: "checked", value: fmt(r.denominator) },
                   { color: "var(--color-negative)", name: "wrong", value: String(r.events) },
                 ]}
-                note={`95% upper bound on the true rate: ${pctText(r.upper)}`}
+                note={`Highest likely rate: ${pctText(r.upper)}`}
               />
             }
           >
@@ -73,9 +73,9 @@ export function IntervalChart({ label, value, low, high, from = 0.5 }: { label: 
   const ticks = [from, (from + 1) / 2, 1].map((t) => Number(t.toFixed(2)));
   const said = `${value.toFixed(3)} (${low.toFixed(3)}–${high.toFixed(3)})`;
   return (
-    <ChartFigure caption="Mean over 5 seeds (dot) and 95% interval (line)" table={{ caption: label, head: ["Measure", "Mean", "95% interval"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
+    <ChartFigure caption="Average of 5 runs (dot) and likely range (line)" table={{ caption: label, head: ["Measure", "Average", "Likely range"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
       <div data-testid="recall-chart">
-        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "mean, 95% interval", value: said }]} />}>
+        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "average, likely range", value: said }]} />}>
           <Grid ticks={ticks} x={x} />
           <Seg from={x(low)} to={x(high)} color={SERIES.wasl} />
           <Dot x={x(value)} color={SERIES.wasl} />
@@ -108,7 +108,7 @@ export function KpiChart({ groups }: { groups: Kpi[] }) {
         items={[
           { color: SERIES.comparator, label: "Emirates ID only", shape: "bar" },
           { color: SERIES.wasl, label: "Wasl", shape: "bar" },
-          { color: CHROME.reference, label: "Synthetic truth", shape: "tick" },
+          { color: CHROME.reference, label: "Simulated truth", shape: "tick" },
         ]}
       />
       <div data-testid="kpi-chart" className="mt-2">
@@ -217,9 +217,9 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
   return (
     <ChartFigure
       caption={label}
-      table={{ caption: label, head: ["Corpora", "Count"], rows: [["Found an unsafe phrasing", String(hit)], ["Passed", String(total - hit)]] }}
+      table={{ caption: label, head: ["Report sets", "Count"], rows: [["Exposed an unsafe reading", String(hit)], ["Passed", String(total - hit)]] }}
     >
-      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} corpora found an unsafe phrasing`} className="flex flex-wrap gap-1.5">
+      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} report sets exposed an unsafe reading`} className="flex flex-wrap gap-1.5">
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
@@ -231,7 +231,7 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
       <Legend
         className="mt-2"
         items={[
-          { color: SERIES.comparator, label: "Found an unsafe phrasing, fixed by a general rule", shape: "bar" },
+          { color: SERIES.comparator, label: "Exposed an unsafe reading, then fixed", shape: "bar" },
           { color: SERIES.wasl, label: "Passed", shape: "bar" },
         ]}
       />

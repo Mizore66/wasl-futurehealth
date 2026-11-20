@@ -1,4 +1,3 @@
-import { TechnicalDetail } from "@/components/pipeline/technical";
 import { CountBars } from "@/components/results/charts";
 
 const fmt = (n: number | undefined) => (n === undefined ? "not reported" : n.toLocaleString("en-US"));
@@ -8,17 +7,17 @@ export const LIFECYCLE = [
   {
     key: "intents_ever_held_for_consent",
     label: "Held",
-    what: "Queued because no contact permission was on file yet, including ones released later.",
+    what: "Waited because there was no permission to contact yet. Includes ones sent later.",
   },
   {
     key: "released_total",
     label: "Released",
-    what: "Cleared to send, including ones never held.",
+    what: "Cleared to send. Includes ones that never waited.",
   },
   {
     key: "intents_cancelled_by_consent",
     label: "Cancelled",
-    what: "Dropped because consent was withheld or withdrawn.",
+    what: "Stopped because consent was refused or withdrawn.",
   },
 ] as const;
 
@@ -26,17 +25,17 @@ export const GUARDS = [
   {
     key: "released_without_granted_consent",
     label: "No consent",
-    what: "Released without contact permission granted earlier in the record.",
+    what: "Cleared to send without permission to contact on file.",
   },
   {
     key: "released_after_opt_out_on_file",
     label: "After opt-out",
-    what: "Released after the patient's opt-out was already recorded. This is the violation.",
+    what: "Cleared to send after the patient had already opted out. This is the violation.",
   },
   {
     key: "released_before_opt_out_recorded",
     label: "Before opt-out",
-    what: "Released before an opt-out the patient recorded later.",
+    what: "Cleared to send before the patient opted out later.",
   },
 ] as const;
 
@@ -52,38 +51,31 @@ export function ConsentLifecycle({ timing }: { timing: Record<string, number> })
       <h2 id="consent-h" className="m-0 text-section font-medium">
         Consent: held, released, cancelled
       </h2>
-      <p className="m-0 mt-1 text-small text-muted">Simulated message intents, not patients. No message was sent.</p>
+      <p className="m-0 mt-1 text-small text-muted">Simulated planned messages, not patients. No message was sent.</p>
 
       <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-5 lg:grid-cols-2">
         <div className="min-w-0">
           <CountBars
-            caption="Message intents by consent outcome. The counts overlap: held then released is in both."
-            tableHead={["Outcome", "Message intents"]}
+            caption="Planned messages by consent outcome. A message held and then released counts in both."
+            tableHead={["Outcome", "Planned messages"]}
             rows={LIFECYCLE.map((s) => ({ label: s.label, what: s.what, count: timing[s.key] ?? 0, testId: `consent-${s.key}` }))}
           />
         </div>
         <div className="min-w-0">
-          <h3 className="m-0 text-body font-medium">Safety counters, read against the counts</h3>
+          <h3 className="m-0 text-body font-medium">Consent rules broken</h3>
           <div className="mt-2">
             <CountBars
-              caption="Released message intents that broke a consent rule, out of all released"
-              tableHead={["Counter", "Released intents"]}
+              caption="Released messages that broke a consent rule, out of all released"
+              tableHead={["Rule", "Released messages"]}
               checked
               rows={GUARDS.map((g) => ({ label: g.label, what: g.what, count: timing[g.key] ?? 0, of: released, testId: `consent-${g.key}` }))}
             />
           </div>
           <p data-testid="consent-opted_out_loops" className="m-0 mt-2 text-small text-muted">
-            {fmt(timing.opted_out_loops)} loops had an opt-out on file (this counts loops, not message intents).
+            {fmt(timing.opted_out_loops)} cases had an opt-out on file (this counts cases, not messages).
           </p>
         </div>
       </div>
-      <TechnicalDetail label="Technical detail: dashboard field names">
-        {Object.entries(timing).map(([k, v]) => (
-          <div key={k}>
-            {k} = {v}
-          </div>
-        ))}
-      </TechnicalDetail>
     </section>
   );
 }

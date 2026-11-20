@@ -315,7 +315,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   const due = isActionable(recall) ? recall : null;
   const words = due ? obligationWords(due) : { ...statusWords(c) };
   if (c.api_patient?.slot_selection.status === "selected") {
-    words.status = "Patient selected a simulated slot · coordinator review needed";
+    words.status = "Patient picked a preferred time (simulated) · check it";
     words.next = "Review the preferred time; no appointment is reserved";
   }
   const patientBlocked = c.api_patient?.contact_permission.status === "denied" || c.api_patient?.contact_permission.status === "opted_out";

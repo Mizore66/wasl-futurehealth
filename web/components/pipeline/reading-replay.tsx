@@ -6,7 +6,6 @@ import readerJson from "@/data/reader.json";
 import { Avatar } from "@/components/avatar/avatar";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
-import { TechnicalDetail } from "./technical";
 import { plain } from "@/lib/domain/terms";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import { PipelineHeading, type PipelineHead } from "./heading";
@@ -38,24 +37,22 @@ const REASON_WORDS: Record<string, string> = {
   missing_documentation: "the report does not document every check",
 };
 
-function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held" | "review"; pill: string; text: string; tech: string } {
+function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held" | "review"; pill: string; text: string } {
   if (disagree.length > 0) {
     const names = disagree.map((k) => FIELDS.find((f) => f.k === k)!.name.toLowerCase()).join(", ");
     return {
       kind: "review",
       pill: "Two reviewers",
       text: `The readers disagree on ${names}, so nothing closes by itself. Waiting for two reviewers.`,
-      tech: `AI ${c.ai.state} · ${c.ai.reason} · rules ${c.rules.state} · ${c.rules.reason}`,
     };
   }
   if (c.ai.state === "closed") {
-    return { kind: "pass", pill: "Passed", text: "Both readers agree on every check they both read. Closed with evidence.", tech: `${c.ai.state} · ${c.ai.reason} · per-field agreement` };
+    return { kind: "pass", pill: "Passed", text: "Both readers agree on every check they both read. Closed with evidence." };
   }
   return {
     kind: "held",
     pill: "Held",
     text: `Both readers agree: ${REASON_WORDS[c.ai.reason] ?? plain(c.ai.reason).toLowerCase()}.`,
-    tech: `${c.ai.state} · ${c.ai.reason}`,
   };
 }
 
@@ -76,10 +73,10 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
   const gateMark: Mark = v.gated ? (result.kind === "pass" ? "done" : "held") : v.agreed ? "working" : "queued";
   const stages: { label: string; mark: Mark; detail: string }[] = [
     { label: "Received", mark: "done", detail: `report ${c.uid}` },
-    { label: "Rules reader", mark: stageState(v.rulesDone, f >= 1), detail: "DoH checklist" },
+    { label: "Checklist reader", mark: stageState(v.rulesDone, f >= 1), detail: "DoH checklist" },
     { label: "AI reader", mark: stageState(v.aiDone, f >= 1), detail: `${s1(v.elapsedMs)} s` },
     { label: "Agreement", mark: stageState(v.agreed, v.aiDone), detail: v.agreed ? `${v.compared.length - v.disagree.length} of ${v.compared.length}` : "" },
-    { label: "Safety gate", mark: gateMark, detail: v.gated ? result.pill : "" },
+    { label: "Safety check", mark: gateMark, detail: v.gated ? result.pill : "" },
   ];
   const WORD: Record<Mark, string> = { queued: "queued", working: "working", done: "done", held: "held", failed: "failed" };
 
@@ -94,7 +91,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
             onStep={play.step}
             reduceMotion={play.reduceMotion}
             position={`Report ${v.index + 1} of ${reader.cases.length} · step ${f + 1} of ${t.frames}`}
-            speed={`AI reading times are the recorded ones, played ${READER_SPEEDUP}× faster.`}
+            speed={`Real AI reading times, played ${READER_SPEEDUP}× faster.`}
           >
             <Picker
               label="Report"
@@ -105,7 +102,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
           </PlaybackControls>
         }
       >
-        <section aria-label="Engine steps" className="border-t border-line px-4 py-4 sm:px-6">
+        <section aria-label="Reading steps" className="border-t border-line px-4 py-4 sm:px-6">
           <ol className="m-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0 sm:grid-cols-3 lg:grid-cols-5">
             {stages.map((g, i) => (
               <li key={g.label} className="relative min-w-0 pt-5" data-mark={g.mark}>
@@ -152,7 +149,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
                   <span key={`${c.uid}-${i}`}>
                     {lit && (
                       <span className={cn("mr-1 text-small font-medium", disputed ? "text-warning" : "text-hue")}>
-                        {s.field}
+                        {FIELDS.find((x) => x.k === s.field)?.name ?? s.field}
                         {disputed ? " · disputed" : ""}
                       </span>
                     )}
@@ -170,8 +167,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
             </p>
           </div>
           <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
-            Excerpt of MTSamples {c.uid} (&ldquo;{c.title}&rdquo;), a real US dictation, attached to a synthetic patient. Highlights are the AI reader&apos;s own quotes. Ledger row{" "}
-            {c.sha.slice(0, 8)}.
+            Excerpt of a real US colonoscopy report (&ldquo;{c.title}&rdquo;, MTSamples), given to a simulated patient. Highlights show what the AI reader quoted.
           </p>
         </section>
 
@@ -196,11 +192,11 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
           <div className="mt-3 hidden grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-end gap-x-3 pb-2 @xl:grid">
             <span className="text-body font-medium text-ink">Check</span>
             <span className="flex flex-col">
-              <span className="text-body font-medium text-ink">Rules reader</span>
-              <span className="text-small text-muted">DoH checklist, word for word</span>
+              <span className="text-body font-medium text-ink">Checklist reader</span>
+              <span className="text-small text-muted">Follows the DoH checklist word for word</span>
             </span>
             <span className="flex min-w-0 flex-col">
-              <span className="text-body font-medium">AI reader · Gemma 3 4B</span>
+              <span className="text-body font-medium">AI reader</span>
               <span className="flex items-center gap-2 text-small text-muted">
                 <span className="h-1 w-16 flex-none rounded-sm bg-raised">
                   <span className="block h-1 rounded-sm bg-hue" style={{ width: `${Math.round((v.elapsedMs / c.ai.latencyMs) * 100)}%` }} />
@@ -225,7 +221,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
                   <span className="text-body font-medium">{fd.name}</span>
                 </span>
                 <Cell
-                  who="Rules reader"
+                  who="Checklist reader"
                   mark={stageState(v.rulesDone, f >= 1)}
                   word={v.rulesDone ? valueWord(c.rules, fd.k) : f >= 1 ? "reading" : "queued"}
                 />
@@ -233,7 +229,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
                   who="AI reader"
                   mark={stageState(v.aiDone, f >= 1)}
                   word={v.aiDone ? valueWord(c.ai, fd.k) : f >= 1 ? "reading" : "queued"}
-                  sub={v.aiDone ? (downgraded ? "downgraded by the reader's own check" : quoted ? "quote found in report" : "") : ""}
+                  sub={v.aiDone ? (downgraded ? "marked down after its own double-check" : quoted ? "quote found in report" : "") : ""}
                 />
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap @lg:col-span-2 @xl:col-span-1">
                   <span className="w-24 text-small text-muted @xl:hidden">Agreement</span>
@@ -252,7 +248,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
 
           <div role="status" className="mt-2 min-h-[104px] rounded-control border border-rule bg-limestone-100 p-4">
             <div className="flex items-center gap-3">
-              <span className="text-body font-semibold text-ink">Safety gate</span>
+              <span className="text-body font-semibold text-ink">Safety check</span>
               <span
                 data-testid="gate-pill"
                 className={cn(
@@ -265,14 +261,9 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
               </span>
             </div>
             <motion.p key={`${c.uid}-${v.gated}`} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="m-0 mt-2 text-body">
-              {v.gated ? result.text : v.agreed ? "Comparing the two readers field by field…" : "Nothing closes until both readers have answered and agree on every check."}
+              {v.gated ? result.text : v.agreed ? "Comparing the two readers check by check…" : "Nothing closes until both readers have answered and agree on every check."}
             </motion.p>
-            <TechnicalDetail>{v.gated ? result.tech : "policy · two-reader agreement per field"}</TechnicalDetail>
           </div>
-          <TechnicalDetail label="Technical detail: field names and model version">
-            <div>fields: {FIELDS.map((x) => x.key).join(", ")}</div>
-            <div>model_version {c.ai.modelVersion}</div>
-          </TechnicalDetail>
         </section>
       </div>
     </>

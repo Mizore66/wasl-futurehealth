@@ -26,21 +26,21 @@ export type DispositionActionResult = { ok: true; message: string } | { ok: fals
 
 export async function recordDisposition(input: unknown): Promise<DispositionActionResult> {
   const envelope = Envelope.safeParse(input);
-  if (!envelope.success) return { ok: false, error: "Malformed disposition request" };
+  if (!envelope.success) return { ok: false, error: "Request not recognised. Nothing was saved." };
   const raw = envelope.data.disposition;
   if (raw && typeof raw === "object" && FORBIDDEN.some((f) => f in raw)) {
-    return { ok: false, error: "The page cannot choose who acts or which hold or decline is answered; the API binds those." };
+    return { ok: false, error: "This request isn't allowed. Nothing was saved." };
   }
   const parsed = DispositionInput.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Complete every required field" };
-  if (apiMode() !== "live") return { ok: false, error: "Dispositions need the live API; fixtures cannot append events." };
+  if (apiMode() !== "live") return { ok: false, error: "Dispositions can't be saved in this demo." };
   const token = await session.reviewerToken();
   if (!token) return { ok: false, error: clinicianSignInWords(reviewAuthMode()), signIn: true };
 
   const { caseId, expectedHead } = envelope.data;
   const result = await postDispositionWithToken(caseId, parsed.data, expectedHead, token);
   if (!result.ok) {
-    if (result.status === 401) return { ok: false, error: "The API did not accept your sign-in. Sign in again.", signIn: true };
+    if (result.status === 401) return { ok: false, error: "Your sign-in has expired. Sign in again.", signIn: true };
     if (result.status === 403) return { ok: false, error: "Only a clinician or senior clinician may record a disposition. Nothing was saved." };
     if (result.status === 409 && result.conflict === "head") {
       return { ok: false, error: "The case changed since you opened it. Nothing was saved; reload and check before saving again.", stale: true };
@@ -53,7 +53,7 @@ export async function recordDisposition(input: unknown): Promise<DispositionActi
     ok: true,
     message:
       parsed.data.action === "clinician_disposition"
-        ? "Plan saved as your signed-in credential. The hold stays open until qualifying evidence arrives; nothing was booked or completed."
-        : "Informed-refusal disposition saved as your signed-in credential. No procedure was recorded and the screening record is unchanged.",
+        ? "Plan saved under your name. The hold stays until the results arrive. Nothing was booked or completed."
+        : "Informed refusal saved under your name. No procedure was recorded and the screening record is unchanged.",
   };
 }

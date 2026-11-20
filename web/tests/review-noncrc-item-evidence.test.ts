@@ -153,5 +153,5 @@ it("shows unavailable individual reader output instead of using an overall label
   expect(container.querySelector("dl")!.textContent).toContain("Reader AUnavailable");
   expect(container.querySelector("dl")!.textContent).toContain("Reader BUnavailable");
   expect(container.textContent).not.toContain("OVERALL_LABEL_NOT_READER_OUTPUT");
-  expect(container.textContent).toContain("Automated quote unavailable");
+  expect(container.textContent).toContain("No quote available");
 });

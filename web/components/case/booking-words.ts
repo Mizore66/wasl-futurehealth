@@ -18,7 +18,7 @@ export function slotUnavailableWords(
   const available = candidates.filter((s) => s.availability === "available");
   if (available.length === 0) {
     return candidates.every((s) => s.availability === "elapsed")
-      ? "Every eligible slot in this simulated catalogue is already past on the run clock, so none can be reserved. Arrange a date with the unit directly."
+      ? "Every eligible slot has already passed, so none can be booked. Arrange a date with the unit directly."
       : "No eligible slot is free: the remaining slots are past or already reserved.";
   }
   const suggested = candidates.find((s) => s.slot_id === suggestedSlotId);

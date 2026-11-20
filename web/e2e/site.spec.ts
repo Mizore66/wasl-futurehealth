@@ -677,34 +677,35 @@ test("evidence: sits under the landing story with current sourced run figures", 
   await page.goto("/#evidence");
   const ev = page.getByTestId("evidence");
   const kpi = ev.getByTestId("kpi");
-  await expect(kpi).toContainText("Simulated, n = 1,331");
+  await expect(kpi).toContainText("Simulated, 1,331 patients");
   for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
   await expect(ev).toContainText("65%");
   await expect(ev.getByTestId("outcomes").locator(":scope > li")).toHaveCount(6);
   const stalls = ev.getByTestId("stalls");
   for (const s of ["370", "241", "196", "46", "10"]) await expect(stalls).toContainText(s);
-  await expect(ev).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+  await expect(ev).not.toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
   await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,035");
   await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 217,009");
 
-  const tiers = page.getByRole("group", { name: "Closure tier" });
+  const tiers = page.getByRole("group", { name: "Certainty level" });
   const panel = page.getByTestId("tau-panel");
   const cell = (label: string) => panel.locator(`[data-cell="${label}"] [data-value]`);
-  await expect(tiers.getByRole("button", { name: "τ 0.99", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(cell("Recall, with review")).toHaveText("0.816");
-  await tiers.getByRole("button", { name: "τ 0.7", exact: true }).click();
-  await expect(cell("False closures, with review")).toHaveText("8");
+  await expect(tiers.getByRole("button", { name: "0.99", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(cell("Completed checks found, with review")).toHaveText("0.816");
+  await tiers.getByRole("button", { name: "0.7", exact: true }).click();
+  await expect(cell("Closed wrongly, with review")).toHaveText("8");
 
   const limits = page.locator("#limits");
-  await expect(limits).toContainText("κ = 1.000 on all five scored fields");
-  await expect(limits).toContainText("Not independent ground truth; small sample.");
-  await expect(page.locator("#pilot")).toContainText("A free three-month shadow pilot");
+  await expect(limits).toContainText("checked by a clinician, with full agreement after review");
+  await expect(limits).toContainText("Not an independent second labeller, and a small sample.");
+  await expect(page.locator("#pilot")).toContainText("A free three-month trial alongside your staff");
   const methods = page.getByTestId("methods");
-  for (const s of ["no outcomes on real patients claimed", "seeds 11, 23, 37, 41 and 59", "held-out noise model v2"]) await expect(methods).toContainText(s);
+  await expect(methods).toContainText("no results on real patients are claimed");
+  for (const s of ["seeds", "noise model", "corpora", "Exactly-once"]) await expect(ev).not.toContainText(s);
 
   const text = await ev.innerText();
   const frozen = (JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8")) as { frozen_revision: string }).frozen_revision;
-  // No bracketed placeholders, commit-like hex ids, or policy version printed as metadata (the demo run name embeds it on purpose).
+  // No bracketed placeholders, commit-like hex ids, or policy version printed as metadata.
   expect(text).not.toMatch(/\[[A-Za-z][A-Za-z .'’-]*\]/);
   expect(text).not.toMatch(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/i);
   expect(text).not.toContain(frozen.slice(0, 7));

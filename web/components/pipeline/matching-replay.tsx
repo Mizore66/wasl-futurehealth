@@ -8,7 +8,6 @@ import { CATEGORICAL, CHROME } from "@/components/charts/palette";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
-import { TechnicalDetail } from "./technical";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import { PipelineHeading, type PipelineHead } from "./heading";
 import type { Mark } from "./flow";
@@ -31,11 +30,10 @@ export type MatchCase = {
   p: number;
   tau: number;
   basis: string;
-  linker: string;
   fields: FieldCheck[];
   /** The real referral first, then runner-ups that are illustrative (gap G7). */
   candidates: { ar: string; meta: string; similarity: number; seed: PersonSeed }[];
-  outcome: { held: boolean; pill: string; text: string; tech: string };
+  outcome: { held: boolean; pill: string; text: string };
 };
 
 const FRAMES = 14;
@@ -71,10 +69,10 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
   const stageState = (doneAt: number, from: number): Mark => (f >= doneAt ? "done" : f >= from ? "working" : "queued");
   const stages: { label: string; mark: Mark; detail: string }[] = [
     { label: "Received", mark: "done", detail: C.report },
-    { label: "Name encoded", mark: stageState(2, 1), detail: "Arabic ↔ Latin encoder" },
-    { label: "Nearest names", mark: stageState(4, 2), detail: `${count} referrals` },
-    { label: "Scored", mark: stageState(SCORED, 4), detail: `${C.candidates.length} candidates` },
-    { label: "Calibrated", mark: stageState(CALIBRATED, SCORED), detail: `p ${C.p.toFixed(3)}` },
+    { label: "Name read", mark: stageState(2, 1), detail: "Arabic or English spelling" },
+    { label: "Similar names", mark: stageState(4, 2), detail: `${count} referrals` },
+    { label: "Compared", mark: stageState(SCORED, 4), detail: `${C.candidates.length} possible matches` },
+    { label: "Score", mark: stageState(CALIBRATED, SCORED), detail: C.p.toFixed(3) },
     { label: "Decision", mark: decided ? (C.outcome.held ? "held" : "done") : f >= CALIBRATED ? "working" : "queued", detail: decided ? C.outcome.pill : "" },
   ];
   const WORD: Record<Mark, string> = { queued: "queued", working: "working", done: "done", held: "held", failed: "failed" };
@@ -93,7 +91,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             onStep={play.step}
             reduceMotion={play.reduceMotion}
             position={`Report ${ci + 1} of ${cases.length} · step ${f + 1} of ${FRAMES}`}
-            speed="Slowed down to watch: the linker decides in well under a second."
+            speed="Slowed down so you can follow it. The real match takes under a second."
           >
             <Picker
               label="Case"
@@ -104,7 +102,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
           </PlaybackControls>
         }
       >
-        <section aria-label="Engine steps" className="border-t border-line px-4 py-4 sm:px-6">
+        <section aria-label="Matching steps" className="border-t border-line px-4 py-4 sm:px-6">
           <ol className="m-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0 sm:grid-cols-3 lg:grid-cols-6">
             {stages.map((g, i) => (
               <li key={g.label} className="relative min-w-0 pt-5" data-mark={g.mark}>
@@ -127,11 +125,11 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
         <div className="flex min-w-0 max-w-[400px] flex-[1_1_340px] flex-col gap-3">
           <section aria-labelledby="search-h" className="rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
             <h2 id="search-h" className="m-0 text-section font-semibold text-ink">
-              Nearest referrals
+              Closest referrals
             </h2>
             <p role="status" className="m-0 mt-0.5 flex h-6 items-center gap-2 text-small text-muted">
               {f < 4 && <MarkShape mark="working" />}
-              {f < 1 ? "Report received" : f < 2 ? "Encoding the report name…" : searching ? `Searching ${count} referrals…` : `${C.candidates.length} nearest of ${count} referrals`}
+              {f < 1 ? "Report received" : f < 2 ? "Reading the name on the report…" : searching ? `Searching ${count} referrals…` : `${C.candidates.length} closest of ${count} referrals`}
             </p>
             <div className="mt-2 flex justify-between text-small text-muted">
               <span>Referral, in Arabic</span>
@@ -174,7 +172,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             </ol>
             <p className="m-0 mt-3 flex flex-wrap items-center gap-2 text-small text-ink-soft">
               <HonestyLabel kind="illustrative" />
-              Runner-up names, ages and every similarity bar. The matched pair, its probability and the line are from the run&apos;s case files.
+              The other names, their ages and all similarity bars are examples. The matched pair, its score and the line are real.
             </p>
           </section>
 
@@ -193,18 +191,17 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             {howOpen && (
               <ol className="m-0 mb-2 mt-1 pl-7 pr-2 text-small leading-[18px] text-ink-soft">
                 <li className="mb-1.5">
-                  <span className="font-medium text-ink">Name encoder.</span> Self-trained on Arabic and Latin spellings, 2.3 MB. The right referral is in its top 10 for 93.2% of names
-                  (R@10 0.932), against 0.604 for the best off-the-shelf model.
+                  <span className="font-medium text-ink">Reads the name.</span> It knows Arabic and English spellings. The right referral is in its top 10 for 93% of names; the best
+                  ready-made tool manages 60%.
                 </li>
                 <li className="mb-1.5">
-                  <span className="font-medium text-ink">Nearest-neighbour search.</span> A deterministic HNSW index over every referral returns the closest names.
+                  <span className="font-medium text-ink">Finds similar names.</span> It looks through every referral for the closest names.
                 </li>
                 <li className="mb-1.5">
-                  <span className="font-medium text-ink">Scorer.</span> A LightGBM model weighs the name with the other identifiers.
+                  <span className="font-medium text-ink">Weighs the details.</span> It checks the name against the other details on file.
                 </li>
                 <li>
-                  <span className="font-medium text-ink">Calibration.</span> Stratified calibration turns the score into a probability. A name alone is capped at 0.989, under the
-                  0.99 auto-close line, so it always needs a second identifier or two reviewers.
+                  <span className="font-medium text-ink">Gives a score.</span> A name alone never reaches the 0.99 line, so it always needs a second identifier or two reviewers.
                 </li>
               </ol>
             )}
@@ -214,7 +211,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
         <section aria-labelledby="bridge-h" className="min-w-0 flex-[999_1_560px] rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h2 id="bridge-h" className="m-0 text-section font-semibold text-ink">
-              Incoming report {C.report} against the best referral
+              Report {C.report} against the closest referral
             </h2>
             <span className="whitespace-nowrap text-small text-muted">
               case {ci + 1} of {cases.length}
@@ -256,7 +253,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             <div>
               <div className="flex items-center gap-2 py-1 text-small text-muted @xl:hidden">
                 <MarkShape mark={decided ? (C.outcome.held ? "held" : "done") : "queued"} hue={decided && !C.outcome.held} className="size-2.5" />
-                {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `linked · ${C.basis}`) : scored ? "proposed link" : "no candidate yet"}
+                {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `matched · ${C.basis}`) : scored ? "possible match" : "no match yet"}
               </div>
               <div aria-hidden className="relative hidden h-16 @xl:block">
                 <div className={cn("absolute -left-3 -right-3 top-[31px] h-0.5", scored ? "bg-ink" : "bg-control")} />
@@ -264,7 +261,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
                   <MarkShape mark={decided ? (C.outcome.held ? "held" : "done") : "queued"} hue={decided && !C.outcome.held} className="size-2.5" />
                 </div>
                 <div className="absolute inset-x-0 top-[42px] text-center text-small text-muted">
-                  {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `linked · ${C.basis}`) : scored ? "proposed link" : "no candidate yet"}
+                  {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `matched · ${C.basis}`) : scored ? "possible match" : "no match yet"}
                 </div>
               </div>
               {C.fields.map((fd) => {
@@ -305,13 +302,13 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
           </div>
 
           <div className="mt-5">
-            <span className="text-body font-semibold text-ink">Calibrated probability it is the same woman</span>
+            <span className="text-body font-semibold text-ink">How sure we are it is the same woman</span>
             <div
               role="img"
               aria-label={
                 calibrated
-                  ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; the auto-close line is ${C.tau}; at or above it a link closes by itself.`
-                  : `Link probability not calibrated yet; the auto-close line is ${C.tau}.`
+                  ? `Match score ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; at ${C.tau} or above a match closes by itself.`
+                  : `No match score yet; at ${C.tau} or above a match closes by itself.`
               }
               className="relative mt-2 h-16 tabular-nums"
             >
@@ -362,14 +359,13 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             ) : (
               <span className="inline-flex h-[22px] flex-none items-center gap-1.5 whitespace-nowrap rounded-chip bg-pill-neutral-bg px-2 text-small font-medium text-pill-neutral-ink">
                 <MarkShape mark="queued" />
-                Matching identity
+                Matching
               </span>
             )}
             <span className="min-w-0 flex-1 text-body">
-              {decided ? C.outcome.text : calibrated ? "Checking for a second identifier…" : scored ? "Calibrating the best candidate…" : "Waiting for the nearest names…"}
+              {decided ? C.outcome.text : calibrated ? "Checking for a second identifier…" : scored ? "Scoring the closest match…" : "Looking for similar names…"}
             </span>
           </div>
-          <TechnicalDetail>{decided ? C.outcome.tech : `linker ${C.linker}`}</TechnicalDetail>
         </section>
       </div>
     </>

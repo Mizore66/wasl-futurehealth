@@ -64,7 +64,7 @@ describe("N4 / clinical safety: the shell shows who the review session acts as",
   });
 
   it("names an OIDC subject with its mapped credential", () => {
-    expect(personaFromOidc("synthetic-r2", "reviewer_2")).toEqual({ actor: "synthetic-r2", role: "Second reviewer · OIDC", method: "oidc" });
+    expect(personaFromOidc("synthetic-r2", "reviewer_2")).toEqual({ actor: "synthetic-r2", role: "Second reviewer · organisation account", method: "oidc" });
   });
 
   it("shows the session on the pages that act with it and labels every other persona 'Viewing as'", () => {
@@ -97,12 +97,12 @@ describe("N9: the returned-referrals header follows credential availability", ()
   });
 
   it("never claims answers are saved when the credential is missing", () => {
-    expect(referrerAnswerLabel(true, true)).toEqual({ kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" });
+    expect(referrerAnswerLabel(true, true)).toEqual({ kind: "built", text: "Referrer answers: built, saved to the simulated case record" });
     const missing = referrerAnswerLabel(true, false);
     expect(missing.kind).toBe("designed");
     expect(missing.text).not.toMatch(/saved to/);
-    expect(missing.text).toMatch(/no referring-clinician credential/);
-    expect(referrerAnswerLabel(false, false).text).toBe("Referrer answers: need the live synthetic API");
+    expect(missing.text).toMatch(/not set up on this site/);
+    expect(referrerAnswerLabel(false, false).text).toBe("Referrer answers: not available in this demo");
   });
 });
 
@@ -155,7 +155,7 @@ describe("Live-mode pipeline matching falls back to a labelled replay", () => {
   it("states that the published snapshot is shown", () => {
     const html = renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching", note: SNAPSHOT_NOTE }));
     expect(html).toContain("Replay of a recorded run");
-    expect(html).toContain("published fixture snapshot");
+    expect(html).toContain("shows the published demo instead");
     expect(renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching" }))).not.toContain(
       "pipeline-snapshot-note",
     );
