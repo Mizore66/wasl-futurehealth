@@ -1,14 +1,20 @@
 name: CI
 
+# Pull requests run the fast lanes (about 10 minutes): unit, frontend, sharded Playwright, scans and secrets.
+# The slow lanes (race detector, the full integrated demo, the clean container build and the pool simulation) run on
+# every push to main and on demand, so main is still fully checked after each merge; see docs/CI.md.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-pull-request-${{ github.event.pull_request.number }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -75,6 +81,7 @@ jobs:
 
   go-race:
     name: Go race tests
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 80
     steps:
@@ -158,6 +165,7 @@ jobs:
 
   integration:
     name: Integrated demo and materialized Go tests
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -211,6 +219,7 @@ jobs:
 
   booking-simulation:
     name: Booking pool simulation reproducibility
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -284,9 +293,23 @@ jobs:
         run: pnpm build
 
   playwright:
-    name: Playwright all projects
+    name: Playwright ${{ matrix.part }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every project still runs: the chromium project split three ways, then landing and perf alone with one
+        # worker (they need a quiet machine; --no-deps because chromium already ran in the other shards).
+        include:
+          - part: chromium 1 of 3
+            args: --project=chromium --shard=1/3
+          - part: chromium 2 of 3
+            args: --project=chromium --shard=2/3
+          - part: chromium 3 of 3
+            args: --project=chromium --shard=3/3
+          - part: landing and perf
+            args: --project=landing --project=perf --no-deps --workers=1
     env:
       CI: "1"
       WASL_API_URL: ""
@@ -323,14 +346,19 @@ jobs:
       - name: Install Chromium and its system dependencies
         working-directory: web
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run every Playwright project
+      - name: Run this share of the Playwright projects
         working-directory: web
-        run: pnpm exec playwright test
+        env:
+          PW_ARGS: ${{ matrix.args }}
+        # PW_ARGS is a fixed matrix value above; word splitting into separate flags is intended.
+        run: |
+          # shellcheck disable=SC2086
+          pnpm exec playwright test $PW_ARGS
       - name: Upload browser diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
           path: |
             web/test-results/artifacts/
             web/test-results/screens/
@@ -411,6 +439,7 @@ jobs:
 
   trufflehog:
     name: TruffleHog pull request secrets
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -428,6 +457,7 @@ jobs:
 
   container:
     name: Clean container build and API smoke
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -580,9 +610,13 @@ jobs:
       - name: Require every lane to succeed without skips
         env:
           NEEDS_JSON: ${{ toJson(needs) }}
+          EVENT: ${{ github.event_name }}
         run: |
-          python3 scripts/ci_required.py \
-            actionlint go-test go-race python-test integration booking-simulation \
-            frontend playwright \
-            go-vulnerabilities python-vulnerabilities npm-vulnerabilities \
-            filesystem-vulnerabilities trufflehog container
+          lanes="actionlint go-test python-test frontend playwright go-vulnerabilities python-vulnerabilities npm-vulnerabilities filesystem-vulnerabilities"
+          if [ "$EVENT" = pull_request ]; then
+            lanes="$lanes trufflehog"
+          else
+            lanes="$lanes go-race integration booking-simulation container"
+          fi
+          # shellcheck disable=SC2086 # one argument per lane name
+          python3 scripts/ci_required.py $lanes
