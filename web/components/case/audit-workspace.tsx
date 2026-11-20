@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   Activity,
   ArrowDownWideNarrow,
@@ -67,6 +68,24 @@ type Props = {
 };
 
 const orderWord = (oldest: boolean) => (oldest ? "Oldest first" : "Newest first");
+
+/**
+ * Whether every month of the history fits in the space the pane takes with only the first month open. Flips the
+ * months' `open` in the DOM to measure both layouts and puts them back, all before the browser paints.
+ */
+function allMonthsFit(pane: HTMLElement, chronology: HTMLElement): boolean | undefined {
+  const months = [...chronology.querySelectorAll<HTMLDetailsElement>(":scope > details")];
+  if (months.length < 2) return undefined;
+  const was = months.map((d) => d.open);
+  months.forEach((d, i) => (d.open = i === 0));
+  const room = pane.getBoundingClientRect().height;
+  months.forEach((d) => (d.open = true));
+  const top = chronology.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+  const need = top + months.reduce((n, d) => n + d.getBoundingClientRect().height, 0) + Number.parseFloat(getComputedStyle(pane).paddingBottom || "0");
+  months.forEach((d, i) => (d.open = was[i]));
+  // A hidden pane (the phone's other tab) has no room to measure; decide when it is shown.
+  return room > 0 ? need <= room + 1 : undefined;
+}
 
 function EventRow({ e, detail, controls }: { e: WorkspaceEvent; detail?: React.ReactNode; controls?: React.ReactNode }) {
   const Icon = ICON[e.kind];
@@ -139,16 +158,49 @@ function Receipt({ d }: { d: DecisionView }) {
 export function AuditWorkspace({ head, events, details, controls, historyIntro, historyEmpty, snapshotLabel, decisions, verifyNote, auditDetails }: Props) {
   const [oldest, setOldest] = useState(false);
   const groups = groupByMonth(events, oldest);
+  // Server render and first paint without layout: only the newest month open. When every month fits in the room
+  // the pane already takes, all open instead, decided before paint and again on resize until the reader toggles one.
   const [open, setOpen] = useState<Set<string>>(() => new Set(groups[0] ? [groups[0].name] : []));
+  const [fits, setFits] = useState(false);
+  const touched = useRef(false);
+  const paneRef = useRef<HTMLElement>(null);
+  const chronologyRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<"history" | "verification">("history");
   const [picked, setPicked] = useState(0);
   const matched = decisions.filter((d) => d.matched).length;
 
+  const monthKey = groups.map((g) => g.name).join("|");
+  useLayoutEffect(() => {
+    const pane = paneRef.current;
+    const chronology = chronologyRef.current;
+    if (!pane || !chronology) return;
+    const names = monthKey ? monthKey.split("|") : [];
+    let last = { w: -1, h: -1 };
+    const decide = (sync: boolean) => {
+      if (touched.current) return;
+      const w = pane.getBoundingClientRect().width;
+      if (w === last.w && window.innerHeight === last.h) return;
+      last = { w, h: window.innerHeight };
+      const fit = allMonthsFit(pane, chronology);
+      if (fit === undefined) return;
+      const apply = () => {
+        setFits(fit);
+        setOpen((s) => (fit ? new Set(names) : s.size === names.length && names.length > 1 ? new Set(names.slice(0, 1)) : s));
+      };
+      if (sync) flushSync(apply);
+      else apply();
+    };
+    decide(false);
+    const ro = new ResizeObserver(() => decide(true));
+    ro.observe(pane);
+    return () => ro.disconnect();
+  }, [monthKey]);
+
   function toggleOrder() {
     const next = !oldest;
     setOldest(next);
-    const first = groupByMonth(events, next)[0];
-    setOpen(new Set(first ? [first.name] : []));
+    const shown = groupByMonth(events, next);
+    setOpen(new Set(fits && !touched.current ? shown.map((g) => g.name) : shown[0] ? [shown[0].name] : []));
   }
 
   const paneHead = "flex min-h-[clamp(58px,8vh,90px)] items-center justify-between gap-2 border-b border-line max-md:min-h-0 max-md:border-0";
@@ -174,6 +226,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
         />
 
         <section
+          ref={paneRef}
           aria-labelledby="au-history-h"
           className={cn("flex min-w-0 flex-col px-[clamp(15px,2.1vw,36px)] pb-3.5 max-md:flex-1", view !== "history" && "max-md:hidden")}
         >
@@ -196,7 +249,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
             )}
           </header>
           {historyIntro}
-          <div id="audit-chronology" className="flex flex-1 flex-col">
+          <div id="audit-chronology" ref={chronologyRef} className="flex flex-1 flex-col" data-all-fit={fits || undefined}>
             {groups.length === 0 ? (
               <p className="m-0 mb-3.5 mt-2 text-[13px] text-muted">{historyEmpty}</p>
             ) : (
@@ -209,6 +262,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
                     onToggle={(ev) => {
                       const now = (ev.currentTarget as HTMLDetailsElement).open;
                       if (now === isOpen) return;
+                      touched.current = true;
                       setOpen((s) => {
                         const n = new Set(s);
                         if (now) n.add(g.name);
