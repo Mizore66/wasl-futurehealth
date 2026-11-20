@@ -351,7 +351,9 @@ jobs:
         env:
           PW_ARGS: ${{ matrix.args }}
         # PW_ARGS is a fixed matrix value above; word splitting into separate flags is intended.
-        run: pnpm exec playwright test $PW_ARGS
+        run: |
+          # shellcheck disable=SC2086
+          pnpm exec playwright test $PW_ARGS
       - name: Upload browser diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -258,7 +258,7 @@ class WorkflowTests(unittest.TestCase):
     def test_playwright_installs_browser_and_preserves_diagnostics(self):
         commands = self.runs("playwright")
         self.assertIn("playwright install --with-deps chromium", commands)
-        self.assertIn("pnpm exec playwright test $PW_ARGS\n", commands)
+        self.assertIn("pnpm exec playwright test $PW_ARGS", commands)
         uploads = self.steps_using("actions/upload-artifact")
         self.assertTrue(any(step.get("if") == "failure()" for step in uploads))
 
