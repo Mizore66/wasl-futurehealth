@@ -12,8 +12,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** "30.7% (408 of 1,331)". */
 const onTimeText = (o: { share: number; onTime: number; eligible: number }) => `${pct(o.share)} (${n(o.onTime)} of ${n(o.eligible)})`;
 
-/** Each window's own figure, when the deadline depends on the referral: "14 days 7.5% (4 of 53), 28 days …". */
-const windowsText = (o: OnTime) => o.windows.map((w) => `${n(w.days)} days ${onTimeText(w)}`).join(", ");
+/** Each window's own figure, when the deadline depends on the referral: "14 days: 7.5% (4 of 53); 28 days: …". */
+const windowsText = (o: OnTime) => o.windows.map((w) => `${n(w.days)} days: ${onTimeText(w)}`).join("; ");
 
 /** Below this many referrals past their deadline, the on-time dot is hollow and its count is printed beside it. */
 export const SMALL_ON_TIME = 20;
@@ -96,7 +96,7 @@ export function ProgrammeChart({ rows, onTimeMeasured }: { rows: ProgrammeRow[];
                       <>
                         {" "}
                         {cap(r.onTime.step)} {r.onTime.within} for {pct(r.onTime.share)} of referrals past their deadline ({n(r.onTime.onTime)} of{" "}
-                        {n(r.onTime.eligible)}){r.onTime.windows.length > 1 && <>. By window, {windowsText(r.onTime)}</>}.
+                        {n(r.onTime.eligible)}){r.onTime.windows.length > 1 && <>; by window, {windowsText(r.onTime)}</>}.
                       </>
                     )}{" "}
                     Opens the patient list.
@@ -110,7 +110,7 @@ export function ProgrammeChart({ rows, onTimeMeasured }: { rows: ProgrammeRow[];
                 <span
                   data-testid={`status-${r.key}`}
                   className="mt-1.5 flex h-2.5 min-w-0 gap-0.5 sm:mt-0"
-                  title={`${n(r.closed)} finished, ${n(r.overdue)} overdue${r.open !== null ? `, ${n(r.open)} still open` : ""}`}
+                  title={`${n(r.closed)} finished · ${n(r.overdue)} overdue${r.open !== null ? ` · ${n(r.open)} still open` : ""}`}
                 >
                   {segs.map((s) => (
                     <span key={s.key} className="block h-full rounded-[4px]" style={{ width: `${(s.count / total) * 100}%`, minWidth: 3, backgroundColor: FILLS[s.key] }} />
