@@ -85,6 +85,10 @@ for (const name of NAMES) {
       await expect(page.getByRole("region", { name: /Why it (closed|is still open)/ })).toBeVisible();
       await expect(page.getByRole("region", { name: "Consent and messages" })).toBeVisible();
       await expect(page.getByRole("list", { name: "Timeline" }).getByRole("listitem")).toHaveCount(detail.timeline.length);
+      // Preferred language from Patient.communication; the fixture snapshots predate it, so they say "Not recorded".
+      await expect(page.getByTestId("preferred-language")).toContainText(
+        detail.case.language === "ar" ? "Arabic" : detail.case.language === "en" ? "English" : detail.case.language ?? "Not recorded",
+      );
       // The Evidence File's Audit trail clock, beside Activity (the sidebar has its own Audit trail link).
       await expect(page.getByRole("main").getByRole("link", { name: "Audit trail", exact: true })).toHaveAttribute("href", href(name, "/audit"));
       await shot(page, `detail-${name}-1440`);
@@ -102,6 +106,10 @@ for (const name of NAMES) {
       const verify = page.getByRole("region", { name: "Verification" });
       await expect(verify.getByTestId("signature-score")).toContainText(`${matching} / ${audit.decision_signatures.length}`);
       await expect(verify.getByRole("radio")).toHaveCount(audit.decision_signatures.length);
+      // A signature whose decision id the case lists is named from that decision, not "Decision N".
+      const listed = new Set(detail.decisions.map((d: { decision_id: string }) => d.decision_id));
+      const unnamed = audit.decision_signatures.filter((s: { decision_id?: string }) => !s.decision_id || !listed.has(s.decision_id)).length;
+      await expect(verify.getByRole("radio", { name: /^Decision \d+\b/ })).toHaveCount(unnamed);
       const receipt = verify.getByTestId("decision-receipt");
       await expect(receipt).toContainText(matching === audit.decision_signatures.length ? "Signature matched" : /Signature (matched|mismatch)/);
       await receipt.getByText("Signature details").click();

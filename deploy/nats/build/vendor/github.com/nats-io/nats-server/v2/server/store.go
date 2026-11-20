@@ -94,13 +94,14 @@ type StreamStore interface {
 	StoreMsg(subject string, hdr, msg []byte, ttl int64) (uint64, int64, error)
 	StoreRawMsg(subject string, hdr, msg []byte, seq uint64, ts int64, ttl int64) error
 	SkipMsg(seq uint64) (uint64, error)
+	SkipMsgNoInterest(seq uint64) (uint64, error)
 	SkipMsgs(seq uint64, num uint64) error
 	FlushAllPending()
 	LoadMsg(seq uint64, sm *StoreMsg) (*StoreMsg, error)
 	LoadNextMsg(filter string, wc bool, start uint64, smp *StoreMsg) (sm *StoreMsg, skip uint64, err error)
 	LoadNextMsgMulti(sl *gsl.SimpleSublist, start uint64, smp *StoreMsg) (sm *StoreMsg, skip uint64, err error)
 	LoadLastMsg(subject string, sm *StoreMsg) (*StoreMsg, error)
-	LoadPrevMsg(start uint64, smp *StoreMsg) (sm *StoreMsg, err error)
+	LoadPrevMsg(filter string, wc bool, start uint64, smp *StoreMsg) (sm *StoreMsg, skip uint64, err error)
 	LoadPrevMsgMulti(sl *gsl.SimpleSublist, start uint64, smp *StoreMsg) (sm *StoreMsg, skip uint64, err error)
 	RemoveMsg(seq uint64) (bool, error)
 	EraseMsg(seq uint64) (bool, error)
@@ -363,6 +364,7 @@ type ConsumerStore interface {
 	HasState() bool
 	UpdateDelivered(dseq, sseq, dc uint64, ts int64) error
 	UpdateAcks(dseq, sseq uint64) error
+	RemoveRedeliveredBelow(seq uint64)
 	UpdateConfig(cfg *ConsumerConfig) error
 	Update(*ConsumerState) error
 	State() (*ConsumerState, error)
@@ -741,7 +743,7 @@ func isOutOfSpaceErr(err error) bool {
 var errFirstSequenceMismatch = errors.New("first sequence mismatch")
 
 func isClusterResetErr(err error) bool {
-	return err == errLastSeqMismatch || err == ErrStoreEOF || err == errFirstSequenceMismatch || errors.Is(err, errCatchupAbortedNoLeader) || err == errCatchupTooManyRetries
+	return err == errLastSeqMismatch || err == ErrStoreEOF || err == errFirstSequenceMismatch || errors.Is(err, errCatchupAbortedNoLeader) || err == errCatchupTooManyRetries || err == errAlreadyLeader
 }
 
 // Copy all fields.

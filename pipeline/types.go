@@ -82,6 +82,7 @@ type Event struct {
 	Dob           string      `json:"dob,omitempty"`
 	Sex           string      `json:"sex,omitempty"`
 	Eid           string      `json:"eid,omitempty"`
+	Phone         string      `json:"phone,omitempty"`    // Patient.telecom (system=phone) as captured at this registration
 	Focus         string      `json:"focus,omitempty"`    // Task.focus -> ServiceRequest id | DiagnosticReport parent id
 	Relation      string      `json:"relation,omitempty"` // DiagnosticReport explicit episode relationship
 	Owner         string      `json:"owner,omitempty"`

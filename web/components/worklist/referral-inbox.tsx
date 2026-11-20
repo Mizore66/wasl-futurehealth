@@ -9,11 +9,12 @@ import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/page-header";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import { handoffActBy } from "@/lib/domain/handoff";
 import type { ReferralAnswer, RespondResult } from "@/app/app/referrals/actions";
-import type { ReferralCondition, ReferralReturnReason } from "@/lib/api/schema";
+import { RETURN_NOTE_MAX, type ReferralCondition, type ReferralReturnReason } from "@/lib/api/schema";
 import {
   CONDITION_LABELS,
   REASON_LABELS,
@@ -22,17 +23,21 @@ import {
   handoffWords,
   referralStatus,
   statusFilterLabel,
+  withSessionReturn,
   type Handoff,
   type Referral,
   type ReferralState,
   type StatusTone,
 } from "./referrals";
 import { SearchField } from "./search-field";
+import { removeSessionReturn, saveSessionReturn, useSessionReturns } from "./session-returns";
 import { inboxHref, readInboxUrl, shallowGo, type InboxUrl } from "./inbox-url";
 import { paginate, pageOfId, pageStatusText, type Paging } from "./paging";
 
 /* With `respond` (live API), answers are appended to the case ledger and the inbox shows the server's projection after
-   a refresh. Without it (fixtures), answers and prep grades are session state. Prep grading is always session state.
+   a refresh. Without it (fixtures), answers and prep grades are session state; a CRC return (reason and note) is also
+   kept in this browser's sessionStorage (session-returns.ts), so the GP view in this browser can show and acknowledge
+   it. Prep grading is always session state.
    The inbox state (view, search, status, page, open referral) lives in the URL (inbox-url.ts); session decisions live
    here, so they outlive every move between the hand-off and the full inbox. */
 
@@ -115,11 +120,16 @@ export function ReferralInbox({
   }
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
+  const [note, setNote] = useState("");
   const [tried, setTried] = useState(false);
   const [over, setOver] = useState<Record<string, Override>>({});
   const [packetOpen, setPacketOpen] = useState(false);
   const reduce = useReducedMotion();
-  const reasonError = `rf-reason-error-${useId().replace(/:/g, "")}`;
+  const uid = useId().replace(/:/g, "");
+  const reasonError = `rf-reason-error-${uid}`;
+  const noteHint = `rf-note-hint-${uid}`;
+  /* Fixtures mode: returns and GP acknowledgements kept in this browser. Live mode never reads them. */
+  const kept = useSessionReturns();
 
   /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
   const root = useRef<HTMLDivElement>(null);
@@ -136,7 +146,9 @@ export function ReferralInbox({
     (el?.querySelector<HTMLElement>('[data-focus="selected-row"]') ?? el?.querySelector<HTMLElement>('[data-focus="heading"]'))?.focus();
   }, [url.view]);
 
-  const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state, handoff: over[r.id]?.handoff ?? r.handoff }));
+  const all = referrals
+    .map((r) => (respond ? r : withSessionReturn(r, kept[r.id])))
+    .map((r) => ({ ...r, state: over[r.id]?.state ?? r.state, handoff: over[r.id]?.handoff ?? r.handoff }));
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
   const list = url.status ? sorted.filter((x) => referralStatus(x, referrer).key === url.status) : sorted;
   const r = url.caseId ? all.find((x) => x.id === url.caseId) : ((pinned ? all.find((x) => x.id === pinned) : undefined) ?? list[0]);
@@ -150,6 +162,7 @@ export function ReferralInbox({
     setDraftFor(shownId);
     setMode(null);
     setPicked([]);
+    setNote("");
     setTried(false);
   }
 
@@ -196,10 +209,21 @@ export function ReferralInbox({
       conds.length ? `Accepted with conditions. ${conds.map((c) => CONDITION_LABELS[c]).join("; ")}. Your unit books her now.` : "Accepted. Your unit books her now.",
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
-  const returnToGp = (x: Referral, reason: ReferralReturnReason) => {
+  const returnToGp = (x: Referral, reason: ReferralReturnReason, noteText: string) => {
     const handoff: Handoff = { status: "awaiting_referrer", actBy: handoffActBy(now, x.urgent) };
     const words = REASON_LABELS[reason].toLowerCase();
-    answer(x, { response: "return", reason }, "returned", `Returned to the ${x.clinic} GP. Reason: ${words}. Act by ${formatDay(handoff.actBy)}.`, `Returned to the GP: ${words}`, handoff);
+    const text = noteText.trim().slice(0, RETURN_NOTE_MAX);
+    if (!respond && x.kind === "crc") {
+      saveSessionReturn({ id: x.id, name: x.name, short: x.short, clinic: x.clinic, unit: x.unit, reason, ...(text && { note: text }), urgent: x.urgent, actBy: handoff.actBy });
+    }
+    answer(
+      x,
+      { response: "return", reason, ...(text && { note: text }) },
+      "returned",
+      `Returned to the ${x.clinic} GP. Reason: ${words}.${text ? " With a note to the GP." : ""} Act by ${formatDay(handoff.actBy)}.`,
+      `Returned to the GP: ${words}`,
+      handoff,
+    );
   };
   const reRefer = (x: Referral) =>
     act(
@@ -211,6 +235,7 @@ export function ReferralInbox({
       x.referrer,
     );
   const undo = (id: string) => {
+    if (!respond) removeSessionReturn(id);
     pin(id);
     setWant({ k: "heading" });
     setOver((o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== id)));
@@ -219,11 +244,13 @@ export function ReferralInbox({
     setWant({ k: "mode" });
     setMode(m);
     setPicked([]);
+    setNote("");
     setTried(false);
   };
   const cancel = (opener: string) => {
     setMode(null);
     setPicked([]);
+    setNote("");
     setTried(false);
     setWant({ k: opener });
   };
@@ -237,7 +264,7 @@ export function ReferralInbox({
     <div className="mt-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">{aside}</div>
       <p className="m-0 text-small text-muted">
-        {respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.
+        {respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only; a return and the ${referrer}'s acknowledgement are kept in this browser so the ${referrer} view here can show them. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.
       </p>
     </div>
   );
@@ -386,7 +413,7 @@ export function ReferralInbox({
             e.preventDefault();
             setTried(true);
             if (!picked[0]) return;
-            returnToGp(r, picked[0] as ReferralReturnReason);
+            returnToGp(r, picked[0] as ReferralReturnReason, note);
           }}
         >
           <fieldset className="m-0 border-0 p-0" aria-describedby={tried && !picked[0] ? reasonError : undefined} aria-invalid={tried && !picked[0] ? true : undefined}>
@@ -414,6 +441,23 @@ export function ReferralInbox({
               Choose a reason before you return it. Nothing was sent.
             </p>
           )}
+          <label className="mt-1 grid gap-1">
+            <span className="text-body font-semibold">
+              Note to the GP <span className="font-normal text-muted">(optional)</span>
+            </span>
+            <textarea
+              name="note"
+              rows={3}
+              maxLength={RETURN_NOTE_MAX}
+              value={note}
+              aria-describedby={noteHint}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full rounded-control border border-control bg-surface px-3 py-2 text-body text-ink"
+            />
+            <span id={noteHint} className="text-small text-muted">
+              What the reason does not say, such as a missing report. {RETURN_NOTE_MAX - note.length} of {RETURN_NOTE_MAX} characters left.
+            </span>
+          </label>
           <p className="m-0 text-small text-muted">
             Returning hands the case back to the {r.clinic} GP, who must act by {formatDay(handoffActBy(now, r.urgent))}. Booking stays held.
           </p>
@@ -461,6 +505,11 @@ export function ReferralInbox({
       <strong className="text-body font-semibold">{r.kind === "crc" ? "Booking held" : `Held with the ${referrer}`}</strong>
       {!outcome && <p className="m-0 text-muted">{r.answer ? `${r.answer}.` : `Returned to the ${referrer}.`}</p>}
 
+      {(r.note || r.hasNote) && (
+        <p className="m-0 max-w-prose whitespace-pre-line break-words text-start" data-testid="return-note">
+          <span className="font-medium">Note to the {referrer}:</span> {r.note ?? "could not load this case's detail; reload to try again"}
+        </p>
+      )}
       {r.acknowledged && (
         <small className="flex items-center gap-1.5 text-small text-jade-700">
           <Check aria-hidden className="size-4" /> The {referrer} acknowledged the return
@@ -481,8 +530,14 @@ export function ReferralInbox({
       <Link href={gpView} className="inline-flex min-h-11 items-center gap-1 font-medium">
         Open the {referrer} view <ChevronRight aria-hidden className="size-4" />
       </Link>
-      {!respond && r.kind === "crc" && over[r.id] && (
-        <p className="m-0 text-small text-muted">The {referrer} view needs the live synthetic API; this return stays in this session.</p>
+      {!respond && r.kind === "crc" && r.kept === "browser" && (
+        <p className="m-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-small text-muted max-md:justify-start">
+          <HonestyLabel kind="designed">Kept in this browser only</HonestyLabel>
+          <span>The {referrer} view in this browser shows this return; nothing is sent or saved.</span>
+        </p>
+      )}
+      {!respond && r.kind === "crc" && over[r.id] && r.kept !== "browser" && (
+        <p className="m-0 text-small text-muted">This browser could not keep the return, so the {referrer} view cannot show it; it stays on this page only.</p>
       )}
     </div>
   );
@@ -687,8 +742,9 @@ function Activity({ r, over, referrer }: { r: Referral; over: Override | undefin
   const entries: Entry[] = [
     { id: "ref", icon: FileText, what: "Referral sent", who: r.referrer, when: r.sent },
     ...(r.answer ? [{ id: "answer", icon: r.state === "returned" ? Undo2 : Check, what: r.answer, who: r.unit, when: r.answerWhen }] : []),
-    ...(r.acknowledged ? [{ id: "ack", icon: Check, what: `The ${referrer} acknowledged the return`, who: r.referrer, when: "Saved to the case ledger" }] : []),
-    ...(over?.saved ? [] : (over?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, icon: what.startsWith("Returned") ? Undo2 : Check, what, who, when: "This session" })),
+    ...(r.acknowledged ? [{ id: "ack", icon: Check, what: `The ${referrer} acknowledged the return`, who: r.referrer, when: r.kept === "browser" ? "Kept in this browser" : "Saved to the case ledger" }] : []),
+    // A return kept in this browser is already the answer entry above; its session log line would repeat it.
+    ...(over?.saved || r.kept === "browser" ? [] : (over?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, icon: what.startsWith("Returned") ? Undo2 : Check, what, who, when: "This session" })),
     ...(r.state === "done"
       ? []
       : [

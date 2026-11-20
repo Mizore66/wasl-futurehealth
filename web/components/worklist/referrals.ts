@@ -5,6 +5,7 @@ import { shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
+import type { SessionReturn } from "./session-returns";
 import { ownerLabel, providerLabel } from "./model";
 
 /** Where a referral sits in the endoscopy unit's inbox, derived from the case's drop-off. */
@@ -173,6 +174,11 @@ export type Referral = {
   answerWhen: string;
   /** The referrer acknowledged the returned packet through the API (it still waits on their answer). */
   acknowledged?: boolean;
+  /** The unit's note to the GP on a return, when the case detail was read; `hasNote` when the list says one exists. */
+  note?: string;
+  hasNote?: boolean;
+  /** "browser": the return and any acknowledgement are kept in this browser session only (fixtures mode). */
+  kept?: "browser";
 };
 
 const CONSENT_WORDS: Record<CaseSummary["consent"], string> = {
@@ -216,6 +222,8 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
     head: c.api_overlay?.head ?? null,
     answer: answered ? answerWords(answered) : null,
     acknowledged: !!(answered && returned?.acknowledgement),
+    ...(answered?.note ? { note: answered.note } : {}),
+    ...(answered?.has_note || answered?.note ? { hasNote: true } : {}),
     details: [
       ["Indication", "Positive FIT, colorectal screening"],
       ["Referred", formatDay(c.referral_day)],
@@ -224,6 +232,24 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
       ["Owner at the clinic", ownerLabel(c.owner)],
       ["Case", shortId(c.id)],
     ],
+  };
+}
+
+/**
+ * A CRC referral as a return kept in this browser shows it (fixtures mode): returned to the GP with the reason and note,
+ * waiting on the GP until they acknowledge it on their view in this same browser. Nothing of it is in the case ledger.
+ */
+export function withSessionReturn(r: Referral, s: SessionReturn | undefined): Referral {
+  if (!s || r.kind !== "crc" || r.state === "done") return r;
+  return {
+    ...r,
+    state: "returned",
+    handoff: { status: "awaiting_referrer", actBy: s.actBy },
+    answer: `Returned to the GP: ${REASON_LABELS[s.reason].toLowerCase()}`,
+    answerWhen: "Kept in this browser",
+    acknowledged: !!s.acknowledgedAt,
+    kept: "browser",
+    ...(s.note ? { note: s.note, hasNote: true } : { note: undefined, hasNote: false }),
   };
 }
 
@@ -313,7 +339,8 @@ export const packetReasonWords = (code: string) => PACKET_REASONS[code] ?? code;
  * The returned-referrals header label. It follows the same credential check as the save error
  * (REFERRER_TOKEN_MISSING), so the header never claims answers are saved when this server cannot send them.
  */
-export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean): { kind: "built" | "designed"; text: string } {
+export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean, browserAcknowledge = false): { kind: "built" | "designed"; text: string } {
+  if (!live && browserAcknowledge) return { kind: "designed", text: "Acknowledgement: kept in this browser only" };
   if (!live) return { kind: "designed", text: "Referrer answers: need the live synthetic API" };
   if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not available on this server (no referring-clinician credential configured)" };
   return { kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" };

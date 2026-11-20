@@ -15,7 +15,7 @@ func synthEID(payload string) string { return payload + string(luhnDigit(payload
 
 type idPerson struct{ mrn, name, dob, sex, eid string }
 
-func appendFHIRPatient(t *testing.T, f *os.File, seq uint64, prov string, p idPerson) {
+func appendFHIRPatient(t *testing.T, f *os.File, seq uint64, prov string, p idPerson, phone ...string) {
 	t.Helper()
 	ids := []interface{}{map[string]interface{}{"system": "urn:ae:" + prov + ":mrn", "value": p.mrn}}
 	if p.eid != "" {
@@ -27,6 +27,9 @@ func appendFHIRPatient(t *testing.T, f *os.File, seq uint64, prov string, p idPe
 	}
 	if p.sex != "" {
 		pt["gender"] = p.sex
+	}
+	if len(phone) > 0 && phone[0] != "" {
+		pt["telecom"] = []interface{}{map[string]interface{}{"system": "phone", "value": phone[0], "use": "mobile"}}
 	}
 	res, _ := json.Marshal(map[string]interface{}{"resourceType": "Encounter", "id": fmt.Sprintf("enc-%d", seq), "period": map[string]string{"start": "2026-01-02T00:00:00Z"}, "contained": []interface{}{pt}})
 	m := LogMsg{Seq: seq, Subject: "fhir." + prov + ".res", Hdr: map[string]string{"Wsi-Arr": "3"}, Data: res}

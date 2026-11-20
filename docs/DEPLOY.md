@@ -25,7 +25,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.4 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.12 rebuilt with Go 1.27.4 and patched modules on `nats:2.12.12-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -61,7 +61,7 @@ This builds both the Wasl image (`wasl-offline-clean:local`) and the NATS image 
 Requirements and limits:
 
 - **BuildKit is required on Docker** (`--mount=type=bind,from=...` in both Dockerfiles). Podman/Buildah supports it natively.
-- **Base images must already be loaded**: `golang:1.27.4-bookworm`, `python:3.12-alpine` and `nats:2.12.6-alpine`. The runner refuses to pull and exits if one is missing. Their Alpine releases must match the bundles (Wasl 3.24.*, NATS 3.22.*) or the build fails closed.
+- **Base images must already be loaded**: `golang:1.27.4-bookworm`, `python:3.12-alpine` and `nats:2.12.12-alpine`. The runner refuses to pull and exits if one is missing. Their Alpine releases must match the bundles (Wasl 3.24.*, NATS 3.22.*) or the build fails closed.
 - **Clean vs seeded**: the clean build has no layer cache and no runtime seed. The older `scripts/offline_build.sh` path above reuses an online-built runtime image (`OFFLINE_RUNTIME=1`) and is faster but weaker; it is not the clean-build proof.
 - **Not an empty-host claim**: base-image archives are out of scope, so a host with no images cannot do this.
 - **Bundle maintenance**: bundles are pinned to their generation date and to linux/amd64 and linux/arm64. Regenerate them online with the generation scripts, review the SHA-256 manifests, and regenerate for security updates or a new architecture; stale bundles are not updated by the offline build.

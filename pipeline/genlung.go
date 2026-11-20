@@ -141,6 +141,7 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 		x.eid = string(bs)
 	}
 	adv.register(x, p) // -wrongeid (genadv.go), own hashed stream
+	x.phone = drawPhone(g.seed, p, x.pk)
 	g.regs[k] = x
 	g.tr.PKQid[x.pk] = p.Qid
 	g.tr.PKCc[x.pk] = p.Cc
@@ -156,6 +157,9 @@ func lungPatient(x *reg, prov string) map[string]interface{} {
 		"name": []interface{}{map[string]interface{}{"text": x.name}}, "gender": map[string]string{"M": "male", "F": "female"}[x.sex]}
 	if x.dob != "" {
 		pt["birthDate"] = x.dob
+	}
+	if tc := patientTelecom(x.phone); tc != nil {
+		pt["telecom"] = tc
 	}
 	return pt
 }

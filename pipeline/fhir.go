@@ -443,6 +443,7 @@ func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signo
 			e.Name = gs(ns[0].(map[string]interface{}), "text")
 		}
 		e.Dob = gs(pt, "birthDate")
+		e.Phone = patientPhone(pt)
 		if cm, ok := pt["communication"].([]interface{}); ok && len(cm) > 0 {
 			if lg, ok := cm[0].(map[string]interface{})["language"].(map[string]interface{}); ok {
 				if cd, ok := lg["coding"].([]interface{}); ok && len(cd) > 0 {
@@ -483,6 +484,27 @@ func crcReportReference(provider, reference string) string {
 	for _, p := range Providers {
 		if p.ID == parts[0] {
 			return strings.Join(parts, "/")
+		}
+	}
+	return ""
+}
+
+// patientPhone returns the first Patient.telecom value whose system is phone (or unset), as recorded. Comparison and
+// masking normalise it later (identity_review.go); the raw value never leaves identity review unmasked.
+func patientPhone(pt map[string]interface{}) string {
+	tc, ok := pt["telecom"].([]interface{})
+	if !ok {
+		return ""
+	}
+	for _, x := range tc {
+		cp, ok := x.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if sys := gs(cp, "system"); sys == "" || sys == "phone" {
+			if v := strings.TrimSpace(gs(cp, "value")); v != "" {
+				return v
+			}
 		}
 	}
 	return ""

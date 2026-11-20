@@ -188,7 +188,7 @@ class CleanRunnerContractTests(unittest.TestCase):
         pull = self.ci.index("Preload base images into the Docker image store")
         run = self.ci.index("DOCKER_BUILDKIT=1 WASL_CONTAINER_ENGINE=docker scripts/offline_build_clean.sh")
         self.assertLess(pull, run)
-        for image in ("golang:1.27.4-bookworm", "python:3.12-alpine", "nats:2.12.6-alpine"):
+        for image in ("golang:1.27.4-bookworm", "python:3.12-alpine", "nats:2.12.12-alpine"):
             self.assertIn("docker pull " + image, self.ci[pull:run])
 
     def test_dockerfiles_do_not_resolve_a_syntax_frontend(self):

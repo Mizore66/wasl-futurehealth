@@ -161,6 +161,19 @@ function identifierCell(field: string, v: { state: string; value: string }): str
   return `${v.value} (${v.state})`.trim();
 }
 
+type ComparedIdentity = Extract<NonNullable<CaseDetail["identity_review"]>[number], { available: true }>;
+
+/**
+ * The phone row, only when at least one record has a number. Values are masked by the server (last three digits) and
+ * the difference marking follows the server's verdict; runs served before phone was materialized have no row.
+ */
+function phoneRows(compared: ComparedIdentity): IdentityRow[] {
+  const [a, b] = [compared.records[0].phone, compared.records[1].phone];
+  if (a?.state !== "present" && b?.state !== "present") return [];
+  const cell = (v: typeof a) => (v ? identifierCell("phone", v) : "not recorded");
+  return [{ field: "Phone", referral: cell(a), report: cell(b), verdict: compared.comparison.find((x) => x.field === "phone")?.verdict ?? "unavailable" }];
+}
+
 const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", wasl: "name and details", human: "a person", below_tau: "below the line" };
 
 /** Reader fields arrive as `caecum/prep/tissue/histology`, e.g. `yes/not_stated/no/no`. */
@@ -365,6 +378,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
           report: identifierCell(key, compared.records[1][key]),
           verdict: compared.comparison.find((x) => x.field === key)?.verdict ?? "unavailable",
         })),
+        ...phoneRows(compared),
         recordRow,
       ]
     : [{ field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "unavailable" }, recordRow];

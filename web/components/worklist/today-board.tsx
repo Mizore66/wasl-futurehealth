@@ -22,6 +22,8 @@ import { ElsewhereForm } from "./elsewhere-form";
 import { BookingControls } from "@/components/case/booking-controls";
 import type { BookingProjection } from "@/app/app/patients/[id]/booking-actions";
 import { CONSENT_WORDS, contactWords, taskSentence, taskTitle } from "./today-task";
+import { eventDay, heldOf, RecordsPanel, useTodayRecords, type RecordsRead } from "./today-file";
+import { TodayRecords } from "./today-records";
 import { recordAction } from "@/app/app/today/actions";
 import { ApiOverlay, Booking, CasePatient, CaseSummary, RETRIEVAL_OUTCOMES, type CaseAction } from "@/lib/api/schema";
 import { z } from "zod";
@@ -55,8 +57,10 @@ type State = {
   collapsed: boolean;
   /** The case-details disclosure (person-card icon). */
   facts: boolean;
-  /** Phone only: the Activity panel under the inline case is open. */
+  /** Phone only: the Activity and Records panel under the inline case is open. */
   hist: boolean;
+  /** The supporting-information tab under the open case. */
+  file: "activity" | "records";
   /** The activity event whose note is open. */
   note: string | null;
   sel: string | null;
@@ -82,6 +86,8 @@ const LedgerResponse = z.object({
   entries: z.array(z.object({ what: z.string(), when: z.string(), who: z.string(), hash: z.string().optional() })),
   patient: CasePatient.optional(),
   bookingPanel: z.object({ booking: Booking, overlay: ApiOverlay, case: CaseSummary }).nullable().optional(),
+  /** The case's source records and events (optional: an older web server's ledger read has none). */
+  records: TodayRecords.optional(),
 });
 type LedgerSnapshot = z.infer<typeof LedgerResponse>;
 type LedgerRead = LedgerSnapshot | { error: string };
@@ -183,7 +189,7 @@ export function TodayBoard({
   const fromUrl = params?.get("queue");
   /* The sidebar's queue links and this board's own moves both change `?queue=`; the URL is the one source. */
   const urlTab: View = isTodayQueue(fromUrl) ? fromUrl : queue;
-  const [s, setS] = useState<State>({ tab: urlTab, seen: urlTab, page: 1, collapsed: false, facts: false, hist: false, note: null, sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
+  const [s, setS] = useState<State>({ tab: urlTab, seen: urlTab, page: 1, collapsed: false, facts: false, hist: false, file: "activity", note: null, sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const heldWrite = useHeldWrite<Pending>();
@@ -272,6 +278,8 @@ export function TodayBoard({
   const p = held ?? paging.rows.find((x) => x.id === s.sel) ?? paging.rows[0];
   if (s.page !== paging.page) setS((prev) => (prev.page === paging.page ? prev : { ...prev, page: paging.page }));
   const fresh = { calling: null, stage: null, last: null };
+  /* Fixtures mode: the open case's source records and events, read for the selected case only. Live, the ledger read carries them. */
+  const { read: fixtureRecords, retry: retryFixtureRecords } = useTodayRecords(live ? undefined : p?.id);
   const goPage = (to: number, via: PagerControl) => {
     const target = paginate(list, to);
     const focus = pagerFocusAfter(via, target);
@@ -374,6 +382,21 @@ export function TodayBoard({
     });
   };
   const ledgerError = ledger && !isLedger(ledger) ? ledger.error : null;
+  /* Live, the selected case's one detail read (GET /app/today/ledger) also carries its records, so the detail is read once. */
+  const recordsRead: RecordsRead | undefined = !live
+    ? fixtureRecords
+    : ledger === undefined
+      ? undefined
+      : !isLedger(ledger)
+        ? { ok: false, error: ledger.error, missing: false }
+        : ledger.records
+          ? { ok: true, records: ledger.records }
+          : { ok: false, error: "the case read carried no source records", missing: true };
+  const retryRecords = () => {
+    if (!p) return;
+    if (live) retryLedger(p.id);
+    else retryFixtureRecords();
+  };
   /*
    * An untrustworthy ledger is server-wide: if the latest detail read (or, before any, a listed case) says so, no row on
    * the board is authoritative and the API refuses every write. The board says so once; the open patient's detail says why.
@@ -646,15 +669,26 @@ export function TodayBoard({
       : ledgerError
         ? "Could not read the case ledger"
         : "No contact on the case ledger yet";
-  /** Activity, earliest to latest: the referral, every logged contact, then the next step. Each event opens its note. */
+  /**
+   * Activity, earliest to latest: the referral, the case's source events (once its records are read, in the Audit
+   * page's words), every logged contact, then the next step. Each event opens its note.
+   */
   type Activity = { id: string; what: string; when: string; note: string; current?: boolean };
+  const sourceEvents = recordsRead?.ok ? recordsRead.records.events : [];
   const activity: Activity[] = p
     ? [
-        { id: "referral", what: "Referral issued", when: formatDay(p.referralDay), note: `${p.programmeName} · ${p.providerName}` },
+        // The source timeline names the referral itself when it carries it; otherwise the list summary does.
+        ...(sourceEvents.some((e) => e.kind === "referral") ? [] : [{ id: "referral", what: "Referral issued", when: formatDay(p.referralDay), note: `${p.programmeName} · ${p.providerName}` }]),
+        ...sourceEvents.map((e) => ({ id: e.key, what: e.label, when: eventDay(e.date), note: e.note })),
         ...entries.map((c, i) => ({ id: `log-${i}`, what: c.what, when: c.when, note: `Recorded by ${c.who}${c.hash ? ` · ledger ${c.hash.slice(0, 12)}` : ""}` })),
         { id: "next", what: `Next: ${p.next}`, when: entries.length ? "Now" : nothingYet, note: p.status, current: true },
       ]
     : [];
+  /* The strip shows the latest few; older events fold under "Earlier activity" so the strip stays one line. */
+  const STRIP = 4;
+  const earlier = activity.length > STRIP + 1 ? activity.slice(0, activity.length - STRIP) : [];
+  const strip = activity.slice(earlier.length);
+  const heldNow = heldOf(recordsRead);
 
   const queueLabel = TABS.find(([id]) => id === tab)![1];
   const phone = () => !window.matchMedia("(min-width: 1024px)").matches;
@@ -735,14 +769,17 @@ export function TodayBoard({
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
             </Link>
           ) : (
+            // Fixtures mode only (the live API has a record for every case): focusable, so the reason can be read.
             <button
               type="button"
-              disabled
+              aria-disabled="true"
               aria-label="Full record not available for this case"
-              title="Full record not available for this case"
-              className="inline-flex size-11 items-center justify-center rounded-control bg-transparent text-limestone-500 lg:size-9"
+              aria-describedby="today-no-record"
+              title="Full record not available: this demo has full records only for the showcase cases"
+              className="inline-flex size-11 cursor-not-allowed items-center justify-center rounded-control bg-transparent text-limestone-500 lg:size-9"
             >
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
+              <span id="today-no-record" className="sr-only">This demo has full records only for the showcase cases.</span>
             </button>
           )}
         </div>
@@ -756,6 +793,7 @@ export function TodayBoard({
           <Fact label="Texts" value={p.textsStopped ? "Stopped by patient" : p.textsAllowed ? "Allowed" : "Not allowed yet"} />
           <Fact label="Case" value={p.short} ltr />
           {p.named && <Fact label="Patient" value={p.name} />}
+          <Fact label="Preferred language" value={p.languageName} />
           <Fact label="Programme" value={`${p.programmeName} · ${p.providerName}`} />
           <Fact label="Referred" value={formatDay(p.referralDay)} />
           <Fact label="Deadline" value={p.deadline === null ? "Routine interval, no overdue clock" : `Day ${p.deadline} · ${formatDay(p.referralDay + p.deadline)}`} />
@@ -1040,6 +1078,51 @@ export function TodayBoard({
     </div>
   );
 
+  const fileTabs: ["activity" | "records", string][] = [
+    ["activity", "Activity"],
+    ["records", "Records"],
+  ];
+  /** Arrow keys move between the two tabs (and select), as a tablist does. */
+  const tabKey = (e: React.KeyboardEvent) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const next = e.key === "Home" ? "activity" : e.key === "End" ? "records" : s.file === "activity" ? "records" : "activity";
+    setS((prev) => ({ ...prev, file: next }));
+    root.current?.querySelector<HTMLElement>(`#today-tab-${next}`)?.focus();
+  };
+  /** Fixtures mode only: no detail record, so the full record and its audit trail cannot open; say why, not just grey. */
+  const noRecord = "showcase cases only in this demo";
+  const renderEvent = (ev: Activity, i: number, list: Activity[]) => {
+    const open = s.note === ev.id;
+    return (
+      <li key={ev.id} className="relative min-w-0 pb-3 pl-6 lg:pl-0 lg:pr-4 lg:pt-6">
+        {/* The rail: down the side on a phone, across the top from lg up. */}
+        <span aria-hidden className={cn("absolute bg-jade-300 max-lg:bottom-0 max-lg:left-[5px] max-lg:top-2 max-lg:w-px lg:left-0 lg:right-0 lg:top-[5px] lg:h-px", i === list.length - 1 && "max-lg:hidden lg:right-auto lg:w-2")} />
+        <span aria-hidden className={cn("absolute left-0 top-1.5 size-[11px] rounded-full border border-jade-400 lg:top-0", ev.current ? "bg-jade-800 ring-2 ring-jade-200" : "bg-jade-50")} />
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setS((prev) => ({ ...prev, note: prev.note === ev.id ? null : ev.id }))}
+          className="block w-full min-w-0 cursor-pointer bg-transparent p-0 text-left"
+        >
+          <span className="block font-medium text-ink">{ev.what}</span>
+          <span className="mt-0.5 flex min-h-6 items-center gap-1 text-small text-muted">
+            {ev.when}
+            <ChevronDown aria-hidden className={cn("size-3.5 flex-none transition-transform", open && "rotate-180")} />
+          </span>
+        </button>
+        <p hidden={!open} className="m-0 mt-1 text-small text-ink-soft">
+          {ev.note}
+        </p>
+      </li>
+    );
+  };
+  const heldChip = heldNow > 0 && (
+    <span data-testid="records-held" className="rounded-chip bg-ochre-wash px-1.5 py-px text-small font-medium text-ochre-ink">
+      {heldNow} held
+    </span>
+  );
+
   const activityPane = p && (
     <section
       key="activity"
@@ -1055,63 +1138,105 @@ export function TodayBoard({
         className="flex min-h-11 w-full cursor-pointer items-center gap-2 bg-transparent text-left text-body font-medium text-jade-800 lg:hidden"
       >
         <ChevronDown aria-hidden className={cn("size-4 transition-transform", !s.hist && "-rotate-90")} />
-        Activity
+        Activity and records
+        {heldChip}
       </button>
       <div id="today-activity" className={cn(!s.hist && "max-lg:hidden")}>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule">
-          <h3 data-focus="contacts" tabIndex={-1} className="-mb-px m-0 border-b-2 border-jade-700 py-2.5 text-body font-semibold text-jade-900 outline-none">
-            Activity
-          </h3>
-          {p.hasRecord && (
-            <Link href={`${caseHref("/app/patients", p.id)}/audit`} className="inline-flex min-h-11 items-center gap-1.5 text-small font-medium text-jade-700">
-              Audit trail
-              <ArrowRight aria-hidden className="size-4" />
+        {/* Both halves carry the rule, so it stays under the tabs when the link wraps below them on a narrow phone. */}
+        <div className="flex flex-wrap items-end justify-between [&>*]:border-b [&>*]:border-rule">
+          <div role="tablist" aria-label="Case information" className="flex grow gap-5" onKeyDown={tabKey}>
+            {fileTabs.map(([key, label]) => {
+              const on = s.file === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  id={`today-tab-${key}`}
+                  aria-selected={on}
+                  aria-controls={`today-panel-${key}`}
+                  tabIndex={on ? 0 : -1}
+                  data-focus={key === "activity" ? "contacts" : undefined}
+                  onClick={() => setS((prev) => ({ ...prev, file: key }))}
+                  className={cn(
+                    "-mb-px inline-flex min-h-11 cursor-pointer items-center gap-2 border-b-2 bg-transparent py-2.5 text-body",
+                    on ? "border-jade-700 font-semibold text-jade-900" : "border-transparent font-medium text-muted hover:text-jade-800",
+                  )}
+                >
+                  {label}
+                  {key === "records" && heldChip}
+                </button>
+              );
+            })}
+          </div>
+          {s.file === "activity" ? (
+            p.hasRecord ? (
+              <Link href={`${caseHref("/app/patients", p.id)}/audit`} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
+                Audit trail
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            ) : (
+              <span data-testid="audit-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Audit trail: {noRecord}</span>
+            )
+          ) : p.hasRecord ? (
+            <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
+              <Folder aria-hidden className="size-4" strokeWidth={1.6} />
+              Full case record
             </Link>
+          ) : (
+            <span data-testid="record-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Full case record: {noRecord}</span>
           )}
         </div>
-        {ledgerError && (
-          <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-            <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
-            <Button
-              variant="quiet"
-              size="touch"
-              onClick={() => {
-                // The button goes while the ledger is read again; focus stays in the Activity section.
-                setWant({ k: "contacts" });
-                retryLedger(p.id);
-              }}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
-        <ol aria-live="polite" className="m-0 mt-4 list-none p-0 lg:grid lg:auto-cols-[minmax(180px,1fr)] lg:grid-flow-col lg:overflow-x-auto lg:pb-1">
-          {activity.map((ev, i) => {
-            const open = s.note === ev.id;
-            return (
-              <li key={ev.id} className="relative min-w-0 pb-3 pl-6 lg:pl-0 lg:pr-4 lg:pt-6">
-                {/* The rail: down the side on a phone, across the top from lg up. */}
-                <span aria-hidden className={cn("absolute bg-jade-300 max-lg:bottom-0 max-lg:left-[5px] max-lg:top-2 max-lg:w-px lg:left-0 lg:right-0 lg:top-[5px] lg:h-px", i === activity.length - 1 && "max-lg:hidden lg:right-auto lg:w-2")} />
-                <span aria-hidden className={cn("absolute left-0 top-1.5 size-[11px] rounded-full border border-jade-400 lg:top-0", ev.current ? "bg-jade-800 ring-2 ring-jade-200" : "bg-jade-50")} />
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  onClick={() => setS((prev) => ({ ...prev, note: prev.note === ev.id ? null : ev.id }))}
-                  className="block w-full min-w-0 cursor-pointer bg-transparent p-0 text-left"
-                >
-                  <span className="block font-medium text-ink">{ev.what}</span>
-                  <span className="mt-0.5 flex min-h-6 items-center gap-1 text-small text-muted">
-                    {ev.when}
-                    <ChevronDown aria-hidden className={cn("size-3.5 flex-none transition-transform", open && "rotate-180")} />
-                  </span>
-                </button>
-                <p hidden={!open} className="m-0 mt-1 text-small text-ink-soft">
-                  {ev.note}
-                </p>
-              </li>
-            );
-          })}
-        </ol>
+        <div role="tabpanel" id="today-panel-activity" aria-labelledby="today-tab-activity" hidden={s.file !== "activity"} tabIndex={0} className="outline-offset-2">
+          {ledgerError && (
+            <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+              <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+              <Button
+                variant="quiet"
+                size="touch"
+                onClick={() => {
+                  // The button goes while the ledger is read again; focus stays in the Activity section.
+                  setWant({ k: "contacts" });
+                  retryLedger(p.id);
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+          {/* Live, a failed read is the ledger read: its message and Retry are above. */}
+          {!live && recordsRead && !recordsRead.ok && !recordsRead.missing && (
+            <div role="status" data-testid="source-events-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+              <span className="text-warning">Source events not shown: {recordsRead.error}</span>
+              <Button variant="quiet" size="touch" onClick={retryRecords}>
+                Retry
+              </Button>
+            </div>
+          )}
+          <ol aria-live="polite" className="m-0 mt-4 list-none p-0 lg:grid lg:auto-cols-[minmax(180px,1fr)] lg:grid-flow-col lg:overflow-x-auto lg:pb-1">
+            {strip.map((ev, i) => renderEvent(ev, i, strip))}
+          </ol>
+          {earlier.length > 0 && (
+            <details data-testid="earlier-activity" className="group mt-1 border-t border-rule pt-1">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-small font-semibold text-jade-700 [&::-webkit-details-marker]:hidden">
+                <ChevronDown aria-hidden className="size-4 -rotate-90 transition-transform group-open:rotate-0" />
+                Earlier activity ({earlier.length})
+              </summary>
+              <ol aria-label="Earlier activity, oldest first" className="m-0 mb-2 mt-1 grid list-none gap-2 p-0 lg:grid-cols-2 lg:gap-x-8">
+                {earlier.map((ev) => (
+                  <li key={ev.id} className="min-w-0 border-l-2 border-jade-200 pl-2.5">
+                    <span className="font-medium text-ink">{ev.what}</span>
+                    <span className="text-small text-muted"> · {ev.when}</span>
+                    <p className="m-0 text-small text-ink-soft">{ev.note}</p>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
+        <div role="tabpanel" id="today-panel-records" aria-labelledby="today-tab-records" hidden={s.file !== "records"} tabIndex={0} className="outline-offset-2">
+          {s.file === "records" && <RecordsPanel read={recordsRead} onRetry={retryRecords} />}
+        </div>
       </div>
     </section>
   );

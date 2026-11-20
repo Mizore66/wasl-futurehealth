@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -757,6 +758,23 @@ func handoffMarkerLocked(c *apiCase) map[string]interface{} {
 	return m
 }
 
+var servedLanguagePattern = regexp.MustCompile(`^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$`)
+
+// servedLanguage returns a recorded BCP-47 language tag lower-cased in its primary subtag, or "" when the value is
+// missing or not tag-shaped (free text is never served in its place).
+func servedLanguage(v string) string {
+	v = strings.TrimSpace(v)
+	if i := strings.IndexByte(v, '-'); i > 0 {
+		v = strings.ToLower(v[:i]) + v[i:]
+	} else {
+		v = strings.ToLower(v)
+	}
+	if !servedLanguagePattern.MatchString(v) {
+		return ""
+	}
+	return v
+}
+
 func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	closed := c.Closed
 	if c.last != nil && ongoingCare(c.last) {
@@ -766,6 +784,11 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
 		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false), "contact_state": s.contactSummary(c)}
+	if lang := servedLanguage(c.lang); lang != "" {
+		// Patient.communication preferred language recorded on the referral. Optional: absent when not recorded. The
+		// auditor/export projection does not list it, so audit and export payloads are unchanged.
+		m["language"] = lang
+	}
 	if c.last != nil && (c.last.CRC != nil || s.dashboard["materialization"] != nil || s.report["materialization"] != nil) {
 		// Root-only legacy retained artifacts predate this additive contract.
 		// Keep their exported payloads/digests unchanged; new materializations
@@ -1788,6 +1811,15 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 		m["no_answer_streak"] = streak
 	}
 	response, handoff := referralViewLocked(c)
+	// Like notes, the unit's note to the GP on a return is detail only; the list says one exists.
+	if !full {
+		for _, v := range []map[string]interface{}{response, handoff} {
+			if _, ok := v["note"]; ok {
+				delete(v, "note")
+				v["has_note"] = true
+			}
+		}
+	}
 	if response != nil {
 		m["referral_response"] = response
 	}

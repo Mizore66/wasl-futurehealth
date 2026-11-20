@@ -91,7 +91,8 @@ test.describe("Today: queue keyboard access", () => {
     await expect(page.getByRole("heading", { level: 2, name: /^Waiting/ })).toBeVisible();
     await expect(caseRow(page, "AHS-sr-1011")).toBeVisible();
 
-    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    // Click outside any field. Not main's corner: the sticky top bar can cover it once the page has scrolled.
+    await page.getByRole("heading", { level: 1 }).click();
     await page.keyboard.press("/");
     await focused(page, searchbox(page));
     // Typing a slash in the field types it; it does not jump anywhere.

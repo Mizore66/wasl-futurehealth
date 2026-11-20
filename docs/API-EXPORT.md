@@ -96,6 +96,10 @@ array element or chain body: a future field must be added deliberately to the re
   image-reader scores/hashes; reader `quote` is not listed. Timeline keeps
   seq/type/id/provider/status/day/category/raw_sha/source.
 - **Registration-bearing fields use one deterministic pseudonym.** Link `referral_patient`, `weakest_edge.a/b`, identity `registration` on the secured detail route, and registration `pair` arrays in review/signoff/outreach/agent records and chain bodies become `reg_` plus SHA-256 of a domain-separated registration key. Equal source registrations therefore retain operational equality joins across detail, current/audit chains and snapshots without serving the literal key. The transform is idempotent and operates only on deep-copied served projections, never canonical chains or evidence. These unkeyed pseudonyms are deterministic and guessable for known registrations; they are not semantic anonymity or de-identification.
+- **Referral answers keep codes and days only.** `api_overlay.referral_response` and `referral_handoff` keep the
+  response, reason and requested-information codes, units, days and events. The unit's free-text return `note` to the
+  GP (and its list marker `has_note`), the referrer's `supplied_info` and `reason`, and actors are not listed, so they
+  never reach the auditor's redacted audit or the export.
 - **Citations are recursed into, not dropped.** Each `agent_investigations[].citations` entry keeps only `tool` and
   `field`; arguments, values (including exact DOBs), quote, excerpt, result and future keys are dropped. Identity entries
   likewise omit registration keys and retain only provider/role.
@@ -106,6 +110,10 @@ array element or chain body: a future field must be added deliberately to the re
   remain. Server-generated operational fields such as review-item `reason`,
   hold `why`, escalation codes and image/review `hint` accept lower-case machine tokens, including single-token codes
   such as `capacity` and `unowned`. The fixed server sentence used for a not-applicable booking is explicitly allowed.
+  One field has its own, longer shape: `decision_signatures[].decision_id` in the audit accepts a server-built
+  decision id (`dec-` plus up to 240 characters of the same identifier set, for example
+  `dec-<provider>/ServiceRequest/<id>@<input event id>`), so the audit can name each signature's decision. Any other
+  value there, and long values in every other field, still drop (built; `TestExportKeepsLongDecisionIDsOnly`).
 - **Dynamic maps are bounded.** IFHAS domain-status/deadline maps accept only `bp`, `glyc`, `lipid` and `weight`.
   Audit anchors accept only the `fhir` key or partition-subject keys of the form `out.p<N>`; their hash values still
   pass the scalar shape check.

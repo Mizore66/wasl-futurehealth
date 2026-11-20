@@ -274,6 +274,7 @@ type exportAllow struct {
 	citations bool                    // an array of citation objects
 	kids      map[string]*exportAllow // keys kept when the value is an object; "*" requires keyOK
 	keyOK     *regexp.Regexp          // allowed dynamic-map keys; never used for ordinary object fields
+	pattern   *regexp.Regexp          // string leaves must match this stricter pattern instead of exportSafeValue
 }
 
 var exportLeaf = &exportAllow{leaf: true}
@@ -450,6 +451,11 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		}
 		return out, true
 	default:
+		if a.leaf && a.pattern != nil {
+			if sv, isStr := v.(string); isStr && !exportCanaryString(sv) && a.pattern.MatchString(sv) {
+				return v, true
+			}
+		}
 		if a.leaf && ((a.empty && v == "") || exportScalarOK(v, a.op)) {
 			return v, true
 		}
@@ -499,6 +505,13 @@ var exportTimelineAllow = &exportAllow{kids: exportKeys("seq", "type", "id", "pr
 var exportCitationAllow = &exportAllow{kids: exportKeys("tool", "field")}
 
 var exportSafeValue = regexp.MustCompile(`^[A-Za-z0-9_.:/|@=+#%-]{1,80}$`)
+
+// exportDecisionID admits server-built decision ids (dec-<loop>@<input event id>), which routinely exceed the 80-character
+// bound of exportSafeValue. It uses the same safe charset with a dec- prefix and a longer bound, and is applied only to
+// decision_signatures[].decision_id; no other field is widened.
+var exportDecisionID = regexp.MustCompile(`^dec-[A-Za-z0-9_.:/|@=+#%-]{1,240}$`)
+
+var exportDecisionIDLeaf = &exportAllow{leaf: true, pattern: exportDecisionID}
 
 var exportRegistrationAlias = regexp.MustCompile(`^reg_[0-9a-f]{64}$`)
 
@@ -850,7 +863,9 @@ var exportAuditAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "chain_verified", "chain_length")
 	m["chain"] = &exportAllow{chain: true}
 	m["anchors"] = &exportAllow{kids: map[string]*exportAllow{"*": exportLeaf}, keyOK: regexp.MustCompile(`^(?:fhir|out\.p[0-9]+)$`)}
-	m["decision_signatures"] = exportList(exportObject(exportKeys("decision_id", "sig", "recomputed", "policy")))
+	sigs := exportKeys("sig", "recomputed", "policy")
+	sigs["decision_id"] = exportDecisionIDLeaf
+	m["decision_signatures"] = exportList(exportObject(sigs))
 	m["history"] = exportList(exportReviewEventAllow)
 	return m
 }())

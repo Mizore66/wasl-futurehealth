@@ -893,3 +893,49 @@ func TestExportNumberCanonicalisation(t *testing.T) {
 		t.Fatal("comparison hash does not verify with UseNumber parse")
 	}
 }
+
+// Server-built decision ids (dec-<loop>@<input event>) routinely exceed the generic 80-character safe-value bound. The
+// audit projection keeps them on decision_signatures[].decision_id only, through a strict dec- pattern; prose, canaries,
+// over-long or unsafe values in that field, and long values in any other field, still drop.
+func TestExportKeepsLongDecisionIDsOnly(t *testing.T) {
+	long := "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@14157"
+	if len(long) <= 80 {
+		t.Fatalf("fixture id must exceed the generic bound, got %d", len(long))
+	}
+	longOther := "ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@14157-x"
+	rejected := []string{
+		"dec-" + strings.Repeat("a", 241),        // past the decision-id bound
+		"dec-sessile adenoma at 30cm",            // prose (space)
+		"dec-CANARY-RAW-CLINICAL-TEXT",           // canary tripwire
+		"ahs-mushrif/ServiceRequest/" + long[4:], // long, but no dec- prefix
+		"dec-a\nb",                               // control character
+	}
+	sigs := []interface{}{map[string]interface{}{"decision_id": long, "sig": "s0", "recomputed": "s0", "policy": "v7strict"}}
+	for i, v := range rejected {
+		sigs = append(sigs, map[string]interface{}{"decision_id": v, "sig": fmt.Sprintf("s%d", i+1), "policy": longOther})
+	}
+	out, keep := exportProject(map[string]interface{}{"case": long, "decision_signatures": sigs}, exportAuditAllow)
+	if !keep {
+		t.Fatal("audit projection dropped the document")
+	}
+	audit := out.(map[string]interface{})
+	if _, ok := audit["case"]; ok {
+		t.Error("long dec- value survived outside decision_signatures")
+	}
+	got := audit["decision_signatures"].([]interface{})
+	if len(got) != len(rejected)+1 {
+		t.Fatalf("signature rows changed: %d", len(got))
+	}
+	if id := got[0].(map[string]interface{})["decision_id"]; id != long {
+		t.Errorf("long decision id dropped: %#v", id)
+	}
+	for i, row := range got[1:] {
+		r := row.(map[string]interface{})
+		if id, ok := r["decision_id"]; ok {
+			t.Errorf("unsafe decision id %q survived as %#v", rejected[i], id)
+		}
+		if _, ok := r["policy"]; ok {
+			t.Errorf("long non-decision value survived in policy")
+		}
+	}
+}

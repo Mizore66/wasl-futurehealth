@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarCheck, ClipboardList, Clock, FileText, History, Send, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
+import { CalendarCheck, ClipboardList, Clock, FileText, History, Languages, Send, ShieldCheck, Stethoscope, UserRound } from "lucide-react";
 import { Avatar } from "@/components/avatar/avatar";
 import { RememberCase } from "@/components/shell/remember-case";
 import { PageHeader } from "@/components/shell/page-header";
@@ -21,6 +21,7 @@ import { OutcomeHandoffSection } from "@/components/case/outcome-handoff-review"
 import { effectiveOwner } from "@/lib/api/owner";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { formatDayYear } from "@/lib/domain/day";
+import { languageWords } from "@/lib/domain/language";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
 import { personForLoop, showsSimulatedName } from "@/lib/people";
@@ -280,6 +281,13 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   <span className="sr-only">Referred</span>
                 </dt>
                 <dd>{formatDayYear(c.referral_day)}</dd>
+              </div>
+              <div title="Preferred language" data-testid="preferred-language">
+                <dt>
+                  <Languages aria-hidden="true" />
+                  <span className="sr-only">Preferred language</span>
+                </dt>
+                <dd>{languageWords(c.language)}</dd>
               </div>
             </dl>
             <div className="rs-actions" data-testid="case-actions">
