@@ -678,6 +678,8 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 	for _, k := range []string{"crc_kpi_31d", "closure", "consent_timing", "forged", "provenance", "throughput_ev_s"} {
 		rep[k] = s.report[k]
 	}
+	// Per-programme on-time follow-up, measured by Wasl from the final decisions this server holds (api_ontime.go).
+	rep["on_time_by_programme"] = onTimeByProgramme(s.cases)
 	if cr, ok := s.report["crash_recovery"].(map[string]interface{}); ok {
 		rep["exactly_once"] = map[string]interface{}{"duplicate_outputs": cr["duplicate_outputs"], "lost_outputs": cr["lost_outputs"], "ingest_lost": cr["ingest_lost"], "ingest_duplicates": cr["ingest_duplicates"]}
 	}

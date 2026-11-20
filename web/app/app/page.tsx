@@ -63,9 +63,27 @@ export default async function ProgrammePage() {
           <SourceHeading id="prog-h" title="By programme">
             Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Still open is the programme&apos;s cases minus
             those closed and those overdue.
+            {view.onTimeMeasured && (
+              <>
+                {" "}
+                On time is measured by Wasl from each case&apos;s final decision: of the referrals whose deadline has passed by the end of the
+                run, the share whose follow-up step Wasl recorded on or before it. Each programme keeps its own rule&apos;s step and deadline
+                (colonoscopy 31 days; colposcopy 14, 28 or 56 days by priority; follow-up CT by the end of the Fleischner window; eye-clinic exam
+                for a referable grade; breast assessment outcome; follow-up LDCT or work-up; IFHAS follow-up within every abnormal result&apos;s
+                clock). There is no Emirates ID or simulated-truth comparison for these figures, and no target line: the app has no sourced
+                target for them.
+              </>
+            )}
           </SourceHeading>
+          {view.onTimeMeasured ? (
+            <div className="mt-2">
+              <HonestyLabel kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
+            </div>
+          ) : (
+            <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available for this run.</p>
+          )}
           <div className="mt-3">
-            <ProgrammeChart rows={view.programmes} />
+            <ProgrammeChart rows={view.programmes} onTimeMeasured={view.onTimeMeasured} />
           </div>
         </section>
       </div>

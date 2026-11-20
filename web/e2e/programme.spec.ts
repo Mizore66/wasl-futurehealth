@@ -242,6 +242,31 @@ test.describe("Programme charts", () => {
     await expect(page).toHaveURL(/\/app\/patients\?programme=crc$/);
   });
 
+  test("by programme: every programme's on-time share with its own window, measured by Wasl on simulated data", async ({ page }) => {
+    await page.goto("/app");
+    const card = progCard(page);
+    await expect(card.locator('[data-honesty="simulated"]')).toHaveText("On time: Wasl-measured, simulated");
+    for (const [key, text] of [
+      ["crc", "On time 30.7% · colonoscopy within 31 days · 408 of 1,331"],
+      ["cervical", "On time 31.7% · colposcopy within 14, 28 or 56 days · 144 of 454"],
+      ["lung_nodule", "On time 35.3% · follow-up CT within 91, 183, 365 or 396 days · 125 of 354"],
+      ["diabetic_retinopathy", "On time 40.4% · eye-clinic exam within 42 or 91 days · 38 of 94"],
+      ["breast", "On time 50.0% · assessment outcome within 14 days · 2 of 4"],
+      ["lung_ldct", "On time 73.7% · follow-up LDCT or work-up within 30, 121 or 213 days · 14 of 19"],
+      ["ifhas", "On time 48.9% · follow-up documented within 10 or 59 days · 116 of 237"],
+    ] as const) {
+      await expect(page.getByTestId(`on-time-${key}`)).toHaveText(text);
+    }
+    // The colorectal Target Rail keeps its target; the programme list draws none.
+    expect(await card.getByRole("figure").innerText()).not.toMatch(/target/i);
+    await card.locator("ul a").nth(1).focus();
+    await expect(card.getByRole("tooltip").filter({ hasText: "Colposcopy within 14, 28 or 56 days for 31.7% of referrals past their deadline (144 of 454); by window, 14 days: 7.5% (4 of 53);" })).toBeVisible();
+    await card.getByRole("button", { name: "Source" }).click();
+    await expect(card.getByText("On time is measured by Wasl from each case's final decision")).toBeVisible();
+    await expect(card.getByText("There is no Emirates ID or simulated-truth comparison for these figures")).toBeVisible();
+    expect(await unsourced(page)).toEqual([]);
+  });
+
   test("Show all stalls opens every sourced stall by pathway, and closes again", async ({ page }) => {
     await page.goto("/app");
     const card = stallCard(page);
@@ -300,6 +325,8 @@ test.describe("Programme charts", () => {
     await expect(table.getByRole("row", { name: /Lung nodule/ })).toContainText("905");
     await expect(table.getByRole("row", { name: /Lung nodule/ })).toContainText("441");
     await expect(table.getByRole("columnheader")).toHaveText(["Programme", "Cases", "Closed", "Overdue", "Still open"]);
+    await expect(table.getByRole("row", { name: /^On time: 30\.7%/ })).toHaveText("On time: 30.7% (408 of 1,331), colonoscopy within 31 days.");
+    await expect(table.getByRole("row", { name: /^On time: 31\.7%/ })).toContainText("31.7% (144 of 454), colposcopy within 14, 28 or 56 days. By window, 14 days: 7.5% (4 of 53); 28 days: 25.0% (42 of 168); 56 days: 42.1% (98 of 233)");
 
     await stallCard(page).getByRole("button", { name: "Show as table" }).click();
     await expect(stallCard(page).getByRole("row", { name: /No follow-up CT booked/ })).toContainText("498");

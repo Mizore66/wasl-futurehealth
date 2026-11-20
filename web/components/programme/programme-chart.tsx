@@ -1,9 +1,17 @@
 "use client";
 
 import { ChartFigure, FILL, Legend, Mark } from "./chart-kit";
-import type { ProgrammeRow } from "./model";
+import { pct, type OnTime, type ProgrammeRow } from "./model";
 
 const n = (v: number) => v.toLocaleString("en-US");
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** "30.7% (408 of 1,331)". */
+const onTimeText = (o: { share: number; onTime: number; eligible: number }) => `${pct(o.share)} (${n(o.onTime)} of ${n(o.eligible)})`;
+
+/** Each window's own figure, when the deadline depends on the referral: "14 days: 7.5% (4 of 53); 28 days: …". */
+const windowsText = (o: OnTime) => o.windows.map((w) => `${n(w.days)} days: ${onTimeText(w)}`).join("; ");
 
 function segments(r: ProgrammeRow): { key: string; fill: "solid" | "hatch" | "open"; count: number }[] {
   const all = [
@@ -15,15 +23,33 @@ function segments(r: ProgrammeRow): { key: string; fill: "solid" | "hatch" | "op
 }
 
 /** Closed, overdue and still open cases for each programme; a row opens the patient list for that programme. */
-export function ProgrammeChart({ rows }: { rows: ProgrammeRow[] }) {
+export function ProgrammeChart({ rows, onTimeMeasured }: { rows: ProgrammeRow[]; onTimeMeasured: boolean }) {
   const showOpen = rows.every((r) => r.open !== null);
   return (
     <ChartFigure
-      caption="Every case in each programme, split into closed, overdue and still open. Bars show shares of that programme's cases. Select a row to open its patients."
+      caption={
+        <>
+          Every case in each programme, split into closed, overdue and still open. Bars show shares of that programme&apos;s cases.
+          {onTimeMeasured && " Under each bar: the share of referrals past their deadline whose follow-up was on time."} Select a row to open its patients.
+        </>
+      }
       table={{
         caption: "Cases by programme",
         head: ["Programme", "Cases", "Closed", "Overdue", ...(showOpen ? ["Still open"] : [])],
-        rows: rows.map((r) => [r.name, n(r.cases), n(r.closed), n(r.overdue), ...(showOpen ? [n(r.open ?? 0)] : [])]),
+        rows: rows.map((r) => [
+          r.name,
+          n(r.cases),
+          n(r.closed),
+          n(r.overdue),
+          ...(showOpen ? [n(r.open ?? 0)] : []),
+        ]),
+        details: onTimeMeasured
+          ? rows.map((r) =>
+              r.onTime
+                ? `On time: ${onTimeText(r.onTime)}, ${r.onTime.step} ${r.onTime.within}${r.onTime.windows.length > 1 ? `. By window, ${windowsText(r.onTime)}` : ""}.`
+                : "On time: no referral's deadline has passed yet.",
+            )
+          : undefined,
       }}
     >
       <ul className="m-0 list-none p-0">
@@ -38,7 +64,15 @@ export function ProgrammeChart({ rows }: { rows: ProgrammeRow[] }) {
                 tip={
                   <>
                     <strong className="font-medium">{r.name}</strong>: {n(r.closed)} closed, {n(r.overdue)} overdue
-                    {r.open !== null && <>, {n(r.open)} still open</>}, of {n(r.cases)} cases. Opens the patient list.
+                    {r.open !== null && <>, {n(r.open)} still open</>}, of {n(r.cases)} cases.
+                    {r.onTime && (
+                      <>
+                        {" "}
+                        {cap(r.onTime.step)} {r.onTime.within} for {pct(r.onTime.share)} of referrals past their deadline ({n(r.onTime.onTime)} of{" "}
+                        {n(r.onTime.eligible)}){r.onTime.windows.length > 1 && <>; by window, {windowsText(r.onTime)}</>}.
+                      </>
+                    )}{" "}
+                    Opens the patient list.
                   </>
                 }
               >
@@ -54,6 +88,18 @@ export function ProgrammeChart({ rows }: { rows: ProgrammeRow[] }) {
                 <span className="mt-1 block text-small text-ink-soft">
                   {n(r.closed)} closed · {n(r.overdue)} overdue{r.open !== null && <> · {n(r.open)} still open</>}
                 </span>
+                {onTimeMeasured && (
+                  <span data-testid={`on-time-${r.key}`} className="mt-0.5 block text-small text-ink-soft">
+                    {r.onTime ? (
+                      <>
+                        <span className="font-medium text-ink">On time {pct(r.onTime.share)}</span> · {r.onTime.step} {r.onTime.within} ·{" "}
+                        {n(r.onTime.onTime)} of {n(r.onTime.eligible)}
+                      </>
+                    ) : (
+                      "On time: no referral's deadline has passed yet"
+                    )}
+                  </span>
+                )}
               </Mark>
             </li>
           );
