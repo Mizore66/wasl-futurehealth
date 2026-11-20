@@ -2,17 +2,27 @@
 
 import { useState } from "react";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { CATEGORICAL, CHROME } from "@/components/charts/palette";
 import { ChartFigure, Mark } from "./chart-kit";
 import { pct, points, type KpiSet } from "./model";
 
 type Source = "demo" | "heldout";
 type Arm = "eid" | "wasl" | "truth";
 
-/** One row per method. Every row is labelled on the chart, so the fills need no legend. */
-const ARMS: { arm: Arm; name: string; fill: string; emphasis?: boolean }[] = [
-  { arm: "eid", name: "Emirates ID only", fill: "bg-jade-300" },
-  { arm: "wasl", name: "Wasl", fill: "bg-jade-700", emphasis: true },
-  { arm: "truth", name: "Simulated truth", fill: "bg-jade-500" },
+/** Every method, in table order. */
+const ARMS: { arm: Arm; name: string }[] = [
+  { arm: "eid", name: "Emirates ID only" },
+  { arm: "wasl", name: "Wasl" },
+  { arm: "truth", name: "Simulated truth" },
+];
+
+/**
+ * The two measured methods get a bar each, in the shared palette's first two slots (Wasl jade, the comparator ochre).
+ * The simulated truth is the reference Wasl is judged against, so it is a thin ink tick on Wasl's track, not a third bar.
+ */
+const BARS: { arm: Exclude<Arm, "truth">; name: string; fill: string; emphasis?: boolean }[] = [
+  { arm: "eid", name: "Emirates ID only", fill: CATEGORICAL[1] },
+  { arm: "wasl", name: "Wasl", fill: CATEGORICAL[0], emphasis: true },
 ];
 
 const TICKS = [0, 25, 50, 75, 100];
@@ -43,7 +53,6 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
         captionBelow
         caption={
           <>
-            Colonoscopy within 31 days of a positive FIT, by method, on a 0 to 100% scale. Hover or focus a bar for detail.{" "}
             <span data-testid="kpi-why">
               Why the two sources differ: the demo run is one run on training-time noise; the five-seed mean averages 5 seeds on held-out noise.
             </span>
@@ -58,13 +67,13 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
         <div role="group" aria-label={label} className={`relative ${COLS} mt-8 @min-[701px]:mt-[clamp(31px,4cqi,53px)]`}>
           {target !== null && (
             <div aria-hidden className="pointer-events-none relative z-10 col-start-2 row-start-1">
-              <div data-testid="kpi-target" className="absolute inset-y-0 border-l border-dashed border-jade-500" style={{ left: `${target}%` }}>
-                <span className="absolute right-[5px] top-[-22px] whitespace-nowrap text-small font-semibold leading-[1.4] text-jade-800">{target}% target</span>
+              <div data-testid="kpi-target" className="absolute inset-y-0 border-l" style={{ left: `${target}%`, borderColor: CHROME.reference }}>
+                <span className="absolute right-[5px] top-[-22px] whitespace-nowrap text-small font-semibold leading-[1.4] text-ink">{target}% DoH target</span>
               </div>
             </div>
           )}
           <ul className="col-span-full row-start-1 m-0 grid list-none p-0">
-            {ARMS.map(({ arm, name, fill, emphasis }) => {
+            {BARS.map(({ arm, name, fill, emphasis }) => {
               const v = set.rates[arm];
               return (
                 <li key={arm} data-method={arm} className="border-b border-rule last:border-b-0">
@@ -76,16 +85,29 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
                         </strong>
                         <br />
                         {set.detail[arm]}
+                        {arm === "wasl" && (
+                          <>
+                            <br />
+                            Simulated truth: {pct(truth)} ({set.detail.truth})
+                          </>
+                        )}
                       </>
                     }
-                    className={`${COLS} min-h-14 items-center @min-[701px]:min-h-[clamp(56px,6.4vw,100px)]`}
+                    className={`${COLS} min-h-14 items-center @min-[701px]:min-h-[clamp(56px,6vw,84px)]`}
                   >
-                    <span className={`text-[12px] leading-[1.35] @min-[701px]:text-body ${emphasis ? "font-bold text-jade-800" : "font-medium text-limestone-800"}`}>{name}</span>
-                    <span aria-hidden className="relative block h-[13px] min-w-0 rounded-[3px] bg-limestone-100 @min-[701px]:h-4">
-                      <span className={`block h-full rounded-[3px] ${fill} motion-safe:transition-[width] motion-safe:duration-300`} style={{ width: `${v}%`, minWidth: 4 }} />
-                    </span>
-                    <span data-testid={arm === "truth" ? "kpi-true" : `kpi-${arm}`} className={`text-right text-[12px] font-bold tabular-nums @min-[701px]:text-body ${emphasis ? "text-jade-800" : "text-ink"}`}>
-                      {pct(v)}
+                    <span className={`text-[12px] leading-[1.35] @min-[701px]:text-body ${emphasis ? "font-semibold text-ink" : "font-medium text-ink-soft"}`}>{name}</span>
+                    <span aria-hidden className="relative flex h-[13px] min-w-0 items-center @min-[701px]:h-5">
+                      <span className="block h-full rounded-r-[4px] motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${v}%`, minWidth: 4, backgroundColor: fill }} />
+                      {arm === "wasl" && (
+                        <span data-testid="kpi-truth-tick" className="absolute -inset-y-1.5 w-0.5 -translate-x-1/2 rounded-full" style={{ left: `${truth}%`, backgroundColor: CHROME.reference }} />
+                      )}
+                      <span
+                        data-testid={`kpi-${arm}`}
+                        className="absolute whitespace-nowrap pl-2.5 text-[12px] font-semibold tabular-nums text-ink @min-[701px]:text-body"
+                        style={{ left: `${arm === "wasl" ? Math.max(v, truth) : v}%` }}
+                      >
+                        {pct(v)}
+                      </span>
                     </span>
                   </Mark>
                 </li>
@@ -98,6 +120,7 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
             {TICKS.map((t, i) => (
               <span
                 key={t}
+                data-axis
                 className={`absolute tabular-nums ${i === 0 ? "" : i === TICKS.length - 1 ? "-translate-x-full" : "-translate-x-1/2"} ${i % 2 === 1 ? "hidden @min-[701px]:inline" : ""}`}
                 style={{ left: `${t}%` }}
               >
@@ -106,6 +129,20 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
             ))}
           </div>
         </div>
+        <ul aria-hidden className="m-0 mt-4 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-small text-ink-soft">
+          {BARS.slice().reverse().map((b) => (
+            <li key={b.arm} className="flex items-center gap-1.5">
+              <span className="block size-2.5 rounded-[2px]" style={{ backgroundColor: b.fill }} />
+              {b.name}
+            </li>
+          ))}
+          <li className="flex items-center gap-1.5">
+            <span className="block h-3 w-0.5 rounded-full" style={{ backgroundColor: CHROME.reference }} />
+            <span>
+              Simulated truth <span data-testid="kpi-true" className="tabular-nums">{pct(truth)}</span>
+            </span>
+          </li>
+        </ul>
       </ChartFigure>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">

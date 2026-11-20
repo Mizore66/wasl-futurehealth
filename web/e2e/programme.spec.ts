@@ -139,7 +139,9 @@ test.describe("Programme", () => {
 
   test("Open Today and See proof go where the board says", async ({ page }) => {
     await page.goto("/app");
-    await expect(page.getByLabel("Safety")).toContainText("0 false closures in 3,035 tested.");
+    await expect(page.getByTestId("safety-figure")).toHaveText("0");
+    await expect(page.getByLabel("Safety")).toContainText("false closures");
+    await expect(page.getByLabel("Safety")).toContainText("in 3,035 tested");
     await page.getByRole("link", { name: "See proof" }).click();
     await expect(page).toHaveURL(/\/app\/results$/);
     await page.goto("/app");
@@ -230,14 +232,16 @@ test.describe("Programme charts", () => {
     await page.goto("/app");
     const rows = progCard(page).locator("ul a");
     await expect(rows).toHaveCount(7);
-    const keys = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"];
-    for (const [i, name] of ["Colorectal", "Cervical", "Lung nodule", "Diabetic retinopathy", "Breast", "Lung screening (LDCT)", "IFHAS cardiometabolic"].entries()) {
+    // Sorted by overdue share, largest first.
+    const keys = ["crc", "cervical", "lung_nodule", "ifhas", "diabetic_retinopathy", "lung_ldct", "breast"];
+    for (const [i, name] of ["Colorectal", "Cervical", "Lung nodule", "IFHAS cardiometabolic", "Diabetic retinopathy", "Lung screening (LDCT)", "Breast"].entries()) {
       await expect(rows.nth(i)).toContainText(name);
       await expect(rows.nth(i)).toHaveAttribute("href", `/app/patients?programme=${keys[i]}`);
     }
-    await expect(rows.first()).toContainText("473 closed · 869 overdue · 158 still open");
+    await expect(page.getByTestId("status-crc")).toHaveAttribute("title", "473 finished · 869 overdue · 158 still open");
+    await expect(page.getByTestId("prog-takeaway")).toHaveText("Colorectal and cervical carry the largest overdue shares; on time is under half in five of seven.");
     await rows.nth(1).focus();
-    await expect(progCard(page).getByRole("tooltip").filter({ hasText: "205 closed, 267 overdue, 128 still open, of 600 cases" })).toBeVisible();
+    await expect(progCard(page).getByRole("tooltip").filter({ hasText: "205 finished, 267 overdue, 128 still open, of 600 cases" })).toBeVisible();
     await rows.first().click();
     await expect(page).toHaveURL(/\/app\/patients\?programme=crc$/);
   });
@@ -247,13 +251,14 @@ test.describe("Programme charts", () => {
     const card = progCard(page);
     await expect(card.locator('[data-honesty="simulated"]')).toHaveText("On time: Wasl-measured, simulated");
     for (const [key, text] of [
-      ["crc", "On time 30.7% · colonoscopy within 31 days · 408 of 1,331"],
-      ["cervical", "On time 31.7% · colposcopy within 14, 28 or 56 days · 144 of 454"],
-      ["lung_nodule", "On time 35.3% · follow-up CT within 91, 183, 365 or 396 days · 125 of 354"],
-      ["diabetic_retinopathy", "On time 40.4% · eye-clinic exam within 42 or 91 days · 38 of 94"],
-      ["breast", "On time 50.0% · assessment outcome within 14 days · 2 of 4"],
-      ["lung_ldct", "On time 73.7% · follow-up LDCT or work-up within 30, 121 or 213 days · 14 of 19"],
-      ["ifhas", "On time 48.9% · follow-up documented within 10 or 59 days · 116 of 237"],
+      // The share on the dot column; a count only where fewer than 20 referrals are past their deadline (hollow dot).
+      ["crc", "30.7%"],
+      ["cervical", "31.7%"],
+      ["lung_nodule", "35.3%"],
+      ["diabetic_retinopathy", "40.4%"],
+      ["breast", "50.0%2 of 4"],
+      ["lung_ldct", "73.7%14 of 19"],
+      ["ifhas", "48.9%"],
     ] as const) {
       await expect(page.getByTestId(`on-time-${key}`)).toHaveText(text);
     }
@@ -270,7 +275,8 @@ test.describe("Programme charts", () => {
   test("Show all stalls opens every sourced stall by pathway, and closes again", async ({ page }) => {
     await page.goto("/app");
     const card = stallCard(page);
-    const button = card.getByRole("button", { name: "Show all stalls" });
+    await expect(page.getByTestId("stall-scope")).toHaveText("Colorectal and cervical: the three largest of eight stalls");
+    const button = card.getByRole("button", { name: "Show all 20 stalls, every programme" });
     await expect(button).toHaveAttribute("aria-expanded", "false");
     await button.click();
     const open = card.getByRole("button", { name: "Show only the top 3" });
@@ -286,7 +292,7 @@ test.describe("Programme charts", () => {
     expect(await unsourced(page)).toEqual([]);
     await open.click();
     await expect(card.locator("ol a")).toHaveCount(3);
-    await expect(card.getByRole("button", { name: "Show all stalls" })).toHaveAttribute("aria-expanded", "false");
+    await expect(card.getByRole("button", { name: "Show all 20 stalls, every programme" })).toHaveAttribute("aria-expanded", "false");
   });
 
   test("capacity: simulated label, summary, regions, and the measured pooling result with its caveat", async ({ page }) => {
@@ -303,6 +309,8 @@ test.describe("Programme charts", () => {
     await expect(card.getByText("Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.")).toBeVisible();
     await expect(page.getByTestId("pooling-result")).toContainText("21.5% within 31 days without cross-site booking, 41.7% with network pooling");
     await expect(card.getByRole("figure")).toHaveCount(2);
+    await expect(card.getByRole("figure").first()).toContainText("Abu Dhabi is 29 slots short while Al Ain and Al Dhafra have spare.");
+    for (const [key, gap] of [["AA", "86 spare"], ["AD", "29 short"], ["DH", "96 spare"]]) await expect(page.getByTestId(`region-gap-${key}`)).toHaveText(gap);
     await page.screenshot({ path: "test-results/screens/programme-capacity.png", fullPage: true });
   });
 
@@ -324,7 +332,7 @@ test.describe("Programme charts", () => {
     const table = progCard(page).getByRole("table");
     await expect(table.getByRole("row", { name: /Lung nodule/ })).toContainText("905");
     await expect(table.getByRole("row", { name: /Lung nodule/ })).toContainText("441");
-    await expect(table.getByRole("columnheader")).toHaveText(["Programme", "Cases", "Closed", "Overdue", "Still open"]);
+    await expect(table.getByRole("columnheader")).toHaveText(["Programme", "Cases", "Finished", "Overdue", "Still open"]);
     await expect(table.getByRole("row", { name: /^On time: 30\.7%/ })).toHaveText("On time: 30.7% (408 of 1,331), colonoscopy within 31 days.");
     await expect(table.getByRole("row", { name: /^On time: 31\.7%/ })).toContainText("31.7% (144 of 454), colposcopy within 14, 28 or 56 days. By window, 14 days: 7.5% (4 of 53); 28 days: 25.0% (42 of 168); 56 days: 42.1% (98 of 233)");
 
@@ -356,7 +364,7 @@ test.describe("Programme charts", () => {
     await page.screenshot({ path: "test-results/screens/programme-390.png", fullPage: true });
     await kpiCard(page).getByRole("radio", { name: "Five-seed held-out mean" }).click();
     await page.screenshot({ path: "test-results/screens/programme-390-mean.png", fullPage: true });
-    await stallCard(page).getByRole("button", { name: "Show all stalls" }).click();
+    await stallCard(page).getByRole("button", { name: /^Show all \d+ stalls/ }).click();
     expect(await overflow()).toBeLessThanOrEqual(0);
     for (const b of await page.locator("main figure").getByRole("button").all()) {
       expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
@@ -374,7 +382,6 @@ test.describe("Programme charts", () => {
 
 /* Issue #45: provider links into filtered Patients lists, and the queue-lever counts. */
 const providerBlock = (page: Page) => page.getByTestId("provider-links");
-const SHOTS = "/tmp/claude-0/-home-user-wasl-futurehealth/309dfc1c-29a9-5a64-83c9-6308e8ff1d9e/scratchpad/review-64";
 
 type SampleCase = { id: string; provider: string; state: string; dropoff: string };
 
@@ -390,29 +397,21 @@ function sampleCases(): SampleCase[] {
 const sampleCount = (f: Partial<SampleCase>) => sampleCases().filter((c) => (Object.keys(f) as (keyof SampleCase)[]).every((k) => c[k] === f[k])).length;
 const casesWord = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
 
-/** Opens the provider disclosure from the keyboard. */
-async function openProviders(page: Page) {
-  const summary = providerBlock(page).locator("summary");
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(providerBlock(page).locator("details")).toHaveAttribute("open", "");
-}
-
 test.describe("Programme: provider links", () => {
-  test("one collapsed line; opened, one line per provider whose links carry their number and denominator", async ({ page }) => {
+  test("one meter row per provider: evidenced-closure share, and links that carry their number and denominator", async ({ page }) => {
     await page.goto("/app");
     const block = providerBlock(page);
     await expect(block.getByRole("heading", { name: "By provider" })).toBeVisible();
     await expect(block.locator('[data-honesty="simulated"]')).toHaveText("Simulated cohort");
-    await expect(block.locator("summary")).toHaveText("Closure and largest stall for 7 providers, linked to the patient list");
-    await expect(block.getByRole("link")).toHaveCount(0);
+    await expect(block.getByTestId("provider-takeaway")).toHaveText("Closed with evidence runs from 5% to 33%");
+    // Labelled apart from the programme chart's Finished, which also counts cases that needed no follow-up.
+    await expect(block).toContainText("which also counts cases that needed no follow-up");
 
-    await openProviders(page);
     await expect(block.getByRole("listitem")).toHaveCount(7);
     const rad = block.getByTestId("provider-rad-imaging");
-    for (const shown of ["rad-imaging, 905 cases", "168 of 905 closed", "largest stall: No follow-up CT booked, 498 of 905"]) await expect(rad).toContainText(shown);
+    for (const shown of ["rad-imaging, 905 cases", "19%", "168 of 905 closed with evidence", "largest stall: No follow-up CT booked, 498 of 905"]) await expect(rad).toContainText(shown);
     await expect(rad.getByRole("link", { name: "rad-imaging, 905 cases (simulated)" })).toHaveAttribute("href", "/app/patients?provider=rad-imaging");
-    await expect(rad.getByRole("link", { name: "rad-imaging: 168 of 905 closed (simulated)" })).toHaveAttribute("href", "/app/patients?state=closed&provider=rad-imaging");
+    await expect(rad.getByRole("link", { name: "rad-imaging: 168 of 905 closed with evidence (simulated)" })).toHaveAttribute("href", "/app/patients?state=closed&provider=rad-imaging");
     await expect(rad.getByRole("link", { name: "rad-imaging: largest stall: No follow-up CT booked, 498 of 905 (simulated)" })).toHaveAttribute(
       "href",
       "/app/patients?dropoff=no_followup_ct&provider=rad-imaging",
@@ -421,13 +420,13 @@ test.describe("Programme: provider links", () => {
     // Every pattern link's accessible name holds its number out of the provider's cases, and says it is simulated.
     for (const l of await block.getByRole("link").all()) {
       const href = (await l.getAttribute("href"))!;
-      await expect(l).toHaveAccessibleName(/[?&](state|dropoff)=/.test(href) ? / \d[\d,]* of \d[\d,]*( closed)? \(simulated\)$/ : /, \d[\d,]* cases \(simulated\)$/);
+      await expect(l).toHaveAccessibleName(/[?&](state|dropoff)=/.test(href) ? / \d[\d,]* of \d[\d,]*( closed with evidence)? \(simulated\)$/ : /, \d[\d,]* cases \(simulated\)$/);
       await expect(l).not.toContainText("fewer than");
     }
 
     // Suppressed small cells: no number, no link.
     const breast = block.getByTestId("provider-bsu-screen");
-    await expect(breast).toContainText("fewer than 5 of 70 closed");
+    await expect(breast).toContainText("fewer than 5 of 70 closed with evidence");
     await expect(breast).toContainText("largest stall: each one fewer than 5 of 70");
     await expect(breast.getByRole("link")).toHaveCount(1);
     await expect(block).not.toContainText("<5 of");
@@ -435,13 +434,11 @@ test.describe("Programme: provider links", () => {
     // No origin breakdown and no unlinkable timing or escalation patterns.
     await expect(block).not.toContainText("Notified within");
     await expect(block).not.toContainText("escalation");
-    await expect(block).toContainText("Origin is not broken down here");
     expect(await unsourced(page)).toEqual([]);
   });
 
   test("by keyboard, a stall link lands on Patients filtered to that provider and stall", async ({ page }) => {
     await page.goto("/app");
-    await openProviders(page);
     const link = providerBlock(page).getByRole("link", { name: /^rad-imaging: largest stall: No follow-up CT booked, 498 of 905/ });
     await link.focus();
     await expect(link).toBeFocused();
@@ -456,8 +453,7 @@ test.describe("Programme: provider links", () => {
 
   test("by keyboard, a closure link lands on Patients filtered to that provider's closed cases", async ({ page }) => {
     await page.goto("/app");
-    await openProviders(page);
-    const link = providerBlock(page).getByRole("link", { name: "ahs-mushrif: 523 of 1,606 closed (simulated)" });
+    const link = providerBlock(page).getByRole("link", { name: "ahs-mushrif: 523 of 1,606 closed with evidence (simulated)" });
     await link.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/app\/patients\?state=closed&provider=ahs-mushrif$/);
@@ -477,35 +473,22 @@ test.describe("Programme: provider links", () => {
     await expect(levers.getByRole("link")).toHaveCount(0);
   });
 
-  for (const width of [390, 1440]) {
-    test(`at ${width}px the block stays short, opens without sideways scroll and keeps an even rhythm`, async ({ browser }) => {
+  for (const width of [320, 390, 1440]) {
+    test(`at ${width}px the provider rows fit without sideways scroll and keep touch targets`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width < 768 });
       const page = await context.newPage();
       await page.goto("/app");
       const block = providerBlock(page);
       await block.scrollIntoViewIfNeeded();
-      const closed = (await block.boundingBox())!.height;
-      expect(closed, "collapsed block height").toBeLessThan(400);
-      await block.screenshot({ path: `${SHOTS}/after-${width}-closed.png` });
-      await openProviders(page);
-      const open = (await block.boundingBox())!.height;
-      if (width >= 1024) expect(open, "opened block height at desktop width").toBeLessThan(400);
-      test.info().annotations.push({ type: "heights", description: `${width}px: closed ${closed.toFixed(0)}px, open ${open.toFixed(0)}px` });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
-      // Linked and plain items share one height, 44px on touch widths.
-      const heights = await block.locator("[data-item]").evaluateAll((els) =>
-        els.map((el) => Math.round(el.getBoundingClientRect().height)),
-      );
+      const heights = await block.locator("[data-item]").evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
       expect(heights.length).toBeGreaterThan(14);
       if (width < 768) for (const h of heights) expect(h, "touch item height").toBeGreaterThanOrEqual(44);
-      else expect(Math.max(...heights) - Math.min(...heights), "desktop items share one line height").toBeLessThanOrEqual(1);
       for (const l of await block.getByRole("link").all()) {
         const box = (await l.boundingBox())!;
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(width);
       }
-      await block.screenshot({ path: `${SHOTS}/after-${width}-open.png` });
-      await page.screenshot({ path: `${SHOTS}/after-${width}-page.png`, fullPage: true });
       await context.close();
     });
   }
@@ -517,13 +500,17 @@ test.describe("Programme: target rail", () => {
     const rail = page.getByTestId("programme-rail");
     await expect(rail.locator('[data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Synthetic run");
     await expect(rail.getByRole("heading", { level: 2, name: "Colonoscopy within 31 days" })).toBeVisible();
-    await expect(rail.getByText("90% target")).toHaveCount(1);
+    await expect(rail.getByText("90% DoH target")).toHaveCount(1);
     await expect(rail.getByTestId("kpi-target")).toHaveCount(1);
-    for (const [arm, name, value] of [["eid", "Emirates ID only", "11.3%"], ["wasl", "Wasl", "30.7%"], ["truth", "Simulated truth", "31.9%"]] as const) {
+    for (const [arm, name, value] of [["eid", "Emirates ID only", "11.3%"], ["wasl", "Wasl", "30.7%"]] as const) {
       const row = rail.locator(`li[data-method="${arm}"]`);
       await expect(row).toContainText(name);
       await expect(row).toContainText(value);
     }
+    // The simulated truth is a tick on Wasl's track, named with its value in the legend.
+    await expect(rail.getByTestId("kpi-true")).toHaveText("31.9%");
+    await expect(rail.getByTestId("kpi-truth-tick")).toHaveCount(1);
+    await expect(rail.getByTestId("kpi-takeaway")).toHaveText(" Wasl reads it almost as the truth does; Emirates ID alone undercounts.");
     // The target line sits at 90% of the track, the same scale the bars use.
     const track = (await rail.locator('li[data-method="wasl"] button > span').nth(1).boundingBox())!;
     const line = (await rail.getByTestId("kpi-target").boundingBox())!;
@@ -532,8 +519,10 @@ test.describe("Programme: target rail", () => {
     const strip = page.getByTestId("programme-workload");
     await expect(strip.getByTestId("programme-cases")).toHaveText("1,500");
     await expect(strip.getByTestId("programme-overdue")).toContainText("869");
-    await expect(strip.getByTestId("programme-open")).toContainText("Other open");
-    await expect(strip.getByTestId("programme-open")).toContainText("158");
+    await expect(strip.getByTestId("programme-open")).toHaveAttribute("title", "Still open: 158");
+    await expect(strip.getByTestId("programme-overdue")).toContainText("869 · 58%");
+    await expect(strip.getByRole("img", { name: /^1,500 colorectal cases: 869 overdue \(58%\), 158 still open \(11%\), 473 finished \(32%\)\.$/ })).toBeVisible();
+    await expect(strip).toContainText("869 of 1,500 colorectal cases are overdue");
     await expect(strip.getByTestId("programme-closed")).toContainText("473");
     await strip.getByRole("link", { name: "Open Today" }).click();
     await expect(page).toHaveURL(/\/app\/today$/);

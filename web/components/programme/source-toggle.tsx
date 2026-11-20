@@ -41,13 +41,14 @@ export function SourceHeading({
           </h2>
           {sub && <p className="m-0 mt-1 text-small text-muted">{sub}</p>}
         </div>
-        {/* Touch widths get a 44px hit area of transparent padding; the negative margin keeps the row's compact height. */}
+        {/* Touch widths get a 44px hit area of transparent padding; the negative margin keeps the row's compact height.
+            The fixed minimum width fits "Hide source", so opening the note never re-wraps the heading's takeaway line. */}
         <button
           type="button"
           aria-expanded={open}
           aria-controls={noteId}
           onClick={() => setOpen(!open)}
-          className="-my-[13px] inline-flex min-h-11 min-w-11 flex-none md:my-0 md:min-h-0 md:min-w-0 cursor-pointer items-center justify-end border-0 bg-transparent p-0 text-small text-hue hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue"
+          className="-my-[13px] inline-flex min-h-11 min-w-[5.5rem] flex-none md:my-0 md:min-h-0 cursor-pointer items-center justify-end border-0 bg-transparent p-0 text-small text-hue hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue"
         >
           {open ? "Hide source" : "Source"}
         </button>

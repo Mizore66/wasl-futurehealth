@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
+import { CATEGORICAL, CHROME } from "@/components/charts/palette";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
@@ -153,7 +154,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
                           <span className="flex-none text-body font-medium tabular-nums text-ink">{k.similarity.toFixed(2)}</span>
                         </div>
                         <div aria-hidden className="mt-0.5 h-1 rounded-sm bg-raised">
-                          <div className={cn("h-1 rounded-sm", best ? "bg-hue" : "bg-ink")} style={{ width: `${Math.round(k.similarity * 100)}%` }} />
+                          <div className="h-1 rounded-sm" style={{ width: `${Math.round(k.similarity * 100)}%`, backgroundColor: i === 0 ? CATEGORICAL[0] : CHROME.deemphasis }} />
                         </div>
                         <div className="mt-1 break-words text-small text-muted">
                           {k.meta}
@@ -304,24 +305,21 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
           </div>
 
           <div className="mt-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <span className="text-body font-semibold text-ink">Calibrated probability it is the same woman</span>
-              <span className="text-section font-semibold tabular-nums text-ink" data-testid="match-p">
-                {calibrated ? C.p.toFixed(3) : "—"}
-              </span>
-            </div>
+            <span className="text-body font-semibold text-ink">Calibrated probability it is the same woman</span>
             <div
               role="img"
               aria-label={
                 calibrated
-                  ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; the auto-close line is ${C.tau}.`
+                  ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; the auto-close line is ${C.tau}; at or above it a link closes by itself.`
                   : `Link probability not calibrated yet; the auto-close line is ${C.tau}.`
               }
-              className="relative mt-1 h-14 tabular-nums"
+              className="relative mt-2 h-16 tabular-nums"
             >
-              <div className="absolute inset-x-0 top-6 h-1 rounded-sm bg-control" />
-              <div className="absolute top-3.5 -ml-px h-6 w-0.5 bg-ink" style={{ left: `${lineAt}%` }} />
-              <div className="absolute -top-0.5 mr-1.5 whitespace-nowrap text-small" style={{ right: `${100 - lineAt}%` }}>
+              {/* The zone at or above the line, where a link closes by itself. */}
+              <div className="absolute top-3.5 h-6 bg-jade-50" style={{ left: `${lineAt}%`, right: 0 }} />
+              <div className="absolute inset-x-0 top-6 h-0.5 rounded-sm bg-limestone-400" />
+              <div className="absolute top-2.5 -ml-px h-8 w-0.5" style={{ left: `${lineAt}%`, backgroundColor: CHROME.reference }} />
+              <div className="absolute -top-2 mr-1.5 whitespace-nowrap text-small text-ink" style={{ right: `${100 - lineAt}%` }}>
                 auto-close line {C.tau}
               </div>
               {calibrated && (
@@ -329,12 +327,25 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
                   initial={reduceMotion ? false : { left: "0%", opacity: 0 }}
                   animate={{ left: `${left}%`, opacity: 1 }}
                   transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.2, 0.7, 0.2, 1] }}
-                  className="absolute top-[21px] -ml-[5px] size-2.5 rounded-full bg-hue"
+                  className="absolute top-[19px] -ml-[7px] size-3.5 rounded-full"
+                  style={{ backgroundColor: CATEGORICAL[0], boxShadow: "0 0 0 2px var(--color-surface)" }}
                 />
               )}
-              <div className="absolute left-0 top-[38px] text-small text-muted">0.95</div>
-              <div className="absolute right-0 top-[38px] text-small text-muted">1.00</div>
+              {/* The value sits under its dot; the 1.00 end label gives way when the dot is near it. */}
+              <div
+                data-testid="match-p"
+                className="absolute top-[38px] whitespace-nowrap text-body font-semibold text-ink"
+                style={calibrated ? (left > 88 ? { right: 0 } : { left: `${left}%`, transform: "translateX(-50%)" }) : { left: 0 }}
+              >
+                {calibrated ? C.p.toFixed(3) : "—"}
+              </div>
+              {(!calibrated || left > 10) && <div className="absolute left-0 top-[40px] text-small text-muted">0.95</div>}
+              {(!calibrated || left <= 88) && <div className="absolute right-0 top-[40px] text-small text-muted">1.00</div>}
             </div>
+            <p className="m-0 mt-1 flex items-center gap-1.5 text-small text-ink-soft">
+              <span aria-hidden className="block h-3 w-4 rounded-[2px] bg-jade-50 shadow-[inset_0_0_0_1px_var(--color-jade-200)]" />
+              Closes by itself at {C.tau} and above
+            </p>
           </div>
 
           <div role="status" className="mt-2 flex min-h-11 items-center gap-3 border-t border-rule pt-3">

@@ -1,105 +1,143 @@
 "use client";
 
-import { ChartFigure, FILL, Legend, Mark } from "./chart-kit";
+import { CATEGORICAL, CHROME } from "@/components/charts/palette";
+import { cn } from "@/lib/utils";
+import { ChartFigure, Mark } from "./chart-kit";
 import type { CapacityRegion, PoolRun } from "./model";
 
 const n = (v: number) => v.toLocaleString("en-US");
-const w = (v: number, max: number) => ({ width: `${(v / max) * 88}%`, minWidth: v > 0 ? 4 : 0 });
+const w = (v: number, max: number) => ({ width: `${(v / max) * 80}%`, minWidth: v > 0 ? 4 : 0 });
 
-/** Slots against open cases that need one, in each region: a grouped bar chart. */
+const SLOTS = CATEGORICAL[0];
+const OPEN = CATEGORICAL[1];
+
+function Key({ items }: { items: { color: string; label: string }[] }) {
+  return (
+    <ul aria-hidden className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-small text-ink-soft">
+      {items.map((i) => (
+        <li key={i.label} className="flex items-center gap-1.5">
+          <span className="block size-2.5 flex-none rounded-[2px]" style={{ backgroundColor: i.color }} />
+          {i.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** "29 short" or "86 spare": slots minus the open cases that need one. */
+export function regionGap(r: CapacityRegion): string {
+  const d = r.slots - r.cases;
+  return d < 0 ? `${n(-d)} short` : `${n(d)} spare`;
+}
+
+/** The takeaway for the region chart, from the numbers: which regions are short and which have spare. */
+export function regionTakeaway(regions: CapacityRegion[]): string {
+  const short = regions.filter((r) => r.slots < r.cases);
+  const spare = regions.filter((r) => r.slots > r.cases);
+  const names = (rs: CapacityRegion[]) => (rs.length <= 1 ? rs.map((r) => r.name).join("") : `${rs.slice(0, -1).map((r) => r.name).join(", ")} and ${rs.at(-1)!.name}`);
+  if (short.length === 0) return "Every region has a slot for each open case.";
+  const gap = short.reduce((t, r) => t + r.cases - r.slots, 0);
+  const lead = `${names(short)} ${short.length === 1 ? "is" : "are"} ${n(gap)} slots short`;
+  return spare.length ? `${lead} while ${names(spare)} ${spare.length === 1 ? "has" : "have"} spare.` : `${lead}.`;
+}
+
+/** Slots against open cases that need one, in each region: paired bars on one scale, the difference printed per row. */
 export function RegionCapacityChart({ regions }: { regions: CapacityRegion[] }) {
   const max = Math.max(1, ...regions.flatMap((r) => [r.slots, r.cases]));
   return (
     <ChartFigure
-      caption="Endoscopy slots against open cases that need one, by region. Both bars share one scale that starts at zero."
-      table={{ caption: "Slots and open cases by region", head: ["Region", "Slots", "Open cases"], rows: regions.map((r) => [r.name, n(r.slots), n(r.cases)]) }}
+      caption={<><span className="font-medium text-ink">{regionTakeaway(regions)}</span> Endoscopy slots and open cases needing one, by region.</>}
+      table={{
+        caption: "Slots and open cases by region",
+        head: ["Region", "Slots", "Open cases", "Difference"],
+        rows: regions.map((r) => [r.name, n(r.slots), n(r.cases), regionGap(r)]),
+      }}
     >
-      <ul className="m-0 list-none p-0">
+      <Key items={[{ color: SLOTS, label: "Slots" }, { color: OPEN, label: "Open cases needing a slot" }]} />
+      <ul className="m-0 mt-2 list-none p-0">
         {regions.map((r) => (
-          <li key={r.key} className="border-b border-rule py-2 first:pt-0 last:border-b-0">
-            <div className="text-body font-medium">{r.name}</div>
-            {(
-              [
-                ["Slots", r.slots, "solid"],
-                ["Open cases", r.cases, "ink"],
-              ] as const
-            ).map(([name, v, fill]) => (
-              <Mark
-                key={name}
-                className="flex flex-col justify-center"
-                tip={<><strong className="font-medium">{r.name}</strong>: {n(r.slots)} slots for {n(r.cases)} open cases.</>}
-              >
-                <span className="text-small leading-4 text-ink-soft">{name}</span>
-                <span className="relative mt-0.5 block h-4">
-                  <span className="absolute left-0 top-0 block h-4 rounded-[4px]" style={{ ...FILL[fill], ...w(v, max) }} />
-                  <span className="absolute top-0 text-small font-medium leading-4" style={{ left: `calc(${(v / max) * 88}% + 6px)` }}>
-                    {n(v)}
+          <li key={r.key}>
+            <Mark
+              className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)_auto] items-center gap-x-3 py-2"
+              tip={<><strong className="font-medium">{r.name}</strong>: {n(r.slots)} slots for {n(r.cases)} open cases, {regionGap(r)}.</>}
+            >
+              <span className="text-body font-medium">{r.name}</span>
+              <span className="flex min-w-0 flex-col gap-0.5 border-l border-limestone-400 py-0.5">
+                {(
+                  [
+                    [r.slots, SLOTS],
+                    [r.cases, OPEN],
+                  ] as const
+                ).map(([v, color], i) => (
+                  <span key={i} className="flex h-3.5 items-center gap-1.5">
+                    <span aria-hidden className="block h-full flex-none rounded-r-[4px]" style={{ ...w(v, max), backgroundColor: color }} />
+                    <span className="text-small leading-none tabular-nums">{n(v)}</span>
                   </span>
-                </span>
-              </Mark>
-            ))}
+                ))}
+              </span>
+              <span data-testid={`region-gap-${r.key}`} className="text-right text-body font-semibold tabular-nums">
+                {regionGap(r)}
+              </span>
+            </Mark>
           </li>
         ))}
       </ul>
-      <div className="mt-2">
-        <Legend
-          items={[
-            { fill: "solid", label: "Slots" },
-            { fill: "ink", label: "Open cases needing a slot" },
-          ]}
-        />
-      </div>
     </ChartFigure>
   );
 }
 
-/** The measured pooling test: share within 31 days with and without cross-site booking. */
+/** The measured pooling test: share within 31 days per scenario, one small panel per capacity level on a shared 0 to 50% axis. */
 export function PoolingChart({ runs }: { runs: PoolRun[] }) {
   const max = 50;
   return (
     <ChartFigure
-      caption="Simulated booking test with capacity in the wrong regions: share of all FIT+ patients with a colonoscopy within 31 days. Bars start at zero."
+      caption={
+        <>
+          <span className="font-medium text-ink">Pooling restores on-time booking only when the network has enough slots.</span> Share of FIT+ patients with a
+          colonoscopy within 31 days, with capacity placed in the wrong regions.
+        </>
+      }
       table={{
         caption: "Share within 31 days, by scenario",
         head: ["Scenario", "Slots per FIT+", "Within 31 days"],
         rows: runs.flatMap((run) => run.rows.map((r) => [`${r.label} (${run.slotsPerCase} slots)`, run.slotsPerCase, r.display])),
       }}
     >
-      {runs.map((run) => (
-        <div key={run.slotsPerCase} className="mt-3 first:mt-0">
-          <h3 className="m-0 text-small font-medium text-muted">
-            {run.slotsPerCase} slots per FIT+ {run.enough ? "(enough in total)" : "(short overall)"}
-          </h3>
-          <ul className="m-0 list-none p-0">
-            {run.rows.map((r) => {
-              const pooled = r.id.endsWith("skewed_pool_60");
-              return (
-                <li key={r.id}>
-                  <Mark
-                    className="flex flex-col justify-center"
-                    tip={<><strong className="font-medium">{r.label}</strong>: {r.display} within 31 days at {run.slotsPerCase} slots per FIT+.</>}
-                  >
-                    <span className={pooled ? "text-small font-medium leading-4" : "text-small leading-4 text-ink-soft"}>{r.label}</span>
-                    <span className="relative mt-0.5 block h-3.5">
-                      <span className="absolute left-0 top-0 block h-3.5 rounded-[4px]" style={{ ...FILL[pooled ? "solid" : "muted"], ...w(r.share, max) }} />
-                      <span className="absolute top-0 text-small font-medium leading-3.5" style={{ left: `calc(${(r.share / max) * 88}% + 6px)` }}>
-                        {r.display}
+      <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+        {runs.map((run) => (
+          <div key={run.slotsPerCase} className="min-w-0">
+            <h3 className="m-0 text-small font-semibold text-ink">
+              {run.slotsPerCase} slots per FIT+ · {run.enough ? "enough overall" : "short overall"}
+            </h3>
+            <ul className="m-0 mt-1 list-none p-0">
+              {run.rows.map((r) => {
+                const pooled = r.id.endsWith("skewed_pool_60");
+                return (
+                  <li key={r.id}>
+                    <Mark
+                      className="flex flex-col justify-center"
+                      tip={<><strong className="font-medium">{r.label}</strong>: {r.display} within 31 days at {run.slotsPerCase} slots per FIT+.</>}
+                    >
+                      <span className={cn("text-small leading-4", pooled ? "font-semibold" : "text-ink-soft")}>{r.label}</span>
+                      <span className="mt-1 flex h-3 items-center gap-1.5 border-l border-limestone-400">
+                        <span aria-hidden className="block h-full flex-none rounded-r-[4px]" style={{ ...w(r.share, max), backgroundColor: pooled ? SLOTS : CHROME.deemphasis }} />
+                        <span className={cn("text-small leading-none tabular-nums", pooled && "font-semibold")}>{r.display}</span>
                       </span>
-                    </span>
-                  </Mark>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-      <div className="mt-2">
-        <Legend
-          items={[
-            { fill: "solid", label: "With network pooling" },
-            { fill: "muted", label: "Other scenarios" },
-          ]}
-        />
+                    </Mark>
+                  </li>
+                );
+              })}
+            </ul>
+            <div aria-hidden className="relative ml-0 mr-[20%] mt-1 h-4 text-small text-muted tabular-nums">
+              <span data-axis className="absolute left-0">0%</span>
+              <span data-axis className="absolute left-1/2 -translate-x-1/2">25%</span>
+              <span data-axis className="absolute left-full -translate-x-1/2">50%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3">
+        <Key items={[{ color: SLOTS, label: "Network pooling (60% willing)" }, { color: CHROME.deemphasis, label: "Other scenarios" }]} />
       </div>
     </ChartFigure>
   );
