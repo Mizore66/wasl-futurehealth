@@ -495,7 +495,7 @@ export function ScenarioRanges({ scenarios }: { scenarios: EvidenceScenario[] })
   const [worst, base, best] = [by("worst"), by("base"), by("best")];
   return (
     <ChartFigure
-      caption="Worst to best case (line), base case (dot) · each row on its own scale from 0"
+      caption="Worst to best case (line), base case (dot). Each row has its own scale from 0."
       table={{
         caption: "Modelled scenarios per 1,000 positive FITs",
         head: ["Measure", "Worst", "Base", "Best"],

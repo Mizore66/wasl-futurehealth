@@ -20,7 +20,7 @@ import {
   worstRanges,
 } from "@/components/evidence/model";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { HONESTY } from "@/lib/honesty";
 import type { Evidence, EvidenceClaim } from "@/lib/api/evidence-schema";
 
@@ -82,7 +82,7 @@ function Headline({ ev }: { ev: Evidence }) {
     <Section
       id="gap"
       title="Wasl raises the measured rate toward the true rate"
-      aside={<HonestyLabel kind="simulated">Synthetic cohort, measured</HonestyLabel>}
+      aside={<HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Synthetic cohort, measured.</HonestyLabel>}
     >
       <GapChart
         runs={gapRuns(rows)}
@@ -145,8 +145,8 @@ function Accuracy({ ev }: { ev: Evidence }) {
   return (
     <Section
       id="accuracy"
-      title={anyClosure ? "False closures were seen: read the counts below" : "No false closures in any programme; misses stay visible"}
-      aside={<HonestyLabel kind="simulated">Held-out persons, 5 seeds</HonestyLabel>}
+      title={anyClosure ? "False closures were seen in the counts below" : "No false closures in any programme, and misses stay visible"}
+      aside={<HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Held-out persons, 5 seeds.</HonestyLabel>}
     >
       <Terms ev={ev} />
       <div className="mt-5 grid items-start gap-x-gap gap-y-8 lg:grid-cols-2">
@@ -157,7 +157,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
           </div>
         </div>
         <div className="min-w-0">
-          <h3 className={h3}>Wrong matches are rare; missed matches stay open for review</h3>
+          <h3 className={h3}>Wrong matches are rare, and missed matches stay open for review</h3>
           <div className="mt-2">
             <RateChart falseMatch={rates.falseMatch} missed={rates.missed} />
           </div>
@@ -221,7 +221,7 @@ function Benchmarks({ ev }: { ev: Evidence }) {
     <Section
       id="benchmarks"
       title={rows.length === 0 ? "On data the team did not generate" : wins === paired.length && paired.length > 0 ? "Ahead of the published baseline on public data" : "On data the team did not generate"}
-      aside={rows.length > 0 ? <HonestyLabel kind="built">Public datasets</HonestyLabel> : undefined}
+      aside={rows.length > 0 ? <HonestyLabel kind="built" className={HONESTY_PLAIN}>Public datasets.</HonestyLabel> : undefined}
     >
       {rows.length === 0 ? (
         <p data-testid="benchmarks-none" className="m-0 mt-2 text-body text-ink-soft">
@@ -263,8 +263,8 @@ function Modelled({ ev }: { ev: Evidence }) {
   return (
     <Section
       id="modelled"
-      title={`If navigators act on the list: ${num(Math.min(...cancers))} to ${num(Math.max(...cancers))} more cancers found per 1,000`}
-      aside={<HonestyLabel kind="illustrative">Modelled, not measured</HonestyLabel>}
+      title={`${num(Math.min(...cancers))} to ${num(Math.max(...cancers))} more cancers found per 1,000 if navigators act on the list`}
+      aside={<HonestyLabel kind="illustrative" className={HONESTY_PLAIN}>Modelled, not measured.</HonestyLabel>}
     >
       <p data-testid="modelled-label" className="m-0 mt-2 flex flex-wrap gap-2 text-small">
         <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Conditional on navigation acting on the corrected list</span>

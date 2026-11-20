@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 
 export const metadata: Metadata = { title: "Page not found" };
 
@@ -26,7 +26,7 @@ export default function AppNotFound() {
           </Link>
         </div>
         <div className="mt-6">
-          <HonestyLabel kind="built">Built · the app shell</HonestyLabel>
+          <HonestyLabel kind="built" className={HONESTY_PLAIN}>The app shell is built.</HonestyLabel>
         </div>
       </div>
     </section>

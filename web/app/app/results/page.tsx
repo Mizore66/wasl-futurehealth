@@ -114,7 +114,7 @@ function Readers() {
   const corpora = result("reader.corpora");
   return (
     <section aria-labelledby="read-h" className={card}>
-      <CardHead id="read-h" title={`3 of ${corpora.value} unseen corpora found an unsafe phrasing; each was fixed`} />
+      <CardHead id="read-h" title={`3 of ${corpora.value} unseen corpora found an unsafe phrasing, and each was fixed`} />
       <div className="mt-3">
         <UnitChart total={corpora.value} hit={3} label="Corpora of 300 reports from 4 model families, frozen before any reader ran" />
       </div>
@@ -145,7 +145,7 @@ function Review() {
       <CardHead id="human-h" title="When the gate says no, two people sign" />
       <div className="mt-3">
         <CountBars
-          caption="False closures after human review · simulated reviewers, 5 seeds, 3 error rates"
+          caption="False closures after human review, with simulated reviewers, 5 seeds and 3 error rates"
           tableHead={["Review", "False closures"]}
           rows={[
             { label: "Two reviewers", sub: `in ${double.display}`, count: 0, testId: "double-review" },

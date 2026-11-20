@@ -1,4 +1,4 @@
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechnicalDetail } from "@/components/pipeline/technical";
 import { CountBars } from "@/components/results/charts";
 
@@ -52,7 +52,7 @@ export function ConsentLifecycle({ timing }: { timing: Record<string, number> })
         <h2 id="consent-h" className="m-0 text-section font-medium">
           Consent: held, released, cancelled
         </h2>
-        <HonestyLabel kind="simulated">Simulated messages</HonestyLabel>
+        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated messages.</HonestyLabel>
       </div>
       <p className="m-0 mt-1 flex flex-wrap gap-2 text-small">
         <span className="rounded-chip bg-raised px-2 py-0.5 text-ink-soft">No message was sent to anyone</span>
