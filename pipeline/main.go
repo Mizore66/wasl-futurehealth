@@ -85,6 +85,44 @@ func main() {
 		}
 		return
 	}
+	if cmd == "febrl" { // public FEBRL4 benchmark through the runtime linker (febrl.go); evidence only
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		a := fs.String("a", "", "FEBRL dataset4a.csv")
+		b := fs.String("b", "", "FEBRL dataset4b.csv")
+		models := fs.String("wasl", "../models", "models dir (encoder_weights.json, lgb_stream.json)")
+		config := fs.String("config", "names_dob", "names_dob | names_dob_ssid")
+		out := fs.String("out", "-", "result JSON (- = stdout)")
+		fs.Parse(os.Args[2:])
+		if *a == "" || *b == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "febrl requires -a <dataset4a.csv> -b <dataset4b.csv>")
+			os.Exit(2)
+		}
+		if err := runFebrl(*a, *b, *models, *config, *out); err != nil {
+			fmt.Fprintln(os.Stderr, "febrl:", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if cmd == "namepairs" { // public Arabic-English name pairs against the name encoder alone (namepairs.go); evidence only
+		fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+		pairs := fs.String("pairs", "", "dict_FINAL.json (English -> Arabic map)")
+		enc := fs.String("encfile", "../models/encoder_weights.json", "encoder weights")
+		netrans := fs.String("netrans", "", "NETransliteration wd_arabic (training source, for dedup)")
+		variants := fs.String("variants", "", "wikidata_variants.jsonl (training source, for dedup)")
+		persons := fs.String("persons", "", "data/persons3.json (training source, for dedup)")
+		seed := fs.Int64("seed", 1, "negative sampling / split seed")
+		out := fs.String("out", "-", "result JSON (- = stdout)")
+		fs.Parse(os.Args[2:])
+		if *pairs == "" || *netrans == "" || *variants == "" || *persons == "" || fs.NArg() != 0 {
+			fmt.Fprintln(os.Stderr, "namepairs requires -pairs -netrans -variants -persons")
+			os.Exit(2)
+		}
+		if err := runNamePairs(*pairs, *enc, *netrans, *variants, *persons, *seed, *out); err != nil {
+			fmt.Fprintln(os.Stderr, "namepairs:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
 		runMCF(os.Stdin, os.Stdout)
 		return
