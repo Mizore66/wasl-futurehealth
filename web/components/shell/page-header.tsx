@@ -3,7 +3,8 @@ import { RunMeta } from "./run-meta";
 
 /**
  * The staff title header: limestone-to-jade wash with the calligraphy pen strokes (globals.css .staff-heading).
- * One h1 per page, and one header per page carries `run`, the simulated-data notice with its details drop-down.
+ * One h1 per page, and one header per page carries `run`. From md up the simulated-data notice sits in the top bar;
+ * the top bar is hidden on a phone, so there the `run` header shows it.
  * `attached` makes it the top band of the page's main card: put it first inside that card. `aside` sits at the end of
  * the band (a status chip, a back link, record icons).
  */
@@ -55,7 +56,12 @@ export function PageHeader({
       {(aside || run) && (
         // ml-auto keeps the group, and the drop-downs anchored to its right edge, at the right even when it wraps to its own line.
         <div className="relative ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
-          {run && <RunMeta />}
+          {/* From md up the notice sits in the top bar; the top bar is hidden on a phone, so it shows here. */}
+          {run && (
+            <span className="contents md:hidden">
+              <RunMeta />
+            </span>
+          )}
           {aside}
         </div>
       )}
