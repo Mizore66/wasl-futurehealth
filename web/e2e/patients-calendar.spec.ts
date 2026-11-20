@@ -26,7 +26,8 @@ for (const [label, viewport] of [
   test(`find the record from the calendar (${label})`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/app/patients");
-    await expect(page.getByRole("heading", { level: 2, name: "Referral calendar" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: /^[A-Z][a-z]+ \d{4}$/ })).toBeVisible();
+    await expect(page.getByText("Referral calendar")).toHaveCount(0);
 
     // `/` jumps to the search.
     await page.locator("body").click({ position: { x: 5, y: 5 } });
@@ -36,7 +37,7 @@ for (const [label, viewport] of [
     await search.fill("AHS-sr-1011");
     await search.press("Enter");
     await expect(page).toHaveURL(/q=AHS-sr-1011/);
-    await expect(page.getByRole("heading", { level: 3, name: "May 2026" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "May 2026" })).toBeVisible();
     await expect(page.getByTestId("month-total")).toHaveText("1 referral");
     await shot(page, `search-${label}`);
     await noSeriousAxe(page);
@@ -44,7 +45,7 @@ for (const [label, viewport] of [
     // Its date tile opens the case files of 27 May.
     await page.getByRole("link", { name: /^27 May 2026, 1 referral\. View case files$/ }).click();
     await expect(page).toHaveURL(/files=2026-05-27/);
-    await expect(page.getByRole("heading", { level: 2, name: "Case files" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "27 May 2026" })).toBeVisible();
     const folder = page.locator(`[data-pf-case="${ID}"]`);
     await expect(folder).toContainText("Aisha Al Mansoori");
     await shot(page, `files-${label}`);
@@ -88,9 +89,8 @@ for (const [label, viewport] of [
     await expect(page).not.toHaveURL(/open=/);
     await expect(page.locator(`[data-pf-case="${ID}"]`)).toBeVisible();
     await page.getByRole("link", { name: "Calendar", exact: true }).click();
-    await expect(page.getByRole("heading", { level: 2, name: "Referral calendar" })).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Find a case, task or owner" })).toHaveValue("AHS-sr-1011");
-    await expect(page.getByRole("heading", { level: 3, name: "May 2026" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "May 2026" })).toBeVisible();
   });
 }
 
@@ -101,11 +101,11 @@ test("a record opened directly goes back to the files of its referral date", asy
 
 test("month navigation steps between months that hold referrals", async ({ page }) => {
   await page.goto("/app/patients?month=2026-05");
-  await expect(page.getByRole("heading", { level: 3, name: "May 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "May 2026" })).toBeVisible();
   await expect(page.getByTestId("month-total")).toHaveText("39 referrals");
   await page.getByRole("link", { name: /^Next referral month/ }).click();
   await expect(page).toHaveURL(/month=2026-06/);
-  await expect(page.getByRole("heading", { level: 3, name: "June 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "June 2026" })).toBeVisible();
   // A busy date is one tile with a count, never one chip per case.
   await page.goto("/app/patients?month=2026-05");
   const busy = page.getByRole("link", { name: /^18 May 2026, 4 referrals/ });

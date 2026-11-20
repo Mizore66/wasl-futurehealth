@@ -2,10 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { loadCaseRecord, renderEvidenceFile } from "@/components/case/evidence-file";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
-import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
+import { facetValueLabel, facets as buildFacets } from "@/components/patients/facets";
 import { clearRefineHref, NativeRefine, refineMenus } from "@/components/patients/refine";
 import { FolderTab, RememberFiles } from "@/components/patients/back-to-files";
 import { CaseFiles, ReferralCalendar, type Row } from "@/components/patients/referral-calendar";
@@ -26,7 +25,7 @@ import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWN
 import { DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { ldctChildren, openObligation } from "@/components/worklist/obligation";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { apiMode, getCases, matches, type CaseQuery } from "@/lib/api/source";
+import { getCases, matches, type CaseQuery } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -83,7 +82,7 @@ const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
   q: keep.q,
 });
 
-/** Cases the calendar reads at most: 20 API pages of 500. Past that the view says it is partial. */
+/** Cases the calendar reads at most: 20 API pages of 500. */
 const CALENDAR_CAP = 10_000;
 
 /** Every case matching the filters, page by page (the API serves up to 500 at a time). */
@@ -124,10 +123,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       count: searchedAll.filter((c) => matches(c, query)).length,
     };
   });
-  const inView = programmesInView(searchedAll, apiFilters);
-  const partialCounts = everything.total > everything.cases.length;
-  const partialCalendar = matched.total > matched.cases.length;
-  const sample = apiMode() === "fixtures";
   // Replay failure is server-wide, so any case the API listed saying so makes every status here a partial view.
   const ledgerPartial = listLedgerInvalid(rows.map((r) => r.it)) || everything.cases.some((c) => c.api_overlay?.ledger_status === "invalid");
 
@@ -151,7 +146,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       <div className="pf-folder-open pf-record-in-folder">
         <FolderTab href={back} />
         <section className="rs-card" aria-label="Record not available">
-          {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
           <PageHeader
             attached
             className="rounded-se-[6px]!"
@@ -202,17 +196,16 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
     <>
       {ledgerPartial && <LedgerInvalidBanner what="this list" className="mb-3" />}
 
-      <section className="pf-directory" aria-labelledby="pf-view-heading">
+      <section className="pf-directory" aria-labelledby="pf-title">
         <PageHeader
           attached
           className="pf-hero"
-          title="Patients"
+          title={<span id="pf-title">Patients</span>}
           sub={
             <ResultCount data-testid="showing" count={rows.length} one="case">
               : {describe(filters)}
             </ResultCount>
           }
-          aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
         />
         <Toolbar label="Filter patients" className="pf-filters">
           <SegmentedFilter label="Filters" items={segments} />
@@ -248,17 +241,14 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           <NativeRefine facets={choices} filters={filters} />
         </Toolbar>
 
-        <header className="pf-toolbar">
-          <div>
-            {scope && (
-              <Link href={calendarHref(filters, { month: scope.slice(0, 7) })} className="pf-back">
-                <ArrowLeft aria-hidden="true" />
-                Calendar
-              </Link>
-            )}
-            <h2 id="pf-view-heading">{scope ? "Case files" : "Referral calendar"}</h2>
+        {scope && (
+          <div className="pf-toolbar">
+            <Link href={calendarHref(filters, { month: scope.slice(0, 7) })} className="pf-back">
+              <ArrowLeft aria-hidden="true" />
+              Calendar
+            </Link>
           </div>
-        </header>
+        )}
 
         <div id="pf-results">
           {rows.length === 0 ? (
@@ -275,7 +265,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           ) : scope ? (
             <>
               <div className="pf-files-head">
-                <h3>{scopeLabel(scope)}</h3>
+                <h2>{scopeLabel(scope)}</h2>
                 <small>{plural(inScope.length, "file")}</small>
               </div>
               {inScope.length === 0 ? (
@@ -309,25 +299,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
         </div>
       </section>
 
-      <footer className="pf-notes">
-        <p className="m-0" data-testid="programmes-in-view">
-          {inView.length === 0
-            ? "No programme in view."
-            : `${inView.length === 1 ? "Programme" : "Programmes"} in view: ${inView.map((p) => `${p.name} (${p.count})`).join(", ")}.`}
-        </p>
-        <p className="m-0" data-testid="count-basis">
-          {sample
-            ? `Counts are over the published sample of ${everything.total} cases (simulated), not the whole run.`
-            : partialCounts
-              ? `Filter counts cover the first ${everything.cases.length} of ${everything.total} cases.`
-              : `Filter counts cover all ${everything.total} cases in this run.`}
-        </p>
-        {partialCalendar && <p className="m-0">The calendar shows the first {matched.cases.length} of {matched.total} referrals. Add a filter to see the rest.</p>}
-        {rows.some((r) => !r.it.hasRecord) && <p className="m-0">In this demo only some cases have a full record. The rest open as a summary.</p>}
-        <p className="m-0">
-          Run day {Math.floor(now)}, {formatDay(now)}. Dates are when the referral was received (UTC).
-        </p>
-      </footer>
     </>
   );
 }

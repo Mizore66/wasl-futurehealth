@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Audit, CaseDetail, CaseList } from "@/lib/api/schema";
-import { facets, programmesInView } from "@/components/patients/facets";
+import { facets } from "@/components/patients/facets";
 import { parseCaseFilters, parsePage, filtersHref, toCaseQuery } from "@/components/worklist/filters";
 import { matches } from "@/lib/api/source";
 import { closureChecks, DROPOFF_WORDS, elapsedDays, PROCEDURE, PROGRAMME_NAMES, recordNodes, statusWords, workItem } from "@/components/worklist/model";
@@ -126,16 +126,6 @@ describe("patients refine filters", () => {
     expect(fx.programme.find((o) => o.value === "breast")?.count).toBe(all.filter((c) => c.programme === "breast").length);
     expect(fx.programme.find((o) => o.value === "lung_ldct")?.count).toBe(all.filter((c) => c.programme === "lung_ldct").length);
     expect(fx.programme.find((o) => o.value === "ifhas")?.count).toBe(all.filter((c) => c.programme === "ifhas").length);
-    expect(programmesInView(all, f).map((p) => p.programme)).toEqual(["crc"]);
-    expect(programmesInView(all, {}).map((p) => p.programme)).toEqual([
-      "crc",
-      "cervical",
-      "lung_nodule",
-      "diabetic_retinopathy",
-      "breast",
-      "lung_ldct",
-      "ifhas",
-    ]);
   });
 
   it("keeps a chosen value listed at zero rather than dropping the filter", () => {
