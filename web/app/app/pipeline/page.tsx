@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import readerJson from "@/data/reader.json";
 import type { ReaderData } from "@/components/pipeline/reader-types";
 import type { RulesBySha } from "@/components/pipeline/profile";
-import { PipelineHeading } from "@/components/pipeline/heading";
 import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-replay";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { HealthPanel } from "@/components/pipeline/health-panel";
@@ -87,7 +86,7 @@ export default async function Page() {
 
   return (
     <PipelineReplay
-      heading={<PipelineHeading title="Pipeline" current="/app/pipeline" />}
+      heading={{ title: "Pipeline", current: "/app/pipeline" }}
       health={<HealthPanel state={health} />}
       tamper={tamperDemo(loop, audit.chain)}
       rules={rules}

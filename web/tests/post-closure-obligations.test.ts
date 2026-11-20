@@ -121,8 +121,9 @@ beforeEach(() => {
 
 async function today(sp: Record<string, string>) {
   // Server component unit test with mocked reads; not served HTTP or browser evidence.
-  const tree = (await TodayPage({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<{ children: ReactElement[] }>;
-  return tree.props.children[1].props as ComponentProps<typeof TodayBoard>;
+  // The page returns the board itself; its header is the board's `head` prop.
+  const board = (await TodayPage({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<ComponentProps<typeof TodayBoard>>;
+  return board.props;
 }
 
 describe("Today worklist, deliberately scoped to open cases and due recalls", () => {

@@ -1,6 +1,7 @@
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Option } from "@/components/patients/facets";
+import { DismissableDetails } from "@/components/ui/dismissable-details";
 import type { TodaySelection } from "./filters";
 import { PROGRAMME_NAMES, providerLabel } from "./model";
 import { QueueField } from "./queue-field";
@@ -31,7 +32,7 @@ export function TodayScope({
   queue?: string;
 }) {
   return (
-    <details className="group relative" data-testid="today-scope">
+    <DismissableDetails className="group relative" data-testid="today-scope">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-control px-2 text-small font-medium text-jade-700 hover:bg-jade-50 [&::-webkit-details-marker]:hidden">
         <SlidersHorizontal aria-hidden className="size-4" />
         Change scope
@@ -64,6 +65,6 @@ export function TodayScope({
           Show queue
         </Button>
       </form>
-    </details>
+    </DismissableDetails>
   );
 }

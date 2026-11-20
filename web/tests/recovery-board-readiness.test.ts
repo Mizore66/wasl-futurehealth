@@ -9,7 +9,7 @@ import { RecoveryBoard } from "@/components/recovery/recovery-board";
 import { RecoveryDetail, RecoveryList } from "@/lib/api/recovery-schema";
 
 vi.mock("@/app/app/recovery/actions", () => ({ cancelBackfill: vi.fn(), confirmBackfill: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), usePathname: () => "/app/recovery" }));
 vi.mock("next/link", () => ({ default: (props: Record<string, unknown>) => createElement("a", { href: String(props.href) }, props.children as never) }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

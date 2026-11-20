@@ -1,15 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { getPersonByCase } from "@/lib/api/person-source";
 import { PersonAssociationUnavailableView } from "@/components/person/journey";
+import { PageHeader } from "@/components/shell/page-header";
 
 export default async function Page({ searchParams }: PageProps<"/app/people">) {
   const caseID = (await searchParams).case_id;
   if (caseID === undefined) {
     return (
-      <section className="max-w-2xl" aria-labelledby="person-lookup">
-        <h1 id="person-lookup" className="m-0 text-title font-semibold">Person journey</h1>
-        <p>Open a case and choose “View all programmes”. Wasl resolves the opaque person ID from trusted canonical identity links.</p>
-        <p className="text-muted">There is no person-list endpoint and names are never used to find or combine records.</p>
+      <section aria-labelledby="person-lookup" className="rounded-card border border-line bg-surface">
+        <PageHeader attached run title={<span id="person-lookup">Person journey</span>} />
+        <div className="max-w-[72ch] p-4 md:p-pad">
+          <p className="m-0">Open a case and choose “View all programmes”. Wasl resolves the opaque person ID from trusted canonical identity links.</p>
+          <p className="mb-0 text-muted">There is no person-list endpoint and names are never used to find or combine records.</p>
+        </div>
       </section>
     );
   }

@@ -35,7 +35,7 @@ const key = (purpose: Purpose, answer: Answer) => `${purpose}:${answer}`;
 const href = (base: string, detail: CaseDetail) => `${base}/app/review/${encodeURIComponent(detail.case.id)}`;
 const rail = (page: Page) => page.getByRole("region", { name: "Your answers" });
 const card = (page: Page) => rail(page).locator('section[data-question="evidence"]');
-const summary = (page: Page) => page.locator("main > header").first();
+const summary = (page: Page) => page.locator("main header.staff-heading").first();
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const fixtures = PURPOSES.map((purpose) => purposeFixture(purpose));
 const scenarios = new Map<string, Scenario>();
