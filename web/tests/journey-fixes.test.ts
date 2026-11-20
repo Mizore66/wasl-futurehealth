@@ -71,7 +71,7 @@ describe("B5: CRC obligation confirmation agrees with the review desk", () => {
     const done = obligationConfirmationWords(need, { api_review_states: [state("resolved_agreed")] });
     expect(done).toMatch(/Independently confirmed/);
     expect(done).toMatch(/canonical record still shows the obligation awaiting/);
-    expect(obligationConfirmationWords({ ...need, confirmation: "rv-713", reviewer: "c1" }, {})).toBe("Confirmed by c1; signature rv-713.");
+    expect(obligationConfirmationWords({ ...need, confirmation: "rv-713", reviewer: "c1" }, {})).toBe("Confirmed by c1, signature rv-713.");
     expect(obligationConfirmationWords({ ...need, state: "blocked", blockers: ["specimen"] }, {})).toMatch(/holds/);
   });
 

@@ -47,14 +47,14 @@ export function PatientContestControls({ caseId, contest, excluded }: { caseId: 
           Outcome
           <select name="outcome" required defaultValue="" disabled={pending} className="min-h-11 rounded-control border border-control bg-surface px-3 font-normal">
             <option value="">Choose an outcome</option>
-            <option value="decision_upheld">Uphold the decision: release the closure hold</option>
-            <option value="decision_revised">Revise the decision: keep closure held until the decision changes</option>
+            <option value="decision_upheld">Uphold the decision and release the closure hold</option>
+            <option value="decision_revised">Revise the decision and keep closure held until it changes</option>
           </select>
         </label>
         <label className="flex flex-col gap-1 text-small font-medium">
           Reason for your decision (required)
           <textarea name="reason" required maxLength={500} disabled={pending} className="min-h-20 rounded-control border border-control bg-surface px-3 py-2 font-normal" />
-          <span className="font-normal text-muted">Recorded with your sign-in, the outcome and the time. Staff see it; the patient sees the outcome.</span>
+          <span className="font-normal text-muted">Recorded with your sign-in, the outcome and the time. Staff see it. The patient sees the outcome.</span>
         </label>
         <button type="submit" disabled={pending} className="min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink disabled:opacity-60">
           {pending ? "Appending…" : "Record contest outcome"}

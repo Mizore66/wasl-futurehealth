@@ -54,7 +54,7 @@ describe("N1: chain check with no sealed entries", () => {
 
   it("still reads verified for a sealed chain and broken for a broken one", () => {
     expect(chainCheck(audit).tone).toBe("positive");
-    expect(chainCheck(audit).label).toBe(`Verified · ${audit.chain.length} of ${audit.chain_length} intact`);
+    expect(chainCheck(audit).label).toBe(`Verified, ${audit.chain.length} of ${audit.chain_length} intact`);
     expect(chainCheck({ ...empty, chain_verified: false }).label).toBe("Chain broken");
   });
 });

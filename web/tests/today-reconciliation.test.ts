@@ -69,7 +69,7 @@ describe("completed elsewhere: owned record retrieval", () => {
     const entries = persistedLedger(CaseDetail.parse(raw)).entries.slice(-2).map((e) => e.what);
     expect(entries).toEqual([
       "Reported done elsewhere: colonoscopy at Synthetic Private Hospital · Hessa Al Ali to retrieve the record by 2026-12-04",
-      "Record retrieval ended: record not found · follow-up resumes",
+      "Record retrieval ended: record not found. Follow-up resumes",
     ]);
   });
 

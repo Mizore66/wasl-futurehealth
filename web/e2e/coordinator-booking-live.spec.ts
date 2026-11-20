@@ -259,7 +259,7 @@ test.describe("coordinator simulated booking, live mock", () => {
     await expect(page.getByRole("dialog")).toContainText("only releases the synthetic reservation");
     await page.getByLabel("Reason (required)").fill("Patient asked to cancel");
     await page.getByRole("button", { name: "Release synthetic reservation", exact: true }).click();
-    await expect(card).toContainText("Simulated reservation cancelled · rebook");
+    await expect(card).toContainText("Simulated reservation cancelled. Rebook.");
     await card.getByRole("button", { name: "Accept simulated slot", exact: true }).click();
     await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
     await expect(card).toContainText("Simulated reservation confirmed");

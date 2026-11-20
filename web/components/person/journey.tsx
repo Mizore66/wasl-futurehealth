@@ -130,7 +130,7 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
           <ul className="m-0 mt-2 list-disc space-y-1 ps-5">
             {trustedLinks.map((link, linkIndex) => <li key={`${link.downstream_event}-${linkIndex}`}>Trusted case link: {shortId(link.downstream_event)} · {link.hops} hop{link.hops === 1 ? "" : "s"}</li>)}
           </ul>
-        ) : <p className="text-small text-muted">No additional case link blocks are shown; cluster membership comes only from the canonical identity artifact.</p>}
+        ) : <p className="text-small text-muted">No additional case link blocks are shown. Cluster membership comes only from the canonical identity artifact.</p>}
       </section>
 
       <section aria-labelledby={`${prefix}-decisions`} className="mt-5">
@@ -144,7 +144,7 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
               {decision.consent_log.length > 0 && (
                 <ul className="m-0 mt-1 list-disc ps-5 text-small">
                   {decision.consent_log.map((transition, transitionIndex) => (
-                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent transition to {transition.to}; canonical contact {transition.contact ?? "unknown"}</li>
+                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent transition to {transition.to}, canonical contact {transition.contact ?? "unknown"}</li>
                   ))}
                 </ul>
               )}
@@ -213,7 +213,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
         </ul>
         {action.case_id && <CaseLink caseID={action.case_id}>Open source case {shortId(action.case_id)}</CaseLink>}
         {action.outreach_flag_id && <a className={linkClass} href={`#flag-${action.outreach_flag_id}`}>Open the related outreach review group</a>}
-        <p className="mb-0 text-small text-muted">Rule {action.rule}. Coordinator review only; this is not a clinical recommendation.</p>
+        <p className="mb-0 text-small text-muted">Rule {action.rule}. Coordinator review only. This is not a clinical recommendation.</p>
       </section>
 
       <section aria-labelledby="outreach-review" className={`${sectionClass} mt-gap`}>
@@ -229,7 +229,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
                   {flag.intents.map((intent) => (
                     <li key={`${intent.case_id}-${intent.outreach.kind}-${intent.outreach.ev}`}>
                       <CaseLink caseID={intent.case_id}>{programmeLabels[intent.programme]}: {shortId(intent.case_id)}</CaseLink>
-                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? " · Not in the latest decision; history only, not actionable" : ""}</div>
+                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? ". Not in the latest decision, history only, not actionable" : ""}</div>
                       <div className="text-small text-muted">Latest decision {intent.latest_decision_id}</div>
                     </li>
                   ))}
@@ -255,10 +255,10 @@ export function Journey({ journey }: { journey: PersonJourney }) {
 
       {journey.schema === "wasl-person-journey/2" && <section aria-labelledby="retained-references" className={`${sectionClass} mt-gap`}>
         <h2 id="retained-references" className="text-section font-semibold">Non-actionable history references</h2>
-        <p>Only proven as-of associations appear here. References are not current care participation; full original history remains in the authorized case and audit views.</p>
+        <p>Only proven as-of associations appear here. References are not current care participation. Full original history remains in the authorized case and audit views.</p>
         {journey.retained_references.map((reference) => <article key={reference.case_id} className="border-t border-rule pt-3">
           <h3 className="text-body font-semibold"><CaseLink caseID={reference.case_id}>{shortId(reference.case_id)}</CaseLink> · {reference.lifecycle === "retained" ? "Retired case" : "Historical association"}</h3>
-          <p>{reference.programmes.map((programme) => programmeLabels[programme]).join(", ") || "Historical programme unavailable"}. History reference only; no current action.</p>
+          <p>{reference.programmes.map((programme) => programmeLabels[programme]).join(", ") || "Historical programme unavailable"}. History reference only, no current action.</p>
           <details><summary className="cursor-pointer py-3">Source decisions and recorded outreach</summary>
             <ul>{reference.decisions.map((decision) => <li key={decision.decision_id}>{decision.decision_id} · <code>{decision.sig}</code></li>)}</ul>
             <ul>{reference.outreach_intents.map((intent) => <li key={`${intent.case_id}-${intent.outreach.ev}-${intent.outreach.kind}`}>

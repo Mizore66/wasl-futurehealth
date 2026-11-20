@@ -1,5 +1,5 @@
 import { Mark, Pill } from "@/components/review/marks";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
 import type { Audit, Programme, UndoProjection } from "@/lib/api/schema";
@@ -30,7 +30,7 @@ function Hash({ label, value }: { label: string; value: string }) {
 export function chainCheck(audit: Pick<Audit, "chain" | "chain_length" | "chain_verified">): { tone: "positive" | "negative" | "muted"; shape: "tick" | "cross" | "dash"; label: string } {
   if (!audit.chain_verified) return { tone: "negative", shape: "cross", label: "Chain broken" };
   if (audit.chain_length === 0) return { tone: "muted", shape: "dash", label: "No sealed entries yet" };
-  return { tone: "positive", shape: "tick", label: `Verified · ${audit.chain.length} of ${audit.chain_length} intact` };
+  return { tone: "positive", shape: "tick", label: `Verified, ${audit.chain.length} of ${audit.chain_length} intact` };
 }
 
 /** Whether the server's check passed, with honest wording about what that check is. */
@@ -63,8 +63,8 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
       <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
         This proves the record is unaltered. It does not prove the decisions were clinically right.{" "}
         {apiMode() === "live"
-          ? "The Wasl API ran the check when this page loaded; your browser does not re-run it."
-          : "The Wasl API ran the check when this snapshot was published (the run metadata above says when); this page shows that result and does not re-run it."}
+          ? "The Wasl API ran the check when this page loaded. Your browser does not re-run it."
+          : "The Wasl API ran the check when this snapshot was published (the run metadata above says when). This page shows that result and does not re-run it."}
       </p>
     </section>
   );
@@ -118,7 +118,7 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
           {matching} of {rows.length} match
         </span>
       }
-      note="Each decision is signed when made. The server signs it again from the stored decision; the two must be equal."
+      note="Each decision is signed when made. The server signs it again from the stored decision, and the two must be equal."
     >
       {rows.length === 0 ? (
         <p className="m-0 mt-3 text-muted">No decisions are signed for this case.</p>
@@ -199,7 +199,7 @@ export function LedgerTitle({ r, programme }: { r: LedgerRow; programme: Program
   return r.ledger === "review" ? (
     <>
       {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-      {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
+      {isNonbindingLegacyHistory(r) ? "Legacy history, nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
     </>
   ) : (
     /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
@@ -217,7 +217,7 @@ export function LedgerFacts({ audit, index, programme }: { audit: Audit; index: 
   return (
     <>
       {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
-        <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}; this history does not resolve a review item.</p>
+        <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}. This history does not resolve a review item.</p>
       )}
       {/* The auditor's redacted history never names the actor or quotes the note. */}
       <p className="m-0 text-muted">
@@ -274,7 +274,7 @@ export function GovernanceHeader({ governance, gov }: { governance?: HistoryGove
   return (
     <>
       <p className="m-0 mt-3 max-w-[72ch] text-small text-muted" role="status">
-        Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
+        Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}. Compensation does not rewrite it.
       </p>
       {gov.anyGovernable &&
         (gov.controls ? (
@@ -293,8 +293,12 @@ export function HistoryCard({ audit, programme, governance }: { audit: Audit; pr
     <Card
       id="history"
       title="Review history"
-      aside={<HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
-      note="Append-only: reviews, coordinator actions and undo/contest events share one chain. A new entry is added below; an old one is never edited."
+      note={
+        <>
+          <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Demo actions, not clinical sign-offs.</HonestyLabel> Reviews, coordinator
+          actions and undo or contest events share one append-only chain. A new entry is added below. An old one is never edited.
+        </>
+      }
     >
       <GovernanceHeader governance={governance} gov={gov} />
       {audit.history.length === 0 ? (
@@ -331,7 +335,7 @@ const streamWords = (k: string) => STREAM_WORDS[k] ?? (/^out\.p\d+$/.test(k) ? `
 export function AnchorsCard({ audit }: { audit: Audit }) {
   const entries = Object.entries(audit.anchors);
   return (
-    <Card id="anchors" title="Anchors" aside={<HonestyLabel kind="designed">External store: designed, not checked here</HonestyLabel>}>
+    <Card id="anchors" title="Anchors" aside={<HonestyLabel kind="designed" className={HONESTY_PLAIN}>Checking the external store is designed, not built.</HonestyLabel>}>
       {entries.length === 0 ? (
         <p className="m-0 mt-3 text-muted">The API sent no anchors for this case.</p>
       ) : (
@@ -351,7 +355,7 @@ export function AnchorsCard({ audit }: { audit: Audit }) {
         </ul>
       )}
       {audit.anchor_note && (
-        <p className="m-0 mt-3 max-w-[72ch] text-muted">{audit.anchor_note}. This page shows the heads the API reports; it does not query that store.</p>
+        <p className="m-0 mt-3 max-w-[72ch] text-muted">{audit.anchor_note}. This page shows the heads the API reports. It does not query that store.</p>
       )}
     </Card>
   );

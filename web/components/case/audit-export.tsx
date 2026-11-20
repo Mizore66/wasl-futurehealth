@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { getExportHashes } from "@/lib/api/export";
 import { caseHref } from "@/lib/domain/ids";
 
@@ -13,14 +13,11 @@ export async function ExportCard({ caseId }: { caseId: string }) {
   const href = `${caseHref("/app/patients", caseId)}/audit/export`;
   return (
     <section aria-labelledby="export-h" className="min-w-0 rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="audit-export">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 id="export-h" className="m-0 text-section font-medium">
-          Redacted evidence export
-        </h2>
-        <HonestyLabel kind="simulated">Synthetic data, redacted</HonestyLabel>
-      </div>
+      <h2 id="export-h" className="m-0 text-section font-medium">
+        Redacted evidence export
+      </h2>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-        A redacted copy of this case&apos;s record and audit trail for internal audit, built and redacted by the Wasl API and
+        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Synthetic data.</HonestyLabel> A redacted copy of this case&apos;s record and audit trail for internal audit, built and redacted by the Wasl API and
         downloaded unchanged. It is not de-identified and not for sharing outside the audit team.
       </p>
 
@@ -42,7 +39,7 @@ export async function ExportCard({ caseId }: { caseId: string }) {
             ))}
           </dl>
           <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
-            The hashes are as the API served them when this page loaded; a new review changes both. Recomputing the
+            The hashes are as the API served them when this page loaded. A new review changes both. Recomputing the
             content hash from the downloaded file checks it is the file the API served. Neither is a signature, and
             neither proves the redaction was complete.
           </p>

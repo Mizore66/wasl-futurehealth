@@ -15,7 +15,7 @@ export const reasonLabels: Record<string, string> = {
   duplicate_outreach_requires_review: "Duplicate or overlapping outreach needs coordinator review.",
   case_priority_urgent: "The canonical case priority is urgent.",
   case_overdue: "A canonical follow-up clock is overdue.",
-  consent_not_granted: "Canonical contact permission is not granted; review permission before patient contact.",
+  consent_not_granted: "Canonical contact permission is not granted. Review permission before patient contact.",
   dropoff_no_show: "The canonical worklist records a no-show.",
   dr_recall_overdue: "The canonical diabetic-eye recall is overdue.",
   dr_next_recall_overdue: "The canonical diabetic-eye recall is overdue.",
@@ -52,11 +52,11 @@ export function obligationsFor(journey: PersonJourney, caseID: string): PersonOb
 export function lifecycleLabel(lifecycle: "released" | "held" | "withheld" | "recorded"): string {
   switch (lifecycle) {
     case "released":
-      return "Release recorded — not evidence of dispatch or delivery";
+      return "Release recorded. This is not evidence of dispatch or delivery";
     case "held":
       return "Held for a canonical guard";
     case "withheld":
-      return "Withheld; not actionable";
+      return "Withheld, not actionable";
     case "recorded":
       return "Intent recorded";
   }

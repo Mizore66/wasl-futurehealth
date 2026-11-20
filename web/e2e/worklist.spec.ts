@@ -316,7 +316,7 @@ test.describe("Patient record", () => {
     await expect(page.getByText("فاطمة الزعابي").first()).toBeVisible();
     await expect(page.getByText("Fatima Alzaabi")).toBeVisible();
     await expect(page.getByText("“the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve”")).toBeVisible();
-    await expect(page.getByTestId("chain-verified")).toContainText("Verified · 3 of 3 intact");
+    await expect(page.getByTestId("chain-verified")).toContainText("Verified, 3 of 3 intact");
     await expect(page.getByText("Message owner")).toHaveCount(0);
 
     await page.getByText("3 sealed entries").click();
@@ -341,7 +341,7 @@ test.describe("Patient record", () => {
     await expect(readers.getByRole("listitem")).toHaveText([/Reader A\s*examined followup/, /Reader B\s*examined followup/]);
     await expect(readers).toContainText("Fundus examined after dilation");
     await expect(page.getByRole("region", { name: "DoH closure checklist" })).toHaveCount(0);
-    await expect(page.getByTestId("chain-verified")).toContainText("Verified · 5 of 5 intact");
+    await expect(page.getByTestId("chain-verified")).toContainText("Verified, 5 of 5 intact");
     await expect(page.getByRole("list", { name: "Sealed chain" }).getByRole("listitem").last()).toContainText("Closed · with evidence, dated to the eye-clinic exam");
     await shot(page, "record-dr");
     await noSeriousAxe(page);

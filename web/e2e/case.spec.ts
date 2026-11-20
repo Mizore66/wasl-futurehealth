@@ -72,7 +72,7 @@ for (const name of NAMES) {
       else await expect(page.getByRole("region", { name: "Human sign-offs" })).toContainText("No human sign-offs recorded for this case.");
 
       const booking = page.getByRole("region", { name: "Booking" });
-      await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support");
+      await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support.");
       await expect(booking).toContainText(detail.booking.status === "suggested" ? "Slot suggested" : "No booking needed");
       if (detail.booking.prep_risk) await expect(booking).toContainText("Bowel-prep risk (App 9)");
       if (detail.api_overlay) {
@@ -118,7 +118,7 @@ for (const name of NAMES) {
       /* Hashes and sealed entries sit under Audit details. */
       await verify.getByText("Audit details", { exact: true }).click();
       await expect(page.getByTestId("chain-verified")).toContainText(
-        audit.chain_verified ? `Verified · ${audit.chain.length} of ${audit.chain_length} intact` : "Chain broken",
+        audit.chain_verified ? `Verified, ${audit.chain.length} of ${audit.chain_length} intact` : "Chain broken",
       );
       await expect(page.getByRole("region", { name: "Chain check" })).toContainText("recomputed every entry's hash");
       const entries = page.getByRole("list", { name: "Chain entries" }).getByRole("listitem");

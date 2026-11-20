@@ -61,8 +61,8 @@ export function OutcomeHandoffApproveForm({
       <summary className="min-h-8 cursor-pointer font-medium">{version ? "Approve revised content" : "Approve content"}</summary>
       <form onSubmit={submit} className="mt-2 flex flex-col gap-3 border-t border-rule pt-3" aria-label="Approve outcome hand-off content">
         <p className="m-0 text-small text-muted">
-          You act as your signed-in credential, which must be a clinician; the API refuses anyone else. You approve the current decision, its end state, the next step
-          you choose and the fixed safety-net notice. A new approval creates a new version; earlier acknowledgements stay in history.
+          You act as your signed-in credential, which must be a clinician. The API refuses anyone else. You approve the current decision, its end state, the next step
+          you choose and the fixed safety-net notice. A new approval creates a new version, and earlier acknowledgements stay in history.
         </p>
         <label className="flex flex-col gap-1 text-small font-medium">
           Next step for the patient

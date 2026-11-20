@@ -36,7 +36,7 @@ const ACTIONS: { event: ConsentEventName; label: string; confirmation: string; c
     event: "consent_opted_out",
     label: "Record opt-out",
     confirmation:
-      "Cancels queued demo outreach and blocks a later grant or denial in this demo flow; only another opt-out can follow. No message is sent and the canonical simulation does not change.",
+      "Cancels queued demo outreach and blocks a later grant or denial in this demo flow. Only another opt-out can follow. No message is sent and the canonical simulation does not change.",
     confirm: "Confirm opt-out",
   },
 ];
@@ -126,7 +126,7 @@ export function ConsentActions({
           setMessage({ kind: "warning", text: result.warning ?? "Consent event saved. Reload before another action." });
         }
       } catch {
-        setMessage({ kind: "error", text: "The API did not answer. Reload before retrying; no new event is shown here." });
+        setMessage({ kind: "error", text: "The API did not answer. Reload before retrying. No new event is shown here." });
       }
     });
   }
@@ -146,7 +146,7 @@ export function ConsentActions({
         <div className="mt-3 flex flex-col gap-2" aria-label="Record demo contact permission">
           {optedOut && (
             <p className="m-0 text-small text-muted">
-              The patient has opted out of contact in this demo flow. Consent can no longer be granted or denied here; only another
+              The patient has opted out of contact in this demo flow. Consent can no longer be granted or denied here. Only another
               opt-out can be recorded.
             </p>
           )}

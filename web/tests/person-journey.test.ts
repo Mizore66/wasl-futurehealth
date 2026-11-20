@@ -168,7 +168,7 @@ describe("person journey presentation", () => {
     }];
     const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
     expect(html).toContain("Duplicate intent");
-    expect(html).toContain("Release recorded — not evidence of dispatch or delivery");
+    expect(html).toContain("Release recorded. This is not evidence of dispatch or delivery");
     expect(reasonLabel("consent_not_granted")).toContain("not granted");
     expect(lifecycleLabel("withheld")).toContain("not actionable");
   });

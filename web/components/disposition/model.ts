@@ -11,8 +11,8 @@ import type { CaseDetail } from "@/lib/api/schema";
  */
 
 export const CLINICIAN_HOLDS = {
-  clinician_decision_no_fundal_view: { programme: "diabetic_retinopathy", label: "No fundal view: the eye clinic could not assess the retina" },
-  clinician_decision_outside_fleischner: { programme: "lung_nodule", label: "Outside Fleischner: the guideline does not apply to this patient" },
+  clinician_decision_no_fundal_view: { programme: "diabetic_retinopathy", label: "No fundal view. The eye clinic could not assess the retina." },
+  clinician_decision_outside_fleischner: { programme: "lung_nodule", label: "Outside Fleischner. The guideline does not apply to this patient." },
 } as const;
 export type ClinicianHold = keyof typeof CLINICIAN_HOLDS;
 
@@ -130,6 +130,6 @@ export function recordedWords(kind: DispositionKind, d: Recorded): string {
     const plan = HOLD_PLANS[d.plan as keyof typeof HOLD_PLANS] ?? String(d.plan);
     return `Plan recorded, not completed care: ${plan} · ${String(d.owner ?? "owner not recorded")} to review by ${reviewDateWords(d.review_date)}`;
   }
-  if (d.plan === "closed_declined") return "Informed refusal recorded · non-procedure end state: no procedure was done and no screening result exists";
+  if (d.plan === "closed_declined") return "Informed refusal recorded as a non-procedure end state. No procedure was done and no screening result exists.";
   return `Informed refusal recorded · ${String(d.follow_up_owner ?? "the GP")} reviews again on ${String(d.next_review ?? "a date not recorded")}`;
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { Pill } from "@/components/review/marks";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
 import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
@@ -159,7 +159,7 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
       title="One patient, two records"
       note={
         detail.identities.some((idn) => personFor(idn.registration))
-          ? "Names are the simulated cast; the record numbers and the link facts come from the API."
+          ? "Names are the simulated cast. The record numbers and the link facts come from the API."
           : "The API sends record numbers and link facts, not names, so no name is shown."
       }
     >
@@ -507,13 +507,13 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
 export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.JSX.Element {
   const { case: c } = detail;
   if (c.crc) {
-    return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only; no treatment delivery or referral dispatch.">
+    return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only. No treatment is delivered and no referral is dispatched.">
       <p>Screening: {c.crc.screening_complete ? "complete" : "evidence incomplete"}. Care: {c.crc.care_state.replaceAll("_", " ")}.</p>
-      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking · source {c.crc.source_report} v{c.crc.source_version}; clock starts day {c.crc.clock_start === undefined ? "not recorded" : Math.floor(c.crc.clock_start)}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
+      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking from source {c.crc.source_report} v{c.crc.source_version}. The clock starts on day {c.crc.clock_start === undefined ? "not recorded" : Math.floor(c.crc.clock_start)}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
       <ul aria-label="Independent CRC obligations">
         {c.crc.obligations.map((need) => <li key={need.id}>
           <strong>{need.outcome.replaceAll("_", " ")}</strong> · {need.state.replaceAll("_", " ")}
-          <p>Source {need.source_report} v{need.source_version}; procedure {need.procedure_report} v{need.procedure_version}; clock starts day {Math.floor(need.clock_start)}. Owner {plain(need.owner)}.</p>
+          <p>Source {need.source_report} v{need.source_version}, procedure {need.procedure_report} v{need.procedure_version}, clock starts day {Math.floor(need.clock_start)}. Owner {plain(need.owner)}.</p>
           {need.blockers.length > 0 && <p>Holds: {need.blockers.map((b) => b.replaceAll("_", " ")).join(", ")}.</p>}
           <p data-testid={`obligation-confirmation-${need.id}`}>
             {obligationConfirmationWords(need, detail)}
@@ -524,7 +524,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
               </>
             )}
           </p>
-          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days; next due day {need.due_day === undefined ? "not recorded" : Math.floor(need.due_day)}.</p>}
+          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days. Next due day {need.due_day === undefined ? "not recorded" : Math.floor(need.due_day)}.</p>}
           {need.child_loop && <p>Tracking loop: {need.child_loop}.</p>}
         </li>)}
       </ul>
@@ -562,7 +562,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
             <>
               <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
               <FindingRow label="Rule timing">
-                Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `; overdue after ${f.rec.deadline_days} days` : "; no overdue clock"}
+                Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `, overdue after ${f.rec.deadline_days} days` : ", no overdue clock"}
               </FindingRow>
             </>
           )}
@@ -632,7 +632,7 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
   const consent = consentRows(detail);
   const out = outreachRows(detail);
   return (
-    <Card id="consent" title="Consent and messages" aside={<HonestyLabel kind="simulated">Simulated messages</HonestyLabel>}>
+    <Card id="consent" title="Consent and messages" note={<HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Messages here are simulated.</HonestyLabel>}>
       <p className="m-0 mt-3">
         Canonical simulation now: <span className="font-medium">{consentNow(detail.case.consent)}</span>
       </p>
@@ -694,8 +694,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
     <Card
       id="signoffs"
       title="Human sign-offs"
-      aside={<HonestyLabel kind="simulated">Simulated reviewers</HonestyLabel>}
-      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review. A first or second read is not a final sign-off; only an agreed or senior-resolved question is."
+      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review. A first or second read is not a final sign-off. Only an agreed or senior-resolved question is."
     >
       {resolutionProgress(detail) && (
         <p className="m-0 mt-3 text-small text-muted" data-testid="resolution-progress">
@@ -724,7 +723,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               {r.ledger === "review" ? (
                 <p className="m-0 font-medium">
                   {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                  {isNonbindingLegacyHistory(r) ? "Legacy history — nonbinding" : reviewWords(r.decision, detail.case.programme)}
+                  {isNonbindingLegacyHistory(r) ? "Legacy history, nonbinding" : reviewWords(r.decision, detail.case.programme)}
                 </p>
               ) : (
                 <div className="font-medium">
@@ -736,7 +735,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
                 {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
               {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
-                <p className="m-0 mt-1 text-small text-muted">Original recorded label: {reviewWords(r.decision, detail.case.programme)}; this history does not resolve a review item.</p>
+                <p className="m-0 mt-1 text-small text-muted">Original recorded label: {reviewWords(r.decision, detail.case.programme)}. This history does not resolve a review item.</p>
               )}
               {(r.ledger === "review" || r.ledger === "compensation") && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>
@@ -757,8 +756,12 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
     <Card
       id="ledger"
       title="Coordinator actions"
-      aside={<HonestyLabel kind="simulated">Demo ledger, synthetic patients</HonestyLabel>}
-      note="Append-only overlay: these never change a decision, consent or signature, and nothing was sent to the patient."
+      note={
+        <>
+          <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Demo ledger with synthetic patients.</HonestyLabel> These entries are
+          append-only. They never change a decision, consent or signature, and nothing was sent to the patient.
+        </>
+      }
     >
       {events.length === 0 ? (
         <Empty>No coordinator actions recorded for this case.</Empty>
@@ -852,7 +855,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
   const slot = d.booking;
   const risk = d.prep_risk;
   return (
-    <Card id="booking" title="Booking" aside={<HonestyLabel kind="simulated">Simulated decision support</HonestyLabel>}>
+    <Card id="booking" title="Booking">
       <p className="m-0 mt-3 flex flex-wrap items-center gap-2">
         <Pill tone={b.status === "suggested" ? "positive" : "muted"}>{BOOKING_STATUS[b.status] ?? plain(b.status)}</Pill>
         {b.data_mode && <span className="text-small text-muted">data mode: {b.data_mode}</span>}
@@ -945,7 +948,8 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
         </details>
       )}
       <div className="mt-3 text-small text-muted">
-        Simulated only: reservations and suggestions stay in Wasl. No provider system or patient is contacted.
+        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated decision support.</HonestyLabel> Reservations and suggestions stay in
+        Wasl. No provider system or patient is contacted.
         {d.capacity_condition && (
           <>
             {" "}

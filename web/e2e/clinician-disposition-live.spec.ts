@@ -207,7 +207,7 @@ test.describe("clinician disposition, live mock", () => {
       await page.goto(caseURL(id));
       const card = page.getByRole("region", { name: "Clinician disposition" });
       await expect(card).toContainText(holdWords);
-      await expect(card).toContainText("Waiting on a clinician: no plan recorded yet");
+      await expect(card).toContainText("Waiting on a clinician. No plan recorded yet");
       await expect(page.getByRole("link", { name: /Review programme evidence|Open in Review/ })).toHaveCount(0);
       await card.getByRole("link", { name: "Record clinician disposition" }).click();
       await expect(page).toHaveURL(new RegExp(`/disposition$`));
@@ -282,7 +282,7 @@ test.describe("clinician disposition, live mock", () => {
     await page.goto(caseURL(CRC));
     await page.reload();
     const saved = page.getByRole("region", { name: "Clinician disposition" });
-    for (const text of ["dr-synthetic-clinician (clinician)", `event ${String(cases.get(CRC)!.events[0].hash).slice(0, 12)}`, "Anxiety about the procedure", "FIT re-offered and declined", "no procedure was done"]) {
+    for (const text of ["dr-synthetic-clinician (clinician)", `event ${String(cases.get(CRC)!.events[0].hash).slice(0, 12)}`, "Anxiety about the procedure", "FIT re-offered and declined", "No procedure was done"]) {
       await expect(saved).toContainText(text);
     }
     await expect(saved).not.toContainText("GP to sign");

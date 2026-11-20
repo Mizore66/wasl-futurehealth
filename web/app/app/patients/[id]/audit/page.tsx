@@ -18,7 +18,7 @@ import {
 } from "@/components/case/audit-view";
 import { AuditWorkspace, type WorkspaceEvent } from "@/components/case/audit-workspace";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 import { statusWords } from "@/components/worklist/model";
 import { gatedHistory } from "@/lib/api/protocol-history";
@@ -72,7 +72,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         <GovernanceHeader governance={governance} gov={gov} />
         {audit.history.length > 0 && (
           <p className="m-0 mt-3">
-            <HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>
+            <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Demo actions, not clinical sign-offs.</HonestyLabel>
           </p>
         )}
       </>
@@ -104,7 +104,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         </p>
       )}
       {tally.state === "some" && <p className="m-0 font-semibold text-clay-ink">At least one decision signature does not match its stored value.</p>}
-      <HonestyLabel kind="simulated">Simulated run, real hashes</HonestyLabel>
+      <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated run with real hashes.</HonestyLabel>
     </div>
   );
 

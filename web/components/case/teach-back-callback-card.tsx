@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { recordTeachBackCallback } from "@/app/app/patients/[id]/actions";
 import { Button } from "@/components/ui/button";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import type { TeachBackCallback } from "@/lib/api/schema";
 import { staffDueTime } from "@/lib/domain/staff-time";
 import { atWords } from "./words";
@@ -63,7 +63,7 @@ export function TeachBackCallbackCard({ caseId, callbacks, live }: { caseId: str
     <section id="teach-back-callbacks" aria-labelledby="teach-back-callbacks-h" className="min-w-0 scroll-mt-4 rounded-card border border-line bg-surface p-4 md:p-pad">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="teach-back-callbacks-h" className="m-0 text-section font-medium">Teach-back nurse callbacks</h2>
-        <HonestyLabel kind="simulated">No call is placed</HonestyLabel>
+        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>No call is placed.</HonestyLabel>
       </div>
       <ol className="m-0 mt-2 list-none p-0" aria-label="Teach-back callbacks">
         {shown.map((cb) => (

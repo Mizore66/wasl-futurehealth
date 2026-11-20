@@ -274,7 +274,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
           </header>
           {decisions.length === 0 ? (
             <p className="m-0 my-4 text-[13px] text-muted" role="status" data-testid="signature-score">
-              Nothing to verify: the audit returned no decision signatures for this case.
+              Nothing to verify. The audit returned no decision signatures for this case.
             </p>
           ) : (
             <>

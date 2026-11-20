@@ -150,7 +150,7 @@ describe("DispositionCard copy", () => {
       decline_disposition: { at: "t", event: "e".repeat(64), role: "clinician", actor: "dr-hamdan", decline_event: DECLINE, plan: "closed_declined", reason: "procedure_anxiety", counselling: "Explained the risks", safety_net: "Return with bleeding", fit_reoffer: "offered_declined" },
     };
     const html = renderToStaticMarkup(createElement(DispositionCard, { ctx: dispositionContext(detail({ programme: "crc", overlay })) }));
-    for (const want of ["dr-hamdan (clinician)", `event ${DECLINE.slice(0, 12)}`, "Anxiety about the procedure", "Explained the risks", "Return with bleeding", "FIT re-offered and declined", "no procedure was done"]) {
+    for (const want of ["dr-hamdan (clinician)", `event ${DECLINE.slice(0, 12)}`, "Anxiety about the procedure", "Explained the risks", "Return with bleeding", "FIT re-offered and declined", "No procedure was done"]) {
       expect(html).toContain(want);
     }
     expect(html).not.toMatch(/GP to sign|loop closed|procedure done|care completed|\bclosed\b/i);

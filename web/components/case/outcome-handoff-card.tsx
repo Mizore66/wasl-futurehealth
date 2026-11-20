@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import type { OutcomeHandoff } from "@/lib/api/schema";
 import { NEXT_STEP_WORDS } from "./outcome-handoff-words";
 import { atWords } from "./words";
@@ -11,11 +11,11 @@ import { atWords } from "./words";
 export type OutcomeHandoffActions = { live: false } | { live: true; identity?: ReactNode; approve?: ReactNode; release?: ReactNode };
 
 const PATIENT: Record<OutcomeHandoff["status"], string> = {
-  not_eligible: "Not eligible: the case is not closed, or a patient contest holds it open",
+  not_eligible: "Not eligible. The case is not closed, or a patient contest holds it open.",
   pending_approval: "Pending clinician approval of the outcome, next step and safety-net content",
-  pending_release: "Approved, not yet released: a coordinator records the simulated release, which checks consent",
-  held_consent: "Approved, held: contact permission was unknown at release; a new release is needed once it is granted",
-  suppressed: "Approved, suppressed: the patient denied or withdrew contact permission",
+  pending_release: "Approved, not yet released. A coordinator records the simulated release, which checks consent.",
+  held_consent: "Approved, held. Contact permission was unknown at release. A new release is needed once it is granted.",
+  suppressed: "Approved, suppressed. The patient denied or withdrew contact permission.",
   released: "Released to the patient link, not yet acknowledged",
   acknowledged: "Acknowledged by the patient",
 };
@@ -39,7 +39,7 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
     <section id="outcome-handoff" aria-labelledby="outcome-handoff-h" className="min-w-0 scroll-mt-4 rounded-card border border-line bg-surface p-4 md:p-pad">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="outcome-handoff-h" className="m-0 text-section font-medium">Outcome hand-off</h2>
-        <HonestyLabel kind="simulated">No message is sent</HonestyLabel>
+        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>No message is sent.</HonestyLabel>
       </div>
       <dl className="m-0 mt-2 grid gap-1">
         <dt className="text-small text-muted">Patient</dt>
@@ -49,7 +49,7 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
         {handoff.patient_informed !== undefined && (
           <>
             <dt className="text-small text-muted">Patient informed</dt>
-            <dd className="m-0">{handoff.patient_informed ? "Yes: the patient acknowledged this version" : "No"}</dd>
+            <dd className="m-0">{handoff.patient_informed ? "Yes, the patient acknowledged this version" : "No"}</dd>
           </>
         )}
         <dt className="text-small text-muted">Contact permission now</dt>
@@ -101,16 +101,16 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
 function StaffSteps({ handoff, actions }: { handoff: OutcomeHandoff; actions: OutcomeHandoffActions }) {
   let body: ReactNode;
   if (handoff.status === "not_eligible") {
-    body = <p className="m-0 text-small text-muted">No staff step: only a closed case with no open patient contest can have an outcome hand-off.</p>;
+    body = <p className="m-0 text-small text-muted">No staff step. Only a closed case with no open patient contest can have an outcome hand-off.</p>;
   } else if (!actions.live) {
-    body = <p className="m-0 text-small text-muted">Approval and release need the live API; fixture data cannot record them.</p>;
+    body = <p className="m-0 text-small text-muted">Approval and release need the live API. Fixture data cannot record them.</p>;
   } else {
     body = (
       <>
         {actions.identity}
         {actions.approve}
         {actions.release ?? (
-          <p className="m-0 mt-3 text-small text-muted">Release: available once a clinician has approved the current content.</p>
+          <p className="m-0 mt-3 text-small text-muted">Release is available once a clinician has approved the current content.</p>
         )}
       </>
     );
