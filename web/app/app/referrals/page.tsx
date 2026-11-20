@@ -72,10 +72,12 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
               return { label: v.label, href: scope ? `/app/referrals?${scope}` : "/app/referrals", current: v === view };
             })}
           />
-          {view && (
+          {view ? (
             <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-jade-800 no-underline hover:underline">
               Returned referrals, referring {view.referrer === "GP" ? "GP" : "clinician"} view <ChevronRight aria-hidden className="size-4" />
             </Link>
+          ) : (
+            <p className="m-0 text-small text-muted">No referral workflow for this programme and provider.</p>
           )}
         </>
       }
