@@ -144,7 +144,8 @@ describe("WCAG 1.3.1 and 2.5.8 on returned-referral cards", () => {
 describe("Live-mode pipeline matching falls back to a labelled replay", () => {
   it("states that the published snapshot is shown", () => {
     const html = renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching", note: SNAPSHOT_NOTE }));
-    expect(html).toContain("Replay of a recorded run");
+    expect(html).toContain("data-honesty=\"replay\"");
+    expect(html).toContain("Replaying the recorded showcase run");
     expect(html).toContain("published fixture snapshot");
     expect(renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching" }))).not.toContain(
       "pipeline-snapshot-note",
