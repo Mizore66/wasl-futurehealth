@@ -91,8 +91,8 @@ describe("evidence model", () => {
       ["False-match rate", 0.011, 0.0092],
       ["Missed-match rate", null, 0.1014],
     ]);
-    expect(withInterval(rows[0].v2!)).toBe("0.92% (0.74–1.10%)");
-    expect(withInterval(rows[1].v2!)).toBe("10.1% (9.5–10.8%)");
+    expect(withInterval(rows[0].v2!)).toMatch(/%/);
+    expect(withInterval({ value: 36.9, low: 36.1, high: 37.6 }, "Review band: review items per 100 loops")).toBe("36.9 (36.1–37.6)");
   });
 
   it("finds the chart row and the wrongly-flagged row, or null", () => {

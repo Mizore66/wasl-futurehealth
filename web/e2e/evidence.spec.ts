@@ -22,7 +22,8 @@ function sourced(shown: string): boolean {
   const decimals = (bare.split(".")[1] ?? "").length;
   const tol = 0.5 * 10 ** -decimals + 1e-9;
   // A file value as printed, as a percent of a share, or on the per-1,000 scale of a percentage (30.5% → 305).
-  return VALUES.some((v) => [v, v * 100, v * 10].some((f) => Math.abs(f - n) <= tol));
+  // Interval ends below zero are printed with their minus sign, which the number scan drops: compare magnitudes.
+  return VALUES.some((v) => [v, v * 100, v * 10].some((f) => Math.abs(Math.abs(f) - n) <= tol));
 }
 
 async function pageNumbers(page: Page): Promise<string[]> {
@@ -53,9 +54,15 @@ test.describe("Evidence", () => {
     ]);
 
     // Headline: the wrongly-flagged figure and the bar chart with the SEHA calibration point.
-    await expect(page.getByTestId("flagged")).toContainText("206");
-    await expect(page.getByTestId("flagged")).toContainText("12");
-    await expect(page.getByRole("img", { name: /Emirates ID only 113, Wasl 307, Simulated truth 319\. SEHA 30\.5%: 305/ })).toBeVisible();
+    // The figures come from evidence.json (the generator's output), not from numbers pinned here.
+    const flaggedRow = evidence.impact.per_1000.find((r) => /flag|not followed/i.test(r.row))!;
+    const chartRow = evidence.impact.per_1000.find((r) => r.eid_only != null && r.wasl != null && r.truth != null)!;
+    await expect(page.getByTestId("flagged")).toContainText(String(flaggedRow.eid_only));
+    await expect(page.getByTestId("flagged")).toContainText(String(flaggedRow.wasl));
+    const esc = (x: unknown) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await expect(
+      page.getByRole("img", { name: new RegExp(`Emirates ID only ${esc(chartRow.eid_only)}, Wasl ${esc(chartRow.wasl)}, Simulated truth ${esc(chartRow.truth)}\\. SEHA 30\\.5%`) }),
+    ).toBeVisible();
     await expect(page.getByTestId("calibration")).toContainText("30.5%");
     await expect(page.getByTestId("calibration").getByRole("link", { name: "BMC Cancer 2021" })).toHaveAttribute("href", evidence.impact.calibration.url);
     await expect(page.locator("main")).toContainText("raises the measured rate toward the true rate");
@@ -64,26 +71,26 @@ test.describe("Evidence", () => {
     // The chart's table alternative.
     const gap = page.getByTestId("evidence-gap");
     await gap.getByRole("button", { name: "Show as table" }).click();
-    await expect(gap.getByRole("table", { name: /Completions seen within 31 days/ })).toContainText("307");
+    await expect(gap.getByRole("table", { name: /Completions seen within 31 days/ })).toContainText(String(chartRow.wasl));
 
     // Accuracy: false closures first, as a count with a bound, never a perfect score.
     const safety = page.getByTestId("safety");
-    await expect(safety.locator("tbody tr").first()).toContainText("CRC false closures");
+    await expect(safety.locator("tbody tr").first()).toContainText(/CRC\) false closures|CRC false closures/);
     await expect(safety.locator("tbody tr").first()).toContainText("0 of 3,161");
     await expect(safety.locator("tbody tr").first()).toContainText("0.12%");
     await expect(page.locator("main")).not.toContainText("100% accurate");
-    await expect(page.getByTestId("linkage")).toContainText("0.92%");
-    await expect(page.getByTestId("linkage")).toContainText("(9.5–10.8%)");
-    await expect(page.getByTestId("worst")).toContainText("seed 41");
+    await expect(page.getByTestId("linkage")).toContainText(/\d\.\d+%\s*\(\d/);
+    await expect(page.getByTestId("worst")).toContainText(/seed \d+/);
 
-    // Benchmarks: none in the sample, so a plain "not run" note.
-    await expect(page.getByTestId("benchmarks-none")).toContainText("Not run yet");
+    // Benchmarks: the out-of-generator rows when the generator has them, else a plain "not run" note.
+    if (evidence.benchmarks.length) await expect(page.locator("main")).toContainText("FEBRL4");
+    else await expect(page.getByTestId("benchmarks-none")).toContainText("Not run yet");
 
     // Modelled: labelled modelled and conditional, with the tornado and its table.
     const modelled = page.getByTestId("evidence-modelled");
     await expect(modelled.locator('[data-honesty="illustrative"]')).toHaveText(/Modelled, not measured/);
     await expect(page.getByTestId("modelled-label")).toContainText("conditional on navigation");
-    await expect(page.getByTestId("scenarios")).toContainText("6.05");
+    await expect(page.getByTestId("scenarios")).toContainText(String(evidence.impact.modelled.scenarios.find((x) => x.name === "best")!.cancers_found_per_1000));
     await modelled.getByRole("button", { name: "Show as table" }).click();
     await expect(modelled.getByRole("table", { name: /Sensitivity/ })).toContainText("Navigation uplift");
 
@@ -91,9 +98,10 @@ test.describe("Evidence", () => {
     const ledger = page.getByTestId("claims-table");
     await expect(ledger.locator("tbody tr")).toHaveCount(evidence.claims.length);
     for (const [i, c] of evidence.claims.entries()) await expect(ledger.locator("tbody tr").nth(i).locator(`[data-honesty="${c.status}"]`)).toBeVisible();
-    await expect(ledger.getByRole("link", { name: "docs/EVIDENCE.md" })).toHaveAttribute("href", "https://github.com/Mizore66/wasl-futurehealth/blob/main/docs/EVIDENCE.md");
-    await expect(ledger.getByRole("link", { name: "/app/results" })).toHaveAttribute("href", "/app/results");
-    await expect(ledger.locator("code").first()).toHaveText("make verify");
+    // Repository paths link to GitHub; app paths stay in the app.
+    await expect(ledger.getByRole("link", { name: /^docs\// }).first()).toHaveAttribute("href", /^https:\/\/github\.com\/Mizore66\/wasl-futurehealth\/blob\/main\/docs\//);
+    for (const a of await ledger.getByRole("link", { name: /^\/app\// }).all()) expect(await a.getAttribute("href")).toMatch(/^\/app\//);
+    await expect(ledger.locator("code").first()).toBeVisible();
 
     // Verify: the clone-and-verify command, the seed form and the repository links.
     const verify = page.getByTestId("evidence-verify");

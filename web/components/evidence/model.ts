@@ -28,10 +28,21 @@ export function sharePct(share: number, digits?: number): string {
 }
 
 /** Interval in the value's own precision: "0.92% (0.74–1.10%)". */
-export function withInterval(l: Pick<EvidenceLinkage, "value" | "low" | "high">): string {
+export function withInterval(l: Pick<EvidenceLinkage, "value" | "low" | "high">, metric = ""): string {
+  // Rates and F1 are shares shown as percents; counts such as "review items per 100 loops" or "hours per 1,000" are not.
+  if (!isShareMetric(metric)) {
+    const n = (v: number) => (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2));
+    return `${n(l.value)} (${n(l.low)}–${n(l.high)})`;
+  }
   const digits = Math.abs(l.value * 100) < 1 ? 2 : 1;
   const p = (v: number) => (v * 100).toFixed(digits);
   return `${p(l.value)}% (${p(l.low)}–${p(l.high)}%)`;
+}
+
+/** A metric whose value is a share (0–1): rates, precision/recall, F1. Empty means a share (the historical default). */
+export function isShareMetric(metric: string): boolean {
+  if (!metric) return true;
+  return !/per 100|per 1,?000|hours|items/i.test(metric);
 }
 
 /** An upper bound as a percent to two significant figures: 0.00117 → "0.12%". */
