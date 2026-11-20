@@ -2,18 +2,23 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { signInReviewer, signOutReviewer } from "@/app/app/review/[id]/actions";
+import { signInAsDemoPersona, signInReviewer, signOutReviewer } from "@/app/app/review/[id]/actions";
 import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 import { oidcStartHref, sessionEndedMessage, type ReviewSessionInfo, type SessionEndedReason } from "./auth";
 import type { SessionPersona } from "@/lib/auth/session-persona";
 import { clearSignedOutNotice, signedOutNotice } from "./signed-out-notice";
+import { DEMO_PERSONA_WORDS, DemoPersonaPicker } from "./demo-persona-picker";
 
 const INDEPENDENCE = {
-  demo: "A token proves a configured demo identity, not that a separate person is present.",
-  oidc: "OIDC verifies a provider subject and maps it to a configured actor. That alone does not prove that separate real-world people took part.",
+  demo: "A token shows which demo account you are, not that you are a separate person.",
+  persona: "Anyone can act as anyone in this demo, so a different demo name does not prove a different person.",
+  oidc: "Signing in shows which account you are. On its own it does not prove that separate people took part.",
 } as const;
 
-/** Explicitly selected demo token entry or OIDC redirect. OIDC renders no token input or identity picker. */
+/**
+ * Demo token entry, the open demo's persona picker, or the OIDC redirect. OIDC renders no token input or identity
+ * picker; persona mode renders no token input.
+ */
 export function ReviewerLogin({
   caseId,
   mode = "demo",
@@ -71,13 +76,15 @@ export function ReviewerLogin({
         </h2>
         <p className="m-0 mt-1 text-muted">
           {mode === "oidc"
-            ? "Use your organisation’s OIDC sign-in. The verified provider subject selects a server-side credential. This page offers no role or credential choice. "
-            : "Enter the review token assigned to you. Your token decides who you are and what you may answer. This page never offers a choice of credential. "}
+            ? "Sign in with your organisation account. Your account decides your role. You cannot pick one here. "
+            : mode === "persona"
+              ? `${DEMO_PERSONA_WORDS} `
+              : "Enter the review token assigned to you. Your token decides who you are and what you may answer. "}
           {INDEPENDENCE[mode]}
         </p>
         {(notice || authError) && (
           <p role="status" className="m-0 mt-2 rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
-            {authError ? "OIDC sign-in could not be completed. Try again or contact the operator." : notice}
+            {authError ? "Sign-in could not be completed. Try again or contact the operator." : notice}
           </p>
         )}
         {mode === "oidc" ? (
@@ -89,8 +96,10 @@ export function ReviewerLogin({
             href={oidcStartHref(caseId, returnTo)}
             className="mt-4 inline-flex min-h-11 items-center self-start rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
           >
-            Sign in with OIDC
+            Sign in with your organisation account
           </a>
+        ) : mode === "persona" ? (
+          <DemoPersonaPicker caseId={caseId} signIn={signInAsDemoPersona} />
         ) : (
           <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
             <div>
@@ -130,22 +139,38 @@ export function ReviewerLogin({
   );
 }
 
-/** `persona` names the OIDC subject and its mapped credential (from reviewerPersona), so a reviewer can check who they are before acting. */
+/**
+ * `persona` names the OIDC subject and its mapped credential, or the picked demo persona (from reviewerPersona), so a
+ * reviewer can check who they are before acting.
+ */
 export function ReviewerSessionStatus({ session, persona }: { session: ReviewSessionInfo; persona?: SessionPersona | null }) {
   const oidcPersona = session.method === "oidc" && persona?.method === "oidc" ? persona : undefined;
+  const demoPersona = session.method === "persona" && persona?.method === "persona" ? persona : undefined;
+  if (session.method === "persona") {
+    return (
+      <p className="m-0 mt-2 text-small text-muted" data-testid="reviewer-session">
+        Demo sign-off as{" "}
+        <span className="font-medium text-ink" data-testid="reviewer-session-subject">
+          {demoPersona?.actor ?? "a demo reviewer"}
+        </span>
+        . Anyone visiting the demo can act as this reviewer. To answer as someone else, sign out and pick another. In
+        real use every sign-off belongs to a named clinician.
+      </p>
+    );
+  }
   return (
     <p className="m-0 mt-2 text-small text-muted" data-testid="reviewer-session">
       {session.method === "oidc" ? (
         oidcPersona ? (
           <>
-            Signed in with OIDC as{" "}
+            Signed in as{" "}
             <span className="font-medium text-ink" data-testid="reviewer-session-subject">
               {oidcPersona.actor}
             </span>{" "}
             ({oidcPersona.role}).
           </>
         ) : (
-          "Signed in with OIDC."
+          "Signed in with your organisation account."
         )
       ) : (
         "Signed in with a demo token."

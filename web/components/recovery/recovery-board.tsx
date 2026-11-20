@@ -121,7 +121,7 @@ export function RecoveryBoard({ list, detail, readOnly, view = NO_VIEW }: { list
             >
               {shown.length === 0 && (
                 <p className="m-0 px-4 py-3 text-muted">
-                  {list.status !== "ready" ? `Recovery input is ${words(list.status)}.` : `No ${filter === "all" ? "" : `${filter} `}slots.`}
+                  {list.status !== "ready" ? "Released slots are not available yet." : `No ${filter === "all" ? "" : `${filter} `}slots.`}
                 </p>
               )}
               {byDay(paging.rows).map((group) => (
@@ -179,9 +179,9 @@ export function RecoveryBoard({ list, detail, readOnly, view = NO_VIEW }: { list
           ) : (
             <p role="status" className="m-0 p-4 lg:px-[clamp(20px,2.4vw,40px)] lg:py-8">
               {list.status !== "ready"
-                ? `Recovery input is ${words(list.status)}. Run the booking demo to generate it.`
+                ? "Released slots are not available yet."
                 : list.slots.length === 0
-                  ? "No simulated released capacity is available."
+                  ? "No released slots right now (simulated)."
                   : "Select a released slot to see its candidates."}
             </p>
           )}

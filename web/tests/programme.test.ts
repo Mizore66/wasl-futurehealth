@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import dashboardJson from "@/data/api/dashboard.json";
 import { Dashboard } from "@/lib/api/schema";
-import { onTimeByProgramme, points, poolingRuns, programmeView, stallScope } from "@/components/programme/model";
+import { onTimeByProgramme, points, poolingRuns, poolingVerb, programmeView, seenShare, stallScope } from "@/components/programme/model";
 import { result } from "@/lib/results";
 
 const dashboard = Dashboard.parse(dashboardJson);
@@ -57,7 +57,7 @@ describe("programmeView: the two 31-day sources", () => {
 
   it("explains each bar from its source: counts for the demo run, the 95% range for the mean", () => {
     expect(view.kpi.demo.detail.wasl).toBe("408 of 1,331 eligible referrals");
-    expect(view.kpi.heldout.detail.eid).toBe("Mean of 5 seeds, 95% range 11.4% to 13.1%");
+    expect(view.kpi.heldout.detail.eid).toBe("Average of 5 test runs, likely range 11.4% to 13.1%");
   });
 });
 
@@ -218,7 +218,7 @@ describe("programmeView: capacity", () => {
 
   it("reads regions, condition and summary from the sample", () => {
     expect(capacity?.condition).toBe("misallocated");
-    expect(capacity?.poolingNote).toContain("network pooling");
+    expect(capacity?.poolingNote).toContain("sharing slots across regions");
     expect(capacity?.regions).toEqual([
       { key: "AA", name: "Al Ain", slots: 340, cases: 254 },
       { key: "AD", name: "Abu Dhabi", slots: 532, cases: 561 },
@@ -239,6 +239,25 @@ describe("poolingRuns", () => {
     expect(enough.rows.map((r) => r.display)).toEqual(["40.8%", "21.5%", "36.9%", "41.7%"]);
     expect(short.rows.map((r) => r.display)).toEqual(["7.3%", "18.5%", "7.1%", "8.2%"]);
     expect(result("pool.1_2.skewed_pool_60").source).toBe("booking/sim/pool_test.json");
+    expect(enough.rows.map((r) => r.label)).toEqual(["Right regions", "Wrong regions, no sharing", "Wrong regions, 30% travel", "Wrong regions, sharing"]);
+  });
+
+  it("words the sharing effect from the measured shares: nearly doubles with enough slots, no gain when short", () => {
+    const [enough, short] = poolingRuns();
+    const share = (run: typeof enough, key: string) => run.rows.find((r) => r.id.endsWith(key))!.share;
+    expect(poolingVerb(share(enough, "skewed_no_travel"), share(enough, "skewed_pool_60"))).toBe("nearly doubles");
+    expect(poolingVerb(share(short, "skewed_no_travel"), share(short, "skewed_pool_60"))).toBe("does not raise");
+    expect(poolingVerb(10, 25)).toBe("more than doubles");
+    expect(poolingVerb(10, 15)).toBe("raises");
+  });
+});
+
+describe("seenShare", () => {
+  it("is each method's 31-day rate over the truth's, per source tab: 96% and 35% in the demo run, 91% and 37% over 5 runs", () => {
+    const { demo, heldout } = programmeView(dashboard).kpi;
+    expect([seenShare(demo.rates.wasl, demo.rates.truth), seenShare(demo.rates.eid, demo.rates.truth)]).toEqual([96, 35]);
+    expect([seenShare(heldout.rates.wasl, heldout.rates.truth), seenShare(heldout.rates.eid, heldout.rates.truth)]).toEqual([91, 37]);
+    expect(seenShare(5, 0)).toBe(0);
   });
 });
 

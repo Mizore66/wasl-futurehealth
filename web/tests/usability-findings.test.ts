@@ -45,17 +45,17 @@ describe("N1: chain check with no sealed entries", () => {
   const empty: Audit = { ...audit, chain: [], chain_length: 0, chain_verified: true };
 
   it("is neutral, not a positive '0 of 0 intact'", () => {
-    expect(chainCheck(empty)).toEqual({ tone: "muted", shape: "dash", label: "No sealed entries yet" });
+    expect(chainCheck(empty)).toEqual({ tone: "muted", shape: "dash", label: "Nothing recorded yet" });
     const html = text(renderToStaticMarkup(VerifiedCard({ audit: empty })));
-    expect(html).toContain("No sealed entries yet");
+    expect(html).toContain("Nothing recorded yet");
     expect(html).not.toContain("0 of 0 intact");
-    expect(html).not.toContain("they all matched");
+    expect(html).not.toContain("Every entry was checked");
   });
 
   it("still reads verified for a sealed chain and broken for a broken one", () => {
     expect(chainCheck(audit).tone).toBe("positive");
-    expect(chainCheck(audit).label).toBe(`Verified, ${audit.chain.length} of ${audit.chain_length} intact`);
-    expect(chainCheck({ ...empty, chain_verified: false }).label).toBe("Chain broken");
+    expect(chainCheck(audit).label).toBe(`Unchanged · ${audit.chain.length} of ${audit.chain_length} entries checked`);
+    expect(chainCheck({ ...empty, chain_verified: false }).label).toBe("Record altered");
   });
 });
 
@@ -99,8 +99,8 @@ describe("N8: why the case is still open sits above the timeline", () => {
 
 describe("Review desk: lease announcements", () => {
   it("uses the operation's past tense", () => {
-    expect(claimAnnouncement("link", "claim")).toBe("Identity question claimed. The current server state is shown.");
-    expect(claimAnnouncement("evidence", "takeover")).toBe("Evidence question taken over. The current server state is shown.");
+    expect(claimAnnouncement("link", "claim")).toBe("Identity question claimed. The page is up to date.");
+    expect(claimAnnouncement("evidence", "takeover")).toBe("Evidence question taken over. The page is up to date.");
     expect(claimAnnouncement("link", "release")).not.toMatch(/claim claim|release recorded/);
   });
 });

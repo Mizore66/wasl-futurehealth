@@ -63,7 +63,7 @@ describe("N4 / clinical safety: the shell shows who the review session acts as",
   });
 
   it("names an OIDC subject with its mapped credential", () => {
-    expect(personaFromOidc("synthetic-r2", "reviewer_2")).toEqual({ actor: "synthetic-r2", role: "Second reviewer · OIDC", method: "oidc" });
+    expect(personaFromOidc("synthetic-r2", "reviewer_2")).toEqual({ actor: "synthetic-r2", role: "Second reviewer · organisation account", method: "oidc" });
   });
 
   it("shows the session on the pages that act with it and labels every other persona 'Viewing as'", () => {
@@ -144,9 +144,8 @@ describe("WCAG 1.3.1 and 2.5.8 on returned-referral cards", () => {
 describe("Live-mode pipeline matching falls back to a labelled replay", () => {
   it("states that the published snapshot is shown", () => {
     const html = renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching", note: SNAPSHOT_NOTE }));
-    expect(html).toContain("data-honesty=\"replay\"");
-    expect(html).toContain("Replaying the recorded showcase run");
-    expect(html).toContain("published fixture snapshot");
+    expect(html).toContain("Replay of a recorded run");
+    expect(html).toContain("shows the published demo instead");
     expect(renderToStaticMarkup(createElement(PipelineHeading, { title: "Identity matching", current: "/app/pipeline/matching" }))).not.toContain(
       "pipeline-snapshot-note",
     );

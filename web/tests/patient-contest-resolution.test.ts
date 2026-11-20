@@ -144,7 +144,7 @@ describe("staff patient-contest card", () => {
     const out = html([contest], { live: false, signedIn: false });
     expect(out).toContain("The report was for a different visit");
     expect(out).toContain("Closure is held");
-    expect(out).toContain("This snapshot is read-only");
+    expect(out).toContain("This view is read-only");
     expect(out).not.toContain("Resolve patient contest");
   });
 

@@ -37,7 +37,7 @@ test.describe("redacted evidence export, fixtures mode", () => {
     expect(res?.status()).toBe(200);
     const card = page.getByRole("region", { name: "Redacted evidence export" });
     await expect(card).toBeVisible();
-    await expect(card.locator("[data-honesty]")).toHaveText("Synthetic data.");
+    await expect(card.locator("[data-honesty]")).toHaveText("Simulated data");
     await expect(card.getByRole("status")).toContainText("no auditor API");
     await expect(card.getByRole("button", { name: "Download redacted export (JSON)" })).toBeDisabled();
     await expect(card.getByRole("link")).toHaveCount(0);
@@ -130,7 +130,7 @@ test.describe("redacted evidence export, live mode against a mock API", () => {
     const card = page.getByRole("region", { name: "Redacted evidence export" });
     await expect(card.getByTestId("export-content-hash")).toHaveText(exported.content_sha256);
     await expect(card.getByTestId("export-comparison-hash")).toHaveText(exported.comparison_sha256);
-    await expect(card.locator("[data-honesty]")).toHaveText("Synthetic data.");
+    await expect(card.locator("[data-honesty]")).toHaveText("Simulated data");
 
     const [download] = await Promise.all([page.waitForEvent("download"), card.getByRole("link", { name: "Download redacted export (JSON)" }).click()]);
     expect(download.suggestedFilename()).toBe(`wasl-synthetic-redacted-export_${ALLOWED.replaceAll("/", "_")}.json`);

@@ -9,7 +9,7 @@ import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/page-header";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { FilterMenu } from "@/components/ui/filters/filter-menu";
 import { SearchField } from "@/components/ui/filters/search-field";
 import { Toolbar } from "@/components/ui/filters/toolbar";
@@ -63,9 +63,9 @@ const RANK: Record<ReferralState, number> = { new: 0, grade: 1, returned: 2, acc
 type Override = { state: ReferralState; outcome: string; log: { who: string; what: string }[]; handoff?: Handoff; saved?: boolean };
 const REFUSED: Record<number, string> = {
   403: "your clinician account is not assigned to this referral's unit.",
-  404: "the API has no such referral.",
+  404: "this referral could not be found.",
   409: "the referral changed since this page loaded. Reload and answer again.",
-  500: "the case ledger could not be read.",
+  500: "the case record could not be read. Try again later.",
 };
 type Mode = null | "cond" | "ret";
 
@@ -184,7 +184,7 @@ export function ReferralInbox({
     setRefusal(null);
     if (!respond) return act(x.id, state, outcome, entry, handoff);
     if (busy) return;
-    if (!x.head) return setRefusal({ id: x.id, text: "Not saved: this referral is not in the API case ledger, so nothing was sent." });
+    if (!x.head) return setRefusal({ id: x.id, text: "Not saved: this referral cannot be answered here. Nothing was sent." });
     setBusy(true);
     respond(x.id, x.head, request)
       .then((res) => {
@@ -193,10 +193,10 @@ export function ReferralInbox({
         setWant({ k: "heading" });
         setMode(null);
         setPicked([]);
-        setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case ledger.`, log: [{ who: ME, what: entry }], saved: true } }));
+        setOver((o) => ({ ...o, [x.id]: { state, outcome: `${entry}. Saved to the case record.`, log: [{ who: ME, what: entry }], saved: true } }));
         router.refresh();
       })
-      .catch(() => setRefusal({ id: x.id, text: "Not saved: the API did not answer." }))
+      .catch(() => setRefusal({ id: x.id, text: "Not saved: no response. Try again." }))
       .finally(() => setBusy(false));
   };
   const accept = (x: Referral, conds: ReferralCondition[] = []) =>
@@ -227,8 +227,8 @@ export function ReferralInbox({
     act(
       x.id,
       "returned",
-      `Re-referral to ${x.unit} recorded in this session only. The canonical packet is unchanged and nothing is sent.`,
-      `Re-referred to ${x.unit} (this session)`,
+      `Re-referral to ${x.unit} recorded on this page only. Nothing is saved or sent.`,
+      `Re-referred to ${x.unit} (this page only)`,
       { status: "referrer_acted", actBy: x.handoff?.actBy ?? now },
       x.referrer,
     );
@@ -512,7 +512,7 @@ export function ReferralInbox({
           <Button variant="quiet" size="touch" onClick={() => reRefer(r)}>
             Re-refer to {r.unit}
           </Button>
-          <p className="m-0 text-small text-muted">The network has no other unit for this, so the referrer re-refers to the same one. Recorded in this session only.</p>
+          <p className="m-0 text-small text-muted">No other unit offers this, so the referral goes back to the same unit. Recorded on this page only.</p>
         </div>
       )}
       {outcomeBlock}
@@ -524,7 +524,7 @@ export function ReferralInbox({
       </Link>
       {!respond && r.kind === "crc" && r.kept === "browser" && (
         <p className="m-0 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-small text-muted max-md:justify-start">
-          <HonestyLabel kind="designed" className={HONESTY_PLAIN}>Kept in this browser only.</HonestyLabel>
+          <HonestyLabel plain kind="designed">Kept in this browser only</HonestyLabel>
           <span>The {referrer} view in this browser shows this return. Nothing is sent or saved.</span>
         </p>
       )}
@@ -556,8 +556,8 @@ export function ReferralInbox({
                 type="button"
                 aria-expanded={packetOpen}
                 aria-controls="rf-packet"
-                aria-label="Referral packet"
-                title="Referral packet"
+                aria-label="Referral details"
+                title="Referral details"
                 onClick={() => setPacketOpen((o) => !o)}
                 className={cn("grid size-11 cursor-pointer place-items-center rounded-control bg-transparent text-jade-700 hover:bg-jade-100", packetOpen && "bg-jade-100 text-jade-900")}
               >
@@ -734,7 +734,7 @@ function Activity({ r, over, referrer }: { r: Referral; over: Override | undefin
   const entries: Entry[] = [
     { id: "ref", icon: FileText, what: "Referral sent", who: r.referrer, when: r.sent },
     ...(r.answer ? [{ id: "answer", icon: r.state === "returned" ? Undo2 : Check, what: r.answer, who: r.unit, when: r.answerWhen }] : []),
-    ...(r.acknowledged ? [{ id: "ack", icon: Check, what: `The ${referrer} acknowledged the return`, who: r.referrer, when: r.kept === "browser" ? "Kept in this browser" : "Saved to the case ledger" }] : []),
+    ...(r.acknowledged ? [{ id: "ack", icon: Check, what: `The ${referrer} acknowledged the return`, who: r.referrer, when: r.kept === "browser" ? "Kept in this browser" : "Saved to the case record" }] : []),
     // A return kept in this browser is already the answer entry above; its session log line would repeat it.
     ...(over?.saved || r.kept === "browser" ? [] : (over?.log ?? [])).map(({ who, what }, i) => ({ id: `log-${i}`, icon: what.startsWith("Returned") ? Undo2 : Check, what, who, when: "This session" })),
     ...(r.state === "done"

@@ -231,8 +231,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
     await expect(heading).toBeFocused();
     const result = rail(page).getByRole("status");
     await expect(result).toContainText(copy.explanation);
-    await expect(result).toContainText("Reconstruction. Nothing was saved.");
-    await expect(result).toContainText("No event was appended and no hash exists");
+    await expect(result).toContainText("Practice only. Nothing was saved");
     await expect(result).not.toContainText(/Would close the case|Closed with|Refreshed case data confirms/);
     await expect(rail(page).locator('li[data-kind="human"]')).toHaveCount(0);
     await initialPurpose(page, purpose);
@@ -257,7 +256,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       await card(a.page).getByRole("button", { name: "Submit first read", exact: true }).click();
       await expect(card(a.page)).toHaveAttribute("data-state", "awaiting_r2");
       await expect(card(a.page).getByRole("button", { name: "Claim second read", exact: true })).toHaveCount(0);
-      await expect(a.page.getByTestId("read-announcement")).toContainText("Your first read for the evidence question was recorded.");
+      await expect(a.page.getByTestId("read-announcement")).toContainText("Your first read for the evidence question was saved.");
       // The first reader's own answer stays hidden on the desk until the second read is in.
       await expect(card(a.page)).toContainText("First read: submitted. The answer stays hidden until the second read");
       await expect(card(a.page)).toContainText("Second read due");
@@ -277,7 +276,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       await card(b.page).getByRole("button", { name: "Submit second read", exact: true }).click();
       await expect(card(b.page)).toHaveAttribute("data-state", "resolved_agreed");
       await expect(b.page.getByTestId("final-evidence")).toContainText(answer === "confirm" ? "Report adequate" : "Report not adequate");
-      await expect(card(b.page)).toContainText("Case data is unchanged. This is a demo overlay, not a canonical decision.");
+      await expect(card(b.page)).toContainText("Demo only. This answer does not change the case.");
       await expect(b.page.getByTestId("progress")).toContainText("Every question is resolved");
       await initialPurpose(b.page, purpose);
       expect(JSON.stringify(scenario.canonical)).toBe(original);

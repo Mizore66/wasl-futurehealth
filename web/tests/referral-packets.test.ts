@@ -67,7 +67,7 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     expect(detail("Reason")).toBe("Needs more information");
     expect(detail("Information requested")).toBe("Reason for referral; Relevant clinical information; Expected outcome");
     expect(detail("Advice to the referrer")).toBe("Referral returned incomplete. Resend with the information requested.");
-    expect(detail("Other unit")).toBe("None in the simulated network");
+    expect(detail("Other unit")).toBe("None suggested");
     expect(detail("Responsible clinician")).toBe("Referring clinician, Primary care eye screening");
     expect(detail("Priority")).toBe("Urgent");
     expect(detail("Act by")).toBe(formatDay(packet.act_by));
@@ -96,8 +96,8 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     const row = () => [...h.host.querySelectorAll('section[aria-label="Referral inbox"] li a')].map((a) => a.textContent);
     const rows = row();
     click("Re-refer to Eye clinic, regional hospital", pane());
-    expect(pane().textContent).toContain("recorded in this session only. The canonical packet is unchanged and nothing is sent.");
-    expect(current()).toContain("Re-referred to Eye clinic, regional hospital (this session)");
+    expect(pane().textContent).toContain("recorded on this page only. Nothing is saved or sent.");
+    expect(current()).toContain("Re-referred to Eye clinic, regional hospital (this page only)");
     expect(current()).toContain("The referrer has acted");
     const step = [...pane().querySelectorAll("#rf-activity li")].find((li) => li.textContent?.includes("Re-referred to Eye clinic"))!.textContent;
     expect(step).toContain(DR[0].referrer);
@@ -132,7 +132,7 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
     const bare = CurrentDecision.parse({ ...x.current, handoff: { clinical_priority: "urgent", decided_at: 119, act_by: 123, status: "awaiting_referrer" } });
     const r = packetReferral(x.case, bare, 120, false)!;
     for (const k of ["Recommendation", "Returned by", "Reason", "Advice to the referrer", "Responsible clinician", "Other unit"]) {
-      expect(r.details).toContainEqual([k, "Not in the packet"]);
+      expect(r.details).toContainEqual([k, "Not recorded"]);
     }
     expect(packetReferral(x.case, CurrentDecision.parse({ ...x.current, handoff: undefined }), 120, false)).toBeNull();
     expect(packetReferral(x.case, null, 120, false)).toBeNull();

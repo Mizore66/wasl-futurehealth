@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import type { ReferrerAnswer, RespondResult } from "@/app/app/referrals/actions";
@@ -15,7 +15,7 @@ const DISPOSITIONS = Object.entries(DISPOSITION_LABELS) as [Disposition, string]
 const REFUSED: Record<number, string> = {
   403: "your clinician account is not this patient's referring clinician.",
   409: "the referral changed since this page loaded. Reload and answer again.",
-  500: "the case ledger could not be read.",
+  500: "the case record could not be read. Try again later.",
 };
 const field = "w-full rounded-control border border-control bg-surface px-3 py-2 text-body text-ink";
 
@@ -37,8 +37,8 @@ export function SessionReferrerHandoffs({ referrer = "GP", focus }: { referrer?:
   return (
     <section aria-label="Returns kept in this browser" className="flex flex-col gap-gap">
       <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-muted">
-        <HonestyLabel kind="designed" className={HONESTY_PLAIN}>Kept in this browser only.</HonestyLabel>
-        <span>Returns made in the referral inbox. An acknowledgement here stays in this browser too. Nothing is sent to the {referrer} or saved to the case ledger.</span>
+        <HonestyLabel plain kind="designed">Kept in this browser only</HonestyLabel>
+        <span>Returns made in the referral inbox in this browser. An acknowledgement here stays in this browser too. Nothing is sent to the {referrer} or saved.</span>
       </p>
       {packets.length ? (
         <ReferrerHandoffs packets={shown} referrer={referrer} focus={focus} />
@@ -107,12 +107,12 @@ function PacketCard({
         setSaved(done);
         router.refresh();
       })
-      .catch(() => setError("Not saved: the API did not answer."))
+      .catch(() => setError("Not saved: no response. Try again."))
       .finally(() => setBusy(false));
   };
   const submit = () => {
     setTried(true);
-    if (built.ok) send(built.request, "Answer saved to the case ledger. The hand-off no longer waits on you.");
+    if (built.ok) send(built.request, "Answer saved. The referral no longer waits on you.");
   };
 
   return (
@@ -129,12 +129,12 @@ function PacketCard({
         {(
           [
             ...(p.source === "canonical"
-              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail. Reload to try again." : (p.recommendation ?? "Not in the packet")]] as const)
+              ? ([["Recommendation", p.detailUnavailable ? "Could not load this case's detail. Reload to try again." : (p.recommendation ?? "Not recorded")]] as const)
               : []),
             ["Priority", p.urgent ? "Urgent" : "Routine"],
             ["Returned by", p.unit],
             ["Reason", p.reason],
-            ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not in the packet")]] as const) : []),
+            ...(p.source === "canonical" ? ([["Advice from the unit", p.detailUnavailable ? "Could not load this case's detail" : (p.advice ?? "Not recorded")]] as const) : []),
             ...(p.hasNote || p.note ? ([["Note from the unit", p.note ?? "Could not load this case's detail. Reload to try again."]] as const) : []),
             ["Information requested", p.infoRequested.length ? p.infoRequested.map((i) => INFO_LABELS[i]).join("; ") : "None"],
             ["Status", `${words.what}, ${words.when}`],
@@ -163,14 +163,14 @@ function PacketCard({
               Acknowledge the returned referral
             </Button>
           )}
-          <p className="m-0 text-small text-muted">Kept in this browser only. Other answers need the live synthetic API.</p>
+          <p className="m-0 text-small text-muted">Kept in this browser only. Other answers are not available in this demo.</p>
         </div>
       ) : !answer ? (
-        <p className="m-0 mt-4 text-muted">Answers need the live synthetic API. Nothing can be recorded here.</p>
+        <p className="m-0 mt-4 text-muted">Answers are not available in this demo. Nothing can be recorded here.</p>
       ) : (
         <div className="mt-4">
           {!p.acknowledged && (
-            <Button variant="quiet" size="touch" disabled={busy} onClick={() => send({ response: "acknowledge" }, "Acknowledged. The hand-off still waits on your answer.")}>
+            <Button variant="quiet" size="touch" disabled={busy} onClick={() => send({ response: "acknowledge" }, "Acknowledged. The referral still waits on your answer.")}>
               Acknowledge the returned referral
             </Button>
           )}
@@ -220,7 +220,7 @@ function PacketCard({
             </Button>
             {tried && !built.ok && <span role="alert" className="text-negative">{built.missing}</span>}
           </div>
-          <p className="m-0 mt-2 text-small text-muted">Respond by {formatDay(p.actBy)}. Answering resolves the hand-off only. It does not close the case or book anything.</p>
+          <p className="m-0 mt-2 text-small text-muted">Respond by {formatDay(p.actBy)}. Answering hands the referral back. It does not close the case or book anything.</p>
         </div>
       )}
       {saved && !error && (

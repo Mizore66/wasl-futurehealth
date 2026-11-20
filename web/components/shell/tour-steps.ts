@@ -79,7 +79,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     section: "Review desk",
     page: "/app/review",
-    target: 'ol[aria-label="Record pairs waiting"] > li:first-child',
+    target: 'ol[aria-label="Cases waiting"] > li:first-child',
     title: "A held case",
     body: "Wasl held this case rather than close it on its own. The middle says why. The tags on the right say what needs checking: the patient's identity, a report, or both.",
   },

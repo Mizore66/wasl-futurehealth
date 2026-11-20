@@ -66,10 +66,10 @@ describe("review decision", () => {
     const signatures = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
     expect(signatures).toEqual([{ item: "rv-evidence", decision: "adequate" }]);
     expect(recordedOutcome("close", signatures)).toEqual({
-      recordedText: "Report adequate was appended to the demo review log. Current case data still shows the case as open. Closure is not confirmed.",
+      recordedText: "Report adequate was saved in the demo. The case still shows as open. Closure is not confirmed.",
       recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     });
-    expect(OUTCOMES.close.next("Noor endoscopy", false)).toEqual({ who: "Case data", what: "no downstream effect inferred" });
+    expect(OUTCOMES.close.next("Noor endoscopy", false)).toEqual({ who: "The case", what: "no further change shown" });
   });
 
   it("signs a non-CRC evidence label without turning it into a CRC closure answer", () => {
@@ -77,12 +77,12 @@ describe("review decision", () => {
     const signatures = signaturesFor({ report: "wk_benign" }, { evidence: "rv-ldct" });
     expect(signatures).toEqual([{ item: "rv-ldct", decision: "wk_benign" }]);
     expect(recordedOutcome("evidence", signatures).recordedText).toBe(
-      "Evidence answer wk_benign was appended to the demo review log. No downstream effect is confirmed.",
+      "Evidence answer wk_benign was saved in the demo. No change to the case is confirmed.",
     );
   });
 
   it.each([
-    { report: "adequate", outcome: "close", remaining: "Current case data still shows the case as open. Closure is not confirmed." },
+    { report: "adequate", outcome: "close", remaining: "The case still shows as open. Closure is not confirmed." },
     { report: "inadequate", outcome: "inadequate", remaining: "No repeat booking is confirmed." },
   ] as const)("records only identity for a link-only $outcome outcome", ({ report, outcome, remaining }) => {
     const linkOnly = { link: "rv-link" };
@@ -90,30 +90,30 @@ describe("review decision", () => {
     expect(signatures).toEqual([{ item: "rv-link", decision: "same" }]);
 
     const recorded = recordedOutcome(outcome, signatures);
-    expect(recorded.recordedText).toBe(`Same patient was appended to the demo review log. No report answer was appended. ${remaining}`);
-    expect(recorded.recordedText).not.toContain("report adequate were appended");
-    expect(recorded.recordedText).not.toContain("report not adequate were appended");
+    expect(recorded.recordedText).toBe(`Same patient was saved in the demo. No report answer was saved. ${remaining}`);
+    expect(recorded.recordedText).not.toContain("report adequate were saved");
+    expect(recorded.recordedText).not.toContain("report not adequate were saved");
     expect(recorded.recordedAnswerCell).toEqual({ word: "not signed", tone: "muted" });
   });
 
   it("keeps canonical closure confirmation without inventing a link-only report signature", () => {
     const identityOnly = signaturesFor({ identity: "same", report: "adequate" }, { link: "rv-link" });
     expect(recordedOutcome("close", identityOnly, true)).toEqual({
-      recordedText: "Same patient was appended to the demo review log. Refreshed case data confirms closure.",
+      recordedText: "Same patient was saved in the demo. The case now shows as closed.",
       recordedAnswerCell: { word: "not signed", tone: "muted" },
     });
     expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items), true).recordedText).toBe(
-      "Same patient and report adequate were appended to the demo review log. Refreshed case data confirms closure.",
+      "Same patient and report adequate were saved in the demo. The case now shows as closed.",
     );
   });
 
   it("keeps the complete close and inadequate wording when both answers were recorded", () => {
     expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items))).toEqual({
-      recordedText: "Same patient and report adequate were appended to the demo review log. Current case data still shows the case as open. Closure is not confirmed.",
+      recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open. Closure is not confirmed.",
       recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     });
     expect(recordedOutcome("inadequate", signaturesFor({ identity: "same", report: "inadequate" }, items))).toEqual({
-      recordedText: "Same patient and report not adequate were appended to the demo review log. No repeat booking is confirmed.",
+      recordedText: "Same patient and report not adequate were saved in the demo. No repeat booking is confirmed.",
       recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
     });
   });
@@ -124,7 +124,7 @@ describe("review decision", () => {
     expect(failureSentence({ item: "x", decision: "same" }, { status: 404, error: "nope" })).toBe(
       "Not saved: this case has no open review item for the identity answer.",
     );
-    expect(failureSentence(report, { status: 400, error: "X-Wasl-Actor header required" })).toContain("could not read the report answer");
+    expect(failureSentence(report, { status: 400, error: "X-Wasl-Actor header required" })).toContain("the report answer could not be read");
   });
 });
 
@@ -254,7 +254,7 @@ describe("review view of the review_hold fixture", () => {
     expect(view.checks.map((c) => c.decision)).toEqual(["agreed", "disputed", "disputed", "agreed_none"]);
     expect(view.disputed.map((d) => d.says)).toEqual([
       "neither reader found the bowel prep grade",
-      "the readers differ on whether tissue was taken: rules reader none, second reader yes",
+      "the readers differ on whether tissue was taken: checklist reader none, AI reader yes",
     ]);
     expect(detail.review_items.filter((r) => r.kinds.includes("evidence"))).toHaveLength(1);
   });

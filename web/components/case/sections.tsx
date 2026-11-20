@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { Pill } from "@/components/review/marks";
 import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
-import { TechTerm } from "@/components/wasl/tech-term";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
 import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
@@ -29,7 +28,6 @@ import {
   consentRows,
   eventWords,
   holdWords,
-  ledgerId,
   ledgerWords,
   ledgerWordsWithHistory,
   openReviewReasons,
@@ -76,7 +74,7 @@ const CLOSE_TONE = { closed: "positive", held: "negative", open: "neutral" } as 
 
 /** Why the case is where it is: the closure reason when closed, the latest decision's hold reasons when open. */
 export function ReasonCard({ detail }: { detail: CaseDetail }) {
-  if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each current CRC obligation below has its own evidence binding, clinician confirmation and tracking state. Completing one pathway does not discharge another.</p></Card>;
+  if (detail.case.crc) return <Card id="why" title="Screening completion is not care completion"><p>Each CRC step below needs its own evidence and clinician confirmation. Finishing one does not finish another.</p></Card>;
   const reason = closureReason(detail);
   const holds = caseHolds(detail);
   const reviewReasons = openReviewReasons(detail);
@@ -110,8 +108,8 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
           {holds.current.map((h, i) => (
             <li key={i} className="border-t border-rule py-3">
               <p className="m-0 font-medium">{holdWords(h)}</p>
-              <p className="m-0 mt-1 text-small text-muted">{h.policy ?? "No policy text sent."}</p>
-              <HoldFacts h={h} />
+              <p className="m-0 mt-1 text-small text-muted">{h.policy ?? "No policy recorded."}</p>
+              <p className="m-0 mt-1 text-small text-muted">Rule: {h.rule}</p>
             </li>
           ))}
         </ul>
@@ -119,35 +117,17 @@ export function ReasonCard({ detail }: { detail: CaseDetail }) {
       {holds.earlier.length > 0 && (
         <details className="mt-3 text-small text-muted">
           <summary className="min-h-6 cursor-pointer">Earlier holds, no longer in force ({holds.earlier.length})</summary>
-          <p className="m-0 mt-1">Recorded by an earlier decision and absent from the latest one. Kept for the audit, not an instruction.</p>
+          <p className="m-0 mt-1">These holds no longer apply. Kept for the record only.</p>
           <ul className="m-0 mt-1 list-none p-0" aria-label="Earlier holds">
             {holds.earlier.map((h, i) => (
               <li key={i} className="border-t border-rule py-2">
-                <HoldFacts h={h} />
+                Rule: {h.rule}
               </li>
             ))}
           </ul>
         </details>
       )}
     </Card>
-  );
-}
-
-function HoldFacts({ h }: { h: CaseDetail["holds"][number] }) {
-  return (
-    <details className="mt-1 text-small text-muted">
-      <summary className="min-h-6 cursor-pointer">Rule and system state</summary>
-      <p className="m-0 mt-1">Rule: {h.rule}</p>
-      <p className="m-0 mt-1">
-        State: <code className="font-mono">{h.state}</code>
-        {h.reason && (
-          <>
-            {" "}
-            · reason <code className="font-mono">{h.reason}</code>
-          </>
-        )}
-      </p>
-    </details>
   );
 }
 
@@ -159,8 +139,8 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
       title="One patient, two records"
       note={
         detail.identities.some((idn) => personFor(idn.registration))
-          ? "Names are the simulated cast. The record numbers and the link facts come from the API."
-          : "The API sends record numbers and link facts, not names, so no name is shown."
+          ? "Names are simulated."
+          : "No name is on file for these records."
       }
     >
       <ul className="m-0 mt-3 list-none p-0" aria-label="Records">
@@ -206,27 +186,11 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
                   {l.weakest_edge.basis === "eid" ? "Joined by Emirates ID." : `Joined by ${basisWords(l.weakest_edge.basis)}, no Emirates ID.`}
                 </p>
                 <dl className="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
-                  <dt className="text-muted">Match probability</dt>
-                  <dd className="m-0">{score.toFixed(3)}</dd>
-                  <dt className="text-muted">Auto-close line</dt>
-                  <dd className="m-0">{l.tau}</dd>
-                  <dt className="text-muted">Weakest link</dt>
-                  <dd className="m-0">
-                    {basisWords(l.weakest_edge.basis)}, p {l.weakest_edge.p.toFixed(3)}
-                  </dd>
+                  <dt className="text-muted">Match confidence</dt>
+                  <dd className="m-0">{Math.round(score * 100)}%</dd>
                   <dt className="text-muted">Report joined</dt>
                   <dd className="m-0 text-small leading-6">{shortId(l.downstream_event)}</dd>
                 </dl>
-                <details className="mt-2 text-small text-muted">
-                  <summary className="min-h-6 cursor-pointer">Linker details</summary>
-                  <p className="m-0 mt-1">
-                    Linker <code className="font-mono">{l.linker}</code> · {l.hops} {l.hops === 1 ? "hop" : "hops"}
-                    {l.near_miss ? " · near miss" : ""}
-                  </p>
-                  <p className="m-0 mt-1 break-all font-mono">
-                    {l.weakest_edge.a} → {l.weakest_edge.b}
-                  </p>
-                </details>
               </li>
             );
           })}
@@ -294,17 +258,17 @@ export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev:
       {rows.length > 0 && (
         <div className="mt-3">
           <table className="w-full border-collapse text-left">
-            <caption className="pb-1 text-left text-small text-muted">What each reader read, field by field</caption>
+            <caption className="pb-1 text-left text-small text-muted">What each reader found</caption>
             <thead>
               <tr className="text-small text-muted">
                 <th scope="col" className="py-1 pr-3 font-normal">
-                  Field
+                  Item
                 </th>
                 <th scope="col" className="py-1 pr-3 font-normal">
-                  Reader A (rules)
+                  Reader A (rule-based)
                 </th>
                 <th scope="col" className="py-1 font-normal">
-                  Reader B (language model)
+                  Reader B (AI)
                 </th>
               </tr>
             </thead>
@@ -330,7 +294,6 @@ export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev:
         {quoteB && quoteB !== read.quote && <p className="m-0 mt-2 text-muted">Reader B quotes: “{quoteB}”</p>}
         <p className="m-0 mt-1 text-small text-muted">
           {providerLabel(reportUnit)} report {shortId(ev.report)}
-          {ev.reader_model ? ` · second reader ${ev.reader_model}` : ""}
         </p>
       </blockquote>
     </Card>
@@ -367,7 +330,7 @@ const BREAST_OUTCOME: Record<string, string> = {
   incomplete: "Incomplete",
   dna: "Did not attend",
 };
-const NOT_RECORDED = "Not recorded in the API data";
+const NOT_RECORDED = "Not recorded";
 const yesNoWords = (v: boolean | undefined) => (v === undefined ? null : v ? "Yes" : "No");
 
 /** A day range from the API's absolute day numbers, or null when either end is missing. */
@@ -384,7 +347,7 @@ function ClockRow({ days, day, routine }: { days: number | undefined; day: numbe
   const length = days !== undefined ? `${days} days` : NOT_RECORDED;
   if (routine) {
     const when = day !== undefined ? `, ${formatDayYear(day)}` : "";
-    return <FindingRow label="Next screen">{`${length}${when} (routine interval, no overdue clock)`}</FindingRow>;
+    return <FindingRow label="Next screen">{`${length}${when} (routine interval)`}</FindingRow>;
   }
   return <FindingRow label="Deadline">{`${length}${day !== undefined ? `, due ${formatDayYear(day)}` : ""}`}</FindingRow>;
 }
@@ -398,7 +361,7 @@ function windowWords(lo: number | undefined, hi: number | undefined, dates: stri
 /** Incidental lung nodule (Fleischner 2017): index finding, Fleischner cell, risk and the follow-up window. */
 function LungNoduleRows({ detail }: { detail: CaseDetail }) {
   const f = detail.case.lung ?? detail.current.lung;
-  if (!f) return <Empty>The API sent no lung-nodule finding for this case yet.</Empty>;
+  if (!f) return <Empty>No lung-nodule finding recorded yet.</Empty>;
   const rec = f.rec;
   const window = dayRange(f.window_start_day, f.window_end_day);
   // pipeline/lung.go applies the Fleischner rule as high risk when no risk was recorded, and says so with risk_recorded.
@@ -438,7 +401,7 @@ function LungNoduleRows({ detail }: { detail: CaseDetail }) {
 /** Diabetic retinopathy (doh2024dr): screening grade, the referral's urgency and deadline, the eye-clinic outcome and next due. */
 function DrRows({ detail }: { detail: CaseDetail }) {
   const f = detail.case.dr ?? detail.current.dr;
-  if (!f) return <Empty>The API sent no retinal screening finding for this case yet.</Empty>;
+  if (!f) return <Empty>No retinal screening finding recorded yet.</Empty>;
   const rec = f.rec;
   const examined = yesNoWords(f.examined);
   const within = yesNoWords(f.within_deadline);
@@ -447,7 +410,7 @@ function DrRows({ detail }: { detail: CaseDetail }) {
       <FindingRow label="Screening report">{f.screen_report ? shortId(f.screen_report) : "Not received yet"}</FindingRow>
       <FindingRow label="Grade">
         {f.screen_label ?? "Not graded yet"}
-        {f.screen_label && f.coded_grade ? " (coded result matched the text)" : ""}
+        {f.screen_label && f.coded_grade ? " (matches the report text)" : ""}
       </FindingRow>
       <FindingRow label="Recommendation">{rec ? (DR_ACTION[rec.action] ?? plain(rec.action)) : "Not decided yet"}</FindingRow>
       <FindingRow label="Urgency">{rec?.urgency ? plain(rec.urgency) : rec ? "Not a referral" : "Not decided yet"}</FindingRow>
@@ -463,7 +426,7 @@ function DrRows({ detail }: { detail: CaseDetail }) {
           ? `${plain(f.next_due.kind)} ${formatDayYear(f.next_due.due_day)} (${plain(f.next_due.basis).toLowerCase()})`
           : detail.case.closed
             ? NOT_RECORDED
-            : "Set once the loop resolves"}
+            : "Set once follow-up is complete"}
       </FindingRow>
     </dl>
   );
@@ -472,7 +435,7 @@ function DrRows({ detail }: { detail: CaseDetail }) {
 /** Breast screening (doh2025breast): BI-RADS category, the recall recommendation and the assessment outcome. */
 function BreastRows({ detail }: { detail: CaseDetail }) {
   const f = detail.case.breast ?? detail.current.breast;
-  if (!f) return <Empty>The API sent no breast screening finding for this case yet.</Empty>;
+  if (!f) return <Empty>No breast screening finding recorded yet.</Empty>;
   const rec = f.rec;
   const within = yesNoWords(f.within_deadline);
   // Only a recall expects an assessment-unit document; a repeat mammogram (TR) waits for a new screen (pipeline/breast.go).
@@ -482,7 +445,7 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
       <FindingRow label="Screening report">{f.screen_report ? shortId(f.screen_report) : "Not received yet"}</FindingRow>
       <FindingRow label="BI-RADS category">
         {f.screen_label ?? "Not read yet"}
-        {f.screen_label && f.coded_birads ? " (coded assessment matched the text)" : ""}
+        {f.screen_label && f.coded_birads ? " (matches the report text)" : ""}
       </FindingRow>
       <FindingRow label="Recall recommendation">
         {rec ? `${BREAST_ACTION[rec.action] ?? plain(rec.action)}${rec.urgency ? `, ${rec.urgency}` : ""}` : "Not decided yet"}
@@ -507,13 +470,13 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
 export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.JSX.Element {
   const { case: c } = detail;
   if (c.crc) {
-    return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only. No treatment is delivered and no referral is dispatched.">
+    return <Card id="programme-finding" title="CRC screening and independent care pathways" note="Simulated tracking only. No treatment is given and no referral is sent.">
       <p>Screening: {c.crc.screening_complete ? "complete" : "evidence incomplete"}. Care: {c.crc.care_state.replaceAll("_", " ")}.</p>
-      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking from source {c.crc.source_report} v{c.crc.source_version}. The clock starts on day {c.crc.clock_start === undefined ? "not recorded" : Math.floor(c.crc.clock_start)}. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is the modeled tracking state, not evidence that treatment was delivered.</p>}
+      {c.crc.kind !== "screening" && <p>{c.crc.kind.replaceAll("-", " ")} tracking. {c.crc.follow_up_state?.replaceAll("_", " ")}. This is a modelled tracking state, not evidence that treatment was given.</p>}
       <ul aria-label="Independent CRC obligations">
         {c.crc.obligations.map((need) => <li key={need.id}>
           <strong>{need.outcome.replaceAll("_", " ")}</strong> · {need.state.replaceAll("_", " ")}
-          <p>Source {need.source_report} v{need.source_version}, procedure {need.procedure_report} v{need.procedure_version}, clock starts day {Math.floor(need.clock_start)}. Owner {plain(need.owner)}.</p>
+          <p>Owner: {plain(need.owner)}.</p>
           {need.blockers.length > 0 && <p>Holds: {need.blockers.map((b) => b.replaceAll("_", " ")).join(", ")}.</p>}
           <p data-testid={`obligation-confirmation-${need.id}`}>
             {obligationConfirmationWords(need, detail)}
@@ -524,8 +487,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
               </>
             )}
           </p>
-          {need.interval_days !== undefined && <p>Documented surveillance interval: {need.interval_days} days. Next due day {need.due_day === undefined ? "not recorded" : Math.floor(need.due_day)}.</p>}
-          {need.child_loop && <p>Tracking loop: {need.child_loop}.</p>}
+          {need.interval_days !== undefined && <p>Surveillance interval: {need.interval_days} days. Next due {need.due_day === undefined ? "date not recorded" : formatDayYear(need.due_day)}.</p>}
         </li>)}
       </ul>
     </Card>;
@@ -561,7 +523,7 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
           {f.rec && (
             <>
               <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
-              <FindingRow label="Rule timing">
+              <FindingRow label="Timing">
                 Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `, overdue after ${f.rec.deadline_days} days` : ", no overdue clock"}
               </FindingRow>
             </>
@@ -634,11 +596,11 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
   return (
     <Card id="consent" title="Consent and messages" note={<HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Messages here are simulated.</HonestyLabel>}>
       <p className="m-0 mt-3">
-        Canonical simulation now: <span className="font-medium">{consentNow(detail.case.consent)}</span>
+        Current consent: <span className="font-medium">{consentNow(detail.case.consent)}</span>
       </p>
-      <h3 className="m-0 mt-3 text-body font-medium">Canonical consent history</h3>
+      <h3 className="m-0 mt-3 text-body font-medium">Consent history</h3>
       {consent.length === 0 ? (
-        <Empty>No consent events on record.</Empty>
+        <Empty>No consent recorded.</Empty>
       ) : (
         <ul className="m-0 mt-1 list-none p-0" aria-label="Consent history">
           {consent.map((c) => (
@@ -665,10 +627,6 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
             <li key={o.key} className="border-t border-rule py-2">
               <span className="block">{o.what}</span>
               <span className={cn("block", o.sent ? "text-ink" : "text-warning")}>{o.outcome}</span>
-              <details className="text-small text-muted">
-                <summary className="min-h-6 cursor-pointer">Raw message record</summary>
-                <code className="block break-all font-mono">{JSON.stringify(o.raw)}</code>
-              </details>
             </li>
           ))}
         </ul>
@@ -711,11 +669,6 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               <p className="m-0 text-muted">
                 {roleWords(s.role)} · simulated reviewer · {stampWords(s.t)}
               </p>
-              <details className="text-small text-muted">
-                <summary className="min-h-6 cursor-pointer">Reviewer record</summary>
-                <p className="m-0 mt-1 break-words">{s.reviewer}</p>
-                <p className="m-0 mt-1 font-mono">{s.item}</p>
-              </details>
             </li>
           ))}
           {appended.map((r) => (
@@ -723,19 +676,17 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               {r.ledger === "review" ? (
                 <p className="m-0 font-medium">
                   {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-                  {isNonbindingLegacyHistory(r) ? "Legacy history, nonbinding" : reviewWords(r.decision, detail.case.programme)}
+                  {isNonbindingLegacyHistory(r) ? "Older entry — not binding" : reviewWords(r.decision, detail.case.programme)}
                 </p>
               ) : (
-                <div className="font-medium">
-                  <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
-                </div>
+                <div className="font-medium">{ledgerWords(r)}</div>
               )}
               <p className="m-0 text-muted">
-                {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
+                {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)}
                 {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
               {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
-                <p className="m-0 mt-1 text-small text-muted">Original recorded label: {reviewWords(r.decision, detail.case.programme)}. This history does not resolve a review item.</p>
+                <p className="m-0 mt-1 text-small text-muted">Originally recorded as: {reviewWords(r.decision, detail.case.programme)}. This entry does not settle a review item.</p>
               )}
               {(r.ledger === "review" || r.ledger === "compensation") && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>
@@ -756,12 +707,8 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
     <Card
       id="ledger"
       title="Coordinator actions"
-      note={
-        <>
-          <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Demo ledger with synthetic patients.</HonestyLabel> These entries are
-          append-only. They never change a decision, consent or signature, and nothing was sent to the patient.
-        </>
-      }
+      aside={<HonestyLabel plain kind="simulated">Simulated data</HonestyLabel>}
+      note="These actions never change a decision, consent or signature. Nothing was sent to the patient."
     >
       {events.length === 0 ? (
         <Empty>No coordinator actions recorded for this case.</Empty>
@@ -769,9 +716,7 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
         <ul className="m-0 mt-3 list-none p-0" aria-label="Coordinator actions">
           {events.map((e, i) => (
             <li key={e.hash || `unknown-${i}`} className="border-t border-rule py-3">
-              <div className={cn("font-medium", e.ledger === "unknown" && "text-warning")}>
-                <TechTerm id={ledgerId(e)} label={ledgerWordsWithHistory(e, events.slice(0, i))} />
-              </div>
+              <div className={cn("font-medium", e.ledger === "unknown" && "text-warning")}>{ledgerWordsWithHistory(e, events.slice(0, i))}</div>
               <p className="m-0 text-muted">
                 {e.actor || "Actor not recorded"} · {e.role ? roleWords(e.role) : "role not recorded"} · {e.at ? atWords(e.at) : "time not recorded"}
               </p>
@@ -790,7 +735,7 @@ export function LedgerCard({ detail }: { detail: CaseDetail }) {
 export function TimelineCard({ detail }: { detail: CaseDetail }) {
   const events = [...detail.timeline].sort((a, b) => (a.arrival_day ?? a.day) - (b.arrival_day ?? b.day) || (a.seq ?? 0) - (b.seq ?? 0));
   return (
-    <Card id="timeline" title="Timeline" note={`${events.length} source events, no free text.`}>
+    <Card id="timeline" title="Timeline" note={`${events.length} events.`}>
       <ol className="m-0 mt-3 list-none p-0" aria-label="Timeline">
         {events.map((e) => (
           <li key={`${e.id}@${e.seq}`} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 border-t border-rule py-2">
@@ -855,10 +800,9 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
   const slot = d.booking;
   const risk = d.prep_risk;
   return (
-    <Card id="booking" title="Booking">
+    <Card id="booking" title="Booking" aside={<HonestyLabel plain kind="simulated">Simulated decision support</HonestyLabel>}>
       <p className="m-0 mt-3 flex flex-wrap items-center gap-2">
         <Pill tone={b.status === "suggested" ? "positive" : "muted"}>{BOOKING_STATUS[b.status] ?? plain(b.status)}</Pill>
-        {b.data_mode && <span className="text-small text-muted">data mode: {b.data_mode}</span>}
       </p>
       {b.reason && <p className="m-0 mt-2 text-muted">{plain(b.reason)}.</p>}
       {b.status === "suggested" && slot && (
@@ -922,7 +866,7 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
       )}
       {risk && (
         <div className="mt-3 rounded-control bg-ground p-4">
-          <h3 className="m-0 text-body font-medium">Bowel-prep risk (App 9)</h3>
+          <h3 className="m-0 text-body font-medium">Bowel-prep risk</h3>
           <p className="m-0 mt-1">
             {risk.band === "high" ? "High" : "Low"} risk, score {risk.score ?? 0}
             {risk.factors?.length ? `: ${risk.factors.map((f) => plain(f).toLowerCase()).join(", ")}` : ", no risk factors found"}.
@@ -932,48 +876,13 @@ export function BookingCard({ detail, live = apiMode() === "live" }: { detail: C
           {risk.limitation && <p className="m-0 mt-1 text-small text-muted">Limitation: {risk.limitation}.</p>}
         </div>
       )}
-      {d.app9 && (
-        <details className="mt-3 text-muted">
-          <summary className="min-h-6 cursor-pointer">Checklist fields behind it (synthetic)</summary>
-          <dl className="m-0 mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1">
-            {Object.entries(d.app9)
-              .filter(([k]) => k !== "data_mode")
-              .map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt>{plain(k)}</dt>
-                  <dd className="m-0 text-ink">{typeof v === "boolean" ? yesNo(v) : String(v)}</dd>
-                </div>
-              ))}
-          </dl>
-        </details>
-      )}
       <div className="mt-3 text-small text-muted">
-        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated decision support.</HonestyLabel> Reservations and suggestions stay in
-        Wasl. No provider system or patient is contacted.
-        {d.capacity_condition && (
-          <>
-            {" "}
-            Capacity in this run: <TechTerm id={d.capacity_condition} />
-          </>
-        )}
+        Simulated only. No clinic or patient is contacted.
       </div>
-      {d.constraints && (
-        <details className="mt-1 text-small text-muted">
-          <summary className="min-h-6 cursor-pointer">Booking constraints used</summary>
-          <dl className="m-0 mt-1 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4">
-            {Object.entries(d.constraints).map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt>{plain(k)}</dt>
-                <dd className="m-0 text-ink">{typeof v === "boolean" ? yesNo(v) : String(v)}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
-      )}
       {detail.api_overlay ? (
         <BookingControls key={detail.case.id} caseId={detail.case.id} initial={{ booking: detail.booking, overlay: detail.api_overlay, case: detail.case }} live={live} />
       ) : (
-        <p className="m-0 mt-4 text-small text-muted">This older snapshot has no coordinator ledger projection, so reservation controls are unavailable.</p>
+        <p className="m-0 mt-4 text-small text-muted">Booking can&apos;t be changed for this case.</p>
       )}
     </Card>
   );

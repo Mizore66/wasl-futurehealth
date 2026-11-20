@@ -41,7 +41,7 @@ export function PhoneFrame({ step, query, live = false, children }: { step: Step
     <div className="min-h-dvh bg-ground">
       <div className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-phone-ground min-[420px]:border-x min-[420px]:border-line">
         <nav aria-label="Demo steps" lang="en" dir="ltr" className="flex flex-wrap items-center gap-3 px-5 pt-3 text-small">
-          {live ? <HonestyLabel kind="built">Synthetic · server saved</HonestyLabel> : <HonestyLabel kind="designed">Designed, not built · no API</HonestyLabel>}
+          {live ? <HonestyLabel kind="built">Simulated · answers saved</HonestyLabel> : <HonestyLabel kind="designed">Design preview · answers not saved</HonestyLabel>}
           <ol className="m-0 ms-auto flex flex-wrap list-none gap-3 p-0">
             {STEPS.map((s, i) => (
               <li key={s}>

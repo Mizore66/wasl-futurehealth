@@ -12,31 +12,48 @@ import { ALL_GLOSSARY_KEYS, GLOSSARY, type GlossaryKey } from "@/lib/domain/glos
 export function GlossaryPopover({
   terms = ALL_GLOSSARY_KEYS,
   className,
+  inline = false,
 }: {
   terms?: readonly GlossaryKey[];
   className?: string;
+  /** A quiet text link that runs on in a line of text (the page header's subtitle), not a button. */
+  inline?: boolean;
 }) {
   const headingId = useId();
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button
-          type="button"
-          className={cx(
-            "inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-small text-muted underline decoration-dotted underline-offset-4 hover:bg-active hover:text-ink",
-            className,
-          )}
-          data-testid="glossary-trigger"
-        >
-          <span aria-hidden className="flex size-5 items-center justify-center rounded-full border border-control text-[11px] font-medium leading-none">
-            ?
-          </span>
-          Terms used here
-        </button>
+        {inline ? (
+          <button
+            type="button"
+            // 44px tall for touch; the negative margin keeps the subtitle's line height as if it were plain text.
+            className={cx(
+              "-my-3.5 inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 align-middle font-[inherit] text-jade-800 underline decoration-dotted underline-offset-4 hover:text-ink",
+              className,
+            )}
+            data-testid="glossary-trigger"
+          >
+            Terms used here
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={cx(
+              "inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-small text-muted underline decoration-dotted underline-offset-4 hover:bg-active hover:text-ink",
+              className,
+            )}
+            data-testid="glossary-trigger"
+          >
+            <span aria-hidden className="flex size-5 items-center justify-center rounded-full border border-control text-[11px] font-medium leading-none">
+              ?
+            </span>
+            Terms used here
+          </button>
+        )}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          align="end"
+          align={inline ? "start" : "end"}
           sideOffset={6}
           collisionPadding={12}
           aria-labelledby={headingId}

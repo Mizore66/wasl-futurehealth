@@ -122,7 +122,7 @@ describe("an item whose own pair is not in the case borrows no other pair", () =
     const ab = card(c, "rv-ab", "link");
     expect(ab.querySelector('input[type="radio"]')).toBeNull();
     expect(submitButtons(ab)).toHaveLength(0);
-    expect(ab.textContent).toContain("not available");
+    expect(ab.textContent).toContain("are missing, so it cannot be answered here");
     expect(ab.textContent).not.toContain("SKM-MRN000409");
     expect(context(c, "rv-ab")?.textContent ?? "").not.toContain("SKM-MRN000409");
     const ac = card(c, "rv-ac", "link");
@@ -188,7 +188,7 @@ describe("an item whose endpoints are listed but whose own link detail is absent
       expect(ab.querySelector('input[type="radio"]')).toBeNull();
       expect(submitButtons(ab)).toHaveLength(0);
       expect(ab.querySelector("form")).toBeNull();
-      expect(ab.textContent).toContain("not available");
+      expect(ab.textContent).toContain("are missing, so it cannot be answered here");
       const shown = `${ab.textContent}${context(c, "rv-ab")?.textContent ?? ""}`;
       expect(shown).not.toMatch(/0\.123|0\.456|0\.7\b/);
       expect(shown).not.toMatch(/Link score\s*0\.000/);

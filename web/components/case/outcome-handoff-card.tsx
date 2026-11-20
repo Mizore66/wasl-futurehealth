@@ -58,7 +58,7 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
           <>
             <dt className="text-small text-muted">Current decision</dt>
             <dd className="m-0">
-              {handoff.draft.programme} · {handoff.draft.outcome.replaceAll("_", " ")} · signature {handoff.draft.decision.slice(0, 12)}
+              {handoff.draft.programme} · {handoff.draft.outcome.replaceAll("_", " ")}
             </dd>
           </>
         )}
@@ -69,8 +69,7 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
               {NEXT_STEP_WORDS[handoff.content.next_step] ?? handoff.content.next_step.replaceAll("_", " ")}
               {handoff.approved_by ? ` · approved by ${handoff.approved_by}` : ""}
               {handoff.approved_at ? ` · ${atWords(handoff.approved_at)}` : ""}
-              {handoff.version ? ` · version ${handoff.version.slice(0, 8)}` : ""}
-            </dd>
+                          </dd>
           </>
         )}
         {handoff.release && (
@@ -88,7 +87,7 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
           {handoff.history.map((h) => (
             <li key={h.event} className="border-t border-rule py-2 text-small">
               {EVENT[h.kind]}
-              {h.gate ? ` (${GATE[h.gate]})` : ""} · {h.actor} ({h.role}) · {atWords(h.at)} · version {h.version.slice(0, 8)}
+              {h.gate ? ` (${GATE[h.gate]})` : ""} · {h.actor} ({h.role}) · {atWords(h.at)}
             </li>
           ))}
         </ol>
@@ -101,9 +100,9 @@ export function OutcomeHandoffCard({ handoff, actions }: { handoff: OutcomeHando
 function StaffSteps({ handoff, actions }: { handoff: OutcomeHandoff; actions: OutcomeHandoffActions }) {
   let body: ReactNode;
   if (handoff.status === "not_eligible") {
-    body = <p className="m-0 text-small text-muted">No staff step. Only a closed case with no open patient contest can have an outcome hand-off.</p>;
+    body = <p className="m-0 text-small text-muted">No staff step yet. Only a closed case with no open patient contest can have an outcome hand-off.</p>;
   } else if (!actions.live) {
-    body = <p className="m-0 text-small text-muted">Approval and release need the live API. Fixture data cannot record them.</p>;
+    body = <p className="m-0 text-small text-muted">Approval and release can&apos;t be recorded here. This view is read-only.</p>;
   } else {
     body = (
       <>

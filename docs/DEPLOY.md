@@ -290,6 +290,15 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_REFERRER_LUNG_TOKEN` | optional; a token whose actor `WASL_REFERRING_CLINICIANS` assigns to `rad-imaging` | the lung work-up referrer's answers on `/app/referrals/returned?programme=lung_nodule&provider=rad-imaging`; without it those answers are refused with a configuration message; built, synthetic ledger only |
    | `WASL_API_REFERRER_DR_TOKEN` | optional; a token whose actor `WASL_REFERRING_CLINICIANS` assigns to `phc-retina` | the eye-screening referrer's answers on `/app/referrals/returned?programme=diabetic_retinopathy&provider=phc-retina`; built, synthetic ledger only |
 
+   **Open demo personas (built, synthetic data only).** Set `WASL_REVIEW_AUTH_MODE=persona` to replace the review
+   token form with a persona picker: any visitor picks Reviewer A, Reviewer B, Senior reviewer, Clinician or Senior
+   clinician, and the web server signs with that persona's token from `WASL_API_REVIEWER_TOKEN`,
+   `WASL_API_REVIEWER_2_TOKEN`, `WASL_API_REVIEWER_3_TOKEN`, `WASL_API_CLINICIAN_2_TOKEN` or
+   `WASL_API_CLINICIAN_3_TOKEN`. A persona whose variable is unset is refused when picked. The browser's cookie names
+   the persona, never a token. The API still binds role and actor, so the two-person rule still needs a second,
+   different persona. Writes land in the shared synthetic ledger that every visitor sees. Never use this mode with
+   real data.
+
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
 

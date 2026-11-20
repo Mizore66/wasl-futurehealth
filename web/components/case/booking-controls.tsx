@@ -69,13 +69,13 @@ export function BookingControls({
   const cancelReady = writesReady && active && !!summary?.reservation_id && !!summary.reservation_version;
 
   let disabledReason = "";
-  if (!live) disabledReason = "Fixture mode cannot save simulated reservations.";
-  else if (locked) disabledReason = "Reload this case before another booking action.";
-  else if (!ledgerReady) disabledReason = "The case ledger is invalid, so booking writes are disabled.";
-  else if (!hasCatalogue && !active) disabledReason = "This older booking document has no versioned slot catalogue. Regenerate it to enable reservations.";
+  if (!live) disabledReason = "Simulated bookings can't be saved here. This view is read-only.";
+  else if (locked) disabledReason = "Reload the page before booking again.";
+  else if (!ledgerReady) disabledReason = "Booking is off: this case's record failed its tamper check.";
+  else if (!hasCatalogue && !active) disabledReason = "This case has no list of slots, so it can't be booked here.";
   else if (reconciling) disabledReason = "A record retrieval for a procedure done elsewhere is pending. Record its outcome before booking.";
   else if (notReady) disabledReason = `Not clinically ready: ${booking.readiness?.reason ?? "a referral or repeat disposition is unresolved"}.`;
-  else if (!eligibleCase && !active) disabledReason = "A simulated reservation needs an open booking-eligible case with canonical contact permission granted.";
+  else if (!eligibleCase && !active) disabledReason = "Booking needs an open case that is ready to book, with the patient's contact permission.";
   else if (!active && hasCatalogue) disabledReason = slotUnavailableWords(candidates, booking.suggested_slot_id, booking.reservable);
 
   const open = (next: Mode) => {
@@ -95,14 +95,14 @@ export function BookingControls({
   const failed = (result: Extract<BookingWriteResult, { ok: false }>) => {
     if (result.status === 409) {
       if (install(result.projection)) {
-        setNotice(`Not saved: ${result.error}. The latest server state is now shown.`);
+        setNotice(`Not saved: ${result.error}. The latest booking is now shown.`);
       } else {
         setLocked(true);
-        setNotice(`Not saved: ${result.error}. The latest state could not be read. Reload before another attempt.`);
+        setNotice(`Not saved: ${result.error}. Reload the page before trying again.`);
       }
     } else {
       if (result.status >= 500) setLocked(true);
-      setNotice(`Not saved: ${result.error}${result.status >= 500 ? " Reload before another attempt." : ""}`);
+      setNotice(`Not saved: ${result.error}${result.status >= 500 ? " Reload the page before trying again." : ""}`);
     }
     setMode(null);
   };
@@ -143,14 +143,14 @@ export function BookingControls({
       if (!result.ok) return failed(result);
       if (!install(result.projection)) {
         setLocked(true);
-        setNotice(result.warning ?? "The event was saved, but its state could not be read. Reload before another action.");
+        setNotice(result.warning ?? "Saved. Reload the page before doing anything else.");
       } else {
-        setNotice("Saved to the simulated reservation ledger. No provider system or patient was contacted.");
+        setNotice("Simulated booking saved. No clinic or patient was contacted.");
       }
       setMode(null);
     } catch {
       setLocked(true);
-      setNotice("The save result is uncertain. Reload this case before retrying. The previous case head prevents a duplicate append.");
+      setNotice("We couldn't confirm the save. Reload the page before trying again. It won't be booked twice.");
       setMode(null);
     } finally {
       setPending(false);
@@ -172,7 +172,7 @@ export function BookingControls({
         </p>
       )}
       {booking.reservation_explanation === "overbooked_suggestion_not_reservable" && (
-        <p className="m-0 mt-2 text-warning">The suggested session is overbooked, so that suggestion is not a reservable seat. A different regular eligible slot may be chosen.</p>
+        <p className="m-0 mt-2 text-warning">The suggested session is overbooked and can&apos;t be booked. Choose another slot.</p>
       )}
       {booking.reservation_explanation === "suggestion_misses_referral_conditions" && (
         <p className="m-0 mt-2 text-warning">The suggested slot does not meet the receiving unit&apos;s acceptance conditions. Choose a slot that does.</p>
@@ -200,7 +200,7 @@ export function BookingControls({
       {backfill && (
         <p className="m-0 mt-2 text-small text-muted" data-testid="booking-recovery-backfill">
           A simulated recovery slot is already confirmed for this case (Day {backfill.day}), so ordinary reservations are disabled.{" "}
-          <Link href={`/app/recovery?slot=${backfill.slot_id}`}>Open recovery projection</Link>
+          <Link href={`/app/recovery?slot=${backfill.slot_id}`}>Open slot recovery</Link>
         </p>
       )}
 
@@ -231,8 +231,8 @@ export function BookingControls({
             </DialogTitle>
             <DialogDescription className="text-muted">
               {mode === "cancel"
-                ? "This only releases the synthetic reservation. It does not contact a provider or patient and does not change the clinical record."
-                : "This reserves only a synthetic seat in Wasl. No provider scheduling system or patient is contacted."}
+                ? "This only releases the simulated booking. No clinic or patient is contacted and the clinical record does not change."
+                : "This holds a simulated slot in Wasl only. No clinic or patient is contacted."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="grid gap-4">
@@ -260,7 +260,7 @@ export function BookingControls({
             <div className="flex flex-wrap justify-end gap-2">
               <Button type="button" variant="quiet" size="touch" disabled={pending} onClick={() => setMode(null)}>Back</Button>
               <Button type="submit" variant="cta" size="touch" disabled={pending || (mode !== "accept" && !reason.trim()) || ((mode === "choose" || mode === "reschedule") && !selected)}>
-                {pending ? "Saving…" : mode === "cancel" ? "Release synthetic reservation" : "Save simulated reservation"}
+                {pending ? "Saving…" : mode === "cancel" ? "Release simulated booking" : "Save simulated reservation"}
               </Button>
             </div>
           </form>

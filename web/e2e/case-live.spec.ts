@@ -137,10 +137,10 @@ test.describe("case detail, live mode against a mock API", () => {
         const card = "Diabetic retinopathy screening";
         const pending = byId.get("phc-retina/ServiceRequest/PHC-sr-1")!.dr as Json & { rec: Json };
         await page.goto(caseHref("phc-retina/ServiceRequest/PHC-sr-1"));
-        await expect(value(page, card, "Grade")).toHaveText(`${pending.screen_label} (coded result matched the text)`);
+        await expect(value(page, card, "Grade")).toHaveText(`${pending.screen_label} (matches the report text)`);
         await expect(value(page, card, "Urgency")).toHaveText("Urgent");
         await expect(value(page, card, "Outcome")).toHaveText("Pending");
-        await expect(value(page, card, "Next due")).toHaveText("Set once the loop resolves");
+        await expect(value(page, card, "Next due")).toHaveText("Set once follow-up is complete");
         await noSideScroll(page, width);
 
         const closed = (drFixture.case as Json).dr as Json & { next_due: Json };
@@ -154,7 +154,7 @@ test.describe("case detail, live mode against a mock API", () => {
         const card = "Breast screening (BI-RADS)";
         const recall = byId.get("bsu-screen/ServiceRequest/BSU-sr-15")!.breast as Json & { rec: Json };
         await page.goto(caseHref("bsu-screen/ServiceRequest/BSU-sr-15"));
-        await expect(value(page, card, "BI-RADS category")).toHaveText(`${recall.screen_label} (coded assessment matched the text)`);
+        await expect(value(page, card, "BI-RADS category")).toHaveText(`${recall.screen_label} (matches the report text)`);
         await expect(value(page, card, "Recall recommendation")).toHaveText(`Recall for assessment, ${recall.rec.urgency}`);
         await expect(value(page, card, "Deadline")).toHaveText(`${recall.rec.deadline_days} days, due ${day(recall.deadline_day as number)}`);
         await expect(value(page, card, "Assessment document")).toHaveText("Pending: none read yet");
@@ -166,7 +166,7 @@ test.describe("case detail, live mode against a mock API", () => {
         const routine = byId.get("bsu-screen/ServiceRequest/BSU-sr-1")!.breast as Json & { rec: Json };
         await expect(value(page, card, "Recall recommendation")).toHaveText("Routine screening, no recall");
         await expect(value(page, card, "Next screen")).toHaveText(
-          `${routine.rec.deadline_days} days, ${day(routine.deadline_day as number)} (routine interval, no overdue clock)`,
+          `${routine.rec.deadline_days} days, ${day(routine.deadline_day as number)} (routine interval)`,
         );
         await expect(value(page, card, "Outcome")).toHaveText("None: no recall");
         await noSideScroll(page, width);

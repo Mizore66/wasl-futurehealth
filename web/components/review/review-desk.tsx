@@ -7,7 +7,7 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Check, Lock } from "lucide-react";
 import { cx } from "@/lib/cx";
 import { claimReviewQuestion, submitReviewRead } from "@/app/app/review/[id]/actions";
-import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { ApiMode, ReviewSourceResult } from "@/lib/api/source";
 import type { ReviewRead, ReviewState } from "@/lib/api/schema";
@@ -54,7 +54,7 @@ const CLAIM_DONE: Record<"claim" | "renew" | "release" | "takeover", string> = {
 
 /** What a screen reader hears after a lease operation: the question and the operation in the past tense. */
 export function claimAnnouncement(question: ReviewState["question"], operation: keyof typeof CLAIM_DONE): string {
-  return `${question === "link" ? "Identity" : "Evidence"} question ${CLAIM_DONE[operation]}. The current server state is shown.`;
+  return `${question === "link" ? "Identity" : "Evidence"} question ${CLAIM_DONE[operation]}. The page is up to date.`;
 }
 
 /**
@@ -62,8 +62,8 @@ export function claimAnnouncement(question: ReviewState["question"], operation: 
  * claim; only a viewer the API does not let claim or take over the senior read is told a third read is not accepted.
  */
 export function awaitingSeniorWords(actions: ReviewState["claim_actions"]): string {
-  if (actions?.claim || actions?.takeover) return "The two reads differ. Claim the senior resolution to give the deciding read.";
-  return "The two reads differ. Only an authorised senior can resolve it. A third read from you is not accepted.";
+  if (actions?.claim || actions?.takeover) return "The two reviewers disagree. Claim this question to give the deciding answer.";
+  return "The two reviewers disagree. A senior reviewer will decide. You cannot give a third answer.";
 }
 
 /** A second read reveals the first, so the page's withheld-history notice must be re-rendered from the server. */
@@ -223,7 +223,7 @@ function QuestionCard({
       return;
     }
     if (needsNote) {
-      setBlocked("Explain why to submit the senior resolution.");
+      setBlocked("Give a reason before you submit your decision.");
       document.getElementById(`${id}-note`)?.focus();
       return;
     }
@@ -234,7 +234,7 @@ function QuestionCard({
   const lease = claims && (
     <p className="m-0 flex flex-wrap items-center gap-x-3 text-small" data-testid={`claim-status-${state.question}`}>
       <span className={state.claim?.status === "expired" ? "text-warning" : "text-muted"}>{claimSummary(state)}</span>
-      {state.claim?.status === "active" && actions.renew && <span className="text-muted">Heartbeat every 60 seconds</span>}
+      {state.claim?.status === "active" && actions.renew && <span className="text-muted">Kept for you while this page is open</span>}
     </p>
   );
 
@@ -247,7 +247,7 @@ function QuestionCard({
         </legend>
         <p id={`${id}-help`} className="m-0 mt-0.5 text-small text-muted">
           {next === "r3"
-            ? "You are resolving a disagreement between two independent reads. Your answer is recorded as the senior resolution."
+            ? "The two reviewers disagree. Your answer decides."
             : next === "r2"
               ? "Answer independently. You cannot see the first answer until you submit."
               : "Answer first. The second reader will not see your answer until they have submitted theirs."}
@@ -284,7 +284,7 @@ function QuestionCard({
       </fieldset>
       <div>
         <label htmlFor={`${id}-note`} className="block text-small font-semibold">
-          {next === "r3" ? "Rationale for the senior resolution (required)" : "Rationale (optional)"}
+          {next === "r3" ? "Reason for your decision (required)" : "Reason (optional)"}
         </label>
         <textarea
           id={`${id}-note`}
@@ -328,15 +328,7 @@ function QuestionCard({
       {reads.map((r) => (
         <li key={r.read} className="py-0.5" data-read={r.read}>
           {readLine(r, state.question, scoped)}
-          {r.note && <span className="block text-muted">Rationale: &ldquo;{r.note}&rdquo;</span>}
-          {r.hash && (
-            <>
-              {" "}
-              <span className="font-mono text-muted" title={r.hash}>
-                {r.hash.slice(0, 12)}
-              </span>
-            </>
-          )}
+          {r.note && <span className="block text-muted">Reason: &ldquo;{r.note}&rdquo;</span>}
         </li>
       ))}
     </ol>
@@ -361,13 +353,13 @@ function QuestionCard({
             {title}
           </h2>
           <p className="m-0 mt-1 text-small text-muted" data-testid={`subject-${state.question}`}>
-            {bound ? subject : "The case context for this item is not available, so it cannot be answered here."}
+            {bound ? subject : "The case details for this question are missing, so it cannot be answered here."}
           </p>
         </div>
         <p className="m-0 flex flex-wrap items-center gap-2" data-testid={`status-${state.question}`}>
           <Pill tone={headline.tone} wrap>{headline.text}</Pill>
           <span className="text-small text-muted">
-            {link ? "Identity (reviewer discipline)" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report (clinician discipline)` : "Programme evidence (clinician discipline)"}
+            {link ? "Identity check" : view.programme === "crc" ? `${view.pathology ? "Pathology" : "Colonoscopy"} report, for a clinician` : "Programme evidence, for a clinician"}
             {total > 1 ? ` · question ${position + 1} of ${total}` : ""}
           </span>
         </p>
@@ -375,7 +367,7 @@ function QuestionCard({
 
       {!terminal && (state.claim === undefined || actions === undefined) && (
         <p className="m-0 px-[var(--rv-pad)] pt-3 text-small text-muted" data-testid={`claim-unavailable-${state.question}`}>
-          This API does not provide review claims, so this question is not actionable.
+          This question cannot be answered here.
         </p>
       )}
 
@@ -391,10 +383,10 @@ function QuestionCard({
               <h3 className="staff-display m-0 text-[clamp(22px,2.2vw,32px)] leading-tight text-jade-900">{dueTitle(state)}</h3>
               <p className="m-0 text-muted">
                 {ownFirst
-                  ? "Your first read is in. A different reviewer is required. Your answer stays hidden until then."
+                  ? "Your first answer is in. A different reviewer answers next. Yours stays hidden until then."
                   : mayClaim
                     ? link
-                      ? "Claim to view the identifiers."
+                      ? "Claim to see the patient details."
                       : "Claim to answer this question."
                     : headline.text}
               </p>
@@ -441,22 +433,22 @@ function QuestionCard({
               Senior resolution: {answerWords(state.final_decision, state.question, scoped)}.
             </p>
           )}
-          {terminal && <p className="m-0 text-small text-muted">Case data is unchanged. This is a demo overlay, not a canonical decision.</p>}
+          {terminal && <p className="m-0 text-small text-muted">Demo only. This answer does not change the case.</p>}
           {locked && (
             <p className="m-0 text-small text-muted" data-testid="committed-lock">
-              Your read was recorded. This form is closed until the page is reloaded so the current state can be shown.
+              Your answer was saved. Reload the page to continue.
             </p>
           )}
           {state.state === "awaiting_r3" && !locked && (
             <p className="m-0 text-small text-muted" data-testid={`r3-note-${state.question}`}>{awaitingSeniorWords(actions)}</p>
           )}
           {state.state === "awaiting_r2" && !locked && !ownFirst && (
-            <p className="m-0 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
+            <p className="m-0 text-small text-muted">The first answer stays hidden until the second reviewer answers.</p>
           )}
           {state.state === "awaiting_r1" && !locked && !actions?.claim && !actions?.takeover && !state.claim && (
-            <p className="m-0 text-small text-muted">Your credential cannot give the first read for this question.</p>
+            <p className="m-0 text-small text-muted">You cannot give the first answer for this question.</p>
           )}
-          {crcItem && crcItem.choices.length === 0 && <p className="m-0">This obligation is blocked, already signed or superseded. No generic adequacy answer can resolve it.</p>}
+          {crcItem && crcItem.choices.length === 0 && <p className="m-0">This item is blocked, already signed or replaced. It cannot be answered here.</p>}
         </div>
       )}
 
@@ -684,7 +676,7 @@ export function ReviewDesk({
         } else {
           setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([key]) => !key.startsWith(`${qk}:`))));
         }
-        if (res.committed && !res.states) setNotice("The server recorded the claim operation, but its confirmation could not be read. Reload before continuing.");
+        if (res.committed && !res.states) setNotice("Your claim was saved, but the page could not update. Reload before continuing.");
         setAnnouncement(claimAnnouncement(state.question, operation));
         return "success";
       }
@@ -692,7 +684,7 @@ export function ReviewDesk({
       setErrors((e) => ({ ...e, [qk]: `Not saved: ${res.failure.error}` }));
       return "terminal";
     } catch {
-      setErrors((e) => ({ ...e, [qk]: "Not saved: the claim request failed. Check the current state before trying again." }));
+      setErrors((e) => ({ ...e, [qk]: "Not saved: the claim did not go through. Reload the page before trying again." }));
       return "transient";
     } finally {
       delete busyRef.current[qk];
@@ -731,20 +723,20 @@ export function ReviewDesk({
             lockedAt.current[qk] = state.head;
             setLocked((l) => ({ ...l, [qk]: true }));
           }
-          setNotice("The server recorded your read, but its confirmation could not be read. Do not submit again. Reload to see the current state.");
+          setNotice("Your answer was saved, but the page could not update. Do not submit again. Reload the page.");
         }
         const label = state.question === "link" ? "identity" : "evidence";
-        setAnnouncement(`Your ${READ_LABEL[res.read as "r1" | "r2" | "r3"]?.toLowerCase() ?? "read"} for the ${label} question was recorded. The question status has been updated.`);
+        setAnnouncement(`Your ${READ_LABEL[res.read as "r1" | "r2" | "r3"]?.toLowerCase() ?? "read"} for the ${label} question was saved. The question status has been updated.`);
         requestAnimationFrame(() => headings.current[`${state.item}:${state.question}`]?.focus());
         /* The server-rendered history gate ("withheld while a first read is hidden") is stale once r2 is in: re-render it. */
         if (readEndsConcealment(res.read)) reconcileAfterOperations.current = true;
       } else {
         setErrors((e) => ({ ...e, [qk]: readFailureSentence(res.failure) }));
-        if (res.failure.status === 409) setAnnouncement(`The ${state.question === "link" ? "identity" : "evidence"} question changed on the server. The current state is shown.`);
+        if (res.failure.status === 409) setAnnouncement(`The ${state.question === "link" ? "identity" : "evidence"} question was changed by someone else. The page is up to date.`);
         if (res.failure.status === 409) setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
       }
     } catch {
-      setErrors((e) => ({ ...e, [qk]: "Not saved: the request failed. Check the current state before trying again." }));
+      setErrors((e) => ({ ...e, [qk]: "Not saved: the request did not go through. Reload the page before trying again." }));
     } finally {
       delete busyRef.current[qk];
       setBusy((current) => {
@@ -775,13 +767,13 @@ export function ReviewDesk({
 
 
   if (!live && Object.keys(view.crcItems ?? {}).length > 0) {
-    return <div className="mt-6" role="status"><p>CRC care needs separate evidence-bound confirmations. This fixture preview cannot sign care obligations or declare them completed. Use an authenticated live review for each current item.</p>{sharedEvidence}</div>;
+    return <div className="mt-6" role="status"><p>Colorectal cases need a separate confirmation for each item. This demo cannot sign them. Sign in to the live review to answer each item.</p>{sharedEvidence}</div>;
   }
   if (live && current.length === 0) {
     return (
       <div className="mt-6 max-w-[72ch]" role="status">
         <p className="m-0 text-muted">
-          The API did not report an independent review for this case, so nothing can be submitted here. No answer is recorded from this page.
+          This case has no open review questions, so there is nothing to answer here.
         </p>
         <ReviewerSignOut caseId={view.caseId} />
         {settled}
@@ -803,7 +795,7 @@ export function ReviewDesk({
 
   const previewControls = pending && sourceWithheld ? (
     <p className="m-0 text-small text-muted" data-testid="source-withheld">
-      The evidence answer cannot be previewed until the source report it judges is shown.
+      The answer cannot be previewed until the report is shown.
     </p>
   ) : pending ? (
     <button type="button" onClick={preview} className="min-h-11 justify-self-start rounded-control bg-cta px-4 font-semibold text-white hover:bg-jade-800">
@@ -837,8 +829,8 @@ export function ReviewDesk({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="m-0 max-w-[80ch] text-small text-muted">
             {live
-              ? "In independent double review, two different credentials answer each question separately, and a disagreement goes to an authorised senior. Tokens show configured demo identities, not that separate people took part."
-              : "This is a reconstruction. Nothing here is appended or saved. Signing needs the live API."}
+              ? "Two different reviewers answer each question separately. If they disagree, a senior reviewer decides. Demo sign-ins do not prove that separate people took part."
+              : "Practice only. Nothing here is saved."}
           </p>
           {live && <ReviewerSignOut caseId={view.caseId} />}
         </div>
@@ -988,13 +980,13 @@ export function ReviewDesk({
                             <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
                               {view.disputed.length > 0
                                 ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ${view.items.scoped ? "Your answer settles only this question. The other checks stay open." : `One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}.`} `
-                                : "Use the exact programme evidence label. "}
+                                : "Choose the label that matches the report. "}
                               Preview as clinician: {SIGNER.name}
                               {hasLink ? ", the same person as question 1" : ""}.
                             </p>
                             {view.programme === "crc" && hasLink && (
                               <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
-                                &ldquo;Ask the unit&rdquo; is designed, not built. It records the identity answer only and sends nothing.
+                                &ldquo;Ask the unit&rdquo; is not available yet. It saves the identity answer only and sends nothing.
                               </p>
                             )}
                             <EvidenceChoices name={`${q2}-report`} programme={view.programme} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={false} />
@@ -1025,10 +1017,10 @@ export function ReviewDesk({
                 <Pill tone={outcome.tone}>{outcome.preview}</Pill>
               </h3>
               <div className="mt-2">
-                <HonestyLabel kind="designed" className={HONESTY_PLAIN}>Reconstruction. Nothing was saved.</HonestyLabel>
+                <HonestyLabel plain kind="designed">Practice only. Nothing was saved</HonestyLabel>
               </div>
               <p className="m-0 mt-2">
-                No event was appended and no hash exists. If this were saved against the live API: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}
+                If this were saved: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <Link
@@ -1077,7 +1069,7 @@ export function ReviewDesk({
           <SealedChain
             nodes={
               live
-                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "Case data" : "Two independent reads", what: resolved ? "no downstream effect inferred" : "still being answered", when: resolved ? (view.items.scoped ? "this question resolved" : "resolved") : "waiting" }]
+                ? [...view.trail, { id: "now", kind: "current", who: resolved ? "The case" : "Two separate reviews", what: resolved ? "no further change shown" : "still being answered", when: resolved ? (view.items.scoped ? "this question resolved" : "resolved") : "waiting" }]
                 : previewTrail(view, draft, done)
             }
             className="mt-3"

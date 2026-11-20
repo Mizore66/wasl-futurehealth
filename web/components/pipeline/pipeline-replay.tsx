@@ -6,14 +6,13 @@ import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import replayJson from "@/data/replay.json";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
-import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { Replay } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls } from "./controls";
 import { PipelineHeading, type PipelineHead } from "./heading";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
-import { TechnicalDetail } from "./technical";
 import { stepAnnouncement } from "./announce";
 import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
@@ -32,8 +31,6 @@ export type TamperDemo = {
   /** 1-based index of the changed step. */
   step: number;
   changed: string;
-  /** The backend's own entry types and hashes, for the Technical detail disclosure. */
-  technical: string[];
 };
 
 type LaneMark = "closed" | "review" | "open";
@@ -84,7 +81,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
             onStep={onStep}
             reduceMotion={play.reduceMotion}
             position={`Step ${view.step} of ${view.steps}`}
-            speed={`One step a second. The recorded run handled ${facts.throughputEvS} events a second.`}
+            speed="One step a second."
           />
         }
       >
@@ -122,18 +119,9 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
                 <span className="text-small text-muted">{ledger.note}</span>
                 <span className="min-w-0 flex-[1_1_240px] break-words text-small text-ink-soft">
                   {view.latestRecorded
-                    ? `Latest: ${view.latestRecorded.who.name} · ${view.latestRecorded.closed ? "chain verified" : "decision sealed"}`
-                    : "Nothing recorded yet in this loop"}
+                    ? `Latest: ${view.latestRecorded.who.name} · ${view.latestRecorded.closed ? "record checked" : "decision saved"}`
+                    : "Nothing saved yet"}
                 </span>
-              </div>
-              <div className="border-t border-rule px-4 sm:px-6">
-                <TechnicalDetail label="Technical detail: the system's names for these stages">
-                  {stages.concat(lanes, [ledger]).map((r) => (
-                    <div key={r.id}>
-                      {r.label} = {r.tech}
-                    </div>
-                  ))}
-                </TechnicalDetail>
               </div>
             </div>
           </LayoutGroup>
@@ -145,7 +133,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
           <h2 id="feed-h" className="m-0 text-section font-semibold text-ink">
             Decisions
           </h2>
-          <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">Newest first. The system&apos;s own labels are under Technical detail.</p>
+          <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">Newest first.</p>
           <ol aria-label="Decisions, newest first" className="relative m-0 mt-3 list-none overflow-hidden p-0" style={{ height: FEED_ROWS * FEED_PITCH }}>
             {view.feed.map((f, i) => {
               const latest = f.key === view.step - 1;
@@ -174,16 +162,9 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
               );
             })}
           </ol>
-          <TechnicalDetail label="Technical detail: the system's labels for these lines">
-            {view.feed.map((f) => (
-              <div key={f.key}>
-                step {f.step} · {f.tech}
-              </div>
-            ))}
-          </TechnicalDetail>
         </section>
 
-        <section aria-label="Run totals and the recorded failover result" className={CARD}>
+        <section aria-label="Run totals and the server test result" className={CARD}>
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
               <span data-testid="total-decisions" data-value={view.decisions}>
@@ -196,7 +177,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
             <Total label="Duplicated" note="decisions">
               <span data-testid="total-duplicated">{facts.duplicates}</span>
             </Total>
-            <Total label="Records verified so far" note={`of ${fmt(totals.chainsVerified)} sealed chains`}>
+            <Total label="Records checked so far" note={`of ${fmt(totals.chainsVerified)} records`}>
               <span data-testid="total-chains" data-value={view.chains}>
                 <NumberFlow value={view.chains} locales="en-US" />
               </span>
@@ -208,8 +189,8 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
               Switching a server off during a run <HonestyLabel kind="designed" />
             </p>
             <p className="m-0 max-w-[72ch] text-small text-muted" data-testid="server-result">
-              There is no switch on this screen because live failover is not built. This is the result of the recorded run, not the state of any server now. It shows {facts.lost} of {fmt(totals.outputs)} decisions
-              lost and {facts.duplicates} duplicated.
+              In a recorded test, a server was switched off mid-run: {facts.lost} of {fmt(totals.outputs)} decisions were lost and {facts.duplicates} duplicated. This is
+              not the state of any server now. Switching servers live is not built, so there is no switch here.
             </p>
           </div>
         </section>
@@ -221,7 +202,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
                 {tamper.title}
               </h2>
               <div className="flex flex-wrap items-center gap-2">
-                <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated edit.</HonestyLabel>
+                <HonestyLabel plain kind="simulated">Simulated edit</HonestyLabel>
                 <span
                   role="status"
                   className={cn(
@@ -243,14 +224,9 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
           <SealedChain nodes={tampered ? tamper.tampered : tamper.intact} className="mt-4" />
           <p aria-live="polite" className="m-0 mt-3 max-w-[72ch] text-small text-muted">
             {tampered
-              ? `${tamper.changed} Simulated here. In the recorded run, ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught.`
-              : `In the recorded run, ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught: deleted, reordered, truncated and rewritten records.`}
+              ? `${tamper.changed} Simulated here. In a recorded test, ${facts.tamperDetected} of ${facts.tamperAttacks} attempts to change records were caught.`
+              : `In a recorded test, ${facts.tamperDetected} of ${facts.tamperAttacks} attempts to change records were caught: deleted, reordered, cut short or rewritten.`}
           </p>
-          <TechnicalDetail label="Technical detail: the system's record types">
-            {tamper.technical.map((t) => (
-              <div key={t}>{t}</div>
-            ))}
-          </TechnicalDetail>
         </section>
       </div>
       <PersonSheet profile={shown} onClose={profile.close} />

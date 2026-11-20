@@ -66,7 +66,7 @@ export function PlaybackControls({
       </div>
       {reduceMotion && (
         <p data-testid="reduced-motion-note" className="m-0 max-w-[72ch] text-small text-ink-soft">
-          Reduced motion is on, so the replay waits at a settled frame. Press Play or Step to move it.
+          Reduced motion is on, so the replay is paused. Press Play or Step to move it.
         </p>
       )}
       {children}

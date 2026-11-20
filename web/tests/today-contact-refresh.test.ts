@@ -103,7 +103,7 @@ it("failed or malformed reads cannot turn blocked permission into a successful g
     expect(button("Log call").disabled).toBe(true);
     expect(host.textContent).not.toContain("Contact permitted");
     expect(host.textContent).not.toContain("MALFORMED-CONCEALED");
-    expect(host.textContent).toContain("Could not read the case ledger");
+    expect(host.textContent).toContain("Could not load the contact history");
     await act(async () => root!.unmount()); root = null; host.remove();
   }
 });
@@ -113,7 +113,7 @@ it("an invalid prefix cannot authorize regrant", async () => {
   await mount([blocked]);
   expect(button("Log call").disabled).toBe(true);
   expect(host.textContent).not.toContain("Contact permitted");
-  expect(host.textContent).toContain("not trustworthy");
+  expect(host.textContent).toContain("Case history needs checking");
 });
 
 it("aborted selection reads cannot change another case, reveal stale history, or override a newer retry", async () => {
@@ -183,7 +183,7 @@ it("a refreshed overlay regrant never borrows canonical permission from the stal
   expect(host.textContent).toContain("Contact permitted");
   expect(host.textContent).not.toContain("Not allowed yet");
   await act(async () => pending.resolve(ok(response(granted))));
-  expect(host.textContent).not.toContain("Could not read the case ledger");
+  expect(host.textContent).not.toContain("Could not load the contact history");
   expect(host.textContent).toContain("Not allowed yet");
   expect(host.textContent).not.toContain("Contact permitted");
   expect(host.textContent).not.toContain("Stopped by patient");

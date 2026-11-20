@@ -5,27 +5,27 @@ export const GLOSSARY: Record<GlossaryKey, { term: string; meaning: string }> = 
   reads: {
     term: "r1, r2, r3",
     meaning:
-      "The independent reads of one review question. r1 is the first reader. r2 is a second, different person who cannot see r1's answer until they submit their own. r3 is a senior reader, different from both, who decides only when r1 and r2 disagree.",
+      "The separate answers to one review question. r1 is the first reviewer. r2 is a second person who cannot see r1's answer until they give their own. r3 is a senior reviewer, different from both, who decides only when r1 and r2 disagree.",
   },
   canonical: {
     term: "Canonical",
     meaning:
-      "The clinical decision the pipeline engine recorded from source events. Staff actions on screen are saved beside it and never rewrite it. It changes only when the engine records a new decision.",
+      "The clinical decision Wasl recorded from the clinic and hospital records. Staff actions are saved beside it and never change it. It changes only when new records arrive.",
   },
   overlay: {
     term: "Overlay",
     meaning:
-      "The staff ledger kept on top of the canonical decision: calls, owners, snoozes, review reads and other actions, each with its actor, time and hash.",
+      "What staff did on the case, kept beside the clinical decision: calls, owners, snoozes, review answers and other actions, each with who did it and when.",
   },
   anchor: {
     term: "Anchor",
     meaning:
-      "A chain head (the latest hash) recorded in a store outside the ledger. Matching the recomputed chain against it would show that no earlier entry changed afterwards. Here the page shows the heads the API reports. Checking the external store is designed, not built.",
+      "A copy of the latest record entry, kept in a separate place, so anyone can check that no earlier entry was changed later. Checking against that copy is designed, not built yet.",
   },
   comparison_hash: {
     term: "Comparison hash",
     meaning:
-      "A hash of the export's content without its load time, so two exports of the same ledger state give the same value and can be compared directly.",
+      "A short code made from an export's contents. Two exports of the same record give the same code, so you can tell they match.",
   },
 };
 

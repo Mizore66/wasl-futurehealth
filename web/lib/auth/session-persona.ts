@@ -3,7 +3,7 @@
  * The API binds each bearer token to an actor and role; the web server can name that actor only when it holds the same
  * token map (WASL_API_TOKENS, "token:role:actor,…", as scripts/demo.sh exports it). Otherwise it names the credential.
  */
-export type SessionPersona = { actor: string; role: string; method: "demo" | "oidc" };
+export type SessionPersona = { actor: string; role: string; method: "demo" | "persona" | "oidc" };
 
 type Env = Record<string, string | undefined>;
 
@@ -50,13 +50,18 @@ export function personaFromToken(token: string, env: Env = process.env): Session
   if (bound) return { actor: bound.actor, role: roleWords(bound.role), method: "demo" };
   for (const credential of Object.keys(CREDENTIAL_WORDS)) {
     if (env[`WASL_API_${credential.toUpperCase()}_TOKEN`]?.trim() === token) {
-      return { actor: `${credentialWords(credential)} credential`, role: "Demo token · actor bound by the API", method: "demo" };
+      return { actor: `${credentialWords(credential)} credential`, role: "Demo token", method: "demo" };
     }
   }
-  return { actor: "Pasted reviewer token", role: "Demo token · actor bound by the API", method: "demo" };
+  return { actor: "Pasted reviewer token", role: "Demo token", method: "demo" };
+}
+
+/** An open-demo persona session: the persona's name, labelled as a demo persona (the API still binds the actor). */
+export function personaFromDemo(name: string, role: string): SessionPersona {
+  return { actor: name, role: `${role} · demo`, method: "persona" };
 }
 
 /** An OIDC session: the identity provider's subject, acting with its mapped credential. */
 export function personaFromOidc(subject: string, credential: string): SessionPersona {
-  return { actor: subject, role: `${credentialWords(credential)} · OIDC`, method: "oidc" };
+  return { actor: subject, role: `${credentialWords(credential)} · organisation account`, method: "oidc" };
 }

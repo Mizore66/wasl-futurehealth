@@ -26,13 +26,13 @@ test.describe("Recovery fixture mode", () => {
     await expect(page.getByText(/Programme match: pass/)).toBeVisible();
     const confirm = page.getByRole("button", { name: "Confirm backfill", exact: true });
     await expect(confirm).toBeDisabled();
-    await expect(confirm).toHaveAccessibleDescription(/Fixture mode is read-only/);
+    await expect(confirm).toHaveAccessibleDescription(/This demo is read-only/);
     await noSeriousAxe(page);
 
     await page.getByRole("tab", { name: /Excluded/ }).click();
     const excluded = page.locator("[data-eligible=false]");
     await expect(excluded).toContainText("AHS-sr-900");
-    await expect(excluded.getByTestId("excluded-by")).toHaveText("Source case for this release");
+    await expect(excluded.getByTestId("excluded-by")).toHaveText("This patient released the slot");
     await expect(page).toHaveURL(/set=excluded/);
     await page.reload();
     await expect(page.getByRole("tab", { name: /Excluded/ })).toHaveAttribute("aria-selected", "true");

@@ -41,6 +41,7 @@ export async function axe(page: Page) {
  * Derived figures the Programme page prints that no source file states, each computed here from the sources with the page's formula:
  *  - "still open" per programme = cases - closed - overdue (shown only when it is not negative);
  *  - the gaps in points between the true 31-day rate and the Wasl rate, the Emirates ID rate and the target = |a - b|, to one decimal;
+ *  - the share of on-time colonoscopies each method sees = its rate / the truth's rate, as a whole percent, per tab;
  *  - on time by programme (metrics.on_time_by_programme): each window's share = on_time / eligible as a percent to one
  *    decimal, and per programme the summed eligible and on_time over its windows and their share, the same way.
  * Only the Programme checks allow these; nothing else gets through.
@@ -64,6 +65,10 @@ function derived(): Set<string> {
     out.add(gap(truth, eid));
     out.add(gap(target, truth));
   }
+  // What each method sees: its 31-day rate over the truth's, as a whole percent (seenShare), per source tab.
+  const seen = (rate: number, truth: number) => String(Math.round((100 * rate) / truth));
+  for (const a of [kpi.eid_only, kpi.wasl_live]) out.add(seen(demo(a), demo(kpi.truth)));
+  for (const a of ["eid_only", "wasl"]) out.add(seen(held(`kpi31.heldout.${a}`), held("kpi31.heldout.truth")));
   const share = (on: number, of: number) => (Math.round((on / of) * 1000) / 10).toFixed(1);
   const sums = new Map<string, { eligible: number; onTime: number }>();
   for (const r of dashboard.metrics.on_time_by_programme ?? []) {

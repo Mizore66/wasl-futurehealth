@@ -68,7 +68,7 @@ describe("recovery assignment and outreach stay distinct", () => {
     expect(hold?.textContent).toContain("Unconfirmed");
     expect(document.querySelector("[data-eligible=false]")).toBeNull();
     await act(async () => document.querySelector<HTMLButtonElement>("#rc-cands-tab-excluded")!.click());
-    expect(document.querySelector("[data-eligible=false] [data-testid=excluded-by]")?.textContent).toBe("Source case for this release");
+    expect(document.querySelector("[data-eligible=false] [data-testid=excluded-by]")?.textContent).toBe("This patient released the slot");
   });
 
   it("confirms the top case through the existing backfill action without an outreach intent", async () => {
@@ -115,6 +115,6 @@ describe("recovery assignment and outreach stay distinct", () => {
   it("disables the backfill action in read-only fixture mode", async () => {
     await mount(open, true);
     expect(button("Confirm backfill")?.disabled).toBe(true);
-    expect(document.body.textContent).toContain("Fixture mode is read-only");
+    expect(document.body.textContent).toContain("This demo is read-only");
   });
 });

@@ -15,7 +15,7 @@ export default function AppNotFound() {
       <PageHeader attached sub="404" title={<span id="nf-title">This page could not be found</span>} />
       <div className="max-w-xl p-4 md:p-pad">
         <p className="m-0 text-body text-ink-soft">
-          The dashboard has no page at this address. Go back to the programme overview or pick a section from the sidebar.
+          There is no page at this address. Go back to the dashboard, or pick a section from the menu.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/app" className={`${link} bg-cta text-ground hover:text-ground`}>

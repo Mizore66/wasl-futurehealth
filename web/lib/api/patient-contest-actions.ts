@@ -33,7 +33,7 @@ export async function resolvePatientContest(input: unknown): Promise<PatientCont
   if (!parsed.success) return { ok: false, error: "Choose whether the decision is upheld or revised, and give the reason for your decision." };
   if (apiMode() !== "live") return { ok: false, error: "Resolving a patient contest needs the live API. Fixtures cannot append events." };
   const token = await session.reviewerToken();
-  if (!token) return { ok: false, error: "Sign in with the token assigned to you. A patient contest is resolved only as the signed-in credential.", signIn: true };
+  if (!token) return { ok: false, error: "Sign in first. A patient contest is resolved only as the signed-in credential.", signIn: true };
 
   const { caseId, contest, outcome, reason } = parsed.data;
   const result = await postPatientContestResolutionWithToken(caseId, contest, outcome, reason, token);

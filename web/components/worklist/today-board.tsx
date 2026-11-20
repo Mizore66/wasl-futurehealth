@@ -126,11 +126,11 @@ const SESSION_WHO = "This browser";
 const SESSION_OWNER = "Hessa Al Ali";
 
 const REFUSED: Record<number, string> = {
-  403: "the coordinator role may not do this",
-  404: "the API does not know this case",
+  403: "your role cannot do this",
+  404: "this case could not be found",
   409: "someone changed this case first. Reload to see it",
-  500: "the case ledger failed validation, so the API refuses new actions",
-  503: "no live API",
+  500: "saving is paused while the case history is checked",
+  503: "this demo cannot save changes",
 };
 
 // Revision access is confined to effects and event handlers; render only constructs the chip callbacks.
@@ -313,15 +313,15 @@ export function TodayBoard({
       .then(async (r) => {
         if (r.ok) {
           const parsed = LedgerResponse.safeParse(await r.json());
-          if (!parsed.success) throw new ReadError("the web server returned an unrecognised ledger");
+          if (!parsed.success) throw new ReadError("the case history could not be read");
           const panel = parsed.data.bookingPanel;
           if (panel && (panel.case.id !== selId || panel.case.api_overlay?.head !== panel.overlay.head)) {
-            throw new ReadError("the web server returned a ledger for a different case or head");
+            throw new ReadError("the case changed while loading; try again");
           }
           return parsed.data;
         }
         const body = (await r.json().catch(() => null)) as { error?: unknown } | null;
-        throw new ReadError(typeof body?.error === "string" ? body.error : `HTTP ${r.status}`);
+        throw new ReadError(typeof body?.error === "string" ? body.error : "the system returned an error");
       })
       .then((ledger) => {
         if (stale()) return;
@@ -352,7 +352,7 @@ export function TodayBoard({
       })
       .catch((e: unknown) => {
         if (stale()) return;
-        const error = e instanceof ReadError ? e.message : "the web server did not answer";
+        const error = e instanceof ReadError ? e.message : "no response; check your connection";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
@@ -398,7 +398,7 @@ export function TodayBoard({
         ? { ok: false, error: ledger.error, missing: false }
         : ledger.records
           ? { ok: true, records: ledger.records }
-          : { ok: false, error: "the case read carried no source records", missing: true };
+          : { ok: false, error: "none were found for this case", missing: true };
   const retryRecords = () => {
     if (!p) return;
     if (live) retryLedger(p.id);
@@ -460,13 +460,13 @@ export function TodayBoard({
           const communication = action.action === "initial_notification" || action.action === "receipt_acknowledgement";
           const next = communication && res.obligation ? obligationAfterCommunication(res.obligation) : undefined;
           const served = next ? { ...next, communicationStep: res.obligation === "no_acknowledgement" ? ("receipt" as const) : undefined } : {};
-          apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, ...served, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
+          apply(row, { what, when: `Saved · ${clock()}`, who: res.actor, hash: res.hash }, { ...patch, ...served, ...(action.action === "assign_owner" && !action.owner ? { owner: ownerLabel(res.owner) } : {}), head: res.head }, head, move, stage);
         } else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         else if (res.conflict === "reconciliation" || res.conflict === "communication" || res.conflict === "content" || res.conflict === "identity") setRefusal({ id: row.id, text: `Not saved: ${res.error}` });
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
-      .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
+      .catch(() => setRefusal({ id: row.id, text: "Not saved: no response; try again" }))
       .finally(() => setBusy(false));
   };
 
@@ -509,7 +509,7 @@ export function TodayBoard({
   const pendingNotice = pending && (
     <div role="status" className="mb-4 flex min-h-11 flex-wrap items-center gap-x-gap rounded-card border border-warning px-3" data-testid="pending-write">
       <span className="flex-1">
-        <span className="font-medium">{pending.what}</span> · {pending.name} · saves to the case ledger in {Math.round(undoMs / 1000)} seconds
+        <span className="font-medium">{pending.what}</span> · {pending.name} · saves in {Math.round(undoMs / 1000)} seconds
       </span>
       <Button variant="quiet" size="touch" data-focus="pending-undo" onClick={undoPending}>
         Undo
@@ -532,7 +532,7 @@ export function TodayBoard({
       <span>
         <span className="font-medium">{removed.head}</span> · {removed.move}
         {live ? (
-          <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+          <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved</span>
         ) : (
           <>
             {" "}·{" "}
@@ -672,10 +672,10 @@ export function TodayBoard({
   const nothingYet = !live
     ? "No contact logged this session"
     : ledger === undefined
-      ? "Reading the case ledger…"
+      ? "Loading…"
       : ledgerError
-        ? "Could not read the case ledger"
-        : "No contact on the case ledger yet";
+        ? "Could not load the contact history"
+        : "No contact recorded yet";
   /**
    * Activity, earliest to latest: the referral, the case's source events (once its records are read, in the Audit
    * page's words), every logged contact, then the next step. Each event opens its note.
@@ -687,7 +687,7 @@ export function TodayBoard({
         // The source timeline names the referral itself when it carries it; otherwise the list summary does.
         ...(sourceEvents.some((e) => e.kind === "referral") ? [] : [{ id: "referral", what: "Referral issued", when: formatDay(p.referralDay), note: `${p.programmeName} · ${p.providerName}` }]),
         ...sourceEvents.map((e) => ({ id: e.key, what: e.label, when: eventDay(e.date), note: e.note })),
-        ...entries.map((c, i) => ({ id: `log-${i}`, what: c.what, when: c.when, note: `Recorded by ${c.who}${c.hash ? ` · ledger ${c.hash.slice(0, 12)}` : ""}` })),
+        ...entries.map((c, i) => ({ id: `log-${i}`, what: c.what, when: c.when, note: `Recorded by ${c.who}` })),
         { id: "next", what: `Next: ${p.next}`, when: entries.length ? "Now" : nothingYet, note: p.status, current: true },
       ]
     : [];
@@ -733,7 +733,7 @@ export function TodayBoard({
     root.current?.querySelector<HTMLElement>(`#today-tab-${next}`)?.focus();
   };
   /** Fixtures mode only: no detail record, so the full record and its audit trail cannot open; say why, not just grey. */
-  const noRecord = "showcase cases only in this demo";
+  const noRecord = "not available in this demo";
   const renderEvent = (ev: Activity, i: number, list: Activity[]) => {
     const open = s.note === ev.id;
     return (
@@ -827,7 +827,7 @@ export function TodayBoard({
         <div role="tabpanel" id="today-panel-activity" aria-labelledby="today-tab-activity" hidden={s.file !== "activity"} tabIndex={0} className="outline-offset-2">
           {ledgerError && (
             <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-              <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+              <span className="text-warning">Could not load the contact history: {ledgerError}</span>
               <Button
                 variant="quiet"
                 size="touch"
@@ -844,7 +844,7 @@ export function TodayBoard({
           {/* Live, a failed read is the ledger read: its message and Retry are above. */}
           {!live && recordsRead && !recordsRead.ok && !recordsRead.missing && (
             <div role="status" data-testid="source-events-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-              <span className="text-warning">Source events not shown: {recordsRead.error}</span>
+              <span className="text-warning">Some history not shown: {recordsRead.error}</span>
               <Button variant="quiet" size="touch" onClick={retryRecords}>
                 Retry
               </Button>
@@ -934,12 +934,12 @@ export function TodayBoard({
               type="button"
               aria-disabled="true"
               aria-describedby="today-no-record"
-              title="Case file not available. This demo has case files only for the showcase cases."
+              title="Case file not available. This demo has case files for a few sample patients only."
               className={cn(caseViewButton, "cursor-not-allowed border-dashed bg-transparent text-limestone-700 hover:bg-transparent")}
             >
               <Folder aria-hidden className="size-[18px]" strokeWidth={1.6} />
               No case file
-              <span id="today-no-record" className="sr-only">This demo has case files only for the showcase cases.</span>
+              <span id="today-no-record" className="sr-only">This demo has case files for a few sample patients only.</span>
             </button>
           )}
         </div>
@@ -1105,13 +1105,10 @@ export function TodayBoard({
       {ledgerInvalid && (
         /* Not an alert: the board banner above is the one alert for this; this box only adds the open patient's detail. */
         <div data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
-          <p className="m-0 font-medium text-warning">Case ledger not trustworthy. This patient&rsquo;s state here is not authoritative.</p>
+          <p className="m-0 font-medium text-warning">Case history needs checking. This patient&rsquo;s details may be out of date.</p>
           <p className="m-0 mt-1">
-            The API reports its shared case ledger as not trustworthy, so the contacts and status shown here may not match it
-            {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
-            operator restores the ledger.
+            The contacts and status shown here may be wrong. Saving is paused until support fixes the case history.
           </p>
-          {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
         </div>
       )}
 
@@ -1134,7 +1131,7 @@ export function TodayBoard({
             <span>
               <span className="font-medium">{last.head}</span> · {last.move}
               {live ? (
-                <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+                <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved</span>
               ) : (
                 <>
                   {" "}·{" "}
@@ -1248,10 +1245,10 @@ export function TodayBoard({
         <section aria-labelledby="today-patient-journey" data-testid="today-patient-journey" className="mt-5 border-t border-rule pt-4">
           <h3 id="today-patient-journey" className="m-0 text-body font-medium">Patient self-service</h3>
           <p className="m-0 mt-1 text-muted">
-            Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} · last patient contact choice: {ledgerRead.patient.contact_permission.status}
+            Teach-back {ledgerRead.patient.teach_back.status} · preparation {ledgerRead.patient.preparation.completed}/{ledgerRead.patient.preparation.total} done · contact permission: {CONSENT_WORDS[ledgerRead.patient.contact_permission.status].toLowerCase()}
           </p>
           {ledgerRead.patient.slot_selection.status === "selected" && (
-            <p className="m-0 mt-1">Patient selected a simulated slot. Coordinator review is needed. No appointment is reserved.</p>
+            <p className="m-0 mt-1">Patient picked a preferred time (simulated). Check it. No appointment is booked yet.</p>
           )}
         </section>
       )}

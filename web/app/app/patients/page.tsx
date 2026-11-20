@@ -154,7 +154,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             sub={openRow?.it.named ? shortId(view.open) : undefined}
           />
           <div className="p-4 md:p-pad">
-            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
+            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case found."}</p>
             {openRow && (
               <dl className="rs-referral-facts">
                 <div>

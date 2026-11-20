@@ -143,7 +143,6 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
   const [requestID, setRequestID] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
-  const [ledgerHash, setLedgerHash] = useState("");
   const [releasing, setReleasing] = useState(false);
   const [reason, setReason] = useState("");
   const submitting = useRef(false);
@@ -186,7 +185,6 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
     setReason("");
     setRequestID(crypto.randomUUID());
     setMessage("");
-    setLedgerHash("");
   };
 
   const release = async () => {
@@ -205,15 +203,14 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       });
       setReleasing(false);
       if (result.ok) {
-        setLedgerHash(result.response.event.hash);
-        setMessage("Simulated backfill cancelled. The synthetic seat is released. The confirmation stays in the ledger.");
+        setMessage("Simulated backfill cancelled. The seat is free again. The original confirmation stays on record.");
       } else {
-        setMessage(`Cancellation refused: ${result.error}`);
+        setMessage(`Cancellation refused: ${result.status === 409 ? "someone changed this slot first. Reload and try again." : result.error}`);
       }
       router.refresh();
     } catch {
       setReleasing(false);
-      setMessage("Cancellation could not be completed. Reload the projection before retrying. No release was recorded in this browser.");
+      setMessage("Cancellation could not be completed. Reload the page and try again. Nothing was changed.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -244,18 +241,17 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       });
       if (result.ok) {
         setConfirming(null);
-        setLedgerHash(result.response.event.hash);
         setMessage("Simulated backfill confirmed. No provider booking or message was made.");
         router.refresh();
       } else {
         // Never retain stale heads or optimistic success after a refusal.
         setConfirming(null);
-        setMessage(`Confirmation refused: ${result.error}`);
+        setMessage(`Confirmation refused: ${result.status === 409 ? "someone changed this slot first. Reload and try again." : result.error}`);
         if (result.status === 409) router.refresh();
       }
     } catch {
       setConfirming(null);
-      setMessage("Confirmation could not be completed. Reload the projection before retrying. No success was recorded in this browser.");
+      setMessage("Confirmation could not be completed. Reload the page and try again. Nothing was saved.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -292,7 +288,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
               </div>
             </dl>
           </div>
-          <p className="m-0 mt-1 text-small text-ink-soft">Outreach is decided apart from the slot assignment. No message is ever sent.</p>
+          <p className="m-0 mt-1 text-small text-ink-soft">Contacting the patient is a separate choice from assigning the slot. No message is sent.</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {isAssigned ? (
@@ -392,7 +388,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
           </button>
         </div>
         <dl className="m-0 mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
-          <Fact mark="slot" term={slot.backfill ? "Assigned" : slot.status === "stale" ? "Stale slot" : "Slot"} value={`Day ${slotDay}`} note={leadWords(slotDay - Math.floor(asOfDay))} />
+          <Fact mark="slot" term={slot.backfill ? "Assigned" : slot.status === "stale" ? "Slot unavailable" : "Slot"} value={`Day ${slotDay}`} note={leadWords(slotDay - Math.floor(asOfDay))} />
           <Fact mark="requested" term="Requested" value={selected ? `Day ${Math.floor(selected.requested_day)}` : "None"} />
           <Fact mark="due" term="Due" value={selected ? `Day ${Math.floor(selected.deadline_day)}` : "None"} />
           <Fact term="Against due" value={gap?.text ?? "Nobody to measure"} tone={gap ? (gap.past ? "past" : "ok") : undefined} testId="recovery-gap" />
@@ -400,12 +396,11 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
         <p className="m-0 mt-2 text-small text-muted">
           {selected
             ? `Requested and due for ${shortId(selected.case_id)}, ${selected.case_id === assigned?.case_id ? "the assigned case" : selected.case_id === topId ? "the top candidate" : `rank ${selected.rank}`}.`
-            : "No eligible candidate to measure against."}
+            : "No eligible patient for this slot."}
         </p>
         {message && (
           <div role="status" className="mt-3 rounded-control border border-line bg-surface p-3 text-small">
             {message}
-            {ledgerHash && <span className="ml-2 break-all">Ledger {ledgerHash}</span>}
           </div>
         )}
       </header>
@@ -430,11 +425,11 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
               <dd className="m-0 font-semibold [overflow-wrap:anywhere]">{shortId(slot.release.source_appointment)}</dd>
             </div>
           </dl>
-          <p className="m-0 mt-2 text-small text-ink-soft">A future synthetic session, not the missed provider slot.</p>
+          <p className="m-0 mt-2 text-small text-ink-soft">A future simulated clinic session, not the original slot.</p>
           {slot.history.length > 0 && (
             <details className="group/hist mt-1">
               <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-[7px] text-[13px] font-semibold text-jade-700 [&::-webkit-details-marker]:hidden">
-                Ledger history ({slot.history.length})
+                History ({slot.history.length})
                 <ChevronDown aria-hidden className="size-3.5 transition-transform group-open/hist:rotate-180" />
               </summary>
               <ol className="m-0 max-h-40 list-decimal overflow-y-auto pl-5 text-small" data-testid="recovery-slot-history">
@@ -474,12 +469,12 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
       <div ref={scroller} id={tabs.panelId} role="tabpanel" aria-labelledby={tabs.tabId(set)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {slot.status === "stale" && (
           <p className={cx("m-0 border-b border-line bg-ochre-wash py-3 text-small text-ochre-ink", gutter)}>
-            Slot is stale{slot.stale_reason_codes.length ? `: ${slot.stale_reason_codes.map(words).join(", ")}` : ""}. It cannot be backfilled.
+            Slot no longer available{slot.stale_reason_codes.length ? `: ${slot.stale_reason_codes.map(words).join(", ")}` : ""}. It cannot be filled.
           </p>
         )}
         {slot.candidates.length === 0 ? (
           <p role="status" className={cx("m-0 py-4 text-muted", gutter)}>
-            No waitlist candidates were generated.
+            No patients on the waiting list for this slot.
           </p>
         ) : (
           <ol className="m-0 list-none p-0">
@@ -547,7 +542,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
         {readOnly && (
           // Only the disabled confirm button's description: no visible footnote under the board.
           <p id="rc-read-only" className="sr-only">
-            Fixture mode is read-only. Confirmations are never simulated in browser state.
+            This demo is read-only. Slots cannot be filled here.
           </p>
         )}
       </div>
@@ -567,7 +562,7 @@ export function SlotDetail({ slot, asOfDay, readOnly, view }: { slot: RecoverySl
         <DialogContent className="staff-tokens max-h-[90dvh] overflow-y-auto bg-surface text-ink" showCloseButton={!pending}>
           <DialogHeader>
             <DialogTitle>Cancel simulated backfill</DialogTitle>
-            <DialogDescription>Releases the synthetic seat so the case can be rebooked. A compensating ledger event references the confirmation. Nothing is deleted.</DialogDescription>
+            <DialogDescription>Frees the seat so the patient can be rebooked. The original confirmation stays on record. Nothing is deleted.</DialogDescription>
           </DialogHeader>
           <label className="flex flex-col gap-1 text-small">
             <span>Reason (required)</span>

@@ -42,26 +42,27 @@ export function PatientJourneyCard({ detail }: { detail: CaseDetail }) {
   const events = detail.api_reviews.filter((event): event is Extract<CaseDetail["api_reviews"][number], { ledger: "patient" }> => event.ledger === "patient");
   return (
     <section id="patient-journey" aria-labelledby="patient-journey-h" className="min-w-0 scroll-mt-4 rounded-card border border-line bg-surface p-4 md:p-pad">
-      <h2 id="patient-journey-h" className="m-0 text-section font-medium">Patient self-service timeline</h2>
-      <p className="m-0 mt-1 text-small text-muted">
-        <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Synthetic patient link.</HonestyLabel> Server-confirmed patient activity. No message was sent and no appointment is reserved.
-      </p>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 id="patient-journey-h" className="m-0 text-section font-medium">Patient self-service timeline</h2>
+        <HonestyLabel plain kind="simulated">Simulated patient link</HonestyLabel>
+      </div>
+      <p className="m-0 mt-1 text-small text-muted">What the patient did on their link. No message was sent and no appointment is booked.</p>
       <dl className="m-0 mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
         <dt className="text-muted">Teach-back</dt><dd className="m-0">{TEACH_BACK[patient.teach_back.status]}{patient.teach_back.attempts ? ` · ${patient.teach_back.attempts} attempt${patient.teach_back.attempts === 1 ? "" : "s"}` : ""}</dd>
         <dt className="text-muted">Text permission</dt><dd className="m-0">{patient.contact_permission.status === "opted_out" ? "Stopped" : patient.contact_permission.status}</dd>
         <dt className="text-muted">Preferred time</dt><dd className="m-0 [overflow-wrap:anywhere]">{patient.slot_selection.status === "selected" ? `${patient.slot_selection.slot_id}, coordinator review needed` : "Not selected"}</dd>
         <dt className="text-muted">Preparation</dt><dd className="m-0">{patient.preparation.completed} of {patient.preparation.total} complete</dd>
       </dl>
-      <h3 className="m-0 mt-5 text-body font-medium">Append-only patient events</h3>
+      <h3 className="m-0 mt-5 text-body font-medium">Patient activity</h3>
       {events.length === 0 ? (
-        <p className="m-0 mt-2 text-muted">No patient events recorded.</p>
+        <p className="m-0 mt-2 text-muted">No patient activity recorded.</p>
       ) : (
         <ol className="m-0 mt-2 list-none p-0" aria-label="Patient self-service events">
           {events.map((event) => (
             <li key={event.hash} className="border-t border-rule py-3">
               <p className="m-0 font-medium">{KIND[event.kind]}</p>
               <p className="m-0 mt-1">{eventDetail(event)}</p>
-              <p className="m-0 mt-1 text-small text-muted">Patient link · {atWords(event.at)} · event {event.hash.slice(0, 8)}</p>
+              <p className="m-0 mt-1 text-small text-muted">Patient link · {atWords(event.at)}</p>
             </li>
           ))}
         </ol>
@@ -108,14 +109,14 @@ export function PatientRequestsCard({ detail, review }: { detail: CaseDetail; re
             <p className="m-0 mt-1">{requestState(row)}</p>
             {row.kind === "contest_submitted" && row.reason && <p className="m-0 mt-1 [overflow-wrap:anywhere]">Patient&apos;s reason: {row.reason}</p>}
             <p className="m-0 mt-1 text-small text-muted">
-              Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)} · questioned decision {row.decision.slice(0, 8)}
+              Submitted {atWords(row.submitted_at)} · receipt {row.receipt.slice(0, 8)}
             </p>
             {row.resolution_reason && <p className="m-0 mt-1 [overflow-wrap:anywhere]">Reviewer&apos;s reason: {row.resolution_reason}</p>}
             {row.kind === "contest_submitted" && row.status === "open" && review?.live && review.controls?.(row.receipt, row.excluded_reviewers ?? [])}
           </li>
         ))}
       </ol>
-      {anyOpen && !review?.live && <p className="m-0 mt-2 text-small text-muted">Resolving a contest needs the live API and a signed-in senior clinician. This snapshot is read-only.</p>}
+      {anyOpen && !review?.live && <p className="m-0 mt-2 text-small text-muted">A signed-in senior clinician resolves contests. This view is read-only.</p>}
     </section>
   );
 }

@@ -1,7 +1,5 @@
 import { Mark, Pill } from "@/components/review/marks";
-import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
-import { TechTerm } from "@/components/wasl/tech-term";
-import { apiMode } from "@/lib/api/source";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { Audit, Programme, UndoProjection } from "@/lib/api/schema";
 import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 import { Card } from "./sections";
@@ -9,28 +7,16 @@ import { GovernanceControls, GovernanceIdentity, GovernanceSignIn } from "./gove
 import { cn } from "@/lib/utils";
 import { protocolRead, READ_LABEL } from "@/lib/domain/stage";
 import { isNonbindingLegacyHistory } from "@/lib/domain/review-authority";
-import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
-
-/** Full hash on a disclosure; the short form is for comparing by eye. */
-function Hash({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="block">
-      <span className="text-muted">{label} </span>
-      <span className="font-mono" title={value}>
-        {shortHash(value)}
-      </span>
-    </span>
-  );
-}
+import { atWords, bodySummary, entryLabel, ledgerWords, reviewWords, roleWords } from "./words";
 
 /**
  * The chain-check mark. An empty chain passes the server's check vacuously, so it reads as neutral, never as a
  * positive "0 of 0 intact"; a broken chain is negative whatever its length.
  */
 export function chainCheck(audit: Pick<Audit, "chain" | "chain_length" | "chain_verified">): { tone: "positive" | "negative" | "muted"; shape: "tick" | "cross" | "dash"; label: string } {
-  if (!audit.chain_verified) return { tone: "negative", shape: "cross", label: "Chain broken" };
-  if (audit.chain_length === 0) return { tone: "muted", shape: "dash", label: "No sealed entries yet" };
-  return { tone: "positive", shape: "tick", label: `Verified, ${audit.chain.length} of ${audit.chain_length} intact` };
+  if (!audit.chain_verified) return { tone: "negative", shape: "cross", label: "Record altered" };
+  if (audit.chain_length === 0) return { tone: "muted", shape: "dash", label: "Nothing recorded yet" };
+  return { tone: "positive", shape: "tick", label: `Unchanged · ${audit.chain.length} of ${audit.chain_length} entries checked` };
 }
 
 /** Whether the server's check passed, with honest wording about what that check is. */
@@ -41,7 +27,7 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
   return (
     <section aria-labelledby="verified-h" className="rounded-card border border-line bg-surface p-4 md:p-pad">
       <h2 id="verified-h" className="m-0 text-section font-medium">
-        Chain check
+        Tamper check
       </h2>
       <p className="m-0 mt-3 flex flex-wrap items-center gap-3" role="status" data-testid="chain-verified">
         <Pill tone={mark.tone} shape={mark.shape}>
@@ -49,22 +35,19 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
         </Pill>
         {!intact && (
           <span className="text-negative">
-            Only {audit.chain.length} of {audit.chain_length} entries were returned.
+            Only {audit.chain.length} of {audit.chain_length} entries could be shown.
           </span>
         )}
       </p>
       <p className="m-0 mt-3 max-w-[72ch]">
         {empty
-          ? "Nothing has been sealed for this case yet, so there is no entry for the server to check."
+          ? "Nothing has been recorded for this case yet, so there is nothing to check."
           : audit.chain_verified
-          ? "The server recomputed every entry's hash from its contents and the hash of the entry before it, and they all matched. So no entry was changed or removed after it was sealed."
-          : "The server recomputed the hashes and at least one did not match. Treat this case's record as altered until it is checked."}
+          ? "Every entry was checked against the one before it. No entry was changed or removed after it was recorded."
+          : "At least one entry failed the check. Treat this case's record as altered until someone checks it."}
       </p>
       <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
-        This proves the record is unaltered. It does not prove the decisions were clinically right.{" "}
-        {apiMode() === "live"
-          ? "The Wasl API ran the check when this page loaded. Your browser does not re-run it."
-          : "The Wasl API ran the check when this snapshot was published (the run metadata above says when). This page shows that result and does not re-run it."}
+        This shows the record is unaltered. It does not show the decisions were clinically right.
       </p>
     </section>
   );
@@ -73,29 +56,15 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
 /** Each sealed entry: what it was, what it says, and how it chains to the one before. */
 export function ChainCard({ audit }: { audit: Audit }) {
   return (
-    <Card id="chain" title="Sealed entries" note="Each entry carries the hash of the one before it. Break one and every later hash stops matching.">
-      <ol className="m-0 mt-3 list-none p-0" aria-label="Chain entries">
+    <Card id="chain" title="Recorded entries" note="Entries are locked in order. Changing one would break every entry after it.">
+      <ol className="m-0 mt-3 list-none p-0" aria-label="Recorded entries">
         {audit.chain.map((e, i) => (
           <li key={e.hash} className="border-t border-rule py-3" data-entry={e.type}>
             <div className="flex items-baseline gap-3">
               <span className="w-5 flex-none text-right tabular-nums text-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
-                <div className="font-medium">
-                  <TechTerm id={e.type} label={entryLabel(e.type)} />
-                </div>
+                <div className="font-medium">{entryLabel(e.type)}</div>
                 <p className="m-0 mt-1">{bodySummary(e)}</p>
-                <p className="m-0 mt-1 text-small leading-5">
-                  <Hash label={e.prev === "genesis" ? "Starts the chain" : "After"} value={e.prev === "genesis" ? "genesis" : e.prev} />
-                  <Hash label="Hash" value={e.hash} />
-                </p>
-                <details className="mt-1 text-small text-muted">
-                  <summary className="min-h-6 cursor-pointer">Full hashes and entry body</summary>
-                  <p className="m-0 mt-1 break-all font-mono">prev {e.prev}</p>
-                  <p className="m-0 mt-1 break-all font-mono">hash {e.hash}</p>
-                  <pre className="m-0 mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-control bg-ground p-3 font-mono">
-                    {JSON.stringify(e.body, null, 2)}
-                  </pre>
-                </details>
               </div>
             </div>
           </li>
@@ -112,18 +81,18 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
   return (
     <Card
       id="signatures"
-      title="Decision signatures"
+      title="Signed decisions"
       aside={
         <span className="text-small text-muted" data-testid="signature-count">
           {matching} of {rows.length} match
         </span>
       }
-      note="Each decision is signed when made. The server signs it again from the stored decision, and the two must be equal."
+      note="Each decision is signed when it is made. It is checked again now, and the two must match."
     >
       {rows.length === 0 ? (
         <p className="m-0 mt-3 text-muted">No decisions are signed for this case.</p>
       ) : (
-        <ol className="m-0 mt-3 list-none p-0" aria-label="Decision signatures">
+        <ol className="m-0 mt-3 list-none p-0" aria-label="Signed decisions">
           {rows.map((s, i) => {
             const ok = s.sig === s.recomputed;
             return (
@@ -140,17 +109,6 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
                     </Mark>
                   )}
                 </div>
-                <p className="m-0 mt-1 text-small leading-5">
-                  <Hash label="Stored" value={s.sig} />
-                  <Hash label="Recomputed" value={s.recomputed} />
-                </p>
-                <details className="mt-1 text-small text-muted">
-                  <summary className="min-h-6 cursor-pointer">Full values</summary>
-                  <p className="m-0 mt-1 break-all font-mono">{s.decision_id}</p>
-                  <p className="m-0 mt-1 break-all">Policy {s.policy}</p>
-                  <p className="m-0 mt-1 break-all font-mono">stored {s.sig}</p>
-                  <p className="m-0 mt-1 break-all font-mono">recomputed {s.recomputed}</p>
-                </details>
               </li>
             );
           })}
@@ -199,13 +157,11 @@ export function LedgerTitle({ r, programme }: { r: LedgerRow; programme: Program
   return r.ledger === "review" ? (
     <>
       {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
-      {isNonbindingLegacyHistory(r) ? "Legacy history, nonbinding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
+      {isNonbindingLegacyHistory(r) ? "Older entry — not binding" : r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
     </>
   ) : (
     /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
-    <span className={cn(r.ledger === "unknown" && "text-warning")}>
-      <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
-    </span>
+    <span className={cn(r.ledger === "unknown" && "text-warning")}>{ledgerWords(r)}</span>
   );
 }
 
@@ -217,7 +173,7 @@ export function LedgerFacts({ audit, index, programme }: { audit: Audit; index: 
   return (
     <>
       {r.ledger === "review" && isNonbindingLegacyHistory(r) && (
-        <p className="m-0 mt-1 text-small text-muted">Original recorded label: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}. This history does not resolve a review item.</p>
+        <p className="m-0 mt-1 text-small text-muted">Originally recorded as: {r.decision ? reviewWords(r.decision, programme) : "not recorded"}. This entry does not settle a review item.</p>
       )}
       {/* The auditor's redacted history never names the actor or quotes the note. */}
       <p className="m-0 text-muted">
@@ -234,15 +190,11 @@ export function LedgerFacts({ audit, index, programme }: { audit: Audit; index: 
           )}
           {resolving.map((event) => (
             <a key={event.hash} href={`#review-event-${event.hash}`} className="underline">
-              Resolving event: {event.ledger === "compensation" ? event.kind.replaceAll("_", " ") : "event"}
+              Resolved by: {event.ledger === "compensation" ? event.kind.replaceAll("_", " ") : "a later entry"}
             </a>
           ))}
         </p>
       )}
-      <p className="m-0 mt-1 text-small leading-5">
-        {r.prev && <Hash label={index === 0 ? "Continues the shared ledger after" : "After"} value={r.prev} />}
-        {r.hash && <Hash label="Hash" value={r.hash} />}
-      </p>
     </>
   );
 }
@@ -254,7 +206,7 @@ export function LedgerControls({ r, governance, gov }: { r: LedgerRow; governanc
     <>
       {eventStatus && (
         <p className="m-0 mt-1 text-small font-medium" data-compensation-status={eventStatus}>
-          {r.ledger === "review" ? "Review" : r.ledger === "compensation" && r.kind === "contest" ? "Contest" : "Compensation"} status: {eventStatus}
+          {r.ledger === "review" ? "Review" : r.ledger === "compensation" && r.kind === "contest" ? "Contest" : "Correction"} status: {eventStatus}
         </p>
       )}
       {governance && gov.controls && gov.governable(r) === "review" && (
@@ -274,7 +226,7 @@ export function GovernanceHeader({ governance, gov }: { governance?: HistoryGove
   return (
     <>
       <p className="m-0 mt-3 max-w-[72ch] text-small text-muted" role="status">
-        Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}. Compensation does not rewrite it.
+        Review status: {governance.projection.case_status}. Original decision: {governance.projection.canonical_state}. Undoing or contesting a review does not change it.
       </p>
       {gov.anyGovernable &&
         (gov.controls ? (
@@ -293,17 +245,13 @@ export function HistoryCard({ audit, programme, governance }: { audit: Audit; pr
     <Card
       id="history"
       title="Review history"
-      note={
-        <>
-          <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Demo actions, not clinical sign-offs.</HonestyLabel> Reviews, coordinator
-          actions and undo or contest events share one append-only chain. A new entry is added below. An old one is never edited.
-        </>
-      }
+      aside={<HonestyLabel plain kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
+      note="Reviews, coordinator actions, undos and contests are listed in order. New entries are added below. Old ones are never edited."
     >
       <GovernanceHeader governance={governance} gov={gov} />
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
-          Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.
+          No one has signed this case here yet. The simulated reviewers&rsquo; sign-offs are on the case page.
         </p>
       ) : (
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
@@ -328,34 +276,27 @@ export function HistoryCard({ audit, programme, governance }: { audit: Audit; pr
   );
 }
 
-const STREAM_WORDS: Record<string, string> = { fhir: "Incoming records (FHIR)" };
-const streamWords = (k: string) => STREAM_WORDS[k] ?? (/^out\.p\d+$/.test(k) ? `Outgoing messages, partition ${k.slice(5)}` : k);
+const STREAM_WORDS: Record<string, string> = { fhir: "Incoming records" };
+const streamWords = (k: string) => STREAM_WORDS[k] ?? (/^out\.p\d+$/.test(k) ? `Outgoing messages, group ${k.slice(5)}` : k);
 
 /** The daily heads the run reports, as the API gave them. */
 export function AnchorsCard({ audit }: { audit: Audit }) {
   const entries = Object.entries(audit.anchors);
   return (
-    <Card id="anchors" title="Anchors" aside={<HonestyLabel kind="designed" className={HONESTY_PLAIN}>Checking the external store is designed, not built.</HonestyLabel>}>
+    <Card id="anchors" title="Daily record seals" aside={<HonestyLabel plain kind="designed">Designed, not checked here</HonestyLabel>}>
       {entries.length === 0 ? (
-        <p className="m-0 mt-3 text-muted">The API sent no anchors for this case.</p>
+        <p className="m-0 mt-3 text-muted">No daily seals for this case.</p>
       ) : (
-        <ul className="m-0 mt-3 list-none p-0" aria-label="Anchors">
-          {entries.map(([k, v]) => (
+        <ul className="m-0 mt-3 list-none p-0" aria-label="Daily record seals">
+          {entries.map(([k]) => (
             <li key={k} className="border-t border-rule py-2">
               <span className="block">{streamWords(k)}</span>
-              <Hash label="Head" value={v} />
-              <details className="text-small text-muted">
-                <summary className="min-h-6 cursor-pointer">Full value</summary>
-                <code className="break-all font-mono">
-                  {k} {v}
-                </code>
-              </details>
             </li>
           ))}
         </ul>
       )}
       {audit.anchor_note && (
-        <p className="m-0 mt-3 max-w-[72ch] text-muted">{audit.anchor_note}. This page shows the heads the API reports. It does not query that store.</p>
+        <p className="m-0 mt-3 max-w-[72ch] text-muted">{audit.anchor_note}.</p>
       )}
     </Card>
   );

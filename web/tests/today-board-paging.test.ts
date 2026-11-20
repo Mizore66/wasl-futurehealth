@@ -236,7 +236,7 @@ it("T-TODAY-LIVE-INFLIGHT invokes recordAction before paging, then follows that 
   await pager("Next"); expect(heading()).toBe(items[25].name); expect(open().textContent).not.toContain("Logged: Snoozed");
   await act(async () => saved.resolve({ ok: true, head: "synthetic-head-0-after", hash: "synthetic-write-hash", actor: "Synthetic coordinator" }));
   expect(heading()).toBe(items[0].name); expect(status()).toContain("Page 49 of 49"); assertMounted();
-  expect(open().textContent).toContain("saved to the case ledger"); expect(open().textContent).not.toContain("Undo");
+  expect(open().textContent).toContain(" · saved"); expect(open().textContent).not.toContain("Undo");
   expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
 });
 
@@ -263,7 +263,7 @@ it.each([
   if (page) { expect(status()).toBe(`${page}, showing 1201 to 1201 of 1201.`); expect(focusedPager.disabled).toBe(true); }
   else { expect(status()).toBeUndefined(); expect(list().querySelector("nav")).toBeNull(); expect(focusedPager.isConnected).toBe(false); }
   expect(document.activeElement).toBe(open().querySelector('[data-focus="undo"]'));
-  expect(open().textContent).toContain("saved to the case ledger");
+  expect(open().textContent).toContain(" · saved");
   expect(host.querySelector('[data-testid="removed-notice"]')).toBeNull();
   if (kind !== "snooze") expect(open().textContent).toContain("moved to Waiting");
 });
@@ -312,6 +312,6 @@ it("unmounted synthetic invalid row still warns for the whole board", async () =
   vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
   await mount(items, true); expect(rows()).toHaveLength(25);
   expect(names()).not.toContain(items[1200].name);
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain("not trustworthy");
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain("Case history needs checking");
   expect(button("Snooze to tomorrow").disabled).toBe(true);
 });

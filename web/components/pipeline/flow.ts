@@ -9,18 +9,17 @@ export type Mark = "queued" | "working" | "done" | "held" | "failed";
 export type RowId = "received" | "matching" | "reading" | "gate" | "closed" | "review" | "open" | "ledger";
 
 /**
- * The eight stage rows of the case flow (pipeline-brief "The state vocabulary"). `note` is the plain sublabel the screen shows;
- * `tech` is the backend term or technical line, shown only behind a "Technical detail" disclosure (issue #5).
+ * The eight stage rows of the case flow (pipeline-brief "The state vocabulary"). `note` is the plain sublabel the screen shows.
  */
-export const ROWS: { id: RowId; label: string; note: string; tech: string; branch?: boolean }[] = [
-  { id: "received", label: "Received", note: "Hospital messages come in", tech: "HL7 v2 · FHIR R4" },
-  { id: "matching", label: "Matching identity", note: "Arabic and Latin names", tech: "Arabic and Latin names" },
-  { id: "reading", label: "Reading the report", note: "Two readers check it", tech: "rules reader + Gemma 3 4B" },
-  { id: "gate", label: "Safety gate", note: "Both readers must agree", tech: "readers agree, p ≥ 0.99" },
-  { id: "closed", label: plain("closure_decision"), note: "Evidence on file", tech: "closure_decision", branch: true },
-  { id: "review", label: plain("needs_human"), note: "The gate does not guess", tech: "needs_human", branch: true },
-  { id: "open", label: plain("not_closed"), note: "Not complete yet", tech: "not_closed", branch: true },
-  { id: "ledger", label: "Recorded in the ledger", note: "Every decision is sealed", tech: "hash-chained" },
+export const ROWS: { id: RowId; label: string; note: string; branch?: boolean }[] = [
+  { id: "received", label: "Received", note: "Reports from hospitals" },
+  { id: "matching", label: "Matched to the right patient", note: "Names in Arabic or English" },
+  { id: "reading", label: "Report read", note: "Two readers check it" },
+  { id: "gate", label: "Safety check", note: "Both readers must agree" },
+  { id: "closed", label: "Closed", note: "Evidence on file", branch: true },
+  { id: "review", label: "Needs a person", note: "Two reviewers decide", branch: true },
+  { id: "open", label: "Still open", note: "Not complete yet", branch: true },
+  { id: "ledger", label: "Saved to the record", note: "Every decision is kept" },
 ];
 
 const OUTCOME_ROW: Record<Outcome, RowId> = {
@@ -78,7 +77,7 @@ export type Who = { name: string; seed: PersonSeed; face: ChipFace };
 
 export type LedgerLine = { who: Who; closed: boolean } | null;
 
-export type FeedLine = { key: number; caseId: string; who: Who; text: string; note: string; tech: string; mark: Mark; step: number };
+export type FeedLine = { key: number; caseId: string; who: Who; text: string; note: string; mark: Mark; step: number };
 
 export type FlowView = {
   rows: FlowRow[];
@@ -110,37 +109,35 @@ export function readWords(r: ReaderRead): string {
 
 export const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
   closed_with_evidence: { text: "Closed with evidence", mark: "done" },
-  waiting_for_reviewers: { text: "Held, waiting for two reviewers", mark: "held" },
-  kept_open: { text: "Kept open, not complete yet", mark: "held" },
+  waiting_for_reviewers: { text: "Needs a person · two reviewers decide", mark: "held" },
+  kept_open: { text: "Still open · not complete yet", mark: "held" },
 };
 
-/** A decision feed line for the events that report a result. Start-of-work events stay off the feed. `note` is plain; `tech` is the system's own label. */
+/** A decision feed line for the events that report a result. Start-of-work events stay off the feed. `note` is plain. */
 export function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "caseId" | "who" | "step"> | null {
-  const verdict = `${c.read.state} · ${c.read.reason}`;
   const why = plain(c.read.reason);
   switch (e.type) {
     case "received":
-      return { text: "Received a colonoscopy report", note: "Hospital message", tech: c.source === "hl7" ? "HL7 v2" : "FHIR R4", mark: "queued" };
+      return { text: "Received · colonoscopy report", note: "From the hospital", mark: "queued" };
     case "matched":
-      return { text: "Matched to a referral", note: "Linker's decision", tech: "link_decision", mark: "done" };
+      return { text: "Matched to the right patient", note: "Name and details checked", mark: "done" };
     case "read": {
       const t = `${(c.read.latencyMs / 1000).toFixed(1)} s`;
-      return { text: `Read · ${readWords(c.read)}`, note: `${why} · ${t}`, tech: `${verdict} · ${t}`, mark: "done" };
+      return { text: `Read · ${readWords(c.read)}`, note: `${why} · ${t}`, mark: "done" };
     }
     case "gate":
       return e.passed
-        ? { text: "Safety gate passed", note: why, tech: verdict, mark: "done" }
-        : { text: "Safety gate held. It will not guess", note: why, tech: verdict, mark: "held" };
+        ? { text: "Safety check passed", note: why, mark: "done" }
+        : { text: "Safety check held · it does not guess", note: why, mark: "held" };
     case "outcome": {
       const closed = e.outcome === "closed_with_evidence";
-      return { ...OUTCOME_LINE[e.outcome], note: closed ? "Evidence on file" : why, tech: closed ? "closure_decision" : verdict };
+      return { ...OUTCOME_LINE[e.outcome], note: closed ? "Evidence on file" : why };
     }
     case "recorded": {
       const closed = c.outcome === "closed_with_evidence";
       return {
-        text: "Recorded in the ledger",
-        note: closed ? "Match, readers and closure sealed" : "Decision sealed",
-        tech: closed ? "link_decision → evidence → closure_decision" : "decision recorded",
+        text: "Saved to the record",
+        note: closed ? "Match, reading and closure saved" : "Decision saved",
         mark: "done",
       };
     }

@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "./routes";
+
+const meta = JSON.parse(
+  readFileSync(path.join(process.cwd(), "data/api/dashboard.json"), "utf8"),
+).meta as { run: string; reader_model: string };
 
 const sidebar = (page: Page) => page.locator("aside#app-sidebar");
 const toggle = (page: Page) =>
@@ -107,6 +113,30 @@ test.describe("sidebar (desktop)", () => {
     await expect(bar.locator('[data-tour="help"]')).toBeVisible();
     await expect(page.getByRole("region", { name: "Run metadata" })).toHaveCount(0);
     await expect(bar).not.toContainText(/Simulated data|Run loaded|Snapshot|Details/);
+  });
+
+  test("the Evidence page shows no run internals (run id, reader model)", async ({ page }) => {
+    await page.goto("/app/evidence");
+    await expect(page.getByTestId("verify-run")).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText(meta.run);
+    await expect(page.locator("main")).not.toContainText(meta.reader_model);
+  });
+
+  test("page headers hold a title and subtitle only: nothing sits over the header art", async ({ page }) => {
+    for (const route of ["/app", "/app/review", "/app/results", "/app/evidence"]) {
+      await page.goto(route);
+      const header = page.locator("main header.staff-heading").first();
+      await expect(header.locator("[data-dot]")).toHaveCount(0);
+      // Anything interactive in the band sits in the text column, left of where the art begins.
+      const box = (await header.boundingBox())!;
+      for (const b of await header.locator("button, a").all()) {
+        const r = (await b.boundingBox())!;
+        expect(r.x + r.width, route).toBeLessThanOrEqual(box.x + box.width * 0.72);
+      }
+    }
+    await page.goto("/app/review");
+    await page.getByTestId("glossary-trigger").click();
+    await expect(page.getByTestId("glossary-panel")).toBeVisible();
   });
 });
 

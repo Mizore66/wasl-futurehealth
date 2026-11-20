@@ -33,7 +33,7 @@ describe("live referral answers", () => {
     await flush();
     expect(respond).toHaveBeenCalledExactlyOnceWith(open.id, HEAD, { response: "accept" });
     expect(refresh).toHaveBeenCalledOnce();
-    expect(h.paneText()).toContain("Saved to the case ledger");
+    expect(h.paneText()).toContain("Saved to the case record");
     expect([...h.pane()!.querySelectorAll("button")].some((b) => b.textContent === "Undo")).toBe(false);
   });
 
@@ -68,7 +68,7 @@ describe("live referral answers", () => {
     expect(refresh).not.toHaveBeenCalled();
     expect(h.paneText()).toContain("Not saved");
     expect(h.button("Accept referral")).toBeTruthy();
-    expect(h.paneText()).not.toContain("Saved to the case ledger");
+    expect(h.paneText()).not.toContain("Saved to the case record");
   });
 
   it("sends nothing for a referral the API ledger does not hold", async () => {

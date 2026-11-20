@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { CATEGORICAL, CHROME } from "@/components/charts/palette";
 import { ChartFigure, Mark } from "./chart-kit";
-import { pct, points, type KpiSet, type Rates } from "./model";
+import { pct, points, seenShare, type KpiSet, type Rates } from "./model";
 
 type Source = "demo" | "heldout";
 type Arm = keyof Rates;
@@ -26,7 +26,7 @@ const GAP_FILL = "color-mix(in oklab, var(--color-limestone-300) 50%, var(--colo
 
 const SOURCES: Record<Source, { button: string; scope: string }> = {
   demo: { button: "This demo run", scope: "in testing" },
-  heldout: { button: "Five-seed held-out mean", scope: "on held-out noise, mean of 5 seeds" },
+  heldout: { button: "Average of 5 test runs", scope: "on the average of 5 test runs" },
 };
 
 /** The line under each method's name: how far it sits from the simulated truth. */
@@ -49,6 +49,7 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
   const set = kpi[source];
   const { wasl, truth } = set.rates;
   const gap = target !== null && truth < target ? points(target, truth) : null;
+  const seen = (arm: Arm) => (arm === "truth" ? 100 : seenShare(set.rates[arm], truth));
   const label = `On a 0 to 100% scale: ${ROWS.map(({ arm, name }) => `${arm === "truth" ? name.toLowerCase() : name} ${pct(set.rates[arm])}`).join(", ")}${
     target === null ? "" : `, target ${target}%`
   }.`;
@@ -58,15 +59,15 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
       <ChartFigure
         captionBelow
         caption={
-          <span data-testid="kpi-why">The demo run is one run on training-time noise. The five-seed mean averages 5 seeds on held-out noise.</span>
+          <span data-testid="kpi-why">The demo run uses data Wasl was tuned on. The 5-run average uses new data, so it is the fairer figure.</span>
         }
         table={{
-          caption: `31-day rate, ${SOURCES[source].button}`,
-          head: ["Method", "Rate", "Detail"],
+          caption: `Colonoscopy within 31 days, ${SOURCES[source].button}`,
+          head: ["Method", "Sees", "31-day rate", "Detail"],
           rows: [
-            ...ROWS.map(({ arm, name }) => [name, pct(set.rates[arm]), set.detail[arm]]),
-            ...(target === null ? [] : [["Target", `${target}%`, "DoH 31-day standard"]]),
-            ...(gap === null ? [] : [["Gap to target", gap, "Target minus the simulated truth"]]),
+            ...ROWS.map(({ arm, name }) => [name, `${seen(arm)}%`, pct(set.rates[arm]), set.detail[arm]]),
+            ...(target === null ? [] : [["Target", "", `${target}%`, "DoH 31-day standard"]]),
+            ...(gap === null ? [] : [["Gap to target", "", gap, "Target minus the simulated truth"]]),
           ],
         }}
       >
@@ -89,6 +90,12 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
                           {name}: {pct(v)}
                         </strong>
                         <br />
+                        {arm !== "truth" && (
+                          <>
+                            Sees {seen(arm)}% of on-time colonoscopies
+                            <br />
+                          </>
+                        )}
                         {set.detail[arm]}
                       </>
                     }

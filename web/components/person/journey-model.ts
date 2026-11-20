@@ -13,19 +13,19 @@ export const programmeLabels: Record<PersonJourney["person"]["programmes"][numbe
 
 export const reasonLabels: Record<string, string> = {
   duplicate_outreach_requires_review: "Duplicate or overlapping outreach needs coordinator review.",
-  case_priority_urgent: "The canonical case priority is urgent.",
-  case_overdue: "A canonical follow-up clock is overdue.",
-  consent_not_granted: "Canonical contact permission is not granted. Review permission before patient contact.",
-  dropoff_no_show: "The canonical worklist records a no-show.",
-  dr_recall_overdue: "The canonical diabetic-eye recall is overdue.",
-  dr_next_recall_overdue: "The canonical diabetic-eye recall is overdue.",
-  programme_follow_up_required: "The canonical worklist needs programme follow-up.",
+  case_priority_urgent: "The case is urgent.",
+  case_overdue: "A follow-up is overdue.",
+  consent_not_granted: "Contact permission is not granted. Check it before contacting the patient.",
+  dropoff_no_show: "The patient did not attend.",
+  dr_recall_overdue: "The diabetic eye recall is overdue.",
+  dr_next_recall_overdue: "The diabetic eye recall is overdue.",
+  programme_follow_up_required: "The programme needs follow-up.",
   no_open_coordinator_action: "No open coordinator action was found.",
 };
 
 export function reasonLabel(code: string): string {
   if (reasonLabels[code]) return reasonLabels[code];
-  if (code.startsWith("dropoff_")) return `Canonical worklist reason: ${code.slice("dropoff_".length).replaceAll("_", " ")}.`;
+  if (code.startsWith("dropoff_")) return `Worklist reason: ${code.slice("dropoff_".length).replaceAll("_", " ")}.`;
   return code.replaceAll("_", " ");
 }
 
@@ -52,13 +52,13 @@ export function obligationsFor(journey: PersonJourney, caseID: string): PersonOb
 export function lifecycleLabel(lifecycle: "released" | "held" | "withheld" | "recorded"): string {
   switch (lifecycle) {
     case "released":
-      return "Release recorded. This is not evidence of dispatch or delivery";
+      return "Cleared to send — not confirmed as delivered";
     case "held":
-      return "Held for a canonical guard";
+      return "Held by a safety check";
     case "withheld":
-      return "Withheld, not actionable";
+      return "Withheld, no action needed";
     case "recorded":
-      return "Intent recorded";
+      return "Planned";
   }
 }
 

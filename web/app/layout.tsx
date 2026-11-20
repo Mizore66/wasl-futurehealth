@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   // Public production domain, never the per-deployment hostname: crawlers cannot pass deployment protection.
   metadataBase: new URL(siteUrl()),
   title: { default: "Wasl", template: "%s · Wasl" },
-  description: "Every positive screening test, followed to a documented end. Synthetic data demo.",
+  description: "Every positive screening test, followed to a documented end. Simulated data.",
   applicationName: "Wasl",
 };
 

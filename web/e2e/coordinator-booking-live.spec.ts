@@ -244,7 +244,7 @@ test.describe("coordinator simulated booking, live mock", () => {
     const card = page.getByRole("region", { name: "Booking" });
     await card.getByRole("button", { name: "Accept simulated slot", exact: true }).click();
     await expect(page.getByRole("dialog")).toContainText("AD-1 · Day 20");
-    await expect(page.getByRole("dialog")).toContainText("No provider scheduling system or patient is contacted");
+    await expect(page.getByRole("dialog")).toContainText("No clinic or patient is contacted");
     await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
     await expect(card).toContainText("Simulated reservation confirmed");
     await expect(card).toContainText("AD-1 · Day 20");
@@ -256,9 +256,9 @@ test.describe("coordinator simulated booking, live mock", () => {
     await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
     await expect(card).toContainText("AD-2 · Day 25");
     await card.getByRole("button", { name: "Cancel simulated reservation", exact: true }).click();
-    await expect(page.getByRole("dialog")).toContainText("only releases the synthetic reservation");
+    await expect(page.getByRole("dialog")).toContainText("only releases the simulated booking");
     await page.getByLabel("Reason (required)").fill("Patient asked to cancel");
-    await page.getByRole("button", { name: "Release synthetic reservation", exact: true }).click();
+    await page.getByRole("button", { name: "Release simulated booking", exact: true }).click();
     await expect(card).toContainText("Simulated reservation cancelled. Rebook.");
     await card.getByRole("button", { name: "Accept simulated slot", exact: true }).click();
     await page.getByRole("button", { name: "Save simulated reservation", exact: true }).click();
@@ -329,7 +329,7 @@ test.describe("coordinator simulated booking, live mock", () => {
     await expect.poll(async () => [
       ...(await page.getByTestId("booking-notice").allTextContents()),
       ...(await second.getByTestId("booking-notice").allTextContents()),
-    ].join(" ")).toContain("latest server state");
+    ].join(" ")).toContain("latest booking is now shown");
     await page.reload();
     await expect(page.getByRole("region", { name: "Booking" })).toContainText("Simulated reservation confirmed");
     await second.close();

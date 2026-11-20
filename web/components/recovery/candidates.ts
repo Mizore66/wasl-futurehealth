@@ -143,12 +143,12 @@ const WARNINGS: Record<string, string> = {
 };
 
 const EXCLUSIONS: Record<string, string> = {
-  source_case_for_own_release: "Source case for this release",
+  source_case_for_own_release: "This patient released the slot",
   returned_referral_unresolved: "Returned referral unresolved",
   case_already_backfilled: "Already backfilled",
   case_closed_inactive_or_held: "Case closed, inactive or held",
   case_has_active_coordinator_reservation: "Has an active coordinator booking",
-  slot_stale_or_past: "Slot stale or past",
+  slot_stale_or_past: "Slot no longer available or past",
   insufficient_prep_lead: "Not enough preparation time",
   before_repeat_window: "Before the repeat window",
   region_mismatch_without_travel: "Different region, travel not agreed",

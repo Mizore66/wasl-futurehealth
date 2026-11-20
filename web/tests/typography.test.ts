@@ -11,32 +11,11 @@ import { describe, expect, it } from "vitest";
 const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "app/globals.css", line: /^\s*--font-mono:/, why: "the mono token itself" },
   // Hashes and signatures
-  { file: "components/wasl/sealed-chain.tsx", line: /\{n\.hash\}/, why: "full audit hash" },
-  { file: "components/review/review-desk.tsx", line: /title=\{r\.hash\}/, why: "audit hash of each independent review read" },
-  { file: "components/case/evidence-file.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
   { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },
-  { file: "components/case/audit-view.tsx", line: /title=\{value\}/, why: "Hash component (chain, signature and head hashes)" },
-  { file: "components/case/audit-view.tsx", line: /prev \{e\.prev\}/, why: "full previous hash" },
-  { file: "components/case/audit-view.tsx", line: /hash \{e\.hash\}/, why: "full entry hash" },
-  { file: "components/case/audit-view.tsx", line: /^\s*<pre\b/, why: "audit entry body (JSON)" },
-  { file: "components/case/audit-view.tsx", line: /\{s\.decision_id\}/, why: "signed decision id, full value" },
-  { file: "components/case/audit-view.tsx", line: /stored \{s\.sig\}/, why: "full stored signature" },
-  { file: "components/case/audit-view.tsx", line: /recomputed \{s\.recomputed\}/, why: "full recomputed signature" },
-  { file: "components/case/audit-view.tsx", line: /^\s*<code className="break-all font-mono">$/, why: "stream head, full value" },
-  { file: "components/case/audit-workspace.tsx", line: /<code className="select-all break-all font-mono/, why: "full stored and recomputed decision signatures" },
   // Code: system names, raw records, versions and machine traces
-  { file: "app/app/review/page.tsx", line: /<code className="font-mono">review_hold<\/code>/, why: "system name of the queue" },
-  { file: "components/wasl/tech-term.tsx", line: /<code\b/, why: "system identifier behind a plain term" },
   { file: "app/app/evidence/page.tsx", line: /<code className="break-all font-mono text-\[13px\]">\{text\}<\/code>/, why: "claim ledger reproduce command" },
   { file: "app/app/evidence/page.tsx", line: /<code className="font-mono">(git clone|make verify)/, why: "verify commands a judge types" },
-  { file: "components/pipeline/technical.tsx", line: /\{children\}/, why: "technical details disclosure (machine trace)" },
   { file: "components/review/ifhas-label-composer.tsx", line: /<code className="font-mono[^"]*">\{label\}<\/code>/, why: "the exact IFHAS evidence label the controls compose" },
-  { file: "components/case/sections.tsx", line: /\{h\.(state|reason)\}/, why: "system state and reason codes" },
-  { file: "components/case/sections.tsx", line: /\{l\.linker\}/, why: "linker version" },
-  { file: "components/case/sections.tsx", line: /^\s*<p className="m-0 mt-1 break-all font-mono">$/, why: "raw link edge references in linker details" },
-  { file: "components/case/sections.tsx", line: /JSON\.stringify\(o\.raw\)/, why: "raw message record" },
-  { file: "components/case/sections.tsx", line: /\{s\.item\}/, why: "raw reviewer record item" },
-  { file: "components/case/demo-cases.tsx", line: /AHS-sr-1079<\/code>/, why: "full system id format, as typed in an address" },
 ];
 
 const ROOT = join(import.meta.dirname, "..");

@@ -12,7 +12,6 @@ import { reviewerToken } from "@/lib/api/reviewer-session";
 import { claimActionLabel, claimSummary, questionAnchor } from "@/components/review/decision";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
-import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 import { PageHeader } from "@/components/shell/page-header";
 import { Pill } from "@/components/review/marks";
 import { stateHeadline } from "@/components/review/decision";
@@ -23,9 +22,9 @@ export async function generateMetadata({ searchParams }: PageProps<"/app/review"
 }
 
 const FAILURE_COPY = {
-  401: "Your reviewer sign-in was not accepted or has ended. Open a case on the review desk and sign in again.",
-  403: "Your reviewer credential is not allowed to read them. Ask the operator to check your role.",
-  404: "The API lists them as open but returned no detail for them. Reload, or contact the operator.",
+  401: "Your sign-in has ended. Open a case and sign in again.",
+  403: "Your account cannot open them. Ask your administrator to check your access.",
+  404: "They could not be opened. Reload the page, or contact your administrator.",
 } as const;
 
 export default async function Page({ searchParams }: PageProps<"/app/review">) {
@@ -52,21 +51,21 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
        
         title={<span id="review-desk-title">Review desk</span>}
         sub={
-          queue.source !== "incomplete" ? (
-            <>{rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer.</>
-          ) : undefined
+          <>
+            {queue.source !== "incomplete" && <>{rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer. </>}
+            {queue.source !== "open" && (
+              <>
+                <QueueLabel source={queue.source} />.
+              </>
+            )}
+          </>
         }
-        aside={
-          <div className="flex flex-col gap-1 sm:items-end">
-            <QueueLabel source={queue.source} />
-            <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
-          </div>
-        }
+        help={["reads"]}
       />
       <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
         {query.oidc_error === "1" && (
           <p role="status" className="m-0 mt-0 max-w-[72ch] rounded-control bg-pill-negative-bg px-3 py-2 text-small text-pill-negative-ink" data-testid="signed-out-notice">
-            OIDC sign-in could not be completed. Try again from a review case or contact the operator.
+            Sign-in could not be completed. Open a case and try again, or contact your administrator.
           </p>
         )}
 
@@ -86,31 +85,18 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
         {queue.source === "rebuilt" && (
           <div className="mt-3 max-w-[72ch] text-muted">
             <p className="m-0">
-              The sample run has no open review items. Its simulated reviewers signed them all. This queue rebuilds one from the demo case{" "}
-              <span className="font-medium">Held for human review</span>, using its {rows[0]?.detail.review_items.length ?? 0} review items as they stood before they were signed.
-              {guardOnly && (
-                <>
-                  {" "}
-                  In this run no loop had consent held and then granted, so this case is the run&rsquo;s closed, signed loop whose appointment reminder was
-                  stopped by the second-identifier guard, not by a consent hold.
-                </>
-              )}
+              No cases are waiting in this demo, so the practice case <span className="font-medium">Held for human review</span> is shown with its{" "}
+              {rows[0]?.detail.review_items.length ?? 0} questions cleared.
+              {guardOnly && <> It was held because a second identifier was not confirmed, so its appointment reminder was stopped.</>}
             </p>
             {apiMode() === "live" && (
-              <p className="m-0 mt-2">
-                This screen is connected to the live API, which already shows that case as signed. Answers given here are still sent: each is
-                appended to the API&rsquo;s review ledger as a new sign-off. The run&rsquo;s recorded decisions and earlier sign-offs are not changed.
-              </p>
+              <p className="m-0 mt-2">This case is already signed. Answers you give here are still saved as new sign-offs. Earlier decisions are not changed.</p>
             )}
-            <details className="text-small">
-              <summary className="inline-flex min-h-11 cursor-pointer items-center">Show the system name of that case</summary>
-              <code className="font-mono">review_hold</code>
-            </details>
           </div>
         )}
 
         <PagerLinks paging={paging} label="Pages above the list" testId="range-top" hrefFor={hrefFor} complete={complete} className="mt-4" />
-        <ol className="m-0 mt-3 flex list-none flex-col gap-2 p-0" aria-label="Record pairs waiting">
+        <ol className="m-0 mt-3 flex list-none flex-col gap-2 p-0" aria-label="Cases waiting">
           {paging.rows.map(({ detail, view }) => {
             const kinds = detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : view.purpose ? PURPOSE_LABEL[view.purpose] : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence"));
             const questions = (detail.api_review_states ?? []).filter((s) => s.next_read !== null && !s.frozen && s.claim_actions);

@@ -38,7 +38,7 @@ export const BASIS_WORDS: Record<string, string> = {
   p_cal: "name and details",
   wasl: "name and details",
   human: "a person's confirmation",
-  below_tau: "name and details, below the auto-close line",
+  below_tau: "name and details, not yet confirmed by a person",
 };
 
 export function basisWords(basis: string): string {
@@ -67,8 +67,7 @@ export function bodySummary(e: Chain): string {
     case "link_decision": {
       const edge = b.weakest_edge as { basis?: string } | undefined;
       const p = num(b.path_p_cal);
-      const tau = num(b.tau);
-      return `Report ${shortId(str(b.downstream_event) ?? "")} joined to the referral by ${basisWords(edge?.basis ?? "")}${p !== undefined ? `, match probability ${p.toFixed(3)}` : ""}${tau !== undefined ? `, auto-close line ${tau}` : ""}.`;
+      return `Report ${shortId(str(b.downstream_event) ?? "")} joined to the referral by ${basisWords(edge?.basis ?? "")}${p !== undefined ? `, match confidence ${Math.round(p * 100)}%` : ""}.`;
     }
     case "evidence": {
       const label = str(b.label);
@@ -96,7 +95,7 @@ export function bodySummary(e: Chain): string {
         .filter(([, v]) => typeof v === "string" || typeof v === "number" || typeof v === "boolean")
         .slice(0, 4)
         .map(([k, v]) => `${plain(k)}: ${String(v)}`);
-      return bits.join(" · ") || "No summary for this entry type.";
+      return bits.join(" · ") || "No summary for this entry.";
     }
   }
 }
@@ -114,7 +113,7 @@ export function closureReason(d: CaseDetail): { title: string; body: string } {
     const link = d.links[0];
     const parts = [
       d.evidence.some((e) => e.agree || e.human_override) ? "the readers' evidence was accepted" : "evidence was recorded",
-      link ? `the link rests on ${basisWords(link.weakest_edge.basis)}` : null,
+      link ? `the patient match rests on ${basisWords(link.weakest_edge.basis)}` : null,
       inside && sla ? `${inside} the ${sla}-day standard` : null,
     ].filter(Boolean);
     return {
@@ -148,8 +147,8 @@ export function openReviewReasons(d: CaseDetail): string[] {
 export type OutreachRow = { key: string; what: string; outcome: string; sent: boolean | null; raw: Record<string, unknown> };
 
 const SUPPRESS: Record<string, string> = {
-  second_identifier_unconfirmed: "stopped: the match has no second identifier yet",
-  link_below_tau_unconfirmed: "stopped: the match is below the auto-close line and nobody has confirmed it",
+  second_identifier_unconfirmed: "stopped: the patient match has no second identifier yet",
+  link_below_tau_unconfirmed: "stopped: the patient match is not confirmed yet",
   consent_unknown: "stopped: no consent on file yet",
   consent_denied: "stopped: the patient declined messages",
 };
@@ -209,7 +208,7 @@ export function consentRows(d: CaseDetail): ConsentRow[] {
       const key = JSON.stringify(l);
       if (seen.has(key)) continue;
       seen.add(key);
-      rows.push({ key, when: "during the run", what: `${l.kind ? plain(l.kind) : "Consent"} to ${plain(l.to).toLowerCase()}` });
+      rows.push({ key, when: "date not recorded", what: `${l.kind ? plain(l.kind) : "Consent"} to ${plain(l.to).toLowerCase()}` });
     }
   }
   return rows;
@@ -481,7 +480,7 @@ export function ledgerWords(e: LedgerLike): string {
   if (e.ledger === "patient") return `Patient self-service: ${plain(e.kind)}`;
   if (e.ledger === "unknown") {
     if (e.label in PATIENT_REQUEST_WORDS) return PATIENT_REQUEST_WORDS[e.label];
-    return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
+    return "Unrecognised entry";
   }
   return e.decision ? plain(e.decision) : "Review";
 }

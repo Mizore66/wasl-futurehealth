@@ -37,7 +37,7 @@ export type GovernanceActionResult =
    */
   | { ok: false; error: string; signIn?: true };
 
-const SIGN_IN = "Sign in with the token assigned to you. Undo, contest and resolve act only as the signed-in credential.";
+const SIGN_IN = "Sign in first. Undo, contest and resolve act only as the signed-in credential.";
 
 export async function appendGovernanceAction(input: unknown): Promise<GovernanceActionResult> {
   if (input && typeof input === "object" && IDENTITY_FIELDS.some((field) => field in input)) {
@@ -80,6 +80,13 @@ export async function appendGovernanceAction(input: unknown): Promise<Governance
  */
 export async function signInForGovernance(caseId: string, token: string): Promise<SignInResult> {
   const result = await session.signInReviewer(caseId, token);
+  if (result.ok) refresh();
+  return result;
+}
+
+/* The open demo's persona pick (WASL_REVIEW_AUTH_MODE=persona), offered where the governance controls are. */
+export async function signInPersonaForGovernance(caseId: string, credential: string): Promise<SignInResult> {
+  const result = await session.signInAsDemoPersona(caseId, credential);
   if (result.ok) refresh();
   return result;
 }

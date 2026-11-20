@@ -17,19 +17,19 @@ function CaseLink({ caseID, children }: { caseID: string; children?: React.React
 
 export function PersonAssociationUnavailableView({ result }: { result: PersonAssociationUnavailable }) {
   const reasons = {
-    conflicting_request: "Conflicting versions do not establish a selected subject.",
-    unbound_request: "No accepted patient registration was bound to this request.",
-    unknown_programme: "The source request did not establish a supported programme context.",
-    unproven_binding: "The retained source does not prove a unique subject binding.",
-    multiple_historical_subjects: "This case has more than one proven historical subject, so it has no single person destination.",
+    conflicting_request: "The referral has conflicting versions, so it can't be linked to one patient.",
+    unbound_request: "No confirmed patient record is linked to this referral.",
+    unknown_programme: "The referral does not name a supported screening programme.",
+    unproven_binding: "The records do not prove this referral belongs to one patient.",
+    multiple_historical_subjects: "This case was linked to more than one patient in the past, so there is no single patient page.",
   };
   return (
     <section aria-labelledby="association-unavailable" className="rounded-card border border-line bg-surface">
-      <PageHeader attached title={<span id="association-unavailable">Historical association unavailable</span>} />
+      <PageHeader attached title={<span id="association-unavailable">No patient page for this case</span>} />
       <div className="p-4 md:p-pad">
         <p className="m-0">{reasons[result.association.reason]}</p>
-        <p>The retained case remains available for authorized case and audit reads. It creates no current care or outreach action.</p>
-        <CaseLink caseID={result.case_id}>Open retained case history</CaseLink>
+        <p>The case and its audit trail are still available. No care or outreach is due.</p>
+        <CaseLink caseID={result.case_id}>Open the case</CaseLink>
       </div>
     </section>
   );
@@ -44,7 +44,6 @@ function Obligations({ journey, caseID }: { journey: PersonJourney; caseID: stri
         <li key={`${obligation.case_id}-${obligation.source_field}-${obligation.due_day}`}>
           <strong>{obligation.status.replaceAll("_", " ")}</strong> · <Day value={obligation.due_day} label="Due day" />
           {obligation.window_start_day !== undefined && <> · window opens day {obligation.window_start_day}</>}
-          <div className="text-small text-muted">Source: {obligation.source_field}</div>
           {obligation.basis && <div className="text-small text-muted">{obligation.basis}</div>}
         </li>
       ))}
@@ -62,7 +61,7 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
         <div>
           <h3 id={`${prefix}-heading`} className="m-0 text-section font-medium">{shortId(item.case_id)}</h3>
           <p className="m-0 mt-1 text-muted">State: {detail.case.state.replaceAll("_", " ")} · referral day {detail.case.referral_day}</p>
-          {item.parent_case_id && <p className="m-0 text-small text-muted">Surveillance child of {shortId(item.parent_case_id)}</p>}
+          {item.parent_case_id && <p className="m-0 text-small text-muted">Surveillance follow-up of {shortId(item.parent_case_id)}</p>}
         </div>
         <CaseLink caseID={item.case_id}>Open full case and evidence</CaseLink>
       </div>
@@ -71,10 +70,10 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
         <section aria-labelledby={`${prefix}-consent`}>
           <h4 id={`${prefix}-consent`} className="m-0 mb-2 text-body font-semibold">Programme contact permission</h4>
           <ul className="m-0 list-disc ps-5">
-            <li>Canonical permission: <strong>{contact.canonical.replaceAll("_", " ")}</strong></li>
-            <li>Demo overlay: {contact.overlay_status.replaceAll("_", " ")}</li>
+            <li>Contact permission: <strong>{contact.canonical.replaceAll("_", " ")}</strong></li>
+            <li>Demo change: {contact.overlay_status.replaceAll("_", " ")}</li>
             <li>Contact blocked: {contact.contact_blocked ? "yes" : "no"}</li>
-            <li>Canonical decision unchanged by the overlay</li>
+            <li>The demo change does not alter the case decision</li>
           </ul>
         </section>
         <section aria-labelledby={`${prefix}-holds`}>
@@ -83,7 +82,7 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
             <ul className="m-0 list-disc ps-5">
               {detail.holds.map((hold, holdIndex) => <li key={`${hold.loop}-${hold.rule}-${holdIndex}`}>{hold.reason?.replaceAll("_", " ") ?? hold.rule} · {hold.state.replaceAll("_", " ")}</li>)}
             </ul>
-          ) : <p>No holds are recorded in the case projection.</p>}
+          ) : <p>No holds recorded.</p>}
         </section>
       </div>
 
@@ -93,65 +92,62 @@ function ProgrammeCase({ journey, item, index }: { journey: PersonJourney; item:
       </section>
 
       <section aria-labelledby={`${prefix}-outreach`} className="mt-5">
-        <h4 id={`${prefix}-outreach`} className="m-0 mb-2 text-body font-semibold">Latest outreach intents</h4>
+        <h4 id={`${prefix}-outreach`} className="m-0 mb-2 text-body font-semibold">Planned messages</h4>
         {detail.outreach.length ? (
           <ul className="m-0 list-disc space-y-2 ps-5">
             {detail.outreach.map((outreach, outreachIndex) => (
               <li key={`${outreach.kind}-${outreach.ev}-${outreachIndex}`}>
                 {outreach.kind.replaceAll("_", " ")} · {outreach.released ? "release recorded" : outreach.suppress ? `suppressed: ${outreach.suppress.replaceAll("_", " ")}` : "recorded"}
-                <span className="block text-small text-muted">Released means recorded for release, never confirmed dispatch or delivery.</span>
+                <span className="block text-small text-muted">Released means cleared to send, not confirmed as delivered.</span>
               </li>
             ))}
           </ul>
-        ) : <p>No outreach intent is recorded in the latest decision.</p>}
+        ) : <p>No messages planned.</p>}
       </section>
 
       <section aria-labelledby={`${prefix}-timeline`} className="mt-5">
-        <h4 id={`${prefix}-timeline`} className="m-0 mb-2 text-body font-semibold">Timeline and raw event hashes</h4>
+        <h4 id={`${prefix}-timeline`} className="m-0 mb-2 text-body font-semibold">Timeline</h4>
         {detail.timeline.length ? (
           <ol className="m-0 list-none space-y-3 p-0">
             {detail.timeline.map((event) => (
               <li key={`${event.seq}-${event.id}`} className="border-l-2 border-control ps-3">
                 <Day value={event.day} /> · {event.type.replaceAll("_", " ")} · {event.status?.replaceAll("_", " ") ?? "status not recorded"}
                 <div className="text-small text-muted">{event.provider} · {shortId(event.id)}</div>
-                {event.raw_sha && <div className="text-small">Raw event hash <code>{event.raw_sha}</code></div>}
               </li>
             ))}
           </ol>
-        ) : <p>No timeline events are available.</p>}
+        ) : <p>No timeline events recorded.</p>}
       </section>
 
       <section aria-labelledby={`${prefix}-identity`} className="mt-5">
-        <h4 id={`${prefix}-identity`} className="m-0 mb-2 text-body font-semibold">Identity provenance and trusted links</h4>
+        <h4 id={`${prefix}-identity`} className="m-0 mb-2 text-body font-semibold">Patient records and links</h4>
         <ul className="m-0 list-disc space-y-1 ps-5">
           {detail.identities.map((identity) => <li key={`${identity.role}-${identity.registration}`}>{identity.role} · {identity.provider} · <code className="break-all">{identity.registration}</code></li>)}
         </ul>
         {trustedLinks.length ? (
           <ul className="m-0 mt-2 list-disc space-y-1 ps-5">
-            {trustedLinks.map((link, linkIndex) => <li key={`${link.downstream_event}-${linkIndex}`}>Trusted case link: {shortId(link.downstream_event)} · {link.hops} hop{link.hops === 1 ? "" : "s"}</li>)}
+            {trustedLinks.map((link, linkIndex) => <li key={`${link.downstream_event}-${linkIndex}`}>Linked report: {shortId(link.downstream_event)}</li>)}
           </ul>
-        ) : <p className="text-small text-muted">No additional case link blocks are shown. Cluster membership comes only from the canonical identity artifact.</p>}
+        ) : <p className="text-small text-muted">No other linked reports.</p>}
       </section>
 
       <section aria-labelledby={`${prefix}-decisions`} className="mt-5">
-        <h4 id={`${prefix}-decisions`} className="m-0 mb-2 text-body font-semibold">Decision history and signatures</h4>
+        <h4 id={`${prefix}-decisions`} className="m-0 mb-2 text-body font-semibold">Decision history</h4>
         <ol className="m-0 list-none space-y-3 p-0">
           {detail.decisions.map((decision) => (
             <li key={decision.decision_id}>
               {decision.state.replaceAll("_", " ")} · {decision.overdue ? "overdue" : "not overdue"}
-              <div className="text-small text-muted">{decision.decision_id}</div>
-              <div className="text-small">Decision signature <code className="break-all">{decision.sig}</code></div>
               {decision.consent_log.length > 0 && (
                 <ul className="m-0 mt-1 list-disc ps-5 text-small">
                   {decision.consent_log.map((transition, transitionIndex) => (
-                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent transition to {transition.to}, canonical contact {transition.contact ?? "unknown"}</li>
+                    <li key={`${transition.ev}-${transition.kind}-${transitionIndex}`}>Consent changed to {transition.to}, contact {transition.contact ?? "unknown"}</li>
                   ))}
                 </ul>
               )}
               {decision.outreach.length > 0 && (
                 <ul className="m-0 mt-1 list-disc ps-5 text-small">
                   {decision.outreach.map((outreach, outreachIndex) => (
-                    <li key={`${outreach.kind}-${outreach.ev}-${outreachIndex}`}>{outreach.kind.replaceAll("_", " ")} · {outreach.released ? "release recorded (not delivered)" : outreach.suppress ? `held: ${outreach.suppress.replaceAll("_", " ")}` : "intent recorded"}</li>
+                    <li key={`${outreach.kind}-${outreach.ev}-${outreachIndex}`}>{outreach.kind.replaceAll("_", " ")} · {outreach.released ? "release recorded (not delivered)" : outreach.suppress ? `held: ${outreach.suppress.replaceAll("_", " ")}` : "planned"}</li>
                   ))}
                 </ul>
               )}
@@ -180,16 +176,14 @@ export function Journey({ journey }: { journey: PersonJourney }) {
           sub={
             <>
               {display.arabic && <span lang="ar" dir="rtl" className="block text-section text-muted">{display.arabic}</span>}
-              {journey.cases.length} linked case{journey.cases.length === 1 ? "" : "s"} · projection through day {journey.person.as_of_day}
+              {journey.cases.length} linked case{journey.cases.length === 1 ? "" : "s"} · up to day {journey.person.as_of_day}
             </>
           }
         />
         <section aria-labelledby="identity-provenance" className="p-4 md:p-pad">
-          <h2 id="identity-provenance" className="m-0 text-section font-semibold">Trusted identity links only</h2>
-          <p>Names are presentation fixtures only. They never establish membership. Uncertain, rejected and cannot-link pairs remain separate.</p>
-          <p className="m-0 text-small text-muted">Source: canonical linker clusters · artifact {journey.person.identity_provenance.artifact_schema} · policy {journey.person.identity_provenance.policy}</p>
-          <p className="text-small">Artifact SHA-256 <code className="break-all">{journey.person.identity_provenance.artifact_sha256}</code></p>
-          <h3 className="m-0 mt-3 text-body font-semibold">Trusted cluster registrations</h3>
+          <h2 id="identity-provenance" className="m-0 text-section font-semibold">Linked records</h2>
+          <p>Names are simulated. Only confirmed record links are shown; uncertain matches stay separate.</p>
+          <h3 className="m-0 mt-3 text-body font-semibold">Linked record numbers</h3>
           <ul className="m-0 mt-1 list-disc ps-5">
             {journey.person.registrations.map((registration) => <li key={registration.registration}><code className="break-all">{registration.registration}</code> · {registration.providers.join(", ")}</li>)}
           </ul>
@@ -211,33 +205,31 @@ export function Journey({ journey }: { journey: PersonJourney }) {
         <ul className="m-0 list-disc ps-5">
           {action.reason_codes.map((code) => <li key={code}>{reasonLabel(code)}</li>)}
         </ul>
-        {action.case_id && <CaseLink caseID={action.case_id}>Open source case {shortId(action.case_id)}</CaseLink>}
-        {action.outreach_flag_id && <a className={linkClass} href={`#flag-${action.outreach_flag_id}`}>Open the related outreach review group</a>}
-        <p className="mb-0 text-small text-muted">Rule {action.rule}. Coordinator review only. This is not a clinical recommendation.</p>
+        {action.case_id && <CaseLink caseID={action.case_id}>Open case {shortId(action.case_id)}</CaseLink>}
+        {action.outreach_flag_id && <a className={linkClass} href={`#flag-${action.outreach_flag_id}`}>Open the related message review</a>}
+        <p className="mb-0 text-small text-muted">Coordinator review only. This is not a clinical recommendation.</p>
       </section>
 
       <section aria-labelledby="outreach-review" className={`${sectionClass} mt-gap`}>
-        <h2 id="outreach-review" className="m-0 text-section font-semibold">Duplicate and overlapping outreach</h2>
-        <p>Review flags preserve the full decision history. Nothing here suppresses, cancels or sends a message.</p>
+        <h2 id="outreach-review" className="m-0 text-section font-semibold">Duplicate and overlapping messages</h2>
+        <p>Nothing here stops, cancels or sends a message.</p>
         {journey.outreach_flags.length ? (
           <ul className="m-0 list-none space-y-4 p-0">
             {journey.outreach_flags.map((flag) => (
               <li key={flag.id} id={`flag-${flag.id}`} className="scroll-mt-24 border-t border-rule pt-3">
-                <h3 className="m-0 text-body font-semibold">{flag.match === "duplicate" ? "Duplicate intent" : "Cross-programme overlap"} · {flag.actionable ? "review actionable" : "not actionable"}</h3>
-                <p className="text-small text-muted">Review group <code>{flag.id.slice(0, 20)}</code></p>
+                <h3 className="m-0 text-body font-semibold">{flag.match === "duplicate" ? "Duplicate message" : "Cross-programme overlap"} · {flag.actionable ? "needs review" : "no action needed"}</h3>
                 <ul className="m-0 list-disc space-y-2 ps-5">
                   {flag.intents.map((intent) => (
                     <li key={`${intent.case_id}-${intent.outreach.kind}-${intent.outreach.ev}`}>
                       <CaseLink caseID={intent.case_id}>{programmeLabels[intent.programme]}: {shortId(intent.case_id)}</CaseLink>
-                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? ". Not in the latest decision, history only, not actionable" : ""}</div>
-                      <div className="text-small text-muted">Latest decision {intent.latest_decision_id}</div>
+                      <div>{intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)}{intent.participation === "resolved" ? " · Past only, no action needed" : ""}</div>
                     </li>
                   ))}
                 </ul>
               </li>
             ))}
           </ul>
-        ) : <p>No duplicate or cross-programme outreach group is present in the current projection.</p>}
+        ) : <p>No duplicate or overlapping messages.</p>}
       </section>
 
       <section aria-labelledby="upcoming-obligations" className={`${sectionClass} mt-gap`}>
@@ -254,15 +246,15 @@ export function Journey({ journey }: { journey: PersonJourney }) {
       </section>
 
       {journey.schema === "wasl-person-journey/2" && <section aria-labelledby="retained-references" className={`${sectionClass} mt-gap`}>
-        <h2 id="retained-references" className="text-section font-semibold">Non-actionable history references</h2>
-        <p>Only proven as-of associations appear here. References are not current care participation. Full original history remains in the authorized case and audit views.</p>
+        <h2 id="retained-references" className="text-section font-semibold">Past cases (no action needed)</h2>
+        <p>Only cases proven to belong to this patient are shown. Their full history stays in each case and its audit trail.</p>
         {journey.retained_references.map((reference) => <article key={reference.case_id} className="border-t border-rule pt-3">
-          <h3 className="text-body font-semibold"><CaseLink caseID={reference.case_id}>{shortId(reference.case_id)}</CaseLink> · {reference.lifecycle === "retained" ? "Retired case" : "Historical association"}</h3>
-          <p>{reference.programmes.map((programme) => programmeLabels[programme]).join(", ") || "Historical programme unavailable"}. History reference only, no current action.</p>
-          <details><summary className="cursor-pointer py-3">Source decisions and recorded outreach</summary>
-            <ul>{reference.decisions.map((decision) => <li key={decision.decision_id}>{decision.decision_id} · <code>{decision.sig}</code></li>)}</ul>
+          <h3 className="text-body font-semibold"><CaseLink caseID={reference.case_id}>{shortId(reference.case_id)}</CaseLink> · {reference.lifecycle === "retained" ? "Retired case" : "Past link"}</h3>
+          <p>{reference.programmes.map((programme) => programmeLabels[programme]).join(", ") || "Programme not recorded"}. No action needed.</p>
+          <details><summary className="cursor-pointer py-3">Past decisions and messages</summary>
+            <p>{reference.decisions.length} past {reference.decisions.length === 1 ? "decision" : "decisions"} recorded.</p>
             <ul>{reference.outreach_intents.map((intent) => <li key={`${intent.case_id}-${intent.outreach.ev}-${intent.outreach.kind}`}>
-              {intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)} · historical, not actionable
+              {intent.outreach.kind.replaceAll("_", " ")} · {lifecycleLabel(intent.lifecycle)} · past, no action needed
             </li>)}</ul>
           </details>
         </article>)}

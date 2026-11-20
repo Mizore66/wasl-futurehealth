@@ -266,7 +266,7 @@ test.describe("referral answers, live mock", () => {
     expect((await ledger())[ids[0]].events).toHaveLength(0);
 
     await pane.getByRole("button", { name: "Accept referral", exact: true }).click();
-    await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
+    await expect(pane.getByRole("status").first()).toContainText("Saved to the case record");
     await expect(pane.getByRole("button", { name: "Undo" })).toHaveCount(0);
     expect((await ledger())[ids[0]].referral?.response).toBe("accept");
 
@@ -283,7 +283,7 @@ test.describe("referral answers, live mock", () => {
     await pane.getByRole("button", { name: "Arabic interpreter on the day" }).click();
     await pane.getByRole("button", { name: "Female endoscopist" }).click();
     await pane.getByRole("button", { name: "Accept with 2 conditions" }).click();
-    await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
+    await expect(pane.getByRole("status").first()).toContainText("Saved to the case record");
     expect((await ledger())[ids[1]].referral?.conditions).toEqual(["arabic_interpreter", "female_endoscopist"]);
     pane = await open(page, "771");
     await expect(pane).toContainText("Arabic interpreter");
@@ -315,7 +315,7 @@ test.describe("referral answers, live mock", () => {
     await pane.getByRole("radio", { name: "Blood thinner plan missing" }).check();
     await pane.getByRole("textbox", { name: /Note to the GP/ }).fill("Please attach the FIT report.");
     await pane.getByRole("button", { name: "Return to GP" }).click();
-    await expect(pane.getByRole("status").first()).toContainText("Saved to the case ledger");
+    await expect(pane.getByRole("status").first()).toContainText("Saved to the case record");
     expect((await ledger())[ids[2]].referral?.note).toBe("Please attach the FIT report.");
     await expect(page.getByTestId("handoff-arrow")).toHaveAttribute("data-direction", "back");
     const gp = page.getByRole("region", { name: /GP, current$/ });

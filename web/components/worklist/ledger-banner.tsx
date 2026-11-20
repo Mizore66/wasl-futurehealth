@@ -18,10 +18,9 @@ export function listLedgerInvalid(items: Pick<WorkItem, "ledgerStatus">[]): bool
 export function LedgerInvalidBanner({ what, className }: { what: string; className?: string }) {
   return (
     <div role="alert" data-testid="ledger-invalid-board" className={cn("rounded-card border-2 border-warning bg-surface p-3", className)}>
-      <p className="m-0 font-medium text-warning">Case ledger not trustworthy. Nothing on {what} is authoritative.</p>
+      <p className="m-0 font-medium text-warning">Case history needs checking. Details on {what} may be out of date.</p>
       <p className="m-0 mt-1">
-        The API reports its shared case ledger as not trustworthy, so no status, owner or position on {what} can be relied on, and the API
-        refuses new actions until an operator restores it.
+        Statuses, owners and order on {what} may be wrong. Saving is paused until support fixes the case history.
       </p>
     </div>
   );

@@ -57,8 +57,7 @@ for (const name of NAMES) {
       const records = page.getByRole("list", { name: "Records", exact: true });
       await expect(records.getByRole("listitem")).toHaveCount(detail.identities.length);
       for (const idn of detail.identities) await expect(records).toContainText(idn.registration.split("|")[1]);
-      await expect(page.getByRole("list", { name: "How the records were linked" })).toContainText("Match probability");
-      await expect(page.getByRole("list", { name: "How the records were linked" })).toContainText("Auto-close line");
+      await expect(page.getByRole("list", { name: "How the records were linked" })).toContainText("Match confidence");
 
       // The latest reading: field table and quote.
       const readers = page.getByRole("region", { name: /DoH closure checklist|Readers' result/ });
@@ -72,14 +71,14 @@ for (const name of NAMES) {
       else await expect(page.getByRole("region", { name: "Human sign-offs" })).toContainText("No human sign-offs recorded for this case.");
 
       const booking = page.getByRole("region", { name: "Booking" });
-      await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support.");
+      await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support");
       await expect(booking).toContainText(detail.booking.status === "suggested" ? "Slot suggested" : "No booking needed");
-      if (detail.booking.prep_risk) await expect(booking).toContainText("Bowel-prep risk (App 9)");
+      if (detail.booking.prep_risk) await expect(booking).toContainText("Bowel-prep risk");
       if (detail.api_overlay) {
-        await expect(booking).toContainText("Fixture mode cannot save simulated reservations.");
+        await expect(booking).toContainText("Simulated bookings can't be saved here. This view is read-only.");
         await expect(booking.getByRole("button", { name: "Accept simulated slot", exact: true })).toBeDisabled();
       } else {
-        await expect(booking).toContainText("This older snapshot has no coordinator ledger projection, so reservation controls are unavailable.");
+        await expect(booking).toContainText("Booking can't be changed for this case.");
       }
 
       await expect(page.getByRole("region", { name: /Why it (closed|is still open)/ })).toBeVisible();
@@ -111,25 +110,23 @@ for (const name of NAMES) {
       const unnamed = audit.decision_signatures.filter((s: { decision_id?: string }) => !s.decision_id || !listed.has(s.decision_id)).length;
       await expect(verify.getByRole("radio", { name: /^Decision \d+\b/ })).toHaveCount(unnamed);
       const receipt = verify.getByTestId("decision-receipt");
-      await expect(receipt).toContainText(matching === audit.decision_signatures.length ? "Signature matched" : /Signature (matched|mismatch)/);
-      await receipt.getByText("Signature details").click();
-      await expect(receipt).toContainText(audit.decision_signatures[0].sig);
+      await expect(receipt).toContainText(matching === audit.decision_signatures.length ? "Unchanged since signing" : /(Unchanged|Changed) since signing/);
+      await expect(receipt).not.toContainText(audit.decision_signatures[0].sig);
 
       /* Hashes and sealed entries sit under Audit details. */
       await verify.getByText("Audit details", { exact: true }).click();
       await expect(page.getByTestId("chain-verified")).toContainText(
-        audit.chain_verified ? `Verified, ${audit.chain.length} of ${audit.chain_length} intact` : "Chain broken",
+        audit.chain_verified ? `Unchanged · ${audit.chain.length} of ${audit.chain_length} entries checked` : "Record altered",
       );
-      await expect(page.getByRole("region", { name: "Chain check" })).toContainText("recomputed every entry's hash");
-      const entries = page.getByRole("list", { name: "Chain entries" }).getByRole("listitem");
+      await expect(page.getByRole("region", { name: "Tamper check" })).toContainText("Every entry was checked against the one before it");
+      const entries = page.getByRole("list", { name: "Recorded entries" }).getByRole("listitem");
       await expect(entries).toHaveCount(audit.chain.length);
-      await expect(entries.first()).toContainText("Starts the chain");
-      const sigs = page.getByRole("list", { name: "Decision signatures" }).getByRole("listitem");
+      await expect(entries.first()).not.toContainText("Starts the chain");
+      const sigs = page.getByRole("list", { name: "Signed decisions" }).getByRole("listitem");
       await expect(sigs).toHaveCount(audit.decision_signatures.length);
       await expect(page.getByTestId("signature-count")).toHaveText(`${matching} of ${audit.decision_signatures.length} match`);
-      await expect(sigs.first()).toContainText("Stored");
-      await expect(sigs.first()).toContainText("Recomputed");
-      await expect(page.getByRole("region", { name: "Anchors" })).toContainText(audit.anchor_note);
+      await expect(sigs.first()).not.toContainText("Recomputed");
+      await expect(page.getByRole("region", { name: "Daily record seals" })).toContainText(audit.anchor_note);
 
       /* Event history: every timeline record and ledger event, grouped by month. */
       const history = page.getByRole("region", { name: "Event history" });

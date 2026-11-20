@@ -60,14 +60,14 @@ describe("review purpose", () => {
   it("reports only the appended answer unless refreshed data confirms a change", () => {
     const sigs = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
     expect(recordedOutcome("close", sigs, false, "shadow_confirm").recordedText).toBe(
-      "Report adequate was appended to the demo review log. Current case data still shows the case as open. Closure is not confirmed.",
+      "Report adequate was saved in the demo. The case still shows as open. Closure is not confirmed.",
     );
-    expect(recordedOutcome("close", sigs, true, "shadow_confirm").recordedText).toContain("Refreshed case data confirms closure.");
+    expect(recordedOutcome("close", sigs, true, "shadow_confirm").recordedText).toContain("The case now shows as closed.");
     const agree = recordedOutcome("close", sigs, false, "auto_audit").recordedText;
-    expect(agree).toMatch(/appended to the demo review log/);
+    expect(agree).toMatch(/saved in the demo/);
     expect(agree).toMatch(/not changed/);
     const disagree = recordedOutcome("inadequate", signaturesFor({ report: "inadequate" }, { evidence: "rv-evidence" }), false, "auto_audit").recordedText;
-    expect(disagree).toMatch(/appended to the demo review log/);
+    expect(disagree).toMatch(/saved in the demo/);
     expect(disagree).toMatch(/Reopening is not confirmed/);
   });
 

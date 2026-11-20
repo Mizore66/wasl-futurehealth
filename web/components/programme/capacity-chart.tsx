@@ -91,12 +91,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
   const max = 50;
   return (
     <ChartFigure
-      caption={
-        <>
-          <span className="font-medium text-ink">Pooling restores on-time booking only when the network has enough slots.</span> Share of FIT+ patients with a
-          colonoscopy within 31 days, with capacity placed in the wrong regions.
-        </>
-      }
+      caption="Share of FIT+ patients with a colonoscopy within 31 days."
       table={{
         caption: "Share within 31 days, by scenario",
         head: ["Scenario", "Slots per FIT+", "Within 31 days"],
@@ -107,7 +102,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
         {runs.map((run) => (
           <div key={run.slotsPerCase} className="min-w-0">
             <h3 className="m-0 text-small font-semibold text-ink">
-              {run.slotsPerCase} slots per FIT+, {run.enough ? "enough overall" : "short overall"}
+              {run.enough ? "Enough slots" : "Too few slots"} ({run.slotsPerCase} per patient)
             </h3>
             <ul className="m-0 mt-1 list-none p-0">
               {run.rows.map((r) => {
@@ -137,7 +132,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
         ))}
       </div>
       <div className="mt-3">
-        <Key items={[{ color: SLOTS, label: "Network pooling (60% willing)" }, { color: CHROME.deemphasis, label: "Other scenarios" }]} />
+        <Key items={[{ color: SLOTS, label: "Sharing (60% willing to travel)" }, { color: CHROME.deemphasis, label: "Other scenarios" }]} />
       </div>
     </ChartFigure>
   );

@@ -148,7 +148,7 @@ const GUARD_WORDS: Record<string, string> = {
   eid_placeholder: "An Emirates ID is a default or placeholder number.",
   eid_invalid: "An Emirates ID fails its check digit.",
   eid_differ: "The Emirates IDs differ.",
-  eid_second_disabled: "The EID path is disabled for this visible-field check.",
+  eid_second_disabled: "Emirates ID is not used for this check.",
   sex_unknown: "Sex is unknown on one or both records, so a matching Emirates ID does not confirm the match.",
   sex_differ: "The recorded sexes differ.",
 };
@@ -353,7 +353,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
       says:
         k.rules === k.second
           ? `neither reader found ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}`
-          : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: rules reader ${READER_WORD[k.rules] ?? k.rules}, second reader ${READER_WORD[k.second] ?? k.second}`,
+          : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: checklist reader ${READER_WORD[k.rules] ?? k.rules}, AI reader ${READER_WORD[k.second] ?? k.second}`,
     }));
   const evidenceHold = programme === "crc" && !pathology
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
@@ -383,8 +383,8 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
       ]
     : [{ field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "unavailable" }, recordRow];
   const identityContext = compared?.source_scope === "materialized_registration"
-    ? "These identifiers are materialized across recorded events, not an original item-time snapshot. The original configured guard result is unavailable."
-    : "The identifier source scope is unavailable. The original configured guard result is unavailable.";
+    ? "These details are from the records as they stand now, not as they were when the case was held."
+    : "Where these details came from is not known.";
   const visibleChecks = compared?.guard.visible_checks;
   const identityGuard = visibleChecks && !visibleChecks.met ? visibleChecks.failures.flatMap((code) => GUARD_WORDS[code] ? [GUARD_WORDS[code]] : []) : [];
 
@@ -423,7 +423,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     evidenceChoices: [...evidenceChoices],
     crcItems: Object.fromEntries(c.review_items.filter((it) => it.reason === "crc_disposition").map((it) => {
       const need = c.case.crc?.obligations.find((p) => p.review_item === it.item);
-      return [it.item, { title: need ? `${need.outcome.replaceAll("_", " ")} · ${need.source_report} v${need.source_version}` : "Superseded CRC obligation", choices: need && !need.confirmation && need.blockers.length === 0 && it.verdict ? [it.verdict] : [] }];
+      return [it.item, { title: need ? `${need.outcome.replaceAll("_", " ")} · ${need.source_report} v${need.source_version}` : "Replaced item", choices: need && !need.confirmation && need.blockers.length === 0 && it.verdict ? [it.verdict] : [] }];
     })),
     imageBacked,
     photos: imageBacked && evidenceItem
@@ -467,7 +467,7 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     identityContext,
     identityGuard,
     identitySummary: !compared
-      ? "The identifier comparison is not available for this item, so the two records cannot be compared on this page. A person must confirm."
+      ? "The two records cannot be compared on this page. A person must confirm."
       : noSecondId
         ? `Matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, but no second identifier is confirmed. A person must confirm.`
         : "A person must confirm the match.",
