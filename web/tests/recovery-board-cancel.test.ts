@@ -56,6 +56,7 @@ describe("recovery board backfill cancellation", () => {
       response: { event: { hash: "cancel-hash", at: "2026-11-14T00:00:00Z", type: "waitlist_recovery" }, case_head: "cancel-hash", canonical_unchanged: true, dispatched: false, duplicate: false },
     });
     await mount(false);
+    await act(async () => button("Slot source")!.click());
     expect(document.querySelector("[data-testid=recovery-slot-history]")?.textContent).toContain("confirm backfill");
     await act(async () => button("Cancel backfill")!.click());
     const submit = button("Cancel simulated backfill")!;

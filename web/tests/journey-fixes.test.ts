@@ -16,7 +16,8 @@ import { mapSettledBounded } from "@/lib/domain/bounded";
 import { patientScript } from "@/components/patient/programme";
 import { PREVIEW_OFFERS } from "@/components/patient/book-flow";
 import { elsewhereVisible } from "@/components/patient/elsewhere-report";
-import { candidatePages, slotsByDay, CANDIDATE_PAGE } from "@/components/recovery/candidates";
+import { candidateSets, NO_VIEW, parseRecoveryView, recoveryHref, slotsByDay, CANDIDATE_PAGE } from "@/components/recovery/candidates";
+import { paginate } from "@/components/worklist/paging";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { ALL_DICTS } from "@/components/patient/i18n/all";
 import { PatientJourney } from "@/lib/api/patient-schema";
@@ -209,11 +210,19 @@ describe("Draft translations stay out of patient client bundles", () => {
 describe("Recovery board: paged candidates and day-ordered slots", () => {
   it("sorts slots by day and pages candidates", () => {
     expect(slotsByDay([{ day: 129, slot_id: "b" }, { day: 123, slot_id: "a" }, { day: 127, slot_id: "c" }]).map((s) => s.day)).toEqual([123, 127, 129]);
-    const cands = Array.from({ length: 60 }, (_, i) => ({ case_id: `c${i}`, eligible: i < 40 })) as never[];
-    const p = candidatePages(cands, CANDIDATE_PAGE, 0);
-    expect(p.eligible).toHaveLength(CANDIDATE_PAGE);
-    expect(p.excluded).toHaveLength(0);
-    expect(p.hiddenEligible).toBe(15);
-    expect(p.hiddenExcluded).toBe(20);
+    const candidates = Array.from({ length: 60 }, (_, i) => ({ case_id: `c${i}`, eligible: i < 40 })) as never[];
+    const sets = candidateSets({ candidates, backfill: { case_id: "c0", event: "e", status: "simulated_backfill_confirmed" } });
+    expect(sets.assigned).toMatchObject({ case_id: "c0" });
+    expect([sets.eligible.length, sets.excluded.length]).toEqual([39, 20]);
+    const page2 = paginate(sets.eligible, 2, CANDIDATE_PAGE);
+    expect([page2.pages, page2.rows.length, page2.rows[0].case_id]).toEqual([2, 14, "c26"]);
+  });
+
+  it("keeps the selected slot, candidate and pages in the URL and drops malformed values", () => {
+    const view = parseRecoveryView({ slot: "rel_1", status: "filled", page: "2", case: "a/b", set: "excluded", cpage: "3" });
+    expect(view).toEqual({ slot: "rel_1", filter: "filled", page: 2, case: "a/b", set: "excluded", cpage: 3 });
+    expect(parseRecoveryView(Object.fromEntries(new URL(recoveryHref(view), "http://x").searchParams))).toEqual(view);
+    expect(parseRecoveryView({ status: "closed", page: "0", set: "maybe", cpage: "1.5" })).toEqual(NO_VIEW);
+    expect(recoveryHref(NO_VIEW)).toBe("/app/recovery");
   });
 });

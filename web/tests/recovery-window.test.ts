@@ -5,7 +5,7 @@ import path from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { focalCandidate, outreachState, windowGeometry } from "@/components/recovery/candidates";
+import { focalCandidate, gapWords, outreachState } from "@/components/recovery/candidates";
 import { RecoveryBoard } from "@/components/recovery/recovery-board";
 import { confirmBackfill } from "@/app/app/recovery/actions";
 import { RecoveryDetail, RecoveryList } from "@/lib/api/recovery-schema";
@@ -44,24 +44,12 @@ afterEach(() => {
   vi.mocked(confirmBackfill).mockReset();
 });
 
-describe("recovery time window geometry", () => {
-  it("puts the slot between the ends with the gap to the due day", () => {
-    const g = windowGeometry(12, 40, 47);
-    expect([g.start, g.end, g.gap, g.gapText]).toEqual([0, 100, 7, "7 days"]);
-    expect(g.slot).toBeCloseTo(80);
-  });
-
-  it("keeps the slot clear of the end markers when days are close or far apart", () => {
-    expect(windowGeometry(39, 40, 40).slot).toBe(94);
-    expect(windowGeometry(40, 40, 400).slot).toBe(6);
-    expect(windowGeometry(40, 40, 40)).toMatchObject({ slot: 50, gapText: "Due that day" });
-  });
-
-  it("moves a slot after the due day to the end and leaves the due label room", () => {
-    const g = windowGeometry(12, 40, 13);
-    expect(g.slot).toBe(100);
-    expect(g.end).toBe(35);
-    expect(g.gapText).toBe("27 days past due");
+describe("recovery slot against the due day", () => {
+  it("says how far the slot lands before or past the candidate's due day", () => {
+    expect(gapWords(40, 47)).toEqual({ text: "7 days before due", past: false });
+    expect(gapWords(40, 40)).toEqual({ text: "On the due day", past: false });
+    expect(gapWords(123, 22)).toEqual({ text: "101 days past due", past: true });
+    expect(gapWords(40, 39)).toEqual({ text: "1 day past due", past: true });
   });
 });
 
@@ -71,13 +59,15 @@ describe("recovery assignment and outreach stay distinct", () => {
     expect(outreachState(top, open.slot.outreach)).toEqual({ tone: "held", title: "Outreach held" });
     await mount(open, false);
     expect(mark("requested")).toBe("RequestedDay 12");
-    expect(mark("slot")).toBe("SlotDay 40");
+    expect(mark("slot")).toBe("SlotDay 40In 20 days");
     expect(mark("due")).toBe("DueDay 47");
-    expect(document.querySelector("[data-testid=recovery-gap]")?.textContent).toContain("7 days");
+    expect(document.querySelector("[data-testid=recovery-gap]")?.textContent).toBe("7 days before due");
     const hold = document.querySelector("[data-testid=recovery-outreach]");
     expect(hold?.textContent).toContain("Contact permission");
     expect(hold?.textContent).toContain("Unknown");
     expect(hold?.textContent).toContain("Unconfirmed");
+    expect(document.querySelector("[data-eligible=false]")).toBeNull();
+    await act(async () => document.querySelector<HTMLButtonElement>("#rc-cands-tab-excluded")!.click());
     expect(document.querySelector("[data-eligible=false] [data-testid=excluded-by]")?.textContent).toBe("Source case for this release");
   });
 
@@ -95,9 +85,26 @@ describe("recovery assignment and outreach stay distinct", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it("measures and confirms against the candidate the coordinator picks, and keeps the pick in the URL", async () => {
+    vi.mocked(confirmBackfill).mockResolvedValue({ ok: false, status: 409, error: "stale" });
+    const second = { ...top, case_id: "ahs-mushrif/ServiceRequest/AHS-sr-911", case_head: "sig-second", rank: 2, requested_day: 15, deadline_day: 30 };
+    const two = RecoveryDetail.parse({ ...open, slot: { ...open.slot, candidates: [top, second, ...open.slot.candidates.slice(1)] } });
+    await mount(two, false);
+    const rows = [...document.querySelectorAll<HTMLButtonElement>("[data-eligible=true] > button")];
+    expect(rows.map((row) => row.getAttribute("aria-expanded"))).toEqual(["true", "false"]);
+    await act(async () => rows[1].click());
+    expect(new URL(window.location.href).searchParams.get("case")).toBe(second.case_id);
+    expect(mark("requested")).toBe("RequestedDay 15");
+    expect(document.querySelector("[data-testid=recovery-gap]")?.textContent).toBe("10 days past due");
+    expect(document.querySelectorAll("[data-testid=recovery-outreach]")).toHaveLength(1);
+    await act(async () => button("Confirm backfill")!.click());
+    await act(async () => button("Confirm simulated backfill")!.click());
+    expect(confirmBackfill).toHaveBeenCalledWith(open.slot.slot_id, expect.objectContaining({ case_id: second.case_id, expected_case_head: "sig-second" }));
+  });
+
   it("marks the slot Assigned after confirmation while outreach stays held", async () => {
     await mount(assigned, false);
-    expect(mark("slot")).toBe("AssignedDay 40");
+    expect(mark("slot")).toBe("AssignedDay 40In 20 days");
     expect(document.querySelector("[data-testid=recovery-slot-backfill]")?.textContent).toContain("Backfill confirmed");
     expect(button("Confirm backfill")).toBeUndefined();
     const hold = document.querySelector("[data-testid=recovery-outreach]");

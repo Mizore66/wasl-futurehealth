@@ -1,72 +1,128 @@
 import type { RecoveryCandidate, RecoveryList, RecoverySlot } from "@/lib/api/recovery-schema";
 
-/** Candidates shown per page; a slot can rank more than a thousand, which the browser cannot render usefully at once. */
+/** Candidates per page; a slot can rank more than a thousand, which the browser cannot render usefully at once. */
 export const CANDIDATE_PAGE = 25;
+
+export type SlotStatus = RecoveryList["slots"][number]["status"];
+export type SlotFilter = SlotStatus | "all";
+export const SLOT_FILTERS: readonly SlotFilter[] = ["open", "filled", "stale", "all"];
+export type CandidateSet = "eligible" | "excluded";
+
+/**
+ * Everything on the board a reload must keep. `slot` is read on the server, which fetches that slot's detail; the
+ * rest is client state mirrored into the URL. Null means not chosen, and the board derives a default.
+ */
+export type RecoveryView = {
+  slot: string | null;
+  filter: SlotFilter | null;
+  page: number | null;
+  case: string | null;
+  set: CandidateSet | null;
+  cpage: number | null;
+};
+
+export const NO_VIEW: RecoveryView = { slot: null, filter: null, page: null, case: null, set: null, cpage: null };
+
+const one = (value: string | string[] | undefined) => (typeof value === "string" && value !== "" ? value : null);
+const pageNumber = (value: string | string[] | undefined) => {
+  const n = Number(one(value));
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+export function parseRecoveryView(query: Record<string, string | string[] | undefined>): RecoveryView {
+  const filter = one(query.status);
+  const set = one(query.set);
+  return {
+    slot: one(query.slot),
+    filter: SLOT_FILTERS.find((f) => f === filter) ?? null,
+    page: pageNumber(query.page),
+    case: one(query.case),
+    set: set === "eligible" || set === "excluded" ? set : null,
+    cpage: pageNumber(query.cpage),
+  };
+}
+
+export function recoveryHref(view: RecoveryView): string {
+  const params = new URLSearchParams();
+  if (view.slot) params.set("slot", view.slot);
+  if (view.filter) params.set("status", view.filter);
+  if (view.page) params.set("page", String(view.page));
+  if (view.case) params.set("case", view.case);
+  if (view.set) params.set("set", view.set);
+  if (view.cpage) params.set("cpage", String(view.cpage));
+  const query = params.toString();
+  return query ? `/app/recovery?${query}` : "/app/recovery";
+}
+
+type ClientParam = "status" | "page" | "case" | "set" | "cpage";
+
+/** Mirrors client state into the address bar without a server round trip; Next keeps its router in step. */
+export function replaceRecoveryParams(patch: Partial<Record<ClientParam, string | number | null>>) {
+  const url = new URL(window.location.href);
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null || value === undefined) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url);
+}
+
+/**
+ * Scrolls a panel (positioned, so it is the row's offsetParent) until the row shows below its sticky heading.
+ * Not scrollIntoView: below lg the panels are part of the page, and that would scroll the whole page too.
+ */
+export function revealIn(panel: HTMLElement | null, selector: string, headroom = 0) {
+  const row = panel?.querySelector<HTMLElement>(selector);
+  if (!panel || !row) return;
+  const top = row.offsetTop - headroom;
+  if (top < panel.scrollTop || row.offsetTop + row.offsetHeight > panel.scrollTop + panel.clientHeight) panel.scrollTop = top;
+}
 
 /** The released slots in day order (then unit and id), so the list reads chronologically. */
 export function slotsByDay<T extends Pick<RecoveryList["slots"][number], "day" | "slot_id">>(slots: readonly T[]): T[] {
   return [...slots].sort((a, b) => a.day - b.day || a.slot_id.localeCompare(b.slot_id));
 }
 
+/** A slot list row: the summary, the `id` the pager keys on, and the days from the run's day to the slot. */
+export type SlotRow = RecoveryList["slots"][number] & { id: string; lead: number };
+
+export function slotRows(list: Pick<RecoveryList, "slots" | "as_of_day">): SlotRow[] {
+  return slotsByDay(list.slots).map((slot) => ({ ...slot, id: slot.slot_id, lead: Math.floor(slot.day) - Math.floor(list.as_of_day) }));
+}
+
+const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
+export function leadWords(lead: number): string {
+  if (lead === 0) return "Today";
+  return lead > 0 ? `In ${days(lead)}` : `${days(-lead)} ago`;
+}
+
+/** The slot day against a candidate's due day. */
+export function gapWords(slotDay: number, due: number): { text: string; past: boolean } {
+  const gap = Math.floor(due) - Math.floor(slotDay);
+  return { text: gap === 0 ? "On the due day" : gap > 0 ? `${days(gap)} before due` : `${days(-gap)} past due`, past: gap < 0 };
+}
+
 /**
- * Eligible candidates in rank order and excluded ones after them, each cut to what the coordinator asked to see.
- * `hiddenEligible` and `hiddenExcluded` say how many more each list holds.
+ * A slot's candidates as the board shows them: the assigned case (if any) pinned on its own, then everyone else as
+ * ranked eligible and excluded sets in API order.
  */
-export function candidatePages(candidates: readonly RecoveryCandidate[], eligibleShown: number, excludedShown: number) {
-  const eligible = candidates.filter((c) => c.eligible);
-  const excluded = candidates.filter((c) => !c.eligible);
-  return {
-    eligible: eligible.slice(0, eligibleShown),
-    excluded: excluded.slice(0, excludedShown),
-    hiddenEligible: Math.max(0, eligible.length - eligibleShown),
-    hiddenExcluded: Math.max(0, excluded.length - excludedShown),
-    totalExcluded: excluded.length,
-  };
+export function candidateSets(slot: Pick<RecoverySlot, "candidates" | "backfill">) {
+  const assignedId = slot.backfill?.case_id;
+  const assigned = assignedId ? (slot.candidates.find((c) => c.case_id === assignedId) ?? null) : null;
+  const others = slot.candidates.filter((c) => c.case_id !== assignedId).map((c) => ({ ...c, id: c.case_id }));
+  return { assigned, eligible: others.filter((c) => c.eligible), excluded: others.filter((c) => !c.eligible) };
 }
 
 export const words = (value: string) => value.replaceAll("_", " ");
 export const sentence = (value: string) => (value ? value[0].toUpperCase() + value.slice(1) : value);
 
 /**
- * The candidate the time window describes: the case the slot is assigned to once a backfill is confirmed,
- * otherwise the top-ranked eligible case. Null when nobody is eligible and nothing is assigned.
+ * The candidate the slot is measured against until the coordinator picks another: the case the slot is assigned to
+ * once a backfill is confirmed, otherwise the top-ranked eligible case. Null when nobody is eligible or assigned.
  */
 export function focalCandidate(slot: Pick<RecoverySlot, "candidates" | "backfill">): RecoveryCandidate | null {
   if (slot.backfill) return slot.candidates.find((c) => c.case_id === slot.backfill?.case_id) ?? null;
   return slot.candidates.find((c) => c.eligible) ?? null;
-}
-
-export type Align = "start" | "center" | "end";
-const align = (position: number): Align => (position < 20 ? "start" : position > 80 ? "end" : "center");
-const clamp = (value: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, value));
-
-/**
- * Positions (percent of the axis) for the requested day, the slot and the deadline. Requested and Due sit at the
- * two ends so their labels below the axis never meet; the slot label sits above the axis and is kept clear of the
- * end markers. A slot after the deadline moves to the right end and the deadline keeps room for its own label.
- */
-export function windowGeometry(requested: number, slotDay: number, due: number) {
-  const gap = due - slotDay;
-  const start = 0;
-  let end = 100;
-  let slot: number;
-  if (slotDay > due) {
-    slot = 100;
-    end = clamp(((due - requested) / Math.max(1, slotDay - requested)) * 100, 35, 82);
-  } else if (due === requested) {
-    slot = 50;
-  } else {
-    slot = clamp(((slotDay - requested) / (due - requested)) * 100, 6, 94);
-  }
-  return {
-    start,
-    slot,
-    end,
-    gap,
-    slotAlign: align(slot),
-    endAlign: slotDay > due ? align(end) : ("end" as Align),
-    gapText: gap === 0 ? "Due that day" : gap > 0 ? `${gap} ${gap === 1 ? "day" : "days"}` : `${-gap} ${gap === -1 ? "day" : "days"} past due`,
-  };
 }
 
 /** Passing checks a coordinator reads as matches, in display order. Other passes stay in the full check list. */
@@ -122,12 +178,13 @@ export type OutreachTone = "held" | "recorded" | "cancelled" | "allowed";
 
 /**
  * Outreach is decided apart from assignment: a confirmed backfill assigns the slot, and outreach stays held while the
- * assigned (or top) case lacks contact permission or a confirmed second identifier.
+ * case lacks contact permission or a confirmed second identifier. The slot's outreach record belongs to the assigned
+ * case only, so pass it for that case and `null` for anyone else.
  */
-export function outreachState(candidate: RecoveryCandidate | null, slotOutreach: RecoverySlot["outreach"]): { tone: OutreachTone; title: string } {
+export function outreachState(candidate: RecoveryCandidate | null, slotOutreach: RecoverySlot["outreach"] | null): { tone: OutreachTone; title: string } {
   if (!candidate || !candidate.outreach.allowed) return { tone: "held", title: "Outreach held" };
-  if (slotOutreach.status === "recorded_not_dispatched") return { tone: "recorded", title: "Outreach recorded, not sent" };
-  if (slotOutreach.status === "cancelled_consent") return { tone: "cancelled", title: "Outreach cancelled" };
+  if (slotOutreach?.status === "recorded_not_dispatched") return { tone: "recorded", title: "Outreach recorded, not sent" };
+  if (slotOutreach?.status === "cancelled_consent") return { tone: "cancelled", title: "Outreach cancelled" };
   return { tone: "allowed", title: "Outreach allowed" };
 }
 
