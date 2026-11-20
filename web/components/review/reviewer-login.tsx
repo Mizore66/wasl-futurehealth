@@ -2,18 +2,23 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { signInReviewer, signOutReviewer } from "@/app/app/review/[id]/actions";
+import { signInAsDemoPersona, signInReviewer, signOutReviewer } from "@/app/app/review/[id]/actions";
 import type { ReviewAuthMode } from "@/lib/auth/oidc-config";
 import { oidcStartHref, sessionEndedMessage, type ReviewSessionInfo, type SessionEndedReason } from "./auth";
 import type { SessionPersona } from "@/lib/auth/session-persona";
 import { clearSignedOutNotice, signedOutNotice } from "./signed-out-notice";
+import { DEMO_PERSONA_WORDS, DemoPersonaPicker } from "./demo-persona-picker";
 
 const INDEPENDENCE = {
   demo: "A token proves a configured demo identity, not that a separate person is present.",
+  persona: "A different persona proves a different configured actor, not a different person.",
   oidc: "OIDC verifies a provider subject and maps it to a configured actor; it does not by itself prove that separate real-world people took part.",
 } as const;
 
-/** Explicitly selected demo token entry or OIDC redirect. OIDC renders no token input or identity picker. */
+/**
+ * Demo token entry, the open demo's persona picker, or the OIDC redirect. OIDC renders no token input or identity
+ * picker; persona mode renders no token input.
+ */
 export function ReviewerLogin({
   caseId,
   mode = "demo",
@@ -72,7 +77,9 @@ export function ReviewerLogin({
         <p className="m-0 mt-1 text-muted">
           {mode === "oidc"
             ? "Use your organisation’s OIDC sign-in. The verified provider subject selects a server-side credential; this page offers no role or credential choice. "
-            : "Enter the review token assigned to you. Your token decides who you are and what you may answer; this page never offers a choice of credential. "}
+            : mode === "persona"
+              ? `${DEMO_PERSONA_WORDS} `
+              : "Enter the review token assigned to you. Your token decides who you are and what you may answer; this page never offers a choice of credential. "}
           {INDEPENDENCE[mode]}
         </p>
         {(notice || authError) && (
@@ -91,6 +98,8 @@ export function ReviewerLogin({
           >
             Sign in with OIDC
           </a>
+        ) : mode === "persona" ? (
+          <DemoPersonaPicker caseId={caseId} signIn={signInAsDemoPersona} />
         ) : (
           <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
             <div>
@@ -130,9 +139,25 @@ export function ReviewerLogin({
   );
 }
 
-/** `persona` names the OIDC subject and its mapped credential (from reviewerPersona), so a reviewer can check who they are before acting. */
+/**
+ * `persona` names the OIDC subject and its mapped credential, or the picked demo persona (from reviewerPersona), so a
+ * reviewer can check who they are before acting.
+ */
 export function ReviewerSessionStatus({ session, persona }: { session: ReviewSessionInfo; persona?: SessionPersona | null }) {
   const oidcPersona = session.method === "oidc" && persona?.method === "oidc" ? persona : undefined;
+  const demoPersona = session.method === "persona" && persona?.method === "persona" ? persona : undefined;
+  if (session.method === "persona") {
+    return (
+      <p className="m-0 mt-2 text-small text-muted" data-testid="reviewer-session">
+        Demo sign-off as{" "}
+        <span className="font-medium text-ink" data-testid="reviewer-session-subject">
+          {demoPersona?.actor ?? "a demo persona"}
+        </span>
+        . Anyone visiting the demo can pick this persona; to give a read as someone else, sign out and pick another. In
+        production every sign-off is bound to a named clinician.
+      </p>
+    );
+  }
   return (
     <p className="m-0 mt-2 text-small text-muted" data-testid="reviewer-session">
       {session.method === "oidc" ? (

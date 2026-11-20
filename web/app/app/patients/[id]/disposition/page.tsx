@@ -69,7 +69,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
         />
         <div className="p-4 md:p-pad">
           {live && viewer.session && (
-            <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />
+            <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "demo" ? null : await reviewerPersona()} />
           )}
           <div className="mt-4 grid items-start gap-gap lg:grid-cols-2">
             <DispositionCard ctx={ctx} link={false} />

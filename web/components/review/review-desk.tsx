@@ -837,7 +837,7 @@ export function ReviewDesk({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="m-0 max-w-[80ch] text-small text-muted">
             {live
-              ? "Independent double review: two different credentials answer each question separately, and a disagreement goes to an authorised senior. Tokens show configured demo identities, not that separate people took part."
+              ? "Independent double review: two different credentials answer each question separately, and a disagreement goes to an authorised senior. Demo sign-ins show configured identities, not that separate people took part."
               : "A reconstruction: nothing here is appended or saved. Signing needs the live API."}
           </p>
           {live && <ReviewerSignOut caseId={view.caseId} />}

@@ -4,7 +4,11 @@ import { isReviewToken } from "@/components/review/auth";
 
 export const OIDC_CREDENTIALS = ["reviewer", "reviewer_2", "reviewer_3", "clinician", "clinician_2", "clinician_3"] as const;
 export type OidcCredential = (typeof OIDC_CREDENTIALS)[number];
-export type ReviewAuthMode = "demo" | "oidc";
+/**
+ * "demo": each reviewer pastes an assigned bearer token. "persona": the open hosted demo, where any visitor picks a demo
+ * persona and the web server signs with that persona's server-side token. "oidc": the identity provider decides.
+ */
+export type ReviewAuthMode = "demo" | "persona" | "oidc";
 export type OidcEnvironment = Record<string, string | undefined>;
 
 export type OidcConfig = {
@@ -39,7 +43,7 @@ export class OidcConfigurationError extends Error {
 
 export function reviewAuthMode(env: OidcEnvironment = process.env): ReviewAuthMode {
   const mode = env.WASL_REVIEW_AUTH_MODE ?? "demo";
-  if (mode !== "demo" && mode !== "oidc") throw new OidcConfigurationError("WASL_REVIEW_AUTH_MODE must be demo or oidc");
+  if (mode !== "demo" && mode !== "persona" && mode !== "oidc") throw new OidcConfigurationError("WASL_REVIEW_AUTH_MODE must be demo, persona or oidc");
   return mode;
 }
 
