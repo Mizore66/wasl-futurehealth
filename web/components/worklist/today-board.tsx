@@ -1,5 +1,6 @@
 "use client";
 
+import { ConsultsDue } from "./consults-due";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -1356,6 +1357,7 @@ export function TodayBoard({
         className="flex flex-col rounded-card border border-line bg-surface lg:min-h-0 lg:flex-1 lg:overflow-clip"
       >
         {head}
+        <ConsultsDue now={now} />
         {(boardInvalid || pendingNotice) && (
           <div className="px-4 pt-3">
             {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-4" />}
