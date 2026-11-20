@@ -268,7 +268,7 @@ for (const purpose of PURPOSES) for (const answer of ANSWERS) {
       expect(firstRead.event.role).toBe("clinician");
 
       await b.page.reload();
-      await expect(card(b.page)).toContainText("the answer stays hidden until the second read");
+      await expect(card(b.page)).toContainText("The answer stays hidden until the second read");
       await expect(card(b.page)).not.toContainText(firstRead.hash.slice(0, 12));
       await expect(card(b.page)).not.toContainText(/First read: Report (not )?adequate/);
       await expect(b.page.getByTestId("history-withheld")).toBeVisible();

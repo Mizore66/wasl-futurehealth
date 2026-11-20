@@ -398,7 +398,7 @@ test.describe("independent double review with synthetic OIDC", () => {
     const { context, page } = await viewer(browser, "r2");
     for (const q of ["link", "evidence"] as const) {
       await expect(card(page, q)).toContainText("Second read due");
-      await expect(card(page, q)).toContainText("the answer stays hidden until the second read");
+      await expect(card(page, q)).toContainText("The answer stays hidden until the second read");
     }
     const html = await page.content();
     expect(html).not.toContain(hash(LINK, "r1"));
