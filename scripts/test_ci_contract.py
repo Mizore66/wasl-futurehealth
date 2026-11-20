@@ -258,10 +258,30 @@ class WorkflowTests(unittest.TestCase):
     def test_playwright_installs_browser_and_preserves_diagnostics(self):
         commands = self.runs("playwright")
         self.assertIn("playwright install --with-deps chromium", commands)
-        self.assertIn("pnpm exec playwright test\n", commands)
-        self.assertNotIn("--project=", commands)
+        self.assertIn("pnpm exec playwright test $PW_ARGS\n", commands)
         uploads = self.steps_using("actions/upload-artifact")
         self.assertTrue(any(step.get("if") == "failure()" for step in uploads))
+
+    def test_playwright_shards_still_run_every_project(self):
+        shards = [entry["args"] for entry in self.jobs["playwright"]["strategy"]["matrix"]["include"]]
+        self.assertFalse(self.jobs["playwright"]["strategy"]["fail-fast"])
+        chromium = [a for a in shards if a.startswith("--project=chromium ")]
+        self.assertEqual(sorted(chromium), [f"--project=chromium --shard={i}/{len(chromium)}" for i in range(1, len(chromium) + 1)])
+        rest = [a for a in shards if a not in chromium]
+        self.assertEqual(rest, ["--project=landing --project=perf --no-deps --workers=1"])
+
+    def test_pull_requests_run_fast_lanes_and_main_runs_every_lane(self):
+        trigger = self.doc.get("on", self.doc.get(True))
+        self.assertEqual(trigger["push"]["branches"], ["main"])
+        self.assertIn("workflow_dispatch", trigger)
+        slow = {"go-race", "integration", "booking-simulation", "container"}
+        for lane in slow:
+            self.assertEqual(self.jobs[lane]["if"], "github.event_name != 'pull_request'", lane)
+        self.assertEqual(self.jobs["trufflehog"]["if"], "github.event_name == 'pull_request'")
+        gate = self.jobs["required"]["steps"][-1]["run"]
+        for lane in slow:
+            self.assertIn(lane, gate.split("else", 1)[1], lane)
+            self.assertNotIn(lane, gate.split("if", 1)[0], lane)
 
     def test_dependency_and_vulnerability_scanners_fail_on_findings(self):
         self.assertIn("golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...", self.runs("go-vulnerabilities"))
