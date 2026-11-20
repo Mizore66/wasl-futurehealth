@@ -24,9 +24,8 @@ beforeEach(() => {
 
 async function render(sp: Record<string, string>) {
   // Server component unit test with mocked reads; not served HTTP or browser evidence.
-  const tree = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<{ children: ReactElement<{ aside?: ReactElement }>[] }>;
-  const [header, board] = tree.props.children;
-  const scope = header.props.aside!;
+  const board = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<ComponentProps<typeof TodayBoard>>;
+  const scope = (board.props.head as ReactElement<{ aside: ReactElement }>).props.aside;
   expect([scope.type, board.type]).toEqual([TodayScope, TodayBoard]);
   return { scope: scope.props as ComponentProps<typeof TodayScope>, board: board.props as ComponentProps<typeof TodayBoard> };
 }

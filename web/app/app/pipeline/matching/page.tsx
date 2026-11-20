@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PipelineHeading, SNAPSHOT_NOTE } from "@/components/pipeline/heading";
+import { SNAPSHOT_NOTE } from "@/components/pipeline/heading";
 import { MatchingReplay, type MatchCase } from "@/components/pipeline/matching-replay";
 import { apiMode, getCase, getDashboard, getFixtures, getPublishedCase, getPublishedFixtures } from "@/lib/api/source";
 import { CRC_FIXTURES, type CaseDetail } from "@/lib/api/schema";
@@ -122,14 +122,12 @@ export default async function Page() {
 
   return (
     <MatchingReplay
-      heading={
-        <PipelineHeading
-          title="Identity matching"
-          question="Is this incoming report the same woman as one of our referrals?"
-          current="/app/pipeline/matching"
-          note={snapshot ? SNAPSHOT_NOTE : undefined}
-        />
-      }
+      heading={{
+        title: "Identity matching",
+        question: "Is this incoming report the same woman as one of our referrals?",
+        current: "/app/pipeline/matching",
+        note: snapshot ? SNAPSHOT_NOTE : undefined,
+      }}
       cases={cases}
       referrals={dashboard.by_programme.crc?.cases ?? 0}
     />

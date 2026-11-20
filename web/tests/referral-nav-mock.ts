@@ -28,6 +28,7 @@ const subscribe = (l: () => void) => {
 
 export const navigationMock = {
   useRouter: () => ({ push, refresh, replace: push }),
+  usePathname: () => location.pathname,
   useSearchParams: () => {
     const search = useSyncExternalStore(subscribe, () => location.search, () => "");
     return useMemo(() => new URLSearchParams(search), [search]);

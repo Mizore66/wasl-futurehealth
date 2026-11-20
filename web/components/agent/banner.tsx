@@ -5,14 +5,14 @@ import { AGENT_LANE_SOURCE } from "@/lib/api/agent-source";
 import type { Meta } from "@/lib/api/schema";
 import { tauOf } from "./words";
 
-/** The prominent "this is a separate experimental run" banner. */
+/** The "this is a separate experimental run" banner, drawn as the body of the page's main card under the header. */
 export function AgentBanner({ meta, cases }: { meta: Meta; cases: number }) {
   const tau = tauOf(meta.policy);
   return (
     <section
       aria-labelledby="agent-banner-h"
       data-testid="agent-banner"
-      className="rounded-card border-2 border-ink bg-raised p-4 md:p-pad"
+      className="bg-raised p-4 md:p-pad"
     >
       <div className="flex flex-wrap items-center gap-2">
         <Pill tone="warning">Experimental</Pill>

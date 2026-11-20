@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useSyncExternalStore } from "react";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechnicalDetail } from "./technical";
@@ -80,7 +81,7 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
           <div className="flex items-center gap-4 border-b border-rule px-6 pb-5 pt-6 pr-12">
             <Avatar person={{ key: p.person.key, sex: p.person.sex }} state={p.matched ? "known" : "unknown"} size={64} label="" />
             <div className="min-w-0">
-              <DialogTitle className="text-title font-medium leading-tight">{p.person.name}</DialogTitle>
+              <DialogTitle className="break-words text-title font-semibold leading-tight text-ink">{p.person.name}</DialogTitle>
               <div lang="ar" dir="rtl" className="text-left text-body text-ink-soft">
                 {p.person.nameAr}
               </div>
@@ -147,7 +148,7 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
               <ol className="m-0 list-none p-0" aria-label="Steps in this run">
                 {p.history.map((h) => (
                   <li key={h.step} className={cn("grid grid-cols-[56px_minmax(0,1fr)] gap-x-2 border-t border-rule py-1.5", !h.played && "text-muted")}>
-                    <span className="text-small tabular-nums text-muted">step {h.step}</span>
+                    <span className="pt-px text-small tabular-nums text-muted">step {h.step}</span>
                     <span className="min-w-0">
                       <span className="block text-body">{h.text}</span>
                       <span className="block text-small text-muted">{h.played ? h.note : "not reached yet in this loop"}</span>
@@ -168,12 +169,9 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
             </Section>
 
             {p.record ? (
-              <Link
-                href={p.record}
-                className="inline-flex h-11 items-center self-start rounded-control bg-cta px-4 text-body font-medium text-white no-underline hover:text-white"
-              >
-                Open full record
-              </Link>
+              <Button asChild variant="cta" size="touch" className="self-start no-underline hover:text-white">
+                <Link href={p.record}>Open full record</Link>
+              </Button>
             ) : (
               <p className="m-0 text-small text-muted">
                 No patient record: this person was generated for the replay, which is a different run from the one the records come from.
@@ -189,7 +187,7 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="m-0 text-small font-medium text-muted">{title}</h3>
+      <h3 className="m-0 text-small font-semibold text-ink-soft">{title}</h3>
       <div className="mt-1.5">{children}</div>
       {note && <p className="m-0 mt-2 text-small text-muted">{note}</p>}
     </section>

@@ -399,7 +399,7 @@
     font-size: 12px;
   }
 
-  /* The open folder: a jade tab above the record title, which takes the top border. */
+  /* The open folder: a jade tab above the record card, which takes the top border. */
   .staff .pf-return-tab {
     position: relative;
     display: inline-flex;
@@ -432,15 +432,12 @@
     width: 15px;
     height: 15px;
   }
-  .pf-record-in-folder > .record-title {
+  .pf-record-in-folder > .rs-card {
     border-top: 3px solid var(--color-jade-700);
     border-start-start-radius: 0;
   }
 
   /* Evidence File */
-  .record-title {
-    margin-bottom: 10px;
-  }
   .rs-card {
     display: flex;
     flex-direction: column;

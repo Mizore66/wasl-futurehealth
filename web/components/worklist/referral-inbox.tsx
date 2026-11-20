@@ -294,17 +294,25 @@ export function ReferralInbox({
     return (
       <div ref={root}>
         {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
-        <PageHeader title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>} />
-        <section aria-label="Open referral" className="rounded-card border border-line bg-surface p-4 sm:p-pad">
-          <h2 className="m-0 text-section font-medium">{url.caseId ? "This referral is not in this view" : "Nothing to open"}</h2>
-          <p className="m-0 mt-2 text-muted">
-            {url.caseId ? "It may have been answered elsewhere, or the search no longer includes it." : "This view is empty."}{" "}
-          </p>
-          {(url.q || url.status || url.caseId) && (
-            <Link href={inboxHref(scope, {})} className="mt-2 inline-flex min-h-11 items-center underline">
-              Clear the search
-            </Link>
-          )}
+        {/* Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners. */}
+        <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
+          <PageHeader
+            attached
+            run
+           
+            title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>}
+          />
+          <div className="p-4 sm:p-pad">
+            <h2 className="m-0 text-section font-medium">{url.caseId ? "This referral is not in this view" : "Nothing to open"}</h2>
+            <p className="m-0 mt-2 text-muted">
+              {url.caseId ? "It may have been answered elsewhere, or the search no longer includes it." : "This view is empty."}{" "}
+            </p>
+            {(url.q || url.status || url.caseId) && (
+              <Link href={inboxHref(scope, {})} className="mt-2 inline-flex min-h-11 items-center underline">
+                Clear the search
+              </Link>
+            )}
+          </div>
         </section>
         {footer}
       </div>
@@ -551,7 +559,8 @@ export function ReferralInbox({
       {url.from && <BackLink href={backUrl} />}
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
-          className="mb-0 rounded-none border-0 border-b border-line"
+          attached
+          run
           title={
             <span data-focus="heading" tabIndex={-1} aria-label={`${heading.title}, ${r.short}`} className="outline-none">
               {heading.title}
@@ -824,9 +833,12 @@ function Directory({
   const paging = paginate(list, requested, INBOX_PAGE);
   const filtered = !!(url.q || url.status);
   return (
-    <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="overflow-hidden rounded-card border border-line bg-surface outline-none">
+    // Not clipped: a short or empty list is shorter than the run notice's drop-down, so the band rounds its own corners.
+    <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="rounded-card border border-line bg-surface outline-none">
       <PageHeader
-        className="mb-0 rounded-none border-0 border-b border-line"
+        attached
+        run
+       
         title={
           <span data-focus="heading" tabIndex={-1} className="outline-none">
             Referral inbox
