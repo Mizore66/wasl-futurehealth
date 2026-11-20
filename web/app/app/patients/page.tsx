@@ -137,29 +137,38 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
     return (
       <div className="pf-folder-open pf-record-in-folder">
         <FolderTab href={back} />
-        <PageHeader className="record-title" title={openRow?.it.name ?? shortId(view.open)} sub={openRow?.it.named ? shortId(view.open) : undefined} />
-        <section className="rs-card p-4 md:p-pad" aria-label="Record not available">
-          <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
-          {openRow && (
-            <dl className="rs-referral-facts">
-              <div>
-                <dt>Status</dt>
-                <dd>{openRow.it.status}</dd>
-              </div>
-              <div>
-                <dt>Next</dt>
-                <dd>{openRow.it.next}</dd>
-              </div>
-              <div>
-                <dt>Owner</dt>
-                <dd>{openRow.it.owner}</dd>
-              </div>
-              <div>
-                <dt>Referred</dt>
-                <dd>{formatDay(openRow.c.referral_day)}</dd>
-              </div>
-            </dl>
-          )}
+        <section className="rs-card" aria-label="Record not available">
+          {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
+          <PageHeader
+            attached
+            run
+            className="rounded-se-[6px]!"
+            title={openRow?.it.name ?? shortId(view.open)}
+            sub={openRow?.it.named ? shortId(view.open) : undefined}
+          />
+          <div className="p-4 md:p-pad">
+            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
+            {openRow && (
+              <dl className="rs-referral-facts">
+                <div>
+                  <dt>Status</dt>
+                  <dd>{openRow.it.status}</dd>
+                </div>
+                <div>
+                  <dt>Next</dt>
+                  <dd>{openRow.it.next}</dd>
+                </div>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{openRow.it.owner}</dd>
+                </div>
+                <div>
+                  <dt>Referred</dt>
+                  <dd>{formatDay(openRow.c.referral_day)}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
         </section>
       </div>
     );
@@ -180,20 +189,21 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
   return (
     <>
       <SearchShortcut target="pf-find" />
-      <PageHeader
-        className="pf-hero"
-        title="Patients"
-        sub={
-          <span data-testid="showing">
-            {rows.length} {rows.length === 1 ? "case" : "cases"}: {describe(filters)}
-          </span>
-        }
-        aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
-      />
-
       {ledgerPartial && <LedgerInvalidBanner what="this list" className="mb-3" />}
 
       <section className="pf-directory" aria-labelledby="pf-view-heading">
+        <PageHeader
+          attached
+          run
+          className="pf-hero"
+          title="Patients"
+          sub={
+            <span data-testid="showing">
+              {rows.length} {rows.length === 1 ? "case" : "cases"}: {describe(filters)}
+            </span>
+          }
+          aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
+        />
         <header className="pf-toolbar">
           <div>
             {scope && (

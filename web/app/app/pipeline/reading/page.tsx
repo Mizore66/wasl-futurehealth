@@ -1,5 +1,4 @@
 import readerJson from "@/data/reader.json";
-import { PipelineHeading } from "@/components/pipeline/heading";
 import { ReadingReplay, type StandsFor } from "@/components/pipeline/reading-replay";
 import type { ReaderData } from "@/components/pipeline/reader-types";
 import { personForLoop } from "@/lib/people";
@@ -21,13 +20,7 @@ function castLines(data: ReaderData): Record<string, StandsFor> {
 export default function Page() {
   return (
     <ReadingReplay
-      heading={
-        <PipelineHeading
-          title="Report reading"
-          question="Does this report prove the colonoscopy is complete?"
-          current="/app/pipeline/reading"
-        />
-      }
+      heading={{ title: "Report reading", question: "Does this report prove the colonoscopy is complete?", current: "/app/pipeline/reading" }}
       standsFor={castLines(readerJson as ReaderData)}
     />
   );

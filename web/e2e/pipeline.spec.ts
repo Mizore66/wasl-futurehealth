@@ -345,7 +345,7 @@ test("every control is a replay control, a real toggle or labelled; none is an u
     new Set(["Pause", "Step", "Tamper with a step"]),
   );
   await expect(page.getByRole("group", { name: "Replay controls" })).toBeVisible();
-  await expect(page.locator('main [data-honesty="simulated"]')).toHaveText("Simulated edit");
+  await expect(page.locator('main [data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Simulated edit");
 });
 
 for (const route of PIPELINE_ROUTES) {

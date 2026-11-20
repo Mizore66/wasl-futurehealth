@@ -1,87 +1,76 @@
+"use client";
+
+import { createContext, Suspense, use } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { DismissableDetails } from "@/components/ui/dismissable-details";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
-import { apiMode, getDashboard } from "@/lib/api/source";
-import { runStripCopy } from "./run-meta-copy";
+import type { RunInfo } from "./run-info";
 
-const SOURCE = {
-  live: "Live Wasl API",
-  fixtures: "Published snapshot of the API",
-} as const;
+const RunInfoContext = createContext<Promise<RunInfo> | null>(null);
 
-/** Reserves the strip's height while the dashboard loads, so the page does not jump. */
-export function RunMetaFallback() {
-  return (
-    <div
-      aria-hidden
-      className="mb-6 h-11 rounded-card border border-line bg-surface md:h-9"
-    />
-  );
+/** The app layout starts the read; each page header's notice waits on the same promise. */
+export function RunInfoProvider({ value, children }: { value: Promise<RunInfo>; children: React.ReactNode }) {
+  return <RunInfoContext value={value}>{children}</RunInfoContext>;
 }
 
+// Not positioned: the drop-down anchors to the header's aside group, whose right edge is the header's.
+const FRAME = "text-small";
+
 /**
- * Whether the numbers on this screen are simulated and when they were taken, in plain words (issue #50). The run, policy,
- * reader model and API version behind them sit in the expanded technical panel, one click away for reproducibility.
- * Built: reads `meta` from the same source every screen uses.
+ * Whether the numbers on this screen are simulated and when they were taken, in plain words (issue #50), at the end of
+ * the page header. The run, policy, reader model and API version open in a drop-down, one click away for reproducibility.
+ * Agent review shows a separate experimental run, so there it says so instead of presenting the main run as its source.
  */
-export async function RunMeta() {
-  const mode = apiMode();
-  const source = SOURCE[mode];
-  let meta: Awaited<ReturnType<typeof getDashboard>>["meta"];
-  try {
-    meta = (await getDashboard()).meta;
-  } catch {
+export function RunMeta() {
+  const pathname = usePathname() ?? "";
+  if (pathname === "/app/agent-review" || pathname.startsWith("/app/agent-review/")) {
     return (
-      <section
-        aria-label="Run metadata"
-        className="mb-6 rounded-card border border-line bg-surface px-3 py-2 text-small text-muted"
-      >
-        Run details are unavailable. Source: {source}.
+      <section aria-label="Run metadata" className="max-w-[46ch] text-small text-ink-soft">
+        The main dashboard run is not the source of this page. Agent review shows a separate experimental run, described in the banner below.
       </section>
     );
   }
-
-  const copy = runStripCopy(meta, mode);
-  const rows: [string, string][] = [
-    ["Data source", source],
-    ["Run", meta.run],
-    ["Policy", meta.policy],
-    ["Reader model", meta.reader_model],
-    ["API", meta.api],
-  ];
-
   return (
-    <section
-      aria-label="Run metadata"
-      className="mb-6 rounded-card border border-line bg-surface text-small"
-    >
-      <details className="group">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-card px-3 py-1 md:min-h-9 [&::-webkit-details-marker]:hidden">
+    <Suspense fallback={<div aria-hidden className="h-11 w-96 max-w-full" />}>
+      <Notice />
+    </Suspense>
+  );
+}
+
+function Notice() {
+  const read = use(RunInfoContext);
+  if (!read) return null;
+  const info = use(read);
+  if (!info.ok) {
+    return (
+      <section aria-label="Run metadata" className={`${FRAME} px-1 text-muted`}>
+        Run details are unavailable. Source: {info.source}.
+      </section>
+    );
+  }
+  return (
+    <section aria-label="Run metadata" className={`${FRAME} min-w-0 max-w-full`}>
+      <DismissableDetails className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-control px-2 py-1 hover:bg-jade-50/70 [&::-webkit-details-marker]:hidden">
           <HonestyLabel kind="simulated" className="self-center">
-            {copy.data}
+            {info.data}
           </HonestyLabel>
           {/* Wraps to two lines at phone width rather than cutting the time off. */}
-          <time
-            dateTime={meta.loaded_at}
-            className="min-w-0 flex-1 leading-tight text-ink-soft"
-          >
-            {copy.when}
+          <time dateTime={info.loadedAt} className="min-w-0 flex-1 leading-tight text-ink-soft">
+            {info.when}
           </time>
           <span className="flex flex-none items-center gap-1 text-muted">
             <span className="max-sm:sr-only group-open:hidden">Details</span>
-            <span className="hidden max-sm:sr-only group-open:inline">
-              Hide
-            </span>
-            <ChevronDown
-              aria-hidden
-              className="size-4 group-open:rotate-180 motion-safe:transition-transform"
-            />
+            <span className="hidden max-sm:sr-only group-open:inline">Hide</span>
+            <ChevronDown aria-hidden className="size-4 group-open:rotate-180 motion-safe:transition-transform" />
           </span>
         </summary>
-        <div className="border-t border-line px-3 py-3">
-          <p className="m-0 text-ink-soft">{meta.note}</p>
+        <div className="mt-2 rounded-card border border-line bg-surface px-3 py-3 sm:absolute sm:right-0 sm:top-full sm:z-30 sm:mt-1 sm:w-[min(480px,calc(100vw-48px))] sm:shadow-[0_6px_20px_rgb(32_55_46/0.12)]">
+          <p className="m-0 text-ink-soft">{info.note}</p>
           <p className="m-0 mt-3 font-medium text-muted">Technical detail</p>
           <dl className="m-0 mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-[max-content_1fr]">
-            {rows.map(([k, v]) => (
+            {info.rows.map(([k, v]) => (
               <div key={k} className="contents">
                 <dt className="text-muted">{k}</dt>
                 <dd className="m-0 break-all font-mono text-ink-soft">{v}</dd>
@@ -89,7 +78,7 @@ export async function RunMeta() {
             ))}
           </dl>
         </div>
-      </details>
+      </DismissableDetails>
     </section>
   );
 }

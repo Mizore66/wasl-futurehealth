@@ -234,7 +234,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
   const otherSlots = slotsByDay(list.slots);
 
   const slotNav = otherSlots.length > 1 && (
-    <nav aria-label="Released slots" className="mb-3">
+    <nav aria-label="Released slots" className="border-b border-line px-[var(--g)] py-3">
       <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-1">
         {otherSlots.map((item) => (
           <li key={item.slot_id} className="flex-none">
@@ -254,17 +254,25 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
 
   if (!slot) {
     return (
-      <>
-        <PageHeader title="Recovery" sub="Released capacity from missed appointments" aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>} />
+      // Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners.
+      <article className="rounded-[8px] border border-line bg-surface text-ink [--g:clamp(16px,2vw,28px)]">
+        <PageHeader
+          attached
+          run
+         
+          title="Recovery"
+          sub="Released capacity from missed appointments"
+          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
+        />
         {slotNav}
-        <p role="status" className="m-0 rounded-[8px] border border-line bg-surface p-4">
+        <p role="status" className="m-0 p-4">
           {list.status !== "ready"
             ? `Recovery input is ${words(list.status)}. Run the booking demo to generate it.`
             : list.slots.length === 0
               ? "No simulated released capacity is available."
               : "Select a released slot to see its candidates."}
         </p>
-      </>
+      </article>
     );
   }
 
@@ -274,13 +282,14 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
 
   return (
     <>
-      {slotNav}
       <article
         aria-labelledby="rc-title"
         className="@container overflow-hidden rounded-[8px] border border-line bg-surface text-ink [--g:clamp(19px,2.65cqi,42px)] @max-[700px]:[--g:16px]"
       >
         <PageHeader
-          className="mb-0! rounded-none! border-0! border-b! border-line! py-[clamp(13px,1.8cqi,24px)]! @max-[700px]:px-4!"
+          attached
+          run
+          className="py-[clamp(13px,1.8cqi,24px)]! @max-[700px]:px-4!"
           title={<span id="rc-title">{procedureLabel(slot.procedure)}</span>}
           titleAside={
             <button
@@ -298,6 +307,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
           sub={`${providerLabel(slot.provider)} · ${slot.unit}`}
           aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
+        {slotNav}
 
         <div className="grid min-h-[clamp(210px,31svh,325px)] items-center bg-jade-50 px-[var(--g)] py-[30px] @max-[700px]:min-h-0 @max-[700px]:py-[15px]">
           <TimeWindow

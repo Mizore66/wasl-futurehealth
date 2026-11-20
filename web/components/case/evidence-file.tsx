@@ -211,49 +211,51 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
   return (
     <div className={cn("pf-record", back && "pf-record-in-folder")}>
       <RememberCase id={c.id} />
-      {back}
-      <PageHeader
-        className="record-title"
-        title={person?.display_name ?? shortId(c.id)}
-        titleAside={
-          <>
-            <Avatar person={referralSeed(c.id)} size={40} label="" />
-            {person && (
-              <span lang="ar" dir="rtl" className="text-section text-muted">
-                {person.display_name_ar}
-              </span>
-            )}
-          </>
-        }
-        sub={
-          <>
-            <span className="block">
-              {person && (
-                <>
-                  <span className="tabular-nums">{shortId(c.id)}</span> · {person.age} ·{" "}
-                </>
-              )}
-              {providerLabel(c.provider)}
-              {c.programme && ` · ${PROGRAMME_NAMES[c.programme]}`}
-            </span>
-            <span className="mt-2 flex flex-wrap items-center gap-2">
-              {closedIn !== null ? (
-                <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
-              ) : (
-                <StageMarks stage={caseStage(detail).label} overdue={c.overdue} />
-              )}
-              <span className="text-ink-soft">
-                {headerStatusWords(c)} · owner {owner}
-              </span>
-            </span>
-          </>
-        }
-        aside={showsSimulatedName(c.id) ? <HonestyLabel kind="simulated">Simulated names</HonestyLabel> : undefined}
-      />
-
       {ledgerInvalid && <LedgerInvalidBanner what="this record" className="mb-3" />}
+      {back}
 
       <section className="rs-card live-record" aria-label={`Evidence file for ${shortId(c.id)}`}>
+        {/* The card does not clip (the Run metadata drop-down hangs over it), so the band rounds the corners the folder tab leaves. */}
+        <PageHeader
+          attached
+          run
+          className={back ? "rounded-se-[6px]!" : "rounded-t-[6px]!"}
+          title={person?.display_name ?? shortId(c.id)}
+          titleAside={
+            <>
+              <Avatar person={referralSeed(c.id)} size={40} label="" />
+              {person && (
+                <span lang="ar" dir="rtl" className="text-section text-muted">
+                  {person.display_name_ar}
+                </span>
+              )}
+            </>
+          }
+          sub={
+            <>
+              <span className="block">
+                {person && (
+                  <>
+                    <span className="tabular-nums">{shortId(c.id)}</span> · {person.age} ·{" "}
+                  </>
+                )}
+                {providerLabel(c.provider)}
+                {c.programme && ` · ${PROGRAMME_NAMES[c.programme]}`}
+              </span>
+              <span className="mt-2 flex flex-wrap items-center gap-2">
+                {closedIn !== null ? (
+                  <Pill tone={closedIn <= due && !isNoAction(c) ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+                ) : (
+                  <StageMarks stage={caseStage(detail).label} overdue={c.overdue} />
+                )}
+                <span className="text-ink-soft">
+                  {headerStatusWords(c)} · owner {owner}
+                </span>
+              </span>
+            </>
+          }
+          aside={showsSimulatedName(c.id) ? <HonestyLabel kind="simulated">Simulated names</HonestyLabel> : undefined}
+        />
         <div className="record-work">
           <div className="rs-browser">
             <SourceSwitch labels={docs.map((d) => d.label)}>{docs.map((d) => d.doc)}</SourceSwitch>

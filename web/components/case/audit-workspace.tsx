@@ -49,6 +49,8 @@ const ICON: Record<AuditEventKind, LucideIcon> = {
 export type WorkspaceEvent = AuditEvent & { anchor?: string };
 
 type Props = {
+  /** The page header, drawn as the card's top band above both panes. */
+  head: React.ReactNode;
   events: WorkspaceEvent[];
   /** Server-rendered detail and controls of ledger events, keyed by event key. */
   details: Record<string, React.ReactNode>;
@@ -156,7 +158,7 @@ function Receipt({ d, total }: { d: DecisionView; total: number }) {
 }
 
 /** The approved audit layout: event history beside verification on desktop, two tabs on a phone. */
-export function AuditWorkspace({ events, details, controls, historyIntro, historyEmpty, snapshotLabel, decisions, verifyNote, auditDetails }: Props) {
+export function AuditWorkspace({ head, events, details, controls, historyIntro, historyEmpty, snapshotLabel, decisions, verifyNote, auditDetails }: Props) {
   const [oldest, setOldest] = useState(false);
   const groups = groupByMonth(events, oldest);
   const [open, setOpen] = useState<Set<string>>(() => new Set(groups[0] ? [groups[0].name] : []));
@@ -176,160 +178,164 @@ export function AuditWorkspace({ events, details, controls, historyIntro, histor
   const corner = "max-md:absolute max-md:right-[15px] max-md:top-0.5";
 
   return (
-    <div
-      className="relative grid min-w-0 flex-1 grid-cols-[minmax(0,1.36fr)_minmax(300px,1fr)] rounded-[8px] border border-line bg-surface max-md:flex max-md:flex-col"
-      data-audit-view={view}
-    >
-      <div role="group" aria-label="Audit view" className="hidden items-center gap-4 border-b border-line px-[15px] max-md:flex">
-        {(["history", "verification"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={view === v}
-            aria-label={v === "history" ? "Event history" : undefined}
-            onClick={() => setView(v)}
-            className={cn(
-              "min-h-12 border-b-2 px-px text-[14px] font-[550]",
-              view === v ? "border-jade-700 text-jade-800" : "border-transparent text-muted",
-            )}
-          >
-            {v === "history" ? "History" : "Verification"}
-          </button>
-        ))}
-      </div>
-
-      <section
-        aria-labelledby="au-history-h"
-        className={cn("flex min-w-0 flex-col px-[clamp(15px,2.1vw,36px)] pb-3.5 max-md:flex-1", view !== "history" && "max-md:hidden")}
+    <div className="flex min-w-0 flex-1 flex-col rounded-[8px] border border-line bg-surface">
+      {head}
+      <div
+        className="relative grid min-w-0 flex-1 grid-cols-[minmax(0,1.36fr)_minmax(300px,1fr)] max-md:flex max-md:flex-col"
+        data-audit-view={view}
       >
-        <header className={paneHead}>
-          <h2 id="au-history-h" className={paneTitle}>
-            Event history
-          </h2>
-          {events.some((e) => e.date) && (
+        <div role="group" aria-label="Audit view" className="hidden items-center gap-4 border-b border-line px-[15px] max-md:flex">
+          {(["history", "verification"] as const).map((v) => (
             <button
+              key={v}
               type="button"
-              onClick={toggleOrder}
-              aria-controls="audit-chronology"
-              title={`Switch to ${orderWord(!oldest).toLowerCase()}`}
-              data-oldest={oldest}
-              className={cn("inline-flex min-h-10 items-center gap-1.5 rounded px-1.5 text-[12px] text-jade-700 hover:bg-jade-50 max-md:min-h-11", corner)}
+              aria-pressed={view === v}
+              aria-label={v === "history" ? "Event history" : undefined}
+              onClick={() => setView(v)}
+              className={cn(
+                "min-h-12 border-b-2 px-px text-[14px] font-[550]",
+                view === v ? "border-jade-700 text-jade-800" : "border-transparent text-muted",
+              )}
             >
-              <ArrowDownWideNarrow aria-hidden className={cn("size-[15px]", oldest && "-scale-y-100")} strokeWidth={1.6} />
-              {orderWord(oldest)}
+              {v === "history" ? "History" : "Verification"}
             </button>
-          )}
-        </header>
-        {historyIntro}
-        <div id="audit-chronology" className="flex flex-1 flex-col">
-          {groups.length === 0 ? (
-            <p className="m-0 mb-3.5 mt-2 text-[13px] text-muted">{historyEmpty}</p>
-          ) : (
-            groups.map((g) => {
-              const isOpen = open.has(g.name);
-              return (
-                <details
-                  key={g.name}
-                  open={isOpen}
-                  onToggle={(ev) => {
-                    const now = (ev.currentTarget as HTMLDetailsElement).open;
-                    if (now === isOpen) return;
-                    setOpen((s) => {
-                      const n = new Set(s);
-                      if (now) n.add(g.name);
-                      else n.delete(g.name);
-                      return n;
-                    });
-                  }}
-                  className="group/m border-b border-line last:border-b-0"
-                  data-month={g.name}
-                >
-                  <summary className="flex min-h-[clamp(44px,6.1vh,72px)] cursor-pointer list-none items-center gap-2 text-[14px] font-semibold max-md:min-h-11 [&::-webkit-details-marker]:hidden">
-                    <span>{g.name}</span>
-                    <small className="text-[11px] font-normal text-muted">
-                      {g.events.length}
-                      <span className="sr-only"> {g.events.length === 1 ? "event" : "events"}</span>
-                    </small>
-                    <ChevronRight aria-hidden className="ms-auto size-[13px] text-muted group-open/m:rotate-90" strokeWidth={1.8} />
-                  </summary>
-                  <ol className="m-0 mb-2 flex list-none flex-col p-0">
-                    {g.events.map((e) => (
-                      <EventRow key={e.key} e={e} detail={details[e.key]} controls={controls[e.key]} />
-                    ))}
-                  </ol>
-                </details>
-              );
-            })
-          )}
+          ))}
         </div>
-      </section>
 
-      <section
-        aria-labelledby="au-verify-h"
-        className={cn("flex min-w-0 flex-col border-s border-line px-[clamp(15px,2.1vw,36px)] pb-3.5 max-md:flex-1 max-md:border-0", view !== "verification" && "max-md:hidden")}
-      >
-        <header className={paneHead}>
-          <h2 id="au-verify-h" className={paneTitle}>
-            Verification
-          </h2>
-          <span className={cn("text-[12px] text-muted max-md:flex max-md:h-11 max-md:items-center max-md:text-[11px]", corner)}>{snapshotLabel}</span>
-        </header>
-        {decisions.length === 0 ? (
-          <p className="m-0 my-4 text-[13px] text-muted" role="status" data-testid="signature-score">
-            Nothing to verify: the audit returned no decision signatures for this case.
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-baseline gap-x-3.5 py-[clamp(14px,2.8vh,38px)] max-md:py-[18px]" role="status" data-testid="signature-score">
-              <div className="staff-display text-[clamp(42px,4.3vw,74px)] leading-none tracking-[-0.05em] text-jade-900">
-                <b className="font-medium">{matched}</b>
-                <span className="text-[0.62em] text-jade-500"> / {decisions.length}</span>
+        <section
+          aria-labelledby="au-history-h"
+          className={cn("flex min-w-0 flex-col px-[clamp(15px,2.1vw,36px)] pb-3.5 max-md:flex-1", view !== "history" && "max-md:hidden")}
+        >
+          <header className={paneHead}>
+            <h2 id="au-history-h" className={paneTitle}>
+              Event history
+            </h2>
+            {events.some((e) => e.date) && (
+              <button
+                type="button"
+                onClick={toggleOrder}
+                aria-controls="audit-chronology"
+                title={`Switch to ${orderWord(!oldest).toLowerCase()}`}
+                data-oldest={oldest}
+                className={cn("inline-flex min-h-10 items-center gap-1.5 rounded px-1.5 text-[12px] text-jade-700 hover:bg-jade-50 max-md:min-h-11", corner)}
+              >
+                <ArrowDownWideNarrow aria-hidden className={cn("size-[15px]", oldest && "-scale-y-100")} strokeWidth={1.6} />
+                {orderWord(oldest)}
+              </button>
+            )}
+          </header>
+          {historyIntro}
+          <div id="audit-chronology" className="flex flex-1 flex-col">
+            {groups.length === 0 ? (
+              <p className="m-0 mb-3.5 mt-2 text-[13px] text-muted">{historyEmpty}</p>
+            ) : (
+              groups.map((g) => {
+                const isOpen = open.has(g.name);
+                return (
+                  <details
+                    key={g.name}
+                    open={isOpen}
+                    onToggle={(ev) => {
+                      const now = (ev.currentTarget as HTMLDetailsElement).open;
+                      if (now === isOpen) return;
+                      setOpen((s) => {
+                        const n = new Set(s);
+                        if (now) n.add(g.name);
+                        else n.delete(g.name);
+                        return n;
+                      });
+                    }}
+                    className="group/m border-b border-line last:border-b-0"
+                    data-month={g.name}
+                  >
+                    <summary className="flex min-h-[clamp(44px,6.1vh,72px)] cursor-pointer list-none items-center gap-2 text-[14px] font-semibold max-md:min-h-11 [&::-webkit-details-marker]:hidden">
+                      <span>{g.name}</span>
+                      <small className="text-[11px] font-normal text-muted">
+                        {g.events.length}
+                        <span className="sr-only"> {g.events.length === 1 ? "event" : "events"}</span>
+                      </small>
+                      <ChevronRight aria-hidden className="ms-auto size-[13px] text-muted group-open/m:rotate-90" strokeWidth={1.8} />
+                    </summary>
+                    <ol className="m-0 mb-2 flex list-none flex-col p-0">
+                      {g.events.map((e) => (
+                        <EventRow key={e.key} e={e} detail={details[e.key]} controls={controls[e.key]} />
+                      ))}
+                    </ol>
+                  </details>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="au-verify-h"
+          className={cn("flex min-w-0 flex-col border-s border-line px-[clamp(15px,2.1vw,36px)] pb-3.5 max-md:flex-1 max-md:border-0", view !== "verification" && "max-md:hidden")}
+        >
+          <header className={paneHead}>
+            <h2 id="au-verify-h" className={paneTitle}>
+              Verification
+            </h2>
+            <span className={cn("text-[12px] text-muted max-md:flex max-md:h-11 max-md:items-center max-md:text-[11px]", corner)}>{snapshotLabel}</span>
+          </header>
+          {decisions.length === 0 ? (
+            <p className="m-0 my-4 text-[13px] text-muted" role="status" data-testid="signature-score">
+              Nothing to verify: the audit returned no decision signatures for this case.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-baseline gap-x-3.5 py-[clamp(14px,2.8vh,38px)] max-md:py-[18px]" role="status" data-testid="signature-score">
+                <div className="staff-display text-[clamp(42px,4.3vw,74px)] leading-none tracking-[-0.05em] text-jade-900">
+                  <b className="font-medium">{matched}</b>
+                  <span className="text-[0.62em] text-jade-500"> / {decisions.length}</span>
+                </div>
+                <p className="m-0 text-[14px] text-ink">decision signatures matched</p>
               </div>
-              <p className="m-0 text-[14px] text-ink">decision signatures matched</p>
-            </div>
-            {verifyNote}
-            <fieldset className="@container m-0 border-0 p-0">
-              <legend className="mb-2 p-0 text-[12px] text-muted">Inspect a decision</legend>
-              <div className="grid grid-cols-3 gap-1.5 @max-[380px]:grid-cols-2">
-                {decisions.map((d, i) => (
-                  <label key={d.key} className="relative block cursor-pointer">
-                    <input
-                      type="radio"
-                      name="audit-decision"
-                      value={i}
-                      checked={picked === i}
-                      onChange={() => setPicked(i)}
-                      aria-label={`${d.label}, decision ${i + 1}, ${d.matched ? "signature matched" : "signature mismatch"}`}
-                      className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0"
-                    />
-                    <span
-                      className={cn(
-                        "flex h-full min-h-[clamp(46px,5.5vh,65px)] items-center justify-between gap-1.5 rounded px-[9px] py-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-jade-800 max-md:min-h-11",
-                        picked === i ? "bg-jade-700 text-limestone-50" : d.matched ? "bg-jade-50 text-jade-700" : "bg-clay-wash text-clay-ink",
-                      )}
-                    >
-                      <b className="text-[13px] font-[550] leading-[1.25]">{d.label}</b>
-                      {d.matched ? <Check aria-hidden className="size-[13px] flex-none" strokeWidth={1.8} /> : <X aria-hidden className="size-[13px] flex-none" strokeWidth={2} />}
-                    </span>
-                  </label>
-                ))}
+              {verifyNote}
+              <fieldset className="@container m-0 border-0 p-0">
+                <legend className="mb-2 p-0 text-[12px] text-muted">Inspect a decision</legend>
+                <div className="grid grid-cols-3 gap-1.5 @max-[380px]:grid-cols-2">
+                  {decisions.map((d, i) => (
+                    <label key={d.key} className="relative block cursor-pointer">
+                      <input
+                        type="radio"
+                        name="audit-decision"
+                        value={i}
+                        checked={picked === i}
+                        onChange={() => setPicked(i)}
+                        aria-label={`${d.label}, decision ${i + 1}, ${d.matched ? "signature matched" : "signature mismatch"}`}
+                        className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0"
+                      />
+                      <span
+                        className={cn(
+                          "flex h-full min-h-[clamp(46px,5.5vh,65px)] items-center justify-between gap-1.5 rounded px-[9px] py-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-jade-800 max-md:min-h-11",
+                          picked === i ? "bg-jade-700 text-limestone-50" : d.matched ? "bg-jade-50 text-jade-700" : "bg-clay-wash text-clay-ink",
+                        )}
+                      >
+                        {/* A long word ("acknowledgement") must break inside the chip, or it pushes the tick past the edge. */}
+                        <b className="min-w-0 hyphens-auto text-[13px] font-[550] leading-[1.25] [overflow-wrap:anywhere]">{d.label}</b>
+                        {d.matched ? <Check aria-hidden className="size-[13px] flex-none" strokeWidth={1.8} /> : <X aria-hidden className="size-[13px] flex-none" strokeWidth={2} />}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="my-[clamp(12px,2vh,24px)] border-s-2 border-jade-400 bg-limestone-100 p-[clamp(14px,1.6vw,25px)]" aria-live="polite" aria-atomic="true" data-testid="decision-receipt">
+                <Receipt d={decisions[picked]} total={decisions.length} />
               </div>
-            </fieldset>
-            <div className="my-[clamp(12px,2vh,24px)] border-s-2 border-jade-400 bg-limestone-100 p-[clamp(14px,1.6vw,25px)]" aria-live="polite" aria-atomic="true" data-testid="decision-receipt">
-              <Receipt d={decisions[picked]} total={decisions.length} />
-            </div>
-          </>
-        )}
-        <div className="mt-auto border-t border-line pb-[5px] max-md:pb-2">
-          <details className="group/ad">
-            <summary className="flex min-h-[42px] cursor-pointer list-none items-center text-[13px] font-[550] max-md:min-h-11 [&::-webkit-details-marker]:hidden">
-              Audit details
-              <ChevronRight aria-hidden className="ms-auto size-[13px] text-muted group-open/ad:rotate-90" strokeWidth={1.8} />
-            </summary>
-            <div className="flex flex-col gap-5 pb-3 pt-2 [&_section]:rounded-none [&_section]:border-0 [&_section]:bg-transparent [&_section]:p-0">{auditDetails}</div>
-          </details>
-        </div>
-      </section>
+            </>
+          )}
+          <div className="mt-auto border-t border-line pb-[5px] max-md:pb-2">
+            <details className="group/ad">
+              <summary className="flex min-h-[42px] cursor-pointer list-none items-center text-[13px] font-[550] max-md:min-h-11 [&::-webkit-details-marker]:hidden">
+                Audit details
+                <ChevronRight aria-hidden className="ms-auto size-[13px] text-muted group-open/ad:rotate-90" strokeWidth={1.8} />
+              </summary>
+              <div className="flex flex-col gap-5 pb-3 pt-2 [&_section]:rounded-none [&_section]:border-0 [&_section]:bg-transparent [&_section]:p-0">{auditDetails}</div>
+            </details>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

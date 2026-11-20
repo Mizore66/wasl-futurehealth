@@ -7,19 +7,19 @@ import { apiErrorRateText, apiLatencyText, completedRunRate, DEPENDENCY_GLOSS, D
 /** Point-in-time synthetic observations and separately labelled completed-run measurements (issue #81). */
 export function HealthPanel({ state }: { state: OperationsState }) {
   return (
-    <section aria-labelledby="health-h" data-testid="health-panel" className="mt-10 min-w-0 border-t border-line pt-5">
+    <section aria-labelledby="health-h" data-testid="health-panel" className="mt-3 min-w-0 rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 id="health-h" className="m-0 text-body font-medium">Synthetic operational readiness</h2>
+        <h2 id="health-h" className="m-0 text-section font-semibold text-ink">Synthetic operational readiness</h2>
         {state.kind === "snapshot" && <HonestyLabel kind="published">Published snapshot, not live</HonestyLabel>}
         {state.kind === "live" && <HonestyLabel kind="built">Live synthetic API check</HonestyLabel>}
       </div>
-      <p className="m-0 mt-1 text-small text-muted">
+      <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
         Separate from the recorded replay above. Checks do not auto-refresh. This is not production monitoring, a hospital live feed,
         proof of NATS cluster quorum, a verified restore, or an accumulated service-level objective.
       </p>
 
       {state.kind === "unavailable" ? (
-        <p data-testid="health-unavailable" className="m-0 mt-3 rounded-control bg-ground px-3 py-2 text-body">
+        <p data-testid="health-unavailable" className="m-0 mt-3 rounded-control bg-limestone-100 px-3 py-2 text-body">
           <span className="font-medium">Operational data unavailable.</span> The operational check could not be loaded or validated.
           No earlier API, queue, run, or backup values are shown.
           <span className="block text-small text-muted">Reason: {state.reason}</span>
@@ -35,27 +35,27 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
   const { operations: o } = state;
   return (
     <>
-      <p data-testid="health-source" className="m-0 mt-3 text-body">
+      <p data-testid="health-source" className="m-0 mt-3 max-w-[72ch] text-body text-ink-soft">
         {state.kind === "snapshot"
           ? `Published snapshot, not live. Observed ${utc(o.observed_at)}; the completed-run data was loaded ${utc(o.meta.loaded_at)}.`
           : `Live synthetic API check fetched ${utc(state.fetchedAt)}, when this page loaded. Reload to check again.`}
       </p>
 
-      <h3 className="m-0 mt-5 text-body font-medium">API health</h3>
+      <h3 className="m-0 mt-6 border-t border-rule pt-4 text-body font-semibold text-ink">API health</h3>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
         <Fact label="Status" value={o.api.status} testid="health-status" />
         <Fact label="Source" value={o.api.source} testid="api-source" />
         <Fact label="Observed at" value={<Instant value={o.observed_at} />} testid="observed-at" />
         <Fact label="Completed-run data loaded" value={<Instant value={o.meta.loaded_at} />} testid="loaded-at" />
       </dl>
-      <h4 className="m-0 mt-4 text-body font-medium">Dependencies reported by /healthz</h4>
+      <h4 className="m-0 mt-4 text-body font-medium text-ink-soft">Dependencies reported by /healthz</h4>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
         {DEPENDENCY_ORDER.map((key) => (
           <Fact key={key} label={DEPENDENCY_GLOSS[key].label} value={o.api.dependencies[key]} note={DEPENDENCY_GLOSS[key].note} testid={`dep-${key}`} />
         ))}
       </dl>
 
-      <h3 className="m-0 mt-5 text-body font-medium">NATS and durable-consumer lag</h3>
+      <h3 className="m-0 mt-6 border-t border-rule pt-4 text-body font-semibold text-ink">NATS and durable-consumer lag</h3>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
         <Fact label="Authenticated JetStream probe" value={o.nats.status} note={o.nats.status === "unreachable" ? o.nats.reason : undefined} testid="nats-status" />
         <Fact label="NATS observation source" value={o.nats.source} testid="nats-source" />
@@ -74,13 +74,13 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
           ))
         )}
       </dl>
-      <p className="m-0 mt-2 text-small text-muted">Source: {o.queue.source}. Ordered ephemeral consumers are not continuously measured.</p>
+      <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">Source: {o.queue.source}. Ordered ephemeral consumers are not continuously measured.</p>
 
-      <h3 className="m-0 mt-5 text-body font-medium">Current API measurements</h3>
+      <h3 className="m-0 mt-6 border-t border-rule pt-4 text-body font-semibold text-ink">Current API measurements</h3>
       <APIMeasurements measurements={o.api_measurements} />
 
-      <h3 className="m-0 mt-5 text-body font-medium">Completed synthetic run</h3>
-      <p className="m-0 mt-1 text-small text-muted">
+      <h3 className="m-0 mt-6 border-t border-rule pt-4 text-body font-semibold text-ink">Completed synthetic run</h3>
+      <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
         Accumulated observations from {o.run.source}, scoped to {o.run.scope}. These are not current API latency, current API error rates, or an SLO.
       </p>
       {o.run.status === "unmeasured" ? (
@@ -89,7 +89,7 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
         <CompletedRun run={o.run} />
       )}
 
-      <h3 className="m-0 mt-5 text-body font-medium">Latest completed bundle</h3>
+      <h3 className="m-0 mt-6 border-t border-rule pt-4 text-body font-semibold text-ink">Latest completed bundle</h3>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
         <Fact label="Backup metadata" value={o.backup.status} note={o.backup.status === "available" ? undefined : o.backup.reason} testid="backup-status" />
         <Fact label="Backup metadata source" value={o.backup.source} testid="backup-source" />
@@ -106,7 +106,7 @@ function OperationsDetails({ state }: { state: Extract<OperationsState, { kind: 
         )}
         {o.backup.status !== "available" && <Fact label="Latest completed bundle age" value={o.backup.status === "unmeasured" ? "Unmeasured" : "Unavailable"} testid="backup-age" />}
       </dl>
-      <p className="m-0 mt-2 text-small text-muted">
+      <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
         The API reads only the configured manifest&apos;s schema and creation time. It does not authenticate or mount the bundle, read keys,
         decrypt payloads, or verify a restore. Bundle age is not proof of a successful backup or restore.
       </p>
@@ -118,7 +118,7 @@ function APIMeasurements({ measurements: m }: { measurements: Operations["api_me
   const observed = m.window;
   return (
     <>
-      <p className="m-0 mt-1 text-small text-muted">
+      <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
         {observed
           ? `Requests completed by this API process in a rolling window of at most ${observed.length_seconds / 60} minutes and ${observed.capacity.toLocaleString("en-US")} requests, kept in memory only. A restart starts an empty window. Route labels are fixed templates; no case, person, actor or credential is recorded. This is a point-in-time observation of synthetic traffic, not an SLO.`
           : "This response was not produced by an API process that records requests, so current latency and error rate are not measured."}
@@ -141,14 +141,14 @@ function APIMeasurements({ measurements: m }: { measurements: Operations["api_me
         />
       </dl>
       {m.routes && m.routes.length > 0 && (
-        <table data-testid="api-routes" className="mt-3 w-full max-w-xl text-left text-small">
+        <table data-testid="api-routes" className="mt-3 w-full max-w-xl border-collapse text-left text-small">
           <caption className="sr-only">Requests in the current window by route</caption>
           <thead>
-            <tr className="text-muted"><th scope="col" className="font-normal">Route</th><th scope="col" className="font-normal">Requests</th><th scope="col" className="font-normal">Server errors</th><th scope="col" className="font-normal">Client errors</th></tr>
+            <tr className="text-muted"><th scope="col" className="pb-1 pr-3 font-normal">Route</th><th scope="col" className="pb-1 pr-3 font-normal">Requests</th><th scope="col" className="pb-1 pr-3 font-normal">Server errors</th><th scope="col" className="pb-1 pr-3 font-normal">Client errors</th></tr>
           </thead>
           <tbody>
             {m.routes.map((route) => (
-              <tr key={route.route}><td className="break-all">{route.route}</td><td>{route.requests}</td><td>{route.server_errors}</td><td>{route.client_errors}</td></tr>
+              <tr key={route.route} className="border-t border-rule"><td className="break-all py-1.5 pr-3">{route.route}</td><td className="py-1.5 pr-3 tabular-nums">{route.requests}</td><td className="py-1.5 pr-3 tabular-nums">{route.server_errors}</td><td className="py-1.5 tabular-nums">{route.client_errors}</td></tr>
             ))}
           </tbody>
         </table>
@@ -170,7 +170,7 @@ function CompletedRun({ run }: { run: Extract<Operations["run"], { status: "avai
         <Fact label="Maximum latency" value={milliseconds(latency.max)} testid="run-latency-max" />
         <Fact label="Run metrics source" value={run.source} testid="run-source" />
       </dl>
-      <h4 className="m-0 mt-4 text-body font-medium">Recorded integrity counts and rates</h4>
+      <h4 className="m-0 mt-4 text-body font-medium text-ink-soft">Recorded integrity counts and rates</h4>
       <dl className="m-0 mt-2 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
         {([
           ["generated_resources", "Generated resources"], ["fhir_msgs", "FHIR messages"],
@@ -206,7 +206,7 @@ function Fact({ label, value, note, testid }: { label: string; value: ReactNode;
   return (
     <div className="min-w-0">
       <dt className="text-small text-muted">{label}</dt>
-      <dd className="m-0 break-words text-body font-medium" data-testid={testid}>{value}</dd>
+      <dd className="m-0 break-words text-body font-medium text-ink" data-testid={testid}>{value}</dd>
       {note && <dd className="m-0 text-small text-muted">{note}</dd>}
     </div>
   );
