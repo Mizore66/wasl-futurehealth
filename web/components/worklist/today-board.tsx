@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Check, ChevronDown, CircleAlert, Clock, Folder, IdCard, Phone, Search, UserRoundCheck } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, CircleAlert, Clock, Folder, IdCard, Phone, Search, UserRoundCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isTodayQueue, publishTodayCounts, type TodayQueue } from "@/components/shell/today-counts";
 import { formatDay } from "@/lib/domain/day";
@@ -231,10 +231,12 @@ export function TodayBoard({
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
       e.preventDefault();
       searchRef.current?.focus();
+      searchRef.current?.select();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  const search = (q: string) => setS((prev) => ({ ...prev, q, page: 1, collapsed: false }));
 
   /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
   const root = useRef<HTMLDivElement>(null);
@@ -1339,21 +1341,42 @@ export function TodayBoard({
               <h2 id="today-queue" className="staff-display m-0 whitespace-nowrap text-[22px] font-medium text-jade-900">
                 {queueLabel} <span className="sr-only">· {list.length}</span>
               </h2>
-              <label className="flex min-w-[150px] flex-1 items-center gap-2 rounded-control border border-input bg-surface px-2.5 focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue">
-                <Search aria-hidden className="size-4 flex-none text-muted" />
-                <span className="sr-only">Find a case or task</span>
+              {/* SearchField's look and keys, but it filters this queue in the browser: it is not a URL search. */}
+              <label className="flex min-h-11 min-w-[150px] flex-1 items-center rounded-control border border-input bg-surface ps-3 text-muted focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue">
+                <Search aria-hidden className="size-4 shrink-0" />
                 <input
                   ref={searchRef}
                   type="search"
+                  autoComplete="off"
+                  aria-label="Find a case or task"
                   placeholder="Find a case or task"
                   aria-keyshortcuts="/"
                   value={s.q}
-                  onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value, page: 1, collapsed: false }))}
-                  className="h-11 min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-hidden placeholder:text-muted placeholder:opacity-100 lg:h-10"
+                  onChange={(e) => search(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Escape" || !s.q) return;
+                    e.preventDefault();
+                    search("");
+                  }}
+                  className="h-11 min-w-0 flex-1 border-0 bg-transparent px-2 text-body text-ink outline-hidden placeholder:text-muted placeholder:opacity-100 [&::-webkit-search-cancel-button]:appearance-none"
                 />
-                <kbd aria-hidden className="hidden rounded-chip border border-line bg-limestone-100 px-1.5 text-small text-muted sm:inline">
-                  /
-                </kbd>
+                {s.q ? (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => {
+                      search("");
+                      searchRef.current?.focus();
+                    }}
+                    className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-muted hover:text-ink"
+                  >
+                    <X aria-hidden className="size-4" />
+                  </button>
+                ) : (
+                  <kbd aria-hidden className="me-2 hidden rounded-[3px] border border-line px-1.5 font-sans text-small sm:inline">
+                    /
+                  </kbd>
+                )}
               </label>
             </div>
             <div className="contents">
