@@ -7,7 +7,7 @@ import { syntheticHandoffs, syntheticReferrals } from "@/components/worklist/syn
 import { getAllCases } from "@/lib/api/all-cases";
 import type { CaseSummary } from "@/lib/api/schema";
 import { apiMode, getCase, getDashboard } from "@/lib/api/source";
-import { cn } from "@/lib/utils";
+import { SegmentedFilter } from "@/components/ui/filters/toolbar";
 import { respondToReferral } from "./actions";
 import { simulatedRunDate } from "@/lib/domain/staff-time";
 
@@ -66,21 +66,13 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
       heading={view ? { title: view.title, indication: view.indication } : { title: "Referrals", indication: "" }}
       aside={
         <>
-          <nav aria-label="Referral programme" className="flex flex-wrap gap-2">
-            {REFERRAL_VIEWS.map((v) => {
-              const scope = viewScope(v === REFERRAL_VIEWS[0] ? "" : v.programme, v === REFERRAL_VIEWS[0] ? "" : v.provider);
-              return (
-                <Link
-                  key={v.programme}
-                  href={scope ? `/app/referrals?${scope}` : "/app/referrals"}
-                  aria-current={v === view ? "page" : undefined}
-                  className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small no-underline", v === view ? "border-jade-700 bg-jade-100 text-jade-900" : "border-control bg-surface text-muted hover:bg-ground")}
-                >
-                  {v.label}
-                </Link>
-              );
+          <SegmentedFilter
+            label="Referral programme"
+            items={REFERRAL_VIEWS.map((v) => {
+              const scope = v === REFERRAL_VIEWS[0] ? "" : viewScope(v.programme, v.provider);
+              return { label: v.label, href: scope ? `/app/referrals?${scope}` : "/app/referrals", current: v === view };
             })}
-          </nav>
+          />
           <div className="flex flex-col items-start gap-1.5 sm:items-end">
             {view && (
               <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center text-small underline">

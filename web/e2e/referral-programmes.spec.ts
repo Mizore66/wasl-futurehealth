@@ -24,11 +24,11 @@ const views = (page: Page) => page.getByRole("navigation", { name: "Referral pro
 
 test("the lung view is chosen by URL and survives search, reload and the referrer's view", async ({ page }) => {
   await page.goto("/app/referrals");
-  await expect(views(page).getByRole("link", { name: "Colorectal, Al Mushrif" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Colorectal, Al Mushrif" })).toHaveAttribute("aria-current", "true");
 
   await views(page).getByRole("link", { name: "Lung nodule work-up" }).click();
   await expect(page).toHaveURL(`/app/referrals?${LUNG}`);
-  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "true");
   await expect(page.getByRole("region", { name: /current$/ })).toContainText("Waiting on referrer");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nodule work-up referral");
 
@@ -39,7 +39,7 @@ test("the lung view is chosen by URL and survives search, reload and the referre
   await expect(page).toHaveURL(`/app/referrals?${LUNG}&q=9101&view=inbox`);
   await expect(box).toBeFocused();
   await page.reload();
-  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "true");
   await page.locator("tbody a").first().click();
   const pane = page.getByRole("region", { name: "Open referral" });
   await pane.getByRole("button", { name: "Referral packet" }).click();
@@ -52,12 +52,12 @@ test("the lung view is chosen by URL and survives search, reload and the referre
 
   await page.getByRole("link", { name: "Returned referrals, referring clinician view" }).click();
   await expect(page).toHaveURL(`/app/referrals/returned?${LUNG}`);
-  await expect(page.getByRole("navigation", { name: "Referring provider" }).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "Referring provider" }).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "true");
   await expect(page.getByRole("article")).toContainText("PET/CT or tissue sampling");
   await expect(page.getByRole("article")).not.toContainText(CRC_COPY);
   await page.getByRole("link", { name: "Receiving unit inbox" }).click();
   await expect(page).toHaveURL(`/app/referrals?${LUNG}`);
-  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Lung nodule work-up" })).toHaveAttribute("aria-current", "true");
 });
 
 test("an unknown programme and provider pair and an empty search are honest, not CRC fallbacks", async ({ page }) => {
@@ -65,14 +65,14 @@ test("an unknown programme and provider pair and an empty search are honest, not
   await expect(page.getByText("No referral workflow for this programme and provider")).toBeVisible();
   await expect(page.locator("main")).not.toContainText(/AHS-sr|Al Mansoori/);
   await page.goto(`/app/referrals?${DR}&q=nothing-matches`);
-  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "true");
   await expect(page.getByRole("heading", { name: "Nothing to open" })).toBeVisible();
 });
 
 test("phone width: a DR packet opens without horizontal scroll and keeps its view", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/app/referrals?${DR}`);
-  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "true");
   await page.getByRole("link", { name: /^View all/ }).click();
   await page.locator("tbody a").first().click();
   await page.getByRole("button", { name: "Referral packet" }).click();
@@ -82,5 +82,5 @@ test("phone width: a DR packet opens without horizontal scroll and keeps its vie
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.reload();
   await expect(page).toHaveURL(new RegExp(`/app/referrals\\?${DR}&from=inbox&case=`));
-  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
+  await expect(views(page).getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "true");
 });
