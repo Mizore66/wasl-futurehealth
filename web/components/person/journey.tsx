@@ -182,7 +182,7 @@ export function Journey({ journey }: { journey: PersonJourney }) {
         />
         <section aria-labelledby="identity-provenance" className="p-4 md:p-pad">
           <h2 id="identity-provenance" className="m-0 text-section font-semibold">Linked records</h2>
-          <p>Names are simulated. Only confirmed record links are shown; uncertain matches stay separate.</p>
+          <p>Names are simulated. Only confirmed record links are shown. Uncertain matches stay separate.</p>
           <h3 className="m-0 mt-3 text-body font-semibold">Linked record numbers</h3>
           <ul className="m-0 mt-1 list-disc ps-5">
             {journey.person.registrations.map((registration) => <li key={registration.registration}><code className="break-all">{registration.registration}</code> · {registration.providers.join(", ")}</li>)}

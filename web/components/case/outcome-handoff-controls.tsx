@@ -97,8 +97,8 @@ export function OutcomeHandoffReleaseButton({ caseId, version, again }: { caseId
   return (
     <div className="mt-3 flex flex-col gap-2 rounded-control bg-ground px-3 py-3" data-testid="outcome-handoff-release">
       <p className="m-0 text-small text-muted">
-        Recorded as the coordinator. Consent is checked now: if granted, the patient link shows the result; if unknown, it is held;
-        if denied or withdrawn, it is not shown. No message is sent.
+        Recorded as the coordinator. Consent is checked now. If granted, the patient link shows the result. If unknown, it is held.
+        If denied or withdrawn, it is not shown. No message is sent.
       </p>
       <button
         type="button"

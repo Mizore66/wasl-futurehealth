@@ -103,7 +103,7 @@ describe("GET /app/today/records", () => {
     vi.stubGlobal("fetch", fetchMock);
     const res = await GET(req(`?id=${encodeURIComponent(trap.case.id)}`));
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "the case system returned an error; try again" });
+    expect(await res.json()).toEqual({ error: "the case system returned an error. Try again" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(trap.case.id)}`);
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer reviewer-secret-1234567890");

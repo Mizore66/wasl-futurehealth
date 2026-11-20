@@ -76,13 +76,13 @@ it("fixtures mode: reads the selected case's records once, shows the held count,
 
 it("fixtures mode: no held count without a hold, a missing record says so, a failure says why and Retry reads again", async () => {
   const fetchMock = vi.fn()
-    .mockResolvedValueOnce(failed(502, { error: "the case system did not respond; try again" }))
+    .mockResolvedValueOnce(failed(502, { error: "the case system did not respond. Try again" }))
     .mockResolvedValueOnce(ok({ sources: [], caseHeld: [], events: [] }));
   vi.stubGlobal("fetch", fetchMock);
   await mount();
   await flush();
   expect(history().querySelector('[data-testid="records-held"]')).toBeNull();
-  expect(panel("activity").textContent).toContain("Some history not shown: the case system did not respond; try again");
+  expect(panel("activity").textContent).toContain("Some history not shown: the case system did not respond. Try again");
   const retry = Array.from(panel("activity").querySelectorAll("button")).find((b) => b.textContent === "Retry")!;
   await act(async () => retry.click());
   await flush();

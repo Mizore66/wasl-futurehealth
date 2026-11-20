@@ -316,7 +316,7 @@ export function TodayBoard({
           if (!parsed.success) throw new ReadError("the case history could not be read");
           const panel = parsed.data.bookingPanel;
           if (panel && (panel.case.id !== selId || panel.case.api_overlay?.head !== panel.overlay.head)) {
-            throw new ReadError("the case changed while loading; try again");
+            throw new ReadError("the case changed while loading. Try again");
           }
           return parsed.data;
         }
@@ -352,7 +352,7 @@ export function TodayBoard({
       })
       .catch((e: unknown) => {
         if (stale()) return;
-        const error = e instanceof ReadError ? e.message : "no response; check your connection";
+        const error = e instanceof ReadError ? e.message : "no response. Check your connection";
         setPersisted((prev) => ({ ...prev, [selId]: { error } }));
       });
     return () => ac.abort();
@@ -466,7 +466,7 @@ export function TodayBoard({
         // 400 and 401 carry their own words: what was malformed, or whether the coordinator credential is missing or refused.
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 || res.status === 401 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
-      .catch(() => setRefusal({ id: row.id, text: "Not saved: no response; try again" }))
+      .catch(() => setRefusal({ id: row.id, text: "Not saved: no response. Try again" }))
       .finally(() => setBusy(false));
   };
 
