@@ -86,7 +86,8 @@ REV="${WASL_VERIFY_REV:-$FROZEN}"; NOISE="${WASL_VERIFY_NOISE:-v2}"; CRC="${WASL
 export WASL_PORT_OFFSET="${WASL_PORT_OFFSET:-500}" WASL_SYNTHETIC_DATA_ONLY=1
 OUT="$ROOT/out/verify/seed-$SEED"; rm -rf "$OUT"; mkdir -p "$OUT/bin"
 t0=$(date +%s); tl=$t0
-lap() { local now; now=$(date +%s); printf '  %-11s %4d s\n' "$1" $((now - tl)); tl=$now; }
+exec 3>&1   # step timings and failures go to the terminal, not into a step's redirected log
+lap() { local now; now=$(date +%s); printf '  %-11s %4d s\n' "$1" $((now - tl)) >&3; tl=$now; }
 if [ "$REV" = HEAD ]; then
   SRC="$ROOT"; REVID="$(git -C "$ROOT" rev-parse HEAD)"
   [ -z "$(git -C "$ROOT" status --porcelain -- pipeline scripts models data patient-parsers)" ] || REVID="$REVID (with uncommitted changes)"
@@ -102,7 +103,7 @@ cp "$NATS" "$OUT/bin/nats-server"; lap build
 B="$OUT/bin"; D="$SRC/data"; M="$SRC/models"; R="$OUT/run/main"
 # the frozen scripts/final_eval.sh run_one, with lung/DR/breast/LDCT/IFHAS loops off and smaller CRC/cervical counts
 PARGS=(-lungsurv -xreflink -drnext)
-run() { local name="$1"; shift; "$@" || { echo "FAIL  $name (exit $?; logs in $OUT)"; exit 1; }; lap "$name"; }
+run() { local name="$1"; shift; "$@" || { echo "FAIL  $name (exit $?; logs in $OUT)" >&3; exit 1; }; lap "$name"; }
 run gen "$B/wsi7" gen -wasl "$D" -reports "$D/evidence/reports43.json" -pathology "$D/evidence/pathology_templates.json" -prepquery=true -handoff=true \
   -lungworkup=true -refreject=true -ecpool "$SRC/patient-parsers/econsult_testset.json" -tbpool "$SRC/patient-parsers/teachback_testset.json" \
   -out "$OUT/base" -seed "$SEED" -loops "$CRC" -persons 0 -cerv "$CERV" -noise "$NOISE" -lung 0 -lungdata "$D/lung" -dr 0 -drdata "$D/dr" \
