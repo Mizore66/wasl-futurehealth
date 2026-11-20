@@ -351,7 +351,7 @@ function Nav({
   return (
     <nav aria-label={label} className="flex flex-col">
       {GROUPS.map((group, gi) => (
-        <div key={group.title} className={cx(gi > 0 && "mt-5")}>
+        <div key={group.title} data-tour={group.title.toLowerCase()} className={cx(gi > 0 && "mt-5")}>
           <p
             className={cx(
               "m-0 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[1.45px] text-jade-200",
