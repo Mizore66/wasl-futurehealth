@@ -12,29 +12,18 @@ export const BRAND = {
 } as const;
 
 /**
- * وصل ("connect", "link") in three strokes, redrawn from IBM Plex Sans Arabic's joined وصل as a single weight:
- * the ل with its ascender and descender bowl, the baseline running into a narrow ص bowl, and the non-joining و set
- * apart with its tail kept clear of the ص. The ص tooth is dropped so the letters keep visible gaps at small sizes.
+ * وصل typed in IBM Plex Sans Arabic Bold: shaped with HarfBuzz and stored as filled glyph outlines (fontTools SVG pen),
+ * so no font loads at runtime and Satori draws it as a plain path. Fitted to x 0.5 to 31.5 of the 32-unit grid,
+ * centred on y=16. Bold, not SemiBold, so the strokes stay a full pixel wide in the 16px favicon.
  */
-export const MASTER = {
+export const WORD = {
   grid: 32,
-  stroke: 3.2,
-  d: "M6.6 3.4V23.2C6.6 27.2 5.3 28.4 4 28.4C2.5 28.4 1.8 27 1.8 24.6M6.6 20H17.4C18.8 20 19.6 18.8 19.6 16.8C19.6 13 15.6 12.4 13.6 15.4L11 20M24.2 28.4H25.2C28.6 28.4 30.2 26 30.2 21.4V16.6C30.2 14.4 29.2 13 27.9 13C26.6 13 25.6 14.4 25.6 16.4C25.6 18.8 26.6 20 28.2 20H30.2",
+  d: "M4.8 23.49Q2.67 23.49 1.59 22.4Q0.5 21.3 0.5 19.3Q0.5 18.61 0.69 17.75Q0.88 16.89 1.22 16.08L2.69 16.5Q2.38 17.16 2.2 17.83Q2.03 18.51 2.03 19Q2.03 19.96 2.6 20.49Q3.18 21.01 4.18 21.01H5.41Q6 21.01 6.42 20.87Q6.83 20.72 7.08 20.39Q7.33 20.07 7.45 19.54Q7.56 19.01 7.56 18.25V8.51H9.4V17.53H11.09V19.36L10.63 19.82H9.27Q8.97 21.7 7.88 22.6Q6.8 23.49 4.8 23.49ZM14.46 16.46Q14.46 17.12 14.82 17.36L15.5 16.2Q16.03 15.27 16.59 14.61Q17.15 13.95 17.76 13.54Q18.37 13.13 19.05 12.94Q19.73 12.74 20.51 12.74Q22.31 12.74 23.21 13.73Q24.12 14.72 24.12 16.47Q24.12 18.2 23.14 19.01Q22.16 19.82 20.05 19.82H15.68Q14.46 19.82 13.82 19.32Q13.19 18.83 12.97 17.76H12.88Q12.67 18.83 12.15 19.32Q11.63 19.82 10.63 19.82V17.99L11.09 17.53H11.55Q12.77 17.53 12.77 16.46V15.5H14.46ZM20.05 17.53Q20.78 17.53 21.27 17.48Q21.75 17.42 22.05 17.29Q22.34 17.16 22.47 16.93Q22.59 16.7 22.59 16.34Q22.59 15.68 22.16 15.36Q21.73 15.04 20.74 15.04H20.28Q19.59 15.04 19.07 15.09Q18.55 15.14 18.16 15.3Q17.76 15.45 17.44 15.72Q17.12 16 16.83 16.44L16.17 17.44L16.21 17.53ZM25.11 21.2H26.09Q28.09 21.2 29.02 20.5Q29.96 19.81 29.96 18.71V18.31H29.86Q29.64 19.09 29.12 19.45Q28.61 19.82 27.83 19.82Q26.59 19.82 25.9 19.1Q25.2 18.37 25.2 17.07Q25.2 16.28 25.44 15.59Q25.68 14.91 26.1 14.42Q26.52 13.92 27.09 13.64Q27.66 13.36 28.34 13.36Q29.08 13.36 29.67 13.67Q30.26 13.98 30.67 14.57Q31.07 15.16 31.29 16.02Q31.5 16.87 31.5 17.94Q31.5 20.56 30.16 22.02Q28.82 23.49 26.24 23.49H25.11ZM28.31 17.53Q28.9 17.53 29.3 17.48Q29.7 17.42 29.94 17.3Q29.88 16.55 29.38 16.1Q28.87 15.65 28.14 15.65Q27.54 15.65 27.14 15.96Q26.73 16.28 26.73 16.76Q26.73 17.18 27.07 17.35Q27.4 17.53 27.98 17.53Z",
 } as const;
 
-/**
- * The 16px drawing: every stroke centre sits on a whole pixel (ل stem x=4, ص sides x=7 and x=10, و x=13 to 14,
- * baseline y=11), so the 2px strokes stay crisp, with clean one-pixel columns between ل and ص (x=5) and ص and و (x=11)
- * and a one-pixel hole in the ص bowl. Already inset for the tile.
- */
-export const HINTED = {
-  grid: 16,
-  stroke: 2,
-  d: "M4 2.5V12.5C4 13.6 3.4 14 2.8 14C2.3 14 2 13.6 2 13V12M4 11H9C9.6 11 10 10.6 10 10V7C10 6.4 9.6 6 9 6H8C7.4 6 7 6.4 7 7V11M14 11H13V8C13 7.6 13.2 7.4 13.5 7.4C13.8 7.4 14 7.6 14 8V12.6C14 13.5 13.6 14 12.8 14H12",
-} as const;
-
-const TILE_INSET = 3.5;
-const TILE_RX = { 32: 7.5, 16: 3.5 } as const;
+/** Padding around the word inside the tile; at 16px and below the word grows to fill the tile so it stays legible. */
+const TILE_INSET = { regular: 3, small: 1.5 } as const;
+const TILE_RX = 7.5;
 
 /**
  * `light` sits on paper or sand: teal tile with a paper knockout, or a teal bare mark.
@@ -48,16 +37,14 @@ const TONES = {
 } as const;
 
 /** A plain function, not a component: Satori (the OG renderer) accepts only intrinsic elements inside <svg>. */
-function stroke(geometry: typeof MASTER | typeof HINTED, color: string) {
-  return (
-    <path d={geometry.d} fill="none" stroke={color} strokeWidth={geometry.stroke} strokeLinecap="round" strokeLinejoin="round" />
-  );
+function word(color: string) {
+  return <path d={WORD.d} fill={color} />;
 }
 
 /**
  * The symbol. `tile` knocks the mark out of a rounded square (favicon, app icon, sidebar, phone);
- * `bare` is the mark alone (lockups). `color` sets a one-colour mark, or the tile ground.
- * At 16px and below it switches to the hinted drawing, which stays sharp where the master blurs.
+ * `bare` is the word alone (lockups). `color` sets a one-colour mark, or the tile ground. One path at every size;
+ * at 16px and below the tile padding shrinks so the word is drawn larger.
  */
 export function Mark({
   size,
@@ -77,9 +64,8 @@ export function Mark({
   style?: CSSProperties;
 }) {
   const t = TONES[tone];
-  const hinted = typeof size === "number" && size <= 16;
-  const geometry = hinted ? HINTED : MASTER;
-  const g = geometry.grid;
+  const g = WORD.grid;
+  const inset = typeof size === "number" && size <= 16 ? TILE_INSET.small : TILE_INSET.regular;
   const svgProps = {
     xmlns: "http://www.w3.org/2000/svg",
     width: size,
@@ -96,21 +82,15 @@ export function Mark({
   if (variant === "bare") {
     return (
       <svg {...svgProps}>
-        {stroke(geometry, color ?? t.ground)}
+        {word(color ?? t.ground)}
       </svg>
     );
   }
   const ground = color ?? t.ground;
   return (
     <svg {...svgProps}>
-      <rect width={g} height={g} rx={TILE_RX[g]} fill={ground} />
-      {hinted ? (
-        stroke(HINTED, t.knockout)
-      ) : (
-        <g transform={`translate(${TILE_INSET} ${TILE_INSET}) scale(${(g - TILE_INSET * 2) / g})`}>
-          {stroke(MASTER, t.knockout)}
-        </g>
-      )}
+      <rect width={g} height={g} rx={TILE_RX} fill={ground} />
+      <g transform={`translate(${inset} ${inset}) scale(${(g - inset * 2) / g})`}>{word(t.knockout)}</g>
     </svg>
   );
 }
