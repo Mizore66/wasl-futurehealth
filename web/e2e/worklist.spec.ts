@@ -371,7 +371,6 @@ test.describe("Referrals", () => {
     await expect(page.getByRole("region", { name: "Referral inbox" }).getByRole("listitem")).toHaveCount(3);
     await expect(page.getByRole("link", { name: "View all 21 referrals" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Hand-off activity" })).toContainText("Referral sent");
-    await expect(page.locator("[data-honesty=designed]")).toHaveText("Referral inbox: designed, not built");
     await shot(page, "referrals");
     await noSeriousAxe(page);
   });

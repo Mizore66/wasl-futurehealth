@@ -80,7 +80,7 @@ export function ReferralInbox({
   window,
   now,
   q,
-  aside,
+  scopeBar,
   respond,
   scope = "",
   referrer = "GP",
@@ -94,8 +94,8 @@ export function ReferralInbox({
   /** The run day: a return is decided on it. */
   now: number;
   q: string;
-  /** The programme views, the referrer's view link and the honesty label, under the referral. */
-  aside: React.ReactNode;
+  /** The page-level programme switcher and the referrer's view link, above the card. */
+  scopeBar: React.ReactNode;
   /** The programme/provider query that every inbox URL keeps; empty for the CRC default. */
   scope?: string;
   /** Who returned referrals wait on, in words. */
@@ -255,18 +255,12 @@ export function ReferralInbox({
 
   const searchHref = (next: string) => href({ q: next.trim(), view: url.view === "inbox" ? "inbox" : undefined, caseId: undefined, page: undefined, from: url.from });
 
-  const footer = (
-    <div className="mt-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">{aside}</div>
-      <p className="m-0 text-small text-muted">
-        {respond ? "Accept and return answers are saved to the synthetic case ledger; prep grades stay in this session. Nothing is booked or sent to the GP." : `Decisions stay in this inbox session only; a return and the ${referrer}'s acknowledgement are kept in this browser so the ${referrer} view here can show them. Nothing is saved to the clinical record, booked or sent to the ${referrer}.`} Return deadlines assume two business days for urgent referrals and five for routine referrals, excluding weekends and UAE holidays; these are not medical-policy or DoH requirements.
-      </p>
-    </div>
-  );
+  const top = <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">{scopeBar}</div>;
 
   if (url.view === "inbox") {
     return (
       <div ref={root}>
+        {top}
         <Directory
           list={list}
           searched={sorted}
@@ -279,7 +273,6 @@ export function ReferralInbox({
           search={(next) => router.push(searchHref(next))}
           clearSearch={searchHref("")}
         />
-        {footer}
       </div>
     );
   }
@@ -287,6 +280,7 @@ export function ReferralInbox({
   if (!r) {
     return (
       <div ref={root}>
+        {top}
         {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
         {/* Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners. */}
         <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
@@ -308,7 +302,6 @@ export function ReferralInbox({
             )}
           </div>
         </section>
-        {footer}
       </div>
     );
   }
@@ -550,6 +543,7 @@ export function ReferralInbox({
 
   return (
     <div ref={root}>
+      {top}
       {url.from && <BackLink href={backUrl} />}
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
@@ -660,7 +654,6 @@ export function ReferralInbox({
           <Activity r={r} over={over[r.id]} referrer={referrer} />
         </div>
       </section>
-      {footer}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { ChevronRight } from "lucide-react";
 import { ReferralInbox } from "@/components/worklist/referral-inbox";
 import { REFERRAL_VIEWS, handoffOf, packetReferral, referralFrom, referralView, viewScope, type Referral, type ReferralView } from "@/components/worklist/referrals";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
@@ -9,7 +9,6 @@ import type { CaseSummary } from "@/lib/api/schema";
 import { apiMode, getCase, getDashboard } from "@/lib/api/source";
 import { SegmentedFilter } from "@/components/ui/filters/toolbar";
 import { respondToReferral } from "./actions";
-import { simulatedRunDate } from "@/lib/domain/staff-time";
 
 export const metadata = { title: "Referrals" };
 
@@ -64,7 +63,7 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
       referrer={view?.referrer ?? "referrer"}
       respond={live && view?.programme === "crc" ? respondToReferral : undefined}
       heading={view ? { title: view.title, indication: view.indication } : { title: "Referrals", indication: "" }}
-      aside={
+      scopeBar={
         <>
           <SegmentedFilter
             label="Referral programme"
@@ -73,26 +72,11 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals">
               return { label: v.label, href: scope ? `/app/referrals?${scope}` : "/app/referrals", current: v === view };
             })}
           />
-          <div className="flex flex-col items-start gap-1.5 sm:items-end">
-            {view && (
-              <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center text-small underline">
-                Returned referrals, referring {view.referrer === "GP" ? "GP" : "clinician"} view
-              </Link>
-            )}
-            <span className="text-small text-muted">
-              {view ? view.unit : "No referral workflow for this programme and provider"} · {simulatedRunDate(now)}
-            </span>
-            {view?.programme !== "crc" ? (
-              // The longest label on the page: let it wrap so a phone does not scroll sideways (#155).
-              <HonestyLabel kind="designed" className="h-auto min-h-6 max-w-full whitespace-normal py-0.5">
-                Returned packets: canonical, synthetic. Referrer answers: {live ? "built, on the referrer's page" : "need the live synthetic API"}. Re-referral here: designed, session only
-              </HonestyLabel>
-            ) : live ? (
-              <HonestyLabel kind="built">Referral answers: built, saved to the synthetic case ledger</HonestyLabel>
-            ) : (
-              <HonestyLabel kind="designed">Referral inbox: designed, not built</HonestyLabel>
-            )}
-          </div>
+          {view && (
+            <Link href={view.programme === "crc" ? "/app/referrals/returned" : `/app/referrals/returned?${viewScope(view.programme, view.provider)}`} className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-jade-800 no-underline hover:underline">
+              Returned referrals, referring {view.referrer === "GP" ? "GP" : "clinician"} view <ChevronRight aria-hidden className="size-4" />
+            </Link>
+          )}
         </>
       }
     />

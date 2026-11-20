@@ -253,7 +253,6 @@ test.describe("referral answers, live mock", () => {
 
   const open = async (page: Page, n: string) => {
     await page.goto(`${NEXT_URL}/app/referrals?q=${n}`);
-    await expect(page.locator("[data-honesty=built]")).toHaveText("Referral answers: built, saved to the synthetic case ledger");
     return page.getByRole("region", { name: "Open referral" });
   };
   const ledger = async () => (await fetch(`http://127.0.0.1:${MOCK_PORT}/mock/state`).then((r) => r.json())) as Record<string, CaseState>;
