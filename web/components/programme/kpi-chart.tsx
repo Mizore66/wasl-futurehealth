@@ -121,6 +121,9 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
         Programme on-time rate: <span className="font-semibold tabular-nums text-ink">{pct(truth)}</span>
         {target !== null && <> (DoH target {target}%)</>} — Wasl shows who still needs a colonoscopy.
       </p>
+      <p data-testid="kpi-message" className="m-0 mt-1 text-body text-ink-soft">
+        Wasl doesn&apos;t create colonoscopy slots. It makes sure no completed colonoscopy is missed and no lost patient stays invisible.
+      </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <SegmentedToggle

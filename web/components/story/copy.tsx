@@ -158,6 +158,9 @@ export function CueBody({
             When a screening test asks for a closer look, Wasl makes sure that person gets the follow-up check, and marks it done only with
             proof.
           </p>
+          <p data-testid="hero-message" className={cn(type.body, "mt-3 max-w-[32rem] font-semibold")}>
+            Wasl doesn&apos;t create colonoscopy slots. It makes sure no completed colonoscopy is missed and no lost patient stays invisible.
+          </p>
           <Ctas />
         </>
       );
