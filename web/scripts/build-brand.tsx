@@ -11,8 +11,8 @@ import { BRAND, Mark } from "../components/brand/mark";
 const root = join(__dirname, "..");
 const svg = (el: React.ReactElement) => renderToStaticMarkup(el).replace(/ (class|data-brand|aria-hidden)="[^"]*"/g, "");
 
-/** The bare mark's stroked bounds span 29.2 of its 32 units. */
-const BARE_FILL = 29.2 / 32;
+/** The bare mark's stroked bounds span 31.6 of its 32 units (x 0.2 to 31.8). */
+const BARE_FILL = 31.6 / 32;
 
 function fullBleed(side: number, markShare: number) {
   const size = Math.round((side * markShare) / BARE_FILL);
