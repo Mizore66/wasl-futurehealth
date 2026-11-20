@@ -1,6 +1,6 @@
 /** Shared type and layout classes for the site pages, so the four pages keep one rhythm. */
 export const wrap = "mx-auto w-full max-w-[1760px] px-[clamp(1rem,2.2vw,2rem)]";
-export const wrapExpert = "mx-auto w-full max-w-[1280px] px-4 md:px-14";
+export const wrapEvidence = "mx-auto w-full max-w-[1280px] px-4 md:px-14";
 export const section = "py-20 md:py-[120px]";
 
 export const display = "m-0 text-[clamp(2.5rem,1rem_+_6vw,7rem)] leading-[0.98] tracking-[-0.04em] font-bold text-balance";

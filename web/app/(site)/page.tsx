@@ -1,3 +1,4 @@
+import { Evidence } from "@/components/site/evidence";
 import { SiteFooter } from "@/components/site/footer";
 import { missedOfFive, published } from "@/components/site/figures";
 import { Story } from "@/components/story/story";
@@ -19,6 +20,7 @@ export default function Page() {
           closuresWrong: closures.value,
         }}
       />
+      <Evidence />
       <div id="notes">
         <SiteFooter
           big

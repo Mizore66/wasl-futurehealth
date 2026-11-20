@@ -3,36 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { wrap, wrapExpert } from "./styles";
+import { wrap } from "./styles";
 import { Wordmark } from "./wordmark";
 
-/** The buyer pages link to each other; the expert page links to its own sections. */
-const BUYER_LINKS = [
+const LINKS = [
   { href: "/how-it-works", label: "How it works" },
-];
-
-const EXPERT_LINKS = [
-  { href: "#outcomes", label: "Outcomes" },
-  { href: "#safety", label: "Safety" },
-  { href: "#deploy", label: "Deployment" },
-  { href: "#plan", label: "Pilot" },
-  { href: "#limits", label: "Limits" },
+  { href: "/#evidence", label: "Evidence" },
 ];
 
 export function SiteHeader() {
   const path = usePathname();
-  const expert = path === "/experts";
-  const links = expert ? EXPERT_LINKS : BUYER_LINKS;
 
   return (
     <nav
       aria-label="Primary"
-      className={cn(expert ? wrapExpert : wrap, "flex flex-wrap items-center justify-between gap-x-4 gap-y-4 py-5 md:gap-x-8 md:py-7")}
+      className={cn(wrap, "flex flex-wrap items-center justify-between gap-x-4 gap-y-4 py-5 md:gap-x-8 md:py-7")}
     >
       <Wordmark className="min-h-11" />
       <div className="flex items-center gap-8 max-md:contents">
-      <div className={cn("flex items-center gap-8", expert ? "text-[16px]" : "text-[18px]", "max-md:order-last max-md:w-full max-md:gap-6", expert && "max-lg:hidden")}>
-        {links.map((l) => {
+      <div className="flex items-center gap-8 text-[18px] max-md:order-last max-md:w-full max-md:gap-6">
+        {LINKS.map((l) => {
           const current = l.href === path;
           return (
             <Link
@@ -53,7 +43,7 @@ export function SiteHeader() {
         href="/app"
         className={cn(
           "inline-flex min-h-11 items-center bg-(--ink) font-semibold text-(--paper) no-underline hover:bg-(--teal) hover:text-(--paper)",
-          expert ? "rounded px-[18px] py-[11px] text-[16px]" : "px-[22px] py-[13px] text-[18px]",
+          "px-[22px] py-[13px] text-[18px]",
           "max-md:px-4 max-md:py-2.5 max-md:text-[16px]",
         )}
       >

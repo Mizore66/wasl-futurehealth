@@ -8,7 +8,6 @@ import { ROUTES as APP_ROUTES } from "./routes";
 const ROUTES = [
   { path: "/", name: "home" },
   { path: "/how-it-works", name: "how-it-works" },
-  { path: "/experts", name: "experts" },
 ] as const;
 
 const WIDTHS = [
@@ -642,71 +641,6 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
   await expect(nav.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
 });
 
-test("experts: KPI bars and outcome table use current sourced run figures", async ({ page }) => {
-  await page.goto("/experts");
-  const kpi = page.locator("figure");
-  await expect(kpi).toContainText("Simulated, n = 1,331");
-  for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
-  await expect(kpi).toContainText("65% of real completions look lost");
-  await expect(kpi).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
-
-  const outcomes = page.getByTestId("outcomes");
-  await expect(outcomes.locator("tbody tr")).toHaveCount(6);
-  const ownership = outcomes.locator("tbody tr").nth(1);
-  await expect(ownership).toContainText("simulated, 2,100 colorectal and cervical cases");
-  await expect(ownership).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
-  await expect(ownership).toContainText("370 no acknowledgement, 241 not booked, 196 never notified");
-  await expect(ownership).toContainText("referral unanswered 46 and referral rejected 10 are smaller");
-  await expect(ownership.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
-  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,035");
-  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 217,009");
-
-  const tiers = page.getByRole("group", { name: "Closure tier" });
-  const panel = page.getByTestId("tau-panel");
-  const cell = (label: string) => panel.locator(`[data-cell="${label}"] [data-value]`);
-  await expect(tiers.getByRole("button", { name: "τ 0.99", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(panel).toContainText("τ 0.99. The operating tier");
-  await expect(cell("Recall, with review")).toHaveText("0.816");
-  await expect(cell("Review items per 100 loops")).toHaveText("58.8");
-
-  await tiers.getByRole("button", { name: "τ 0.7", exact: true }).click();
-  await expect(panel).toContainText("τ 0.7. Not certified");
-  await expect(cell("False closures, with review")).toHaveText("8");
-  await expect(cell("Recall, with review")).toHaveText("0.829");
-  await expect(cell("Recall, no review")).toHaveText("0.565");
-
-  await tiers.getByRole("button", { name: "τ 0.999", exact: true }).click();
-  await expect(cell("Review items per 100 loops")).toHaveText("83.8");
-  await expect(cell("False closures, with review")).toHaveText("0");
-  await expect(tiers.locator('[aria-pressed="true"]')).toHaveCount(1);
-});
-
-test("experts: no placeholder contact or build identifier renders, and the evidence and limits stay", async ({ page }) => {
-  await page.goto("/experts");
-  await visitAll(page);
-  const text = await page.locator("body").innerText();
-  const meta = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8")) as { frozen_revision: string; frozen_on: string };
-  const frozen = meta.frozen_revision;
-  const [y, m, d] = meta.frozen_on.split("-").map(Number);
-  const frozenOn = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-
-  // Bracketed placeholders such as "[team email]" or "[link]".
-  expect(text).not.toMatch(/\[[A-Za-z][A-Za-z .'’-]*\]/);
-  // Commit-like hex identifiers (7–40 chars, at least one letter and one digit) and the frozen revision itself.
-  expect(text).not.toMatch(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/i);
-  expect(text).not.toContain(frozen.slice(0, 7));
-  // The policy version is not printed as evaluation metadata (the demo run name, which embeds it, is shown on purpose).
-  expect(text).not.toMatch(/policy v7strict|two readers, v7strict/);
-
-  const footer = page.locator("footer").last();
-  for (const s of ["Synthetic cohort", "no outcomes on real patients are claimed", frozenOn, "seeds 11, 23, 37, 41 and 59", "held-out noise model v2", "results files"]) {
-    await expect(footer).toContainText(s);
-  }
-  await expect(page.locator("#limits tbody tr").first()).toBeVisible();
-  await expect(page.locator("#pilot")).toContainText("A free three-month shadow pilot");
-  await expect(page.locator("#pilot")).not.toContainText("To request one");
-});
-
 test("figure lab: a figure wears its seed's look, and at known 0 it is the grey question mark", async ({ page }) => {
   await page.goto("/lab/figures");
   await expect(page.getByText("Lab · not part of the product")).toBeVisible();
@@ -726,30 +660,9 @@ test("figure lab: a figure wears its seed's look, and at known 0 it is the grey 
   expect(seen.unknown).toMatchObject({ hairVisible: false, faceVisible: false, askVisible: true });
 });
 
-test("experts: the clinical-labelling limit is current, and the obsolete claims are gone", async ({ page }) => {
-  await page.goto("/experts");
-  const limits = page.locator("#limits");
-  await expect(limits).toContainText("clinically verified model-assisted labels");
-  await expect(limits).toContainText("two model passes");
-  await expect(limits).toContainText("clinician adjudication");
-  await expect(limits).toContainText("κ = 1.000 on all five scored fields");
-  await expect(limits).toContainText("not independent human double-labelling or clinical ground truth");
-  await expect(limits).toContainText("small sample");
-  await expect(limits).toContainText("Gate: 0 false closures, recall ≥ 0.95");
-  const body = await page.locator("body").innerText();
-  for (const gone of [
-    "There are no clinician labels",
-    "LLM-produced answer key",
-    "Human double-labelling by both team members",
-    "Before 21 Nov; not started",
-  ]) {
-    expect(body).not.toContain(gone);
-  }
-});
-
 test("social preview: og:image and twitter:image point at the public production domain, not a per-deployment host", async ({ request }) => {
   // Holds for any build where only VERCEL_URL (the per-deployment host) is set, and for the default build.
-  for (const route of ["/", "/experts"]) {
+  for (const route of ["/"]) {
     const html = await (await request.get(route)).text();
     const og = /<meta property="og:image" content="([^"]+)"/.exec(html)?.[1];
     const tw = /<meta name="twitter:image" content="([^"]+)"/.exec(html)?.[1];
@@ -759,16 +672,46 @@ test("social preview: og:image and twitter:image point at the public production 
   }
 });
 
-test("experts: drop-off counts match the dashboard, with run, cohort and the 196 never-notified stall", async ({ page }) => {
+
+test("evidence: sits under the landing story with current sourced run figures", async ({ page }) => {
+  await page.goto("/#evidence");
+  const ev = page.getByTestId("evidence");
+  const kpi = ev.getByTestId("kpi");
+  await expect(kpi).toContainText("Simulated, n = 1,331");
+  for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
+  await expect(ev).toContainText("65%");
+  await expect(ev.getByTestId("outcomes").locator(":scope > li")).toHaveCount(6);
+  const stalls = ev.getByTestId("stalls");
+  for (const s of ["370", "241", "196", "46", "10"]) await expect(stalls).toContainText(s);
+  await expect(ev).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,035");
+  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 217,009");
+
+  const tiers = page.getByRole("group", { name: "Closure tier" });
+  const panel = page.getByTestId("tau-panel");
+  const cell = (label: string) => panel.locator(`[data-cell="${label}"] [data-value]`);
+  await expect(tiers.getByRole("button", { name: "τ 0.99", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(cell("Recall, with review")).toHaveText("0.816");
+  await tiers.getByRole("button", { name: "τ 0.7", exact: true }).click();
+  await expect(cell("False closures, with review")).toHaveText("8");
+
+  const limits = page.locator("#limits");
+  await expect(limits).toContainText("κ = 1.000 on all five scored fields");
+  await expect(limits).toContainText("Not independent ground truth; small sample.");
+  await expect(page.locator("#pilot")).toContainText("A free three-month shadow pilot");
+  const methods = page.getByTestId("methods");
+  for (const s of ["no outcomes on real patients claimed", "seeds 11, 23, 37, 41 and 59", "held-out noise model v2"]) await expect(methods).toContainText(s);
+
+  const text = await ev.innerText();
+  const frozen = (JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8")) as { frozen_revision: string }).frozen_revision;
+  // No bracketed placeholders, commit-like hex ids, or policy version printed as metadata (the demo run name embeds it on purpose).
+  expect(text).not.toMatch(/\[[A-Za-z][A-Za-z .'’-]*\]/);
+  expect(text).not.toMatch(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/i);
+  expect(text).not.toContain(frozen.slice(0, 7));
+  expect(text).not.toMatch(/policy v7strict|two readers, v7strict/);
+});
+
+test("evidence: /experts redirects to the landing section", async ({ page }) => {
   await page.goto("/experts");
-  const row = page.getByTestId("outcomes").locator("tbody tr").nth(1);
-  await expect(row).toContainText("simulated, 2,100 colorectal and cervical cases");
-  await expect(row).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
-  await expect(row).toContainText("370 no acknowledgement, 241 not booked, 196 never notified");
-  await expect(row).toContainText("referral unanswered 46 and referral rejected 10 are smaller");
-  await expect(row.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
-  for (const w of [1440, 390]) {
-    await page.setViewportSize({ width: w, height: 900 });
-    await row.screenshot({ path: `test-results/screens/site3-experts-drop-${w}.png` });
-  }
+  await expect(page).toHaveURL(/\/#evidence$/);
 });

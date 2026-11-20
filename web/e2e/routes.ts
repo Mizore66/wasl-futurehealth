@@ -8,7 +8,6 @@ const FIXTURE_NAMES = ["evidence_closure", "false_closure_trap", "review_hold", 
 export const ROUTES = [
   "/",
   "/how-it-works",
-  "/experts",
   "/app",
   "/app/today",
   "/app/review",
@@ -28,7 +27,6 @@ export const ROUTES = [
   "/patient/notice",
   "/patient/check",
   "/patient/book",
-  "/app/agent-review",
 ] as const;
 
 export function screenName(route: string): string {

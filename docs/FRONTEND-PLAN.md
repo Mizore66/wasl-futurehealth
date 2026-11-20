@@ -38,7 +38,7 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 |---|---|---|
 | `/` | C-landing | static copy, four numbers from `results.json` |
 | `/how-it-works` | C-howitworks | static |
-| `/experts` | B-landing-expert | `results.json` |
+| `/#evidence` (was `/experts`) | B-landing-expert | `results.json` |
 | `/app` | Main (Programme) | `/api/dashboard` |
 | `/app/today` | V2-today | `/api/cases?owner=…&overdue=…` |
 | `/app/review`, `/app/review/[id]` | V2-review | `/api/cases?review=open`, `/api/cases/{id}`, POST review |
@@ -91,7 +91,7 @@ Refusal wording (#157): the English rights dialog keeps the right to decline fol
    - Today + Patient + Referrals;
    - Review (with the real POST);
    - Pipeline replay + Matching + Reading;
-   - Site pages (landing, how it works, experts);
+   - Site pages (landing with evidence, how it works);
    - Patient phones (RTL).
 
    **Check per screen:** Playwright opens the route, walks every click from the canvas, asserts the key numbers against `results.json` / API, saves a screenshot, axe has no serious violations.

@@ -17,7 +17,6 @@ const CRUMBS: [RegExp, string][] = [
   [/^\/app\/evidence/, "Evidence"],
   [/^\/app\/pipeline/, "Pipeline"],
   [/^\/app\/results/, "Results"],
-  [/^\/app\/agent-review/, "Agent review"],
   [/^\/app\/people/, "People"],
   [/^\/app\/?$/, "Programme"],
 ];
