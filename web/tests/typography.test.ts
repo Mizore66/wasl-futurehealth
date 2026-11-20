@@ -10,8 +10,6 @@ import { describe, expect, it } from "vitest";
  */
 const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "app/globals.css", line: /^\s*--font-mono:/, why: "the mono token itself" },
-  // Hashes and signatures
-  { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },
   // Code: system names, raw records, versions and machine traces
   { file: "app/app/evidence/page.tsx", line: /<code className="break-all font-mono text-\[13px\]">\{text\}<\/code>/, why: "claim ledger reproduce command" },
   { file: "app/app/evidence/page.tsx", line: /<code className="font-mono">(git clone|make verify)/, why: "verify commands a judge types" },

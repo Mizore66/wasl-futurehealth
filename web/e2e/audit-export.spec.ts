@@ -4,10 +4,10 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 /*
- * The redacted evidence export on the case audit page (issue #46).
+ * The redacted evidence export route behind the case audit page (issue #46). The page no longer shows an export card;
+ * the route stays, and still serves only the backend's bytes to the auditor credential.
  *
- * Fixtures mode (the default run): there is no auditor API, so the action is disabled with the reason and the
- * download route serves no file.
+ * Fixtures mode (the default run): there is no auditor API, so the download route serves no file.
  *
  * Live mode against a mock of the Go API: start `next start` yourself with WASL_API_URL=http://127.0.0.1:3295 and the
  * four role tokens (WASL_API_REVIEWER_TOKEN, WASL_API_CLINICIAN_TOKEN, WASL_API_AUDITOR_TOKEN,
@@ -32,23 +32,12 @@ const auditHref = (id: string) => `/app/patients/${encodeURIComponent(id)}/audit
 test.describe("redacted evidence export, fixtures mode", () => {
   test.skip(LIVE, "fixtures-mode checks run against the default server without WASL_API_URL");
 
-  test("the action is disabled with the reason, after the chain, and the route serves no file", async ({ page, request }) => {
+  test("the audit page shows no export card, and the route serves no file", async ({ page, request }) => {
     const res = await page.goto(auditHref(ALLOWED));
     expect(res?.status()).toBe(200);
-    const card = page.getByRole("region", { name: "Redacted evidence export" });
-    await expect(card).toBeVisible();
-    await expect(card.locator("[data-honesty]")).toHaveText("Simulated data");
-    await expect(card.getByRole("status")).toContainText("no auditor API");
-    await expect(card.getByRole("button", { name: "Download redacted export (JSON)" })).toBeDisabled();
-    await expect(card.getByRole("link")).toHaveCount(0);
-    await expect(card.getByTestId("export-content-hash")).toHaveCount(0);
-    // Secondary to chain inspection: it comes after the chain cards in the page.
-    const after = await page.evaluate(() => {
-      const chain = document.getElementById("chain");
-      const exp = document.querySelector("[data-testid=audit-export]");
-      return !!chain && !!exp && !!(chain.compareDocumentPosition(exp) & Node.DOCUMENT_POSITION_FOLLOWING);
-    });
-    expect(after).toBe(true);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Audit trail");
+    await expect(page.getByRole("region", { name: "Redacted evidence export" })).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText(/redacted export|check code/i);
 
     const direct = await request.get(`${auditHref(ALLOWED)}/export`);
     expect(direct.status()).toBe(404);
@@ -125,27 +114,20 @@ test.describe("redacted evidence export, live mode against a mock API", () => {
     exportCalls.length = 0;
   });
 
-  test("an auditor downloads the backend's bytes unchanged, with the hashes shown on the page", async ({ page }) => {
-    await page.goto(auditHref(ALLOWED));
-    const card = page.getByRole("region", { name: "Redacted evidence export" });
-    await expect(card.getByTestId("export-content-hash")).toHaveText(exported.content_sha256);
-    await expect(card.getByTestId("export-comparison-hash")).toHaveText(exported.comparison_sha256);
-    await expect(card.locator("[data-honesty]")).toHaveText("Simulated data");
-
-    const [download] = await Promise.all([page.waitForEvent("download"), card.getByRole("link", { name: "Download redacted export (JSON)" }).click()]);
-    expect(download.suggestedFilename()).toBe(`wasl-synthetic-redacted-export_${ALLOWED.replaceAll("/", "_")}.json`);
-    const saved = readFileSync(await download.path());
+  test("the route serves the backend's bytes unchanged under the auditor credential", async ({ request }) => {
+    const res = await request.get(`${auditHref(ALLOWED)}/export`);
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-disposition"]).toContain(`wasl-synthetic-redacted-export_${ALLOWED.replaceAll("/", "_")}.json`);
+    const saved = await res.body();
     expect(saved.equals(EXPORT_BYTES)).toBe(true);
     expect(JSON.parse(saved.toString("utf8")).content_sha256).toBe(exported.content_sha256);
-    // The page's hash read and the download both used the auditor credential, and only it.
-    expect(exportCalls).toEqual([`auditor ${ALLOWED}`, `auditor ${ALLOWED}`]);
+    // The download used the auditor credential, and only it.
+    expect(exportCalls).toEqual([`auditor ${ALLOWED}`]);
   });
 
-  test("a refused export shows fixed wording, no backend metadata, and no download", async ({ page, request }) => {
+  test("a refused export leaks no backend metadata, on the page or from the route", async ({ page, request }) => {
     await page.goto(auditHref(REFUSED));
-    const card = page.getByRole("region", { name: "Redacted evidence export" });
-    await expect(card.getByRole("status")).toHaveText("The Wasl API refused the export. Only the auditor role may download it.");
-    await expect(card.getByRole("button", { name: "Download redacted export (JSON)" })).toBeDisabled();
+    await expect(page.getByRole("region", { name: "Redacted evidence export" })).toHaveCount(0);
     await expect(page.locator("main")).not.toContainText("CANARY");
     await expect(page.locator("main")).not.toContainText("rbac");
 
