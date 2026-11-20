@@ -3,6 +3,7 @@ import { AppSidebar, type NavCounts } from "@/components/shell/app-sidebar";
 import { SIDEBAR_COOKIE } from "@/components/shell/sidebar-cookie";
 import { SkipLink } from "@/components/shell/skip-link";
 import { TopBar } from "@/components/shell/top-bar";
+import { GuidedTour } from "@/components/shell/guided-tour";
 import { runInfo } from "@/components/shell/run-info";
 import { RunInfoProvider } from "@/components/shell/run-meta";
 import { getCases } from "@/lib/api/source";
@@ -26,11 +27,12 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
       <RunInfoProvider value={runInfo()}>
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
-          <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-(--main-px) py-(--main-py) [--main-px:clamp(12px,2.4vw,32px)] [--main-py:clamp(12px,2vw,24px)] focus:outline-none">
+          <main id="main" data-tour="page" tabIndex={-1} className="min-w-0 flex-1 px-(--main-px) py-(--main-py) [--main-px:clamp(12px,2.4vw,32px)] [--main-py:clamp(12px,2vw,24px)] focus:outline-none">
             {children}
           </main>
         </div>
       </RunInfoProvider>
+      <GuidedTour />
     </div>
   );
 }
