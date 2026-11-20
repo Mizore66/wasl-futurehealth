@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" role="img" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<title>Zero-event safety counts, v2 noise: 95% upper bound on the true rate</title><desc>Bars show the Clopper-Pearson upper bound; every observed count is 0. Small denominators give wide bounds.</desc>
+<rect width="760" height="400" fill="#fcfcfb"/>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#0b0b0b">Zero-event safety counts, v2 noise: 95% upper bound on the true rate</text>
+<text x="16" y="46" font-size="12" fill="#52514e">Bars show the Clopper-Pearson upper bound; every observed count is 0. Small denominators give wide bounds.</text>
+<text x="16.0" y="81.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Colorectal (CRC) false closures</text>
+<rect x="330.0" y="70.0" width="2.5" height="13.0" rx="2" fill="#2a78d6"><title>Colorectal (CRC) false closures: 0/3035, upper bound 0.121%</title></rect>
+<text x="338.5" y="81.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/3,035 (&lt; 0.12%)</text>
+<text x="16.0" y="101.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Cervical false closures</text>
+<rect x="330.0" y="90.0" width="5.9" height="13.0" rx="2" fill="#2a78d6"><title>Cervical false closures: 0/1303, upper bound 0.283%</title></rect>
+<text x="341.9" y="101.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/1,303 (&lt; 0.28%)</text>
+<text x="16.0" y="121.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Incidental lung nodule false closures</text>
+<rect x="330.0" y="110.0" width="4.0" height="13.0" rx="2" fill="#2a78d6"><title>Incidental lung nodule false closures: 0/1907, upper bound 0.193%</title></rect>
+<text x="340.0" y="121.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/1,907 (&lt; 0.19%)</text>
+<text x="16.0" y="141.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Diabetic retinopathy false closures</text>
+<rect x="330.0" y="130.0" width="1.4" height="13.0" rx="2" fill="#2a78d6"><title>Diabetic retinopathy false closures: 0/5627, upper bound 0.066%</title></rect>
+<text x="337.4" y="141.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/5,627 (&lt; 0.07%)</text>
+<text x="16.0" y="161.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Breast recall false closures</text>
+<rect x="330.0" y="150.0" width="22.7" height="13.0" rx="2" fill="#2a78d6"><title>Breast recall false closures: 0/338, upper bound 1.085%</title></rect>
+<text x="358.7" y="161.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/338 (&lt; 1.08%)</text>
+<text x="16.0" y="181.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Lung screening (LDCT) false closures</text>
+<rect x="330.0" y="170.0" width="5.5" height="13.0" rx="2" fill="#2a78d6"><title>Lung screening (LDCT) false closures: 0/1413, upper bound 0.261%</title></rect>
+<text x="341.5" y="181.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/1,413 (&lt; 0.26%)</text>
+<text x="16.0" y="201.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">IFHAS abnormal result false closures</text>
+<rect x="330.0" y="190.0" width="2.3" height="13.0" rx="2" fill="#2a78d6"><title>IFHAS abnormal result false closures: 0/3392, upper bound 0.109%</title></rect>
+<text x="338.3" y="201.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/3,392 (&lt; 0.11%)</text>
+<text x="16.0" y="221.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">DR referral-loop false closures</text>
+<rect x="330.0" y="210.0" width="32.9" height="13.0" rx="2" fill="#2a78d6"><title>DR referral-loop false closures: 0/233, upper bound 1.571%</title></rect>
+<text x="368.9" y="221.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/233 (&lt; 1.57%)</text>
+<text x="16.0" y="241.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Breast recall-loop false closures</text>
+<rect x="330.0" y="230.0" width="310.0" height="13.0" rx="2" fill="#2a78d6"><title>Breast recall-loop false closures: 0/23, upper bound 14.819%</title></rect>
+<text x="646.0" y="241.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/23 (&lt; 14.82%)</text>
+<text x="16.0" y="261.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">LDCT action-loop false closures</text>
+<rect x="330.0" y="250.0" width="62.8" height="13.0" rx="2" fill="#2a78d6"><title>LDCT action-loop false closures: 0/121, upper bound 3.003%</title></rect>
+<text x="398.8" y="261.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/121 (&lt; 3.00%)</text>
+<text x="16.0" y="281.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">IFHAS follow-up-loop false closures</text>
+<rect x="330.0" y="270.0" width="7.4" height="13.0" rx="2" fill="#2a78d6"><title>IFHAS follow-up-loop false closures: 0/1047, upper bound 0.352%</title></rect>
+<text x="343.4" y="281.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/1,047 (&lt; 0.35%)</text>
+<text x="16.0" y="301.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Lung surveillance-CT false closures</text>
+<rect x="330.0" y="290.0" width="227.8" height="13.0" rx="2" fill="#2a78d6"><title>Lung surveillance-CT false closures: 0/32, upper bound 10.888%</title></rect>
+<text x="563.8" y="301.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/32 (&lt; 10.89%)</text>
+<text x="16.0" y="321.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Rejected-referral hand-off false closures</text>
+<rect x="330.0" y="310.0" width="87.8" height="13.0" rx="2" fill="#2a78d6"><title>Rejected-referral hand-off false closures: 0/86, upper bound 4.199%</title></rect>
+<text x="423.8" y="321.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/86 (&lt; 4.20%)</text>
+<text x="16.0" y="341.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Wrong-patient messages released</text>
+<rect x="330.0" y="330.0" width="0.5" height="13.0" rx="2" fill="#2a78d6"><title>Wrong-patient messages released: 0/16486, upper bound 0.022%</title></rect>
+<text x="336.5" y="341.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/16,486 (&lt; 0.02%)</text>
+<text x="16.0" y="361.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Messages released without granted consent</text>
+<rect x="330.0" y="350.0" width="0.7" height="13.0" rx="2" fill="#2a78d6"><title>Messages released without granted consent: 0/11650, upper bound 0.032%</title></rect>
+<text x="336.7" y="361.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/11,650 (&lt; 0.03%)</text>
+<text x="16.0" y="381.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Duplicate or lost pipeline outputs (process and broker kills)</text>
+<rect x="330.0" y="370.0" width="0.5" height="13.0" rx="2" fill="#2a78d6"><title>Duplicate or lost pipeline outputs (process and broker kills): 0/217009, upper bound 0.002%</title></rect>
+<text x="336.0" y="381.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">0/217,009 (&lt; 0.00%)</text>
+</svg>

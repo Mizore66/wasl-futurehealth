@@ -7,7 +7,9 @@
 - If her colonoscopy happens, it may be at another hospital, under a Latin spelling of her name and with no Emirates ID. Her clinic never sees it.
 - In Abu Dhabi only 30.5% of FIT+ patients had a colonoscopy, after a median 72 days against a 31-day standard (SEHA 2021).
 
-**The headline: KPI assurance for the ADPHC CRC programme.** Share of referrals reaching colonoscopy within 31 days, in our merged simulation:
+**The headline: Wasl raises the measured rate toward the true rate.** Frozen held-out evaluation (independent v2 noise), per 1,000 positive FITs: Emirates-ID-only matching wrongly flags about 207 patients as "not followed up" who had their colonoscopy within 31 days; Wasl about 31, with 0/3,035 CRC false closures (95% upper bound 0.121%). Deployed demo run: 11.3% EID-only, 30.7% Wasl, 31.9% truth. Clinical benefit is modelled only, conditional on navigation acting on the corrected list (`docs/EVIDENCE.md`).
+
+**KPI assurance for the ADPHC CRC programme.** Share of referrals reaching colonoscopy within 31 days, in our merged simulation:
 
 | Tracker | Result |
 |---|---|
@@ -54,7 +56,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
   - 9–12 mo: ADHDS vendor contract (precedents: Orion, VitalHub, Digi7, the Philips AI PoC); fallback: DoH limited tender.
   - 12 mo+: cervical, breast, then other loop types.
 
-**Queue control (simulated decision support, built):** how Wasl raises completion, not just measures it.
+**Queue control (simulated decision support, built):** how completion could rise once the list is right. Simulated, not a measured Wasl effect.
 - Direct-to-procedure booking with a nurse doing the App 9 checklist. It targets the 36.3% of non-completers lost at the GI consult.
 - Prep-risk targeting (Dik 2015 score), the only lever that creates capacity: about 88 repeat colonoscopies avoided per 1,000.
 - Together at 1.2 slots per FIT+: **+13 pp** ≤31-day completion in simulation. Below 1.0 slot, no lever helps.

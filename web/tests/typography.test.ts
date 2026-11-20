@@ -30,6 +30,8 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "app/(site)/experts/page.tsx", line: /whitespace-pre-wrap break-all .*font-mono text-\[14px\]/, why: "HL7 v2 message code block (<pre>)" },
   { file: "app/app/review/page.tsx", line: /<code className="font-mono">review_hold<\/code>/, why: "system name of the queue" },
   { file: "components/wasl/tech-term.tsx", line: /<code\b/, why: "system identifier behind a plain term" },
+  { file: "app/app/evidence/page.tsx", line: /<code className="break-all font-mono text-\[13px\]">\{text\}<\/code>/, why: "claim ledger reproduce command" },
+  { file: "app/app/evidence/page.tsx", line: /<code className="font-mono">(git clone|make verify)/, why: "verify commands a judge types" },
   { file: "components/pipeline/technical.tsx", line: /\{children\}/, why: "technical details disclosure (machine trace)" },
   { file: "components/agent/banner.tsx", line: /\{meta\.run\}/, why: "run id" },
   { file: "components/agent/decision.tsx", line: /\{reads\.join/, why: "raw read codes beside their plain words" },

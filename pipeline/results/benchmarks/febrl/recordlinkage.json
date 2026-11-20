@@ -1,0 +1,85 @@
+{
+ "recordlinkage_version": "0.16",
+ "true_pairs": 5000,
+ "published": {
+  "recipe": "block postcode; JW given_name, surname, address_1, suburb; exact postcode; sum >= 3.5",
+  "candidate_pairs": 28609,
+  "predicted_pairs": 4285,
+  "true_positives": 4040,
+  "false_positives": 245,
+  "false_negatives": 960,
+  "precision": {
+   "k": 4040,
+   "n": 4285,
+   "value": 0.942824,
+   "low": 0.935467,
+   "high": 0.949387
+  },
+  "recall": {
+   "k": 4040,
+   "n": 5000,
+   "value": 0.808,
+   "low": 0.796848,
+   "high": 0.818679
+  },
+  "f1": 0.870221,
+  "false_match_rate": {
+   "k": 223,
+   "n": 5000,
+   "value": 0.0446,
+   "low": 0.039219,
+   "high": 0.05068
+  },
+  "missed_match_rate": {
+   "k": 960,
+   "n": 5000,
+   "value": 0.192,
+   "low": 0.181321,
+   "high": 0.203152
+  }
+ },
+ "same_fields": {
+  "recipe": "blocks given_name | surname | date_of_birth; JW given_name, surname; exact date_of_birth; sum >= 2.1",
+  "candidate_pairs": 160789,
+  "blocking_recall": {
+   "k": 4930,
+   "n": 5000,
+   "value": 0.986,
+   "low": 0.98235,
+   "high": 0.988904
+  },
+  "predicted_pairs": 3838,
+  "true_positives": 3760,
+  "false_positives": 78,
+  "false_negatives": 1240,
+  "precision": {
+   "k": 3760,
+   "n": 3838,
+   "value": 0.979677,
+   "low": 0.97471,
+   "high": 0.983685
+  },
+  "recall": {
+   "k": 3760,
+   "n": 5000,
+   "value": 0.752,
+   "low": 0.739839,
+   "high": 0.763774
+  },
+  "f1": 0.850871,
+  "false_match_rate": {
+   "k": 78,
+   "n": 5000,
+   "value": 0.0156,
+   "low": 0.012518,
+   "high": 0.019426
+  },
+  "missed_match_rate": {
+   "k": 1240,
+   "n": 5000,
+   "value": 0.248,
+   "low": 0.236226,
+   "high": 0.260161
+  }
+ }
+}

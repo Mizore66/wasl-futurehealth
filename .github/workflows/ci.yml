@@ -145,6 +145,8 @@ jobs:
           go build -o ../bin/wsi7 .
       - name: Run scripts unit tests
         run: python3 -m unittest discover -v -s scripts -p 'test_*.py'
+      - name: Verify frozen evaluation hashes and evidence numbers
+        run: scripts/verify.sh --ci
       - name: Run fresh evaluation unit tests
         run: python3 -m unittest discover -v -s scripts/fresh2_eval -p 'test_*.py'
       - name: Run encoder unit tests with LightGBM installed

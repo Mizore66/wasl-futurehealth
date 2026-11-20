@@ -1,11 +1,13 @@
 ## Wasl (وصل): evidence behind every screening follow-up across Abu Dhabi providers (Closing the Screening-to-Care Loop)
 
 > **The product:** evidence-backed CRC follow-up tracking for the ADPHC programme. It is built, and it is what we pitch and demo. One buyer (ADPHC), one KPI (31-day completion), one engine.
-> **The roadmap** (designed, clearly fenced below): Phase 2 is queue control, which raises completion. Phase 3 puts the same engine to work on the programme's other follow-up loops, which spreads the fixed cost. Every item is marked built, simulated or designed.
+> **The roadmap** (designed, clearly fenced below): Phase 2 is queue control, designed to raise completion once the list is right (simulated decision support, not a measured Wasl effect). Phase 3 puts the same engine to work on the programme's other follow-up loops, which spreads the fixed cost. Every item is marked built, simulated or designed.
 
 **The patient.** A woman has a positive stool test (FIT+) at her clinic. If the colonoscopy happens, it may be at another hospital, under a Latin spelling of her name and with no Emirates ID (EID). The clinic never sees it. In one Abu Dhabi study only 30.5% of FIT+ patients had a colonoscopy, after a median 72 days against a 31-day standard (SEHA, BMC Cancer 2021).
 
-**KPI assurance (headline).** In our merged simulation, counting all referrals:
+**Measured impact (headline).** Wasl is a measurement fix: it raises the measured rate toward the true rate. In the frozen held-out evaluation (code `075abc5ad04a`, frozen 2026-11-02T04:33Z before the runs; five seeds, independent v2 noise), per 1,000 positive FITs Emirates-ID-only matching sees about 122 colonoscopies completed within 31 days, Wasl about 298, the simulated truth about 329. EID-only matching therefore wrongly flags about 207 patients per 1,000 as "not followed up"; Wasl about 31, with 0/3,035 CRC false closures (95% upper bound 0.121%). In the deployed demo run the rates are 11.3% (EID-only), 30.7% (Wasl) and 31.9% (truth): 206 versus 12 wrongly flagged per 1,000. The simulated truth sits near the only published Abu Dhabi figure (30.5%, SEHA), which has no fixed 31-day window. Any clinical benefit is modelled, conditional on navigation acting on the corrected list, and stated as a range in `docs/EVIDENCE.md`. Every claim, its status and a reproduce command is in the claim ledger at the top of `README.md`.
+
+**KPI assurance.** In our merged simulation, counting all referrals:
 
 | Tracker | Reaching colonoscopy ≤31 days from referral (CRC 5.5.4.2 and the App 2 KPI) |
 |---|---|
@@ -425,7 +427,7 @@
 
 ## Roadmap (fenced from the product above; build status marked per item)
 
-### Phase 2: Queue control (direct-to-procedure and prep-risk built as simulated decision support; this is what makes Wasl raise completion, not just measure it)
+### Phase 2: Queue control (direct-to-procedure and prep-risk built as simulated decision support; this is how completion could rise once the list is right; simulated, not a measured Wasl effect)
   - **Direct-to-procedure:**
     - 36.3% of Abu Dhabi FIT+ non-completers were "referred to a gastroenterologist but did not attend" (SEHA, PMC8343888). This is the largest single local leak.
     - The DoH spec requires a referral form (5.5.1) and the App 9 pre-colonoscopy assessment, not a GI consult.
