@@ -72,16 +72,16 @@ export function PatternLinks({ patterns, className }: { patterns: Patterns; clas
   const range = shares.length > 1 ? ` runs from ${Math.min(...shares)}% to ${Math.max(...shares)}%` : "";
   return (
     <section aria-labelledby="patterns-h" className={className} data-testid="provider-links">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 id="patterns-h" className="m-0 text-section font-medium">
-          By provider
-        </h2>
-        <HonestyLabel kind="simulated">Simulated cohort</HonestyLabel>
-      </div>
+      <h2 id="patterns-h" className="m-0 text-section font-medium">
+        By provider
+      </h2>
       <p data-testid="provider-takeaway" className="m-0 mt-1 text-body font-medium text-ink">
         Closed with evidence{range}
       </p>
       <p className="m-0 mt-1 text-small text-muted">
+        <HonestyLabel kind="simulated" className="inline h-auto whitespace-normal bg-transparent px-0 text-small font-normal text-muted [&>[data-dot]]:hidden">
+          Simulated cohort.
+        </HonestyLabel>{" "}
         Out of each provider&apos;s cases across every programme. Closed with evidence counts closures with evidence on file only, so it is lower than the
         programme chart&apos;s {STATUS_PART.closed.toLowerCase()}, which also counts cases that needed no follow-up. Each figure opens the filtered patient list.
         {smallCellRule && <> Small cells are suppressed at source ({smallCellRule}) and are never shown as a number or linked.</>}

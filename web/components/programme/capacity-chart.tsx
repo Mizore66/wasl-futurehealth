@@ -107,7 +107,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
         {runs.map((run) => (
           <div key={run.slotsPerCase} className="min-w-0">
             <h3 className="m-0 text-small font-semibold text-ink">
-              {run.slotsPerCase} slots per FIT+ · {run.enough ? "enough overall" : "short overall"}
+              {run.slotsPerCase} slots per FIT+, {run.enough ? "enough overall" : "short overall"}
             </h3>
             <ul className="m-0 mt-1 list-none p-0">
               {run.rows.map((r) => {

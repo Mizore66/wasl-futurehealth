@@ -18,6 +18,9 @@ const NUMBER_WORD: Record<number, string> = { 3: "three", 4: "four", 5: "five", 
 
 const card = "rounded-card border border-line bg-surface p-pad";
 
+/** An honesty label read as plain text: no chip, no status dot. */
+const PLAIN = "inline h-auto whitespace-normal bg-transparent px-0 text-small font-normal text-muted [&>[data-dot]]:hidden";
+
 export default async function ProgrammePage() {
   const dash = await getDashboard();
   const view = programmeView(dash);
@@ -35,13 +38,13 @@ export default async function ProgrammePage() {
   // Takeaway lines, computed from the numbers the charts draw so they stay true for any run.
   const { eid, wasl, truth } = view.kpi.demo.rates;
   const kpiTakeaway =
-    eid < truth && Math.abs(wasl - truth) < Math.abs(eid - truth) ? "Wasl reads it almost as the truth does; Emirates ID alone undercounts." : null;
+    eid < truth && Math.abs(wasl - truth) < Math.abs(eid - truth) ? "Wasl's rate is close to the simulated truth. Emirates ID alone undercounts." : null;
   const [first, second] = byOverdueShare(view.programmes);
   const withOnTime = view.programmes.filter((p) => p.onTime);
   const underHalf = withOnTime.filter((p) => p.onTime!.share < 50).length;
   const progTakeaway = first && second
     ? `${first.name} and ${second.name.charAt(0).toLowerCase()}${second.name.slice(1)} carry the largest overdue shares${
-        view.onTimeMeasured && withOnTime.length ? `; on time is under half in ${word(underHalf)} of ${word(withOnTime.length)}` : ""
+        view.onTimeMeasured && withOnTime.length ? `. On time is under half in ${word(underHalf)} of ${word(withOnTime.length)}` : ""
       }.`
     : null;
   const stallGroup = view.allStalls[0];
@@ -57,11 +60,11 @@ export default async function ProgrammePage() {
         />
 
         <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
-          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<>Positive FIT referrals.{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
-            Simulated colorectal cohort. Emirates ID only counts a colonoscopy only when the Emirates ID on the report matches. Wasl also links
+          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<><HonestyLabel kind="simulated" className={PLAIN}>Positive FIT referrals in a simulated run.</HonestyLabel>{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
+            Simulated colorectal cohort. Emirates ID only counts a colonoscopy when the Emirates ID on the report matches. Wasl also links
             reports by name and date of birth. Simulated truth comes from the cohort&apos;s known outcomes. The target is the DoH 31-day standard.
-            It is read from the run&apos;s KPI definition. The demo run is the run this dashboard serves; the five-seed mean is the frozen evaluation in
-            results.json.
+            It is read from the run&apos;s KPI definition. The shaded gap runs from the simulated truth to the target. The demo run is the run this
+            dashboard serves. The five-seed mean is the frozen evaluation in results.json.
           </SourceHeading>
 
           <KpiChart kpi={view.kpi} target={view.target} />
@@ -86,14 +89,14 @@ export default async function ProgrammePage() {
                 run, the share whose follow-up step Wasl recorded on or before it. Each programme keeps its own rule&apos;s step and deadline
                 (colonoscopy 31 days; colposcopy 14, 28 or 56 days by priority; follow-up CT by the end of the Fleischner window; eye-clinic exam
                 for a referable grade; breast assessment outcome; follow-up LDCT or work-up; IFHAS follow-up within every abnormal result&apos;s
-                clock). There is no Emirates ID or simulated-truth comparison for these figures, and no target line: the app has no sourced
+                clock). There is no Emirates ID or simulated-truth comparison for these figures, and no target line. The app has no sourced
                 target for them.
               </>
             )}
           </SourceHeading>
           {view.onTimeMeasured ? (
             <div className="mt-2">
-              <HonestyLabel kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
+              <HonestyLabel kind="simulated" className={PLAIN}>Wasl measures on time in a simulated run.</HonestyLabel>
             </div>
           ) : (
             <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available for this run.</p>
@@ -113,13 +116,13 @@ export default async function ProgrammePage() {
             sub={
               stallGroup && (
                 <span data-testid="stall-scope" className="text-body font-medium text-ink">
-                  {stallGroup.pathway}: the {word(view.stalls.length)} largest of {word(stallGroup.stalls.length)} stalls
+                  The {word(view.stalls.length)} largest of {word(stallGroup.stalls.length)} {stallGroup.pathway.toLowerCase()} stalls
                 </span>
               )
             }
           >
             Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together (run {dash.meta.run}). The three largest stalls are shown.
-            The run&apos;s drop-off counts cover all {programmeCount} programmes; these stall labels are the colorectal and cervical pathway&apos;s.
+            The run&apos;s drop-off counts cover all {programmeCount} programmes. These stall labels are the colorectal and cervical pathway&apos;s.
             &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS pathways.
           </SourceHeading>
           <div className="mt-3">
@@ -137,7 +140,7 @@ export default async function ProgrammePage() {
               test comes from booking/sim/pool_test.json, a separate simulation of 30 draws with capacity placed in the wrong regions.
             </SourceHeading>
             <div className="mt-2">
-              <HonestyLabel kind="simulated">Simulated decision support</HonestyLabel>
+              <HonestyLabel kind="simulated" className={PLAIN}>Simulated decision support.</HonestyLabel>
             </div>
 
             <p data-testid="capacity-condition" className="m-0 mt-3 text-body font-medium">
@@ -167,13 +170,13 @@ export default async function ProgrammePage() {
 
             {levers && (
               <p data-testid="capacity-levers" className="m-0 mt-4 text-body text-ink-soft tabular-nums">
-                <span className="font-medium text-ink">Queue levers:</span>{" "}
+                <span className="font-medium text-ink">Queue levers.</span>{" "}
                 {[
                   levers.direct && `${cellText(levers.direct.cell, levers.direct.of)} suggested direct to colonoscopy`,
                   levers.highPrepRisk && `${cellText(levers.highPrepRisk.cell, levers.highPrepRisk.of)} at high risk of failed bowel prep`,
                 ]
                   .filter(Boolean)
-                  .join("; ")}
+                  .join(" and ")}
                 . Counted over the{" "}
                 {[levers.direct, levers.highPrepRisk].every((l) => !l || l.of === capacity.openCases) && `${capacity.openCases.toLocaleString("en-US")} `}
                 open colorectal cases needing a colonoscopy slot. The patient list cannot filter by pathway or prep risk, so these counts do not link.
@@ -192,8 +195,8 @@ export default async function ProgrammePage() {
               </p>
               {noPooling && pooled && (
                 <p data-testid="pooling-result" className="m-0 mt-2 text-body">
-                  Measured in the simulated booking test, with {enough.slotsPerCase} slots per FIT+ in total: {noPooling.display} within 31 days
-                  without cross-site booking, {pooled.display} with network pooling.
+                  In the simulated booking test, with {enough.slotsPerCase} slots per FIT+ in total, {noPooling.display} were booked within 31 days
+                  without cross-site booking. With network pooling, {pooled.display} were.
                 </p>
               )}
               <div className="mt-3">
@@ -219,7 +222,7 @@ export default async function ProgrammePage() {
         <div className="min-w-0">
           <p className="m-0 text-body font-semibold">false closures</p>
           <p className="m-0 text-small text-ink-soft">
-            in {safety.denominator?.toLocaleString("en-US")} tested · every closure has evidence or two signatures ·{" "}
+            in {safety.denominator?.toLocaleString("en-US")} tested. Every closure has evidence or two signatures.{" "}
             <Link href="/app/results" className="font-medium no-underline">
               See proof
             </Link>

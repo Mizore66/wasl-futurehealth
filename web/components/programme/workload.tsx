@@ -87,7 +87,7 @@ export function Workload({ row, note }: { row: ProgrammeRow | undefined; note?: 
                   {/* A label only where it fits: the full figure on wide blocks, the count on mid ones, nothing on slivers. */}
                   {part >= 0.27 ? (
                     <span className="whitespace-nowrap">
-                      {n(count)} · {share(count, total)}
+                      {n(count)} ({share(count, total)})
                     </span>
                   ) : part >= 0.12 ? (
                     <span className="whitespace-nowrap">{n(count)}</span>
