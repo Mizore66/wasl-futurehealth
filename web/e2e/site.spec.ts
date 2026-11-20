@@ -602,6 +602,9 @@ test("landing: the hero and the close open the dashboard and the pipeline", asyn
     await expect(cue.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
     await expect(cue.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
   }
+  await expect(page.getByTestId("hero-message")).toHaveText(
+    "Wasl doesn't create colonoscopy slots. It makes sure no completed colonoscopy is missed and no lost patient stays invisible.",
+  );
   const close = page.locator('[data-cue="close"]');
   await expect(close).toHaveAttribute("data-on", "");
   await expect(close.getByRole("link", { name: "Wasl, home" })).toBeVisible();
