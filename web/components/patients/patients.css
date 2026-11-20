@@ -421,35 +421,6 @@
     min-width: 0;
     padding: 14px var(--inset);
   }
-  .rs-source-buttons {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    gap: 4px;
-  }
-  .rs-source-buttons button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 6px 10px;
-    border-radius: 4px;
-    color: var(--color-limestone-700);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .rs-source-buttons button:hover {
-    background: var(--color-jade-50);
-  }
-  .rs-source-buttons [aria-pressed="true"] {
-    background: var(--color-jade-100);
-    color: var(--color-jade-800);
-    font-weight: 600;
-  }
-  .rs-source-buttons svg {
-    width: 15px;
-    height: 15px;
-  }
   .rs-document-slot {
     display: flex;
     flex: 1;
