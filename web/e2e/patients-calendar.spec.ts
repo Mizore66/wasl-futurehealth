@@ -54,19 +54,19 @@ for (const [label, viewport] of [
     await expect(page).toHaveURL(/open=ahs-mushrif%2FServiceRequest%2FAHS-sr-1011/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
     const file = page.getByRole("region", { name: "Evidence file for AHS-sr-1011" });
-    const sources = file.getByRole("group", { name: "Choose a source document" });
-    await expect(sources.getByRole("button", { name: "Outside report" })).toHaveAttribute("aria-pressed", "true");
+    const sources = file.getByRole("radiogroup", { name: "Choose a source document" });
+    await expect(sources.getByRole("radio", { name: "Outside report" })).toHaveAttribute("aria-checked", "true");
     await expect(file.getByRole("region", { name: "DoH closure checklist" })).toBeVisible();
     await expect(file.getByText("“until it reached the cecum”")).toBeVisible();
     await shot(page, `open-${label}`);
     await noSeriousAxe(page);
 
     // Switch to the referral and back.
-    await sources.getByRole("button", { name: "Referral" }).click();
-    await expect(sources.getByRole("button", { name: "Referral" })).toHaveAttribute("aria-pressed", "true");
+    await sources.getByRole("radio", { name: "Referral" }).click();
+    await expect(sources.getByRole("radio", { name: "Referral" })).toHaveAttribute("aria-checked", "true");
     await expect(file.getByRole("article", { name: "Referral AHS-sr-1011" })).toBeVisible();
     await expect(file.getByRole("region", { name: "DoH closure checklist" })).toBeHidden();
-    await sources.getByRole("button", { name: "Outside report" }).click();
+    await sources.getByRole("radio", { name: "Outside report" }).click();
     await expect(file.getByRole("region", { name: "DoH closure checklist" })).toBeVisible();
 
     // The Audit trail clock beside Activity, then back to the case.
