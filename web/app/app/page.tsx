@@ -107,7 +107,8 @@ export default async function ProgrammePage() {
       </div>
 
       <div className="mt-gap grid items-start gap-gap lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <section aria-labelledby="stall-h" className={card}>
+        <div className="grid min-w-0 gap-gap">
+          <section aria-labelledby="stall-h" className={card}>
           <SourceHeading
             id="stall-h"
             title="Where patients stall"
@@ -127,6 +128,9 @@ export default async function ProgrammePage() {
             <StallsChart top={view.stalls} groups={view.allStalls} />
           </div>
         </section>
+
+          <PatternLinks patterns={view.patterns} className={card} />
+        </div>
 
         {capacity && (
           <section aria-labelledby="cap-h" className={card}>
@@ -201,8 +205,6 @@ export default async function ProgrammePage() {
           </section>
         )}
       </div>
-
-      <PatternLinks patterns={view.patterns} />
 
       {/* Static supporting copy with no object state, so it sits on the page grid unframed (DEC-3); the chart panels above keep their surfaces. */}
       <section aria-labelledby="safety-h" className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2">

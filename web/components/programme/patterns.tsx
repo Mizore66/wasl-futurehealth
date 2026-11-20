@@ -15,8 +15,8 @@ import { closedShare, loopsText, patternText, STATUS_PART, type Pattern, type Pa
 /** Every item is a 44px row on touch widths, linked or not, so the rhythm stays even; compact from md up. */
 const item = "inline-flex min-h-11 items-center md:min-h-0";
 
-/** Provider | bar | figure | largest stall; the bar column drops under the name on narrow widths. */
-const ROW = "grid grid-cols-1 items-center gap-x-4 md:grid-cols-[minmax(120px,170px)_minmax(150px,1fr)_minmax(0,auto)_minmax(0,1.4fr)]";
+/** Provider | bar and figure on the first line; the linked counts sit under them, so the list fits a half-width card. */
+const ROW = "grid grid-cols-1 items-center gap-x-4 sm:grid-cols-[minmax(0,1fr)_minmax(110px,1.1fr)]";
 
 function PatternLink({ row, p }: { row: PatternRow; p: Pattern }) {
   const text = patternText(p);
@@ -56,20 +56,22 @@ function Line({ row }: { row: PatternRow }) {
         </span>
         <span className="w-10 flex-none text-right text-body font-semibold tabular-nums">{share !== null && `${share}%`}</span>
       </span>
-      <span className="tabular-nums">{closed && <PatternLink row={row} p={closed} />}</span>
-      <span className="text-ink-soft">{stall && <PatternLink row={row} p={stall} />}</span>
+      <span className="flex flex-wrap gap-x-3 text-small tabular-nums text-ink-soft sm:col-span-2">
+        {closed && <PatternLink row={row} p={closed} />}
+        {stall && <PatternLink row={row} p={stall} />}
+      </span>
     </li>
   );
 }
 
-/** Supporting links with no object state, so they sit on the page grid unframed, like Safety (DEC-3). */
-export function PatternLinks({ patterns }: { patterns: Patterns }) {
+/** A chart panel like its neighbours: it sits in a card under "Where patients stall". */
+export function PatternLinks({ patterns, className }: { patterns: Patterns; className?: string }) {
   const { providers, smallCellRule } = patterns;
   if (providers.length === 0) return null;
   const shares = providers.map((r) => closedShare(r.patterns.find((p) => p.kind === "closed"))).filter((v): v is number => v !== null);
   const range = shares.length > 1 ? ` runs from ${Math.min(...shares)}% to ${Math.max(...shares)}%` : "";
   return (
-    <section aria-labelledby="patterns-h" className="mt-8" data-testid="provider-links">
+    <section aria-labelledby="patterns-h" className={className} data-testid="provider-links">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id="patterns-h" className="m-0 text-section font-medium">
           By provider
@@ -79,7 +81,7 @@ export function PatternLinks({ patterns }: { patterns: Patterns }) {
       <p data-testid="provider-takeaway" className="m-0 mt-1 text-body font-medium text-ink">
         Closed with evidence{range}
       </p>
-      <p className="m-0 mt-1 max-w-[80ch] text-small text-muted">
+      <p className="m-0 mt-1 text-small text-muted">
         Out of each provider&apos;s cases across every programme. Closed with evidence counts closures with evidence on file only, so it is lower than the
         programme chart&apos;s {STATUS_PART.closed.toLowerCase()}, which also counts cases that needed no follow-up. Each figure opens the filtered patient list.
         {smallCellRule && <> Small cells are suppressed at source ({smallCellRule}) and are never shown as a number or linked.</>}
