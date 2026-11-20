@@ -51,7 +51,7 @@ only ever receives synthetic data. No frontier model is in any request path.
 |---|---|---|---|
 | Web app | Vercel project `wasl` (team `kais-projects-42abda1c`), Root Directory `web`, alias `wasl-topaz-mu.vercel.app` | `web/` | **built** |
 | API | Container App `wasl-api` in environment `wasl-env-vnet` (VNet `wasl-vnet`); image from ACR `wasldemo8e952e` | root `Dockerfile` | **built** |
-| Run data and ledger | Storage account `waslrun4f7f2e`, share `wasl-run`, mounted at `/var/lib/wasl` as UID 10001 | one local pipeline run | **built, local**: the pipeline did not run on Azure |
+| Run data and ledger | Storage account `waslrun4f7f2e`, share `wasl-run`, mounted at `/var/lib/wasl` as UID 10001 | one local pipeline run, refreshed on 20 Nov 2026 (#256) | **built, local**: the pipeline did not run on Azure |
 | Audit agent | Foundry account `wasl-foundry-1608b4`, project `wasl-agents`, agent `wasl-audit-explainer` | `deploy/azure/agent/` | **built, demo**: output is unvalidated prose |
 | Gemma 3 4B | Modal app `wasl-gemma`, volume `wasl-gemma-weights`, secret `wasl-gemma-key`, one T4, scales to zero | `deploy/modal/` | **built** |
 | Secrets | Key Vault `wasl-kv-59c0db`: `wasl-auditor-token`, `gemma-api-key` | `deploy/azure/README.md` | **built** |
@@ -129,7 +129,8 @@ Modal CLI. It checks a Vercel token before storing it and never prints a token.
 - **The production alias is public by decision**, so judges can open it without an account. Every other Vercel
   deployment URL needs a team sign-in.
 - **The run data is a fixed snapshot.** Nothing refreshes it, because a new pipeline run invalidates the review
-  ledger. Refreshing is a deliberate manual step ([runbook](../deploy/azure/README.md), sections 1 and 2).
+  ledger. Refreshing is a deliberate manual step ([runbook](../deploy/azure/README.md), sections 1 and 2). The last
+  refresh, on 20 Nov 2026, added preferred language and masked phone numbers and reset the ledger (#256).
 - **No concurrent ledger write during a revision restart has been tested** on Azure Files.
 - **The agent identity still holds two Foundry model roles** from its `gpt-4.1-mini` version, which it no longer
   needs.
