@@ -92,7 +92,7 @@ test.describe("Evidence", () => {
     for (const row of runRows(/v2/)) await expect(gapTable).toContainText(row.wasl!.toLocaleString("en-US"));
     await gap.getByRole("button", { name: "Show as table" }).click();
 
-    // Accuracy: one whisker row per false-closure counter, the CRC row first, as a count with a bound (never a score).
+    // Accuracy: one "cases checked" bar per false-closure counter, the CRC row first, as a count with a bound (never a score).
     const safety = page.getByTestId("safety");
     const closureRows = evidence.accuracy.safety.filter((x) => x.metric.startsWith("[v2]") && /false closures/i.test(x.metric));
     await expect(safety.getByTestId("safety-row").first()).toContainText("Colorectal (CRC)");

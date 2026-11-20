@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Axis, Bar, ChartRow, Dot, Grid, Label, Legend, Seg, Tick, TipRows, Toggle, scale, ticksTo } from "@/components/charts/kit";
+import { Axis, Bar, ChartRow, CheckedBar, Dot, Grid, Label, Legend, Seg, Tick, TipRows, Toggle, ZeroFigure, scale, ticksTo } from "@/components/charts/kit";
 import { CHROME, SERIES } from "@/components/charts/palette";
 import { ChartFigure } from "@/components/programme/chart-kit";
 import type {
@@ -162,58 +162,60 @@ export function GapChart({
 const V2 = { color: SERIES.wasl, label: "Held-out noise (v2)" };
 const V1 = { color: SERIES.tuned, label: "Tuned-on noise (v1)" };
 
-/** The zero-event safety counters: observed 0 (the dot) and the 95% upper bound (the whisker), v2 above v1. */
+/**
+ * The zero-event safety counters as "cases checked, none wrong": per counter a bar for the held-out (v2) cases checked
+ * and a thinner one for the tuned-on (v1) run, on one count axis per panel, with any wrong ones as a clay segment at the
+ * bar's end. "0 of N" with a check and the 95% upper bound sit under the label; both runs are in the tooltip and table.
+ */
 export function SafetyChart({ closures, other }: { closures: SafetyPair[]; other: SafetyPair[] }) {
   const bounded = other.filter((p) => (p.v2 ?? p.v1)?.upper_95 != null);
   const countOnly = other.filter((p) => (p.v2 ?? p.v1)?.upper_95 == null);
-  const all = [...closures, ...bounded];
-  const max = niceMax(Math.max(...all.flatMap((p) => [p.v1?.upper_95 ?? 0, p.v2?.upper_95 ?? 0])) * 100) / 100;
-  const x = scale(0, max);
-  const ticks = ticksTo(max);
   const words = (s: EvidenceSafety | null) => (s ? safetyWords(s) : null);
-  const row = (p: SafetyPair, label: string) => {
-    const w2 = words(p.v2);
-    const w1 = words(p.v1);
-    const rate = (s: EvidenceSafety | null) => (s && s.denominator ? s.events / s.denominator : 0);
+  const checked = (s: EvidenceSafety | null) => s?.denominator ?? 0;
+  const panel = (pairs: SafetyPair[], name: (p: SafetyPair) => string) => {
+    const max = niceMax(Math.max(...pairs.flatMap((p) => [checked(p.v1), checked(p.v2)])));
+    const x = scale(0, max);
+    const ticks = ticksTo(max, 2);
     return (
-      <ChartRow
-        key={p.name}
-        label={label}
-        sub={w2?.count ?? w1?.count}
-        labelWidth="12rem"
-        track="h-8"
-        testId="safety-row"
-        tip={
-          <TipRows
-            title={p.name}
-            rows={[
-              ...(w2 ? [{ color: V2.color, name: `${V2.label}${w2.bound ? `, ${w2.bound}` : ""}`, value: w2.count }] : []),
-              ...(w1 ? [{ color: V1.color, name: `${V1.label}${w1.bound ? `, ${w1.bound}` : ""}`, value: w1.count }] : []),
-            ]}
-          />
-        }
-      >
-        <Grid ticks={ticks} x={x} />
-        {(
-          [
-            [p.v2, V2.color, 32],
-            [p.v1, V1.color, 72],
-          ] as const
-        ).map(([s, color, y]) =>
-          s && s.upper_95 != null ? (
-            <span key={y}>
-              <Seg from={x(rate(s))} to={x(s.upper_95)} color={color} y={y} />
-              <Tick x={x(s.upper_95)} color={color} y={y} h={10} />
-              <Dot x={x(rate(s))} y={y} color={color} size={8} />
-            </span>
-          ) : null,
-        )}
-        {p.v2?.upper_95 != null && (
-          <Label x={x(p.v2.upper_95)} y={32} strong>
-            ≤ {boundPct(p.v2.upper_95)}
-          </Label>
-        )}
-      </ChartRow>
+      <>
+        {pairs.map((p) => {
+          const w2 = words(p.v2);
+          const w1 = words(p.v1);
+          const lead = p.v2 ?? p.v1;
+          return (
+            <ChartRow
+              key={p.name}
+              label={name(p)}
+              sub={
+                lead &&
+                lead.denominator !== null && (
+                  <>
+                    <ZeroFigure events={lead.events} of={lead.denominator} className="mt-0.5" />
+                    {lead.upper_95 != null && <span className="block">≤ {boundPct(lead.upper_95)} at 95%</span>}
+                  </>
+                )
+              }
+              labelWidth="12rem"
+              track="h-8"
+              testId="safety-row"
+              tip={
+                <TipRows
+                  title={p.name}
+                  rows={[
+                    ...(w2 ? [{ color: V2.color, name: `${V2.label}${w2.bound ? `, ${w2.bound}` : ""}`, value: `${w2.count} wrong` }] : []),
+                    ...(w1 ? [{ color: V1.color, name: `${V1.label}${w1.bound ? `, ${w1.bound}` : ""}`, value: `${w1.count} wrong` }] : []),
+                  ]}
+                />
+              }
+            >
+              <Grid ticks={ticks} x={x} />
+              {p.v2 && <CheckedBar to={x(checked(p.v2))} wrong={x(p.v2.events)} color={V2.color} y={36} thick={10} />}
+              {p.v1 && <CheckedBar to={x(checked(p.v1))} wrong={x(p.v1.events)} color={V1.color} y={74} thick={4} />}
+            </ChartRow>
+          );
+        })}
+        <Axis ticks={ticks} x={x} format={fmt} labelWidth="12rem" title="Cases checked" />
+      </>
     );
   };
   const tableRows = [...closures, ...other].map((p) => {
@@ -223,24 +225,26 @@ export function SafetyChart({ closures, other }: { closures: SafetyPair[]; other
   });
   return (
     <ChartFigure
-      caption="Seen (dot) and the 95% upper bound on the true rate (whisker), seeds pooled"
-      table={{ caption: "Safety events and 95% upper bounds", head: ["Error", "v2 seen", "v2 upper bound", "v1 seen", "v1 upper bound"], rows: tableRows }}
+      caption="Cases checked (bar) and how many were wrong; under each count, the 95% upper bound on the true rate. Seeds pooled"
+      table={{ caption: "Safety events and 95% upper bounds", head: ["Error", "v2 wrong of checked", "v2 upper bound", "v1 wrong of checked", "v1 upper bound"], rows: tableRows }}
     >
-      <Legend items={[V2, V1]} />
+      <Legend items={[{ ...V2, shape: "bar" }, { ...V1, shape: "bar" }]} />
       <div data-testid="safety" className="mt-2">
-        {closures.map((p) => row(p, closureName(p.name)))}
-        {bounded.length > 0 && <p className="m-0 mt-3 text-small font-medium text-ink">Other safety counters</p>}
-        {bounded.map((p) => row(p, p.name))}
-        <Axis ticks={ticks} x={x} format={(v) => `${Number((v * 100).toFixed(2))}%`} labelWidth="12rem" />
+        {closures.length > 0 && panel(closures, (p) => closureName(p.name))}
+        {bounded.length > 0 && <p className="m-0 mt-4 text-small font-medium text-ink">Other safety counters</p>}
+        {bounded.length > 0 && panel(bounded, (p) => p.name)}
       </div>
       {countOnly.length > 0 && (
         <ul data-testid="safety-counts" className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0 text-small">
-          {countOnly.map((p) => (
-            <li key={p.name} className="rounded-chip bg-raised px-2 py-1 text-ink-soft">
-              {p.name.replace(/\s*\(not zero; see definitions\)/, "")}{" "}
-              <span className="font-medium text-ink tabular-nums">{words(p.v2 ?? p.v1)?.count}</span>
-            </li>
-          ))}
+          {countOnly.map((p) => {
+            const s = p.v2 ?? p.v1;
+            return (
+              <li key={p.name} className="inline-flex items-center gap-1 rounded-chip bg-raised px-2 py-1 text-ink-soft">
+                {p.name.replace(/\s*\(not zero; see definitions\)/, "")}{" "}
+                {s && s.denominator !== null ? <ZeroFigure events={s.events} of={s.denominator} /> : <span className="font-medium text-ink tabular-nums">{words(s)?.count}</span>}
+              </li>
+            );
+          })}
         </ul>
       )}
     </ChartFigure>

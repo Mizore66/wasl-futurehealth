@@ -9,7 +9,7 @@ test.describe("Results", () => {
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
     await expect(page.getByText("Frozen evaluation at code 075abc5")).toBeVisible();
     await expect(page.getByTestId("lead-figure")).toHaveText("0 of 3,035");
-    // False closures: a whisker per zero-event counter to its 95% upper bound, on one axis.
+    // False closures: a "cases checked" bar per zero-event counter, "0 of N" with its 95% upper bound beside it.
     await expect(page.getByTestId("bound-crc")).toContainText("0 of 3,035");
     await expect(page.getByTestId("bound-crc")).toContainText("≤ 0.12%");
     await expect(page.getByTestId("bound-wrong-patient")).toContainText("0 of 16,486");
@@ -89,7 +89,7 @@ test.describe("Results on a phone", () => {
     // Buttons are chart marks (tooltips) and "Show as table" toggles, nothing that changes data.
     for (const b of await page.locator("main button").all()) {
       const describedBy = await b.getAttribute("aria-describedby");
-      if (!describedBy) await expect(b).toHaveText("Show as table");
+      if (!describedBy) await expect(b).toHaveAccessibleName("Show as table");
       expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
     await expect(page.getByTestId("consent-lifecycle")).toBeVisible();

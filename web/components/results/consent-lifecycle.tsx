@@ -68,6 +68,7 @@ export function ConsentLifecycle({ timing }: { timing: Record<string, number> })
             <CountBars
               caption="Released message intents that broke a consent rule, out of all released"
               tableHead={["Counter", "Released intents"]}
+              checked
               rows={GUARDS.map((g) => ({ label: g.label, what: g.what, count: timing[g.key] ?? 0, of: released, testId: `consent-${g.key}` }))}
             />
           </div>

@@ -209,10 +209,13 @@ export default async function ProgrammePage() {
         <h2 id="safety-h" className="sr-only">
           Safety
         </h2>
-        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
+        {/* The zero is the good news: a positive check badge, not a muted glyph. */}
+        <span aria-hidden className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-pill-positive-bg text-positive">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+        </span>
         <p data-testid="safety-figure" className="m-0 text-[48px] font-semibold leading-none tracking-[-0.02em] text-ink">
           {safety.value}
         </p>
@@ -224,6 +227,11 @@ export default async function ProgrammePage() {
               See proof
             </Link>
           </p>
+          {safety.upper95 && (
+            <p data-testid="safety-bound" className="m-0 text-small text-muted">
+              95% upper bound on the true rate: {Number(parseFloat(safety.upper95).toPrecision(2))}%
+            </p>
+          )}
         </div>
       </section>
     </>
