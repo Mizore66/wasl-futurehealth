@@ -40,7 +40,7 @@ export async function axe(page: Page) {
 /**
  * Derived figures the Programme page prints that no source file states, each computed here from the sources with the page's formula:
  *  - "still open" per programme = cases - closed - overdue (shown only when it is not negative);
- *  - the gap in points between the true and Wasl 31-day rates = |a - b| of two sourced rates, to one decimal;
+ *  - the gaps in points between the true 31-day rate and the Wasl rate, the Emirates ID rate and the target = |a - b|, to one decimal;
  *  - on time by programme (metrics.on_time_by_programme): each window's share = on_time / eligible as a percent to one
  *    decimal, and per programme the summed eligible and on_time over its windows and their share, the same way.
  * Only the Programme checks allow these; nothing else gets through.
@@ -55,8 +55,15 @@ function derived(): Set<string> {
   const demo = (a: { kpi_all_referrals: number }) => Math.round(a.kpi_all_referrals * 1000) / 10;
   const held = (id: string) => Math.round((results.entries as Record<string, { value: number }>)[id].value * 1000) / 10;
   const gap = (a: number, b: number) => (Math.round(Math.abs(a - b) * 10) / 10).toString();
-  out.add(gap(demo(kpi.truth), demo(kpi.wasl_live)));
-  out.add(gap(held("kpi31.heldout.truth"), held("kpi31.heldout.wasl")));
+  const target = Number(/acceptable >(\d+)%/.exec(kpi.definition)![1]);
+  for (const [truth, wasl, eid] of [
+    [demo(kpi.truth), demo(kpi.wasl_live), demo(kpi.eid_only)],
+    [held("kpi31.heldout.truth"), held("kpi31.heldout.wasl"), held("kpi31.heldout.eid_only")],
+  ]) {
+    out.add(gap(truth, wasl));
+    out.add(gap(truth, eid));
+    out.add(gap(target, truth));
+  }
   const share = (on: number, of: number) => (Math.round((on / of) * 1000) / 10).toFixed(1);
   const sums = new Map<string, { eligible: number; onTime: number }>();
   for (const r of dashboard.metrics.on_time_by_programme ?? []) {
