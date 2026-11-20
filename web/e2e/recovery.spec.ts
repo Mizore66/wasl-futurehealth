@@ -7,23 +7,17 @@ async function noSeriousAxe(page: import("@playwright/test").Page) {
 }
 
 test.describe("Recovery fixture mode", () => {
-  test("shows ranking and exclusions while remaining read-only", async ({ page }) => {
+  test("shows the slot, its ranking and exclusions while remaining read-only", async ({ page }) => {
     await page.goto("/app/recovery");
-    await expect(page.getByRole("heading", { level: 1, name: "Colonoscopy" })).toBeVisible();
-    await expect(page.getByText("Al Mushrif · AD-1")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Recovery" })).toBeVisible();
     await expect(page.locator("main header [data-honesty]")).toHaveCount(0);
-    const window = page.getByRole("list", { name: "Scheduling window" });
-    await expect(window).toContainText("Requested");
-    await expect(window).toContainText("Day 12");
-    await expect(window).toContainText("Slot");
-    await expect(window).toContainText("Day 40");
-    await expect(window).toContainText("Day 47");
-    await expect(page.getByTestId("recovery-gap")).toContainText("7 days");
-    await expect(page.getByRole("heading", { name: /Rank 1/ })).toContainText("AHS-sr-910");
-    const excluded = page.locator("[data-eligible=false]");
-    await expect(excluded).toContainText("AHS-sr-900");
-    await excluded.getByText("Excluded").click();
-    await expect(excluded.getByTestId("excluded-by")).toHaveText("Source case for this release");
+    await expect(page.locator("[data-slot-row][aria-current=page]")).toContainText("AD-1 · Colonoscopy");
+    await expect(page.getByRole("heading", { level: 2, name: "Colonoscopy · AD-1" })).toBeVisible();
+    await expect(page.locator("[data-mark=slot]")).toContainText("Day 40");
+    await expect(page.locator("[data-mark=requested]")).toContainText("Day 12");
+    await expect(page.locator("[data-mark=due]")).toContainText("Day 47");
+    await expect(page.getByTestId("recovery-gap")).toHaveText("7 days before due");
+    await expect(page.getByRole("button", { name: /Rank 1 AHS-sr-910/, expanded: true })).toBeVisible();
     const outreach = page.getByTestId("recovery-outreach");
     await expect(outreach).toContainText("Outreach held");
     await expect(outreach).toContainText("Unknown");
@@ -32,7 +26,26 @@ test.describe("Recovery fixture mode", () => {
     await expect(page.getByText(/Programme match: pass/)).toBeVisible();
     const confirm = page.getByRole("button", { name: "Confirm backfill", exact: true });
     await expect(confirm).toBeDisabled();
-    await expect(confirm).toHaveAccessibleDescription(/Fixture mode is read-only/);    await noSeriousAxe(page);
+    await expect(confirm).toHaveAccessibleDescription(/Fixture mode is read-only/);
+    await noSeriousAxe(page);
+
+    await page.getByRole("tab", { name: /Excluded/ }).click();
+    const excluded = page.locator("[data-eligible=false]");
+    await expect(excluded).toContainText("AHS-sr-900");
+    await expect(excluded.getByTestId("excluded-by")).toHaveText("Source case for this release");
+    await expect(page).toHaveURL(/set=excluded/);
+    await page.reload();
+    await expect(page.getByRole("tab", { name: /Excluded/ })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("[data-eligible=false]")).toContainText("AHS-sr-900");
+  });
+
+  test("fits the board to the screen with panels that scroll on their own", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/app/recovery");
+    await expect(page.getByRole("heading", { level: 2, name: "Colonoscopy · AD-1" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(900);
+    const overflow = await page.locator("[role=tabpanel]").evaluateAll((panels) => panels.map((panel) => getComputedStyle(panel).overflowY));
+    expect(overflow).toEqual(["auto", "auto"]);
   });
 
   test("supports keyboard navigation and a narrow viewport", async ({ page }) => {
@@ -41,23 +54,22 @@ test.describe("Recovery fixture mode", () => {
     await page.keyboard.press("Tab");
     await expect(page.locator(":focus")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-    // The context panels start collapsed on a phone and open from their summaries.
-    await expect(page.getByText("Contact permission")).toBeHidden();
-    await page.getByText("Outreach held").click();
     await expect(page.getByText("Contact permission")).toBeVisible();
-    await page.getByRole("button", { name: "Slot source" }).click();
+    const source = page.getByRole("button", { name: "Slot source" });
+    await expect(source).toHaveAttribute("aria-expanded", "false");
+    await source.click();
     await expect(page.getByText("Missed appointment")).toBeVisible();
     await noSeriousAxe(page);
   });
 
-  test("keeps the window labels apart at 320 px", async ({ page }) => {
+  test("keeps the slot facts inside a 320 px screen", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto("/app/recovery");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    const boxes = await Promise.all(["requested", "slot", "due"].map((mark) => page.locator(`[data-mark=${mark}]`).boundingBox()));
-    const [requested, slot, due] = boxes.map((box) => box!);
-    expect(requested.x + requested.width).toBeLessThan(due.x);
-    expect(slot.y + slot.height).toBeLessThan(requested.y);
+    for (const mark of ["slot", "requested", "due"]) {
+      const box = (await page.locator(`[data-mark=${mark}]`).boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(320);
+    }
   });
 });
 
