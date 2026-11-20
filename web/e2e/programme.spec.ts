@@ -29,7 +29,7 @@ test.describe("Programme", () => {
     for (const [card, note] of [
       ["kpi-h", "The target is the DoH 31-day standard."],
       ["prog-h", "Still open is the programme"],
-      ["stall-h", "Simulated data: 2,100 colorectal and cervical cases."],
+      ["stall-h", "2,100 simulated colorectal and cervical cases."],
       ["cap-h", "Slots are suggested one patient at a time"],
     ] as const) {
       const section = page.locator(`section[aria-labelledby="${card}"]`);
