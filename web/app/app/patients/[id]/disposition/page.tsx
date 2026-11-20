@@ -6,7 +6,6 @@ import { dispositionContext } from "@/components/disposition/model";
 import { clinicianSignInWords } from "@/components/review/auth";
 import { ReviewerLogin, ReviewerSessionStatus } from "@/components/review/reviewer-login";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { getReviewCase, reviewerPersona } from "@/lib/api/reviewer-session";
 import { apiMode } from "@/lib/api/source";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
@@ -67,7 +66,6 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
           compact
           title="Clinician disposition"
           sub={`Case ${shortId(detail.case.id)} · ${detail.case.programme.replaceAll("_", " ")} · screening record ${detail.case.closed ? "closed by evidence" : "open"}`}
-          aside={<HonestyLabel kind="simulated">Synthetic case</HonestyLabel>}
         />
         <div className="p-4 md:p-pad">
           {live && viewer.session && (

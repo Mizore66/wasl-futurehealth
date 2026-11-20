@@ -53,7 +53,6 @@ export default async function ProgrammePage() {
           attached
           title="Colorectal screening"
           compact
-          aside={<HonestyLabel kind="simulated" className="bg-jade-50 text-jade-800">Synthetic run</HonestyLabel>}
           className="border-rule px-4 py-[17px] @min-[701px]:px-[clamp(19px,2.65cqi,42px)] @min-[701px]:py-[clamp(17px,2.2cqi,32px)]"
         />
 

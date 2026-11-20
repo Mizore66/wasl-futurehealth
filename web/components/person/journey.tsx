@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { PersonAssociationUnavailable, PersonCase, PersonJourney } from "@/lib/api/person-schema";
 import { caseHref, shortId } from "@/lib/domain/ids";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { actionLabels, lifecycleLabel, obligationsFor, personDisplay, programmeLabels, reasonLabel } from "./journey-model";
 
 const linkClass = "inline-flex min-h-11 items-center rounded-control px-2 text-ink underline underline-offset-4 hover:bg-active";
@@ -184,7 +183,6 @@ export function Journey({ journey }: { journey: PersonJourney }) {
               {journey.cases.length} linked case{journey.cases.length === 1 ? "" : "s"} · projection through day {journey.person.as_of_day}
             </>
           }
-          aside={display.synthetic && <HonestyLabel kind="simulated">Simulated names</HonestyLabel>}
         />
         <section aria-labelledby="identity-provenance" className="p-4 md:p-pad">
           <h2 id="identity-provenance" className="m-0 text-section font-semibold">Trusted identity links only</h2>

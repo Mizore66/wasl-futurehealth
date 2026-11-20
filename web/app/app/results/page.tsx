@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SERIES } from "@/components/charts/palette";
 import { BoundChart, CountBars, IntervalChart, KpiChart, UnitChart, type Bound, type Kpi } from "@/components/results/charts";
 import { ConsentLifecycle } from "@/components/results/consent-lifecycle";
@@ -173,7 +172,6 @@ export default async function ResultsPage() {
         attached
         title="Results"
         sub={`Frozen evaluation at code ${results.frozen_revision.slice(0, 7)} · 5 seeds · held-out noise · synthetic patients, real report texts`}
-        aside={<HonestyLabel kind="simulated">Simulated evaluation</HonestyLabel>}
       />
       {/* The sections share the sheet; the 1px gaps show the line colour as rules between them. */}
       <div className="grid gap-px bg-line lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">

@@ -8,7 +8,6 @@ import { cancelBackfill, confirmBackfill } from "@/app/app/recovery/actions";
 import { PageHeader } from "@/components/shell/page-header";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { providerLabel } from "@/components/worklist/model";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { RecoveryCandidate, RecoveryDetail, RecoveryList, RecoverySlot } from "@/lib/api/recovery-schema";
 import { cx } from "@/lib/cx";
 import { caseHref, shortId } from "@/lib/domain/ids";
@@ -261,7 +260,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
          
           title="Recovery"
           sub="Released capacity from missed appointments"
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
         <p role="status" className="m-0 p-4">
@@ -303,7 +301,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             </button>
           }
           sub={`${providerLabel(slot.provider)} · ${slot.unit}`}
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
 
@@ -537,7 +534,8 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
         </div>
       )}
       {readOnly && (
-        <p id="rc-read-only" className="mb-0 mt-3 text-small text-muted">
+        // Only the disabled confirm buttons' description: no visible footnote under the board.
+        <p id="rc-read-only" className="sr-only">
           Fixture mode is read-only. Confirmations are never simulated in browser state.
         </p>
       )}

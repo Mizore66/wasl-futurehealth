@@ -7,11 +7,11 @@ async function noSeriousAxe(page: import("@playwright/test").Page) {
 }
 
 test.describe("Recovery fixture mode", () => {
-  test("shows synthetic provenance, ranking and exclusions while remaining read-only", async ({ page }) => {
+  test("shows ranking and exclusions while remaining read-only", async ({ page }) => {
     await page.goto("/app/recovery");
     await expect(page.getByRole("heading", { level: 1, name: "Colonoscopy" })).toBeVisible();
     await expect(page.getByText("Al Mushrif · AD-1")).toBeVisible();
-    await expect(page.locator("[data-honesty=simulated]", { hasText: "Simulated" }).first()).toBeVisible();
+    await expect(page.locator("main header [data-honesty]")).toHaveCount(0);
     const window = page.getByRole("list", { name: "Scheduling window" });
     await expect(window).toContainText("Requested");
     await expect(window).toContainText("Day 12");
@@ -30,9 +30,9 @@ test.describe("Recovery fixture mode", () => {
     await expect(outreach).toContainText("Unconfirmed");
     await page.getByText("All checks (2)").first().click();
     await expect(page.getByText(/Programme match: pass/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Confirm backfill", exact: true })).toBeDisabled();
-    await expect(page.getByText(/Fixture mode is read-only/)).toBeVisible();
-    await noSeriousAxe(page);
+    const confirm = page.getByRole("button", { name: "Confirm backfill", exact: true });
+    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveAccessibleDescription(/Fixture mode is read-only/);    await noSeriousAxe(page);
   });
 
   test("supports keyboard navigation and a narrow viewport", async ({ page }) => {

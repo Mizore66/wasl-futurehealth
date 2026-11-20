@@ -441,7 +441,6 @@ export default function EvidencePage() {
       <PageHeader
         title="Evidence"
         sub={`What Wasl measured, how sure we are, and how to check it. Frozen at code ${ev.generated.revision.slice(0, 7)} on ${frozenWords(ev.generated.frozen_at)}, before the held-out runs.`}
-        aside={<HonestyLabel kind="simulated">Synthetic patients</HonestyLabel>}
       />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-gap">
         <Headline ev={ev} />
