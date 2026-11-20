@@ -20,6 +20,9 @@ test.describe("Programme", () => {
     await expect(page.getByTestId("kpi-wasl")).toHaveText("96%");
     await expect(page.getByRole("group", { name: "Share of on-time colonoscopies each method sees, on a 0 to 100% scale: Wasl 96%, Emirates ID only 35%." })).toBeVisible();
     await expect(page.getByTestId("kpi-programme")).toHaveText("Programme on-time rate: 31.9% (DoH target 90%) — Wasl shows who still needs a colonoscopy.");
+    await expect(page.getByTestId("kpi-message")).toHaveText(
+      "Wasl doesn't create colonoscopy slots. It makes sure no completed colonoscopy is missed and no lost patient stays invisible.",
+    );
     await expect(page.getByText("1 in 6 on your chase list is already done.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme.png", fullPage: true });
     await axe(page);
