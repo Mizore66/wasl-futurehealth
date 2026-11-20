@@ -1,0 +1,119 @@
+{
+  "generated": {
+    "revision": "075abc5ad04a",
+    "frozen_at": "2026-11-02T04:33:36.064230Z",
+    "source": "pipeline/results/final/summary.json",
+    "generated_by": "scripts/evidence.py"
+  },
+  "impact": {
+    "per_1000": [
+      { "row": "Completions seen within 31 days", "eid_only": 113, "wasl": 307, "truth": 319, "unit": "per 1,000" },
+      { "row": "Share of true completions seen", "eid_only": 35, "wasl": 96, "truth": 100, "unit": "%" },
+      { "row": "Wrongly flagged \"not followed up\"", "eid_only": 206, "wasl": 12, "truth": 0, "unit": "per 1,000" },
+      { "row": "Navigator worklist size", "eid_only": 887, "wasl": 693, "truth": 681, "unit": "per 1,000" },
+      { "row": "Worklist precision", "eid_only": 77, "wasl": 98, "truth": null, "unit": "%" }
+    ],
+    "calibration": {
+      "label": "SEHA Abu Dhabi ambulatory clinics, 2015–16: FIT-positive patients with a follow-up colonoscopy",
+      "value": 30.5,
+      "source": "BMC Cancer 2021",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343888/",
+      "caveat": "No fixed 31-day window, and SEHA counted only colonoscopies inside its own network."
+    },
+    "modelled": {
+      "label": "Modelled, conditional on navigation acting on the corrected worklist. Team arithmetic per 1,000 positive FITs.",
+      "scenarios": [
+        { "name": "worst", "uplift_pp": 0, "ppv": 2.5, "extra_colonoscopies_per_1000": 0, "cancers_found_per_1000": 0 },
+        { "name": "base", "uplift_pp": 3, "ppv": 2.5, "extra_colonoscopies_per_1000": 30, "cancers_found_per_1000": 0.75 },
+        { "name": "best", "uplift_pp": 11, "ppv": 5.5, "extra_colonoscopies_per_1000": 110, "cancers_found_per_1000": 6.05 }
+      ],
+      "tornado": [
+        { "input": "Navigation uplift", "low": "3 pp", "high": "11 pp", "out_low": 0.75, "out_high": 2.75 },
+        { "input": "CRC yield per colonoscopy", "low": "2.5%", "high": "5.5%", "out_low": 0.75, "out_high": 1.65 },
+        { "input": "Share of the corrected list acted on", "low": "50%", "high": "100%", "out_low": 0.375, "out_high": 0.75 }
+      ],
+      "parameters": [
+        { "name": "Navigation uplift in colonoscopy completion", "value": "3–11 pp", "scope": "INTL", "source": "Selby et al. 2021", "url": "https://doi.org/10.1177/0969141320904977" },
+        { "name": "CRC yield per colonoscopy, Abu Dhabi", "value": "2.5% (11 of 436)", "scope": "UAE", "source": "BMC Cancer 2021, team calculation", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343888/" },
+        { "name": "CRC yield per colonoscopy, Korea", "value": "5.5%", "scope": "INTL", "source": "Korean national programme", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5832343/" },
+        { "name": "Share of the corrected list acted on", "value": "50–100%", "scope": "ASSUMED", "source": "Team assumption", "url": "" }
+      ]
+    }
+  },
+  "accuracy": {
+    "definitions": [
+      { "term": "False closure", "meaning": "A loop marked closed when the patient never had the test. The patient drops off the worklist. This is the dangerous error." },
+      { "term": "False match", "meaning": "Two records joined that belong to different people. Rate is 1 − pair precision." },
+      { "term": "Missed match", "meaning": "Two records of one person left apart. Rate is 1 − pair recall. It adds work; it does not close a loop." },
+      { "term": "v1 and v2 noise", "meaning": "v1 is the corruption the system was tuned on. v2 is an independent corruptor never used for training or rule design." }
+    ],
+    "linkage": [
+      { "noise": "v1", "metric": "False-match rate", "value": 0.011, "low": 0.0082, "high": 0.0138 },
+      { "noise": "v2", "metric": "False-match rate", "value": 0.0092, "low": 0.0074, "high": 0.011 },
+      { "noise": "v1", "metric": "Missed-match rate", "value": 0.0298, "low": 0.028, "high": 0.0316 },
+      { "noise": "v2", "metric": "Missed-match rate", "value": 0.1014, "low": 0.0953, "high": 0.1075 },
+      { "noise": "v1", "metric": "31-day rate error, Wasl", "value": 0.0096, "low": 0.0064, "high": 0.0128 },
+      { "noise": "v2", "metric": "31-day rate error, Wasl", "value": 0.031, "low": 0.0254, "high": 0.0366 },
+      { "noise": "v1", "metric": "31-day rate error, Emirates ID only", "value": 0.1946, "low": 0.1849, "high": 0.2043 },
+      { "noise": "v2", "metric": "31-day rate error, Emirates ID only", "value": 0.2066, "low": 0.1889, "high": 0.2243 }
+    ],
+    "safety": [
+      { "metric": "CRC false closures, v1 noise", "events": 0, "denominator": 3161, "upper_95": 0.00117 },
+      { "metric": "CRC false closures, v2 noise", "events": 0, "denominator": 3035, "upper_95": 0.00121 },
+      { "metric": "Cervical false closures, v2 noise", "events": 0, "denominator": 1303, "upper_95": 0.00283 },
+      { "metric": "Wrong-patient messages released, v2 noise", "events": 0, "denominator": 16486, "upper_95": 0.00022 },
+      { "metric": "Messages released without consent, v2 noise", "events": 0, "denominator": 11650, "upper_95": 0.00032 },
+      { "metric": "Forged events with effect, v2 noise", "events": 0, "denominator": 106, "upper_95": null }
+    ],
+    "worst": [
+      { "label": "Worst seed, missed-match rate (v2)", "value": "10.9% (seed 41)" },
+      { "label": "Worst stratum, CRC recall by age band (v2)", "value": "0.766 (under 40)" },
+      { "label": "Review load by name origin (v2), highest over lowest", "value": "1.124 (p = 0.007)" }
+    ]
+  },
+  "benchmarks": [],
+  "claims": [
+    {
+      "id": "measured-gap",
+      "claim": "Wasl raises the measured 31-day colonoscopy rate toward the true rate on a synthetic cohort.",
+      "status": "simulated",
+      "evidence": "pipeline/results/final/SUMMARY.md",
+      "reproduce": "make verify"
+    },
+    {
+      "id": "false-closures",
+      "claim": "0 false closures in 3,035 held-out CRC loops; 95% upper bound 0.12%.",
+      "status": "simulated",
+      "evidence": "pipeline/results/final/summary.json",
+      "reproduce": "make verify SEED=<n>"
+    },
+    {
+      "id": "pipeline",
+      "claim": "Linkage, the closure gate and the audit chain run end to end on FHIR input.",
+      "status": "built",
+      "evidence": "pipeline/",
+      "reproduce": "cd pipeline && go test ./..."
+    },
+    {
+      "id": "encoder",
+      "claim": "The name encoder is tested on held-out real Wikidata name variants.",
+      "status": "built",
+      "evidence": "encoder/RESULTS.md",
+      "reproduce": "bash encoder/run_all.sh"
+    },
+    {
+      "id": "staff-app",
+      "claim": "Staff can see the frozen results in the hosted app.",
+      "status": "built",
+      "evidence": "/app/results",
+      "reproduce": "Open /app/results"
+    },
+    {
+      "id": "modelled-benefit",
+      "claim": "Navigation on the corrected list could find more cancers per 1,000 positives.",
+      "status": "designed",
+      "evidence": "docs/EVIDENCE.md",
+      "reproduce": "Not reproducible: modelled from published parameters"
+    }
+  ]
+}
