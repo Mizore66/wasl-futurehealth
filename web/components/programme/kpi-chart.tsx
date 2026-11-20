@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChartFigure, Mark, Segmented } from "./chart-kit";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { ChartFigure, Mark } from "./chart-kit";
 import { pct, points, type KpiSet } from "./model";
 
 type Source = "demo" | "heldout";
@@ -108,11 +109,11 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
       </ChartFigure>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Segmented
+        <SegmentedToggle
           label="31-day rate source"
           value={source}
           onChange={setSource}
-          options={[
+          items={[
             { value: "demo", label: SOURCES.demo.button },
             { value: "heldout", label: SOURCES.heldout.button },
           ]}
