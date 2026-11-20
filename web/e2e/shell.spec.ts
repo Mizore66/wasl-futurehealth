@@ -80,6 +80,7 @@ test.describe("sidebar (desktop)", () => {
       "Programme",
       "Review desk",
       "Audit trail",
+      "Evidence",
       "Pipeline",
       "Results",
       "Agent review",
@@ -313,7 +314,7 @@ const navNames = async (page: Page) => {
 const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
 // The sidebar groups (redesign): Workspace with the Today queues nested under Today, then Oversight, then Evidence.
 // Queue and nav counts are stripped from the stop text (tabStop), so the order is checked without the data.
-const FOCUS_TEXT = ["Skip to main content", "Waslوصل", "Today", "To call", "Waiting", "No owner", "Patients", "Referrals", "Recovery", "Programme", "Review desk", "Audit trail", "Pipeline", "Results", "Agent reviewExperimental"];
+const FOCUS_TEXT = ["Skip to main content", "Waslوصل", "Today", "To call", "Waiting", "No owner", "Patients", "Referrals", "Recovery", "Programme", "Review desk", "Audit trail", "Evidence", "Pipeline", "Results", "Agent reviewExperimental"];
 // Worklist pages (Today, Referrals) add a second skip link, "Skip to worklist", straight after "Skip to main content".
 const WORKLIST_ROUTES = new Set(["/app/today", "/app/referrals"]);
 const withWorklistSkip = (route: string, stops: string[]) =>

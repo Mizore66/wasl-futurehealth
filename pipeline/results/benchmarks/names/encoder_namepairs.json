@@ -1,0 +1,191 @@
+{
+ "dataset": "Sayedyousef/arabic-name-pairs dict_FINAL.json",
+ "raw_entries": 22797,
+ "unique_normalised_pairs": 22672,
+ "training_pairs_checked": 316511,
+ "dropped_exact_pair_overlap": 183,
+ "tiers": [
+  {
+   "tier": "pair_dedup",
+   "pairs": 22489,
+   "hard_negatives": 22467,
+   "roc_auc_hard_negatives": [
+    0.994706,
+    0.994033,
+    0.995379
+   ],
+   "roc_auc_random_negatives": [
+    0.997246,
+    0.996761,
+    0.997731
+   ],
+   "positive_beats_its_hard_negative": {
+    "k": 22407,
+    "n": 22467,
+    "value": 0.997329,
+    "low": 0.996564,
+    "high": 0.997925
+   },
+   "threshold": {
+    "cosine_threshold": 0.735,
+    "chosen_on": "random 20% of pairs, best F1",
+    "reported_on": "other 80%, 1:1 hard negatives",
+    "positive_share": 0.5,
+    "precision": {
+     "k": 17719,
+     "n": 18070,
+     "value": 0.980576,
+     "low": 0.978459,
+     "high": 0.982488
+    },
+    "recall": {
+     "k": 17719,
+     "n": 17970,
+     "value": 0.986032,
+     "low": 0.98421,
+     "high": 0.987647
+    },
+    "false_match_rate": {
+     "k": 351,
+     "n": 17970,
+     "value": 0.019533,
+     "low": 0.01761,
+     "high": 0.021661
+    }
+   },
+   "retrieval": [
+    {
+     "direction": "latin_to_arabic",
+     "gallery": 12493,
+     "top1": {
+      "k": 19534,
+      "n": 22486,
+      "value": 0.868718,
+      "low": 0.864241,
+      "high": 0.873069
+     },
+     "top10": {
+      "k": 22142,
+      "n": 22486,
+      "value": 0.984702,
+      "low": 0.983013,
+      "high": 0.986225
+     }
+    },
+    {
+     "direction": "arabic_to_latin",
+     "gallery": 22486,
+     "top1": {
+      "k": 11056,
+      "n": 12493,
+      "value": 0.884976,
+      "low": 0.879262,
+      "high": 0.890452
+     },
+     "top10": {
+      "k": 12259,
+      "n": 12493,
+      "value": 0.98127,
+      "low": 0.97874,
+      "high": 0.983503
+     }
+    }
+   ]
+  },
+  {
+   "tier": "unseen_tokens",
+   "pairs": 1440,
+   "hard_negatives": 1428,
+   "roc_auc_hard_negatives": [
+    0.997783,
+    0.996062,
+    0.999504
+   ],
+   "roc_auc_random_negatives": [
+    0.999669,
+    0.999004,
+    1
+   ],
+   "positive_beats_its_hard_negative": {
+    "k": 1426,
+    "n": 1428,
+    "value": 0.998599,
+    "low": 0.994908,
+    "high": 0.999616
+   },
+   "threshold": {
+    "cosine_threshold": 0.745,
+    "chosen_on": "random 20% of pairs, best F1",
+    "reported_on": "other 80%, 1:1 hard negatives",
+    "positive_share": 0.5,
+    "precision": {
+     "k": 1128,
+     "n": 1140,
+     "value": 0.989474,
+     "low": 0.981691,
+     "high": 0.993968
+    },
+    "recall": {
+     "k": 1128,
+     "n": 1143,
+     "value": 0.986877,
+     "low": 0.97846,
+     "high": 0.992031
+    },
+    "false_match_rate": {
+     "k": 12,
+     "n": 1143,
+     "value": 0.010499,
+     "low": 0.006016,
+     "high": 0.018261
+    }
+   },
+   "retrieval": [
+    {
+     "direction": "latin_to_arabic",
+     "gallery": 519,
+     "top1": {
+      "k": 1365,
+      "n": 1440,
+      "value": 0.947917,
+      "low": 0.935202,
+      "high": 0.958248
+     },
+     "top10": {
+      "k": 1437,
+      "n": 1440,
+      "value": 0.997917,
+      "low": 0.993893,
+      "high": 0.999291
+     }
+    },
+    {
+     "direction": "arabic_to_latin",
+     "gallery": 1440,
+     "top1": {
+      "k": 505,
+      "n": 519,
+      "value": 0.973025,
+      "low": 0.955234,
+      "high": 0.983865
+     },
+     "top10": {
+      "k": 514,
+      "n": 519,
+      "value": 0.990366,
+      "low": 0.977648,
+      "high": 0.995878
+     }
+    }
+   ]
+  }
+ ],
+ "sha256": {
+  "dict_FINAL.json": "b35b2de4d1d584df374621199bd4b9fbb1aa8ad0dd198ed7c35e81d8a02dc71d",
+  "encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+  "persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+  "wd_arabic": "2c4511e1828b2d857467eb6271f244b3aaad7fdaaadc76e0c1f048f2c4dadf07",
+  "wikidata_variants.jsonl": "b82b4b530a5fbe0ab86ce81dd4362a13ba0842201b9fdb31ea2e273b64c231b8"
+ },
+ "seed": 1
+}

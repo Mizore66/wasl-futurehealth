@@ -1,0 +1,224 @@
+{
+ "config": "names_dob",
+ "records_a_b": [
+  5000,
+  5000
+ ],
+ "true_pairs": 5000,
+ "link_threshold": 0.7,
+ "review_floor": 0.2,
+ "models": {
+  "dataset4a.csv": "07c7cb3f0a8d88180e80317f2a60499dee4e8324a44c38059f4e7fed0a8b4488",
+  "dataset4b.csv": "2eed76c99fa2237be3ec013a123427926d4158abcb3a8f65874d6c7f1358cf2c",
+  "encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+  "lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb"
+ },
+ "blocking_recall": {
+  "k": 4821,
+  "n": 5000,
+  "value": 0.9642,
+  "low": 0.958684,
+  "high": 0.969004
+ },
+ "auto_link": {
+  "predicted_pairs": 4425,
+  "true_positives": 4332,
+  "false_positives": 93,
+  "false_negatives": 668,
+  "precision": {
+   "k": 4332,
+   "n": 4425,
+   "value": 0.978983,
+   "low": 0.974323,
+   "high": 0.982812
+  },
+  "recall": {
+   "k": 4332,
+   "n": 5000,
+   "value": 0.8664,
+   "low": 0.856688,
+   "high": 0.87555
+  },
+  "f1": 0.919257,
+  "false_match_rate": {
+   "k": 67,
+   "n": 5000,
+   "value": 0.0134,
+   "low": 0.010566,
+   "high": 0.016981
+  },
+  "missed_match_rate": {
+   "k": 668,
+   "n": 5000,
+   "value": 0.1336,
+   "low": 0.12445,
+   "high": 0.143312
+  }
+ },
+ "auto_link_direct": {
+  "predicted_pairs": 4387,
+  "true_positives": 4335,
+  "false_positives": 52,
+  "false_negatives": 665,
+  "precision": {
+   "k": 4335,
+   "n": 4387,
+   "value": 0.988147,
+   "low": 0.98449,
+   "high": 0.990949
+  },
+  "recall": {
+   "k": 4335,
+   "n": 5000,
+   "value": 0.867,
+   "low": 0.857305,
+   "high": 0.876131
+  },
+  "f1": 0.923618,
+  "false_match_rate": {
+   "k": 42,
+   "n": 5000,
+   "value": 0.0084,
+   "low": 0.006221,
+   "high": 0.011334
+  },
+  "missed_match_rate": {
+   "k": 665,
+   "n": 5000,
+   "value": 0.133,
+   "low": 0.123869,
+   "high": 0.142695
+  }
+ },
+ "auto_or_review": {
+  "predicted_pairs": 4615,
+  "true_positives": 4508,
+  "false_positives": 107,
+  "false_negatives": 492,
+  "precision": {
+   "k": 4508,
+   "n": 4615,
+   "value": 0.976815,
+   "low": 0.97206,
+   "high": 0.980776
+  },
+  "recall": {
+   "k": 4508,
+   "n": 5000,
+   "value": 0.9016,
+   "low": 0.893033,
+   "high": 0.90955
+  },
+  "f1": 0.937702,
+  "false_match_rate": {
+   "k": 86,
+   "n": 5000,
+   "value": 0.0172,
+   "low": 0.013949,
+   "high": 0.021192
+  },
+  "missed_match_rate": {
+   "k": 492,
+   "n": 5000,
+   "value": 0.0984,
+   "low": 0.09045,
+   "high": 0.106967
+  }
+ },
+ "oracle_threshold_sweep": [
+  {
+   "thr": 0.05,
+   "precision": 0.955849,
+   "recall": 0.9136,
+   "f1": 0.934247
+  },
+  {
+   "thr": 0.1,
+   "precision": 0.969037,
+   "recall": 0.9076,
+   "f1": 0.937313
+  },
+  {
+   "thr": 0.2,
+   "precision": 0.976815,
+   "recall": 0.9016,
+   "f1": 0.937702
+  },
+  {
+   "thr": 0.3,
+   "precision": 0.980302,
+   "recall": 0.8958,
+   "f1": 0.936148
+  },
+  {
+   "thr": 0.4,
+   "precision": 0.982736,
+   "recall": 0.888,
+   "f1": 0.932969
+  },
+  {
+   "thr": 0.5,
+   "precision": 0.985218,
+   "recall": 0.8798,
+   "f1": 0.92953
+  },
+  {
+   "thr": 0.6,
+   "precision": 0.987345,
+   "recall": 0.8738,
+   "f1": 0.927109
+  },
+  {
+   "thr": 0.7,
+   "precision": 0.988147,
+   "recall": 0.867,
+   "f1": 0.923618
+  },
+  {
+   "thr": 0.8,
+   "precision": 0.988689,
+   "recall": 0.8566,
+   "f1": 0.917917
+  },
+  {
+   "thr": 0.9,
+   "precision": 0.990106,
+   "recall": 0.8406,
+   "f1": 0.909248
+  },
+  {
+   "thr": 0.95,
+   "precision": 0.991125,
+   "recall": 0.8264,
+   "f1": 0.901298
+  }
+ ],
+ "linker_stats": {
+  "guard_rejects": 10,
+  "merges": 4386
+ },
+ "missing_dob_a_b": [
+  94,
+  199
+ ],
+ "missing_id_a_b": [
+  5000,
+  5000
+ ],
+ "unchanged": [
+  "name encoder models/encoder_weights.json (Encoder.Embed)",
+  "registration identity: latinForm, tokensOf, skeleton, Luhn check (registrationIdentity)",
+  "candidate generation: exact top-10 cosine + skeleton rule keys (cap 300) + ID index (LinkerCore.candidates)",
+  "30 pair features (pairFeats) and LightGBM scorer models/lgb_stream.json",
+  "union threshold 0.70 (LinkThr) and review floor 0.20 (LinkReview)",
+  "merge rules: cannot-links, cluster guard, ID cluster clash (LinkerCore.newRecord / Link)"
+ ],
+ "adapted": [
+  "name = given_name + ' ' + surname",
+  "date_of_birth YYYYMMDD -\u003e YYYY-MM-DD (else missing)",
+  "sex missing on every record (FEBRL has none)",
+  "address, suburb, postcode, state unused (Wasl has no address fields)",
+  "arrival order: all of A, then all of B",
+  "soc_sec_id unused: Wasl's ID slot only accepts a 15-digit 784-prefixed Luhn-valid Emirates ID"
+ ]
+}

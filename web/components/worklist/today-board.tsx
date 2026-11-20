@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Check, ChevronDown, CircleAlert, Folder, IdCard, Phone, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, CircleAlert, Clock, Folder, IdCard, Phone, Search, UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isTodayQueue, publishTodayCounts, type TodayQueue } from "@/components/shell/today-counts";
 import { formatDay } from "@/lib/domain/day";
@@ -970,34 +970,57 @@ export function TodayBoard({
         days since referral · {clockWords(p).long}
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button
-          variant="cta"
-          size="touch"
-          disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
-          onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
-          className={cn("px-5", callingNow && "bg-ink-soft")}
-        >
-          <Phone aria-hidden strokeWidth={1.8} />
-          {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
-          {callingNow ? (
-            <span>Logging call · {first}</span>
-          ) : (
-            <span>
-              Log call<span className="sr-only"> · {first}</span>
+      {/*
+       * The case's one job, in order: call, then record how it went. Both live in this panel, so the call is the single
+       * primary action and its outcomes read as its second step. Putting the task off sits below, at text weight.
+       */}
+      <section
+        aria-label="Call"
+        className={cn("mt-4 rounded-card border bg-surface p-4", chipsLive ? "border-jade-600 shadow-[inset_3px_0_var(--color-jade-600)]" : "border-line")}
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button
+            variant="cta"
+            size="touch"
+            disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
+            onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
+            className={cn("px-5", callingNow && "bg-ink-soft")}
+          >
+            <Phone aria-hidden strokeWidth={1.8} />
+            {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
+            {callingNow ? (
+              <span>Logging call · {first}</span>
+            ) : (
+              <span>
+                Log call<span className="sr-only"> · {first}</span>
+              </span>
+            )}
+          </Button>
+          {contact && (
+            <span data-testid="contact-status" className={cn("inline-flex items-center gap-1.5 text-small", contact.tone === "ok" ? "text-jade-700" : "font-medium text-warning")}>
+              {contact.tone === "ok" ? <Check aria-hidden className="size-4" /> : <CircleAlert aria-hidden className="size-4" />}
+              {contact.label}
             </span>
           )}
-        </Button>
-        {contact && (
-          <span data-testid="contact-status" className={cn("inline-flex items-center gap-1.5 text-small", contact.tone === "ok" ? "text-jade-700" : "font-medium text-warning")}>
-            {contact.tone === "ok" ? <Check aria-hidden className="size-4" /> : <CircleAlert aria-hidden className="size-4" />}
-            {contact.label}
-          </span>
+        </div>
+        {chips.length > 0 && stage !== "elsewhere" && (
+          <div className="mt-4 border-t border-rule pt-3">
+            <h3 data-focus="chips" tabIndex={-1} className="m-0 text-body font-medium">
+              {chipsTitle}
+            </h3>
+            <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
+              {chips.map(([label, choose]) => (
+                <Button key={label} variant="chip" size="touch" disabled={writing || ledgerInvalid} onClick={choose} className={chipsLive ? "border-ink" : "border-control"}>
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
         )}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      </section>
+      <div className="mt-2 flex flex-wrap items-center gap-1">
         <Button
-          variant="quiet"
+          variant="tertiary"
           size="touch"
           disabled={writing || ledgerInvalid}
           onClick={() =>
@@ -1008,6 +1031,7 @@ export function TodayBoard({
             })
           }
         >
+          <Clock aria-hidden />
           Snooze to tomorrow
         </Button>
         {p.view === "none" ? (
@@ -1025,7 +1049,7 @@ export function TodayBoard({
           </Button>
         ) : (
           <Button
-            variant="quiet"
+            variant="tertiary"
             size="touch"
             disabled={writing || ledgerInvalid}
             onClick={() =>
@@ -1039,6 +1063,7 @@ export function TodayBoard({
               )
             }
           >
+            <UserRoundCheck aria-hidden />
             Hand to {HANDOFF_OWNER}
           </Button>
         )}
@@ -1165,21 +1190,6 @@ export function TodayBoard({
             );
           }}
         />
-      )}
-
-      {chips.length > 0 && stage !== "elsewhere" && (
-        <div className="mt-4">
-          <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
-            {chipsTitle}
-          </h3>
-          <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
-            {chips.map(([label, choose]) => (
-              <Button key={label} variant="chip" size="touch" disabled={writing || ledgerInvalid} onClick={choose} className={chipsLive ? "border-ink" : "border-control"}>
-                {label}
-              </Button>
-            ))}
-          </div>
-        </div>
       )}
 
       {p.teachBackCallback && (

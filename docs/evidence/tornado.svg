@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 146" width="760" height="146" role="img" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<title>Modelled cancers found per 1,000 positive FITs: which input matters most</title><desc>Modelled, conditional on navigation acting on the corrected list. Not a Wasl result. Others held at base.</desc>
+<rect width="760" height="146" fill="#fcfcfb"/>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#0b0b0b">Modelled cancers found per 1,000 positive FITs: which input matters most</text>
+<text x="16" y="46" font-size="12" fill="#52514e">Modelled, conditional on navigation acting on the corrected list. Not a Wasl result. Others held at base.</text>
+<text x="16.0" y="82.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Navigation uplift (INTL): 3 pp to 11 pp</text>
+<rect x="448.2" y="70.0" width="261.8" height="16.0" rx="2" fill="#2a78d6"><title>Navigation uplift (INTL): 0.75 to 2.75 cancers per 1,000</title></rect>
+<text x="716.0" y="82.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">2.75</text>
+<text x="16.0" y="108.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">CRC found per colonoscopy (UAE low, INTL high): 2.5% to 5.5%</text>
+<rect x="448.2" y="96.0" width="117.8" height="16.0" rx="2" fill="#2a78d6"><title>CRC found per colonoscopy (UAE low, INTL high): 0.75 to 1.65 cancers per 1,000</title></rect>
+<text x="572.0" y="108.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">1.65</text>
+<line x1="448.2" y1="62" x2="448.2" y2="122" stroke="#0b0b0b" stroke-dasharray="3 3"/><text x="448.2" y="136.0" font-size="11" fill="#52514e" text-anchor="middle" font-weight="400">base 0.75</text>
+</svg>

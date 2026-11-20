@@ -24,6 +24,7 @@ export const ROUTES = [
   "/app/pipeline/matching",
   "/app/pipeline/reading",
   "/app/results",
+  "/app/evidence",
   "/patient/notice",
   "/patient/check",
   "/patient/book",

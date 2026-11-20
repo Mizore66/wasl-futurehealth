@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 344" width="760" height="344" role="img" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<title>Missed-match rate (1 - recall) with 95% intervals</title><desc>Missed closures stay on the worklist. Closure false-match rate is 0 in every programme; linkage pairs are not 0 (see table).</desc>
+<rect width="760" height="344" fill="#fcfcfb"/>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#0b0b0b">Missed-match rate (1 - recall) with 95% intervals</text>
+<text x="16" y="46" font-size="12" fill="#52514e">Missed closures stay on the worklist. Closure false-match rate is 0 in every programme; linkage pairs are not 0 (see table).</text>
+<rect x="220" y="61" width="10" height="10" rx="2" fill="#2a78d6"/><text x="235.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">v1 noise (training-time)</text>
+<rect x="410" y="61" width="10" height="10" rx="2" fill="#eb6834"/><text x="425.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">v2 noise (independent)</text>
+<line x1="220.0" y1="84" x2="220.0" y2="314" stroke="#e4e3df"/><text x="220.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">0%</text>
+<line x1="320.0" y1="84" x2="320.0" y2="314" stroke="#e4e3df"/><text x="320.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">5%</text>
+<line x1="420.0" y1="84" x2="420.0" y2="314" stroke="#e4e3df"/><text x="420.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">10%</text>
+<line x1="520.0" y1="84" x2="520.0" y2="314" stroke="#e4e3df"/><text x="520.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">15%</text>
+<line x1="620.0" y1="84" x2="620.0" y2="314" stroke="#e4e3df"/><text x="620.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">20%</text>
+<line x1="720.0" y1="84" x2="720.0" y2="314" stroke="#e4e3df"/><text x="720.0" y="330.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">25%</text>
+<text x="16.0" y="104.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Colorectal (CRC)</text>
+<line x1="494.8" y1="96" x2="569.2" y2="96" stroke="#2a78d6" stroke-width="2"/><circle cx="532.0" cy="96" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Colorectal (CRC), v1: 15.60% (95% 13.74 to 17.46)</title></circle>
+<line x1="624.2" y1="104" x2="675.8" y2="104" stroke="#eb6834" stroke-width="2"/><circle cx="650.0" cy="104" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Colorectal (CRC), v2: 21.50% (95% 20.21 to 22.79)</title></circle>
+<text x="16.0" y="132.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Cervical</text>
+<line x1="253.2" y1="124" x2="310.0" y2="124" stroke="#2a78d6" stroke-width="2"/><circle cx="281.6" cy="124" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Cervical, v1: 3.08% (95% 1.66 to 4.50)</title></circle>
+<line x1="347.2" y1="132" x2="468.0" y2="132" stroke="#eb6834" stroke-width="2"/><circle cx="407.6" cy="132" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Cervical, v2: 9.38% (95% 6.36 to 12.40)</title></circle>
+<text x="16.0" y="160.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Incidental lung nodule</text>
+<line x1="237.6" y1="152" x2="276.0" y2="152" stroke="#2a78d6" stroke-width="2"/><circle cx="256.8" cy="152" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Incidental lung nodule, v1: 1.84% (95% 0.88 to 2.80)</title></circle>
+<line x1="293.0" y1="160" x2="339.0" y2="160" stroke="#eb6834" stroke-width="2"/><circle cx="316.0" cy="160" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Incidental lung nodule, v2: 4.80% (95% 3.65 to 5.95)</title></circle>
+<text x="16.0" y="188.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Diabetic retinopathy</text>
+<line x1="222.4" y1="180" x2="228.0" y2="180" stroke="#2a78d6" stroke-width="2"/><circle cx="225.2" cy="180" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Diabetic retinopathy, v1: 0.26% (95% 0.12 to 0.40)</title></circle>
+<line x1="223.8" y1="188" x2="239.4" y2="188" stroke="#eb6834" stroke-width="2"/><circle cx="231.6" cy="188" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Diabetic retinopathy, v2: 0.58% (95% 0.19 to 0.97)</title></circle>
+<text x="16.0" y="216.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Breast recall</text>
+<line x1="220.0" y1="208" x2="241.2" y2="208" stroke="#2a78d6" stroke-width="2"/><circle cx="225.6" cy="208" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Breast recall, v1: 0.28% (95% -0.50 to 1.06)</title></circle>
+<line x1="220.0" y1="216" x2="251.4" y2="216" stroke="#eb6834" stroke-width="2"/><circle cx="231.6" cy="216" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Breast recall, v2: 0.58% (95% -0.41 to 1.57)</title></circle>
+<text x="16.0" y="244.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Lung screening (LDCT)</text>
+<line x1="220.0" y1="236" x2="236.6" y2="236" stroke="#2a78d6" stroke-width="2"/><circle cx="224.4" cy="236" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Lung screening (LDCT), v1: 0.22% (95% -0.39 to 0.83)</title></circle>
+<line x1="220.0" y1="244" x2="231.6" y2="244" stroke="#eb6834" stroke-width="2"/><circle cx="224.0" cy="244" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Lung screening (LDCT), v2: 0.20% (95% -0.18 to 0.58)</title></circle>
+<text x="16.0" y="272.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">IFHAS abnormal result</text>
+<line x1="233.8" y1="264" x2="252.6" y2="264" stroke="#2a78d6" stroke-width="2"/><circle cx="243.2" cy="264" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>IFHAS abnormal result, v1: 1.16% (95% 0.69 to 1.63)</title></circle>
+<line x1="271.4" y1="272" x2="293.4" y2="272" stroke="#eb6834" stroke-width="2"/><circle cx="282.4" cy="272" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>IFHAS abnormal result, v2: 3.12% (95% 2.57 to 3.67)</title></circle>
+<text x="16.0" y="300.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">Linkage pairs</text>
+<line x1="276.0" y1="292" x2="283.2" y2="292" stroke="#2a78d6" stroke-width="2"/><circle cx="279.6" cy="292" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>Linkage pairs, v1: 2.98% (95% 2.80 to 3.16)</title></circle>
+<line x1="410.6" y1="300" x2="435.0" y2="300" stroke="#eb6834" stroke-width="2"/><circle cx="422.8" cy="300" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>Linkage pairs, v2: 10.14% (95% 9.53 to 10.75)</title></circle>
+</svg>
