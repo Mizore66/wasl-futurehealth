@@ -12,7 +12,7 @@ const link =
 export default function AppNotFound() {
   return (
     <section aria-labelledby="nf-title" className="rounded-card border border-line bg-surface">
-      <PageHeader attached run sub="404" title={<span id="nf-title">This page could not be found</span>} />
+      <PageHeader attached sub="404" title={<span id="nf-title">This page could not be found</span>} />
       <div className="max-w-xl p-4 md:p-pad">
         <p className="m-0 text-body text-ink-soft">
           The dashboard has no page at this address. Go back to the programme overview or pick a section from the sidebar.

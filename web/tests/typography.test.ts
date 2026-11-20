@@ -37,8 +37,6 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "components/case/sections.tsx", line: /JSON\.stringify\(o\.raw\)/, why: "raw message record" },
   { file: "components/case/sections.tsx", line: /\{s\.item\}/, why: "raw reviewer record item" },
   { file: "components/case/demo-cases.tsx", line: /AHS-sr-1079<\/code>/, why: "full system id format, as typed in an address" },
-  // Run metadata (run id and revision values); this file is edited by a parallel change, so it is allowed whole.
-  { file: "components/shell/run-meta.tsx", why: "run id and code revisions" },
 ];
 
 const ROOT = join(import.meta.dirname, "..");

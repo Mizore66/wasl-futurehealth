@@ -40,7 +40,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
       <>
         {back}
         <div className={CARD}>
-          <PageHeader attached run compact title="Clinician disposition" />
+          <PageHeader attached compact title="Clinician disposition" />
           <div className="p-4 md:p-pad">
             <p className="m-0 max-w-[72ch] text-muted">Only a clinician or senior clinician may record a disposition. {clinicianSignInWords(authMode)}</p>
             <ReviewerLogin
@@ -64,7 +64,6 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
       <div className={CARD}>
         <PageHeader
           attached
-          run
           compact
           title="Clinician disposition"
           sub={`Case ${shortId(detail.case.id)} · ${detail.case.programme.replaceAll("_", " ")} · screening record ${detail.case.closed ? "closed by evidence" : "open"}`}

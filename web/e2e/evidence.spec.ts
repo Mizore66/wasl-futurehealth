@@ -29,7 +29,7 @@ function sourced(shown: string): boolean {
 async function pageNumbers(page: Page): Promise<string[]> {
   const text = await page.locator("main").evaluate((main) => {
     const copy = main.cloneNode(true) as HTMLElement;
-    copy.querySelectorAll("[data-axis], code, [aria-label='Run metadata']").forEach((el) => el.remove());
+    copy.querySelectorAll("[data-axis], code").forEach((el) => el.remove());
     document.body.append(copy);
     const t = copy.innerText;
     copy.remove();

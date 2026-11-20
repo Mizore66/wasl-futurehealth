@@ -154,7 +154,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
           <PageHeader
             attached
-            run
             className="rounded-se-[6px]!"
             title={openRow?.it.name ?? shortId(view.open)}
             sub={openRow?.it.named ? shortId(view.open) : undefined}
@@ -206,7 +205,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       <section className="pf-directory" aria-labelledby="pf-view-heading">
         <PageHeader
           attached
-          run
           className="pf-hero"
           title="Patients"
           sub={

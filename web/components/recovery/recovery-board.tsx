@@ -258,7 +258,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       <article className="rounded-[8px] border border-line bg-surface text-ink [--g:clamp(16px,2vw,28px)]">
         <PageHeader
           attached
-          run
          
           title="Recovery"
           sub="Released capacity from missed appointments"
@@ -288,7 +287,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       >
         <PageHeader
           attached
-          run
           className="py-[clamp(13px,1.8cqi,24px)]! @max-[700px]:px-4!"
           title={<span id="rc-title">{procedureLabel(slot.procedure)}</span>}
           titleAside={

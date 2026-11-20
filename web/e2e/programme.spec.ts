@@ -498,7 +498,7 @@ test.describe("Programme: target rail", () => {
   test("one target line labelled once, three method bars, the CRC cohort strip and Open Today", async ({ page }) => {
     await page.goto("/app");
     const rail = page.getByTestId("programme-rail");
-    await expect(rail.locator('[data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Synthetic run");
+    await expect(rail.locator('[data-honesty="simulated"]')).toHaveText("Synthetic run");
     await expect(rail.getByRole("heading", { level: 2, name: "Colonoscopy within 31 days" })).toBeVisible();
     await expect(rail.getByText("90% DoH target")).toHaveCount(1);
     await expect(rail.getByTestId("kpi-target")).toHaveCount(1);

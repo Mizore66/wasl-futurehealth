@@ -51,7 +51,6 @@ export default async function ProgrammePage() {
       <article data-testid="programme-rail" className="@container overflow-hidden rounded-[8px] border border-rule bg-surface">
         <PageHeader
           attached
-          run
           title="Colorectal screening"
           compact
           aside={<HonestyLabel kind="simulated" className="bg-jade-50 text-jade-800">Synthetic run</HonestyLabel>}

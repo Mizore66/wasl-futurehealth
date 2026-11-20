@@ -31,7 +31,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   if (!viewer.authenticated) {
     return (
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
-        <PageHeader attached run title={<span id="review-title">Review desk</span>} sub="Sign in to see the case." />
+        <PageHeader attached title={<span id="review-title">Review desk</span>} sub="Sign in to see the case." />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
           <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} reason={viewer.reason === "anonymous" ? undefined : viewer.reason} />
         </div>
@@ -45,7 +45,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   if (detail.case.lifecycle === "retained")
     return (
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
-        <PageHeader attached run title={<span id="review-title">Retired case: review history only</span>} />
+        <PageHeader attached title={<span id="review-title">Retired case: review history only</span>} />
         <div className="p-4 sm:p-pad">
           <p className="m-0">No new claim, clinical read or review work is available from this tracking request.</p>
           <Link href={caseHref("/app/patients", id)} className="mt-2 inline-flex min-h-11 items-center underline">
@@ -86,7 +86,6 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
          
           title={<span id="review-title">{view.items.link ? "Identity review" : view.items.evidence ? "Evidence review" : "Review"}</span>}
           sub={

@@ -4,8 +4,6 @@ import { SIDEBAR_COOKIE } from "@/components/shell/sidebar-cookie";
 import { SkipLink } from "@/components/shell/skip-link";
 import { TopBar } from "@/components/shell/top-bar";
 import { GuidedTour } from "@/components/shell/guided-tour";
-import { runInfo } from "@/components/shell/run-info";
-import { RunInfoProvider } from "@/components/shell/run-meta";
 import { getCases } from "@/lib/api/source";
 import { reviewerPersona } from "@/lib/api/reviewer-session";
 
@@ -23,15 +21,12 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
     <div className="staff flex min-h-dvh flex-col md:flex-row">
       <SkipLink />
       <AppSidebar counts={navCounts()} session={reviewerPersona()} defaultCollapsed={collapsed} />
-      {/* The run notice reads this one request's run: in the top bar from md up, in the page header on a phone. */}
-      <RunInfoProvider value={runInfo()}>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
-          <main id="main" data-tour="page" tabIndex={-1} className="min-w-0 flex-1 px-(--main-px) py-(--main-py) [--main-px:clamp(12px,2.4vw,32px)] [--main-py:clamp(12px,2vw,24px)] focus:outline-none">
-            {children}
-          </main>
-        </div>
-      </RunInfoProvider>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main id="main" data-tour="page" tabIndex={-1} className="min-w-0 flex-1 px-(--main-px) py-(--main-py) [--main-px:clamp(12px,2.4vw,32px)] [--main-py:clamp(12px,2vw,24px)] focus:outline-none">
+          {children}
+        </main>
+      </div>
       <GuidedTour />
     </div>
   );

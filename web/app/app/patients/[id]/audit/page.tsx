@@ -148,7 +148,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         head={
           <PageHeader
             attached
-            run
             title="Audit trail"
             compact
            

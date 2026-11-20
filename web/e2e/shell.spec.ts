@@ -1,12 +1,6 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "./routes";
-
-const meta = JSON.parse(
-  readFileSync(path.join(process.cwd(), "data/api/dashboard.json"), "utf8"),
-).meta as { run: string; loaded_at: string; reader_model: string };
 
 const sidebar = (page: Page) => page.locator("aside#app-sidebar");
 const toggle = (page: Page) =>
@@ -107,34 +101,12 @@ test.describe("sidebar (desktop)", () => {
     ).toEqual([]);
   });
 
-  test("the metadata strip shows plain words first and keeps run internals in its technical panel, and adds no h1", async ({
-    page,
-  }) => {
+  test("the top bar carries only the breadcrumb and help, with no run notice", async ({ page }) => {
     await page.goto("/app/pipeline");
-    const strip = page.getByRole("region", { name: "Run metadata" });
-    const summary = strip.locator("summary");
-    // Collapsed: only the simulation label and a readable snapshot time are shown, no identifiers or ISO timestamps.
-    await expect(strip.locator("time")).toBeVisible();
-    expect(await summary.innerText()).toMatch(/^Simulated data\s*Snapshot \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} UTC\s*Details$/);
-    await expect(strip.locator("time")).toHaveAttribute("datetime", meta.loaded_at);
-    await expect(strip.getByText(meta.run)).toBeHidden();
-    await expect(strip).not.toContainText("data_mode");
-    await expect(summary).not.toContainText(/\d{4}-\d{2}-\d{2}T/);
-
-    const chevron = summary.locator("svg");
-    await expect(chevron).toBeVisible();
-    // Tailwind's rotate-* sets the CSS `rotate` property, so the open state shows as 180deg there, not in `transform`.
-    const turn = () => chevron.evaluate((el) => getComputedStyle(el).rotate);
-    expect(await turn()).toBe("none");
-    await strip.getByText("Details").click();
-    await expect(strip.locator("details")).toHaveAttribute("open", "");
-    await expect(summary).toContainText("Hide");
-    await expect(strip.getByText(meta.run)).toBeVisible();
-    await expect(strip).toContainText("Published snapshot of the API");
-    await expect(strip).toContainText("Reader model");
-    await expect(strip).toContainText(meta.reader_model);
-    await expect.poll(turn).toBe("180deg");
-    await expect(page.locator("h1")).toHaveCount(1);
+    const bar = page.getByRole("navigation", { name: "Breadcrumb" }).locator("..");
+    await expect(bar.locator('[data-tour="help"]')).toBeVisible();
+    await expect(page.getByRole("region", { name: "Run metadata" })).toHaveCount(0);
+    await expect(bar).not.toContainText(/Simulated data|Run loaded|Snapshot|Details/);
   });
 });
 
@@ -156,9 +128,7 @@ test.describe("mobile (390px)", () => {
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav).toBeVisible();
     await expect(nav.getByRole("link").first()).toBeFocused();
-    await expect(
-      page.locator("#mobile-menu").getByText("Synthetic data · demo"),
-    ).toBeVisible();
+    await expect(page.locator("#mobile-menu")).not.toContainText("Synthetic data");
     await expect(
       page.locator("#mobile-menu").getByText("Dr Salama Al Tamimi"),
     ).toBeVisible();
@@ -200,30 +170,6 @@ test.describe("mobile (390px)", () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(390);
-  });
-
-  test("the run strip fits, shows its time in full, and opens by touch and keyboard", async ({ page }) => {
-    await page.goto("/app");
-    const strip = page.getByRole("region", { name: "Run metadata" });
-    const summary = strip.locator("summary");
-    const details = strip.locator("details");
-    expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    const time = strip.locator("time");
-    await expect(time).toBeVisible();
-    expect(await time.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-    // The time wraps inside the 44px row, so the strip keeps the height its loading placeholder reserves.
-    expect((await summary.boundingBox())!.height).toBe(44);
-    await expect(summary.locator("svg")).toBeVisible();
-
-    await summary.tap();
-    await expect(details).toHaveAttribute("open", "");
-    await expect(strip.getByText(meta.run)).toBeVisible();
-    await summary.focus();
-    await page.keyboard.press("Enter");
-    await expect(details).not.toHaveAttribute("open", "");
-    await page.keyboard.press("Space");
-    await expect(details).toHaveAttribute("open", "");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 });
 

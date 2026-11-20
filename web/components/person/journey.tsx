@@ -26,7 +26,7 @@ export function PersonAssociationUnavailableView({ result }: { result: PersonAss
   };
   return (
     <section aria-labelledby="association-unavailable" className="rounded-card border border-line bg-surface">
-      <PageHeader attached run title={<span id="association-unavailable">Historical association unavailable</span>} />
+      <PageHeader attached title={<span id="association-unavailable">Historical association unavailable</span>} />
       <div className="p-4 md:p-pad">
         <p className="m-0">{reasons[result.association.reason]}</p>
         <p>The retained case remains available for authorized case and audit reads. It creates no current care or outreach action.</p>
@@ -177,7 +177,6 @@ export function Journey({ journey }: { journey: PersonJourney }) {
       <div className="overflow-clip rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
           title={display.name}
           sub={
             <>

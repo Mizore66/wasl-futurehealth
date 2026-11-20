@@ -49,7 +49,6 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
     <section aria-labelledby="review-desk-title" className="rounded-card border border-line bg-surface">
       <PageHeader
         attached
-        run
        
         title={<span id="review-desk-title">Review desk</span>}
         sub={

@@ -30,7 +30,7 @@ export type PipelineHead = {
 export function PipelineHeading({ title, question, current, note, controls, children }: PipelineHead & { controls?: React.ReactNode; children?: React.ReactNode }) {
   return (
     <div className="rounded-card border border-line bg-surface">
-      <PageHeader attached run title={title} sub={question} />
+      <PageHeader attached title={title} sub={question} />
       <nav aria-label="Pipeline views" className="flex flex-wrap gap-x-6 border-b border-rule px-4 sm:px-6">
         {VIEWS.map((v) => {
           const on = v.href === current;

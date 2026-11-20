@@ -171,7 +171,6 @@ export default async function ResultsPage() {
     <div className="overflow-clip rounded-card border border-line bg-surface">
       <PageHeader
         attached
-        run
         title="Results"
         sub={`Frozen evaluation at code ${results.frozen_revision.slice(0, 7)} · 5 seeds · held-out noise · synthetic patients, real report texts`}
         aside={<HonestyLabel kind="simulated">Simulated evaluation</HonestyLabel>}
