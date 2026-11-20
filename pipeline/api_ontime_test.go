@@ -118,15 +118,21 @@ func TestDashboardServesOnTimeByProgramme(t *testing.T) {
 // On a real materialised run (WASL_TEST_RUN), the colorectal row is the Wasl arm of report7's crc_kpi_31d: the same
 // referrals, the same 31-day clock and the same colonoscopy day.
 func TestOnTimeCRCMatchesReport7(t *testing.T) {
+	// Like TestAPIIntegrityMaterializedRunCounts: the integration lane's generated run, or WASL_TEST_RUN; without one
+	// there is nothing to compare (CI accounts for every skip, so this returns instead of skipping).
 	src := os.Getenv("WASL_TEST_RUN")
 	if src == "" {
-		t.Skip("WASL_TEST_RUN not set")
+		src = "../out/run/v7strict-cached-fhir"
+		if _, err := os.Stat(filepath.Join(src, "out_log.ndjson")); os.IsNotExist(err) {
+			t.Log("no generated materialized run; nothing to compare")
+			return
+		}
 	}
 	s := loadAPI(src, "")
 	kpi, _ := s.report["crc_kpi_31d"].(map[string]interface{})
 	arm, _ := kpi["wasl_live"].(map[string]interface{})
 	if arm == nil {
-		t.Skip("run has no crc_kpi_31d")
+		t.Fatalf("run %s has no crc_kpi_31d", src)
 	}
 	for _, r := range onTimeByProgramme(s.cases) {
 		if r["programme"] != "crc" {
