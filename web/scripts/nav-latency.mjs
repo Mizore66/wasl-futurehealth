@@ -1,5 +1,6 @@
 // Page-transition latency for the staff app: clicks each sidebar destination from another page (a soft navigation,
-// as a user does) and times click -> URL changed and the new page's h1 rendered with no pending loading state.
+// as a user does) and times click -> URL changed and the new page's h1 rendered. Background reads after that (the
+// sidebar counts) are left out of the timed window.
 // Usage: node nav-latency.mjs <base url> <samples per transition> <out.json>
 import { chromium } from "@playwright/test";
 import { writeFileSync } from "node:fs";
@@ -46,8 +47,9 @@ for (let i = 0; i < N; i++) {
         const h1 = document.querySelector("main h1");
         return h1 && !document.querySelector("[data-loading], [aria-busy='true']");
       }, null, { timeout: 30000 });
-      await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
       results[name].push(Math.round(performance.now() - t0));
+      // Let background reads (the sidebar counts) settle before the next click, outside the timed window.
+      await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
     } catch (e) {
       results[name].push(30000);
       console.error(name, "timeout", e.message.slice(0, 80));
