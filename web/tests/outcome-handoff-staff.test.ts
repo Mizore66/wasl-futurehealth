@@ -178,7 +178,7 @@ describe("outcome hand-off card states", () => {
 
   it("says fixtures cannot record approval or release", () => {
     const out = render({ ...base, status: "pending_approval" }, { live: false, signedIn: false });
-    expect(out).toContain("need the live API");
+    expect(out).toContain("can&#x27;t be recorded here");
     expect(out).not.toContain("<form");
   });
 
@@ -204,7 +204,7 @@ describe("outcome hand-off card states", () => {
     expect(out).toContain("outcome-handoff-release");
     expect(out).toContain("Record simulated release");
     expect(out).toContain("approved by dr-gp");
-    expect(out).toContain("version aaaaaaaa");
+    expect(out).not.toContain("version aaaaaaaa");
   });
 
   it("shows a held release and offers a re-check", () => {
@@ -221,6 +221,6 @@ describe("outcome hand-off card states", () => {
     expect(out).toContain("Acknowledged (does not mark the patient informed)");
     const buttons = [...out.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1]);
     expect(buttons).toEqual(["Sign out", "Record approval", "Record simulated release"]);
-    expect(out).toContain("Approval acts as the token you signed in with");
+    expect(out).toContain("Approval acts under the token you signed in with");
   });
 });

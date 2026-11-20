@@ -13,6 +13,8 @@ const base = CaseDetail.parse(hold);
 const A = "rv-image-answered";
 const B = "rv-image-other";
 const MODEL = "hk-mnv3s-v1/exact-item-chain";
+/** The model name is not shown on screen; the AI reading block marks where it is revealed. */
+const SHOWN = 'data-testid="image-model"';
 const next = { href: "/app/review", label: "Back to Review", last: true };
 
 /* Backend-style redaction: aggregate evidence has no image verdict; only the answered item's own chain exposes it. */
@@ -62,16 +64,17 @@ describe("image model comes only from the exact item chain", () => {
 
   it("reveals the model in the answered item's context only, with unique heading ids, and does not unlock the other item", () => {
     const markup = render(detail(), [state(A, true), state(B, false)]);
-    expect(section(markup, A)).toContain(MODEL);
-    expect(section(markup, B)).not.toContain(MODEL);
+    expect(section(markup, A)).toContain(SHOWN);
+    expect(section(markup, B)).not.toContain(SHOWN);
     expect(section(markup, B)).toContain("image-model-hidden");
-    expect(markup.split(MODEL).length - 1).toBe(1);
+    expect(markup.split(SHOWN).length - 1).toBe(1);
     const ids = [...markup.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("keeps both models hidden before any answer", () => {
     const markup = render(detail(), [state(A, false), state(B, false)]);
+    expect(markup).not.toContain(SHOWN);
     expect(markup).not.toContain(MODEL);
   });
 });

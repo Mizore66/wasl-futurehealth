@@ -26,7 +26,7 @@ export function TimeWindow({
   assigned: boolean;
   stale: boolean;
 }) {
-  const slotWord = assigned ? "Assigned" : stale ? "Stale slot" : "Slot";
+  const slotWord = assigned ? "Assigned" : stale ? "Slot unavailable" : "Slot";
   if (requested === null || due === null) {
     return (
       <div className="relative mx-[7px] h-[126px] @min-[701px]:h-[160px]" data-testid="recovery-window">
@@ -37,7 +37,7 @@ export function TimeWindow({
             <strong className={cx(day, "text-[clamp(19px,3.35cqi,45px)]")}>Day {Math.floor(slotDay)}</strong>
           </li>
         </ol>
-        <p className="absolute inset-x-0 top-[72px] m-0 text-center text-small text-muted @min-[701px]:top-[86px]">No eligible candidate to measure against.</p>
+        <p className="absolute inset-x-0 top-[72px] m-0 text-center text-small text-muted @min-[701px]:top-[86px]">No eligible patient for this slot.</p>
       </div>
     );
   }

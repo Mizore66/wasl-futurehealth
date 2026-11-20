@@ -151,7 +151,7 @@ describe("versioned retained lifecycle HTTP contract", () => {
     expect(children.map((item) => item.case_id)).toEqual(["ahs-mushrif/ServiceRequest/a#surv", "ahs-mushrif/ServiceRequest/a#surv2", "ahs-mushrif/ServiceRequest/a#surv3"]);
     expect(children.every((item) => item.lifecycle === "active" && !item.actionable && item.availability === "reference_only")).toBe(true);
     const html = renderToStaticMarkup(React.createElement(Journey, { journey: history }));
-    expect(html).toContain("Historical association");
+    expect(html).toContain("Past link");
     expect(html).not.toContain("Retired case");
   });
 
@@ -186,7 +186,7 @@ describe("versioned retained lifecycle HTTP contract", () => {
     expect(journey.retained_references).toHaveLength(1);
     expect(journey.retained_references[0].actionable).toBe(false);
     const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
-    expect(html).toContain("Non-actionable history references");
+    expect(html).toContain("Past cases (no action needed)");
     expect(html).toContain("Retired case");
     expect(html).not.toContain("Record a new clinical");
   });
@@ -198,8 +198,8 @@ describe("versioned retained lifecycle HTTP contract", () => {
     expect(result.actionable).toBe(false);
     expect(PersonJourney.safeParse(result).success).toBe(false);
     const html = renderToStaticMarkup(React.createElement(PersonAssociationUnavailableView, { result }));
-    expect(html).toContain("Historical association unavailable");
-    expect(html).toContain("no current care or outreach action");
+    expect(html).toContain("No patient page for this case");
+    expect(html).toContain("No care or outreach is due");
     expect(PersonAssociationUnavailable.safeParse({ ...result, association: { status: "unavailable", reason: "anything", registration: "invented" } }).success).toBe(false);
   });
 });

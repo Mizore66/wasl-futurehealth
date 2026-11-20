@@ -81,7 +81,7 @@ const STEPS: Step[] = [
     main: "“The preparation was excellent and all surfaces were well seen.”",
     mainKind: "quote",
     lines: [
-      { k: "Rules reader", v: "Complete" },
+      { k: "Checklist reader", v: "Complete" },
       { k: "AI reader", v: "Complete, they agree" },
     ],
   },

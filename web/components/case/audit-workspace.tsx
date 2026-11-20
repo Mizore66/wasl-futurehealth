@@ -113,7 +113,7 @@ function EventRow({ e, detail, controls }: { e: WorkspaceEvent; detail?: React.R
   );
 }
 
-function Receipt({ d, total }: { d: DecisionView; total: number }) {
+function Receipt({ d }: { d: DecisionView }) {
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -121,39 +121,16 @@ function Receipt({ d, total }: { d: DecisionView; total: number }) {
         {d.matched ? (
           <span className="inline-flex items-center gap-1 text-[12px] text-jade-700" data-match="true">
             <Check aria-hidden className="size-[13px]" strokeWidth={1.8} />
-            Signature matched
+            Unchanged since signing
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-clay-ink" data-match="false">
             <X aria-hidden className="size-[13px]" strokeWidth={2} />
-            Signature mismatch
+            Changed since signing
           </span>
         )}
       </div>
       <p className="m-0 mb-3 mt-2 max-w-[55ch] leading-normal">{d.explanation}</p>
-      <details className="group/sig border-t border-line">
-        <summary className="flex min-h-10 w-fit cursor-pointer list-none items-center gap-1.5 text-[12px] text-jade-700 max-md:min-h-11 [&::-webkit-details-marker]:hidden">
-          Signature details
-          <ChevronRight aria-hidden className="size-3 group-open/sig:rotate-90" strokeWidth={1.8} />
-        </summary>
-        <p className="m-0 my-1 text-[11px] text-muted">
-          Decision {d.index + 1} of {total} · policy {d.policy}
-        </p>
-        <dl className="m-0 mb-1.5 mt-3">
-          {[
-            ["Stored", d.stored],
-            ["Recomputed", d.recomputed],
-            ...(d.decisionId ? [["Decision id", d.decisionId]] : []),
-          ].map(([k, v]) => (
-            <div key={k} className="grid gap-[3px] py-1">
-              <dt className="text-[12px] text-muted">{k}</dt>
-              <dd className="m-0">
-                <code className="select-all break-all font-mono text-[12px] leading-[1.45]">{v}</code>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </details>
     </>
   );
 }
@@ -274,7 +251,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
           </header>
           {decisions.length === 0 ? (
             <p className="m-0 my-4 text-[13px] text-muted" role="status" data-testid="signature-score">
-              Nothing to verify: the audit returned no decision signatures for this case.
+              No signed decisions to check for this case.
             </p>
           ) : (
             <>
@@ -283,7 +260,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
                   <b className="font-medium">{matched}</b>
                   <span className="text-[0.62em] text-jade-500"> / {decisions.length}</span>
                 </div>
-                <p className="m-0 text-[14px] text-ink">decision signatures matched</p>
+                <p className="m-0 text-[14px] text-ink">signed decisions unchanged</p>
               </div>
               {verifyNote}
               <fieldset className="@container m-0 border-0 p-0">
@@ -297,7 +274,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
                         value={i}
                         checked={picked === i}
                         onChange={() => setPicked(i)}
-                        aria-label={`${d.label}, decision ${i + 1}, ${d.matched ? "signature matched" : "signature mismatch"}`}
+                        aria-label={`${d.label}, decision ${i + 1}, ${d.matched ? "unchanged since signing" : "changed since signing"}`}
                         className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0"
                       />
                       <span
@@ -315,7 +292,7 @@ export function AuditWorkspace({ head, events, details, controls, historyIntro, 
                 </div>
               </fieldset>
               <div className="my-[clamp(12px,2vh,24px)] border-s-2 border-jade-400 bg-limestone-100 p-[clamp(14px,1.6vw,25px)]" aria-live="polite" aria-atomic="true" data-testid="decision-receipt">
-                <Receipt d={decisions[picked]} total={decisions.length} />
+                <Receipt d={decisions[picked]} />
               </div>
             </>
           )}

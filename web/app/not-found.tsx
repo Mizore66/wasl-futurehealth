@@ -22,7 +22,7 @@ export default function NotFound() {
         <p className="m-0 mt-8 text-small text-muted">404</p>
         <h1 className="m-0 mt-1 text-title font-semibold">This page could not be found</h1>
         <p className="m-0 mt-3 text-body text-ink-soft">
-          Wasl has no page at this address. Go back to the site, or open the dashboard.
+          There is no page at this address. Go back home, or open the dashboard.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/" className={`${link} bg-cta text-ground hover:text-ground`}>
@@ -33,7 +33,7 @@ export default function NotFound() {
           </Link>
         </div>
         <div className="mt-6">
-          <HonestyLabel kind="built">Built · Synthetic data demo</HonestyLabel>
+          <HonestyLabel kind="built">Built · Simulated data</HonestyLabel>
         </div>
       </main>
     </>

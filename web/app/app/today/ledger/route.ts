@@ -20,12 +20,12 @@ function recordsOf(detail: Parameters<typeof todayRecords>[0]) {
 
 export async function GET(request: NextRequest) {
   const noStore = { "cache-control": "no-store" };
-  if (apiMode() !== "live") return Response.json({ error: "no live API: Today keeps its log in this browser" }, { status: 404, headers: noStore });
+  if (apiMode() !== "live") return Response.json({ error: "this demo keeps the call log in this browser" }, { status: 404, headers: noStore });
   const id = request.nextUrl.searchParams.get("id") ?? "";
-  if (!id || id.length > 200) return Response.json({ error: "id is required" }, { status: 400, headers: noStore });
+  if (!id || id.length > 200) return Response.json({ error: "no case was chosen" }, { status: 400, headers: noStore });
   try {
     const detail = await getCase(id);
-    if (!detail) return Response.json({ error: "unknown case" }, { status: 404, headers: noStore });
+    if (!detail) return Response.json({ error: "this case could not be found" }, { status: 404, headers: noStore });
     return Response.json({
       ...persistedLedger(detail),
       bookingPanel: detail.api_overlay ? { booking: detail.booking, overlay: detail.api_overlay, case: detail.case } : null,

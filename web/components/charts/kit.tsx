@@ -299,3 +299,60 @@ export function Toggle<T extends string>({
 export function ticksTo(max: number, n = 4): number[] {
   return Array.from({ length: n + 1 }, (_, i) => Number(((max / n) * i).toPrecision(6)));
 }
+
+/** A check mark for a zero-event count: the absence is the good news, so it gets a positive mark beside the figure. */
+export function CheckMark({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" className={cn("inline-block size-3.5 flex-none", className)} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 8.5 3.2 3L13 4.5" />
+    </svg>
+  );
+}
+
+/** "0 of 3,035" with a check when nothing went wrong; the plain count otherwise. In ink, never the series colour. */
+export function ZeroFigure({ events, of, className }: { events: number; of: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 font-medium text-ink tabular-nums", className)}>
+      {events === 0 && <CheckMark className="text-positive" />}
+      {events.toLocaleString("en-US")} of {of.toLocaleString("en-US")}
+    </span>
+  );
+}
+
+/**
+ * The cases checked, drawn as one bar on a count axis, with any wrong ones as a clay segment at its end (2px surface
+ * gap). For a zero-event counter the whole bar stays in the series colour: a long bar is a lot of checking with
+ * nothing found, a short one shows where the zero rests on little evidence.
+ */
+export function CheckedBar({ to, wrong = 0, color, y = 50, thick = 12 }: { to: number; wrong?: number; color: string; y?: number; thick?: number }) {
+  // A visible stub (1.5% of the plot) even for a handful of cases, so a small denominator still shows as a bar.
+  const ok = Math.max(to - wrong, wrong > 0 ? 0 : 1.5);
+  return (
+    <>
+      <Bar to={ok} color={color} y={y} thick={thick} />
+      {wrong > 0 && (
+        <span
+          aria-hidden
+          className="absolute -translate-y-1/2"
+          style={{
+            left: pct(ok),
+            width: pct(Math.max(wrong, 0.6)),
+            top: pct(y),
+            height: Math.min(thick, 24),
+            backgroundColor: "var(--color-negative)",
+            borderRadius: "0 4px 4px 0",
+            boxShadow: `-2px 0 0 ${CHROME.surface}`,
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/** A round axis end at or above the largest value: 319 → 400, 16,486 → 20,000. */
+export function niceMax(max: number): number {
+  if (max <= 0) return 1;
+  const mag = 10 ** Math.floor(Math.log10(max));
+  const step = [1, 2, 2.5, 4, 5, 8, 10].find((s) => s * mag >= max) ?? 10;
+  return step * mag;
+}

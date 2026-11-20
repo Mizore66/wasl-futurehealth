@@ -395,7 +395,7 @@ describe("booking flags follow the latest successful booking projection", () => 
       expect(nextField()).toBe("Choose another simulated slot");
       if (invalidPart === "ledger") {
         expect((docButton("Log call") as HTMLButtonElement).disabled).toBe(true);
-        expect(container!.textContent).toContain("not trustworthy");
+        expect(container!.textContent).toContain("Case history needs checking");
       } else {
         // The envelope is ok but its prefix is not authoritative: the last trusted row head must still be used.
         actions.recordAction.mockResolvedValue({ ok: false, status: 409, conflict: "head", error: "stale head" });

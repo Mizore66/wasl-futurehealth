@@ -211,9 +211,9 @@ test.describe("consent governance through the UI", () => {
 
   test("signed out, the page offers a sign-in prompt and no governance control", async ({ page }) => {
     await page.goto(auditPath);
-    await expect(page.getByTestId("governance-signin")).toContainText("signs in separately");
+    await expect(page.getByTestId("governance-signin")).toContainText("sign in separately");
     await expect(page.getByText("Contest review")).toHaveCount(0);
-    await expect(page.getByText("Append compensation")).toHaveCount(0);
+    await expect(page.getByText("Undo this review")).toHaveCount(0);
     await expect(page.locator('select[name="credential"]')).toHaveCount(0);
     await page.getByTestId("governance-signin").getByLabel("Your token").fill("not-an-issued-token-0000");
     await page.getByTestId("governance-signin").getByRole("button", { name: "Sign in" }).click();

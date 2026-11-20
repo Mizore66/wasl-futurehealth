@@ -1,41 +1,43 @@
 import { cx } from "@/lib/cx";
-import { RunMeta } from "./run-meta";
+import { GlossaryPopover } from "@/components/wasl/glossary-popover";
+import type { GlossaryKey } from "@/lib/domain/glossary";
 
 /**
- * The staff title header: limestone-to-jade wash with the calligraphy pen strokes (globals.css .staff-heading).
- * One h1 per page, and one header per page carries `run`. From md up the simulated-data notice sits in the top bar;
- * the top bar is hidden on a phone, so there the `run` header shows it.
- * `attached` makes it the top band of the page's main card: put it first inside that card. `aside` sits at the end of
- * the band (a status chip, a back link, record icons).
+ * The staff title header: limestone-to-jade wash with the faded وصل calligraphy (globals.css .staff-heading).
+ * One h1 per page. The header holds the title and a one-line subtitle, and nothing sits over the artwork: the
+ * simulated-data notice is the top bar's (the phone header's below md), `help` is a quiet "Terms used here" link at
+ * the end of the subtitle, and `aside` (a scope control, a back link) sits under the subtitle in the text column.
+ * `attached` makes it the top band of the page's main card: put it first inside that card.
  */
 export function PageHeader({
   title,
   sub,
   aside,
   titleAside,
+  help,
   className,
   compact = false,
   attached = false,
-  run = false,
 }: {
   title: React.ReactNode;
   sub?: React.ReactNode;
   aside?: React.ReactNode;
   /** Inline with the title, e.g. the full-record icon. */
   titleAside?: React.ReactNode;
+  /** Glossary terms behind a quiet "Terms used here" text link after the subtitle. */
+  help?: readonly GlossaryKey[];
   className?: string;
   compact?: boolean;
   attached?: boolean;
-  run?: boolean;
 }) {
   return (
     <header
       className={cx(
-        "staff-heading flex flex-wrap items-center justify-between gap-3",
+        "staff-heading",
         // 7px: the inner radius of a 1px-bordered 8px card, so the wash meets the card corner whether or not the card clips.
         attached ? "mb-0 rounded-t-[7px] rounded-b-none border-0 border-b border-line" : "mb-3",
-        // The drop-downs hang below the band, over the card body: above its sticky bars (z-10), under the top bar (z-20).
-        run && "z-[15] overflow-visible",
+        // A control's drop-down hangs below the band, over the card body: above its sticky bars (z-10), under the top bar (z-20).
+        Boolean(aside) && "z-[15] overflow-visible",
         className,
       )}
     >
@@ -51,20 +53,15 @@ export function PageHeader({
           </h1>
           {titleAside}
         </div>
-        {sub && <p className="m-0 mt-1 text-small text-limestone-800">{sub}</p>}
+        {(sub || help) && (
+          <p className="m-0 mt-1 text-small text-limestone-800">
+            {sub}
+            {sub && help && " "}
+            {help && <GlossaryPopover terms={help} inline />}
+          </p>
+        )}
+        {aside && <div className="mt-2 flex min-w-0 max-w-full flex-wrap items-center gap-2">{aside}</div>}
       </div>
-      {(aside || run) && (
-        // ml-auto keeps the group, and the drop-downs anchored to its right edge, at the right even when it wraps to its own line.
-        <div className="relative ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
-          {/* From md up the notice sits in the top bar; the top bar is hidden on a phone, so it shows here. */}
-          {run && (
-            <span className="contents md:hidden">
-              <RunMeta />
-            </span>
-          )}
-          {aside}
-        </div>
-      )}
     </header>
   );
 }

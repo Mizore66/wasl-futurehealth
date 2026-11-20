@@ -129,7 +129,7 @@ describe("N5: live Snooze, Hand to and Declined wait with Undo before the POST",
     await mount(items, true);
     await click("Hand to Dr Al Kaabi");
     const notice = host.querySelector<HTMLElement>('[data-testid="pending-write"]')!;
-    expect(notice.textContent).toContain(`Handed to Dr Al Kaabi · ${items[0].name} · saves to the case ledger in 5 seconds`);
+    expect(notice.textContent).toContain(`Handed to Dr Al Kaabi · ${items[0].name} · saves in 5 seconds`);
     expect(recordAction).not.toHaveBeenCalled();
     expect(button("Snooze to tomorrow").disabled).toBe(true);
     await act(async () => vi.advanceTimersByTime(LIVE_UNDO_MS - 1));
@@ -152,7 +152,7 @@ describe("N5: live Snooze, Hand to and Declined wait with Undo before the POST",
     await act(async () => vi.advanceTimersByTime(LIVE_UNDO_MS));
     expect(recordAction).toHaveBeenCalledExactlyOnceWith(items[0].id, items[0].head, expect.objectContaining({ action: "snooze" }));
     expect(host.querySelector('[data-testid="pending-write"]')).toBeNull();
-    expect(open().textContent).toContain("saved to the case ledger");
+    expect(open().textContent).toContain(" · saved");
   });
 
   it("Declined is held too; Save now sends at once and only once", async () => {

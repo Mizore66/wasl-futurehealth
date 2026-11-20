@@ -41,7 +41,7 @@ export function CommunicationForm({
     return (
       <section aria-label={title} className="mt-4" data-testid="communication-form">
         <h3 className="m-0 text-section font-medium">{title}</h3>
-        <p className="m-0 mt-1 text-muted">The approved notification wording is not available from this source, so a notification cannot be recorded here.</p>
+        <p className="m-0 mt-1 text-muted">The approved wording for telling the patient is not available, so the notification cannot be recorded here.</p>
       </section>
     );
   }

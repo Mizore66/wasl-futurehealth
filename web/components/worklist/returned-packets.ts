@@ -94,7 +94,7 @@ export function returnedPacket(c: CaseSummary, current: CurrentDecision | null =
     actBy: h.act_by,
     status: h.status,
     acknowledged: !!h.acknowledgement,
-    answer: r ? referrerAnswerWords(r) : h.status === "referrer_acted" ? "The canonical packet already records the referrer's action" : null,
+    answer: r ? referrerAnswerWords(r) : h.status === "referrer_acted" ? "The referrer has already acted" : null,
     ...(r ? { answerCode: r.response } : {}),
     note: source === "unit_return" ? (ov.referral_response?.note ?? h.note ?? null) : null,
     ...(source === "unit_return" && (h.has_note || h.note || ov.referral_response?.note) ? { hasNote: true } : {}),

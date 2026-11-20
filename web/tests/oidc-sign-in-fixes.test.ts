@@ -72,7 +72,7 @@ describe("fix 1: Sign in with OIDC is a full-page navigation and tolerates Next'
     expect(read("components", "review", "reviewer-login.tsx")).not.toContain("next/link");
     const html = renderToStaticMarkup(createElement(ReviewerLogin, { caseId: "case/1", mode: "oidc" }));
     expect(html).toContain('href="/app/auth/oidc/start?returnTo=%2Fapp%2Freview%2Fcase%252F1"');
-    expect(html).toMatch(/<a [^>]*href="\/app\/auth\/oidc\/start[^"]*"[^>]*>Sign in with OIDC<\/a>/);
+    expect(html).toMatch(/<a [^>]*href="\/app\/auth\/oidc\/start[^"]*"[^>]*>Sign in with your organisation account<\/a>/);
   });
 
   it("accepts the start URL with the _rsc parameter the client router adds", async () => {
@@ -207,15 +207,15 @@ describe("fix 5: who you are, and returnTo stays under /app", () => {
     const html = renderToStaticMarkup(
       createElement(ReviewerSessionStatus, { session: { method: "oidc", expiresAt: "2026-11-18T12:00:00.000Z" }, persona: personaFromOidc("synthetic-r1", "reviewer_2") }),
     );
-    expect(html).toContain("Signed in with OIDC as");
+    expect(html).toContain("Signed in as");
     expect(html).toContain("synthetic-r1");
-    expect(html).toContain("Second reviewer · OIDC");
+    expect(html).toContain("Second reviewer · organisation account");
     expect(html).toContain("Session expires at");
   });
 
   it("falls back to the plain line without a persona, and never shows an OIDC persona for a demo session", () => {
     const plain = renderToStaticMarkup(createElement(ReviewerSessionStatus, { session: { method: "oidc", expiresAt: "x" } }));
-    expect(plain).toContain("Signed in with OIDC.");
+    expect(plain).toContain("Signed in with your organisation account.");
     const demo = renderToStaticMarkup(createElement(ReviewerSessionStatus, { session: { method: "demo" }, persona: personaFromOidc("s", "reviewer") }));
     expect(demo).toContain("Signed in with a demo token.");
     expect(demo).not.toContain(">s<");
@@ -223,7 +223,7 @@ describe("fix 5: who you are, and returnTo stays under /app", () => {
 
   it("both pages pass reviewerPersona() to the session line", () => {
     for (const page of [read("app", "app", "review", "[id]", "page.tsx"), read("app", "app", "patients", "[id]", "disposition", "page.tsx")]) {
-      expect(page).toContain('persona={viewer.session.method === "oidc" ? await reviewerPersona() : null}');
+      expect(page).toContain('persona={viewer.session.method === "demo" ? null : await reviewerPersona()}');
     }
   });
 

@@ -94,7 +94,7 @@ describe("ReferrerHandoffs", () => {
     expect(button("Send answer")).toBeUndefined();
     render([packet], false);
     expect(button("Send answer")).toBeUndefined();
-    expect(host.textContent).toContain("need the live synthetic API");
+    expect(host.textContent).toContain("not available in this demo");
   });
 
   it("answers a canonical lung work-up packet: same-unit re-referral only, no CRC copy", async () => {

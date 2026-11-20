@@ -1,12 +1,13 @@
 "use client";
 
+import { Table2 } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /*
  * The small parts the Programme charts share: a tooltip that opens on hover and on focus, a focusable mark,
- * a figure with a "Show as table" toggle, a segmented toggle and the fills that tell series apart without colour.
+ * a figure with an icon-only "Show as table" toggle, a segmented toggle and the fills that tell series apart without colour.
  */
 
 /** Fills that differ in texture as well as colour, so no series is told apart by colour alone. */
@@ -117,27 +118,21 @@ export function ChartFigure({
   captionBelow?: boolean;
 }) {
   const [asTable, setAsTable] = useState(false);
-  const head = (
-    <div className={cn("flex flex-wrap items-start justify-between gap-x-3 gap-y-1", captionBelow && "mt-5")}>
-      <figcaption className="min-w-0 flex-1 basis-48 text-small leading-4 text-muted">{caption}</figcaption>
-      <button
-        type="button"
-        aria-pressed={asTable}
-        onClick={() => setAsTable(!asTable)}
-        className={cn(
-          "inline-flex min-h-11 flex-none cursor-pointer items-center rounded-control border border-control px-3 text-small text-ink md:min-h-8",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue",
-          asTable ? "bg-active font-medium" : "bg-surface hover:bg-raised",
-        )}
-      >
-        Show as table
-      </button>
+  const toggle = <TableToggle pressed={asTable} onToggle={() => setAsTable(!asTable)} />;
+  const captionLine = <figcaption className={cn("text-small leading-4 text-muted", captionBelow ? "mt-5" : "min-w-0 flex-1 basis-48")}>{caption}</figcaption>;
+  const head = captionBelow ? (
+    // The chart sits straight under its heading: the toggle floats in the chart's own top margin, the caption goes below.
+    <div className={cn("flex justify-end", !asTable && "-mb-7")}>{toggle}</div>
+  ) : (
+    <div className="flex items-start justify-between gap-x-3">
+      {captionLine}
+      {toggle}
     </div>
   );
   return (
     <figure className={cn("m-0", className)}>
-      {!captionBelow && head}
-      <div className={cn("tabular-nums", !captionBelow && "mt-3")}>
+      {head}
+      <div className={cn("tabular-nums", (!captionBelow || asTable) && "mt-3")}>
         {asTable ? (
           <table className="w-full border-collapse text-small">
             <caption className="sr-only">{table.caption}</caption>
@@ -185,8 +180,37 @@ export function ChartFigure({
           children
         )}
       </div>
-      {captionBelow && head}
+      {captionBelow && captionLine}
     </figure>
+  );
+}
+
+/**
+ * The table view toggle: a quiet icon-only button at the chart's top-right. The visual box is 28px; the button itself
+ * is 44px (negative margins keep the layout at 28px), so the hit area meets the touch-target size everywhere. Its name
+ * stays "Show as table" and aria-pressed carries the state; the hover title says what a click will do.
+ */
+export function TableToggle({ pressed, onToggle }: { pressed: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Show as table"
+      aria-pressed={pressed}
+      title={pressed ? "Show as chart" : "Show as table"}
+      onClick={onToggle}
+      className="group -m-2 inline-flex size-11 flex-none cursor-pointer items-center justify-center rounded-control border-0 bg-transparent p-0 text-ink-soft focus-visible:outline-none"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex size-7 items-center justify-center rounded-control border transition-colors",
+          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-hue",
+          pressed ? "border-control bg-active text-ink" : "border-transparent group-hover:border-control group-hover:bg-raised group-hover:text-ink",
+        )}
+      >
+        <Table2 className="size-4" strokeWidth={1.75} />
+      </span>
+    </button>
   );
 }
 

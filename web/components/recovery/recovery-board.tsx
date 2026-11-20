@@ -8,7 +8,6 @@ import { cancelBackfill, confirmBackfill } from "@/app/app/recovery/actions";
 import { PageHeader } from "@/components/shell/page-header";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { providerLabel } from "@/components/worklist/model";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { RecoveryCandidate, RecoveryDetail, RecoveryList, RecoverySlot } from "@/lib/api/recovery-schema";
 import { cx } from "@/lib/cx";
 import { caseHref, shortId } from "@/lib/domain/ids";
@@ -123,7 +122,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
   const [requestID, setRequestID] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
-  const [ledgerHash, setLedgerHash] = useState("");
   const [releasing, setReleasing] = useState(false);
   const [reason, setReason] = useState("");
   const [holdOpen, setHoldOpen] = useState<boolean | null>(null);
@@ -146,7 +144,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
     setReason("");
     setRequestID(crypto.randomUUID());
     setMessage("");
-    setLedgerHash("");
   };
 
   const release = async () => {
@@ -165,15 +162,14 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       });
       setReleasing(false);
       if (result.ok) {
-        setLedgerHash(result.response.event.hash);
-        setMessage("Simulated backfill cancelled; the synthetic seat is released. The confirmation remains in the ledger.");
+        setMessage("Simulated backfill cancelled; the seat is free again. The original confirmation stays on record.");
       } else {
-        setMessage(`Cancellation refused: ${result.error}`);
+        setMessage(`Cancellation refused: ${result.status === 409 ? "someone changed this slot first. Reload and try again." : result.error}`);
       }
       router.refresh();
     } catch {
       setReleasing(false);
-      setMessage("Cancellation could not be completed. Reload the projection before retrying; no release was recorded in this browser.");
+      setMessage("Cancellation could not be completed. Reload the page and try again; nothing was changed.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -204,18 +200,17 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       });
       if (result.ok) {
         setSelected(null);
-        setLedgerHash(result.response.event.hash);
         setMessage("Simulated backfill confirmed; no provider booking or message was made.");
         router.refresh();
       } else {
         // Never retain stale heads or optimistic success after a refusal.
         setSelected(null);
-        setMessage(`Confirmation refused: ${result.error}`);
+        setMessage(`Confirmation refused: ${result.status === 409 ? "someone changed this slot first. Reload and try again." : result.error}`);
         if (result.status === 409) router.refresh();
       }
     } catch {
       setSelected(null);
-      setMessage("Confirmation could not be completed. Reload the projection before retrying; no success was recorded in this browser.");
+      setMessage("Confirmation could not be completed. Reload the page and try again; nothing was saved.");
       router.refresh();
     } finally {
       submitting.current = false;
@@ -258,18 +253,16 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       <article className="rounded-[8px] border border-line bg-surface text-ink [--g:clamp(16px,2vw,28px)]">
         <PageHeader
           attached
-          run
          
           title="Recovery"
           sub="Released capacity from missed appointments"
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
         <p role="status" className="m-0 p-4">
           {list.status !== "ready"
-            ? `Recovery input is ${words(list.status)}. Run the booking demo to generate it.`
+            ? "Released slots are not available yet."
             : list.slots.length === 0
-              ? "No simulated released capacity is available."
+              ? "No released slots right now (simulated)."
               : "Select a released slot to see its candidates."}
         </p>
       </article>
@@ -288,7 +281,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       >
         <PageHeader
           attached
-          run
           className="py-[clamp(13px,1.8cqi,24px)]! @max-[700px]:px-4!"
           title={<span id="rc-title">{procedureLabel(slot.procedure)}</span>}
           titleAside={
@@ -305,7 +297,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             </button>
           }
           sub={`${providerLabel(slot.provider)} · ${slot.unit}`}
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
 
@@ -331,7 +322,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             </div>
             {slot.status === "stale" && (
               <p className={cx("m-0 border-t border-line bg-ochre-wash py-3 text-small text-ochre-ink", gutter)}>
-                Slot is stale{slot.stale_reason_codes.length ? `: ${slot.stale_reason_codes.map(words).join(", ")}` : ""}. It cannot be backfilled.
+                Slot no longer available{slot.stale_reason_codes.length ? `: ${slot.stale_reason_codes.map(words).join(", ")}` : ""}. It cannot be filled.
               </p>
             )}
 
@@ -356,7 +347,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             )}
 
             {!pages || slot.candidates.length === 0 ? (
-              <p role="status" className={cx("m-0 border-t border-line py-4 text-muted", gutter)}>No waitlist candidates were generated.</p>
+              <p role="status" className={cx("m-0 border-t border-line py-4 text-muted", gutter)}>No patients on the waiting list for this slot.</p>
             ) : (
               <>
                 <ol className="m-0 list-none p-0">
@@ -484,7 +475,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
                     <Fact term="Second identifier">{sentence(words(focal.outreach.second_identifier))}</Fact>
                   </dl>
                   <p className="m-0 border-t border-line pt-3 text-small text-ink-soft">
-                    {assigned ? "Assigned to" : "For"} {shortId(focal.case_id)}. Outreach is decided apart from the slot assignment; no message is ever sent.
+                    {assigned ? "Assigned to" : "For"} {shortId(focal.case_id)}. Contacting the patient is a separate choice from assigning the slot. No message is sent.
                   </p>
                 </>
               ) : (
@@ -510,13 +501,13 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
                 <Fact term="Release reason">{releaseReason(slot.release.projection_basis)}</Fact>
                 <Fact term="Source appointment">{shortId(slot.release.source_appointment)}</Fact>
               </dl>
-              <p className="m-0 border-t border-line pt-3 text-small text-ink-soft">A future synthetic session, not the missed provider slot.</p>
+              <p className="m-0 border-t border-line pt-3 text-small text-ink-soft">A future simulated clinic session, not the original slot.</p>
             </details>
             {slot.history.length > 0 && (
               <details className={cx("group/hist min-w-0 border-t border-line bg-surface pt-1.5 pb-3", gutter)}>
                 <summary className={cx(summaryBase, "text-jade-700")}>
                   <History aria-hidden className="size-4" />
-                  Ledger history ({slot.history.length})
+                  History ({slot.history.length})
                   <ChevronDown aria-hidden className="size-3.5 transition-transform group-open/hist:rotate-180" />
                 </summary>
                 <ol className="m-0 list-decimal pl-5 text-small" data-testid="recovery-slot-history">
@@ -535,12 +526,11 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       {message && (
         <div role="status" className="mt-3 rounded-control border border-line bg-surface p-3">
           {message}
-          {ledgerHash && <span className="ml-2 break-all text-small">Ledger {ledgerHash}</span>}
         </div>
       )}
       {readOnly && (
         <p id="rc-read-only" className="mb-0 mt-3 text-small text-muted">
-          Fixture mode is read-only. Confirmations are never simulated in browser state.
+          This demo is read-only. Slots cannot be filled here.
         </p>
       )}
 
@@ -559,7 +549,7 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
         <DialogContent className="staff-tokens max-h-[90dvh] overflow-y-auto bg-surface text-ink" showCloseButton={!pending}>
           <DialogHeader>
             <DialogTitle>Cancel simulated backfill</DialogTitle>
-            <DialogDescription>Releases the synthetic seat so the case can be rebooked. A compensating ledger event references the confirmation; nothing is deleted.</DialogDescription>
+            <DialogDescription>Frees the seat so the patient can be rebooked. The original confirmation stays on record; nothing is deleted.</DialogDescription>
           </DialogHeader>
           <label className="flex flex-col gap-1 text-small">
             <span>Reason (required)</span>

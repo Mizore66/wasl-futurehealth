@@ -3,7 +3,6 @@ import { Card } from "@/components/case/sections";
 import { caseHref } from "@/lib/domain/ids";
 import { CLINICIAN_HOLDS, FIT_REOFFERS, REFUSAL_REASONS, recordedWords, reviewDateWords, type DispositionContext } from "./model";
 
-const short = (h: unknown) => (typeof h === "string" && h ? h.slice(0, 12) : "not recorded");
 const roleWords = (r: unknown) => (r === "senior_clinician" ? "senior clinician" : r === "clinician" ? "clinician" : "clinician role not recorded");
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -26,7 +25,7 @@ export function DispositionCard({ ctx, link = true }: { ctx: DispositionContext;
     <Card
       id="disposition"
       title="Clinician disposition"
-      note="A recorded plan or informed refusal. It is not completed care: no appointment, test result or procedure is recorded, and the screening record stays as the pipeline left it."
+      note="A recorded plan or informed refusal. It is not completed care: no appointment, test result or procedure is recorded, and the screening record does not change."
     >
       <div className="mt-3 flex flex-col gap-4" data-testid="disposition-card">
         {hold && (
@@ -59,7 +58,7 @@ export function DispositionCard({ ctx, link = true }: { ctx: DispositionContext;
                 <Row label="Signed by">
                   {String(declinePlan.actor ?? "recorded")} ({roleWords(declinePlan.role)})
                 </Row>
-                <Row label="Answers decline">event {short(declinePlan.decline_event)}</Row>
+                <Row label="Answers decline">{decline?.at ? `recorded ${decline.at.slice(0, 10)}` : "recorded by the coordinator"}</Row>
                 <Row label="Reason">{REFUSAL_REASONS[declinePlan.reason as keyof typeof REFUSAL_REASONS] ?? String(declinePlan.reason)}</Row>
                 {declinePlan.counselling !== undefined && <Row label="Counselling">{String(declinePlan.counselling)}</Row>}
                 {declinePlan.safety_net !== undefined && <Row label="Safety net">{String(declinePlan.safety_net)}</Row>}

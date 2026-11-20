@@ -79,7 +79,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     section: "Review desk",
     page: "/app/review",
-    target: 'ol[aria-label="Record pairs waiting"] > li:first-child',
+    target: 'ol[aria-label="Cases waiting"] > li:first-child',
     title: "A held case",
     body: "Wasl held this case rather than close it on its own. The middle says why. The tags on the right say what needs checking: the patient's identity, a report, or both.",
   },
@@ -102,7 +102,7 @@ export const TOUR_STEPS: TourStep[] = [
     page: "/app",
     target: 'section[aria-labelledby="kpi-h"]',
     title: "The headline number",
-    body: "Share of positive FIT referrals that reached a colonoscopy within 31 days, the DoH standard. It is counted three ways: by Emirates ID alone, by Wasl's matching, and against the simulated truth.",
+    body: "How many of the colonoscopies done within 31 days each method can see: Emirates ID alone, or Wasl's matching. Under it, the programme's own on-time rate against the DoH target.",
   },
   {
     section: "Programme",

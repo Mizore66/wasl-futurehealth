@@ -147,7 +147,7 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
   return (
     <div
       role="img"
-      aria-label={`Link score ${score.toFixed(3)} on a scale from 0.95 to 1.00, ${above ? "at or above" : "below"} the ${line} auto-close line.`}
+      aria-label={`Match score ${score.toFixed(3)} on a scale from 0.95 to 1.00, ${above ? "at or above" : "below"} the ${line} auto-close line.`}
       className="relative mt-2 h-[52px] tabular-nums"
     >
       <div className="absolute inset-x-0 top-[22px] h-1 rounded-sm bg-control" />
@@ -185,13 +185,13 @@ export function IdentityBridge({ view, answer, children }: { view: ReviewView; a
         })}
         <p className="m-0 font-medium">{view.identitySummary}</p>
         {view.identityGuard.length > 0 && (
-          <ul aria-label="Visible identifier field limitations" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
+          <ul aria-label="Limits of this check" className="m-0 mt-1 list-disc pl-5 text-small text-muted" data-testid="identity-guard">
             {view.identityGuard.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
         )}
-        <p role="note" aria-label="Identifier source context" className="m-0 mt-2 text-small text-muted">{view.identityContext}</p>
+        <p role="note" aria-label="Where these details come from" className="m-0 mt-2 text-small text-muted">{view.identityContext}</p>
         <button
           type="button"
           aria-expanded={why}
@@ -205,7 +205,7 @@ export function IdentityBridge({ view, answer, children }: { view: ReviewView; a
         {why && (
           <div id={`why-held-${suffix}`} className="mt-2 rounded-control bg-ground p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="font-medium">Link score</span>
+              <span className="font-medium">Match score</span>
               <span>
                 {view.link.score.toFixed(3)}{" "}
                 <span className="text-small text-muted">
@@ -214,12 +214,9 @@ export function IdentityBridge({ view, answer, children }: { view: ReviewView; a
               </span>
             </div>
             <ScoreTrack score={view.link.score} line={view.link.line} />
-            <p className="m-0 mt-2 text-small leading-[18px] text-muted">
-              This score describes the displayed link context. The original configured guard result is unavailable.
-            </p>
+            <p className="m-0 mt-2 text-small leading-[18px] text-muted">This score is for the records as they stand now.</p>
             <p className="m-0 mt-1 text-small leading-[18px] text-muted">
-              Readers: the rules reader applies the DoH closure checklist word for word; the second reader is a language model ({view.readerModel}). Both must
-              agree for a report to close a case.
+              Two readers check each report: one follows the DoH closure checklist, the other is an AI model. Both must agree for a report to close a case.
             </p>
           </div>
         )}

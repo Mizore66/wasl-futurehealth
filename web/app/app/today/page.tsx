@@ -16,15 +16,14 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
   const { items, now, programme, provider } = await todayItems(selection);
   const live = apiMode() === "live";
   const honesty = live ? (
-    <HonestyLabel kind="built">Call log: saved to the case ledger</HonestyLabel>
+    <HonestyLabel kind="built">Call log: saved to the case record</HonestyLabel>
   ) : (
-    <HonestyLabel kind="illustrative">Call log: kept in this browser (no live API)</HonestyLabel>
+    <HonestyLabel kind="illustrative">Call log: kept in this browser only (demo)</HonestyLabel>
   );
   const scope = scopeWords(selection);
   const head = (
     <PageHeader
       attached
-      run
       compact
       title="Today"
       sub={`${scope} · ${simulatedRunDate(now)}`}

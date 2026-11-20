@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { apiMode, getCase, getCaseWithToken } from "@/lib/api/source";
 import {
+  DEMO_PERSONA_COOKIE,
+  demoPersona,
   isReviewToken,
   OIDC_REVIEW_COOKIE,
   OIDC_SESSION_SAME_SITE,
@@ -16,16 +18,29 @@ import {
 import { mappedCredentialToken, oidcConfig, reviewAuthMode } from "@/lib/auth/oidc-config";
 import { defaultSessionStore } from "@/lib/auth/oidc-store";
 import { logOidcFailure } from "@/lib/auth/oidc";
-import { personaFromOidc, personaFromToken, type SessionPersona } from "@/lib/auth/session-persona";
+import { personaFromDemo, personaFromOidc, personaFromToken, type SessionPersona } from "@/lib/auth/session-persona";
 
 export type ResolvedReviewer =
-  | { ok: true; token: string; method: "demo" | "oidc"; expiresAt?: string; subject?: string; credential?: string }
+  | { ok: true; token: string; method: "demo" | "persona" | "oidc"; expiresAt?: string; subject?: string; credential?: string }
   | { ok: false; reason: "anonymous" | "expired" | "revoked" | "unmapped" };
+
+/** A demo persona's server-side token (WASL_API_<CREDENTIAL>_TOKEN), or undefined when this server has none. */
+function demoPersonaToken(credential: string, env: Record<string, string | undefined> = process.env): string | undefined {
+  const token = env[`WASL_API_${credential.toUpperCase()}_TOKEN`]?.trim();
+  return isReviewToken(token) ? token : undefined;
+}
 
 /** Resolve the current request without ever falling back to a shared API credential. */
 export async function resolveReviewer(): Promise<ResolvedReviewer> {
   const jar = await cookies();
-  if (reviewAuthMode() === "demo") {
+  const mode = reviewAuthMode();
+  if (mode === "persona") {
+    /* Only the picked persona's own token; no persona cookie means no session, never the shared web credential. */
+    const persona = demoPersona(jar.get(DEMO_PERSONA_COOKIE)?.value);
+    const token = persona && demoPersonaToken(persona.credential);
+    return token ? { ok: true, token, method: "persona", credential: persona.credential } : { ok: false, reason: "anonymous" };
+  }
+  if (mode === "demo") {
     const value = jar.get(REVIEW_COOKIE)?.value;
     return isReviewToken(value) ? { ok: true, token: value, method: "demo" } : { ok: false, reason: "anonymous" };
   }
@@ -55,6 +70,10 @@ export async function reviewerPersona(): Promise<SessionPersona | null> {
   try {
     const resolved = await resolveReviewer();
     if (!resolved.ok) return null;
+    if (resolved.method === "persona") {
+      const persona = demoPersona(resolved.credential);
+      return persona ? personaFromDemo(persona.name, persona.role) : null;
+    }
     return resolved.method === "oidc" && resolved.subject && resolved.credential
       ? personaFromOidc(resolved.subject, resolved.credential)
       : personaFromToken(resolved.token);
@@ -97,6 +116,36 @@ export async function signInReviewer(caseId: string, token: string): Promise<Sig
   return { ok: true };
 }
 
+const PERSONA_REFUSED: SignInResult = { ok: false, error: "That demo persona is not available. Pick another one." };
+
+/**
+ * Open-demo sign-in: the visitor picks a persona, never a token. The web server signs with that persona's own token,
+ * so the API still binds role and actor, and the two-person rule still needs a second, different persona.
+ */
+export async function signInAsDemoPersona(caseId: string, credential: string): Promise<SignInResult> {
+  if (apiMode() !== "live" || reviewAuthMode() !== "persona") return PERSONA_REFUSED;
+  const persona = demoPersona(credential);
+  const token = persona && demoPersonaToken(persona.credential);
+  if (!persona || !token) return PERSONA_REFUSED;
+  let verified;
+  try {
+    verified = await getCaseWithToken(caseId, token);
+  } catch {
+    return { ok: false, error: "The review server could not be reached or did not answer in time. Try again in a moment." };
+  }
+  if (!verified.ok) return PERSONA_REFUSED;
+  (await cookies()).set(DEMO_PERSONA_COOKIE, persona.credential, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: REVIEW_COOKIE_PATH,
+    maxAge: REVIEW_COOKIE_MAX_AGE,
+  });
+  revalidatePath(`/app/review/${encodeURIComponent(caseId)}`);
+  revalidatePath(`/app/patients/${encodeURIComponent(caseId)}/audit`);
+  return { ok: true };
+}
+
 export async function signOutReviewer(caseId: string): Promise<void> {
   const jar = await cookies();
   if (reviewAuthMode() === "oidc") {
@@ -108,6 +157,7 @@ export async function signOutReviewer(caseId: string): Promise<void> {
     }
   }
   jar.delete({ name: REVIEW_COOKIE, path: REVIEW_COOKIE_PATH });
+  jar.delete({ name: DEMO_PERSONA_COOKIE, path: REVIEW_COOKIE_PATH });
   jar.set(OIDC_REVIEW_COOKIE, "", { httpOnly: true, secure: true, sameSite: OIDC_SESSION_SAME_SITE, path: REVIEW_COOKIE_PATH, maxAge: 0 });
   revalidatePath(`/app/review/${encodeURIComponent(caseId)}`);
   revalidatePath(`/app/patients/${encodeURIComponent(caseId)}/audit`);

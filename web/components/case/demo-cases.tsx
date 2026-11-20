@@ -14,11 +14,10 @@ export async function CaseNotFound({ base }: { base: "/app/patients" | "/app/rev
   const cases = Object.values(fixtures).filter((c): c is NonNullable<typeof c> => !!c);
   return (
     <section aria-label="Case not found" className="rounded-card border border-line bg-surface">
-      <PageHeader attached run compact title="We could not find that case" />
+      <PageHeader attached compact title="We could not find that case" />
       <div className="p-4 md:p-pad">
         <p className="m-0 max-w-[72ch] text-muted">
-          Case ids look like <code className="font-mono">ahs-mushrif/ServiceRequest/AHS-sr-1079</code>, not a plain number. This run has no case with the id in
-          the address. Try one of the demo cases:
+          No case matches this address. Try one of the demo cases:
         </p>
         <ul className="m-0 mt-4 flex list-none flex-col gap-2 p-0" aria-label="Demo cases">
           {cases.map((c) => {

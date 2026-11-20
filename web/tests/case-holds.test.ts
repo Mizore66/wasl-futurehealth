@@ -36,7 +36,7 @@ describe("case holds come from the latest canonical decision", () => {
     expect(text(d)).toContain("Closed with evidence");
     expect(text(d)).not.toMatch(/Waiting for the eye-clinic exam/);
     expect(currentList(d)).toBe("");
-    expect(historyList(d)).toContain("awaiting_eye_clinic_exam");
+    expect(historyList(d)).toContain(d.holds[0].rule);
     expect(caseStage(d).key).toBe("recorded");
   });
 

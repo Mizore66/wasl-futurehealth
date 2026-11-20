@@ -129,8 +129,8 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(ledger).toContain("Owner set to coordinator-bound");
     expect(ledger).toContain("Contact logged: Appointment agreed (phone)");
     expect(ledger).toContain("Contact logged: Declined the procedure (phone)");
-    expect(ledger).toContain("coordinator_action/contact_outcome");
-    expect(ledger).toContain("coordinator_action/snooze");
+    expect(ledger).toContain("Snoozed");
+    expect(ledger).not.toContain("coordinator_action/");
     expect(ledger).toContain("synthetic coordinator note");
     expect(ledger).toContain("coordinator-bound");
     expect(ledger).not.toContain("self-asserted");
@@ -142,7 +142,7 @@ describe("shared ledger contract (real Go handler output)", () => {
     const html = renderToStaticMarkup(HistoryCard({ audit, programme: "crc" }));
     expect(html).toContain("Contact logged: Reached (phone)");
     expect(html).toContain("Owner changed"); // the redacted audit does not carry the owner name
-    expect(html).toContain("contest_resolution");
+    expect(html).toContain("Contest resolved");
     expect(html).not.toContain("coordinator-bound");
     expect(html.match(/<li /g)).toHaveLength(ORDER.length);
   });
@@ -196,7 +196,7 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(html).toContain("Contest status: rejected");
     expect(html).toContain(`id="review-event-${undo.target}"`);
     expect(html).toContain(`href="#review-event-${undo.target}"`);
-    expect(html).toContain("Resolving event");
+    expect(html).toContain("Resolved by");
     expect(html).not.toContain("redacted-projection-actor");
   });
 
@@ -222,8 +222,8 @@ describe("shared ledger contract (real Go handler output)", () => {
     const html = renderToStaticMarkup(HistoryCard({ audit, programme: "crc", governance } as never));
     expect(html).toContain("Contest status: open");
     expect(html).toContain("Resolve contest");
-    expect(html).toContain("different authorised actor");
-    expect(html).toContain("signed-in credential");
+    expect(html).toContain("different person from the original reviewer");
+    expect(html).toContain("under your own sign-in");
     expect(html).not.toContain('name="credential"');
     expect(html).toContain('<option value="" selected="">Choose a resolution</option>');
     expect(html).toMatch(/<select[^>]*name="resolution"[^>]*required/);
@@ -246,11 +246,11 @@ describe("shared ledger contract (real Go handler output)", () => {
       },
     };
     const liveHtml = renderToStaticMarkup(HistoryCard({ audit, programme: "crc", governance } as never));
-    expect(liveHtml).toContain("Append compensation");
+    expect(liveHtml).toContain("Undo this review");
     expect(liveHtml).toContain("Contest review");
-    expect(liveHtml).toContain("Original event remains unchanged");
+    expect(liveHtml).toContain("The original review stays on record");
     const fixtureHtml = renderToStaticMarkup(HistoryCard({ audit, programme: "crc" }));
-    expect(fixtureHtml).not.toContain("Append compensation");
+    expect(fixtureHtml).not.toContain("Undo this review");
     expect(fixtureHtml).not.toContain("Contest review");
   });
 
@@ -265,12 +265,12 @@ describe("shared ledger contract (real Go handler output)", () => {
   it("offers undo and contest controls for an active evidence review and says who acts", () => {
     const review = reviewFor("signoff_evidence");
     const html = renderGovernanceHistory([review], [[review.hash, "active"]]);
-    expect(html).toContain("Append compensation");
+    expect(html).toContain("Undo this review");
     expect(html).toContain("Contest review");
     expect(html).toContain('data-testid="governance-identity"');
-    expect(html).toContain("act as the token you signed in with");
-    expect(html).toContain("signs in separately");
-    expect(html).toContain("distinct token the operator issued");
+    expect(html).toContain("act under the token you signed in with");
+    expect(html).toContain("sign in separately");
+    expect(html).toContain("with their own token");
     expect(html).toMatch(/<button[^>]*>Sign out<\/button>/);
     expect(html).not.toContain('name="credential"');
   });
@@ -294,9 +294,9 @@ describe("shared ledger contract (real Go handler output)", () => {
     expect(html).toContain('data-testid="governance-signin"');
     expect(html).toContain("Sign in to undo, contest or resolve");
     expect(html).toContain('type="password"');
-    expect(html).toContain("signs in separately");
+    expect(html).toContain("sign in separately");
     expect(html).not.toContain('data-testid="governance-identity"');
-    for (const control of ["Append compensation", "Contest review", "Resolve contest", 'name="reason"', 'name="resolution"', 'name="credential"']) {
+    for (const control of ["Undo this review", "Contest review", "Resolve contest", 'name="reason"', 'name="resolution"', 'name="credential"']) {
       expect(html).not.toContain(control);
     }
   });
@@ -356,7 +356,8 @@ describe("unknown or malformed ledger events", () => {
     expect(tail.map((e) => e.ledger)).toEqual(["unknown", "unknown", "unknown"]);
     expect(tail[0]).toMatchObject({ label: "coordinator_action/callback_booked", hash: "h-future" });
     const html = renderToStaticMarkup(LedgerCard({ detail: r.data! }));
-    expect(html).toContain("Unrecognised ledger event (coordinator_action/callback_booked)");
+    expect(html).toContain("Unrecognised entry");
+    expect(html).not.toContain("coordinator_action/callback_booked");
   });
 
   it("an event of an unrecognised type or kind is never read as a review, even with every review field", () => {

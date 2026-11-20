@@ -90,9 +90,9 @@ it("rebuilt single-case full-row guard semantics survive without a pager", async
   queue.reviewQueue.mockResolvedValue({ source: "rebuilt", cases });
   const html = await render();
   expect(lis(html)).toHaveLength(1); expect(html).toContain("1 case waits");
-  expect(html).toContain("Practice queue"); expect(html).toContain("no open review items");
-  expect(html).toContain(`using its ${cases[0].review_items.length} review items`);
+  expect(html).toContain("Practice queue"); expect(html).toContain("No cases are waiting in this demo");
+  expect(html).toContain(`${cases[0].review_items.length} questions cleared`);
   const guard = cases[0].decisions.some((d) => Array.isArray(d.outreach) && d.outreach.some((o: { suppress?: string }) => o.suppress === "second_identifier_unconfirmed")) && cases[0].decisions.every((d) => d.consent_log.length === 0);
-  expect(html.includes("second-identifier guard")).toBe(guard);
+  expect(html.includes("a second identifier was not confirmed")).toBe(guard);
   expect(html).not.toContain("<nav");
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { Axis, Bar, ChartRow, Dot, Grid, Label, Legend, Seg, Tick, TipRows, scale, ticksTo } from "@/components/charts/kit";
+import { Axis, Bar, ChartRow, CheckMark, CheckedBar, Dot, Grid, Label, Legend, Seg, Tick, TipRows, ZeroFigure, niceMax, scale, ticksTo } from "@/components/charts/kit";
 import { CHROME, SERIES } from "@/components/charts/palette";
 import { ChartFigure } from "@/components/programme/chart-kit";
 
@@ -14,17 +14,21 @@ const pctText = (share: number, digits = 2) => `${Number((share * 100).toFixed(d
 
 export type Bound = { label: string; events: number; denominator: number; upper: number; testId?: string };
 
-/** Zero-event counters: the observed rate (dot) and the 95% upper bound (whisker) on one shared % axis. */
+/**
+ * Zero-event counters as "cases checked, none wrong": a bar per counter for the cases checked on one count axis, a
+ * clay segment at its end for any that were wrong (none here), and "0 of N" with a check beside the label. The 95%
+ * upper bound on the true rate stays under each count, in the tooltip and in the table.
+ */
 export function BoundChart({ rows }: { rows: Bound[] }) {
-  const max = Math.ceil(Math.max(...rows.map((r) => r.upper)) * 1000 * 1.25) / 1000;
+  const max = niceMax(Math.max(...rows.map((r) => r.denominator)));
   const x = scale(0, max);
   const ticks = ticksTo(max, 2);
   return (
     <ChartFigure
-      caption="Seen (dot) and the 95% upper bound on the true rate (whisker), 5 seeds pooled"
+      caption="Cases checked (bar) and how many were wrong. Under each count, the highest the true rate is likely to be. 5 test runs combined"
       table={{
-        caption: "Safety counters with 95% upper bounds",
-        head: ["Counter", "Seen", "95% upper bound"],
+        caption: "Safety errors and the highest likely rate",
+        head: ["Error", "Wrong of checked", "Highest likely rate"],
         rows: rows.map((r) => [r.label, `${r.events} of ${fmt(r.denominator)}`, pctText(r.upper)]),
       }}
     >
@@ -33,22 +37,31 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
           <ChartRow
             key={r.label}
             label={r.label}
-            sub={`${r.events} of ${fmt(r.denominator)}`}
+            sub={
+              <>
+                <ZeroFigure events={r.events} of={r.denominator} className="mt-0.5" />
+                <span className="block">likely ≤ {pctText(r.upper)}</span>
+              </>
+            }
             labelWidth="11rem"
             track="h-7"
             testId={r.testId}
-            tip={<TipRows title={r.label} rows={[{ color: SERIES.wasl, name: "seen", value: `${r.events} of ${fmt(r.denominator)}` }, { color: SERIES.wasl, name: "95% upper bound", value: pctText(r.upper) }]} />}
+            tip={
+              <TipRows
+                title={r.label}
+                rows={[
+                  { color: SERIES.wasl, name: "checked", value: fmt(r.denominator) },
+                  { color: "var(--color-negative)", name: "wrong", value: String(r.events) },
+                ]}
+                note={`Highest likely rate: ${pctText(r.upper)}`}
+              />
+            }
           >
             <Grid ticks={ticks} x={x} />
-            <Seg from={x(r.events / r.denominator)} to={x(r.upper)} color={SERIES.wasl} />
-            <Tick x={x(r.upper)} color={SERIES.wasl} h={10} />
-            <Dot x={x(r.events / r.denominator)} color={SERIES.wasl} size={8} />
-            <Label x={x(r.upper)} strong>
-              ≤ {pctText(r.upper)}
-            </Label>
+            <CheckedBar to={x(r.denominator)} wrong={x(r.events)} color={SERIES.wasl} />
           </ChartRow>
         ))}
-        <Axis ticks={ticks} x={x} format={(v) => pctText(v, 3)} labelWidth="11rem" />
+        <Axis ticks={ticks} x={x} format={fmt} labelWidth="11rem" title="Cases checked" />
       </div>
     </ChartFigure>
   );
@@ -60,9 +73,9 @@ export function IntervalChart({ label, value, low, high, from = 0.5 }: { label: 
   const ticks = [from, (from + 1) / 2, 1].map((t) => Number(t.toFixed(2)));
   const said = `${value.toFixed(3)} (${low.toFixed(3)}–${high.toFixed(3)})`;
   return (
-    <ChartFigure caption="Mean over 5 seeds (dot) and 95% interval (line)" table={{ caption: label, head: ["Measure", "Mean", "95% interval"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
+    <ChartFigure caption="Average of 5 runs (dot) and likely range (line)" table={{ caption: label, head: ["Measure", "Average", "Likely range"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
       <div data-testid="recall-chart">
-        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "mean, 95% interval", value: said }]} />}>
+        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "average, likely range", value: said }]} />}>
           <Grid ticks={ticks} x={x} />
           <Seg from={x(low)} to={x(high)} color={SERIES.wasl} />
           <Dot x={x(value)} color={SERIES.wasl} />
@@ -95,7 +108,7 @@ export function KpiChart({ groups }: { groups: Kpi[] }) {
         items={[
           { color: SERIES.comparator, label: "Emirates ID only", shape: "bar" },
           { color: SERIES.wasl, label: "Wasl", shape: "bar" },
-          { color: CHROME.reference, label: "Synthetic truth", shape: "tick" },
+          { color: CHROME.reference, label: "Simulated truth", shape: "tick" },
         ]}
       />
       <div data-testid="kpi-chart" className="mt-2">
@@ -138,31 +151,60 @@ export function KpiChart({ groups }: { groups: Kpi[] }) {
 }
 
 /** A count out of a whole as a bar (meter list): the bar is the share, the figure is the count. */
-export type CountRow = { label: string; count: number; of?: number; testId?: string; color?: string; sub?: string };
+export type CountRow = { label: string; count: number; of?: number; testId?: string; color?: string; sub?: string; /** The definition: in the tooltip and the table, never under the label. */ what?: string };
 
-export function CountBars({ rows, caption, tableHead, axisMax }: { rows: CountRow[]; caption: string; tableHead: [string, string]; axisMax?: number }) {
+/**
+ * `checked`: every row is a zero-event counter out of a whole (consent guards). The bar is then the whole, in the Wasl
+ * colour, with any rule-breaking ones as a clay segment at its end; the figure reads "0 of 1,891" with a check.
+ */
+export function CountBars({
+  rows,
+  caption,
+  tableHead,
+  axisMax,
+  checked = false,
+}: {
+  rows: CountRow[];
+  caption: string;
+  tableHead: [string, string];
+  axisMax?: number;
+  checked?: boolean;
+}) {
   const shares = rows.every((r) => r.of);
   const max = axisMax ?? (shares ? 1 : Math.max(...rows.map((r) => r.count)));
   const x = scale(0, max);
   const said = (r: CountRow) => (r.of ? `${fmt(r.count)} of ${fmt(r.of)}` : fmt(r.count));
+  const defined = rows.some((r) => r.what);
   return (
-    <ChartFigure caption={caption} table={{ caption, head: tableHead, rows: rows.map((r) => [r.label, said(r)]) }}>
+    <ChartFigure
+      caption={caption}
+      table={{ caption, head: defined ? [...tableHead, "Meaning"] : tableHead, rows: rows.map((r) => (defined ? [r.label, said(r), r.what ?? ""] : [r.label, said(r)])) }}
+    >
       <div>
         {rows.map((r) => (
           <ChartRow
             key={r.label}
             label={r.label}
-            sub={r.sub}
+            sub={checked && r.of ? <ZeroFigure events={r.count} of={r.of} className="mt-0.5" /> : r.sub}
             labelWidth="10rem"
             track="h-7"
             testId={r.testId}
-            tip={<TipRows title={r.label} rows={[{ color: r.color ?? SERIES.wasl, name: r.of ? "" : "count", value: said(r) }]} />}
+            tip={<TipRows title={r.label} rows={[{ color: r.color ?? SERIES.wasl, name: r.of ? "" : "count", value: said(r) }]} note={r.what} />}
           >
-            <span aria-hidden className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 rounded-[4px]" style={{ backgroundColor: CHROME.track }} />
-            {r.count > 0 && <Bar to={x(r.of ? r.count / r.of : r.count)} color={r.color ?? SERIES.wasl} thick={12} />}
-            <Label x={x(r.of ? r.count / r.of : r.count)} strong>
-              {said(r)}
-            </Label>
+            {checked && r.of ? (
+              <CheckedBar to={100} wrong={x(r.count / r.of)} color={SERIES.wasl} />
+            ) : (
+              <>
+                <span aria-hidden className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 rounded-[4px]" style={{ backgroundColor: CHROME.track }} />
+                {r.count > 0 && <Bar to={x(r.of ? r.count / r.of : r.count)} color={r.color ?? SERIES.wasl} thick={12} />}
+                <Label x={x(r.of ? r.count / r.of : r.count)} strong>
+                  <span className="inline-flex items-center gap-1">
+                    {r.count === 0 && <CheckMark className="text-positive" />}
+                    {said(r)}
+                  </span>
+                </Label>
+              </>
+            )}
           </ChartRow>
         ))}
       </div>
@@ -175,9 +217,9 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
   return (
     <ChartFigure
       caption={label}
-      table={{ caption: label, head: ["Corpora", "Count"], rows: [["Found an unsafe phrasing", String(hit)], ["Passed", String(total - hit)]] }}
+      table={{ caption: label, head: ["Report sets", "Count"], rows: [["Exposed an unsafe reading", String(hit)], ["Passed", String(total - hit)]] }}
     >
-      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} corpora found an unsafe phrasing`} className="flex flex-wrap gap-1.5">
+      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} report sets exposed an unsafe reading`} className="flex flex-wrap gap-1.5">
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
@@ -189,7 +231,7 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
       <Legend
         className="mt-2"
         items={[
-          { color: SERIES.comparator, label: "Found an unsafe phrasing, fixed by a general rule", shape: "bar" },
+          { color: SERIES.comparator, label: "Exposed an unsafe reading, then fixed", shape: "bar" },
           { color: SERIES.wasl, label: "Passed", shape: "bar" },
         ]}
       />

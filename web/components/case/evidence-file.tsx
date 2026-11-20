@@ -218,7 +218,6 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
         {/* The card does not clip (the Run metadata drop-down hangs over it), so the band rounds the corners the folder tab leaves. */}
         <PageHeader
           attached
-          run
           className={back ? "rounded-se-[6px]!" : "rounded-t-[6px]!"}
           title={person?.display_name ?? shortId(c.id)}
           titleAside={
@@ -306,7 +305,7 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
             </div>
             {audit && (
               <p className="m-0 mt-2 text-small text-muted" data-testid="audit-teaser">
-                {!audit.chain_verified ? "Chain broken" : audit.chain_length === 0 ? "No sealed entries yet" : "Chain verified by the server"}
+                {!audit.chain_verified ? "Record altered" : audit.chain_length === 0 ? "Nothing recorded yet" : "Record unchanged"}
               </p>
             )}
           </section>
@@ -396,21 +395,20 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
                   <h2 id="audit-h" className="m-0 flex-1 text-section font-medium">
                     Audit
                   </h2>
-                  <span className="text-small text-muted">{audit.chain_length} sealed entries</span>
+                  <span className="text-small text-muted">{audit.chain_length} recorded entries</span>
                 </summary>
-                <ol aria-label="Entry hashes" className="m-0 list-none p-0 pb-2">
+                <ol aria-label="Recorded entries" className="m-0 list-none p-0 pb-2">
                   {audit.chain.map((e, i) => (
                     <li key={e.hash} className="flex min-h-7 items-center gap-2 text-small">
                       <span className="w-4 text-right tabular-nums text-muted">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate">{entryLabel(e.type)}</span>
-                      <span className="font-mono text-muted">{e.hash.slice(0, 8)}</span>
                     </li>
                   ))}
                 </ol>
               </details>
               <p className="m-0 flex flex-wrap items-center gap-2 pb-3" role="status" data-testid="chain-verified">
                 <Pill tone={chain?.tone === "muted" ? "neutral" : (chain?.tone ?? "neutral")}>{chain?.label}</Pill>
-                <span className="text-small text-muted">The server recomputed each hash from its contents and the entry before it.</span>
+                <span className="text-small text-muted">Each entry is checked against the one before it.</span>
               </p>
               <p className="m-0 pb-3">
                 <Link href={auditHref} className="inline-flex min-h-11 items-center">
@@ -428,13 +426,12 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
             <section aria-label="Historical evidence" className="rounded-card border border-line bg-surface p-4 md:p-pad" data-testid="evidence-history">
               <details>
                 <summary className="min-h-11 cursor-pointer py-2 font-medium">Historical evidence</summary>
-                <p>These reports are preserved for audit, not the current clinical checklist. Original decisions and signatures are unchanged.</p>
+                <p>Kept for the record only. These reports are not part of the current checklist.</p>
                 <ul className="m-0 space-y-3 pl-5">
                   {detail.evidence_history.map((ev) => (
                     <li key={ev.block_hash}>
                       <span className="font-medium">{ev.history === "rejected_registration" ? "Rejected registration" : "Superseded evidence"}</span>
                       <span className="block text-small">Report {shortId(ev.report)} · recorded result: {ev.label}</span>
-                      <span className="block text-small text-muted">Decision {shortId(ev.decision_id)} · signature {ev.decision_sig.slice(0, 12)}</span>
                     </li>
                   ))}
                 </ul>

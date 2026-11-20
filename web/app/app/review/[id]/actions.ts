@@ -28,6 +28,11 @@ export async function signInReviewer(caseId: string, token: string): Promise<Sig
   return session.signInReviewer(caseId, token);
 }
 
+/* Open-demo persona pick: the browser names a persona, the server holds and uses its token. */
+export async function signInAsDemoPersona(caseId: string, credential: string): Promise<SignInResult> {
+  return session.signInAsDemoPersona(caseId, credential);
+}
+
 export async function signOutReviewer(caseId: string): Promise<void> {
   return session.signOutReviewer(caseId);
 }
@@ -77,10 +82,10 @@ export async function submitReviewRead(caseId: string, input: ReviewReadInput): 
   const parsed = ReadInput.safeParse(input);
   if (!parsed.success) return { ok: false, failure: { status: 400, error: "malformed read" } };
   const token = await session.reviewerToken();
-  if (!token) return { ok: false, failure: { status: 401, error: "sign in to review" } };
+  if (!token) return { ok: false, failure: { status: 401, error: "sign in again to continue" } };
 
   const latest = await getCaseWithToken(caseId, token);
-  if (!latest.ok) return { ok: false, failure: { status: latest.status, error: latest.status === 404 ? "case not found" : "sign in to review" } };
+  if (!latest.ok) return { ok: false, failure: { status: latest.status, error: latest.status === 404 ? "case not found" : "sign in again to continue" } };
   const detail = latest.detail;
   const { item, question, decision, expectedHead, claimHead, note } = parsed.data;
   const bad = refusal(detail, { item, decision });
@@ -142,9 +147,9 @@ export type SubmitClaimResult =
 export async function claimReviewQuestion(caseId: string, input: ReviewClaimInput): Promise<SubmitClaimResult> {
   if (apiMode() !== "live") throw new Error("claimReviewQuestion needs WASL_API_URL: fixtures mode is a non-persisting preview");
   const parsed = ClaimInput.safeParse(input);
-  if (!parsed.success) return { ok: false, failure: { status: 400, error: "malformed claim operation" } };
+  if (!parsed.success) return { ok: false, failure: { status: 400, error: "the request could not be read" } };
   const token = await session.reviewerToken();
-  if (!token) return { ok: false, failure: { status: 401, error: "sign in to review" } };
+  if (!token) return { ok: false, failure: { status: 401, error: "sign in again to continue" } };
   const { item, question, operation, expectedClaimHead } = parsed.data;
   const res = await postReviewClaimWithToken(caseId, { item, question, operation, expected_claim_head: expectedClaimHead }, token);
   if (res.ok) {

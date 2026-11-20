@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
-import { CATEGORICAL, CHROME } from "@/components/charts/palette";
+import { CATEGORICAL } from "@/components/charts/palette";
 import { ChartFigure, Mark } from "./chart-kit";
-import { pct, points, type KpiSet } from "./model";
+import { pct, seenShare, type KpiSet } from "./model";
 
 type Source = "demo" | "heldout";
 type Arm = "eid" | "wasl" | "truth";
@@ -16,98 +16,84 @@ const ARMS: { arm: Arm; name: string }[] = [
   { arm: "truth", name: "Simulated truth" },
 ];
 
-/**
- * The two measured methods get a bar each, in the shared palette's first two slots (Wasl jade, the comparator ochre).
- * The simulated truth is the reference Wasl is judged against, so it is a thin ink tick on Wasl's track, not a third bar.
- */
+/** The two measured methods, in the shared palette's first two slots (Wasl jade, the comparator ochre). */
 const BARS: { arm: Exclude<Arm, "truth">; name: string; fill: string; emphasis?: boolean }[] = [
-  { arm: "eid", name: "Emirates ID only", fill: CATEGORICAL[1] },
   { arm: "wasl", name: "Wasl", fill: CATEGORICAL[0], emphasis: true },
+  { arm: "eid", name: "Emirates ID only", fill: CATEGORICAL[1] },
 ];
 
 const TICKS = [0, 25, 50, 75, 100];
 
-const SOURCES: Record<Source, { button: string; table: string; scope: string }> = {
-  demo: { button: "This demo run", table: "This demo run", scope: "in testing" },
-  heldout: { button: "Five-seed held-out mean", table: "Five-seed held-out mean", scope: "on held-out noise, mean of 5 seeds" },
+const SOURCES: Record<Source, { button: string; table: string }> = {
+  demo: { button: "This demo run", table: "This demo run" },
+  heldout: { button: "Average of 5 test runs", table: "Average of 5 test runs" },
 };
 
 /** Label, track, value: the three columns every bar row and the axis share. */
 const COLS = "grid grid-cols-[minmax(87px,.8fr)_minmax(0,2fr)_minmax(42px,.38fr)] gap-[7px] @min-[701px]:grid-cols-[minmax(110px,.9fr)_minmax(0,4fr)_minmax(47px,.35fr)] @min-[701px]:gap-3";
 
 /**
- * The target rail: the 31-day rate by each method on a 0 to 100% scale against the one target line,
- * for one demo run or the five-seed held-out mean.
+ * What each method can see: the share of the real (simulated-truth) on-time colonoscopies it counts, on a 0 to 100% scale,
+ * for one demo run or the five-seed held-out mean. The programme's own on-time rate and the DoH target are a plain line
+ * under it: they describe the programme, not the measurement.
  */
 export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target: number | null }) {
   const [source, setSource] = useState<Source>("demo");
   const set = kpi[source];
-  const { wasl, truth } = set.rates;
-  const label = `On a 0 to 100% scale: ${ARMS.map(({ arm, name }) => `${arm === "truth" ? name.toLowerCase() : name} ${pct(set.rates[arm])}`).join(", ")}${
-    target === null ? "" : `, target ${target}%`
-  }.`;
+  const { truth } = set.rates;
+  const seen = { eid: seenShare(set.rates.eid, truth), wasl: seenShare(set.rates.wasl, truth) };
+  const title = `Wasl sees ${seen.wasl}% of on-time colonoscopies; Emirates ID alone sees ${seen.eid}%`;
+  const label = `Share of on-time colonoscopies each method sees, on a 0 to 100% scale: ${BARS.map(({ arm, name }) => `${name} ${seen[arm]}%`).join(", ")}.`;
 
   return (
     <>
+      <p data-testid="kpi-title" className="m-0 mt-4 text-[17px] font-semibold leading-snug text-ink @min-[701px]:text-[20px]">
+        {title}
+      </p>
       <ChartFigure
         captionBelow
         caption={
           <>
             <span data-testid="kpi-why">
-              Why the two sources differ: the demo run is one run on training-time noise; the five-seed mean averages 5 seeds on held-out noise.
+              The demo run uses data Wasl was tuned on; the 5-run average uses new data, so it is the fairer figure.
             </span>
           </>
         }
         table={{
-          caption: `31-day rate, ${SOURCES[source].table}`,
-          head: ["Method", "Rate", "Detail"],
-          rows: [...ARMS.map(({ arm, name }) => [name, pct(set.rates[arm]), set.detail[arm]]), ...(target === null ? [] : [["Target", `${target}%`, "DoH 31-day standard"]])],
+          caption: `Colonoscopy within 31 days, ${SOURCES[source].table}`,
+          head: ["Method", "Sees", "31-day rate", "Detail"],
+          rows: [
+            ...ARMS.map(({ arm, name }) => [name, arm === "truth" ? "100%" : `${seen[arm]}%`, pct(set.rates[arm]), set.detail[arm]]),
+            ...(target === null ? [] : [["Target", "", `${target}%`, "DoH 31-day standard"]]),
+          ],
         }}
       >
-        <div role="group" aria-label={label} className={`relative ${COLS} mt-8 @min-[701px]:mt-[clamp(31px,4cqi,53px)]`}>
-          {target !== null && (
-            <div aria-hidden className="pointer-events-none relative z-10 col-start-2 row-start-1">
-              <div data-testid="kpi-target" className="absolute inset-y-0 border-l" style={{ left: `${target}%`, borderColor: CHROME.reference }}>
-                <span className="absolute right-[5px] top-[-22px] whitespace-nowrap text-small font-semibold leading-[1.4] text-ink">{target}% DoH target</span>
-              </div>
-            </div>
-          )}
-          <ul className="col-span-full row-start-1 m-0 grid list-none p-0">
+        <div role="group" aria-label={label} className={`${COLS} mt-4`}>
+          <ul className="col-span-full m-0 grid list-none p-0">
             {BARS.map(({ arm, name, fill, emphasis }) => {
-              const v = set.rates[arm];
+              const v = seen[arm];
               return (
                 <li key={arm} data-method={arm} className="border-b border-rule last:border-b-0">
                   <Mark
                     tip={
                       <>
                         <strong className="font-medium">
-                          {name}: {pct(v)}
+                          {name}: sees {v}%
                         </strong>
                         <br />
+                        31-day rate {pct(set.rates[arm])} of the simulated truth&apos;s {pct(truth)}
+                        <br />
                         {set.detail[arm]}
-                        {arm === "wasl" && (
-                          <>
-                            <br />
-                            Simulated truth: {pct(truth)} ({set.detail.truth})
-                          </>
-                        )}
                       </>
                     }
                     className={`${COLS} min-h-14 items-center @min-[701px]:min-h-[clamp(56px,6vw,84px)]`}
                   >
                     <span className={`text-[12px] leading-[1.35] @min-[701px]:text-body ${emphasis ? "font-semibold text-ink" : "font-medium text-ink-soft"}`}>{name}</span>
                     <span aria-hidden className="relative flex h-[13px] min-w-0 items-center @min-[701px]:h-5">
-                      <span className="block h-full rounded-r-[4px] motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${v}%`, minWidth: 4, backgroundColor: fill }} />
-                      {arm === "wasl" && (
-                        <span data-testid="kpi-truth-tick" className="absolute -inset-y-1.5 w-0.5 -translate-x-1/2 rounded-full" style={{ left: `${truth}%`, backgroundColor: CHROME.reference }} />
-                      )}
-                      <span
-                        data-testid={`kpi-${arm}`}
-                        className="absolute whitespace-nowrap pl-2.5 text-[12px] font-semibold tabular-nums text-ink @min-[701px]:text-body"
-                        style={{ left: `${arm === "wasl" ? Math.max(v, truth) : v}%` }}
-                      >
-                        {pct(v)}
-                      </span>
+                      <span className="block h-full rounded-r-[4px] motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${Math.min(v, 100)}%`, minWidth: 4, backgroundColor: fill }} />
+                    </span>
+                    <span data-testid={`kpi-${arm}`} className="whitespace-nowrap text-[12px] font-semibold tabular-nums text-ink @min-[701px]:text-body">
+                      {v}%
                     </span>
                   </Mark>
                 </li>
@@ -129,23 +115,14 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
             ))}
           </div>
         </div>
-        <ul aria-hidden className="m-0 mt-4 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-small text-ink-soft">
-          {BARS.slice().reverse().map((b) => (
-            <li key={b.arm} className="flex items-center gap-1.5">
-              <span className="block size-2.5 rounded-[2px]" style={{ backgroundColor: b.fill }} />
-              {b.name}
-            </li>
-          ))}
-          <li className="flex items-center gap-1.5">
-            <span className="block h-3 w-0.5 rounded-full" style={{ backgroundColor: CHROME.reference }} />
-            <span>
-              Simulated truth <span data-testid="kpi-true" className="tabular-nums">{pct(truth)}</span>
-            </span>
-          </li>
-        </ul>
       </ChartFigure>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <p data-testid="kpi-programme" className="m-0 mt-4 text-body text-ink-soft">
+        Programme on-time rate: <span className="font-semibold tabular-nums text-ink">{pct(truth)}</span>
+        {target !== null && <> (DoH target {target}%)</>} — Wasl shows who still needs a colonoscopy.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <SegmentedToggle
           label="31-day rate source"
           value={source}
@@ -155,9 +132,6 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
             { value: "heldout", label: SOURCES.heldout.button },
           ]}
         />
-        <p data-testid="kpi-truth" className="m-0 text-small text-muted">
-          Wasl is within {points(truth, wasl)} of the simulated truth ({pct(truth)}) {SOURCES[source].scope}.
-        </p>
       </div>
     </>
   );

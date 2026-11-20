@@ -259,18 +259,18 @@
   inset: 0 0 0 37%;
   z-index: -1;
   pointer-events: none;
-  /* Rounded like the band, so a header that lets a menu overflow it (Today's scope) still clips its art. */
+  /* The faded وصل ("connection") repeated, joined by one running line: public/staff/wasl-word.svg. Rounded like the band, so a header that lets a menu overflow it (Today's scope) still clips its art. */
   border-radius: inherit;
-  background-image: url("/staff/pen-strokes.svg");
+  background-image: url("/staff/wasl-word.svg");
   background-size: 196px 116px;
   background-position: right center;
   mask-image: linear-gradient(90deg, transparent, #000 67%);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 @media (max-width: 670px) {
   .staff-heading::before {
     left: 60%;
-    opacity: 0.55;
+    opacity: 0.45;
     background-size: 145px 86px;
   }
 }

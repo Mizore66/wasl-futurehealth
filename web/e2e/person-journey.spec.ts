@@ -19,11 +19,11 @@ test("case navigation resolves an opaque person and renders the read-only journe
   await page.getByRole("link", { name: "View all programmes" }).click();
   await expect(page).toHaveURL(personURL);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText("Trusted identity links only", { exact: true })).toBeVisible();
-  await expect(page.getByTestId("next-action")).toContainText("wasl-person-next-action/1");
+  await expect(page.getByText("Linked records", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("next-action")).toContainText("Coordinator review only");
   await expect(page.getByText("Programme contact permission", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Timeline and raw event hashes", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Decision history and signatures", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Timeline", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Decision history", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Open full case and evidence" }).first()).toHaveAttribute("href", caseURL);
   await expect(page.getByRole("button", { name: /send|suppress|dismiss/i })).toHaveCount(0);
   await expect(page).toHaveTitle("Person journey · Wasl");
@@ -47,16 +47,16 @@ test("published journey shows linked programmes, an open obligation, an actionab
   const flag = journey.outreach_flags.find((f) => f.actionable)!;
   expect(flag).toBeTruthy();
   const group = page.locator(`[id="flag-${flag.id}"]`);
-  await expect(group).toContainText("review actionable");
+  await expect(group).toContainText("needs review");
   for (const intent of flag.intents) await expect(group.locator(`a[href="/app/patients/${encodeURIComponent(intent.case_id)}"]`).first()).toBeVisible();
 
   const action = page.getByTestId("next-action");
   expect(journey.next_action.kind).not.toBe("none");
   await expect(action).not.toContainText("No open coordinator action was found");
-  const source = action.getByRole("link", { name: /^Open source case / });
+  const source = action.getByRole("link", { name: /^Open case / });
   await expect(source).toHaveAttribute("href", `/app/patients/${encodeURIComponent(journey.next_action.case_id!)}`);
   if (journey.next_action.outreach_flag_id) {
-    await action.getByRole("link", { name: "Open the related outreach review group" }).click();
+    await action.getByRole("link", { name: "Open the related message review" }).click();
     await expect(page).toHaveURL(`${personURL}#flag-${journey.next_action.outreach_flag_id}`);
   }
   if (journey.next_action.case_id === journey.person.anchor_case_id) {
@@ -91,7 +91,7 @@ test("unknown opaque person shows the safe not-found state", async ({ page }) =>
   const response = await page.goto(`/app/people/person_${"0".repeat(64)}`);
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Person journey not found" })).toBeVisible();
-  await expect(page.getByText(/No similar-name records were substituted/)).toBeVisible();
+  await expect(page.getByText(/No records with a similar name were shown instead/)).toBeVisible();
 });
 
 for (const width of [390, 1440]) {

@@ -9,10 +9,10 @@ const VIEWS = [
   { href: "/app/pipeline/reading", label: "Report reading" },
 ] as const;
 
-export const REPLAY_LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
+export const REPLAY_LINE = "Simulated patients with made-up names and faces · real report texts";
 
 /** Shown when a live run carries no showcase fixtures and the screen replays the published snapshot instead. */
-export const SNAPSHOT_NOTE = "This live run has no showcase cases, so this view replays the published fixture snapshot, not the live ledger.";
+export const SNAPSHOT_NOTE = "This live system has no demo cases, so this shows the published demo instead.";
 
 export type PipelineHead = {
   title: string;
@@ -30,7 +30,7 @@ export type PipelineHead = {
 export function PipelineHeading({ title, question, current, note, controls, children }: PipelineHead & { controls?: React.ReactNode; children?: React.ReactNode }) {
   return (
     <div className="rounded-card border border-line bg-surface">
-      <PageHeader attached run title={title} sub={question} />
+      <PageHeader attached title={title} sub={question} />
       <nav aria-label="Pipeline views" className="flex flex-wrap gap-x-6 border-b border-rule px-4 sm:px-6">
         {VIEWS.map((v) => {
           const on = v.href === current;

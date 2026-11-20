@@ -61,7 +61,7 @@ const TYPE_WORDS: Record<string, string> = {
 const IDENTITY_SECOND = "Identity in review: no second identifier is confirmed for the two records.";
 const IDENTITY = "Identity in review: a person must confirm the two records are the same patient.";
 const EVIDENCE = "Evidence in review: a person must check what the report shows.";
-const SPLIT = "The two readers disagree.";
+const SPLIT = "The two automatic report checks disagree.";
 
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 

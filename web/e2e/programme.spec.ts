@@ -10,14 +10,16 @@ const capCard = (page: Page) => page.locator('section[aria-labelledby="cap-h"]')
 const SOURCE_CARDS = ["kpi-h", "prog-h", "stall-h", "cap-h"] as const;
 
 test.describe("Programme", () => {
-  test("leads with reported vs measured, bars against the target and the truth line", async ({ page }) => {
+  test("leads with what each method can see, and the programme's own rate against the target in one line", async ({ page }) => {
     await page.goto("/app");
     await expect(page.locator("h1")).toHaveText("Colorectal screening");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
-    await expect(page.getByTestId("kpi-eid")).toContainText("11.3%");
-    await expect(page.getByTestId("kpi-wasl")).toContainText("30.7%");
-    await expect(page.getByRole("group", { name: "On a 0 to 100% scale: Emirates ID only 11.3%, Wasl 30.7%, simulated truth 31.9%, target 90%." })).toBeVisible();
-    await expect(page.getByTestId("kpi-truth")).toHaveText("Wasl is within 1.2 points of the simulated truth (31.9%) in testing.");
+    // 30.7 / 31.9 and 11.3 / 31.9 of the demo run's sourced rates, as whole percents.
+    await expect(page.getByTestId("kpi-title")).toHaveText("Wasl sees 96% of on-time colonoscopies; Emirates ID alone sees 35%");
+    await expect(page.getByTestId("kpi-eid")).toHaveText("35%");
+    await expect(page.getByTestId("kpi-wasl")).toHaveText("96%");
+    await expect(page.getByRole("group", { name: "Share of on-time colonoscopies each method sees, on a 0 to 100% scale: Wasl 96%, Emirates ID only 35%." })).toBeVisible();
+    await expect(page.getByTestId("kpi-programme")).toHaveText("Programme on-time rate: 31.9% (DoH target 90%) — Wasl shows who still needs a colonoscopy.");
     await expect(page.getByText("1 in 6 on your chase list is already done.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme.png", fullPage: true });
     await axe(page);
@@ -28,8 +30,8 @@ test.describe("Programme", () => {
     for (const [card, note] of [
       ["kpi-h", "The target is the DoH 31-day standard."],
       ["prog-h", "Still open is the programme"],
-      ["stall-h", "Simulated run of 2,100 cases, colorectal and cervical together (run v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink)"],
-      ["cap-h", "The optimiser is greedy"],
+      ["stall-h", "Simulated data: 2,100 colorectal and cervical cases."],
+      ["cap-h", "Slots are suggested one patient at a time"],
     ] as const) {
       const section = page.locator(`section[aria-labelledby="${card}"]`);
       const button = section.getByRole("button", { name: "Source" });
@@ -193,34 +195,37 @@ test.describe("Programme charts", () => {
     await page.goto("/app");
     const card = kpiCard(page);
     const demo = card.getByRole("radio", { name: "This demo run" });
-    const mean = card.getByRole("radio", { name: "Five-seed held-out mean" });
+    const mean = card.getByRole("radio", { name: "Average of 5 test runs" });
     await expect(demo).toHaveAttribute("aria-checked", "true");
     await expect(mean).toHaveAttribute("aria-checked", "false");
     await expect(page.getByTestId("kpi-why")).toBeVisible();
-    await expect(page.getByTestId("kpi-why")).toContainText("one run on training-time noise");
-    await expect(page.getByTestId("kpi-why")).toContainText("mean averages 5 seeds on held-out noise");
+    await expect(page.getByTestId("kpi-why")).toContainText("data Wasl was tuned on");
+    await expect(page.getByTestId("kpi-why")).toContainText("the 5-run average uses new data");
     await page.screenshot({ path: "test-results/screens/programme-demo.png", fullPage: true });
 
     await mean.click();
     await expect(mean).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByTestId("kpi-eid")).toContainText("12.2%");
-    await expect(page.getByTestId("kpi-wasl")).toContainText("29.8%");
-    await expect(page.getByTestId("kpi-truth")).toContainText("within 3.1 points of the simulated truth (32.9%)");
+    // 29.8 / 32.9 and 12.2 / 32.9 of the 5-run means.
+    await expect(page.getByTestId("kpi-eid")).toHaveText("37%");
+    await expect(page.getByTestId("kpi-wasl")).toHaveText("91%");
+    await expect(page.getByTestId("kpi-title")).toHaveText("Wasl sees 91% of on-time colonoscopies; Emirates ID alone sees 37%");
+    await expect(page.getByTestId("kpi-programme")).toContainText("Programme on-time rate: 32.9% (DoH target 90%)");
     await expect(page.getByTestId("kpi-why")).toBeVisible();
-    await expect(page.getByRole("group", { name: /Emirates ID only 12.2%, Wasl 29.8%, simulated truth 32.9%, target 90%/ })).toBeVisible();
+    await expect(page.getByRole("group", { name: /Wasl 91%, Emirates ID only 37%/ })).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme-mean.png", fullPage: true });
     expect(await unsourced(page)).toEqual([]);
 
     await demo.click();
-    await expect(page.getByTestId("kpi-eid")).toContainText("11.3%");
+    await expect(page.getByTestId("kpi-eid")).toHaveText("35%");
   });
 
   test("keyboard focus on a bar reveals its tooltip, and Escape closes it", async ({ page }) => {
     await page.goto("/app");
     const bar = kpiCard(page).getByRole("button", { name: /^Wasl/ }).first();
     await bar.focus();
-    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Wasl: 30.7%" });
+    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Wasl: sees 96%" });
     await expect(tip).toBeVisible();
+    await expect(tip).toContainText("31-day rate 30.7% of the simulated truth's 31.9%");
     await expect(tip).toContainText("408 of 1,331 eligible referrals");
     await page.keyboard.press("Escape");
     await expect(tip).toBeHidden();
@@ -267,8 +272,8 @@ test.describe("Programme charts", () => {
     await card.locator("ul a").nth(1).focus();
     await expect(card.getByRole("tooltip").filter({ hasText: "Colposcopy within 14, 28 or 56 days for 31.7% of referrals past their deadline (144 of 454); by window, 14 days: 7.5% (4 of 53);" })).toBeVisible();
     await card.getByRole("button", { name: "Source" }).click();
-    await expect(card.getByText("On time is measured by Wasl from each case's final decision")).toBeVisible();
-    await expect(card.getByText("There is no Emirates ID or simulated-truth comparison for these figures")).toBeVisible();
+    await expect(card.getByText("On time is the share of referrals past their deadline")).toBeVisible();
+    await expect(card.getByText("There is no target line: no official target exists for these.")).toBeVisible();
     expect(await unsourced(page)).toEqual([]);
   });
 
@@ -295,22 +300,25 @@ test.describe("Programme charts", () => {
     await expect(card.getByRole("button", { name: "Show all 20 stalls, every programme" })).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("capacity: simulated label, summary, regions, and the measured pooling result with its caveat", async ({ page }) => {
+  test("capacity: simulated label, condition, regions, and the measured pooling result in one line", async ({ page }) => {
     await page.goto("/app");
     const card = capCard(page);
     await expect(card.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support");
     await expect(page.getByTestId("capacity-condition")).toContainText("Misallocated");
-    await expect(card).toContainText("network pooling (cross-site booking) recovers them");
-    const summary = page.getByTestId("capacity-summary");
-    await expect(summary).toContainText("97.3%");
-    await expect(summary).toContainText("17 days");
-    await expect(summary).toContainText("85");
-    await expect(summary).toContainText("102");
-    await expect(card.getByText("Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.")).toBeVisible();
-    await expect(page.getByTestId("pooling-result")).toContainText("21.5% within 31 days without cross-site booking, 41.7% with network pooling");
+    // No queue levers and no jargon summary stats.
+    await expect(page.getByTestId("capacity-summary")).toHaveCount(0);
+    await expect(page.getByTestId("capacity-levers")).toHaveCount(0);
+    await expect(card).not.toContainText("Ways to shorten the queue");
+    await expect(card.getByRole("heading", { name: "Sharing slots between regions" })).toBeVisible();
+    // 41.7% with sharing over 21.5% without, at 1.2 slots per FIT+: a ratio of 1.94.
+    await expect(page.getByTestId("pooling-result")).toHaveText(
+      "Sharing slots between regions nearly doubles on-time colonoscopy — but only when there are enough slots overall.",
+    );
     await expect(card.getByRole("figure")).toHaveCount(2);
     await expect(card.getByRole("figure").first()).toContainText("Abu Dhabi is 29 slots short while Al Ain and Al Dhafra have spare.");
     for (const [key, gap] of [["AA", "86 spare"], ["AD", "29 short"], ["DH", "96 spare"]]) await expect(page.getByTestId(`region-gap-${key}`)).toHaveText(gap);
+    const pool = card.getByRole("figure").nth(1);
+    for (const label of ["Right regions", "Wrong regions, no sharing", "Wrong regions, 30% travel", "Wrong regions, sharing"]) await expect(pool.getByText(label, { exact: true }).first()).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme-capacity.png", fullPage: true });
   });
 
@@ -325,6 +333,8 @@ test.describe("Programme charts", () => {
     await kpi.click();
     await expect(kpi).toHaveAttribute("aria-pressed", "true");
     await expect(kpiCard(page).getByRole("table")).toContainText("30.7%");
+    await expect(kpiCard(page).getByRole("row", { name: /^Wasl/ })).toContainText("96%");
+    await expect(kpiCard(page).getByRole("row", { name: /Emirates ID only/ })).toContainText("11.3%");
     await expect(kpiCard(page).getByRole("row", { name: /Simulated truth/ })).toContainText("424 of 1,331 eligible referrals");
     await expect(kpiCard(page).getByRole("row", { name: /Target/ })).toContainText("90%");
 
@@ -342,7 +352,7 @@ test.describe("Programme charts", () => {
     await capCard(page).getByRole("button", { name: "Show as table" }).first().click();
     await expect(capCard(page).getByRole("row", { name: /Al Dhafra/ })).toContainText("96");
     await capCard(page).getByRole("button", { name: "Show as table" }).nth(1).click();
-    await expect(capCard(page).getByRole("row", { name: /Misallocated, network pooling.*1\.2/ })).toContainText("41.7%");
+    await expect(capCard(page).getByRole("row", { name: /Wrong regions, sharing \(1\.2/ })).toContainText("41.7%");
     await page.screenshot({ path: "test-results/screens/programme-tables.png", fullPage: true });
     expect(await unsourced(page)).toEqual([]);
     await axe(page);
@@ -362,14 +372,14 @@ test.describe("Programme charts", () => {
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(await overflow()).toBeLessThanOrEqual(0);
     await page.screenshot({ path: "test-results/screens/programme-390.png", fullPage: true });
-    await kpiCard(page).getByRole("radio", { name: "Five-seed held-out mean" }).click();
+    await kpiCard(page).getByRole("radio", { name: "Average of 5 test runs" }).click();
     await page.screenshot({ path: "test-results/screens/programme-390-mean.png", fullPage: true });
     await stallCard(page).getByRole("button", { name: /^Show all \d+ stalls/ }).click();
     expect(await overflow()).toBeLessThanOrEqual(0);
     for (const b of await page.locator("main figure").getByRole("button").all()) {
       expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
     }
-    for (const b of await kpiCard(page).getByRole("radio", { name: /This demo run|Five-seed/ }).all()) {
+    for (const b of await kpiCard(page).getByRole("radio", { name: /This demo run|Average of 5/ }).all()) {
       expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
     }
     for (const t of await page.getByRole("button", { name: "Show as table" }).all()) await t.click();
@@ -398,57 +408,38 @@ const sampleCount = (f: Partial<SampleCase>) => sampleCases().filter((c) => (Obj
 const casesWord = (n: number) => `${n} ${n === 1 ? "case" : "cases"}`;
 
 test.describe("Programme: provider links", () => {
-  test("one meter row per provider: evidenced-closure share, and links that carry their number and denominator", async ({ page }) => {
+  test("one meter row per provider: name and cases, the closed-with-evidence bar and share, the row opens the filtered list", async ({ page }) => {
     await page.goto("/app");
     const block = providerBlock(page);
     await expect(block.getByRole("heading", { name: "By provider" })).toBeVisible();
-    await expect(block.locator('[data-honesty="simulated"]')).toHaveText("Simulated cohort");
-    await expect(block.getByTestId("provider-takeaway")).toHaveText("Closed with evidence runs from 5% to 33%");
-    // Labelled apart from the programme chart's Finished, which also counts cases that needed no follow-up.
-    await expect(block).toContainText("which also counts cases that needed no follow-up");
+    await expect(block.locator('[data-honesty="simulated"]')).toHaveText("Simulated data");
+    await expect(block.getByTestId("provider-takeaway")).toHaveText("Share of each provider's cases closed with evidence.");
 
     await expect(block.getByRole("listitem")).toHaveCount(7);
     const rad = block.getByTestId("provider-rad-imaging");
-    for (const shown of ["rad-imaging, 905 cases", "19%", "168 of 905 closed with evidence", "largest stall: No follow-up CT booked, 498 of 905"]) await expect(rad).toContainText(shown);
-    await expect(rad.getByRole("link", { name: "rad-imaging, 905 cases (simulated)" })).toHaveAttribute("href", "/app/patients?provider=rad-imaging");
+    // What sighted users read: name and cases, then the share; the count behind the bar is only in the link's name.
+    await expect(rad.locator("[aria-hidden]").first()).toHaveText("rad-imaging · 905 cases");
+    await expect(rad.locator("[aria-hidden]").last()).toHaveText("19%");
+    await expect(rad).not.toContainText("largest stall");
+    await expect(rad.getByRole("link")).toHaveCount(1);
     await expect(rad.getByRole("link", { name: "rad-imaging: 168 of 905 closed with evidence (simulated)" })).toHaveAttribute("href", "/app/patients?state=closed&provider=rad-imaging");
-    await expect(rad.getByRole("link", { name: "rad-imaging: largest stall: No follow-up CT booked, 498 of 905 (simulated)" })).toHaveAttribute(
-      "href",
-      "/app/patients?dropoff=no_followup_ct&provider=rad-imaging",
-    );
 
-    // Every pattern link's accessible name holds its number out of the provider's cases, and says it is simulated.
+    // Every row link's accessible name holds its number out of the provider's cases, and says it is simulated.
     for (const l of await block.getByRole("link").all()) {
-      const href = (await l.getAttribute("href"))!;
-      await expect(l).toHaveAccessibleName(/[?&](state|dropoff)=/.test(href) ? / \d[\d,]* of \d[\d,]*( closed with evidence)? \(simulated\)$/ : /, \d[\d,]* cases \(simulated\)$/);
-      await expect(l).not.toContainText("fewer than");
+      await expect(l).toHaveAttribute("href", /[?&]state=closed&provider=/);
+      await expect(l).toHaveAccessibleName(/: \d[\d,]* of \d[\d,]* closed with evidence \(simulated\)$/);
     }
 
-    // Suppressed small cells: no number, no link.
+    // Suppressed small cells: no number, no bar, no link; the small-cell rule is the tooltip.
     const breast = block.getByTestId("provider-bsu-screen");
-    await expect(breast).toContainText("fewer than 5 of 70 closed with evidence");
-    await expect(breast).toContainText("largest stall: each one fewer than 5 of 70");
-    await expect(breast.getByRole("link")).toHaveCount(1);
-    await expect(block).not.toContainText("<5 of");
+    await expect(breast).toContainText("bsu-screen · 70 cases");
+    await expect(breast.getByRole("link")).toHaveCount(0);
+    await expect(breast.getByTitle("Counts under 5 are hidden to protect privacy.")).toBeVisible();
+    await expect(breast.getByRole("group", { name: "bsu-screen: fewer than 5 of 70 closed with evidence" })).toBeVisible();
 
-    // No origin breakdown and no unlinkable timing or escalation patterns.
     await expect(block).not.toContainText("Notified within");
     await expect(block).not.toContainText("escalation");
     expect(await unsourced(page)).toEqual([]);
-  });
-
-  test("by keyboard, a stall link lands on Patients filtered to that provider and stall", async ({ page }) => {
-    await page.goto("/app");
-    const link = providerBlock(page).getByRole("link", { name: /^rad-imaging: largest stall: No follow-up CT booked, 498 of 905/ });
-    await link.focus();
-    await expect(link).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/app\/patients\?dropoff=no_followup_ct&provider=rad-imaging$/);
-    // Fixtures mode serves a published sample, not the whole run, so the list holds the sample's matching cases, not 498.
-    const n = sampleCount({ provider: "rad-imaging", dropoff: "no_followup_ct" });
-    expect(n).toBeGreaterThan(0);
-    await expect(page.getByTestId("showing")).toHaveText(`${casesWord(n)}: provider rad-imaging · no follow-up ct booked`);
-    await expect(page.getByRole("group", { name: "Filter patients" }).getByRole("button", { name: "Provider: rad-imaging" })).toBeVisible();
   });
 
   test("by keyboard, a closure link lands on Patients filtered to that provider's closed cases", async ({ page }) => {
@@ -463,16 +454,6 @@ test.describe("Programme: provider links", () => {
     await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed" })).not.toHaveAttribute("aria-current", "true");
   });
 
-  test("queue levers: aggregate direct-pathway and prep-risk counts over the open cases needing a slot, as plain text", async ({ page }) => {
-    await page.goto("/app");
-    const levers = page.getByTestId("capacity-levers");
-    await expect(levers).toContainText("683 of 815 suggested direct to colonoscopy");
-    await expect(levers).toContainText("238 of 815 at high risk of failed bowel prep");
-    await expect(levers).toContainText("Counted over the 815 open colorectal cases needing a colonoscopy slot.");
-    await expect(levers).toContainText("needs a clinician’s order");
-    await expect(levers.getByRole("link")).toHaveCount(0);
-  });
-
   for (const width of [320, 390, 1440]) {
     test(`at ${width}px the provider rows fit without sideways scroll and keep touch targets`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width < 768 });
@@ -482,7 +463,7 @@ test.describe("Programme: provider links", () => {
       await block.scrollIntoViewIfNeeded();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const heights = await block.locator("[data-item]").evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
-      expect(heights.length).toBeGreaterThan(14);
+      expect(heights.length).toBe(7);
       if (width < 768) for (const h of heights) expect(h, "touch item height").toBeGreaterThanOrEqual(44);
       for (const l of await block.getByRole("link").all()) {
         const box = (await l.boundingBox())!;
@@ -495,26 +476,25 @@ test.describe("Programme: provider links", () => {
 });
 
 test.describe("Programme: target rail", () => {
-  test("one target line labelled once, three method bars, the CRC cohort strip and Open Today", async ({ page }) => {
+  test("two method bars on a 0 to 100% scale with no target line, the CRC cohort strip and Open Today", async ({ page }) => {
     await page.goto("/app");
     const rail = page.getByTestId("programme-rail");
-    await expect(rail.locator('[data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Synthetic run");
+    // The top bar says the data is simulated; the header carries no generic chip of its own.
+    await expect(rail.locator("header.staff-heading [data-honesty]")).toHaveCount(0);
     await expect(rail.getByRole("heading", { level: 2, name: "Colonoscopy within 31 days" })).toBeVisible();
-    await expect(rail.getByText("90% DoH target")).toHaveCount(1);
-    await expect(rail.getByTestId("kpi-target")).toHaveCount(1);
-    for (const [arm, name, value] of [["eid", "Emirates ID only", "11.3%"], ["wasl", "Wasl", "30.7%"]] as const) {
+    // The target describes the programme, not the measurement: it is in the plain line, never drawn on the chart.
+    await expect(rail.getByTestId("kpi-target")).toHaveCount(0);
+    await expect(rail.getByRole("figure")).not.toContainText("target");
+    for (const [arm, name, value] of [["wasl", "Wasl", "96%"], ["eid", "Emirates ID only", "35%"]] as const) {
       const row = rail.locator(`li[data-method="${arm}"]`);
       await expect(row).toContainText(name);
       await expect(row).toContainText(value);
     }
-    // The simulated truth is a tick on Wasl's track, named with its value in the legend.
-    await expect(rail.getByTestId("kpi-true")).toHaveText("31.9%");
-    await expect(rail.getByTestId("kpi-truth-tick")).toHaveCount(1);
-    await expect(rail.getByTestId("kpi-takeaway")).toHaveText(" Wasl reads it almost as the truth does; Emirates ID alone undercounts.");
-    // The target line sits at 90% of the track, the same scale the bars use.
-    const track = (await rail.locator('li[data-method="wasl"] button > span').nth(1).boundingBox())!;
-    const line = (await rail.getByTestId("kpi-target").boundingBox())!;
-    expect(Math.abs(line.x - (track.x + track.width * 0.9))).toBeLessThan(2);
+    // Bars share a 0 to 100% track: Wasl's bar is 96% of it.
+    const trackEl = rail.locator('li[data-method="wasl"] button > span').nth(1);
+    const track = (await trackEl.boundingBox())!;
+    const bar = (await trackEl.locator("span").first().boundingBox())!;
+    expect(Math.abs(bar.width - track.width * 0.96)).toBeLessThan(2);
 
     const strip = page.getByTestId("programme-workload");
     await expect(strip.getByTestId("programme-cases")).toHaveText("1,500");

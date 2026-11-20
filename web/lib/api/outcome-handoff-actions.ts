@@ -56,7 +56,7 @@ export async function approveOutcomeHandoff(input: unknown): Promise<OutcomeHand
   if (!parsed.success) return { ok: false, error: "Choose a next step from the list before approving." };
   if (apiMode() !== "live") return { ok: false, error: "Approving an outcome hand-off needs the live API; fixtures cannot append events." };
   const token = await session.reviewerToken();
-  if (!token) return { ok: false, error: "Sign in with the clinician token assigned to you. An approval is recorded only as the signed-in credential.", signIn: true };
+  if (!token) return { ok: false, error: "Sign in as a clinician first. An approval is recorded only as the signed-in credential.", signIn: true };
 
   const { caseId, decision, nextStep, version } = parsed.data;
   const result = await postOutcomeHandoffApprovalWithToken(caseId, { decision, next_step: nextStep, version }, token);

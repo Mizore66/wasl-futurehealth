@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { loadCaseRecord, renderEvidenceFile } from "@/components/case/evidence-file";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
@@ -154,13 +153,12 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
           <PageHeader
             attached
-            run
             className="rounded-se-[6px]!"
             title={openRow?.it.name ?? shortId(view.open)}
             sub={openRow?.it.named ? shortId(view.open) : undefined}
           />
           <div className="p-4 md:p-pad">
-            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
+            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case found."}</p>
             {openRow && (
               <dl className="rs-referral-facts">
                 <div>
@@ -206,7 +204,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       <section className="pf-directory" aria-labelledby="pf-view-heading">
         <PageHeader
           attached
-          run
           className="pf-hero"
           title="Patients"
           sub={
@@ -214,7 +211,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               : {describe(filters)}
             </ResultCount>
           }
-          aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
         />
         <Toolbar label="Filter patients" className="pf-filters">
           <SegmentedFilter label="Filters" items={segments} />
@@ -319,15 +315,15 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
         </p>
         <p className="m-0" data-testid="count-basis">
           {sample
-            ? `Counts are over the published sample of ${everything.total} cases (simulated), not the whole run.`
+            ? `Counts cover a sample of ${everything.total} simulated cases.`
             : partialCounts
               ? `Filter counts cover the first ${everything.cases.length} of ${everything.total} cases.`
-              : `Filter counts cover all ${everything.total} cases in this run.`}
+              : `Filter counts cover all ${everything.total} cases.`}
         </p>
         {partialCalendar && <p className="m-0">The calendar shows the first {matched.cases.length} of {matched.total} referrals. Add a filter to see the rest.</p>}
         {rows.some((r) => !r.it.hasRecord) && <p className="m-0">In this demo only some cases have a full record. The rest open as a summary.</p>}
         <p className="m-0">
-          Run day {Math.floor(now)}, {formatDay(now)}. Dates are when the referral was received (UTC).
+          Today is {formatDay(now)} (simulated). Dates show when the referral was received.
         </p>
       </footer>
     </>

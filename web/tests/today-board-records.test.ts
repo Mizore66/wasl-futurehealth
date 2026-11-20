@@ -76,25 +76,25 @@ it("fixtures mode: reads the selected case's records once, shows the held count,
 
 it("fixtures mode: no held count without a hold, a missing record says so, a failure says why and Retry reads again", async () => {
   const fetchMock = vi.fn()
-    .mockResolvedValueOnce(failed(502, { error: "the API did not answer" }))
+    .mockResolvedValueOnce(failed(502, { error: "the case system did not respond; try again" }))
     .mockResolvedValueOnce(ok({ sources: [], caseHeld: [], events: [] }));
   vi.stubGlobal("fetch", fetchMock);
   await mount();
   await flush();
   expect(history().querySelector('[data-testid="records-held"]')).toBeNull();
-  expect(panel("activity").textContent).toContain("Source events not shown: the API did not answer");
+  expect(panel("activity").textContent).toContain("Some history not shown: the case system did not respond; try again");
   const retry = Array.from(panel("activity").querySelectorAll("button")).find((b) => b.textContent === "Retry")!;
   await act(async () => retry.click());
   await flush();
   expect(fetchMock).toHaveBeenCalledTimes(2);
   await act(async () => tab("Records").click());
-  expect(panel("records").textContent).toBe("No source records on this case yet.");
+  expect(panel("records").textContent).toBe("No records on this case yet.");
 
-  fetchMock.mockResolvedValueOnce(failed(404, { error: "this demo has source records only for the showcase cases", missing: true }));
+  fetchMock.mockResolvedValueOnce(failed(404, { error: "this demo has records for a few sample patients only", missing: true }));
   await act(async () => host.querySelector<HTMLButtonElement>(`button[data-case-row="${items[1].short}"]`)!.click());
   await flush();
-  expect(panel("records").textContent).toBe("No source records to show: this demo has source records only for the showcase cases.");
-  expect(panel("activity").textContent).not.toContain("Source events not shown");
+  expect(panel("records").textContent).toBe("No records to show: this demo has records for a few sample patients only.");
+  expect(panel("activity").textContent).not.toContain("Some history not shown");
 });
 
 it("live: the selected case's one ledger read carries its records; no separate records read", async () => {

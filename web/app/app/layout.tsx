@@ -22,9 +22,9 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
   return (
     <div className="staff flex min-h-dvh flex-col md:flex-row">
       <SkipLink />
-      <AppSidebar counts={navCounts()} session={reviewerPersona()} defaultCollapsed={collapsed} />
-      {/* The run notice reads this one request's run: in the top bar from md up, in the page header on a phone. */}
+      {/* The run notice reads this one request's run: in the top bar from md up, in the phone header below. */}
       <RunInfoProvider value={runInfo()}>
+        <AppSidebar counts={navCounts()} session={reviewerPersona()} defaultCollapsed={collapsed} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
           <main id="main" data-tour="page" tabIndex={-1} className="min-w-0 flex-1 px-(--main-px) py-(--main-py) [--main-px:clamp(12px,2.4vw,32px)] [--main-py:clamp(12px,2vw,24px)] focus:outline-none">

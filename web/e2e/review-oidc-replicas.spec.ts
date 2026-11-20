@@ -121,7 +121,7 @@ test.describe("OIDC sessions shared by two web replicas", () => {
     if (nats) await nats.close();
   });
 
-  const signedIn = async (page: Page) => expect(page.getByTestId("reviewer-session")).toContainText("Signed in with OIDC");
+  const signedIn = async (page: Page) => expect(page.getByTestId("reviewer-session")).toContainText("Signed in");
   const signedOut = async (page: Page) => expect(page.getByRole("heading", { name: "Sign in to review" })).toBeVisible();
 
   test("sign-in started on one replica completes once on the other, survives a replica restart and logs out on both", async ({ browser }) => {
@@ -135,7 +135,7 @@ test.describe("OIDC sessions shared by two web replicas", () => {
 
     await page.goto(deskOn(A_PORT));
     await signedOut(page);
-    await page.getByRole("link", { name: "Sign in with OIDC" }).click();
+    await page.getByRole("link", { name: "Sign in with your organisation account" }).click();
     await page.waitForURL(deskOn(B_PORT));
     await signedIn(page);
     expect(callbackUrl).toContain("state=");

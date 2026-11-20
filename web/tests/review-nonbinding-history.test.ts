@@ -68,8 +68,8 @@ describe("recognized nonbinding legacy history", () => {
     const audit = Audit.parse({ ...auditFixture, history: [archived] });
     const before = JSON.stringify([c.api_reviews, audit.history]);
     for (const html of [renderToStaticMarkup(createElement(SignoffsCard, { detail: c })), renderToStaticMarkup(createElement(HistoryCard, { audit, programme: "crc" }))]) {
-      expect(html).toContain("Legacy history — nonbinding");
-      expect(html).toContain("does not resolve a review item");
+      expect(html).toContain("Older entry — not binding");
+      expect(html).toContain("does not settle a review item");
     }
     expect(JSON.stringify([c.api_reviews, audit.history])).toBe(before);
   });
@@ -79,7 +79,7 @@ describe("recognized nonbinding legacy history", () => {
     const projection = UndoProjection.parse({ ...base, case: base.case.id, case_status: "active", canonical_state: "open", note: "review-ledger status only",
       events: [{ hash: archived.hash, kind: "review", actor: "clin-a", action: "signoff_evidence", target: "", status: "active", at: archived.at }] });
     const html = renderToStaticMarkup(createElement(HistoryCard, { audit, programme: "crc", governance: { caseId: base.case.id, projection, signedIn: true } }));
-    expect(html).toContain("Legacy history — nonbinding");
+    expect(html).toContain("Older entry — not binding");
     expect(html).toMatch(/Undo/i);
     expect(html).toMatch(/Contest/i);
     expect(legacyReviewMayAnswer(LedgerEvent.parse(archived))).toBe(false);

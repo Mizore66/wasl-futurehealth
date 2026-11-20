@@ -97,8 +97,8 @@ describe("person journey contract", () => {
     expect(html).toContain('data-testid="case-actions"');
     expect(html).toContain("Audit trail");
     // This published case has an empty audit chain: the teaser is neutral, not "verified" (USABILITY-AUDIT N1).
-    expect(html).toContain("No sealed entries yet");
-    expect(html).not.toContain("Chain verified by the server");
+    expect(html).toContain("Nothing recorded yet");
+    expect(html).not.toContain("Record unchanged");
     expect(html).not.toContain("0 of 0 intact");
     expect(html).not.toContain("View all programmes");
   });
@@ -120,11 +120,11 @@ describe("person journey presentation", () => {
   it("renders provenance, consent, timelines, signatures and no write controls", async () => {
     for (const journey of [await sample(), await noActionSample()]) {
       const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
-      expect(html).toContain("Trusted identity links only");
+      expect(html).toContain("Linked records");
       expect(html).toContain("Programme contact permission");
-      expect(html).toContain("Timeline and raw event hashes");
-      expect(html).toContain("Decision history and signatures");
-      expect(html).toContain("wasl-person-next-action/1");
+      expect(html).toContain("Timeline");
+      expect(html).toContain("Decision history");
+      expect(html).toContain("Coordinator review only");
       expect(html).not.toContain("Suppress outreach");
       expect(html).not.toContain("Send message");
       expect(html).not.toContain("Dismiss duplicate");
@@ -145,7 +145,7 @@ describe("person journey presentation", () => {
     const trusted = journey.cases[0].detail.links[0];
     journey.cases[0].detail.links.push({ ...trusted, downstream_event: "provider/DiagnosticReport/untrusted-namesake", near_miss: true });
     const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
-    expect(html).toContain("Trusted case link");
+    expect(html).toContain("Linked report");
     expect(html).not.toContain("untrusted-namesake");
     expect(html).not.toContain("near miss");
   });
@@ -167,10 +167,10 @@ describe("person journey presentation", () => {
       })),
     }];
     const html = renderToStaticMarkup(React.createElement(Journey, { journey }));
-    expect(html).toContain("Duplicate intent");
-    expect(html).toContain("Release recorded — not evidence of dispatch or delivery");
+    expect(html).toContain("Duplicate message");
+    expect(html).toContain("Cleared to send — not confirmed as delivered");
     expect(reasonLabel("consent_not_granted")).toContain("not granted");
-    expect(lifecycleLabel("withheld")).toContain("not actionable");
+    expect(lifecycleLabel("withheld")).toContain("no action needed");
   });
 
   it("labels an intent omitted by the latest decision as resolved history", async () => {
@@ -192,7 +192,7 @@ describe("person journey presentation", () => {
     }];
     const parsed = PersonJourney.parse(journey);
     const html = renderToStaticMarkup(React.createElement(Journey, { journey: parsed }));
-    expect(html).toContain("not actionable");
-    expect(html).toContain("Not in the latest decision");
+    expect(html).toContain("no action needed");
+    expect(html).toContain("Past only");
   });
 });

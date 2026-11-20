@@ -40,7 +40,7 @@ describe("todayRecords", () => {
     const report = r.sources.find((s) => s.id === "noor-endo/DiagnosticReport/NOO-dr-316")!;
     expect(report.held).toEqual([holdWords(trap.holds[0]), "Evidence in review: a person must check what the report shows."]);
     const noItems = todayRecords({ ...trap, review_items: [], signoffs: [] });
-    expect(noItems.sources.find((s) => s.id === report.id)!.held).toEqual([holdWords(trap.holds[0]), "The two readers disagree."]);
+    expect(noItems.sources.find((s) => s.id === report.id)!.held).toEqual([holdWords(trap.holds[0]), "The two automatic report checks disagree."]);
     const firstFree = r.sources.findIndex((s) => s.held.length === 0);
     expect(r.sources.slice(firstFree).every((s) => s.held.length === 0)).toBe(true);
     expect(heldCount(r)).toBe(2);
@@ -92,7 +92,7 @@ describe("GET /app/today/records", () => {
     vi.stubEnv("WASL_API_URL", "");
     const res = await GET(req(`?id=${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1002")}`));
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "this demo has source records only for the showcase cases", missing: true });
+    expect(await res.json()).toEqual({ error: "this demo has records for a few sample patients only", missing: true });
     expect((await GET(req(""))).status).toBe(400);
   });
 
@@ -103,7 +103,7 @@ describe("GET /app/today/records", () => {
     vi.stubGlobal("fetch", fetchMock);
     const res = await GET(req(`?id=${encodeURIComponent(trap.case.id)}`));
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "the API answered HTTP 503" });
+    expect(await res.json()).toEqual({ error: "the case system returned an error; try again" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`http://127.0.0.1:8088/api/cases/${encodeURIComponent(trap.case.id)}`);
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer reviewer-secret-1234567890");
@@ -115,10 +115,10 @@ describe("RecordsPanel", () => {
   const render = (read: Parameters<typeof RecordsPanel>[0]["read"]) => text(renderToStaticMarkup(RecordsPanel({ read, onRetry: () => {} })));
 
   it("says it is reading, why it failed (with Retry), or that the demo has no records for the case", () => {
-    expect(render(undefined)).toBe("Reading source records…");
-    expect(render({ ok: false, error: "the API did not answer", missing: false })).toBe("Could not read the source records: the API did not answer Retry");
-    expect(render({ ok: false, error: "this demo has source records only for the showcase cases", missing: true })).toBe("No source records to show: this demo has source records only for the showcase cases.");
-    expect(render({ ok: true, records: { sources: [], caseHeld: [], events: [] } })).toBe("No source records on this case yet.");
+    expect(render(undefined)).toBe("Loading records…");
+    expect(render({ ok: false, error: "no response; check your connection", missing: false })).toBe("Could not load the records: no response; check your connection Retry");
+    expect(render({ ok: false, error: "this demo has records for a few sample patients only", missing: true })).toBe("No records to show: this demo has records for a few sample patients only.");
+    expect(render({ ok: true, records: { sources: [], caseHeld: [], events: [] } })).toBe("No records on this case yet.");
   });
 
   it("marks held records with their reason beside their source and date", () => {

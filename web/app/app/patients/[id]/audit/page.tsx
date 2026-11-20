@@ -95,16 +95,16 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
     <div className="-mt-2 mb-4 flex flex-col items-start gap-2 text-[13px]">
       {!audit.chain_verified && (
         <p className="m-0 font-semibold text-clay-ink" role="alert">
-          The sealed chain did not verify. Treat this case&apos;s record as altered until it is checked.
+          This record failed its tamper check. Treat it as altered until someone checks it.
         </p>
       )}
       {audit.chain_verified && !intact && !history.modelWithheld && (
         <p className="m-0 font-semibold text-clay-ink">
-          Only {audit.chain.length} of {audit.chain_length} sealed entries were returned.
+          Only {audit.chain.length} of {audit.chain_length} recorded entries could be shown.
         </p>
       )}
-      {tally.state === "some" && <p className="m-0 font-semibold text-clay-ink">At least one decision signature does not match its stored value.</p>}
-      <HonestyLabel kind="simulated">Simulated run, real hashes</HonestyLabel>
+      {tally.state === "some" && <p className="m-0 font-semibold text-clay-ink">At least one signed decision has changed since it was signed.</p>}
+      <HonestyLabel kind="simulated">Simulated data</HonestyLabel>
     </div>
   );
 
@@ -112,20 +112,20 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
     <>
       <p className="m-0 text-[13px] text-muted">
         <strong className="font-semibold text-ink">
-          {audit.chain_length} sealed {audit.chain_length === 1 ? "entry" : "entries"}
+          {audit.chain_length} recorded {audit.chain_length === 1 ? "entry" : "entries"}
         </strong>{" "}
-        · Sealing links each entry to the one before it, so a change or removal can be detected.
-        <span className="mt-1 block text-[12px]">Run loaded {formatUtcInstant(audit.meta.loaded_at)}</span>
+        · Entries are locked in order, so any change or removal shows.
+        <span className="mt-1 block text-[12px]">Last updated {formatUtcInstant(audit.meta.loaded_at)}</span>
       </p>
       <GlossaryPopover />
       <VerifiedCard audit={audit} />
       {history.modelWithheld ? (
         <section aria-labelledby="chain-withheld-h" data-testid="chain-withheld">
           <h2 id="chain-withheld-h" className="m-0 text-section font-medium">
-            Sealed entries
+            Recorded entries
           </h2>
           <p className="m-0 mt-3 max-w-[72ch] text-muted" role="status">
-            The chain carries the image reader&apos;s verdict, so it is withheld until you have completed your own independent read of the evidence question.
+            These entries include the AI&apos;s read of the report, so they stay hidden until you finish your own read.
           </p>
           <p className="m-0 mt-3">
             <Link href={reviewHref} className="inline-flex min-h-11 items-center">
@@ -148,7 +148,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         head={
           <PageHeader
             attached
-            run
             title="Audit trail"
             compact
            
@@ -170,7 +169,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
         controls={controls}
         historyIntro={historyIntro}
         historyEmpty="No dated events are recorded for this case."
-        snapshotLabel={apiMode() === "live" ? "Checked on load" : "Recorded snapshot"}
+        snapshotLabel={apiMode() === "live" ? "Checked just now" : "Saved copy"}
         decisions={decisionViews(audit, detail)}
         verifyNote={verifyNote}
         auditDetails={auditDetails}
@@ -180,7 +179,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
           <h2 id="review-history-h" className="m-0 text-[14px] font-semibold">
             Review history
           </h2>
-          <p className="m-0 mt-0.5 text-[12px] text-muted">Every review and coordinator entry on the sealed chain, in order. Each also appears in the event history.</p>
+          <p className="m-0 mt-0.5 text-[12px] text-muted">Every review and coordinator entry, in order. Each also appears in the event history.</p>
           <ol aria-label="Review history" className="m-0 mt-2 flex list-decimal flex-col gap-1 ps-5 text-[13px]">
             {audit.history.map((r, i) => (
               <li key={r.hash ?? i}>

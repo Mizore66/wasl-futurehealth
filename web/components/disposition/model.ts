@@ -63,7 +63,7 @@ export const DispositionInput = z.discriminatedUnion("action", [
     fit_reoffer: z.enum(keys(FIT_REOFFERS)).optional(),
   }).superRefine((d, ctx) => {
     if (d.plan === "follow_up" && (!d.follow_up_owner || !d.next_review)) ctx.addIssue({ code: "custom", message: "A follow-up needs an owner and a review date" });
-    if (d.plan === "closed_declined" && (d.follow_up_owner || d.next_review)) ctx.addIssue({ code: "custom", message: "The non-procedure end state takes no follow-up owner or review date" });
+    if (d.plan === "closed_declined" && (d.follow_up_owner || d.next_review)) ctx.addIssue({ code: "custom", message: "A closed refusal takes no follow-up owner or review date" });
   }),
 ]);
 export type DispositionInput = z.infer<typeof DispositionInput>;
@@ -130,6 +130,6 @@ export function recordedWords(kind: DispositionKind, d: Recorded): string {
     const plan = HOLD_PLANS[d.plan as keyof typeof HOLD_PLANS] ?? String(d.plan);
     return `Plan recorded, not completed care: ${plan} · ${String(d.owner ?? "owner not recorded")} to review by ${reviewDateWords(d.review_date)}`;
   }
-  if (d.plan === "closed_declined") return "Informed refusal recorded · non-procedure end state: no procedure was done and no screening result exists";
+  if (d.plan === "closed_declined") return "Informed refusal recorded · no procedure was done and no screening result exists";
   return `Informed refusal recorded · ${String(d.follow_up_owner ?? "the GP")} reviews again on ${String(d.next_review ?? "a date not recorded")}`;
 }

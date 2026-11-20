@@ -154,7 +154,7 @@ describe("review cards are bound to the item being judged", () => {
   it("offers no answer form for a question whose item has no shown context", async () => {
     const c = await mount(twoReports, [state("rv-unknown", "evidence")]);
     expect(card(c, "rv-unknown", "evidence").querySelector('input[type="radio"]')).toBeNull();
-    expect(card(c, "rv-unknown", "evidence").textContent).toContain("context");
+    expect(card(c, "rv-unknown", "evidence").textContent).toContain("case details for this question are missing");
   });
 
   it("keeps a combined link and evidence item and its revised report aligned from r1 to senior resolution", async () => {

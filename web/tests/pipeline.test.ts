@@ -25,15 +25,12 @@ function run(actions: PlaybackAction<ReplayState>[]): Playback<ReplayState>[] {
 describe("pipeline plain language", () => {
   const RAW = /closure_decision|needs_human|not_closed|link_decision|evidence_closure|false_closure_trap|review_hold/;
 
-  it("shows no backend identifier in a stage label or note, and keeps the raw term for the disclosure", () => {
-    for (const r of ROWS) {
-      expect(`${r.label} ${r.note}`).not.toMatch(RAW);
-      expect(r.tech).toBeTruthy();
-    }
-    expect(ROWS.find((r) => r.id === "review")).toMatchObject({ label: "Waiting for two reviewers", tech: "needs_human" });
+  it("shows no backend identifier in a stage label or note", () => {
+    for (const r of ROWS) expect(`${r.label} ${r.note}`).not.toMatch(RAW);
+    expect(ROWS.find((r) => r.id === "review")).toMatchObject({ label: "Needs a person" });
   });
 
-  it("gives every decision line a plain note apart from its technical label", () => {
+  it("gives every decision line a plain note", () => {
     const v = flowView(replay, track.rest);
     for (const f of v.feed) {
       expect(f.note).not.toMatch(RAW);
@@ -192,7 +189,7 @@ describe("pipeline person profile", () => {
     expect(p.record).toBe(`/app/patients/${encodeURIComponent(personForLoop("ahs-mushrif/ServiceRequest/AHS-sr-1001")!.loop)}`);
     expect(p.rulesOnRecord).toBe(true);
     expect(p.fields.find((f) => f.key === "caecum_reached")).toMatchObject({ value: "yes", rules: "yes" });
-    expect(p.decision).toEqual({ word: "Closed with evidence", label: "closed · criteria_met", note: "Criteria met", gatePassed: true });
+    expect(p.decision).toEqual({ word: "Closed with evidence", note: "Criteria met", gatePassed: true });
   });
 
   it("gives a generated person no record and only the AI reader's answer", () => {
@@ -206,13 +203,13 @@ describe("pipeline person profile", () => {
     const own = replay.events.flatMap((e, i) => ("caseId" in e && e.caseId === fatima.id ? [i + 1] : []));
     expect(profileOf(replay, initialState, fatima.id, rules)!.history.map((h) => h.step)).toEqual(own);
     expect(profileOf(replay, initialState, fatima.id, rules)!.history.every((h) => !h.played)).toBe(true);
-    expect(profileOf(replay, initialState, fatima.id, rules)!.now).toBe(`Not in this loop yet. The report arrives at step ${own[0]}.`);
+    expect(profileOf(replay, initialState, fatima.id, rules)!.now).toBe(`Not here yet. The report arrives at step ${own[0]}.`);
 
     let s = initialState;
     while (s.cursor < own.at(-1)!) s = next(replay, s);
     const done = profileOf(replay, s, fatima.id, rules)!;
     expect(done.history.every((h) => h.played)).toBe(true);
-    expect(done.now).toBe("Closed with evidence");
+    expect(done.now).toBe("Closed");
     expect(done.matched).toBe(true);
   });
 

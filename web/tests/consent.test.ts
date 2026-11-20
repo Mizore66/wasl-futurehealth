@@ -218,7 +218,7 @@ describe("recordConsent server action", () => {
     if (!recordConsent) return;
 
     const result = await recordConsent(detail.case.id, detail.current.sig, "consent_denied", "Patient declined contact");
-    expect(result).toMatchObject({ ok: true, contact: null, warning: "Consent event saved, but the updated case could not be read. Reload before another action." });
+    expect(result).toMatchObject({ ok: true, contact: null, warning: "Consent saved. Reload the page before doing anything else." });
     expect(result).not.toMatchObject({ ok: false });
   });
 
@@ -236,7 +236,7 @@ describe("recordConsent server action", () => {
     await expect(recordConsent(detail.case.id, detail.current.sig, "consent_denied", "")).resolves.toMatchObject({
       ok: true,
       contact: null,
-      warning: "Consent event saved, but the updated case could not be read. Reload before another action.",
+      warning: "Consent saved. Reload the page before doing anything else.",
     });
     expect(nextCache.revalidatePath).toHaveBeenCalledWith(`/app/patients/${encodeURIComponent(detail.case.id)}`);
   });
@@ -292,7 +292,7 @@ describe("consent card demo overlay", () => {
     expect(html).toContain("The demo consent hold is released. No message was sent.");
     expect(html).toContain("stopped: no consent on file yet");
     expect(html).toContain("No answer on messages yet");
-    expect(html).toContain("Canonical consent and outreach are unchanged");
+    expect(html).toContain("This does not change the case record");
   });
 
   it.each(["denied", "opted_out"])("shows %s cancelling queued demo outreach without dispatch", (status) => {
@@ -326,12 +326,12 @@ describe("consent card demo overlay", () => {
     const detail = heldDetail("none", "", []);
     const html = renderToStaticMarkup(ConsentCard({ detail }));
     expect(html).toContain("Record consent granted");
-    expect(html).toContain("Releases the demo consent hold");
+    expect(html).toContain("Lifts the demo consent hold");
     expect(html).toContain("Record consent denied");
-    expect(html).toContain("Cancels queued demo outreach");
+    expect(html).toContain("Cancels queued demo messages");
     expect(html).toContain("Record opt-out");
-    expect(html).toContain("blocks a later grant or denial in this demo flow");
-    expect(html).toContain("No message is sent and the canonical simulation does not change.");
+    expect(html).toContain("blocks any later grant or denial");
+    expect(html).toContain("No message is sent.");
   });
 
   it("does not present consent overlay events as clinical sign-offs", () => {

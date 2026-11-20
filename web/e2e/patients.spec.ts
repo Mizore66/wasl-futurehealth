@@ -21,7 +21,7 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await page.goto("/app/patients?provider=phc-retina");
     await expect(showing(page)).toHaveText("26 cases: provider phc-retina");
     await expect(page.getByTestId("programmes-in-view")).toHaveText("Programme in view: Diabetic eye screening (26).");
-    await expect(page.getByTestId("count-basis")).toContainText("published sample of 177 cases");
+    await expect(page.getByTestId("count-basis")).toContainText("sample of 177 simulated cases");
 
     await page.goto("/app/patients?consent=denied");
     await expect(showing(page)).toHaveText("9 cases: consent denied");

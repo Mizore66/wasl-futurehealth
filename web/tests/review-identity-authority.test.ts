@@ -86,10 +86,9 @@ describe("rendered identifier availability", () => {
     const { element, view } = await mount(withGuard({ authoritative: false, reason: unavailableReason, visible_checks: { met: true, failures: [] } }, scope));
     expect(view.identityAvailable).toBe(true);
     expect(view.identityGuard).toEqual([]);
-    const note = element.querySelector('[aria-label="Identifier source context"]');
-    expect(note?.textContent).toMatch(/original configured guard result is unavailable/i);
-    if (scope) expect(note?.textContent).toMatch(/materialized across recorded events/i);
-    else expect(note?.textContent).toMatch(/source scope.*unavailable/i);
+    const note = element.querySelector('[aria-label="Where these details come from"]');
+    if (scope) expect(note?.textContent).toMatch(/as they stand now, not as they were when the case was held/i);
+    else expect(note?.textContent).toMatch(/came from is not known/i);
     expect(element.textContent).toContain("1965-03-14");
     expect(element.textContent).toContain("784*********123");
     expect(element.textContent).not.toContain("784199012345676");
@@ -101,8 +100,8 @@ describe("rendered identifier availability", () => {
     const { element, view } = await mount(withGuard({ met: false, failures: ["dob_missing", "name_or_shared_id_check"] }));
     expect(view.identityAvailable).toBe(true);
     expect(view.identityGuard).toEqual(["Date of birth is not recorded on one or both records."]);
-    expect(element.querySelector('[aria-label="Visible identifier field limitations"]')?.textContent).toContain("Date of birth is not recorded");
-    expect(element.querySelector('[aria-label="Identifier source context"]')?.textContent).toMatch(/source scope.*unavailable.*original configured guard result is unavailable/i);
+    expect(element.querySelector('[aria-label="Limits of this check"]')?.textContent).toContain("Date of birth is not recorded");
+    expect(element.querySelector('[aria-label="Where these details come from"]')?.textContent).toMatch(/came from is not known/i);
     expect(element.querySelector('[aria-label="Why the second identifier is not met"]')).toBeNull();
     expect(element.textContent).not.toMatch(/shared-ID check did not|name-agreement.*did not/);
   });
@@ -111,8 +110,8 @@ describe("rendered identifier availability", () => {
     const { element, view } = await mount({ ...hold, identity_review: [{ item: projection.item, pair: projection.pair, available: false, reason: "records_not_found" }] });
     expect(view.identityAvailable).toBe(false);
     expect(view.identityGuard).toEqual([]);
-    expect(element.textContent).toMatch(/identifier comparison is not available/i);
-    expect(element.textContent).toMatch(/original configured guard result is unavailable/i);
+    expect(element.textContent).toMatch(/two records cannot be compared on this page/i);
+    expect(element.textContent).toMatch(/came from is not known/i);
     expect(element.textContent).not.toContain("1965-03-14");
     expect(element.textContent).not.toContain("784*********123");
   });
@@ -124,7 +123,7 @@ describe("rendered identifier availability", () => {
     await act(async () => button!.click());
     const context = element.querySelector('[id^="why-held-"]');
     expect(context).not.toBeNull();
-    expect(context?.textContent).toMatch(/original configured guard result is unavailable/i);
+    expect(context?.textContent).toMatch(/for the records as they stand now/i);
     expect(context?.textContent).not.toMatch(/Held anyway|rule asks for a|name-agreement.*did not|shared-ID check did not/);
   });
 });

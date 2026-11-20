@@ -141,7 +141,7 @@ export function frozenWords(iso: string): string {
 /* ---------- Chart shapes ---------- */
 
 export type RunKey = "v2" | "v1" | "deployed";
-export const RUN_LABEL: Record<RunKey, string> = { v2: "Held-out (v2)", v1: "Tuned-on (v1)", deployed: "Demo run" };
+export const RUN_LABEL: Record<RunKey, string> = { v2: "Unseen test data", v1: "Tuning data", deployed: "Demo run" };
 
 /** "Worklist size (patients to chase) (frozen v2 five-seed mean)" → metric "Worklist size (patients to chase)", run "v2". */
 export function splitRun(row: string): { metric: string; run: RunKey | null; runText: string } {

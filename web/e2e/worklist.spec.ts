@@ -42,7 +42,7 @@ test.describe("Today", () => {
     await expect(open(page).getByTestId("contact-status")).toHaveText("Contact permitted");
     await expect(open(page).locator("[data-variant=cta]")).toHaveCount(1);
     await expect(open(page).locator("[data-variant=cta]")).toHaveText("Log call · AHS-sr-1002");
-    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser (no live API)");
+    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser only (demo)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
@@ -239,11 +239,11 @@ test.describe("Today", () => {
     // A case this demo has no detail record for says so, with no held count, and names why its links are missing.
     await row(page, "AHS-sr-1022").click();
     await expect(records.getByTestId("records-held")).toHaveCount(0);
-    await expect(panel.getByTestId("records-missing")).toHaveText("No source records to show: this demo has source records only for the showcase cases.");
-    await expect(history.getByTestId("record-unavailable")).toHaveText("Full case record: showcase cases only in this demo");
+    await expect(panel.getByTestId("records-missing")).toHaveText("No records to show: this demo has records for a few sample patients only.");
+    await expect(history.getByTestId("record-unavailable")).toHaveText("Full case record: not available in this demo");
     await history.getByRole("tab", { name: "Activity" }).click();
-    await expect(history.getByTestId("audit-unavailable")).toHaveText("Audit trail: showcase cases only in this demo");
-    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toHaveAttribute("title", /showcase cases/);
+    await expect(history.getByTestId("audit-unavailable")).toHaveText("Audit trail: not available in this demo");
+    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toHaveAttribute("title", /sample patients only/);
   });
 
   test("phone: the selected case opens inline in its row; tapping the row folds it", async ({ page }) => {
@@ -275,7 +275,7 @@ test.describe("Patients", () => {
     await page.goto("/app/patients?dropoff=never_notified&overdue=true");
     await expect(page.getByTestId("showing")).toHaveText("7 cases: never notified · overdue");
     await expect(page.getByRole("region", { name: "Referrals by date received" })).toBeVisible();
-    await expect(page.locator("[data-honesty]").first()).toBeVisible();
+    await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
     await shot(page, "patients-filtered");
     await noSeriousAxe(page);
 
@@ -306,16 +306,16 @@ test.describe("Patient record", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fatima Al Zaabi");
     await expect(page.getByText("Closed day 27")).toBeVisible();
     await expect(page.getByTestId("closed-in")).toHaveText("Closed in 27 days, 4 inside the 31-day standard");
-    const chain = page.getByRole("list", { name: "Sealed chain" });
+    const chain = page.getByRole("list", { name: "Decision history" });
     await expect(chain.getByRole("listitem").last()).toContainText("Closed · with evidence, dated to the colonoscopy");
     await expect(page.getByText("فاطمة الزعابي").first()).toBeVisible();
     await expect(page.getByText("Fatima Alzaabi")).toBeVisible();
     await expect(page.getByText("“the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve”")).toBeVisible();
-    await expect(page.getByTestId("chain-verified")).toContainText("Verified · 3 of 3 intact");
+    await expect(page.getByTestId("chain-verified")).toContainText("Unchanged · 3 of 3 entries checked");
     await expect(page.getByText("Message owner")).toHaveCount(0);
 
-    await page.getByText("3 sealed entries").click();
-    await expect(page.getByRole("list", { name: "Entry hashes" }).getByRole("listitem")).toHaveText([/Report matched/, /Readers' result/, /Closed/]);
+    await page.getByText("3 recorded entries").click();
+    await expect(page.getByRole("list", { name: "Recorded entries" }).getByRole("listitem")).toHaveText([/Report matched/, /Readers' result/, /Closed/]);
     await shot(page, "record-fatima");
     await noSeriousAxe(page);
   });
@@ -336,8 +336,8 @@ test.describe("Patient record", () => {
     await expect(readers.getByRole("listitem")).toHaveText([/Reader A\s*examined followup/, /Reader B\s*examined followup/]);
     await expect(readers).toContainText("Fundus examined after dilation");
     await expect(page.getByRole("region", { name: "DoH closure checklist" })).toHaveCount(0);
-    await expect(page.getByTestId("chain-verified")).toContainText("Verified · 5 of 5 intact");
-    await expect(page.getByRole("list", { name: "Sealed chain" }).getByRole("listitem").last()).toContainText("Closed · with evidence, dated to the eye-clinic exam");
+    await expect(page.getByTestId("chain-verified")).toContainText("Unchanged · 5 of 5 entries checked");
+    await expect(page.getByRole("list", { name: "Decision history" }).getByRole("listitem").last()).toContainText("Closed · with evidence, dated to the eye-clinic exam");
     await shot(page, "record-dr");
     await noSeriousAxe(page);
   });
