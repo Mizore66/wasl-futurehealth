@@ -190,29 +190,6 @@ export function ChartFigure({
   );
 }
 
-/** Two or three choices where exactly one applies; real buttons with aria-pressed. */
-export function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div role="group" aria-label={label} className="inline-flex max-w-full flex-wrap gap-1 rounded-control bg-raised p-1">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "min-h-11 cursor-pointer rounded-[4px] border-0 px-3 text-body md:min-h-8",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hue",
-            value === o.value ? "bg-surface font-medium text-ink shadow-sm" : "bg-transparent text-ink-soft hover:text-ink",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 /** A key: a swatch in the series' own fill beside its name. */
 export function Legend({ items }: { items: { fill: FillName; label: string }[] }) {
   return (
