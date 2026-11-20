@@ -70,49 +70,10 @@
     padding-right: 12px;
     border-right: 1px solid var(--color-limestone-300);
   }
-  .pf-search-form {
-    width: min(290px, 100%);
-  }
-  .pf-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 0 0 12px;
-    color: var(--color-limestone-700);
-    background: var(--color-limestone-50);
-  }
-  .pf-search:focus-within {
-    outline: 2px solid var(--color-jade-600);
-    outline-offset: 1px;
-  }
-  .pf-search input {
-    flex: 1;
-    width: 0;
-    min-width: 0;
-    height: 44px;
-    padding: 0;
-    border: 0;
-    outline: none;
-    background: transparent;
-    color: var(--color-limestone-900);
-    font-size: 14px;
-  }
-  .pf-search kbd {
-    padding: 0 5px;
-    border: 1px solid var(--color-limestone-400);
-    border-radius: 3px;
-    font-size: 12px;
-    font-family: inherit;
-  }
 
   .pf-filters {
     padding: 10px clamp(14px, 1.7vw, 26px);
     border-bottom: 1px solid var(--color-limestone-300);
-  }
-  .pf-directory [data-testid="refine"] summary,
-  .pf-directory [data-testid="refine"] form,
-  .pf-directory [data-testid="active-filters"] {
-    padding-inline: clamp(14px, 1.7vw, 26px);
   }
 
   /* Month grid */
@@ -399,7 +360,7 @@
     font-size: 12px;
   }
 
-  /* The open folder: a jade tab above the record title, which takes the top border. */
+  /* The open folder: a jade tab above the record card, which takes the top border. */
   .staff .pf-return-tab {
     position: relative;
     display: inline-flex;
@@ -432,15 +393,12 @@
     width: 15px;
     height: 15px;
   }
-  .pf-record-in-folder > .record-title {
+  .pf-record-in-folder > .rs-card {
     border-top: 3px solid var(--color-jade-700);
     border-start-start-radius: 0;
   }
 
   /* Evidence File */
-  .record-title {
-    margin-bottom: 10px;
-  }
   .rs-card {
     display: flex;
     flex-direction: column;
@@ -462,35 +420,6 @@
     gap: 12px;
     min-width: 0;
     padding: 14px var(--inset);
-  }
-  .rs-source-buttons {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    gap: 4px;
-  }
-  .rs-source-buttons button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 6px 10px;
-    border-radius: 4px;
-    color: var(--color-limestone-700);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .rs-source-buttons button:hover {
-    background: var(--color-jade-50);
-  }
-  .rs-source-buttons [aria-pressed="true"] {
-    background: var(--color-jade-100);
-    color: var(--color-jade-800);
-    font-weight: 600;
-  }
-  .rs-source-buttons svg {
-    width: 15px;
-    height: 15px;
   }
   .rs-document-slot {
     display: flex;
@@ -740,12 +669,6 @@
     .pf-toolbar h2 {
       font-size: 25px;
     }
-    .pf-search-form {
-      width: 100%;
-    }
-    .pf-search kbd {
-      display: none;
-    }
     .pf-filters {
       padding: 10px 12px;
     }
@@ -865,19 +788,6 @@
   }
 }
 
-@media (max-width: 760px) {
-  @layer utilities {
-    .pf-filters > nav {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-    .pf-filters > nav > a {
-      flex: none;
-    }
-  }
-}
-
 @layer components {
   .consult-prompt {
     max-width: 45ch;
@@ -889,22 +799,5 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-  }
-}
-
-@layer utilities {
-  .pf-search > [data-slot="button"] {
-    width: 44px;
-    padding: 0;
-    border-radius: 0 3px 3px 0;
-    background: transparent;
-    color: var(--color-jade-700);
-  }
-  .pf-search > [data-slot="button"]:hover {
-    background: var(--color-jade-50);
-  }
-  .pf-search > [data-slot="button"] svg {
-    width: 17px;
-    height: 17px;
   }
 }

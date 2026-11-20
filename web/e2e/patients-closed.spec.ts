@@ -39,7 +39,7 @@ for (const programme of ["lung_nodule", "diabetic_retinopathy", "breast", "lung_
     const rows = all.filter((c) => c.programme === programme && c.closed);
     expect(rows.some((c) => c.state !== "closed")).toBe(true);
     await page.goto(`/app/patients?programme=${programme}`);
-    const chip = page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed", exact: true });
+    const chip = page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: /^Closed \d+$/ });
     await chip.click();
     await expect(page).toHaveURL((url) => url.searchParams.get("programme") === programme && url.searchParams.get("closed") === "true" && !url.searchParams.has("state"));
     await expect(chip).toHaveAttribute("aria-current", "true");
@@ -53,7 +53,7 @@ for (const programme of ["lung_nodule", "diabetic_retinopathy", "breast", "lung_
 }
 
 for (const closed of [true, false]) {
-  test(`native Search and Refine retain closed=${closed}, composed filters and paging`, async ({ page }) => {
+  test(`Search and the filter menus retain closed=${closed}, composed filters and paging`, async ({ page }) => {
     const rows = all.filter((c) => c.closed === closed);
     expect(rows.length).toBeGreaterThan(25);
     await page.goto(`/app/patients?closed=${closed}`);
@@ -73,15 +73,16 @@ for (const closed of [true, false]) {
     await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("q") === "sr-1" && !url.searchParams.has("page"));
     await view(page, rows.filter((c) => c.id.toLowerCase().includes("sr-1")), closed);
 
-    const refine = page.getByTestId("refine");
-    await refine.locator("summary").click();
-    await refine.getByRole("combobox", { name: "Programme", exact: true }).selectOption("lung_nodule");
-    await refine.getByRole("combobox", { name: "Provider", exact: true }).selectOption("rad-imaging");
-    await refine.getByRole("button", { name: "Apply filters", exact: true }).click();
+    const filters = page.getByRole("group", { name: "Filter patients" });
+    await filters.getByRole("button", { name: "Programme", exact: true }).click();
+    await page.getByRole("listbox", { name: "Programme" }).getByRole("option", { name: /^Lung nodule follow-up / }).click();
+    await expect(page).toHaveURL((url) => url.searchParams.get("programme") === "lung_nodule");
+    await filters.getByRole("button", { name: "Provider", exact: true }).click();
+    await page.getByRole("listbox", { name: "Provider" }).getByRole("option", { name: /^rad-imaging / }).click();
     await expect(page).toHaveURL((url) => url.searchParams.get("closed") === String(closed) && url.searchParams.get("q") === "sr-1" && url.searchParams.get("programme") === "lung_nodule" && url.searchParams.get("provider") === "rad-imaging" && !url.searchParams.has("page"));
     await view(page, rows.filter((c) => c.id.includes("sr-1") && c.programme === "lung_nodule" && c.provider === "rad-imaging"), closed);
-    await expect(refine.getByRole("combobox", { name: "Programme", exact: true })).toHaveValue("lung_nodule");
-    await expect(refine.getByRole("combobox", { name: "Provider", exact: true })).toHaveValue("rad-imaging");
-    if (closed) await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Closed", exact: true })).toHaveAttribute("aria-current", "true");
+    await expect(filters.getByRole("button", { name: "Programme: Lung nodule follow-up" })).toBeVisible();
+    await expect(filters.getByRole("button", { name: "Provider: rad-imaging" })).toBeVisible();
+    if (closed) await expect(page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: /^Closed \d+$/ })).toHaveAttribute("aria-current", "true");
   });
 }

@@ -107,6 +107,11 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     title: "Evidence",
     items: [
       {
+        href: "/app/evidence",
+        label: "Evidence",
+        icon: icon(<path d="M14 3H6v18h12V7z M14 3v4h4 M9 14l2 2 4-4" />),
+      },
+      {
         href: "/app/pipeline",
         label: "Pipeline",
         icon: icon(<path d="M3 12h4m4 0h2m4 0h4 M7 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0 M13 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />),

@@ -2,9 +2,10 @@
 
 import { FileText } from "lucide-react";
 import { Children, useState } from "react";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 
 /**
- * The Evidence File's source documents, one at a time: a pressed-button switch above the document. The server renders
+ * The Evidence File's source documents, one at a time: a single-select switch above the document. The server renders
  * every document; without script the first stays shown, so the latest report is always readable.
  */
 export function SourceSwitch({ labels, children }: { labels: string[]; children: React.ReactNode }) {
@@ -13,14 +14,20 @@ export function SourceSwitch({ labels, children }: { labels: string[]; children:
   return (
     <>
       {labels.length > 1 && (
-        <div className="rs-source-buttons" role="group" aria-label="Choose a source document">
-          {labels.map((label, i) => (
-            <button key={label} type="button" aria-pressed={i === shown} onClick={() => setShown(i)}>
-              <FileText aria-hidden="true" />
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedToggle
+          label="Choose a source document"
+          value={String(shown)}
+          onChange={(i) => setShown(Number(i))}
+          items={labels.map((label, i) => ({
+            value: String(i),
+            label: (
+              <>
+                <FileText aria-hidden="true" className="size-[15px]" />
+                {label}
+              </>
+            ),
+          }))}
+        />
       )}
       {docs.map((doc, i) => (
         <div key={i} hidden={i !== shown} className="rs-document-slot">

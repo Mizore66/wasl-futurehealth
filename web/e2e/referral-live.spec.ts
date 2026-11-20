@@ -369,7 +369,7 @@ test.describe("referral answers, live mock", () => {
   test("the eye-screening referrer answers a canonical DR packet; the inbox stops escalating it", async ({ page }) => {
     const scope = "programme=diabetic_retinopathy&provider=phc-retina";
     await page.goto(`${NEXT_URL}/app/referrals/returned?${scope}`);
-    await expect(page.getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("link", { name: "Diabetic eye" })).toHaveAttribute("aria-current", "true");
     const card = page.getByRole("article");
     await expect(card).toContainText("dilated eye examination at an eye clinic");
     await expect(card).toContainText("Returned byEye clinic, regional hospital");

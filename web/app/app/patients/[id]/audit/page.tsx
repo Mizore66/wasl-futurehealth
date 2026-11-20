@@ -144,23 +144,27 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
   return (
     <div className="flex min-h-full flex-col">
       <AuditTopbarControls />
-      <PageHeader
-        title="Audit trail"
-        compact
-        className="mb-2.5 flex-nowrap!"
-        sub={
-          <>
-            <span className="break-all">{shortId(caseId)}</span> · {statusWords(detail.case).status}
-          </>
-        }
-        aside={
-          <Link href={caseHref("/app/patients", caseId)} className="flex min-h-11 items-center gap-1.5 whitespace-nowrap px-[7px] font-semibold text-jade-800 no-underline max-md:text-[12px]">
-            <ArrowLeft aria-hidden className="size-4 max-md:size-[13px]" strokeWidth={1.8} />
-            Back to case
-          </Link>
-        }
-      />
       <AuditWorkspace
+        head={
+          <PageHeader
+            attached
+            run
+            title="Audit trail"
+            compact
+           
+            sub={
+              <>
+                <span className="break-all">{shortId(caseId)}</span> · {statusWords(detail.case).status}
+              </>
+            }
+            aside={
+              <Link href={caseHref("/app/patients", caseId)} className="flex min-h-11 items-center gap-1.5 whitespace-nowrap px-[7px] font-semibold text-jade-800 no-underline max-md:text-[12px]">
+                <ArrowLeft aria-hidden className="size-4 max-md:size-[13px]" strokeWidth={1.8} />
+                Back to case
+              </Link>
+            }
+          />
+        }
         events={events}
         details={details}
         controls={controls}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
+import { RunMeta } from "./run-meta";
 
 const CRUMBS: [RegExp, string][] = [
   [/^\/app\/today/, "Today"],
@@ -12,6 +13,7 @@ const CRUMBS: [RegExp, string][] = [
   [/^\/app\/referrals/, "Referrals"],
   [/^\/app\/recovery/, "Recovery"],
   [/^\/app\/review/, "Review desk"],
+  [/^\/app\/evidence/, "Evidence"],
   [/^\/app\/pipeline/, "Pipeline"],
   [/^\/app\/results/, "Results"],
   [/^\/app\/agent-review/, "Agent review"],
@@ -52,12 +54,12 @@ export function TopbarActionsPortal({ children }: { children: React.ReactNode })
   return slot ? createPortal(children, slot) : null;
 }
 
-/** Desktop bar above the page: where you are, then the page-level controls. */
+/** Desktop bar above the page: where you are on the left; the run notice and any page controls on the right. */
 export function TopBar() {
   const pathname = usePathname();
   return (
     <div className="sticky top-0 z-20 hidden min-h-[54px] items-center justify-between gap-3 border-b border-line bg-surface px-[clamp(18px,3vw,40px)] md:flex">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2.5 text-[12px] text-muted">
+      <nav aria-label="Breadcrumb" className="flex flex-none items-center gap-2.5 text-[12px] text-muted">
         <LayoutGrid aria-hidden className="size-4" strokeWidth={1.5} />
         <span>Care workspace</span>
         <span aria-hidden>/</span>
@@ -65,7 +67,11 @@ export function TopBar() {
           {crumbFor(pathname)}
         </b>
       </nav>
-      <TopActions />
+      {/* Positioned, so the notice's drop-down anchors to the bar's right edge. */}
+      <div className="relative flex min-w-0 items-center justify-end gap-2">
+        <RunMeta />
+        <TopActions />
+      </div>
     </div>
   );
 }

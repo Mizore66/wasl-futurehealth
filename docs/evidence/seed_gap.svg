@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 222" width="760" height="222" role="img" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<title>Gap to the true 31-day rate, every held-out seed</title><desc>One dot per seed. The worst Wasl seed is still far closer to truth than the best EID-only seed.</desc>
+<rect width="760" height="222" fill="#fcfcfb"/>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#0b0b0b">Gap to the true 31-day rate, every held-out seed</text>
+<text x="16" y="46" font-size="12" fill="#52514e">One dot per seed. The worst Wasl seed is still far closer to truth than the best EID-only seed.</text>
+<rect x="120" y="61" width="10" height="10" rx="2" fill="#eb6834"/><text x="135.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">Emirates ID only</text>
+<rect x="254" y="61" width="10" height="10" rx="2" fill="#2a78d6"/><text x="269.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">Wasl</text>
+<line x1="120.0" y1="88" x2="120.0" y2="196" stroke="#e4e3df"/><text x="120.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">0 pts</text>
+<line x1="240.0" y1="88" x2="240.0" y2="196" stroke="#e4e3df"/><text x="240.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">5 pts</text>
+<line x1="360.0" y1="88" x2="360.0" y2="196" stroke="#e4e3df"/><text x="360.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">10 pts</text>
+<line x1="480.0" y1="88" x2="480.0" y2="196" stroke="#e4e3df"/><text x="480.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">15 pts</text>
+<line x1="600.0" y1="88" x2="600.0" y2="196" stroke="#e4e3df"/><text x="600.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">20 pts</text>
+<line x1="720.0" y1="88" x2="720.0" y2="196" stroke="#e4e3df"/><text x="720.0" y="212.0" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400">25 pts</text>
+<text x="16.0" y="112.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">v1 noise</text>
+<circle cx="609.6" cy="92" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 11, eid: 20.4 points from truth</title></circle>
+<circle cx="146.4" cy="112" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 11, wasl: 1.1 points from truth</title></circle>
+<circle cx="592.8" cy="95" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 23, eid: 19.7 points from truth</title></circle>
+<circle cx="132.0" cy="115" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 23, wasl: 0.5 points from truth</title></circle>
+<circle cx="597.6" cy="98" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 37, eid: 19.9 points from truth</title></circle>
+<circle cx="146.4" cy="118" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 37, wasl: 1.1 points from truth</title></circle>
+<circle cx="568.8" cy="101" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 41, eid: 18.7 points from truth</title></circle>
+<circle cx="146.4" cy="121" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 41, wasl: 1.1 points from truth</title></circle>
+<circle cx="566.4" cy="104" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 59, eid: 18.6 points from truth</title></circle>
+<circle cx="144.0" cy="124" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v1 seed 59, wasl: 1.0 points from truth</title></circle>
+<text x="16.0" y="162.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">v2 noise</text>
+<circle cx="614.4" cy="142" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 11, eid: 20.6 points from truth</title></circle>
+<circle cx="201.6" cy="162" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 11, wasl: 3.4 points from truth</title></circle>
+<circle cx="650.4" cy="145" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 23, eid: 22.1 points from truth</title></circle>
+<circle cx="201.6" cy="165" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 23, wasl: 3.4 points from truth</title></circle>
+<circle cx="650.4" cy="148" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 37, eid: 22.1 points from truth</title></circle>
+<circle cx="177.6" cy="168" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 37, wasl: 2.4 points from truth</title></circle>
+<circle cx="583.2" cy="151" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 41, eid: 19.3 points from truth</title></circle>
+<circle cx="201.6" cy="171" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 41, wasl: 3.4 points from truth</title></circle>
+<circle cx="580.8" cy="154" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 59, eid: 19.2 points from truth</title></circle>
+<circle cx="189.6" cy="174" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"><title>v2 seed 59, wasl: 2.9 points from truth</title></circle>
+</svg>

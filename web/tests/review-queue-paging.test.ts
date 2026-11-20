@@ -12,7 +12,7 @@ const queue = vi.hoisted(() => ({ reviewQueue: vi.fn() }));
 vi.mock("@/components/review/queue", () => queue);
 vi.mock("@/lib/api/source", () => ({ apiMode: () => "live" }));
 vi.mock("@/lib/api/reviewer-session", () => ({ reviewerToken: async () => "synthetic-viewer-token" }));
-vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`TEST_REDIRECT:${url}`); } }));
+vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`TEST_REDIRECT:${url}`); }, usePathname: () => "/app/review" }));
 afterEach(() => vi.clearAllMocks());
 const props = (query: Record<string, string> = {}) => ({ params: Promise.resolve({}), searchParams: Promise.resolve(query) });
 async function render(query: Record<string, string> = {}) {

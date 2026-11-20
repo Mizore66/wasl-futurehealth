@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
-import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { loadCaseRecord, renderEvidenceFile } from "@/components/case/evidence-file";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
-import { Refine } from "@/components/patients/refine";
+import { clearRefineHref, NativeRefine, refineMenus } from "@/components/patients/refine";
 import { FolderTab, RememberFiles } from "@/components/patients/back-to-files";
 import { CaseFiles, ReferralCalendar, type Row } from "@/components/patients/referral-calendar";
-import { SearchShortcut } from "@/components/patients/search-shortcut";
 import {
   byDate,
   calendarHref,
@@ -28,12 +26,16 @@ import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWN
 import { DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { ldctChildren, openObligation } from "@/components/worklist/obligation";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { apiMode, getCases, type CaseQuery } from "@/lib/api/source";
+import { apiMode, getCases, matches, type CaseQuery } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { cn } from "@/lib/utils";
+import { FilterMenu } from "@/components/ui/filters/filter-menu";
+import { FilterSheet } from "@/components/ui/filters/filter-sheet";
+import { SearchField } from "@/components/ui/filters/search-field";
+import { ClearAll, ResultCount, SegmentedFilter, Toolbar } from "@/components/ui/filters/toolbar";
 import "@/components/patients/patients.css";
 
 export const metadata = { title: "Patients" };
@@ -70,7 +72,7 @@ const same = (a: CaseFilters, b: CaseFilters) => filtersHref("", a) === filtersH
 /** The quick chips own state, closed, dropoff and overdue. */
 const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, closed: f.closed, dropoff: f.dropoff, overdue: f.overdue });
 
-/** Chips change the view but keep every other filter: the refine selects and the search. */
+/** Chips change the view but keep every other filter: the refine menus and the search. */
 const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
   ...f,
   programme: keep.programme,
@@ -111,6 +113,17 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
   const rows = matched.cases.map(toRow).filter(found);
   const searchedAll = q ? everything.cases.filter((c) => found(toRow(c))) : everything.cases;
   const choices = buildFacets(searchedAll, apiFilters);
+  const menus = refineMenus(choices, filters);
+  // Each status tab counts what choosing it would show: the refine filters and the search stay applied.
+  const segments = QUICK.map(({ label, f }) => {
+    const query = toCaseQuery(chipFilters(f, { ...apiFilters, q: undefined }));
+    return {
+      label,
+      href: filtersHref("/app/patients", chipFilters(f, filters)),
+      current: same(f, quickOnly(filters)),
+      count: searchedAll.filter((c) => matches(c, query)).length,
+    };
+  });
   const inView = programmesInView(searchedAll, apiFilters);
   const partialCounts = everything.total > everything.cases.length;
   const partialCalendar = matched.total > matched.cases.length;
@@ -137,29 +150,38 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
     return (
       <div className="pf-folder-open pf-record-in-folder">
         <FolderTab href={back} />
-        <PageHeader className="record-title" title={openRow?.it.name ?? shortId(view.open)} sub={openRow?.it.named ? shortId(view.open) : undefined} />
-        <section className="rs-card p-4 md:p-pad" aria-label="Record not available">
-          <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
-          {openRow && (
-            <dl className="rs-referral-facts">
-              <div>
-                <dt>Status</dt>
-                <dd>{openRow.it.status}</dd>
-              </div>
-              <div>
-                <dt>Next</dt>
-                <dd>{openRow.it.next}</dd>
-              </div>
-              <div>
-                <dt>Owner</dt>
-                <dd>{openRow.it.owner}</dd>
-              </div>
-              <div>
-                <dt>Referred</dt>
-                <dd>{formatDay(openRow.c.referral_day)}</dd>
-              </div>
-            </dl>
-          )}
+        <section className="rs-card" aria-label="Record not available">
+          {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
+          <PageHeader
+            attached
+            run
+            className="rounded-se-[6px]!"
+            title={openRow?.it.name ?? shortId(view.open)}
+            sub={openRow?.it.named ? shortId(view.open) : undefined}
+          />
+          <div className="p-4 md:p-pad">
+            <p className="m-0">{openRow ? "This demo has a full record for only some cases. This case has its summary only." : "No case with this id is in view."}</p>
+            {openRow && (
+              <dl className="rs-referral-facts">
+                <div>
+                  <dt>Status</dt>
+                  <dd>{openRow.it.status}</dd>
+                </div>
+                <div>
+                  <dt>Next</dt>
+                  <dd>{openRow.it.next}</dd>
+                </div>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{openRow.it.owner}</dd>
+                </div>
+                <div>
+                  <dt>Referred</dt>
+                  <dd>{formatDay(openRow.c.referral_day)}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
         </section>
       </div>
     );
@@ -179,21 +201,55 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
 
   return (
     <>
-      <SearchShortcut target="pf-find" />
-      <PageHeader
-        className="pf-hero"
-        title="Patients"
-        sub={
-          <span data-testid="showing">
-            {rows.length} {rows.length === 1 ? "case" : "cases"}: {describe(filters)}
-          </span>
-        }
-        aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
-      />
-
       {ledgerPartial && <LedgerInvalidBanner what="this list" className="mb-3" />}
 
       <section className="pf-directory" aria-labelledby="pf-view-heading">
+        <PageHeader
+          attached
+          run
+          className="pf-hero"
+          title="Patients"
+          sub={
+            <ResultCount data-testid="showing" count={rows.length} one="case">
+              : {describe(filters)}
+            </ResultCount>
+          }
+          aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
+        />
+        <Toolbar label="Filter patients" className="pf-filters">
+          <SegmentedFilter label="Filters" items={segments} />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <form action="/app/patients" role="search" className="min-w-0 basis-full sm:flex-1 sm:basis-64">
+              {filters.programme && <input type="hidden" name="programme" value={filters.programme} />}
+              {filters.provider && <input type="hidden" name="provider" value={filters.provider} />}
+              {filters.consent && <input type="hidden" name="consent" value={filters.consent} />}
+              {filters.review && <input type="hidden" name="review" value={filters.review} />}
+              {filters.owner && <input type="hidden" name="owner" value={filters.owner} />}
+              {filters.state && <input type="hidden" name="state" value={filters.state} />}
+              {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
+              {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
+              {filters.closed !== undefined && <input type="hidden" name="closed" value={String(filters.closed)} />}
+              {scope && <input type="hidden" name="files" value={scope} />}
+              <SearchField
+                id="pf-find"
+                name="q"
+                label={searchLabel}
+                defaultValue={q}
+                clearHref={calendarHref({ ...filters, q: undefined }, { files: scope })}
+                submitLabel="Search"
+              />
+            </form>
+            <div className="flex min-w-0 items-center gap-2 max-sm:w-full max-sm:overflow-x-auto sm:flex-wrap">
+              <FilterSheet filters={menus} clearHref={clearRefineHref(filters)} total={rows.length} one="case" className="sm:hidden" />
+              {menus.map((m) => (
+                <FilterMenu key={m.label} {...m} className={m.value ? undefined : "max-sm:hidden"} />
+              ))}
+              <ClearAll filters={menus} href={clearRefineHref(filters)} />
+            </div>
+          </div>
+          <NativeRefine facets={choices} filters={filters} />
+        </Toolbar>
+
         <header className="pf-toolbar">
           <div>
             {scope && (
@@ -204,48 +260,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             )}
             <h2 id="pf-view-heading">{scope ? "Case files" : "Referral calendar"}</h2>
           </div>
-          <form action="/app/patients" className="pf-search-form" role="search">
-            {filters.programme && <input type="hidden" name="programme" value={filters.programme} />}
-            {filters.provider && <input type="hidden" name="provider" value={filters.provider} />}
-            {filters.consent && <input type="hidden" name="consent" value={filters.consent} />}
-            {filters.review && <input type="hidden" name="review" value={filters.review} />}
-            {filters.owner && <input type="hidden" name="owner" value={filters.owner} />}
-            {filters.state && <input type="hidden" name="state" value={filters.state} />}
-            {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
-            {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
-            {filters.closed !== undefined && <input type="hidden" name="closed" value={String(filters.closed)} />}
-            {scope && <input type="hidden" name="files" value={scope} />}
-            <div className="pf-search rounded-control border border-input">
-              <label htmlFor="pf-find" className="sr-only">
-                {searchLabel}
-              </label>
-              <input id="pf-find" type="search" name="q" defaultValue={q} placeholder={searchLabel} autoComplete="off" />
-              <kbd aria-hidden="true">/</kbd>
-              <Button variant="quiet" size="touch" aria-label="Search" title="Search">
-                <Search aria-hidden="true" />
-              </Button>
-            </div>
-          </form>
         </header>
-
-        <div className="pf-filters">
-          <nav aria-label="Filters" className="flex flex-wrap gap-2">
-            {QUICK.map(({ label, f }) => {
-              const on = same(f, quickOnly(filters));
-              return (
-                <Link
-                  key={label}
-                  href={filtersHref("/app/patients", chipFilters(f, filters))}
-                  aria-current={on ? "true" : undefined}
-                  className={cn(chip, on ? "border-jade-700 bg-active text-ink" : "border-control text-ink hover:bg-ground")}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-        <Refine facets={choices} filters={filters} />
 
         <div id="pf-results">
           {rows.length === 0 ? (

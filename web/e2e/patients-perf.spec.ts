@@ -83,7 +83,7 @@ test("search and filters stay usable after the first render (4x CPU)", async ({ 
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.goto("/app/patients");
   await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("1001");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page).toHaveURL(/q=1001/);
   await expect(page.getByTestId("showing")).toContainText("2 cases");
   await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Never notified" }).click();

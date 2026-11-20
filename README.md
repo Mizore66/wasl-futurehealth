@@ -4,6 +4,37 @@
 
 This is our entry to the [Future Health Digital Innovation Challenge](https://hack2skill.com/event/futurehealthchallenge/), challenge #5: *Closing the Screening-to-Care Loop*. **Submission closes 20 Nov 2026, 18:29 UTC** (22:29 UAE).
 
+## Verify it yourself in two minutes
+
+1. **Click:** open https://wasl-topaz-mu.vercel.app, go to `/app`. The Programme KPI shows the deployed demo run: Emirates ID only **11.3%**, Wasl **30.7%**, simulated truth **31.9%**. Open any case, then its audit trail.
+2. **Run:** `make verify` (runs `scripts/verify.sh`, about 80 s) checks the frozen results against committed SHA-256 hashes, recomputes every aggregate from the per-seed results, runs the named safety tests and prints PASS or FAIL per claim. `make verify SEED=<any integer>` reruns the frozen code end to end on a fresh held-out cohort nobody has seen (reduced to 600 CRC + 240 cervical loops, about 5 minutes; needs `bin/nats-server`) and prints the accuracy and safety table.
+3. **Trace:** `python3 scripts/evidence.py --check && python3 -m unittest scripts/test_evidence.py` checks that every number in [`docs/EVIDENCE.md`](docs/EVIDENCE.md) comes from the frozen evaluation or a cited parameter.
+
+**Measured headline** (frozen held-out evaluation, independent v2 noise, per 1,000 positive FITs): Emirates-ID-only matching wrongly flags about **207** patients as "not followed up" who completed colonoscopy within 31 days; Wasl about **31**. Wasl raises the measured rate toward the true rate; the real rate moves only if someone acts on the list. **0/3,035 CRC false closures** (95% upper bound 0.121%). Error definitions, intervals, worst seed and worst stratum: [`docs/EVIDENCE.md`](docs/EVIDENCE.md).
+
+## Claim ledger
+
+<!-- evidence:ledger:start -->
+| # | Claim | Status | Evidence | Reproduce |
+|---|---|---|---|---|
+| C1 | Emirates-ID-only matching under-counts 31-day colonoscopy completion; Wasl raises the measured rate toward the true rate | Simulated | pipeline/results/final/SUMMARY.md (kpi_eid_only, kpi_wasl, kpi_truth) | `make verify SEED=<n>; full run: scripts/final_eval.sh` |
+| C2 | No false closures in any of the seven programmes in the frozen held-out evaluation (for example CRC 0/3,035 under v2 noise, 95% upper bound 0.121%) | Simulated | docs/EVIDENCE.md#safety; pipeline/results/final/summary.json | `make verify SEED=<n>` |
+| C3 | Thresholds, error definitions and metric code were frozen at 075abc5ad04a on 2026-11-02T04:33Z before the held-out runs | Built | pipeline/results/final/manifest.json; scripts/final_eval.sh; scripts/final_manifest.py | `git show 075abc5ad04a --stat; python3 -m json.tool pipeline/results/final/manifest.json` |
+| C4 | Links records across Arabic and Latin spellings with a self-trained name encoder, HNSW candidates and a calibrated scorer | Built | encoder/RESULTS.md (held-out Wikidata eval split); pipeline/linker.go; pipeline/ann.go | `cd pipeline && go test ./...` |
+| C5 | A loop closes only when DoH rules and a model reader agree on the report; anything uncertain goes to human review | Built | pipeline/v7.go; pipeline/evidence.go; pipeline/RESULTS.md | `scripts/demo.sh test` |
+| C6 | Ingests FHIR R4 and HL7 v2.5.1 over MLLP into one event model | Built | pipeline/hl7.go; pipeline/hl7_test.go | `cd pipeline && go test -run MLLP ./... && go test -run HL7 ./...` |
+| C7 | Exactly-once processing under process and broker kills: 0 duplicate or lost outputs in all frozen runs | Simulated | docs/EVIDENCE.md#safety (duplicate_or_lost_outputs) | `make verify SEED=<n>` |
+| C8 | Hash-chained provenance detects tampering: 85/85 attacks detected, 0 false alarms per noise model | Simulated | pipeline/results/final/*/tamper.json | `scripts/demo.sh tamper` |
+| C9 | No message is released without granted contact consent (0/11,650 under v2 noise) | Simulated | docs/EVIDENCE.md#safety | `make verify SEED=<n>` |
+| C10 | Seven loop types run on the same engine (CRC, cervical, lung nodule, DR, breast, LDCT, IFHAS) | Built | pipeline/results/final/SUMMARY.md; docs/BACKEND-HANDOFF.md (Seven loop types) | `WASL_LDCT=300 WASL_IFHAS=800 scripts/demo.sh final` |
+| C11 | Review load by name origin is measured: pooled max/min 1.05 under v1 (p = 0.451) and 1.12 under v2 (p = 0.007); 1.07 under v2 after standardising by programme (p = 0.185) | Simulated | docs/EVIDENCE.md#worst-seed-and-worst-stratum | `make verify SEED=<n>` |
+| C12 | Hosted demo with a staff worklist, case evidence and audit trail on synthetic data | Built | https://wasl-topaz-mu.vercel.app (staff area /app); docs/LIVE.md | `Open the web app, then /app, then any case and its audit trail` |
+| C13 | Queue control (direct-to-procedure plus prep targeting) adds about +13 pp 31-day completion at 1.2 slots per FIT+ | Simulated | booking/RESULTS.md | `scripts/demo.sh booking` |
+| C14 | Extra colonoscopies and cancers found if navigation acts on the corrected list (modelled, conditional on navigation acting on the corrected list) | Designed | docs/EVIDENCE.md#modelled-benefit | `python3 scripts/evidence.py` |
+<!-- evidence:ledger:end -->
+
+> **What Wasl does not claim.** It does not raise the follow-up rate by itself. No real patients, real Malaffi feed, clinician users or patient outcomes: every cohort, reviewer and capacity figure is simulated. Extra colonoscopies and cancers found are modelled, conditional on navigation acting on the corrected list. Zero observed false closures is not a zero rate; the upper bounds are the claim. The team wrote the generator, the noise and the matcher; v2 noise and held-out persons reduce that circularity but do not remove it.
+
 ## The problem
 A woman has a positive stool test (FIT+) at her clinic. Her colonoscopy, if it happens, may be at a different hospital, under a Latin spelling of her name and with no Emirates ID. Her clinic never finds out.
 

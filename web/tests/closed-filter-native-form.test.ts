@@ -24,6 +24,8 @@ vi.mock("@/lib/api/source", async (original) => ({
     return { meta: CaseList.parse(loadSample("cases_lung_ldct_page1.json")).meta, cases: hits.slice(offset, offset + limit), total: hits.length, limit, offset };
   },
 }));
+// The filter menus and search are client components; static rendering has no app router to hand them.
+vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/components/worklist/run-clock", () => ({ runClock: async () => 100, hasRecord: () => false }));
 
 type Params = Record<string, string>;
@@ -110,7 +112,7 @@ describe("the Search and Refine GET forms keep the closed filter", () => {
     const doc = await render({ closed: "true", programme: "lung_ldct" });
     const sent = submit(doc, searchForm(doc));
     const after = await render(sent);
-    const chip = [...after.querySelectorAll('nav[aria-label="Filters"] a')].find((a) => a.textContent === "Closed")!;
+    const chip = [...after.querySelectorAll('nav[aria-label="Filters"] a')].find((a) => /^Closed \d+$/.test(a.textContent!))!;
     expect(chip.getAttribute("aria-current")).toBe("true");
   });
 });

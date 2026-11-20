@@ -13,7 +13,7 @@ import { PipelineHeading, SNAPSHOT_NOTE } from "@/components/pipeline/heading";
 import { hasCredential } from "@/lib/api/source";
 import { reviewerPersona } from "@/lib/api/reviewer-session";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {}, push: () => {} }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {}, push: () => {} }), usePathname: () => "/app/pipeline/matching" }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 
 afterEach(() => {

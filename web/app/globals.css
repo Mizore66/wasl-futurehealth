@@ -259,6 +259,8 @@
   inset: 0 0 0 37%;
   z-index: -1;
   pointer-events: none;
+  /* Rounded like the band, so a header that lets a menu overflow it (Today's scope) still clips its art. */
+  border-radius: inherit;
   background-image: url("/staff/pen-strokes.svg");
   background-size: 196px 116px;
   background-position: right center;

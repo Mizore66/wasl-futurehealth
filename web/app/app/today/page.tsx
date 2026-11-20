@@ -21,15 +21,16 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
     <HonestyLabel kind="illustrative">Call log: kept in this browser (no live API)</HonestyLabel>
   );
   const scope = scopeWords(selection);
-  return (
-    <>
-      <PageHeader
-        title="Today"
-        sub={`${scope} · ${simulatedRunDate(now)}`}
-        aside={<TodayScope selection={selection} options={{ programme, provider }} count={items.length} />}
-      />
-      {/* Keyed by scope only: switching queue keeps this browser's logged actions. */}
-      <TodayBoard key={scope} items={items} now={now} aside={honesty} live={live} scope={scope} queue={queue} />
-    </>
+  const head = (
+    <PageHeader
+      attached
+      run
+      compact
+      title="Today"
+      sub={`${scope} · ${simulatedRunDate(now)}`}
+      aside={<TodayScope selection={selection} options={{ programme, provider }} count={items.length} queue={queue} />}
+    />
   );
+  // Keyed by scope only: switching queue keeps this browser's logged actions.
+  return <TodayBoard key={scope} head={head} items={items} now={now} aside={honesty} live={live} scope={scope} queue={queue} />;
 }

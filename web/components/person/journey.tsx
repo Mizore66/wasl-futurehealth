@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PersonAssociationUnavailable, PersonCase, PersonJourney } from "@/lib/api/person-schema";
 import { caseHref, shortId } from "@/lib/domain/ids";
+import { PageHeader } from "@/components/shell/page-header";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { actionLabels, lifecycleLabel, obligationsFor, personDisplay, programmeLabels, reasonLabel } from "./journey-model";
 
@@ -23,12 +24,16 @@ export function PersonAssociationUnavailableView({ result }: { result: PersonAss
     unproven_binding: "The retained source does not prove a unique subject binding.",
     multiple_historical_subjects: "This case has more than one proven historical subject, so it has no single person destination.",
   };
-  return <section aria-labelledby="association-unavailable">
-    <h1 id="association-unavailable" className="text-title font-semibold">Historical association unavailable</h1>
-    <p>{reasons[result.association.reason]}</p>
-    <p>The retained case remains available for authorized case and audit reads. It creates no current care or outreach action.</p>
-    <CaseLink caseID={result.case_id}>Open retained case history</CaseLink>
-  </section>;
+  return (
+    <section aria-labelledby="association-unavailable" className="rounded-card border border-line bg-surface">
+      <PageHeader attached run title={<span id="association-unavailable">Historical association unavailable</span>} />
+      <div className="p-4 md:p-pad">
+        <p className="m-0">{reasons[result.association.reason]}</p>
+        <p>The retained case remains available for authorized case and audit reads. It creates no current care or outreach action.</p>
+        <CaseLink caseID={result.case_id}>Open retained case history</CaseLink>
+      </div>
+    </section>
+  );
 }
 
 function Obligations({ journey, caseID }: { journey: PersonJourney; caseID: string }) {
@@ -169,25 +174,30 @@ export function Journey({ journey }: { journey: PersonJourney }) {
   }));
   return (
     <div className="max-w-6xl pb-10">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="m-0 text-title font-semibold">{display.name}</h1>
-          {display.arabic && <p lang="ar" dir="rtl" className="m-0 mt-1 text-section text-muted">{display.arabic}</p>}
-          <p className="m-0 mt-1 text-muted">{journey.cases.length} linked case{journey.cases.length === 1 ? "" : "s"} · projection through day {journey.person.as_of_day}</p>
-        </div>
-        {display.synthetic && <HonestyLabel kind="simulated">Simulated names</HonestyLabel>}
-      </header>
-
-      <section aria-labelledby="identity-provenance" className={`${sectionClass} mt-5`}>
-        <h2 id="identity-provenance" className="m-0 text-section font-semibold">Trusted identity links only</h2>
-        <p>Names are presentation fixtures only. They never establish membership. Uncertain, rejected and cannot-link pairs remain separate.</p>
-        <p className="m-0 text-small text-muted">Source: canonical linker clusters · artifact {journey.person.identity_provenance.artifact_schema} · policy {journey.person.identity_provenance.policy}</p>
-        <p className="text-small">Artifact SHA-256 <code className="break-all">{journey.person.identity_provenance.artifact_sha256}</code></p>
-        <h3 className="m-0 mt-3 text-body font-semibold">Trusted cluster registrations</h3>
-        <ul className="m-0 mt-1 list-disc ps-5">
-          {journey.person.registrations.map((registration) => <li key={registration.registration}><code className="break-all">{registration.registration}</code> · {registration.providers.join(", ")}</li>)}
-        </ul>
-      </section>
+      <div className="overflow-clip rounded-card border border-line bg-surface">
+        <PageHeader
+          attached
+          run
+          title={display.name}
+          sub={
+            <>
+              {display.arabic && <span lang="ar" dir="rtl" className="block text-section text-muted">{display.arabic}</span>}
+              {journey.cases.length} linked case{journey.cases.length === 1 ? "" : "s"} · projection through day {journey.person.as_of_day}
+            </>
+          }
+          aside={display.synthetic && <HonestyLabel kind="simulated">Simulated names</HonestyLabel>}
+        />
+        <section aria-labelledby="identity-provenance" className="p-4 md:p-pad">
+          <h2 id="identity-provenance" className="m-0 text-section font-semibold">Trusted identity links only</h2>
+          <p>Names are presentation fixtures only. They never establish membership. Uncertain, rejected and cannot-link pairs remain separate.</p>
+          <p className="m-0 text-small text-muted">Source: canonical linker clusters · artifact {journey.person.identity_provenance.artifact_schema} · policy {journey.person.identity_provenance.policy}</p>
+          <p className="text-small">Artifact SHA-256 <code className="break-all">{journey.person.identity_provenance.artifact_sha256}</code></p>
+          <h3 className="m-0 mt-3 text-body font-semibold">Trusted cluster registrations</h3>
+          <ul className="m-0 mt-1 list-disc ps-5">
+            {journey.person.registrations.map((registration) => <li key={registration.registration}><code className="break-all">{registration.registration}</code> · {registration.providers.join(", ")}</li>)}
+          </ul>
+        </section>
+      </div>
 
       <nav aria-label="Person journey sections" className="mt-4">
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0">

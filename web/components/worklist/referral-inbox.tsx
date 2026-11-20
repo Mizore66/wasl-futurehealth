@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/page-header";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { FilterMenu } from "@/components/ui/filters/filter-menu";
+import { SearchField } from "@/components/ui/filters/search-field";
+import { Toolbar } from "@/components/ui/filters/toolbar";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain/day";
 import { handoffActBy } from "@/lib/domain/handoff";
@@ -27,9 +30,9 @@ import {
   type Handoff,
   type Referral,
   type ReferralState,
+  type ReferralStatus,
   type StatusTone,
 } from "./referrals";
-import { SearchField } from "./search-field";
 import { removeSessionReturn, saveSessionReturn, useSessionReturns } from "./session-returns";
 import { inboxHref, readInboxUrl, shallowGo, type InboxUrl } from "./inbox-url";
 import { paginate, pageOfId, pageStatusText, type Paging } from "./paging";
@@ -111,12 +114,6 @@ export function ReferralInbox({
   if (seenUrl !== urlKey) {
     setSeenUrl(urlKey);
     setPinned(null);
-  }
-  const [text, setText] = useState(q);
-  const [seenQ, setSeenQ] = useState(q);
-  if (seenQ !== q) {
-    setSeenQ(q);
-    setText(q);
   }
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
@@ -255,10 +252,7 @@ export function ReferralInbox({
     setWant({ k: opener });
   };
 
-  const search = (next: string) => {
-    const target = href({ q: next.trim(), view: url.view === "inbox" ? "inbox" : undefined, caseId: undefined, page: undefined, from: url.from });
-    router.push(target);
-  };
+  const searchHref = (next: string) => href({ q: next.trim(), view: url.view === "inbox" ? "inbox" : undefined, caseId: undefined, page: undefined, from: url.from });
 
   const footer = (
     <div className="mt-4 flex flex-col gap-3">
@@ -274,16 +268,15 @@ export function ReferralInbox({
       <div ref={root}>
         <Directory
           list={list}
-          total={sorted.length}
+          searched={sorted}
           url={url}
           scope={scope}
           href={href}
           caseLink={caseLink}
           referrer={referrer}
           window={window}
-          text={text}
-          setText={setText}
-          search={search}
+          search={(next) => router.push(searchHref(next))}
+          clearSearch={searchHref("")}
         />
         {footer}
       </div>
@@ -294,17 +287,25 @@ export function ReferralInbox({
     return (
       <div ref={root}>
         {url.from && <BackLink href={href({ view: "inbox", caseId: url.caseId ?? undefined, page: url.page ?? undefined })} />}
-        <PageHeader title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>} />
-        <section aria-label="Open referral" className="rounded-card border border-line bg-surface p-4 sm:p-pad">
-          <h2 className="m-0 text-section font-medium">{url.caseId ? "This referral is not in this view" : "Nothing to open"}</h2>
-          <p className="m-0 mt-2 text-muted">
-            {url.caseId ? "It may have been answered elsewhere, or the search no longer includes it." : "This view is empty."}{" "}
-          </p>
-          {(url.q || url.status || url.caseId) && (
-            <Link href={inboxHref(scope, {})} className="mt-2 inline-flex min-h-11 items-center underline">
-              Clear the search
-            </Link>
-          )}
+        {/* Not clipped: the body is shorter than the run notice's drop-down, so the band rounds its own corners. */}
+        <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
+          <PageHeader
+            attached
+            run
+           
+            title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>}
+          />
+          <div className="p-4 sm:p-pad">
+            <h2 className="m-0 text-section font-medium">{url.caseId ? "This referral is not in this view" : "Nothing to open"}</h2>
+            <p className="m-0 mt-2 text-muted">
+              {url.caseId ? "It may have been answered elsewhere, or the search no longer includes it." : "This view is empty."}{" "}
+            </p>
+            {(url.q || url.status || url.caseId) && (
+              <Link href={inboxHref(scope, {})} className="mt-2 inline-flex min-h-11 items-center underline">
+                Clear the search
+              </Link>
+            )}
+          </div>
         </section>
         {footer}
       </div>
@@ -551,7 +552,8 @@ export function ReferralInbox({
       {url.from && <BackLink href={backUrl} />}
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
-          className="mb-0 rounded-none border-0 border-b border-line"
+          attached
+          run
           title={
             <span data-focus="heading" tabIndex={-1} aria-label={`${heading.title}, ${r.short}`} className="outline-none">
               {heading.title}
@@ -797,36 +799,45 @@ function Activity({ r, over, referrer }: { r: Referral; over: Override | undefin
 
 function Directory({
   list,
-  total,
+  searched,
   url,
   scope,
   href,
   caseLink,
   referrer,
   window,
-  text,
-  setText,
   search,
+  clearSearch,
 }: {
   list: Referral[];
-  total: number;
+  /** Every referral the search leaves, before the status filter. */
+  searched: Referral[];
   url: InboxUrl;
   scope: string;
   href: (s: Partial<InboxUrl>) => string;
   caseLink: (id: string) => string;
   referrer: string;
   window: number;
-  text: string;
-  setText: (v: string) => void;
   search: (q: string) => void;
+  /** The inbox URL without the search, opened when the field's committed search is cleared. */
+  clearSearch: string;
 }) {
   const requested = url.page ?? pageOfId(list, url.caseId, INBOX_PAGE) ?? 1;
   const paging = paginate(list, requested, INBOX_PAGE);
   const filtered = !!(url.q || url.status);
+  const total = searched.length;
+  const counts: Partial<Record<ReferralStatus, number>> = {};
+  for (const x of searched) {
+    const k = referralStatus(x, referrer).key;
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
   return (
-    <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="overflow-hidden rounded-card border border-line bg-surface outline-none">
+    // Not clipped: a short or empty list is shorter than the run notice's drop-down, so the band rounds its own corners.
+    <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="rounded-card border border-line bg-surface outline-none">
       <PageHeader
-        className="mb-0 rounded-none border-0 border-b border-line"
+        attached
+        run
+       
         title={
           <span data-focus="heading" tabIndex={-1} className="outline-none">
             Referral inbox
@@ -834,37 +845,35 @@ function Directory({
         }
         sub={`${total} ${total === 1 ? "referral" : "referrals"}${url.q ? ` matching “${url.q}”` : ""}`}
       />
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-limestone-100 px-[clamp(14px,2.4vw,32px)] py-3">
-        <form
-          role="search"
-          action="/app/referrals"
-          className="min-w-0 max-w-[34rem] flex-[1_1_170px]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            search(text);
-          }}
-        >
-          {[...new URLSearchParams(scope), ["view", "inbox"]].map(([k, v]) => (
-            <input key={k} type="hidden" name={k} value={v} />
-          ))}
-          <SearchField label="Search case id" name="q" value={text} onChange={(e) => setText(e.target.value)} placeholder="Case id, then Enter" />
-        </form>
-        <label className="flex items-center gap-2">
-          <span className="sr-only">Filter by referral status</span>
-          <select
-            value={url.status}
-            onChange={(e) => shallowGo(href({ view: "inbox", status: e.target.value as InboxUrl["status"], page: undefined, caseId: url.caseId ?? undefined }), true)}
-            className="h-11 max-w-full rounded-control border border-input bg-surface px-2 text-body text-ink"
+      <Toolbar label="Filter referrals" className="bg-limestone-100 px-[clamp(14px,2.4vw,32px)] py-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <form
+            role="search"
+            action="/app/referrals"
+            className="min-w-0 basis-full sm:max-w-[34rem] sm:flex-1 sm:basis-64"
+            onSubmit={(e) => {
+              e.preventDefault();
+              search(String(new FormData(e.currentTarget).get("q") ?? ""));
+            }}
           >
-            <option value="">All statuses</option>
-            {STATUS_FILTERS.map((s) => (
-              <option key={s} value={s}>
-                {statusFilterLabel(s, referrer)}
-              </option>
+            {[...new URLSearchParams(scope), ["view", "inbox"]].map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
             ))}
-          </select>
-        </label>
-      </div>
+            <SearchField label="Search case id" name="q" defaultValue={url.q} clearHref={clearSearch} placeholder="Case id, then Enter" />
+          </form>
+          <FilterMenu
+            label="Status"
+            value={url.status || undefined}
+            options={STATUS_FILTERS.map((k) => ({
+              value: k,
+              label: statusFilterLabel(k, referrer),
+              count: counts[k] ?? 0,
+              href: href({ view: "inbox", status: k, page: undefined, caseId: url.caseId ?? undefined }),
+            }))}
+            clearHref={href({ view: "inbox", status: "", page: undefined, caseId: url.caseId ?? undefined })}
+          />
+        </div>
+      </Toolbar>
       {paging.rows.length === 0 ? (
         <div className="p-6 text-center">
           <p role="status" className="m-0 mb-2.5">

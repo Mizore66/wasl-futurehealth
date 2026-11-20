@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 301" width="760" height="301" role="img" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+<title>31-day completions seen per 1,000 positive FITs</title><desc>Emirates-ID-only matching sees about a third of true completions; Wasl sees most of them. Synthetic cohorts.</desc>
+<rect width="760" height="301" fill="#fcfcfb"/>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#0b0b0b">31-day completions seen per 1,000 positive FITs</text>
+<text x="16" y="46" font-size="12" fill="#52514e">Emirates-ID-only matching sees about a third of true completions; Wasl sees most of them. Synthetic cohorts.</text>
+<rect x="200" y="61" width="10" height="10" rx="2" fill="#eb6834"/><text x="215.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">Emirates ID only</text>
+<rect x="334" y="61" width="10" height="10" rx="2" fill="#2a78d6"/><text x="349.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">Wasl</text>
+<rect x="384" y="61" width="10" height="10" rx="2" fill="#1baf7a"/><text x="399.0" y="70.0" font-size="12" fill="#52514e" text-anchor="start" font-weight="400">Simulated truth</text>
+<text x="16.0" y="116.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">frozen v2 five-seed mean</text>
+<rect x="200.0" y="92.0" width="153.0" height="14.0" rx="2" fill="#eb6834"><title>frozen v2 five-seed mean, EID only: 122.4 per 1,000</title></rect>
+<text x="359.0" y="103.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">122.4</text>
+<rect x="200.0" y="109.0" width="372.5" height="14.0" rx="2" fill="#2a78d6"><title>frozen v2 five-seed mean, Wasl: 298.0 per 1,000</title></rect>
+<text x="578.5" y="120.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">298</text>
+<rect x="200.0" y="126.0" width="411.2" height="14.0" rx="2" fill="#1baf7a"><title>frozen v2 five-seed mean, Truth: 329.0 per 1,000</title></rect>
+<text x="617.2" y="137.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">329</text>
+<text x="16.0" y="183.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">frozen v1 five-seed mean</text>
+<rect x="200.0" y="159.0" width="160.5" height="14.0" rx="2" fill="#eb6834"><title>frozen v1 five-seed mean, EID only: 128.4 per 1,000</title></rect>
+<text x="366.5" y="170.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">128.4</text>
+<rect x="200.0" y="176.0" width="391.8" height="14.0" rx="2" fill="#2a78d6"><title>frozen v1 five-seed mean, Wasl: 313.4 per 1,000</title></rect>
+<text x="597.8" y="187.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">313.4</text>
+<rect x="200.0" y="193.0" width="403.8" height="14.0" rx="2" fill="#1baf7a"><title>frozen v1 five-seed mean, Truth: 323.0 per 1,000</title></rect>
+<text x="609.8" y="204.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">323</text>
+<text x="16.0" y="250.0" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="400">deployed demo run</text>
+<rect x="200.0" y="226.0" width="141.2" height="14.0" rx="2" fill="#eb6834"><title>deployed demo run, EID only: 113.0 per 1,000</title></rect>
+<text x="347.2" y="237.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">113</text>
+<rect x="200.0" y="243.0" width="383.8" height="14.0" rx="2" fill="#2a78d6"><title>deployed demo run, Wasl: 307.0 per 1,000</title></rect>
+<text x="589.8" y="254.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">307</text>
+<rect x="200.0" y="260.0" width="398.8" height="14.0" rx="2" fill="#1baf7a"><title>deployed demo run, Truth: 319.0 per 1,000</title></rect>
+<text x="604.8" y="271.0" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="400">319</text>
+<line x1="200" y1="86" x2="200" y2="281" stroke="#8a8984"/>
+</svg>

@@ -1,7 +1,7 @@
-import { expect as baseExpect, test, type Page } from "@playwright/test";
+import { expect as baseExpect, test, type Locator, type Page } from "@playwright/test";
 
 /*
- * Today's programme/provider selection (issue #114), fixture mode. The choice is a GET form, so it lives in the URL,
+ * Today's programme/provider selection (issue #114), fixture mode. Each choice is a filter menu that opens a URL, so it
  * survives reload and history, and the queue shows exactly the selected open cases. CRC at AHS Mushrif stays the default.
  */
 const expect = baseExpect.configure({ timeout: 20_000 });
@@ -19,12 +19,16 @@ const PROGRAMMES = {
 } as const;
 
 const scope = (page: Page) => page.getByTestId("today-scope");
-/** The scope form folds into the page header; open it to change the choice. */
-async function openScope(page: Page) {
-  if (!(await scope(page).evaluate((d) => (d as HTMLDetailsElement).open))) await scope(page).getByText("Change scope").click();
+/** A filter chip in the page header: "Programme" when unset, "Programme: Colorectal screening" when set. */
+const chip = (page: Page, label: "Programme" | "Provider") => scope(page).getByRole("button", { name: new RegExp(`^${label}`) });
+const menu = (page: Page, label: "Programme" | "Provider") => page.getByRole("listbox", { name: label });
+/** An option's name is its label then its count. */
+const option = (page: Page, label: "Programme" | "Provider", name: string) =>
+  menu(page, label).getByRole("option", { name: new RegExp(`^${name.replace(/[()]/g, "\\$&")} \\d+$`) });
+async function choose(page: Page, label: "Programme" | "Provider", name: string) {
+  await chip(page, label).click();
+  await option(page, label, name).click();
 }
-const programmeSelect = (page: Page) => scope(page).getByLabel("Programme");
-const providerSelect = (page: Page) => scope(page).getByLabel("Provider");
 const list = (page: Page) => page.getByTestId("today-sheet");
 
 /** Total of the three queues (To call, Waiting, No owner) the sidebar counts for this board = the queue the selection produced. */
@@ -38,8 +42,8 @@ async function queueSize(page: Page): Promise<number> {
 test.describe("Today programme and provider selection", () => {
   test("opens on CRC at Al Mushrif by default", async ({ page }) => {
     await page.goto("/app/today");
-    await expect(programmeSelect(page)).toHaveValue("crc");
-    await expect(providerSelect(page)).toHaveValue("ahs-mushrif");
+    await expect(chip(page, "Programme")).toHaveText("Programme: Colorectal screening");
+    await expect(chip(page, "Provider")).toHaveText("Provider: Al Mushrif");
     await expect(page.getByText(/Colorectal screening · Al Mushrif · run day \d+/)).toBeVisible();
     await expect(list(page).getByTestId("row-programme")).toHaveCount(0);
   });
@@ -47,23 +51,24 @@ test.describe("Today programme and provider selection", () => {
   test("every supported programme can be selected; the queue and its count match the choice", async ({ page }) => {
     for (const [value, name] of Object.entries(PROGRAMMES)) {
       await page.goto(`/app/today?programme=${value}&provider=`);
-      await expect(programmeSelect(page)).toHaveValue(value);
-      await expect(providerSelect(page)).toHaveValue("");
+      await expect(chip(page, "Programme")).toHaveText(`Programme: ${name}`);
+      await expect(chip(page, "Provider")).toHaveText("Provider");
       await expect(page.getByText(new RegExp(`${name.replace(/[()]/g, "\\$&")} · all providers · run day`))).toBeVisible();
-      const option = programmeSelect(page).locator(`option[value="${value}"]`);
-      const offered = Number((await option.textContent())?.match(/\((\d+)\)$/)?.[1]);
+      await chip(page, "Programme").click();
+      const offered = Number((await menu(page, "Programme").getByRole("option", { selected: true }).innerText()).match(/(\d+)\s*$/)?.[1]);
+      await page.keyboard.press("Escape");
       expect(offered, `${value} is offered with an open-case count`).toBeGreaterThan(0);
       await expect.poll(() => queueSize(page), { message: `${value}: queue size equals the offered count` }).toBe(offered);
     }
   });
 
-  test("the form puts the choice in the URL; reload and history keep it", async ({ page }) => {
+  test("the menus put the choice in the URL; reload and history keep it", async ({ page }) => {
     await page.goto("/app/today");
-    await openScope(page);
-    await programmeSelect(page).selectOption("lung_nodule");
-    await providerSelect(page).selectOption("");
-    await scope(page).getByRole("button", { name: "Show queue" }).click();
-    await expect(page).toHaveURL(/programme=lung_nodule/);
+    await scope(page).getByRole("link", { name: "Remove Provider filter" }).click();
+    await expect(page).toHaveURL(/programme=crc&provider=&/);
+    await expect(chip(page, "Provider")).toHaveText("Provider");
+    await choose(page, "Programme", "Lung nodule follow-up");
+    await expect(page).toHaveURL(/programme=lung_nodule&provider=&/);
     await expect(page.getByText(/Lung nodule follow-up · all providers/)).toBeVisible();
     await expect(list(page)).toBeVisible();
     // A sidebar queue link keeps the chosen scope.
@@ -72,13 +77,23 @@ test.describe("Today programme and provider selection", () => {
     await expect(page.getByText(/Lung nodule follow-up · all providers/)).toBeVisible();
 
     await page.reload();
-    await expect(programmeSelect(page)).toHaveValue("lung_nodule");
+    await expect(chip(page, "Programme")).toHaveText("Programme: Lung nodule follow-up");
     await expect(page.getByText(/Lung nodule follow-up · all providers/)).toBeVisible();
 
     await page.goto("/app/patients");
     await page.goBack();
     await expect(page).toHaveURL(/programme=lung_nodule/);
-    await expect(programmeSelect(page)).toHaveValue("lung_nodule");
+    await expect(chip(page, "Programme")).toHaveText("Programme: Lung nodule follow-up");
+  });
+
+  test("a new scope keeps the queue the sidebar switched to in the browser", async ({ page }) => {
+    await page.goto("/app/today");
+    // The sidebar switches queue without a server render, so the menus must follow the live URL, not the rendered one.
+    await page.getByRole("navigation", { name: "Main", exact: true }).getByRole("link", { name: /^Waiting/ }).click();
+    await expect(page).toHaveURL(/queue=waiting/);
+    await choose(page, "Programme", "Cervical screening");
+    await expect(page).toHaveURL(/programme=cervical&provider=ahs-mushrif&queue=waiting/);
+    await expect(page.getByRole("heading", { level: 2, name: /^Waiting/ })).toBeVisible();
   });
 
   test("a mixed queue labels each row with its programme and provider", async ({ page }) => {
@@ -98,4 +113,29 @@ test.describe("Today programme and provider selection", () => {
     );
     await expect.poll(() => queueSize(page)).toBe(0);
   });
+});
+
+test.describe("Today scope menu is usable", () => {
+  for (const [label, viewport] of [["desktop", { width: 1440, height: 900 }], ["phone", { width: 390, height: 844 }]] as const) {
+    test(`its controls are not clipped by the header and a new scope keeps the queue (${label})`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/app/today?queue=waiting");
+      // Every control is the element a click at its centre reaches (nothing covers or clips it): each chip, then an
+      // option in the open menu.
+      const reached = async (control: Locator) => {
+        await control.scrollIntoViewIfNeeded();
+        return control.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return hit === el || el.contains(hit);
+        });
+      };
+      for (const control of [chip(page, "Programme"), chip(page, "Provider")]) expect(await reached(control)).toBe(true);
+      await chip(page, "Programme").click();
+      expect(await reached(option(page, "Programme", "Cervical screening"))).toBe(true);
+      await option(page, "Programme", "Cervical screening").click();
+      await expect(page).toHaveURL(/programme=cervical/);
+      await expect(page).toHaveURL(/queue=waiting/);
+    });
+  }
 });

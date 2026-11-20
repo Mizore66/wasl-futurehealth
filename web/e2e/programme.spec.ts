@@ -190,17 +190,17 @@ test.describe("Programme charts", () => {
   test("the toggle switches the 31-day rates and one visible line says why they differ", async ({ page }) => {
     await page.goto("/app");
     const card = kpiCard(page);
-    const demo = card.getByRole("button", { name: "This demo run" });
-    const mean = card.getByRole("button", { name: "Five-seed held-out mean" });
-    await expect(demo).toHaveAttribute("aria-pressed", "true");
-    await expect(mean).toHaveAttribute("aria-pressed", "false");
+    const demo = card.getByRole("radio", { name: "This demo run" });
+    const mean = card.getByRole("radio", { name: "Five-seed held-out mean" });
+    await expect(demo).toHaveAttribute("aria-checked", "true");
+    await expect(mean).toHaveAttribute("aria-checked", "false");
     await expect(page.getByTestId("kpi-why")).toBeVisible();
     await expect(page.getByTestId("kpi-why")).toContainText("one run on training-time noise");
     await expect(page.getByTestId("kpi-why")).toContainText("mean averages 5 seeds on held-out noise");
     await page.screenshot({ path: "test-results/screens/programme-demo.png", fullPage: true });
 
     await mean.click();
-    await expect(mean).toHaveAttribute("aria-pressed", "true");
+    await expect(mean).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("kpi-eid")).toContainText("12.2%");
     await expect(page.getByTestId("kpi-wasl")).toContainText("29.8%");
     await expect(page.getByTestId("kpi-truth")).toContainText("within 3.1 points of the simulated truth (32.9%)");
@@ -354,14 +354,14 @@ test.describe("Programme charts", () => {
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(await overflow()).toBeLessThanOrEqual(0);
     await page.screenshot({ path: "test-results/screens/programme-390.png", fullPage: true });
-    await kpiCard(page).getByRole("button", { name: "Five-seed held-out mean" }).click();
+    await kpiCard(page).getByRole("radio", { name: "Five-seed held-out mean" }).click();
     await page.screenshot({ path: "test-results/screens/programme-390-mean.png", fullPage: true });
     await stallCard(page).getByRole("button", { name: "Show all stalls" }).click();
     expect(await overflow()).toBeLessThanOrEqual(0);
     for (const b of await page.locator("main figure").getByRole("button").all()) {
       expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
     }
-    for (const b of await kpiCard(page).getByRole("button", { name: /This demo run|Five-seed/ }).all()) {
+    for (const b of await kpiCard(page).getByRole("radio", { name: /This demo run|Five-seed/ }).all()) {
       expect((await b.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
     }
     for (const t of await page.getByRole("button", { name: "Show as table" }).all()) await t.click();
@@ -451,7 +451,7 @@ test.describe("Programme: provider links", () => {
     const n = sampleCount({ provider: "rad-imaging", dropoff: "no_followup_ct" });
     expect(n).toBeGreaterThan(0);
     await expect(page.getByTestId("showing")).toHaveText(`${casesWord(n)}: provider rad-imaging · no follow-up ct booked`);
-    await expect(page.getByTestId("active-filters")).toContainText("Provider: rad-imaging");
+    await expect(page.getByRole("group", { name: "Filter patients" }).getByRole("button", { name: "Provider: rad-imaging" })).toBeVisible();
   });
 
   test("by keyboard, a closure link lands on Patients filtered to that provider's closed cases", async ({ page }) => {
@@ -515,7 +515,7 @@ test.describe("Programme: target rail", () => {
   test("one target line labelled once, three method bars, the CRC cohort strip and Open Today", async ({ page }) => {
     await page.goto("/app");
     const rail = page.getByTestId("programme-rail");
-    await expect(rail.locator('[data-honesty="simulated"]')).toHaveText("Synthetic run");
+    await expect(rail.locator('[data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Synthetic run");
     await expect(rail.getByRole("heading", { level: 2, name: "Colonoscopy within 31 days" })).toBeVisible();
     await expect(rail.getByText("90% target")).toHaveCount(1);
     await expect(rail.getByTestId("kpi-target")).toHaveCount(1);

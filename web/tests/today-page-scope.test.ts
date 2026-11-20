@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactElement } from "react";
 import Page from "@/app/app/today/page";
 import { TodayBoard } from "@/components/worklist/today-board";
+import { ScopeMenus } from "@/components/worklist/scope-menus";
 import { TodayScope } from "@/components/worklist/today-scope";
 import { CaseList, type Programme } from "@/lib/api/schema";
 import { matches, type CaseQuery } from "@/lib/api/source";
@@ -24,9 +25,8 @@ beforeEach(() => {
 
 async function render(sp: Record<string, string>) {
   // Server component unit test with mocked reads; not served HTTP or browser evidence.
-  const tree = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<{ children: ReactElement<{ aside?: ReactElement }>[] }>;
-  const [header, board] = tree.props.children;
-  const scope = header.props.aside!;
+  const board = (await Page({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) })) as ReactElement<ComponentProps<typeof TodayBoard>>;
+  const scope = (board.props.head as ReactElement<{ aside: ReactElement }>).props.aside;
   expect([scope.type, board.type]).toEqual([TodayScope, TodayBoard]);
   return { scope: scope.props as ComponentProps<typeof TodayScope>, board: board.props as ComponentProps<typeof TodayBoard> };
 }
@@ -59,4 +59,17 @@ it("passes the URL's queue to the board, To call unless it names Waiting or No o
   expect((await render({ queue: "waiting" })).board.queue).toBe("waiting");
   expect((await render({ queue: "none", programme: "crc" })).board.queue).toBe("none");
   expect((await render({ queue: "everything" })).board.queue).toBe("call");
+});
+
+it("builds scope menu links that keep the queue and name an empty choice, so clearing never falls back to the default", async () => {
+  const { scope } = await render({ queue: "waiting" });
+  const tree = TodayScope(scope) as ReactElement<{ children: ReactElement<ComponentProps<typeof ScopeMenus>>[] }>;
+  const menus = tree.props.children[0];
+  expect(menus.type).toBe(ScopeMenus);
+  const [programme, provider] = menus.props.menus;
+  expect([programme.label, programme.value, provider.label, provider.value]).toEqual(["Programme", "crc", "Provider", "ahs-mushrif"]);
+  expect(programme.options.find((o) => o.value === "cervical")!.href).toBe("/app/today?programme=cervical&provider=ahs-mushrif&queue=waiting");
+  expect(programme.options.every((o) => o.value !== "")).toBe(true);
+  expect(provider.clearHref).toBe("/app/today?programme=crc&provider=&queue=waiting");
+  expect(menus.props.clearHref).toBe("/app/today?programme=&provider=&queue=waiting");
 });

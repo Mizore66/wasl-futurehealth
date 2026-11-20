@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { SegmentedFilter } from "@/components/ui/filters/toolbar";
 import { safeInboxBack } from "@/components/worklist/inbox-url";
 import { ReferrerHandoffs, SessionReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
 import { REFERRAL_VIEWS, referralView, referrerAnswerLabel, viewScope, type ReferralView } from "@/components/worklist/referrals";
@@ -10,7 +11,6 @@ import { syntheticHandoffs } from "@/components/worklist/synthetic-referrals";
 import { getAllCases } from "@/lib/api/all-cases";
 import { apiMode, getCase, hasCredential } from "@/lib/api/source";
 import { mapSettledBounded } from "@/lib/domain/bounded";
-import { cn } from "@/lib/utils";
 import { answerAsReferrerWith } from "../actions";
 
 export const metadata = { title: "Returned referrals" };
@@ -71,28 +71,33 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
       <Link href={back} className="mb-2 inline-flex min-h-11 items-center gap-1.5 font-semibold text-jade-800 no-underline hover:underline">
         <ChevronRight aria-hidden className="size-4 rotate-180" /> {first(params.back) ? "Back to inbox" : "Receiving unit inbox"}
       </Link>
-      <PageHeader title="Returned referrals" sub={view ? view.returned : "No referral workflow for this programme and provider."} aside={<HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>} />
-      <nav aria-label="Referring provider" className="mb-3 flex flex-wrap gap-2">
-        {REFERRAL_VIEWS.map((v) => {
-          const s = v === REFERRAL_VIEWS[0] ? "" : viewScope(v.programme, v.provider);
-          return (
-            <Link
-              key={v.programme}
-              href={s ? `/app/referrals/returned?${s}` : "/app/referrals/returned"}
-              aria-current={v === view ? "page" : undefined}
-              className={cn("inline-flex min-h-11 items-center rounded-chip border px-3 text-small no-underline", v === view ? "border-jade-700 bg-jade-100 text-jade-900" : "border-control bg-surface text-muted hover:bg-ground")}
-            >
-              {v.label}
-            </Link>
-          );
-        })}
-      </nav>
-      {view &&
-        (session ? (
-          <SessionReferrerHandoffs referrer={view.referrer} focus={focus || undefined} />
-        ) : (
-          <ReferrerHandoffs packets={shown} referrer={view.referrer} focus={focus || undefined} answer={live ? answerAsReferrerWith.bind(null, view.credential) : undefined} />
-        ))}
+      {/* Not clipped: an empty list is shorter than the run notice's drop-down, so the band rounds its own corners. */}
+      <section aria-labelledby="returned-title" className="rounded-card border border-line bg-surface">
+        <PageHeader
+          attached
+          run
+         
+          title={<span id="returned-title">Returned referrals</span>}
+          sub={view ? view.returned : "No referral workflow for this programme and provider."}
+          aside={<HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>}
+        />
+        <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad">
+          <SegmentedFilter
+            label="Referring provider"
+            className="mb-3"
+            items={REFERRAL_VIEWS.map((v) => {
+              const s = v === REFERRAL_VIEWS[0] ? "" : viewScope(v.programme, v.provider);
+              return { label: v.label, href: s ? `/app/referrals/returned?${s}` : "/app/referrals/returned", current: v === view };
+            })}
+          />
+          {view &&
+            (session ? (
+              <SessionReferrerHandoffs referrer={view.referrer} focus={focus || undefined} />
+            ) : (
+              <ReferrerHandoffs packets={shown} referrer={view.referrer} focus={focus || undefined} answer={live ? answerAsReferrerWith.bind(null, view.credential) : undefined} />
+            ))}
+        </div>
+      </section>
     </div>
   );
 }

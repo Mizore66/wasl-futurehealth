@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Check, ChevronDown, CircleAlert, Folder, IdCard, Phone, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, CircleAlert, Clock, Folder, IdCard, Phone, Search, UserRoundCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isTodayQueue, publishTodayCounts, type TodayQueue } from "@/components/shell/today-counts";
 import { formatDay } from "@/lib/domain/day";
@@ -169,6 +169,7 @@ function useHeldWrite<T>() {
 export function TodayBoard({
   items,
   now,
+  head,
   aside,
   live = false,
   scope = "Al Mushrif Healthcare Centre",
@@ -177,6 +178,8 @@ export function TodayBoard({
 }: {
   items: WorkItem[];
   now: number;
+  /** The page header, drawn as the sheet's top band. */
+  head?: React.ReactNode;
   aside: React.ReactNode;
   live?: boolean;
   scope?: string;
@@ -228,10 +231,12 @@ export function TodayBoard({
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
       e.preventDefault();
       searchRef.current?.focus();
+      searchRef.current?.select();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  const search = (q: string) => setS((prev) => ({ ...prev, q, page: 1, collapsed: false }));
 
   /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
   const root = useRef<HTMLDivElement>(null);
@@ -280,6 +285,10 @@ export function TodayBoard({
   const fresh = { calling: null, stage: null, last: null };
   /* Fixtures mode: the open case's source records and events, read for the selected case only. Live, the ledger read carries them. */
   const { read: fixtureRecords, retry: retryFixtureRecords } = useTodayRecords(live ? undefined : p?.id);
+  /* From lg up the case pane is its own scroller: a newly opened case starts at its top, not at the last case's offset. */
+  useEffect(() => {
+    root.current?.querySelector("#today-case")?.scrollTo({ top: 0 });
+  }, [p?.id]);
   const goPage = (to: number, via: PagerControl) => {
     const target = paginate(list, to);
     const focus = pagerFocusAfter(via, target);
@@ -705,12 +714,171 @@ export function TodayBoard({
   };
   const contact = p ? contactWords(p) : null;
   const caseId = "today-case";
-  /* The grid places the open case in the left column from lg up; in the DOM it follows its row, so a phone reads it inline. */
-  const rightRows = 1 + Math.max(1, paging.rows.length) + 2;
+  /*
+   * In the DOM the open case follows its row, so a phone reads it inline. From lg up it is lifted beside the queue: its
+   * containing block is the sheet, outside the queue's scroller, so the queue and the case each scroll on their own.
+   */
   const openAt = !p || held ? -1 : paging.rows.findIndex((r) => r.id === p.id);
   const fold = s.collapsed ? "max-lg:hidden" : "";
-  const right = "lg:col-start-2 lg:border-l lg:border-line lg:bg-limestone-100";
-  const rowAt = (i: number): React.CSSProperties => ({ gridRow: i + 2 });
+  const side = "lg:absolute lg:inset-y-0 lg:right-0 lg:left-(--queue-w) lg:overflow-y-auto lg:overscroll-contain";
+
+  const fileTabs: ["activity" | "records", string][] = [
+    ["activity", "Activity"],
+    ["records", "Records"],
+  ];
+  /** Arrow keys move between the two tabs (and select), as a tablist does. */
+  const tabKey = (e: React.KeyboardEvent) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const next = e.key === "Home" ? "activity" : e.key === "End" ? "records" : s.file === "activity" ? "records" : "activity";
+    setS((prev) => ({ ...prev, file: next }));
+    root.current?.querySelector<HTMLElement>(`#today-tab-${next}`)?.focus();
+  };
+  /** Fixtures mode only: no detail record, so the full record and its audit trail cannot open; say why, not just grey. */
+  const noRecord = "showcase cases only in this demo";
+  const renderEvent = (ev: Activity, i: number, list: Activity[]) => {
+    const open = s.note === ev.id;
+    return (
+      <li key={ev.id} className="relative min-w-0 pb-3 pl-6 lg:pl-0 lg:pr-4 lg:pt-6">
+        {/* The rail: down the side on a phone, across the top from lg up. */}
+        <span aria-hidden className={cn("absolute bg-jade-300 max-lg:bottom-0 max-lg:left-[5px] max-lg:top-2 max-lg:w-px lg:left-0 lg:right-0 lg:top-[5px] lg:h-px", i === list.length - 1 && "max-lg:hidden lg:right-auto lg:w-2")} />
+        <span aria-hidden className={cn("absolute left-0 top-1.5 size-[11px] rounded-full border border-jade-400 lg:top-0", ev.current ? "bg-jade-800 ring-2 ring-jade-200" : "bg-jade-50")} />
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setS((prev) => ({ ...prev, note: prev.note === ev.id ? null : ev.id }))}
+          className="block w-full min-w-0 cursor-pointer bg-transparent p-0 text-left"
+        >
+          <span className="block font-medium text-ink">{ev.what}</span>
+          <span className="mt-0.5 flex min-h-6 items-center gap-1 text-small text-muted">
+            {ev.when}
+            <ChevronDown aria-hidden className={cn("size-3.5 flex-none transition-transform", open && "rotate-180")} />
+          </span>
+        </button>
+        <p hidden={!open} className="m-0 mt-1 text-small text-ink-soft">
+          {ev.note}
+        </p>
+      </li>
+    );
+  };
+  const heldChip = heldNow > 0 && (
+    <span data-testid="records-held" className="rounded-chip bg-ochre-wash px-1.5 py-px text-small font-medium text-ochre-ink">
+      {heldNow} held
+    </span>
+  );
+
+  const activityPane = p && (
+    <section aria-label="Case history" className="mt-6 min-w-0 border-t border-line pt-2">
+      <button
+        type="button"
+        aria-expanded={s.hist}
+        aria-controls="today-activity"
+        onClick={() => setS((prev) => ({ ...prev, hist: !prev.hist }))}
+        className="flex min-h-11 w-full cursor-pointer items-center gap-2 bg-transparent text-left text-body font-medium text-jade-800 lg:hidden"
+      >
+        <ChevronDown aria-hidden className={cn("size-4 transition-transform", !s.hist && "-rotate-90")} />
+        Activity and records
+        {heldChip}
+      </button>
+      <div id="today-activity" className={cn(!s.hist && "max-lg:hidden")}>
+        {/* Both halves carry the rule, so it stays under the tabs when the link wraps below them on a narrow phone. */}
+        <div className="flex flex-wrap items-end justify-between [&>*]:border-b [&>*]:border-rule">
+          <div role="tablist" aria-label="Case information" className="flex grow gap-5" onKeyDown={tabKey}>
+            {fileTabs.map(([key, label]) => {
+              const on = s.file === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  id={`today-tab-${key}`}
+                  aria-selected={on}
+                  aria-controls={`today-panel-${key}`}
+                  tabIndex={on ? 0 : -1}
+                  data-focus={key === "activity" ? "contacts" : undefined}
+                  onClick={() => setS((prev) => ({ ...prev, file: key }))}
+                  className={cn(
+                    "-mb-px inline-flex min-h-11 cursor-pointer items-center gap-2 border-b-2 bg-transparent py-2.5 text-body",
+                    on ? "border-jade-700 font-semibold text-jade-900" : "border-transparent font-medium text-muted hover:text-jade-800",
+                  )}
+                >
+                  {label}
+                  {key === "records" && heldChip}
+                </button>
+              );
+            })}
+          </div>
+          {s.file === "activity" ? (
+            p.hasRecord ? (
+              <Link href={`${caseHref("/app/patients", p.id)}/audit`} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
+                Audit trail
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            ) : (
+              <span data-testid="audit-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Audit trail: {noRecord}</span>
+            )
+          ) : p.hasRecord ? (
+            <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
+              <Folder aria-hidden className="size-4" strokeWidth={1.6} />
+              Full case record
+            </Link>
+          ) : (
+            <span data-testid="record-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Full case record: {noRecord}</span>
+          )}
+        </div>
+        <div role="tabpanel" id="today-panel-activity" aria-labelledby="today-tab-activity" hidden={s.file !== "activity"} tabIndex={0} className="outline-offset-2">
+          {ledgerError && (
+            <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+              <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
+              <Button
+                variant="quiet"
+                size="touch"
+                onClick={() => {
+                  // The button goes while the ledger is read again; focus stays in the Activity section.
+                  setWant({ k: "contacts" });
+                  retryLedger(p.id);
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+          {/* Live, a failed read is the ledger read: its message and Retry are above. */}
+          {!live && recordsRead && !recordsRead.ok && !recordsRead.missing && (
+            <div role="status" data-testid="source-events-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
+              <span className="text-warning">Source events not shown: {recordsRead.error}</span>
+              <Button variant="quiet" size="touch" onClick={retryRecords}>
+                Retry
+              </Button>
+            </div>
+          )}
+          <ol aria-live="polite" className="m-0 mt-4 list-none p-0 lg:grid lg:auto-cols-[minmax(180px,1fr)] lg:grid-flow-col lg:overflow-x-auto lg:pb-1 lg:pl-1.5 lg:pt-1">
+            {strip.map((ev, i) => renderEvent(ev, i, strip))}
+          </ol>
+          {earlier.length > 0 && (
+            <details data-testid="earlier-activity" className="group mt-1 border-t border-rule pt-1">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-small font-semibold text-jade-700 [&::-webkit-details-marker]:hidden">
+                <ChevronDown aria-hidden className="size-4 -rotate-90 transition-transform group-open:rotate-0" />
+                Earlier activity ({earlier.length})
+              </summary>
+              <ol aria-label="Earlier activity, oldest first" className="m-0 mb-2 mt-1 grid list-none gap-2 p-0 lg:grid-cols-2 lg:gap-x-8">
+                {earlier.map((ev) => (
+                  <li key={ev.id} className="min-w-0 border-l-2 border-jade-200 pl-2.5">
+                    <span className="font-medium text-ink">{ev.what}</span>
+                    <span className="text-small text-muted"> · {ev.when}</span>
+                    <p className="m-0 text-small text-ink-soft">{ev.note}</p>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
+        <div role="tabpanel" id="today-panel-records" aria-labelledby="today-tab-records" hidden={s.file !== "records"} tabIndex={0} className="outline-offset-2">
+          {s.file === "records" && <RecordsPanel read={recordsRead} onRetry={retryRecords} />}
+        </div>
+      </div>
+    </section>
+  );
 
   const casePane = p ? (
     <section
@@ -718,11 +886,7 @@ export function TodayBoard({
       id={caseId}
       aria-label="Selected case"
       data-case={p.short}
-      style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
-      className={cn(
-        "min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:sticky lg:top-[54px] lg:self-start lg:px-[clamp(20px,2.4vw,40px)] lg:py-8",
-        fold,
-      )}
+      className={cn("min-w-0 px-4 pb-4 pt-1 max-lg:bg-jade-50 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:px-[clamp(20px,2.4vw,40px)] lg:py-8", side, fold)}
     >
       {removedNotice}
       <p className="m-0 hidden text-small text-muted lg:block" data-testid="case-who">
@@ -808,34 +972,57 @@ export function TodayBoard({
         days since referral · {clockWords(p).long}
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button
-          variant="cta"
-          size="touch"
-          disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
-          onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
-          className={cn("px-5", callingNow && "bg-ink-soft")}
-        >
-          <Phone aria-hidden strokeWidth={1.8} />
-          {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
-          {callingNow ? (
-            <span>Logging call · {first}</span>
-          ) : (
-            <span>
-              Log call<span className="sr-only"> · {first}</span>
+      {/*
+       * The case's one job, in order: call, then record how it went. Both live in this panel, so the call is the single
+       * primary action and its outcomes read as its second step. Putting the task off sits below, at text weight.
+       */}
+      <section
+        aria-label="Call"
+        className={cn("mt-4 rounded-card border bg-surface p-4", chipsLive ? "border-jade-600 shadow-[inset_3px_0_var(--color-jade-600)]" : "border-line")}
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button
+            variant="cta"
+            size="touch"
+            disabled={p.contactBlocked || ledgerInvalid || !!p.retrieval}
+            onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
+            className={cn("px-5", callingNow && "bg-ink-soft")}
+          >
+            <Phone aria-hidden strokeWidth={1.8} />
+            {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
+            {callingNow ? (
+              <span>Logging call · {first}</span>
+            ) : (
+              <span>
+                Log call<span className="sr-only"> · {first}</span>
+              </span>
+            )}
+          </Button>
+          {contact && (
+            <span data-testid="contact-status" className={cn("inline-flex items-center gap-1.5 text-small", contact.tone === "ok" ? "text-jade-700" : "font-medium text-warning")}>
+              {contact.tone === "ok" ? <Check aria-hidden className="size-4" /> : <CircleAlert aria-hidden className="size-4" />}
+              {contact.label}
             </span>
           )}
-        </Button>
-        {contact && (
-          <span data-testid="contact-status" className={cn("inline-flex items-center gap-1.5 text-small", contact.tone === "ok" ? "text-jade-700" : "font-medium text-warning")}>
-            {contact.tone === "ok" ? <Check aria-hidden className="size-4" /> : <CircleAlert aria-hidden className="size-4" />}
-            {contact.label}
-          </span>
+        </div>
+        {chips.length > 0 && stage !== "elsewhere" && (
+          <div className="mt-4 border-t border-rule pt-3">
+            <h3 data-focus="chips" tabIndex={-1} className="m-0 text-body font-medium">
+              {chipsTitle}
+            </h3>
+            <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
+              {chips.map(([label, choose]) => (
+                <Button key={label} variant="chip" size="touch" disabled={writing || ledgerInvalid} onClick={choose} className={chipsLive ? "border-ink" : "border-control"}>
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
         )}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      </section>
+      <div className="mt-2 flex flex-wrap items-center gap-1">
         <Button
-          variant="quiet"
+          variant="tertiary"
           size="touch"
           disabled={writing || ledgerInvalid}
           onClick={() =>
@@ -846,6 +1033,7 @@ export function TodayBoard({
             })
           }
         >
+          <Clock aria-hidden />
           Snooze to tomorrow
         </Button>
         {p.view === "none" ? (
@@ -863,7 +1051,7 @@ export function TodayBoard({
           </Button>
         ) : (
           <Button
-            variant="quiet"
+            variant="tertiary"
             size="touch"
             disabled={writing || ledgerInvalid}
             onClick={() =>
@@ -877,6 +1065,7 @@ export function TodayBoard({
               )
             }
           >
+            <UserRoundCheck aria-hidden />
             Hand to {HANDOFF_OWNER}
           </Button>
         )}
@@ -1005,21 +1194,6 @@ export function TodayBoard({
         />
       )}
 
-      {chips.length > 0 && stage !== "elsewhere" && (
-        <div className="mt-4">
-          <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
-            {chipsTitle}
-          </h3>
-          <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
-            {chips.map(([label, choose]) => (
-              <Button key={label} variant="chip" size="touch" disabled={writing || ledgerInvalid} onClick={choose} className={chipsLive ? "border-ink" : "border-control"}>
-                {label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {p.teachBackCallback && (
         <div data-testid="teach-back-callback" className="mt-4 rounded-card border border-warning p-3">
           <p className="m-0 font-medium text-warning">
@@ -1056,13 +1230,13 @@ export function TodayBoard({
           <BookingControls key={p.id} caseId={p.id} initial={ledgerRead.bookingPanel} live retrievalPending={!!p.retrieval} onProjection={(projection) => bookingProjection(p.id, projection)} />
         </div>
       )}
+      {activityPane}
     </section>
   ) : (
     <div
       key="case"
       data-testid="no-case"
-      style={{ gridColumn: 1, gridRow: `1 / ${rightRows + 1}` }}
-      className="min-w-0 px-4 py-4 lg:sticky lg:top-[54px] lg:self-start lg:px-[clamp(20px,2.4vw,40px)] lg:py-8"
+      className={cn("min-w-0 px-4 py-4 lg:px-[clamp(20px,2.4vw,40px)] lg:py-8", side)}
     >
       {removedNotice}
       {items.length === 0 ? (
@@ -1078,175 +1252,12 @@ export function TodayBoard({
     </div>
   );
 
-  const fileTabs: ["activity" | "records", string][] = [
-    ["activity", "Activity"],
-    ["records", "Records"],
-  ];
-  /** Arrow keys move between the two tabs (and select), as a tablist does. */
-  const tabKey = (e: React.KeyboardEvent) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
-    e.preventDefault();
-    const next = e.key === "Home" ? "activity" : e.key === "End" ? "records" : s.file === "activity" ? "records" : "activity";
-    setS((prev) => ({ ...prev, file: next }));
-    root.current?.querySelector<HTMLElement>(`#today-tab-${next}`)?.focus();
-  };
-  /** Fixtures mode only: no detail record, so the full record and its audit trail cannot open; say why, not just grey. */
-  const noRecord = "showcase cases only in this demo";
-  const renderEvent = (ev: Activity, i: number, list: Activity[]) => {
-    const open = s.note === ev.id;
-    return (
-      <li key={ev.id} className="relative min-w-0 pb-3 pl-6 lg:pl-0 lg:pr-4 lg:pt-6">
-        {/* The rail: down the side on a phone, across the top from lg up. */}
-        <span aria-hidden className={cn("absolute bg-jade-300 max-lg:bottom-0 max-lg:left-[5px] max-lg:top-2 max-lg:w-px lg:left-0 lg:right-0 lg:top-[5px] lg:h-px", i === list.length - 1 && "max-lg:hidden lg:right-auto lg:w-2")} />
-        <span aria-hidden className={cn("absolute left-0 top-1.5 size-[11px] rounded-full border border-jade-400 lg:top-0", ev.current ? "bg-jade-800 ring-2 ring-jade-200" : "bg-jade-50")} />
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setS((prev) => ({ ...prev, note: prev.note === ev.id ? null : ev.id }))}
-          className="block w-full min-w-0 cursor-pointer bg-transparent p-0 text-left"
-        >
-          <span className="block font-medium text-ink">{ev.what}</span>
-          <span className="mt-0.5 flex min-h-6 items-center gap-1 text-small text-muted">
-            {ev.when}
-            <ChevronDown aria-hidden className={cn("size-3.5 flex-none transition-transform", open && "rotate-180")} />
-          </span>
-        </button>
-        <p hidden={!open} className="m-0 mt-1 text-small text-ink-soft">
-          {ev.note}
-        </p>
-      </li>
-    );
-  };
-  const heldChip = heldNow > 0 && (
-    <span data-testid="records-held" className="rounded-chip bg-ochre-wash px-1.5 py-px text-small font-medium text-ochre-ink">
-      {heldNow} held
-    </span>
-  );
-
-  const activityPane = p && (
-    <section
-      key="activity"
-      aria-label="Case history"
-      style={{ gridColumn: "1 / -1", gridRow: rightRows + 1 }}
-      className={cn("min-w-0 border-line max-lg:bg-jade-50 max-lg:px-4 max-lg:pb-3 max-lg:shadow-[inset_3px_0_var(--color-jade-600)] lg:border-t lg:px-[clamp(20px,2.4vw,40px)] lg:pb-8 lg:pt-2", fold)}
-    >
-      <button
-        type="button"
-        aria-expanded={s.hist}
-        aria-controls="today-activity"
-        onClick={() => setS((prev) => ({ ...prev, hist: !prev.hist }))}
-        className="flex min-h-11 w-full cursor-pointer items-center gap-2 bg-transparent text-left text-body font-medium text-jade-800 lg:hidden"
-      >
-        <ChevronDown aria-hidden className={cn("size-4 transition-transform", !s.hist && "-rotate-90")} />
-        Activity and records
-        {heldChip}
-      </button>
-      <div id="today-activity" className={cn(!s.hist && "max-lg:hidden")}>
-        {/* Both halves carry the rule, so it stays under the tabs when the link wraps below them on a narrow phone. */}
-        <div className="flex flex-wrap items-end justify-between [&>*]:border-b [&>*]:border-rule">
-          <div role="tablist" aria-label="Case information" className="flex grow gap-5" onKeyDown={tabKey}>
-            {fileTabs.map(([key, label]) => {
-              const on = s.file === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  id={`today-tab-${key}`}
-                  aria-selected={on}
-                  aria-controls={`today-panel-${key}`}
-                  tabIndex={on ? 0 : -1}
-                  data-focus={key === "activity" ? "contacts" : undefined}
-                  onClick={() => setS((prev) => ({ ...prev, file: key }))}
-                  className={cn(
-                    "-mb-px inline-flex min-h-11 cursor-pointer items-center gap-2 border-b-2 bg-transparent py-2.5 text-body",
-                    on ? "border-jade-700 font-semibold text-jade-900" : "border-transparent font-medium text-muted hover:text-jade-800",
-                  )}
-                >
-                  {label}
-                  {key === "records" && heldChip}
-                </button>
-              );
-            })}
-          </div>
-          {s.file === "activity" ? (
-            p.hasRecord ? (
-              <Link href={`${caseHref("/app/patients", p.id)}/audit`} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
-                Audit trail
-                <ArrowRight aria-hidden className="size-4" />
-              </Link>
-            ) : (
-              <span data-testid="audit-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Audit trail: {noRecord}</span>
-            )
-          ) : p.hasRecord ? (
-            <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center gap-1.5 pl-3 text-small font-medium text-jade-700">
-              <Folder aria-hidden className="size-4" strokeWidth={1.6} />
-              Full case record
-            </Link>
-          ) : (
-            <span data-testid="record-unavailable" className="inline-flex min-h-11 items-center pl-3 text-small text-muted">Full case record: {noRecord}</span>
-          )}
-        </div>
-        <div role="tabpanel" id="today-panel-activity" aria-labelledby="today-tab-activity" hidden={s.file !== "activity"} tabIndex={0} className="outline-offset-2">
-          {ledgerError && (
-            <div role="status" data-testid="ledger-read-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-              <span className="text-warning">Could not read the case ledger: {ledgerError}</span>
-              <Button
-                variant="quiet"
-                size="touch"
-                onClick={() => {
-                  // The button goes while the ledger is read again; focus stays in the Activity section.
-                  setWant({ k: "contacts" });
-                  retryLedger(p.id);
-                }}
-              >
-                Retry
-              </Button>
-            </div>
-          )}
-          {/* Live, a failed read is the ledger read: its message and Retry are above. */}
-          {!live && recordsRead && !recordsRead.ok && !recordsRead.missing && (
-            <div role="status" data-testid="source-events-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-              <span className="text-warning">Source events not shown: {recordsRead.error}</span>
-              <Button variant="quiet" size="touch" onClick={retryRecords}>
-                Retry
-              </Button>
-            </div>
-          )}
-          <ol aria-live="polite" className="m-0 mt-4 list-none p-0 lg:grid lg:auto-cols-[minmax(180px,1fr)] lg:grid-flow-col lg:overflow-x-auto lg:pb-1">
-            {strip.map((ev, i) => renderEvent(ev, i, strip))}
-          </ol>
-          {earlier.length > 0 && (
-            <details data-testid="earlier-activity" className="group mt-1 border-t border-rule pt-1">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-small font-semibold text-jade-700 [&::-webkit-details-marker]:hidden">
-                <ChevronDown aria-hidden className="size-4 -rotate-90 transition-transform group-open:rotate-0" />
-                Earlier activity ({earlier.length})
-              </summary>
-              <ol aria-label="Earlier activity, oldest first" className="m-0 mb-2 mt-1 grid list-none gap-2 p-0 lg:grid-cols-2 lg:gap-x-8">
-                {earlier.map((ev) => (
-                  <li key={ev.id} className="min-w-0 border-l-2 border-jade-200 pl-2.5">
-                    <span className="font-medium text-ink">{ev.what}</span>
-                    <span className="text-small text-muted"> · {ev.when}</span>
-                    <p className="m-0 text-small text-ink-soft">{ev.note}</p>
-                  </li>
-                ))}
-              </ol>
-            </details>
-          )}
-        </div>
-        <div role="tabpanel" id="today-panel-records" aria-labelledby="today-tab-records" hidden={s.file !== "records"} tabIndex={0} className="outline-offset-2">
-          {s.file === "records" && <RecordsPanel read={recordsRead} onRetry={retryRecords} />}
-        </div>
-      </div>
-    </section>
-  );
-
-  const rowEls = paging.rows.map((r, i) => {
+  const rowEls = paging.rows.map((r) => {
     const on = p?.id === r.id;
     const title = taskTitle(r);
     const over = clockWords(r).over;
     return (
-      <div key={r.id} style={rowAt(i)} className={cn("min-w-0 border-t border-rule", right, on && "lg:bg-jade-100")}>
+      <div key={r.id} className={cn("min-w-0 border-t border-rule", on && "lg:bg-jade-100")}>
         <button
           data-case-row={r.short}
           aria-expanded={on && !s.collapsed}
@@ -1298,72 +1309,99 @@ export function TodayBoard({
     );
   });
 
-  /* The open case and its activity follow the open row (or lead the list when the open case was moved off it). */
+  /* The open case, its history inside it, follows the open row (or leads the list when the open case was moved off it). */
   const at = openAt >= 0 ? openAt + 1 : 0;
-  // One wrapper, laid out as if absent, so the open case and its history read as one unit wherever the grid puts them.
   const opened = (
     <div key="opened" data-testid="today-open" className="contents">
       {casePane}
-      {activityPane}
     </div>
   );
   const listBody = [...rowEls.slice(0, at), opened, ...rowEls.slice(at)];
 
   return (
-    <div ref={root}>
-      {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-4" />}
-      {pendingNotice}
-
+    // From lg up the board fills the screen under the 54px top bar, so the queue and the case scroll, not the page.
+    <div ref={root} className="lg:flex lg:h-[calc(100dvh_-_54px_-_2*var(--main-py))] lg:min-h-[480px] lg:flex-col">
       <div
         id="worklist"
         tabIndex={-1}
         data-testid="today-sheet"
-        style={{ gridTemplateRows: `repeat(${rightRows - 1}, auto) minmax(0, 1fr) auto` }}
-        className="flex flex-col overflow-clip rounded-card border border-line bg-surface lg:grid lg:min-h-[560px] lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,1fr)]"
+        className="flex flex-col rounded-card border border-line bg-surface lg:min-h-0 lg:flex-1 lg:overflow-clip"
       >
-        <div style={{ gridRow: 1 }} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", right)}>
-          <h2 id="today-queue" className="staff-display m-0 whitespace-nowrap text-[22px] font-medium text-jade-900">
-            {queueLabel} <span className="sr-only">· {list.length}</span>
-          </h2>
-          <label className="flex min-w-[150px] flex-1 items-center gap-2 rounded-control border border-input bg-surface px-2.5 focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue">
-            <Search aria-hidden className="size-4 flex-none text-muted" />
-            <span className="sr-only">Find a case or task</span>
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="Find a case or task"
-              aria-keyshortcuts="/"
-              value={s.q}
-              onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value, page: 1, collapsed: false }))}
-              className="h-11 min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-hidden placeholder:text-muted placeholder:opacity-100 lg:h-10"
-            />
-            <kbd aria-hidden className="hidden rounded-chip border border-line bg-limestone-100 px-1.5 text-small text-muted sm:inline">
-              /
-            </kbd>
-          </label>
-        </div>
-        <div className="contents">
-          {listBody}
-          {list.length === 0 && (
-            <p style={rowAt(0)} className={cn("m-0 border-t border-rule px-4 py-3 text-muted", right)}>
-              {q ? "No case matches this search." : "Nobody left in this queue."}
-            </p>
-          )}
-        </div>
-        <div style={{ gridRow: rightRows }} className={cn("min-h-0", right, "max-lg:hidden")} aria-hidden />
-        <div style={{ gridRow: rightRows - 1 }} className={cn("border-t border-rule", right)}>
-          <Pager paging={paging} label="Queue pages" testId="page-range" onPage={goPage} />
-          {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
-          <p className="m-0 px-4 py-3 text-small text-muted" data-testid="queue-summary">
-            {tab === "call"
-              ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
-              : tab === "waiting"
-                ? `${list.length} waiting on someone else`
-                : `${list.length} with no owner`}
-          </p>
+        {head}
+        {(boardInvalid || pendingNotice) && (
+          <div className="px-4 pt-3">
+            {boardInvalid && <LedgerInvalidBanner what="this board" className="mb-4" />}
+            {pendingNotice}
+          </div>
+        )}
+        <div className="relative flex min-h-0 flex-col [--queue-w:clamp(300px,32%,440px)] lg:flex-1">
+          {/* Not positioned: the open case, lifted out with lg:absolute, must not scroll with the queue. */}
+          <div className="flex min-w-0 flex-col lg:h-full lg:w-(--queue-w) lg:scroll-pt-20 lg:overflow-y-auto lg:overscroll-contain lg:border-r lg:border-line lg:bg-limestone-100">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:sticky lg:top-0 lg:z-10 lg:border-b lg:border-line lg:bg-limestone-100">
+              <h2 id="today-queue" className="staff-display m-0 whitespace-nowrap text-[22px] font-medium text-jade-900">
+                {queueLabel} <span className="sr-only">· {list.length}</span>
+              </h2>
+              {/* SearchField's look and keys, but it filters this queue in the browser: it is not a URL search. */}
+              <label className="flex min-h-11 min-w-[150px] flex-1 items-center rounded-control border border-input bg-surface ps-3 text-muted focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue">
+                <Search aria-hidden className="size-4 shrink-0" />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  autoComplete="off"
+                  aria-label="Find a case or task"
+                  placeholder="Find a case or task"
+                  aria-keyshortcuts="/"
+                  value={s.q}
+                  onChange={(e) => search(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Escape" || !s.q) return;
+                    e.preventDefault();
+                    search("");
+                  }}
+                  className="h-11 min-w-0 flex-1 border-0 bg-transparent px-2 text-body text-ink outline-hidden placeholder:text-muted placeholder:opacity-100 [&::-webkit-search-cancel-button]:appearance-none"
+                />
+                {s.q ? (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => {
+                      search("");
+                      searchRef.current?.focus();
+                    }}
+                    className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-muted hover:text-ink"
+                  >
+                    <X aria-hidden className="size-4" />
+                  </button>
+                ) : (
+                  <kbd aria-hidden className="me-2 hidden rounded-[3px] border border-line px-1.5 font-sans text-small sm:inline">
+                    /
+                  </kbd>
+                )}
+              </label>
+            </div>
+            <div className="contents">
+              {listBody}
+              {list.length === 0 && (
+                <p className="m-0 border-t border-rule px-4 py-3 text-muted">
+                  {q ? "No case matches this search." : "Nobody left in this queue."}
+                </p>
+              )}
+            </div>
+            <div className="border-t border-rule lg:mt-auto">
+              <Pager paging={paging} label="Queue pages" testId="page-range" onPage={goPage} />
+              {paging.pages > 1 && <p role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-testid="page-status">{pageStatusText(paging)}</p>}
+              <p className="m-0 px-4 py-3 text-small text-muted" data-testid="queue-summary">
+                {tab === "call"
+                  ? `${list.length} to call · ${list.filter((r) => clockWords(r).over).length} past their deadline`
+                  : tab === "waiting"
+                    ? `${list.length} waiting on someone else`
+                    : `${list.length} with no owner`}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      {aside && <div className="mt-2">{aside}</div>}
+      {aside && <div className="mt-2 lg:flex-none">{aside}</div>}
     </div>
   );
 }

@@ -10,6 +10,8 @@ A woman has a positive faecal immunochemical test (FIT+) at her clinic. Her colo
 
 The local need is substantial. In the 2015–16 Abu Dhabi Health Services/SEHA cohort, only **30.5% of FIT+ patients underwent colonoscopy**, after a median **72 days**. The Department of Health (DoH) colorectal cancer standard requires colonoscopy within **31 days of referral**, with a **>90%** programme target.[1][2] Public programme-wide completion evidence remains scarce, while Malaffi describes care-gap identification rather than evidenced closure.[12]
 
+**Measured impact (headline).** Wasl is a measurement fix: it raises the measured rate toward the true rate. In the frozen held-out evaluation (code `075abc5ad04a`, frozen 2026-11-02T04:33Z before the runs; five seeds, independent v2 noise), per 1,000 positive FITs Emirates-ID-only matching sees about 122 colonoscopies completed within 31 days, Wasl about 298, the simulated truth about 329. EID-only matching therefore wrongly flags about 207 patients per 1,000 as "not followed up"; Wasl about 31, with 0/3,035 CRC false closures (95% upper bound 0.121%). In the deployed demo run the rates are 11.3% (EID-only), 30.7% (Wasl) and 31.9% (truth): 206 versus 12 wrongly flagged per 1,000. The simulated truth sits near the only published Abu Dhabi figure (30.5%, SEHA), which has no fixed 31-day window. Any clinical benefit is modelled, conditional on navigation acting on the corrected list, and stated as a range in `docs/EVIDENCE.md`. Every claim, its status and a reproduce command is in the claim ledger at the top of `README.md`.
+
 Wasl is built around one programme owner and one KPI: evidenced CRC follow-up for the Abu Dhabi Public Health Center screening programme. In a **merged simulation**, counting every referral, the proportion reaching colonoscopy within 31 days was:
 
 | Tracker | Completion within 31 days |
@@ -120,6 +122,10 @@ A subsequent **designed live-outreach phase** would use a stepped-wedge across 6
 - The evidence-investigator sidecar is built and selected experimentally for the showcase, but validation did not run. Stress saved reviewer time while losing five closures against unguarded; it is not a validated recall improvement and has no live-NATS or clinical-effectiveness claim.
 - Malaffi connectivity is mock-tested only. Non-English notices require professional translation, back-translation and cognitive testing; teach-back has been tested only in English, Modern Standard Arabic, Gulf Arabic and Arabizi.
 - No recorded demonstration, clinician endorsement, procurement agreement, local care uplift or patient benefit is claimed.
+
+## Repository note: the extra contributor account
+
+The repository's contributor list shows `anasqumhiyeh-deriv` alongside `Mizore66` and `Kaiz404`. Both `anasqumhiyeh-deriv` and `Mizore66` belong to the same team member, Anas Tarek Qumhiyeh: `anasqumhiyeh-deriv` is his work GitHub account. Three early commits (the colonoscopy image-reader work) were made from a machine set up with his work email by mistake. They were re-authored to `Mizore66` in PR #78, so `main` contains no commit from the work account, and GitHub's contributors API and contributor graph list only `Mizore66`, `Kaiz404` and `claude`. GitHub permanently keeps a read-only copy of each pull request's commits, and pull requests #21 to #78 still hold the three original commits, which keeps the work account in the repository sidebar. Only GitHub Support can purge those copies; a request is open. The team is two people: Anas Tarek Qumhiyeh (`Mizore66`) and Chang Kai Zhe (`Kaiz404`). `claude` appears because commits record AI assistance as a co-author.
 
 ## Sources
 
