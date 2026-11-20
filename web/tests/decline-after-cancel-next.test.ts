@@ -72,7 +72,7 @@ const click = async (label: string, selector = "button") => {
   expect(el, label).toBeDefined();
   await act(async () => el!.click());
 };
-const nextField = () => [...container!.querySelectorAll("dt")].find((dt) => dt.textContent === "Next")!.nextElementSibling!.textContent;
+const nextField = () => [...container!.querySelectorAll("dt")].find((dt) => dt.textContent === "Next step")!.nextElementSibling!.textContent;
 const count = (text: string) => container!.textContent!.split(text).length - 1;
 
 async function declineOnToday(loaded: WorkItemLike) {

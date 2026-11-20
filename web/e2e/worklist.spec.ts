@@ -47,19 +47,25 @@ test.describe("Today", () => {
     await noSeriousAxe(page);
   });
 
-  test("the case-details icon shows owner, contact permission and ids; the folder is unavailable without a record", async ({ page }) => {
+  test("Patient details groups contact, timeline and case facts; the case file is unavailable without a record", async ({ page }) => {
     await page.goto("/app/today");
-    const details = open(page).getByRole("button", { name: "Case details" });
+    const details = open(page).getByRole("button", { name: "Patient details" });
     await expect(details).toHaveAttribute("aria-expanded", "false");
     await expect(open(page).getByTestId("case-facts")).toBeHidden();
+    await expect(open(page).getByTestId("lead-days")).toBeVisible();
     await details.click();
     await expect(details).toHaveAttribute("aria-expanded", "true");
     const facts = open(page).getByTestId("case-facts");
+    await expect(facts.getByRole("heading", { level: 3 })).toHaveText(["Contact", "Timeline", "Case"]);
+    await expect(facts).toContainText("Next stepCall to confirm they received the result");
+    await expect(facts).toContainText("PermissionGranted");
     await expect(facts).toContainText("OwnerNurse 6");
-    await expect(facts).toContainText("Contact permissionGranted");
-    await expect(facts).toContainText("CaseAHS-sr-1002");
-    await expect(facts).toContainText("Referred12 May");
-    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toBeDisabled();
+    await expect(facts).toContainText("Referred12 May108 days ago");
+    await expect(facts).toContainText("DeadlineDay 31 · 12 Jun77 days over 31");
+    // Open, the clock lives in the Timeline group only.
+    await expect(open(page).getByTestId("lead-days")).toHaveCount(0);
+    await expect(open(page).getByRole("button", { name: "No case file" })).toBeDisabled();
+    await noSeriousAxe(page);
   });
 
   test("logging No answer keeps the case open, offers Undo and the next case", async ({ page }) => {
@@ -147,7 +153,7 @@ test.describe("Today", () => {
     await expect(open(page).getByRole("status")).toContainText("Logged: Yours now · AHS-sr-1017 moved to To call");
     await expect(queueLink(page, /^No owner/)).toContainText("1");
     await expect(queueLink(page, /^To call/)).toContainText("9");
-    await open(page).getByRole("button", { name: "Case details" }).click();
+    await open(page).getByRole("button", { name: "Patient details" }).click();
     await expect(open(page).getByTestId("case-facts")).toContainText("OwnerHessa Al Ali");
   });
 
@@ -199,12 +205,12 @@ test.describe("Today", () => {
     await expect(open(page)).toHaveAttribute("data-case", "AHS-sr-1002");
   });
 
-  test("the folder icon opens the full record and Audit trail its audit", async ({ page }) => {
+  test("Open case file opens the full record and Audit trail its audit", async ({ page }) => {
     await page.goto("/app/today?queue=waiting");
     await row(page, "AHS-sr-1011").click();
     await expect(open(page).getByTestId("case-who")).toContainText("Aisha Al Mansoori");
     await expect(page.getByRole("region", { name: "Case history" }).getByRole("link", { name: "Audit trail" })).toHaveAttribute("href", /AHS-sr-1011\/audit$/);
-    await open(page).getByRole("link", { name: "Open full record" }).click();
+    await open(page).getByRole("link", { name: "Open case file" }).click();
     await expect(page).toHaveURL(aisha);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
@@ -243,7 +249,7 @@ test.describe("Today", () => {
     await expect(history.getByTestId("record-unavailable")).toHaveText("Full case record: showcase cases only in this demo");
     await history.getByRole("tab", { name: "Activity" }).click();
     await expect(history.getByTestId("audit-unavailable")).toHaveText("Audit trail: showcase cases only in this demo");
-    await expect(open(page).getByRole("button", { name: "Full record not available for this case" })).toHaveAttribute("title", /showcase cases/);
+    await expect(open(page).getByRole("button", { name: "No case file" })).toHaveAttribute("title", /showcase cases/);
   });
 
   test("phone: the selected case opens inline in its row; tapping the row folds it", async ({ page }) => {
