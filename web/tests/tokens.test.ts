@@ -72,7 +72,7 @@ describe("input boundary token (WCAG 1.4.11)", () => {
 describe("inputs and selects use the input boundary", () => {
   // Where each field's boundary is drawn: the class string on the element that carries the border.
   const FIELDS: [string, string, RegExp][] = [
-    ["filter toolbar search (Patients, Referrals)","components/ui/filters/search-field.tsx", /<div\s+className=\{cn\(\s*"([^"]*)"/],
+    ["filter toolbar search (Patients, Referrals)","components/ui/filters/search-field.tsx", /<div[^>]*?\sclassName=\{cn\(\s*"([^"]*)"/],
     ["Patients refine selects", "components/patients/refine.tsx", /<select[^>]*?className="([^"]*)"/],
   ];
 
