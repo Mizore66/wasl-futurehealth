@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PoolingChart, RegionCapacityChart } from "@/components/programme/capacity-chart";
 import { KpiChart } from "@/components/programme/kpi-chart";
-import { byOverdueShare, cellText, pct, poolingRuns, programmeView } from "@/components/programme/model";
+import { byOverdueShare, poolingRuns, poolingVerb, programmeView } from "@/components/programme/model";
 import { PatternLinks } from "@/components/programme/patterns";
 import { ProgrammeChart } from "@/components/programme/programme-chart";
 import { SourceHeading } from "@/components/programme/source-toggle";
@@ -21,7 +21,7 @@ const card = "rounded-card border border-line bg-surface p-pad";
 export default async function ProgrammePage() {
   const dash = await getDashboard();
   const view = programmeView(dash);
-  const { capacity, levers } = view;
+  const { capacity } = view;
   const safety = result("v2.safety.crc_false_closures");
   const runs = poolingRuns();
   const [enough] = runs;
@@ -33,9 +33,6 @@ export default async function ProgrammePage() {
   const word = (k: number) => NUMBER_WORD[k] ?? String(k);
 
   // Takeaway lines, computed from the numbers the charts draw so they stay true for any run.
-  const { eid, wasl, truth } = view.kpi.demo.rates;
-  const kpiTakeaway =
-    eid < truth && Math.abs(wasl - truth) < Math.abs(eid - truth) ? "Wasl reads it almost as the truth does; Emirates ID alone undercounts." : null;
   const [first, second] = byOverdueShare(view.programmes);
   const withOnTime = view.programmes.filter((p) => p.onTime);
   const underHalf = withOnTime.filter((p) => p.onTime!.share < 50).length;
@@ -57,10 +54,10 @@ export default async function ProgrammePage() {
         />
 
         <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
-          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<>Positive FIT referrals.{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
-            Simulated colorectal data. &quot;Emirates ID only&quot; counts a colonoscopy only when the report carries the matching Emirates ID. Wasl
-            also matches reports by name and date of birth. &quot;Simulated truth&quot; is what really happened to each simulated patient. The target
-            is the DoH 31-day standard.
+          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub="Share of completed colonoscopies each method can see." display>
+            Simulated colorectal data, positive FIT referrals. &quot;Emirates ID only&quot; counts a colonoscopy only when the report carries the
+            matching Emirates ID. Wasl also matches reports by name and date of birth. Each bar is that method&apos;s 31-day rate as a share of the
+            simulated truth, what really happened to each simulated patient. The target is the DoH 31-day standard.
           </SourceHeading>
 
           <KpiChart kpi={view.kpi} target={view.target} />
@@ -138,57 +135,17 @@ export default async function ProgrammePage() {
             <p data-testid="capacity-condition" className="m-0 mt-3 text-body font-medium">
               {capacity.conditionWords}
             </p>
-            <p className="m-0 mt-1 text-body text-ink-soft">
-              {capacity.poolingNote.charAt(0).toUpperCase() + capacity.poolingNote.slice(1)}. {capacity.slots.toLocaleString("en-US")} slots for{" "}
-              {capacity.openCases.toLocaleString("en-US")} open cases.
-            </p>
-
-            <dl data-testid="capacity-summary" className="m-0 mt-4 grid grid-cols-2 gap-x-4 gap-y-3 tabular-nums sm:grid-cols-3">
-              {(
-                [
-                  ["Within 31 days", pct(capacity.summary.within31dShare * 100)],
-                  ["Median wait", `${capacity.summary.medianWaitDays} days`],
-                  ["Cross-region bookings", String(capacity.summary.crossRegion)],
-                  ["Nurse calls", String(capacity.summary.nurseCalls)],
-                  ["No slot found", String(capacity.summary.noSlot)],
-                ] as const
-              ).map(([term, value]) => (
-                <div key={term}>
-                  <dt className="text-small text-muted">{term}</dt>
-                  <dd className="m-0 mt-0.5 text-section font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-
-            {levers && (
-              <p data-testid="capacity-levers" className="m-0 mt-4 text-body text-ink-soft tabular-nums">
-                <span className="font-medium text-ink">Ways to shorten the queue:</span>{" "}
-                {[
-                  levers.direct && `${cellText(levers.direct.cell, levers.direct.of)} suggested direct to colonoscopy`,
-                  levers.highPrepRisk && `${cellText(levers.highPrepRisk.cell, levers.highPrepRisk.of)} at high risk of failed bowel prep`,
-                ]
-                  .filter(Boolean)
-                  .join("; ")}
-                . Counted over the{" "}
-                {[levers.direct, levers.highPrepRisk].every((l) => !l || l.of === capacity.openCases) && `${capacity.openCases.toLocaleString("en-US")} `}
-                open colorectal cases needing a colonoscopy slot. These counts are not linked to the patient list.
-                {levers.requiresClinicianOrder && " A prep regimen change needs a clinician’s order."}
-              </p>
-            )}
 
             <div className="mt-5">
               <RegionCapacityChart regions={capacity.regions} />
             </div>
 
             <div className="mt-6 border-t border-rule pt-5">
-              <h3 className="m-0 text-body font-medium">Sharing slots across regions</h3>
-              <p className="m-0 mt-1 text-body text-ink-soft">
-                Sharing moves existing slots between regions. It cannot create slots, so it does not help when every region is short.
-              </p>
+              <h3 className="m-0 text-body font-medium">Sharing slots between regions</h3>
               {noPooling && pooled && (
-                <p data-testid="pooling-result" className="m-0 mt-2 text-body">
-                  In the simulated booking test, with {enough.slotsPerCase} slots per FIT+ patient: {noPooling.display} within 31 days without
-                  sharing, {pooled.display} with sharing across regions.
+                <p data-testid="pooling-result" className="m-0 mt-1 text-body text-ink-soft">
+                  Sharing slots between regions {poolingVerb(noPooling.share, pooled.share)} on-time colonoscopy — but only when there are enough
+                  slots overall.
                 </p>
               )}
               <div className="mt-3">

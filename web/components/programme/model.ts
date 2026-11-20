@@ -533,14 +533,30 @@ export function points(a: number, b: number): string {
   return `${d} ${d === 1 ? "point" : "points"}`;
 }
 
+/**
+ * The share of the real on-time colonoscopies a method can see: its 31-day rate over the simulated truth's, as a whole
+ * percent. The rates share one denominator (eligible referrals), so the ratio is completed-and-seen over completed.
+ */
+export function seenShare(rate: number, truth: number): number {
+  return truth > 0 ? Math.round((100 * rate) / truth) : 0;
+}
+
+/** "nearly doubles", "more than doubles" or "raises": how sharing changes the on-time share, from the two measured shares. */
+export function poolingVerb(without: number, withSharing: number): string {
+  const r = without > 0 ? withSharing / without : 0;
+  if (r >= 2.05) return "more than doubles";
+  if (r >= 1.8) return "nearly doubles";
+  return r > 1 ? "raises" : "does not raise";
+}
+
 export type PoolRow = { id: string; label: string; short: string; share: number; display: string };
 export type PoolRun = { slotsPerCase: string; enough: boolean; rows: PoolRow[] };
 
 const POOL_ROWS = [
-  ["balanced_30", "Slots in the right regions", "Balanced"],
-  ["skewed_no_travel", "Misallocated, no sharing", "No sharing"],
-  ["skewed_30", "Misallocated, 30% willing to travel", "30% travel"],
-  ["skewed_pool_60", "Misallocated, sharing across regions (60% willing)", "Sharing"],
+  ["balanced_30", "Right regions", "Balanced"],
+  ["skewed_no_travel", "Wrong regions, no sharing", "No sharing"],
+  ["skewed_30", "Wrong regions, 30% travel", "30% travel"],
+  ["skewed_pool_60", "Wrong regions, sharing", "Sharing"],
 ] as const;
 
 /**
