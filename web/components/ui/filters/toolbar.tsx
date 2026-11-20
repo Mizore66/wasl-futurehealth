@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import type { FilterSpec } from "./types";
+import { segmentOn, segmentRow, segmentTab, type FilterSpec } from "./types";
 
 /**
  * The filter bar of a list page, one per page. A labelled group, not role="toolbar": a toolbar promises arrow-key
@@ -16,16 +16,13 @@ export type Segment = { label: string; href: string; current: boolean; count?: n
 /** Single-select quick filters as underlined tabs. Links with aria-current, so each view is a URL that works without JS. */
 export function SegmentedFilter({ label, items, className }: { label: string; items: Segment[]; className?: string }) {
   return (
-    <nav aria-label={label} className={cn("flex min-w-0 gap-1 overflow-x-auto border-b border-line [scrollbar-width:thin]", className)}>
+    <nav aria-label={label} className={cn(segmentRow, className)}>
       {items.map((s) => (
         <Link
           key={s.label}
           href={s.href}
           aria-current={s.current ? "true" : undefined}
-          className={cn(
-            "inline-flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-body whitespace-nowrap text-ink no-underline hover:bg-ground",
-            s.current ? "border-jade-600 font-medium" : "border-transparent",
-          )}
+          className={cn(segmentTab, s.current ? segmentOn : "border-transparent")}
         >
           {s.label}
           {s.count !== undefined && <> <span className="font-normal text-muted tabular-nums">{s.count}</span></>}
