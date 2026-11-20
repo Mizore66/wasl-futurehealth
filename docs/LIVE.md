@@ -63,6 +63,19 @@ second; cold starts took 135 s after a fresh deploy and 68 s and 74 s after scal
 answer took 12 s. Evidence is in [`DEPLOY.md`, "Azure"](DEPLOY.md#azure) and
 [`deploy/azure/decisions.tsv`](../deploy/azure/decisions.tsv).
 
+### Regions
+
+| Part | Region | Why there |
+|---|---|---|
+| Everything on Azure: API, Azure Files, Key Vault, registry, Foundry agent | `japaneast` (Tokyo) | The subscription allows only five Asian regions, and only `japaneast` and `koreacentral` offer both hosted agents and the model quota |
+| Web app server functions | Vercel `hnd1` (Tokyo), set in [`web/vercel.json`](../web/vercel.json) | Next to the API, so a page's many API calls are same-city hops |
+| Web app edge | Vercel's nearest edge to the visitor | Vercel routes it automatically |
+| Gemma server | Modal US East | Modal's default. The agent calls it once per answer, so the extra distance adds roughly 0.15 s (estimate), far less than generation time or a cold start |
+
+The functions ran in Vercel's default `iad1` (Washington, D.C.) until 20 Nov 2026. Moving them to `hnd1` cut median
+time to first byte, three samples per page from Malaysia, from 3.33 to 1.32 s on `/app/today`, 3.56 to 1.50 s on
+`/app/patients`, and 4.76 to 1.52 s on `/app/referrals`. Keep the functions in the API's region if either moves.
+
 ## CI/CD
 
 ```mermaid
