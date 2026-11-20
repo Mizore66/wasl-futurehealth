@@ -23,7 +23,7 @@ test.describe("Recovery fixture mode", () => {
     const excluded = page.locator("[data-eligible=false]");
     await expect(excluded).toContainText("AHS-sr-900");
     await excluded.getByText("Excluded").click();
-    await expect(excluded.getByTestId("excluded-by")).toHaveText("Source case for this release");
+    await expect(excluded.getByTestId("excluded-by")).toHaveText("This patient released the slot");
     const outreach = page.getByTestId("recovery-outreach");
     await expect(outreach).toContainText("Outreach held");
     await expect(outreach).toContainText("Unknown");
@@ -31,7 +31,7 @@ test.describe("Recovery fixture mode", () => {
     await page.getByText("All checks (2)").first().click();
     await expect(page.getByText(/Programme match: pass/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Confirm backfill", exact: true })).toBeDisabled();
-    await expect(page.getByText(/Fixture mode is read-only/)).toBeVisible();
+    await expect(page.getByText(/This demo is read-only/)).toBeVisible();
     await noSeriousAxe(page);
   });
 

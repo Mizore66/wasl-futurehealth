@@ -56,7 +56,6 @@ async function matchCase(fixture: CrcFixture, loop: string, read: (id: string) =
   const score = linkScore(detail, link);
   const above = score >= link.tau;
   const p = score.toFixed(3);
-  const tech = `link_decision · basis ${link.weakest_edge.basis} · path_p_cal ${link.path_p_cal}${score !== link.path_p_cal ? ` · review p ${score}` : ""} · tau ${link.tau}`;
   const noDob = detail.review_items.some((r) => r.kinds.includes("link") && r.reason === "second_identifier");
   const confirmed = detail.signoffs.some((s) => s.kinds.includes("link") && s.link === "same");
   const reviewed = confirmed ? " Two reviewers later confirmed the same patient." : "";
@@ -76,7 +75,6 @@ async function matchCase(fixture: CrcFixture, loop: string, read: (id: string) =
     p: score,
     tau: link.tau,
     basis,
-    linker: link.linker,
     fields: [
       { name: "Name", referral: referral.recorded_name, report: report.recorded_name, verdict: "agrees" },
       byEid
@@ -92,17 +90,15 @@ async function matchCase(fixture: CrcFixture, loop: string, read: (id: string) =
       ? {
           held: true,
           pill: "Two reviewers",
-          text: `A name alone stops at ${p}, under the ${link.tau} line, so it never closes by itself.${reviewed}`,
-          tech: `${tech}${confirmed ? " · human_signoff same" : ""}`,
+          text: `A name alone scores ${p}, under the ${link.tau} line, so it never closes by itself.${reviewed}`,
         }
       : noDob
         ? {
             held: true,
             pill: "Second identifier",
-            text: `Matched on the ${basis}, ${p} against the ${link.tau} line, but the report has no date of birth. Messages wait for a second identifier.${reviewed}`,
-            tech: `${tech} · outreach_guard second_identifier${confirmed ? " · human_signoff same" : ""}`,
+            text: `Matched on the ${basis}, score ${p} against the ${link.tau} line. The report has no date of birth, so messages wait for a second identifier.${reviewed}`,
           }
-        : { held: false, pill: "Matched", text: `Matched on the ${basis}, ${p} against the ${link.tau} line.`, tech },
+        : { held: false, pill: "Matched", text: `Matched on the ${basis}, score ${p} against the ${link.tau} line.` },
   };
 }
 

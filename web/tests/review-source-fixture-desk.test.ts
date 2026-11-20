@@ -65,7 +65,7 @@ describe("fixture review desk source report", () => {
     await act(async () => radio("same").click());
     await act(async () => radio("adequate").click());
     expect(previewButton()).toBeUndefined();
-    expect(container.querySelector('[data-testid="source-withheld"]')?.textContent).toContain("source report");
+    expect(container.querySelector('[data-testid="source-withheld"]')?.textContent).toContain("until the report is shown");
   });
 
   it("uses the page's server-side read without calling the server action", async () => {

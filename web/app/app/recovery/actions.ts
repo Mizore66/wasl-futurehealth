@@ -17,7 +17,7 @@ function revalidateRecovery() {
 
 export async function confirmBackfill(slotId: string, input: unknown): Promise<RecoveryResult> {
   const args = Args.safeParse({ slotId, input });
-  if (!args.success) return { ok: false, status: 400, error: "Malformed recovery confirmation" };
+  if (!args.success) return { ok: false, status: 400, error: "This confirmation could not be read; try again" };
   const result = await confirmRecovery(args.data.slotId, args.data.input);
   if (result.ok) revalidateRecovery();
   return result;

@@ -29,7 +29,7 @@ const TICKS = [0, 25, 50, 75, 100];
 
 const SOURCES: Record<Source, { button: string; table: string; scope: string }> = {
   demo: { button: "This demo run", table: "This demo run", scope: "in testing" },
-  heldout: { button: "Five-seed held-out mean", table: "Five-seed held-out mean", scope: "on held-out noise, mean of 5 seeds" },
+  heldout: { button: "Average of 5 test runs", table: "Average of 5 test runs", scope: "averaged over 5 test runs" },
 };
 
 /** Label, track, value: the three columns every bar row and the axis share. */
@@ -54,7 +54,7 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
         caption={
           <>
             <span data-testid="kpi-why">
-              Why the two sources differ: the demo run is one run on training-time noise; the five-seed mean averages 5 seeds on held-out noise.
+              The demo run uses data Wasl was tuned on; the 5-run average uses new data, so it is the fairer figure.
             </span>
           </>
         }

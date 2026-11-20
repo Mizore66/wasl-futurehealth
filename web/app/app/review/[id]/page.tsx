@@ -46,9 +46,9 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
         <PageHeader attached title={<span id="review-title">Retired case: review history only</span>} />
         <div className="p-4 sm:p-pad">
-          <p className="m-0">No new claim, clinical read or review work is available from this tracking request.</p>
+          <p className="m-0">This case is closed. There is nothing left to review.</p>
           <Link href={caseHref("/app/patients", id)} className="mt-2 inline-flex min-h-11 items-center underline">
-            Open the retained case and authorized audit history
+            Open the case and its history
           </Link>
         </div>
       </section>
@@ -113,7 +113,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
               {view.held && <span className="mt-1 block max-w-[72ch]">{view.held}</span>}
             </>
           }
-          help={["reads", "canonical", "overlay"]}
+          help={["reads"]}
         />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
           {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}
@@ -164,7 +164,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
       </section>
       {concealed && (
         <p className="mt-3 max-w-[72ch] text-muted" role="status" data-testid="history-withheld">
-          The review history is withheld while a first read is hidden. It appears once the second read is in.
+          The review history is hidden until the second reviewer has answered.
         </p>
       )}
       {audit && (

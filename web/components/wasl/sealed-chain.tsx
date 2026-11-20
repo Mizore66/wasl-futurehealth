@@ -47,7 +47,7 @@ function Segment({ broken }: { broken: boolean }) {
 /** The signature element: one line of ink, a node per decision, drawn the same on every surface. */
 export function SealedChain({ nodes, className }: { nodes: ChainNode[]; className?: string }) {
   return (
-    <ol className={cn("m-0 list-none p-0", className)} aria-label="Sealed chain">
+    <ol className={cn("m-0 list-none p-0", className)} aria-label="Decision history">
       {nodes.map((n, i) => {
         const next = nodes[i + 1];
         return (
@@ -60,14 +60,8 @@ export function SealedChain({ nodes, className }: { nodes: ChainNode[]; classNam
               </p>
               <p className="m-0 text-small text-muted">
                 {n.when}
-                {n.broken && <span className="text-negative"> · chain broken before this step</span>}
+                {n.broken && <span className="text-negative"> · the record was changed before this step</span>}
               </p>
-              {n.hash && (
-                <details className="mt-1 text-small text-muted">
-                  <summary className="inline-flex min-h-6 cursor-pointer items-center">Hash</summary>
-                  <code className="break-all font-mono text-small">{n.hash}</code>
-                </details>
-              )}
             </div>
           </li>
         );

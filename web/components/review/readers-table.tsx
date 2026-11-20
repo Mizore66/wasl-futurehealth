@@ -70,11 +70,11 @@ function AutomatedReadersTable({ view }: { view: ReviewView }) {
   const quoteB = typeof ev?.reader_b_fields === "object" ? ev.reader_b_fields.quote : undefined;
   return (
     <section aria-labelledby={`automated-readers-h-${view.items.evidence ?? "case"}`} className="@container rounded-card border border-line bg-surface p-4 md:p-6">
-      <h2 id={`automated-readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">Automated reader evidence</h2>
+      <h2 id={`automated-readers-h-${view.items.evidence ?? "case"}`} className="m-0 text-section font-medium">What the automatic readers found</h2>
       <p className="m-0 mt-1 text-small text-muted">
         {view.unit} report {view.report.id}{view.report.version ? ` version ${view.report.version}` : ""} · {view.report.on || "Date unavailable"}
       </p>
-      {!ev ? <p className="m-0 mt-3 text-small text-muted">Automated reader evidence is unavailable for this item.</p> : (
+      {!ev ? <p className="m-0 mt-3 text-small text-muted">No automatic reading for this item.</p> : (
         <>
           <dl className="m-0 mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-small">
             {labels?.checks.map((check) => (
@@ -83,18 +83,18 @@ function AutomatedReadersTable({ view }: { view: ReviewView }) {
           </dl>
           {rows.length ? (
             <table className="mt-3 w-full border-collapse text-left text-small">
-              <caption className="pb-1 text-left text-muted">What each automated reader read, field by field</caption>
-              <thead><tr><th scope="col" className="py-1 pr-3 font-normal">Field</th><th scope="col" className="py-1 pr-3 font-normal">Reader A</th><th scope="col" className="py-1 font-normal">Reader B</th></tr></thead>
+              <caption className="pb-1 text-left text-muted">What each automatic reader found</caption>
+              <thead><tr><th scope="col" className="py-1 pr-3 font-normal">Item</th><th scope="col" className="py-1 pr-3 font-normal">Reader A</th><th scope="col" className="py-1 font-normal">Reader B</th></tr></thead>
               <tbody>{rows.map((row) => (
                 <tr key={row.field} className="border-t border-rule align-top"><th scope="row" className="py-2 pr-3 font-normal">{row.field}</th><td className="py-2 pr-3 [overflow-wrap:anywhere]">{row.a}</td><td className="py-2 [overflow-wrap:anywhere]">{row.b}</td></tr>
               ))}</tbody>
             </table>
-          ) : <p className="m-0 mt-3 text-small text-muted">Automated reader fields are unavailable for this item.</p>}
+          ) : <p className="m-0 mt-3 text-small text-muted">No details from the automatic readers.</p>}
           <blockquote className="m-0 mt-3 rounded-control bg-raised px-4 py-3 text-small">
-            <p className="m-0">{labels?.quote ? `“${labels.quote}”` : "Automated quote unavailable."}</p>
+            <p className="m-0">{labels?.quote ? `“${labels.quote}”` : "No quote available."}</p>
             {quoteB && quoteB !== labels?.quote ? <p className="m-0 mt-2">Reader B quotes: “{quoteB}”</p> : !quoteB && <p className="m-0 mt-2 text-muted">Reader B quote unavailable.</p>}
           </blockquote>
-          <p className="m-0 mt-2 text-small text-muted">Second reader model: {ev.reader_model || "Unavailable"}</p>
+          <p className="m-0 mt-2 text-small text-muted">Reader B is an AI model.</p>
         </>
       )}
     </section>

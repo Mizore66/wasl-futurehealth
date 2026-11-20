@@ -8,9 +8,9 @@ import type { ReviewSourceResult } from "@/lib/api/source";
 type Loaded = { status: "loading" } | { status: "available"; source: ReviewSource } | { status: "unavailable"; reason: string };
 
 const UNAVAILABLE: Record<SourceStatus, string> = {
-  missing: "The matching source report was not found.",
+  missing: "The report was not found.",
   ambiguous: "More than one report matches this item and version, so none is shown.",
-  unreadable: "The source report could not be read.",
+  unreadable: "The report could not be opened.",
 };
 
 /**
@@ -37,9 +37,9 @@ export function SourceReport({
       .then((res): Loaded => {
         if (res.ok) return { status: "available", source: res.source };
         if (res.sourceStatus) return { status: "unavailable", reason: UNAVAILABLE[res.sourceStatus] };
-        return { status: "unavailable", reason: res.status === 401 ? "Sign in again to open the source report." : "Your credential cannot open this source report." };
+        return { status: "unavailable", reason: res.status === 401 ? "Sign in again to open the report." : "You do not have access to this report." };
       })
-      .catch((): Loaded => ({ status: "unavailable", reason: "The source report request failed." }))
+      .catch((): Loaded => ({ status: "unavailable", reason: "The report could not be opened." }))
       .then((next) => {
         if (!current) return;
         setLoaded(next);
@@ -53,14 +53,14 @@ export function SourceReport({
   if (loaded.status === "loading") {
     return (
       <p className="m-0 mt-3 text-small text-muted" data-testid="source-report" data-source="loading">
-        Opening the source report…
+        Opening the report…
       </p>
     );
   }
   if (loaded.status === "unavailable") {
     return (
       <p role="alert" className="m-0 mt-3 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink" data-testid="source-report" data-source="unavailable">
-        {loaded.reason} Evidence signing is withheld and the item stays held.
+        {loaded.reason} You cannot sign until the report is shown.
       </p>
     );
   }
@@ -68,7 +68,7 @@ export function SourceReport({
   return (
     <figure className="m-0 mt-3" data-testid="source-report" data-source="available">
       <figcaption className="text-small font-medium">
-        Source report {source.report}, version {source.report_version}
+        Report {source.report}, version {source.report_version}
       </figcaption>
       <pre tabIndex={0} className="m-0 mt-1 max-h-72 overflow-auto whitespace-pre-wrap rounded-control border border-rule bg-surface px-3 py-2 text-small text-ink">
         {source.text}

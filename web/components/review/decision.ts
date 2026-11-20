@@ -92,95 +92,95 @@ export const signWords = (decision: string, scoped = false) =>
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   close: {
     commit: "Close the case",
-    pill: "Demo answers appended; case open",
+    pill: "Demo answers saved; case open",
     preview: "Would close the case",
     tone: "positive",
     text: (name, _unit, hasLink = true) =>
       hasLink
         ? `Same patient, report adequate. ${name}’s case closes with both answers and the report quote in her record.`
-        : "Report adequate would be appended for this evidence-only CRC item. No identity answer would be invented.",
-    next: (_unit, hasLink = true) => (hasLink ? { who: "Closed", what: "with both answers recorded" } : { who: "Case data", what: "no downstream effect inferred" }),
-    recordedText: "Same patient and report adequate were appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+        : "Report adequate would be saved. No identity answer is assumed.",
+    next: (_unit, hasLink = true) => (hasLink ? { who: "Closed", what: "with both answers recorded" } : { who: "The case", what: "no further change shown" }),
+    recordedText: "Same patient and report adequate were saved in the demo. The case still shows as open; closure is not confirmed.",
     recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     answerCell: { word: "adequate, signed", tone: "positive" },
   },
   scoped: {
     commit: "Sign: adequate",
-    pill: "Demo answer appended",
+    pill: "Demo answer saved",
     preview: "Would record this answer only",
     tone: "muted",
-    text: () => "Adequate would be appended for this question only. Histology and other requirements are still checked, so nothing is promised about the case.",
-    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
-    recordedText: "Adequate was appended to the demo review log for this question only. Histology and other requirements are still checked.",
+    text: () => "Adequate would be saved for this question only. Histology and other requirements are still checked, so nothing is promised about the case.",
+    next: () => ({ who: "The case", what: "no further change shown" }),
+    recordedText: "Adequate was saved in the demo for this question only. Histology and other requirements are still checked.",
     recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
     answerCell: { word: "adequate, signed", tone: "positive" },
   },
   scopedNo: {
     commit: "Sign: not adequate",
-    pill: "Demo answer appended",
+    pill: "Demo answer saved",
     preview: "Would record this answer only",
     tone: "muted",
-    text: () => "Not adequate would be appended for this question only. Histology and other requirements are still checked, so no repeat booking or other effect is promised.",
-    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
-    recordedText: "Not adequate was appended to the demo review log for this question only. Histology and other requirements are still checked.",
+    text: () => "Not adequate would be saved for this question only. Histology and other requirements are still checked, so no repeat booking or other effect is promised.",
+    next: () => ({ who: "The case", what: "no further change shown" }),
+    recordedText: "Not adequate was saved in the demo for this question only. Histology and other requirements are still checked.",
     recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
     answerCell: { word: "not adequate, signed", tone: "negative" },
   },
   inadequate: {
     commit: "Sign: report not adequate",
-    pill: "Demo answers appended",
+    pill: "Demo answers saved",
     preview: "Would not close: repeat colonoscopy",
     tone: "negative",
     text: (name, _unit, hasLink = true) =>
       hasLink
         ? `Same patient, but the colonoscopy report was not adequate, so this colonoscopy does not count. ${name} goes back to Today for a repeat booking.`
-        : "Report not adequate would be appended for this evidence-only CRC item. No identity answer or repeat booking would be invented.",
+        : "Report not adequate would be saved. No identity answer or repeat booking is assumed.",
     next: () => ({ who: "Her coordinator", what: "to book a repeat colonoscopy" }),
-    recordedText: "Same patient and report not adequate were appended to the demo review log. No repeat booking is confirmed.",
+    recordedText: "Same patient and report not adequate were saved in the demo. No repeat booking is confirmed.",
     recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
     answerCell: { word: "not adequate, signed", tone: "negative" },
   },
   evidence: {
     commit: "Sign evidence answer",
-    pill: "Demo evidence answer appended",
+    pill: "Demo evidence answer saved",
     preview: "Preview evidence answer",
     tone: "muted",
-    text: () => "The selected programme evidence label would be appended. No closure or other downstream effect is inferred.",
-    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
-    recordedText: "The evidence answer was appended to the demo review log. No downstream effect is confirmed.",
+    text: () => "The chosen label would be saved. No closure or other change to the case is assumed.",
+    next: () => ({ who: "The case", what: "no further change shown" }),
+    recordedText: "The evidence answer was saved in the demo. No change to the case is confirmed.",
     recordedAnswerCell: { word: "signed", tone: "muted" },
     answerCell: { word: "signed", tone: "muted" },
   },
   linkSame: {
     commit: "Sign: same patient",
-    pill: "Demo identity answer appended",
+    pill: "Demo identity answer saved",
     preview: "Would confirm the identity link",
     tone: "positive",
-    text: () => "Same patient would be appended for this link-only item. No evidence answer would be invented.",
-    next: () => ({ who: "Case data", what: "no downstream effect inferred" }),
-    recordedText: "Same patient was appended to the demo review log. No downstream effect is confirmed.",
+    text: () => "Same patient would be saved. No evidence answer is assumed.",
+    next: () => ({ who: "The case", what: "no further change shown" }),
+    recordedText: "Same patient was saved in the demo. No change to the case is confirmed.",
     recordedAnswerCell: { word: "not answered", tone: "muted" },
     answerCell: { word: "not answered", tone: "muted" },
   },
   ask: {
     commit: "Sign and ask the unit to complete the report",
-    pill: "Demo identity answer appended",
+    pill: "Demo identity answer saved",
     preview: "Would ask the unit",
     tone: "warning",
     text: (_name, unit) => `Same patient is signed. The case stays held until ${unit} completes the report.`,
     next: (unit) => ({ who: unit, what: "to complete the colonoscopy report" }),
-    recordedText: "Same patient was appended to the demo review log. No report answer was appended. No unit notification was sent.",
+    recordedText: "Same patient was saved in the demo. No report answer was saved. The unit was not told.",
     recordedAnswerCell: { word: "not answered", tone: "muted" },
     answerCell: { word: "asked the unit", tone: "warning" },
   },
   notSame: {
     commit: "Sign: not the same patient",
-    pill: "Demo identity answer appended",
+    pill: "Demo identity answer saved",
     preview: "Would reject the link",
     tone: "negative",
     text: (name, unit) => `The report is not ${name}’s. She stays open, and ${unit} is told the report matches no patient on our list.`,
     next: () => ({ who: "Link undone", what: "report returned unmatched" }),
-    recordedText: "Not the same patient was appended to the demo review log. No link or unit change is confirmed.",
+    recordedText: "Not the same patient was saved in the demo. No change to the records or the unit is confirmed.",
     recordedAnswerCell: { word: "not answered", tone: "muted" },
     answerCell: { word: "not applied", tone: "muted" },
   },
@@ -235,8 +235,8 @@ export function recordedOutcome(
     return {
       recordedText:
         outcome === "close"
-          ? "Audit agreement was appended to the demo review log. The case state is not changed here; it stays as current case data shows it."
-          : "Audit disagreement was appended to the demo review log. The case state is not changed here; reopening is not confirmed unless refreshed case data shows it.",
+          ? "Audit agreement was saved in the demo. The case is not changed here."
+          : "Audit disagreement was saved in the demo. The case is not changed here; reopening is not confirmed until the case shows it.",
       recordedAnswerCell: recorded.recordedAnswerCell,
     };
   }
@@ -244,8 +244,8 @@ export function recordedOutcome(
     const decision = signatures.find((s) => s.decision !== "same" && s.decision !== "different")?.decision;
     return {
       recordedText: decision
-        ? `Evidence answer ${decision} was appended to the demo review log. No downstream effect is confirmed.`
-        : "No evidence answer was appended. No downstream effect is confirmed.",
+        ? `Evidence answer ${decision} was saved in the demo. No change to the case is confirmed.`
+        : "No evidence answer was saved. No change to the case is confirmed.",
       recordedAnswerCell: decision ? { word: `${decision}, signed`, tone: "muted" } : { word: "not signed", tone: "muted" },
     };
   }
@@ -264,26 +264,26 @@ export function recordedOutcome(
         ? "Report adequate was"
         : "Report not adequate was";
     const remaining = outcome === "close" && confirmedClosed
-      ? "Refreshed case data confirms closure."
+      ? "The case now shows as closed."
       : outcome === "close"
-        ? "Current case data still shows the case as open; closure is not confirmed."
+        ? "The case still shows as open; closure is not confirmed."
         : "No repeat booking is confirmed.";
     return {
-      recordedText: `${answer} appended to the demo review log. ${remaining}`,
+      recordedText: `${answer} saved in the demo. ${remaining}`,
       recordedAnswerCell: recorded.recordedAnswerCell,
     };
   }
 
   const remaining = outcome === "close" && confirmedClosed
-    ? "Refreshed case data confirms closure."
+    ? "The case now shows as closed."
     : outcome === "close"
-      ? "Current case data still shows the case as open; closure is not confirmed."
+      ? "The case still shows as open; closure is not confirmed."
       : "No repeat booking is confirmed.";
   return {
     recordedText:
       outcome === "close" && confirmedClosed
-        ? `Same patient was appended to the demo review log. ${remaining}`
-        : `Same patient was appended to the demo review log. No report answer was appended. ${remaining}`,
+        ? `Same patient was saved in the demo. ${remaining}`
+        : `Same patient was saved in the demo. No report answer was saved. ${remaining}`,
     recordedAnswerCell: { word: "not signed", tone: "muted" },
   };
 }
@@ -299,7 +299,7 @@ export function failureSentence(sig: Signature, failure: SaveFailure): string {
     case 404:
       return `Not saved: this case has no open review item for ${what}.`;
     case 400:
-      return `Not saved: the server could not read ${what} (${failure.error}).`;
+      return `Not saved: ${what} could not be read.`;
   }
 }
 
@@ -419,14 +419,14 @@ export function resolvedCell(decision: string): { word: string; tone: "positive"
 export function readFailureSentence(failure: { status: number; error: string }): string {
   switch (failure.status) {
     case 401:
-      return "Not saved: sign in with your reviewer token to continue.";
+      return "Not saved: sign in again to continue.";
     case 403:
-      return "Not saved: this credential cannot submit the next read for this question.";
+      return "Not saved: you cannot give the next answer for this question.";
     case 404:
-      return "Not saved: no independent review is open for this question.";
+      return "Not saved: this question is no longer open for review.";
     case 409:
-      return "Not saved: the review changed while you were answering. The current state is shown; check it before answering again.";
+      return "Not saved: the review changed while you were answering. Check the latest answers before answering again.";
     default:
-      return `Not saved: the server could not read the answer (${failure.error}).`;
+      return "Not saved: the answer could not be saved. Try again.";
   }
 }

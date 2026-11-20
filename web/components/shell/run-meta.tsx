@@ -30,13 +30,13 @@ function Notice() {
   const info = use(read);
   if (!info.ok) {
     return (
-      <section aria-label="Run metadata" className="text-small text-muted">
-        Run details are unavailable. Source: {info.source}.
+      <section aria-label="About this data" className="text-small text-muted">
+        Could not load the data notice.
       </section>
     );
   }
   return (
-    <section aria-label="Run metadata" className="flex min-w-0 items-center">
+    <section aria-label="About this data" className="flex min-w-0 items-center">
       <HonestyLabel kind="simulated">{info.data}</HonestyLabel>
     </section>
   );

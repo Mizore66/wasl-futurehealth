@@ -49,7 +49,7 @@ describe("photos behind image-backed CRC items", () => {
     expect(view.photos).toEqual([{ sha: CAECUM, station: "caecum", available: true, src: `/app/review/${encodeURIComponent(d.case.id)}/photo/${ITEM}/${CAECUM}` }]);
     const markup = render(d, "live");
     expect(markup).toContain(`src="${view.photos[0].src}"`);
-    expect(markup).toContain("Capture station: Caecum");
+    expect(markup).toContain("Site: Caecum");
     expect(reviewView(d).photos).toEqual(view.photos);
   });
 
@@ -67,10 +67,11 @@ describe("photos behind image-backed CRC items", () => {
     expect(before).toContain("image-model-hidden");
     expect(before).not.toContain("hk-mnv3s-v1/cached");
     const after = render(d, "live", true);
-    expect(after).toContain("hk-mnv3s-v1/cached");
-    expect(after).toContain("model output, not a clinician answer");
+    expect(after).toContain('data-testid="image-model"');
+    expect(after).not.toContain("hk-mnv3s-v1/cached");
+    expect(after).toContain("AI reading of the photos (not a clinician answer)");
     expect(after).toContain("Conflict: the report text grades the prep");
-    expect(render(d, "fixtures")).not.toContain("hk-mnv3s-v1/cached");
+    expect(render(d, "fixtures")).not.toContain('data-testid="image-model"');
   });
 
   it("says plainly when photos or pixels are unavailable and never fabricates an image", () => {
@@ -78,7 +79,7 @@ describe("photos behind image-backed CRC items", () => {
     expect(none).toContain("No photos are available for this item here");
     expect(none).not.toContain("<img");
     const lost = render(detailFor("completion_undocumented", [{ sha: CAECUM, station: "caecum", available: false }]), "live");
-    expect(lost).toContain("Pixels unavailable");
+    expect(lost).toContain("Image unavailable");
     expect(lost).not.toContain("<img");
     expect(render(detailFor("completion_undocumented", undefined), "fixtures")).toContain("No photos are available for this item here");
   });

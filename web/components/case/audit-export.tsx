@@ -17,19 +17,19 @@ export async function ExportCard({ caseId }: { caseId: string }) {
         <h2 id="export-h" className="m-0 text-section font-medium">
           Redacted evidence export
         </h2>
-        <HonestyLabel kind="simulated">Synthetic data, redacted</HonestyLabel>
+        <HonestyLabel kind="simulated">Simulated data</HonestyLabel>
       </div>
       <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-        A redacted copy of this case&apos;s record and audit trail for internal audit, built and redacted by the Wasl API and
-        downloaded unchanged. It is not de-identified and not for sharing outside the audit team.
+        A copy of this case&apos;s record and audit trail for internal audit, with some details removed. It can still
+        identify the patient. Do not share it outside the audit team.
       </p>
 
       {got.ok ? (
         <>
           <dl className="m-0 mt-3 text-small">
             {[
-              { id: "content", label: "Content hash", value: got.hashes.content_sha256, note: "covers the whole file, including when the API loaded the run" },
-              { id: "comparison", label: "Comparison hash", value: got.hashes.comparison_sha256, note: "leaves out the load time, so the same case exported after a restart matches" },
+              { id: "content", label: "File check code", value: got.hashes.content_sha256, note: "matches the downloaded file" },
+              { id: "comparison", label: "Case check code", value: got.hashes.comparison_sha256, note: "stays the same while the case is unchanged" },
             ].map((h) => (
               <div key={h.id} className="mt-2">
                 <dt className="font-medium">
@@ -42,9 +42,8 @@ export async function ExportCard({ caseId }: { caseId: string }) {
             ))}
           </dl>
           <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
-            The hashes are as the API served them when this page loaded; a new review changes both. Recomputing the
-            content hash from the downloaded file checks it is the file the API served. Neither is a signature, and
-            neither proves the redaction was complete.
+            A new review changes both codes. They show the file is unchanged, not that every identifying detail was
+            removed.
           </p>
           <p className="m-0 mt-3">
             <Button asChild variant="quiet" size="touch">

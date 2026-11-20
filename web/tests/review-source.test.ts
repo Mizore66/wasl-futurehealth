@@ -68,13 +68,13 @@ describe("evidence source report", () => {
   it.each([
     ["missing", "was not found"],
     ["ambiguous", "More than one report"],
-    ["unreadable", "could not be read"],
+    ["unreadable", "could not be opened"],
   ])("announces a %s source and withholds the evidence read", async (status, words) => {
     actions.readReviewSource.mockResolvedValue({ ok: false, status: 409, sourceStatus: status });
     await mount();
     const alert = container.querySelector('[data-testid="source-report"][role="alert"]')!;
     expect(alert.textContent).toContain(words);
-    expect(alert.textContent).toContain("Evidence signing is withheld");
+    expect(alert.textContent).toContain("You cannot sign until the report is shown");
     const button = await answerAndSubmit();
     expect(button.getAttribute("aria-disabled")).toBe("true");
     expect(actions.submitReviewRead).not.toHaveBeenCalled();

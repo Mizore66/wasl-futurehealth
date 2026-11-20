@@ -79,7 +79,7 @@ for (const step of STEPS) {
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator("h1")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-      await expect(page.locator("[data-honesty=built]")).toHaveText("Synthetic · server saved");
+      await expect(page.locator("[data-honesty=built]")).toHaveText("Simulated · answers saved");
       await expect(page.locator("[data-honesty=designed]")).toHaveCount(0);
       const nav = page.getByRole("navigation", { name: "Demo steps" });
       for (const s of STEPS) {

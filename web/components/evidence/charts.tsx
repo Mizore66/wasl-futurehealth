@@ -94,7 +94,7 @@ export function GapChart({
 }) {
   const [run, setRun] = useState<RunKey>(runs[0]?.run ?? "v2");
   const current = runs.find((r) => r.run === run) ?? runs[0];
-  if (!current) return <p className="m-0 mt-2 text-small text-muted">No per-1,000 rows in this evidence file.</p>;
+  if (!current) return <p className="m-0 mt-2 text-small text-muted">No figures yet.</p>;
   const per1000 = current.rows.filter(isPer1000);
   const percent = current.rows.filter((r) => r.unit === "%");
   const flagged = current.rows.find((r) => /flag|not followed/i.test(r.metric)) ?? null;
@@ -112,7 +112,7 @@ export function GapChart({
   return (
     <div className="mt-3">
       {runs.length > 1 && (
-        <Toggle label="Evaluation run" value={run} onChange={setRun} options={runs.map((r) => ({ value: r.run, label: RUN_LABEL[r.run] }))} />
+        <Toggle label="Test data" value={run} onChange={setRun} options={runs.map((r) => ({ value: r.run, label: RUN_LABEL[r.run] }))} />
       )}
       {flagged && flagged.eid_only !== null && flagged.wasl !== null && (
         <p data-testid="flagged" className="m-0 mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -126,9 +126,9 @@ export function GapChart({
 
       <ChartFigure
         className="mt-5"
-        caption={`Per 1,000 positive FITs, 31-day colonoscopy · ${current.runText}`}
+        caption={`Per 1,000 FIT+ results, colonoscopy within 31 days · ${RUN_LABEL[current.run]}`}
         table={{
-          caption: `Measured gap, ${current.runText}`,
+          caption: `Measured gap, ${RUN_LABEL[current.run]}`,
           head: ["Measure", "Emirates ID only", "Wasl", "Truth"],
           rows: [
             ...current.rows.map((r) => [`${r.metric} (${r.unit})`, cell(r, r.eid_only), cell(r, r.wasl), cell(r, r.truth)]),
@@ -159,8 +159,8 @@ export function GapChart({
 
 /* ---------- Accuracy ---------- */
 
-const V2 = { color: SERIES.wasl, label: "Held-out noise (v2)" };
-const V1 = { color: SERIES.tuned, label: "Tuned-on noise (v1)" };
+const V2 = { color: SERIES.wasl, label: "Unseen test data" };
+const V1 = { color: SERIES.tuned, label: "Tuning data" };
 
 /** The zero-event safety counters: observed 0 (the dot) and the 95% upper bound (the whisker), v2 above v1. */
 export function SafetyChart({ closures, other }: { closures: SafetyPair[]; other: SafetyPair[] }) {
@@ -223,8 +223,8 @@ export function SafetyChart({ closures, other }: { closures: SafetyPair[]; other
   });
   return (
     <ChartFigure
-      caption="Seen (dot) and the 95% upper bound on the true rate (whisker), seeds pooled"
-      table={{ caption: "Safety events and 95% upper bounds", head: ["Error", "v2 seen", "v2 upper bound", "v1 seen", "v1 upper bound"], rows: tableRows }}
+      caption="Seen (dot) and the highest the true rate is likely to be (line)"
+      table={{ caption: "Safety errors and the highest likely rate", head: ["Error", "Seen, test data", "Highest likely, test data", "Seen, tuning data", "Highest likely, tuning data"], rows: tableRows }}
     >
       <Legend items={[V2, V1]} />
       <div data-testid="safety" className="mt-2">
@@ -303,18 +303,18 @@ export function RateChart({ falseMatch, missed }: { falseMatch: RatePair[]; miss
     );
   };
   const table = all.map((p, i) => [
-    `${p.name}: ${i < falseMatch.length ? "false-match" : "missed-match"}`,
+    `${p.name}: ${i < falseMatch.length ? "wrong match" : "missed match"}`,
     p.v2 ? showRate(p.v2) : "–",
     p.v1 ? showRate(p.v1) : "–",
   ]);
   return (
     <ChartFigure
-      caption="Mean over 5 seeds (dot) and 95% interval (line), per programme"
-      table={{ caption: "Linkage error rates by noise model", head: ["Rate", "v2 held-out", "v1 tuned on"], rows: table }}
+      caption="Average of 5 runs (dot) and likely range (line), by programme"
+      table={{ caption: "Wrong and missed matches", head: ["Rate", "Unseen test data", "Tuning data"], rows: table }}
     >
       <Legend items={[V2, V1]} />
       <div data-testid="linkage" className="mt-2 grid gap-y-4">
-        {panel("False match", falseMatch, "rates-false-match")}
+        {panel("Wrong match", falseMatch, "rates-false-match")}
         {panel("Missed match", missed, "rates-missed")}
       </div>
     </ChartFigure>
@@ -329,8 +329,8 @@ export function WorstStrip({ ranges }: { ranges: WorstRange[] }) {
   const ticks = Array.from({ length: Math.round((1 - lo) * 10) + 1 }, (_, i) => Number((lo + i / 10).toFixed(1)));
   return (
     <ChartFigure
-      caption="Recall, worst to best seed or stratum"
-      table={{ caption: "Worst cases", head: ["Measure", "v2 held-out", "v1 tuned on"], rows: names.map((n) => [n, ranges.find((r) => r.label === n && r.noise === "v2")?.value ?? "–", ranges.find((r) => r.label === n && r.noise === "v1")?.value ?? "–"]) }}
+      caption="Share found, from the worst run or group to the best"
+      table={{ caption: "Worst cases", head: ["Measure", "Unseen test data", "Tuning data"], rows: names.map((n) => [n, ranges.find((r) => r.label === n && r.noise === "v2")?.value ?? "–", ranges.find((r) => r.label === n && r.noise === "v1")?.value ?? "–"]) }}
     >
       <Legend items={[V2, V1]} />
       <div data-testid="worst" className="mt-2">
@@ -348,8 +348,8 @@ export function WorstStrip({ ranges }: { ranges: WorstRange[] }) {
                 <TipRows
                   title={n}
                   rows={[
-                    ...(v2 ? [{ color: V2.color, name: "v2", value: v2.value }] : []),
-                    ...(v1 ? [{ color: V1.color, name: "v1", value: v1.value }] : []),
+                    ...(v2 ? [{ color: V2.color, name: V2.label, value: v2.value }] : []),
+                    ...(v1 ? [{ color: V1.color, name: V1.label, value: v1.value }] : []),
                   ]}
                 />
               }
@@ -398,15 +398,15 @@ export function BenchPairs({ rows }: { rows: EvidenceBenchmark[] }) {
   const ticks = ticksTo(1);
   return (
     <ChartFigure
-      caption={`${rows[0]?.dataset ?? ""}: Wasl against the published baseline`}
+      caption={`${rows[0]?.dataset ?? ""}: Wasl against the best published result`}
       table={{
-        caption: "Benchmarks with a baseline",
-        head: ["Benchmark", "Wasl", "Baseline"],
+        caption: "Tests with a published result",
+        head: ["Test", "Wasl", "Published"],
         rows: rows.map((b) => [b.name, num(b.wasl), b.baseline === null ? "–" : num(b.baseline)]),
-        details: rows.map((b) => [b.baseline_source && `Baseline: ${b.baseline_source}`, b.note].filter(Boolean).join(" · ") || null),
+        details: rows.map((b) => [b.baseline_source && `Published: ${b.baseline_source}`, b.note].filter(Boolean).join(" · ") || null),
       }}
     >
-      <Legend items={[{ color: SERIES.wasl, label: "Wasl", shape: "bar" }, { color: SERIES.comparator, label: "Baseline", shape: "bar" }]} />
+      <Legend items={[{ color: SERIES.wasl, label: "Wasl", shape: "bar" }, { color: SERIES.comparator, label: "Published", shape: "bar" }]} />
       <div data-testid="bench-pairs" className="mt-2">
         {rows.map((b) => (
           <ChartRow
@@ -421,7 +421,7 @@ export function BenchPairs({ rows }: { rows: EvidenceBenchmark[] }) {
                 title={b.name}
                 rows={[
                   { color: SERIES.wasl, name: "Wasl", value: sharePct(b.wasl) },
-                  ...(b.baseline !== null ? [{ color: SERIES.comparator, name: baselineShort(b.baseline_source) ?? "Baseline", value: sharePct(b.baseline) }] : []),
+                  ...(b.baseline !== null ? [{ color: SERIES.comparator, name: baselineShort(b.baseline_source) ?? "Published", value: sharePct(b.baseline) }] : []),
                 ]}
                 note={b.note}
               />
@@ -454,8 +454,8 @@ export function BenchBullets({ rows }: { rows: EvidenceBenchmark[] }) {
   const ticks = ticksTo(1);
   return (
     <ChartFigure
-      caption={`${rows[0]?.dataset ?? ""}: Arabic–Latin name encoder alone, no published baseline`}
-      table={{ caption: "Name encoder benchmarks", head: ["Benchmark", "Wasl"], rows: rows.map((b) => [b.name, num(b.wasl)]), details: rows.map((b) => b.note || null) }}
+      caption={`${rows[0]?.dataset ?? ""}: Arabic and English name matching, no published result to compare`}
+      table={{ caption: "Name matching tests", head: ["Test", "Wasl"], rows: rows.map((b) => [b.name, num(b.wasl)]), details: rows.map((b) => b.note || null) }}
     >
       <div data-testid="bench-bullets">
         {rows.map((b) => (
@@ -485,7 +485,7 @@ export function BenchBullets({ rows }: { rows: EvidenceBenchmark[] }) {
 const MEASURES: { label: string; unit: string; get: (s: EvidenceScenario) => number }[] = [
   { label: "Cancers found per 1,000", unit: "", get: (s) => s.cancers_found_per_1000 },
   { label: "Extra colonoscopies per 1,000", unit: "", get: (s) => s.extra_colonoscopies_per_1000 },
-  { label: "Uplift in completion", unit: " pp", get: (s) => s.uplift_pp },
+  { label: "Rise in completion", unit: " points", get: (s) => s.uplift_pp },
   { label: "CRC found per colonoscopy", unit: "%", get: (s) => s.ppv * 100 },
 ];
 
@@ -495,9 +495,9 @@ export function ScenarioRanges({ scenarios }: { scenarios: EvidenceScenario[] })
   const [worst, base, best] = [by("worst"), by("base"), by("best")];
   return (
     <ChartFigure
-      caption="Worst to best case (line), base case (dot) · each row on its own scale from 0"
+      caption="Worst to best case (line), base case (dot)"
       table={{
-        caption: "Modelled scenarios per 1,000 positive FITs",
+        caption: "Modelled outcomes per 1,000 FIT+ results",
         head: ["Measure", "Worst", "Base", "Best"],
         rows: MEASURES.map((m) => [m.label, ...[worst, base, best].map((s) => (s ? `${num(m.get(s))}${m.unit}` : "–"))]),
       }}
@@ -564,14 +564,14 @@ export function TornadoChart({ rows, output, base }: { rows: EvidenceTornadoRow[
   const ticks = ticksTo(max);
   return (
     <ChartFigure
-      caption={`${output} as each input moves low → high, the rest at base`}
+      caption={`How ${output.toLowerCase()} changes as each assumption moves from low to high`}
       table={{
-        caption: `Sensitivity of ${output}`,
-        head: ["Input", "Low", "High"],
+        caption: `What moves ${output.toLowerCase()}`,
+        head: ["Assumption", "Low", "High"],
         rows: bars.map((b) => [b.input, `${b.low}: ${num(b.out_low)}`, `${b.high}: ${num(b.out_high)}`]),
       }}
     >
-      {base !== null && <Legend items={[{ color: SERIES.wasl, label: "Swing", shape: "bar" }, { color: CHROME.reference, label: `Base case ${num(base)}`, shape: "tick" }]} />}
+      {base !== null && <Legend items={[{ color: SERIES.wasl, label: "Range", shape: "bar" }, { color: CHROME.reference, label: `Base case ${num(base)}`, shape: "tick" }]} />}
       <div data-testid="tornado" className="mt-2">
         {bars.map((b) => (
           <ChartRow

@@ -135,7 +135,7 @@ describe("blinded review desk markup", () => {
     expect(html).toContain("Claimed by Rev-A until");
     expect(html).toContain("Release claim");
     expect(html).toContain("Submit first read");
-    expect(html).toContain("Heartbeat every 60 seconds");
+    expect(html).toContain("Kept for you while this page is open");
   });
 
   it("released and frozen states expose no stale answer form or mutation", () => {
@@ -168,15 +168,16 @@ describe("blinded review desk markup", () => {
     expect(html).toContain("stays hidden");
   });
 
-  it("agreement shows both answers by hash and no senior form", () => {
+  it("agreement shows both answers and no senior form", () => {
     const html = desk([agreed(LINK, "link", "same")]);
     expect(html).toContain("First read: Same patient");
     expect(html).toContain("Second read: Same patient");
-    expect(html).toContain("aaaaaaaaaaaa");
-    expect(html).toContain("bbbbbbbbbbbb");
+    expect(html).toContain('data-read="r1"');
+    expect(html).toContain('data-read="r2"');
+    expect(html).not.toContain("aaaaaaaaaaaa");
     expect(html).toContain("No senior form is needed");
     expect(html).not.toContain("Submit senior resolution");
-    expect(html).toContain("Case data is unchanged");
+    expect(html).toContain("Demo only: this answer does not change the case.");
   });
 
   it("disagreement shows both answers and only an authorised senior sees the r3 form", () => {
@@ -188,15 +189,15 @@ describe("blinded review desk markup", () => {
     }
     expect(senior).toContain("Submit senior resolution");
     expect(ordinary).not.toContain("Submit senior resolution");
-    expect(ordinary).toContain("Only an authorised senior");
+    expect(ordinary).toContain("A senior reviewer will decide");
   });
 
-  it("renders terminal reads separately by hash, with the senior resolution last", () => {
+  it("renders terminal reads separately, with the senior resolution last", () => {
     const html = desk([senior(LINK, "link", "same")]);
     const order = ["First read: Same patient", "Second read: Not the same patient", "Senior resolution: Same patient"].map((t) => html.indexOf(t));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
-    for (const h of ["aaaaaaaaaaaa", "bbbbbbbbbbbb", "cccccccccccc"]) expect(html).toContain(h);
+    for (const r of ["r1", "r2", "r3"]) expect(html).toContain(`data-read="${r}"`);
   });
 
   it("an unresolved question keeps the case open; resolved questions offer the next case", () => {
@@ -214,20 +215,20 @@ describe("blinded review desk markup", () => {
     detail.case = { ...detail.case, closed: false };
     detail.review_items = [{ item: "rv-ldct", loop: detail.case.id, kinds: ["evidence"], pair: [], p: 0, report: detail.evidence[0].report, verdict: "disagree", quote: "", chain: [] }];
     const html = desk([awaitingR1("rv-ldct", "evidence")], detail);
-    expect(html).toContain("Programme evidence (clinician discipline)");
+    expect(html).toContain("Programme evidence, for a clinician");
     expect(html).toContain("Select the LDCT report evidence label");
     expect(html).not.toContain("Is the colonoscopy report adequate?");
   });
 
   it("fixtures mode stays a non-persisting preview with no sign-out or submit control", () => {
     const html = renderToStaticMarkup(createElement(ReviewDesk, { view: reviewView(open()), mode: "fixtures", next }));
-    expect(html).toContain("nothing here is appended or saved");
+    expect(html).toContain("nothing here is saved");
     expect(html).not.toContain("Sign out");
     expect(html).not.toContain("Submit first read");
   });
 
   it("says nothing can be submitted when the API reports no independent review", () => {
-    expect(desk([])).toContain("did not report an independent review");
+    expect(desk([])).toContain("no open review questions");
   });
 });
 

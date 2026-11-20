@@ -180,7 +180,7 @@ describe("booking server action read-back", () => {
     expect(result.ok).toBe(true);
     expect(result.ok && result.response).toBeNull();
     expect(result.ok && result.projection).toBeNull();
-    expect(result.ok && result.warning).toContain("was saved");
+    expect(result.ok && result.warning).toContain("Booking saved");
   });
 
   it("missing coordinator credentials send nothing", async () => {

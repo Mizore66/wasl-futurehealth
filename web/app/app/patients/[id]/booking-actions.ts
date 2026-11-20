@@ -34,9 +34,9 @@ async function projection(caseId: string): Promise<BookingProjection | null> {
 
 /** Append exactly one simulated reservation event, then render only the server's freshly read projection. */
 export async function recordBooking(caseId: string, expectedHead: string, action: z.input<typeof BookingAction>): Promise<BookingWriteResult> {
-  if (apiMode() !== "live") return { ok: false, status: 503, error: "No live API: fixture mode cannot save a simulated reservation", projection: null };
+  if (apiMode() !== "live") return { ok: false, status: 503, error: "Bookings can't be saved in this demo.", projection: null };
   const args = Args.safeParse({ caseId, expectedHead, action });
-  if (!args.success) return { ok: false, status: 400, error: "Malformed simulated booking action", projection: null };
+  if (!args.success) return { ok: false, status: 400, error: "Booking not recognised. Nothing was saved.", projection: null };
   const result = await postBookingAction(args.data.caseId, args.data.action, args.data.expectedHead);
   paths(args.data.caseId);
   if (!result.ok) {
@@ -50,7 +50,7 @@ export async function recordBooking(caseId: string, expectedHead: string, action
   if (!latest) {
     return {
       ok: true, response: result.response, projection: null,
-      warning: "The simulated booking event was saved, but the updated case could not be read. Reload before another action.",
+      warning: "Booking saved. Reload the page before doing anything else.",
     };
   }
   return { ok: true, response: result.response, projection: latest };

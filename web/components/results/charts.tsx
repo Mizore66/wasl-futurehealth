@@ -21,10 +21,10 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
   const ticks = ticksTo(max, 2);
   return (
     <ChartFigure
-      caption="Seen (dot) and the 95% upper bound on the true rate (whisker), 5 seeds pooled"
+      caption="Seen (dot) and the highest the true rate is likely to be (line)"
       table={{
-        caption: "Safety counters with 95% upper bounds",
-        head: ["Counter", "Seen", "95% upper bound"],
+        caption: "Safety errors and the highest likely rate",
+        head: ["Error", "Seen", "Highest likely rate"],
         rows: rows.map((r) => [r.label, `${r.events} of ${fmt(r.denominator)}`, pctText(r.upper)]),
       }}
     >
@@ -37,7 +37,7 @@ export function BoundChart({ rows }: { rows: Bound[] }) {
             labelWidth="11rem"
             track="h-7"
             testId={r.testId}
-            tip={<TipRows title={r.label} rows={[{ color: SERIES.wasl, name: "seen", value: `${r.events} of ${fmt(r.denominator)}` }, { color: SERIES.wasl, name: "95% upper bound", value: pctText(r.upper) }]} />}
+            tip={<TipRows title={r.label} rows={[{ color: SERIES.wasl, name: "seen", value: `${r.events} of ${fmt(r.denominator)}` }, { color: SERIES.wasl, name: "highest likely rate", value: pctText(r.upper) }]} />}
           >
             <Grid ticks={ticks} x={x} />
             <Seg from={x(r.events / r.denominator)} to={x(r.upper)} color={SERIES.wasl} />
@@ -60,9 +60,9 @@ export function IntervalChart({ label, value, low, high, from = 0.5 }: { label: 
   const ticks = [from, (from + 1) / 2, 1].map((t) => Number(t.toFixed(2)));
   const said = `${value.toFixed(3)} (${low.toFixed(3)}–${high.toFixed(3)})`;
   return (
-    <ChartFigure caption="Mean over 5 seeds (dot) and 95% interval (line)" table={{ caption: label, head: ["Measure", "Mean", "95% interval"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
+    <ChartFigure caption="Average of 5 runs (dot) and likely range (line)" table={{ caption: label, head: ["Measure", "Average", "Likely range"], rows: [[label, value.toFixed(3), `${low.toFixed(3)}–${high.toFixed(3)}`]] }}>
       <div data-testid="recall-chart">
-        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "mean, 95% interval", value: said }]} />}>
+        <ChartRow label={label} labelWidth="11rem" track="h-7" tip={<TipRows title={label} rows={[{ color: SERIES.wasl, name: "average, likely range", value: said }]} />}>
           <Grid ticks={ticks} x={x} />
           <Seg from={x(low)} to={x(high)} color={SERIES.wasl} />
           <Dot x={x(value)} color={SERIES.wasl} />
@@ -95,7 +95,7 @@ export function KpiChart({ groups }: { groups: Kpi[] }) {
         items={[
           { color: SERIES.comparator, label: "Emirates ID only", shape: "bar" },
           { color: SERIES.wasl, label: "Wasl", shape: "bar" },
-          { color: CHROME.reference, label: "Synthetic truth", shape: "tick" },
+          { color: CHROME.reference, label: "Simulated truth", shape: "tick" },
         ]}
       />
       <div data-testid="kpi-chart" className="mt-2">
@@ -179,9 +179,9 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
   return (
     <ChartFigure
       caption={label}
-      table={{ caption: label, head: ["Corpora", "Count"], rows: [["Found an unsafe phrasing", String(hit)], ["Passed", String(total - hit)]] }}
+      table={{ caption: label, head: ["Report sets", "Count"], rows: [["Exposed an unsafe reading", String(hit)], ["Passed", String(total - hit)]] }}
     >
-      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} corpora found an unsafe phrasing`} className="flex flex-wrap gap-1.5">
+      <div data-testid="unit-chart" role="img" aria-label={`${hit} of ${total} report sets exposed an unsafe reading`} className="flex flex-wrap gap-1.5">
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
@@ -193,7 +193,7 @@ export function UnitChart({ total, hit, label }: { total: number; hit: number; l
       <Legend
         className="mt-2"
         items={[
-          { color: SERIES.comparator, label: "Found an unsafe phrasing, fixed by a general rule", shape: "bar" },
+          { color: SERIES.comparator, label: "Exposed an unsafe reading, then fixed", shape: "bar" },
           { color: SERIES.wasl, label: "Passed", shape: "bar" },
         ]}
       />

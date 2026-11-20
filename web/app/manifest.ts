@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Wasl",
     short_name: "Wasl",
-    description: "Every positive screening test, followed to a documented end. Synthetic data demo.",
+    description: "Every positive screening test, followed to a documented end. Simulated data.",
     start_url: "/",
     display: "standalone",
     background_color: BRAND.paper,

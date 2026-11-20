@@ -57,7 +57,7 @@ describe("programmeView: the two 31-day sources", () => {
 
   it("explains each bar from its source: counts for the demo run, the 95% range for the mean", () => {
     expect(view.kpi.demo.detail.wasl).toBe("408 of 1,331 eligible referrals");
-    expect(view.kpi.heldout.detail.eid).toBe("Mean of 5 seeds, 95% range 11.4% to 13.1%");
+    expect(view.kpi.heldout.detail.eid).toBe("Average of 5 test runs, likely range 11.4% to 13.1%");
   });
 });
 
@@ -218,7 +218,7 @@ describe("programmeView: capacity", () => {
 
   it("reads regions, condition and summary from the sample", () => {
     expect(capacity?.condition).toBe("misallocated");
-    expect(capacity?.poolingNote).toContain("network pooling");
+    expect(capacity?.poolingNote).toContain("sharing slots across regions");
     expect(capacity?.regions).toEqual([
       { key: "AA", name: "Al Ain", slots: 340, cases: 254 },
       { key: "AD", name: "Abu Dhabi", slots: 532, cases: 561 },

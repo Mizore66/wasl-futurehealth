@@ -29,7 +29,7 @@ function sourced(shown: string): boolean {
 async function pageNumbers(page: Page): Promise<string[]> {
   const text = await page.locator("main").evaluate((main) => {
     const copy = main.cloneNode(true) as HTMLElement;
-    copy.querySelectorAll("[data-axis], code, [aria-label='Run metadata'], [data-testid='verify-run']").forEach((el) => el.remove());
+    copy.querySelectorAll("[data-axis], code, [aria-label='About this data'], [data-testid='verify-run']").forEach((el) => el.remove());
     document.body.append(copy);
     const t = copy.innerText;
     copy.remove();
@@ -81,9 +81,9 @@ test.describe("Evidence", () => {
     await expect(tip).toBeVisible();
     await expect(tip).toContainText(r(v2per1000[0].truth));
     await expect(tip).toContainText("SEHA 30.5%");
-    await gap.getByRole("button", { name: "Tuned-on (v1)" }).click();
+    await gap.getByRole("button", { name: "Tuning data" }).click();
     await expect(page.getByTestId("flagged")).toContainText(hero(/v1/));
-    await gap.getByRole("button", { name: "Held-out (v2)" }).click();
+    await gap.getByRole("button", { name: "Unseen test data" }).click();
     await expect(page.getByTestId("calibration")).toContainText("30.5%");
     await expect(page.getByTestId("calibration").getByRole("link", { name: "BMC Cancer 2021" })).toHaveAttribute("href", evidence.impact.calibration.url);
     // The table alternative gives the exact numbers.
@@ -101,12 +101,12 @@ test.describe("Evidence", () => {
     expect(await safety.getByTestId("safety-row").count()).toBeGreaterThanOrEqual(closureRows.length);
     const accuracy = page.getByTestId("evidence-accuracy");
     await accuracy.getByRole("button", { name: "Show as table" }).first().click();
-    await expect(accuracy.getByRole("table", { name: "Safety events and 95% upper bounds" })).toContainText("0 of 3,161");
+    await expect(accuracy.getByRole("table", { name: "Safety errors and the highest likely rate" })).toContainText("0 of 3,161");
     // Linkage rates: two panels (false match, missed match), each programme with v2 and v1 intervals.
     await expect(page.getByTestId("rates-missed").getByTestId("rate-row").first()).toContainText("Colorectal (CRC)");
     await expect(page.getByTestId("rates-missed")).toContainText("21.5%");
     await accuracy.getByRole("button", { name: "Show as table" }).nth(1).click();
-    await expect(accuracy.getByRole("table", { name: "Linkage error rates by noise model" })).toContainText(/\d\.\d+%\s*\(\d/);
+    await expect(accuracy.getByRole("table", { name: "Wrong and missed matches" })).toContainText(/\d\.\d+%\s*\(\d/);
     // Worst cases as a strip: the worst v2 seed labelled.
     await expect(page.getByTestId("worst")).toContainText(/seed \d+/);
     await expect(page.getByTestId("worst-tiles")).toContainText("3.4 points");
@@ -125,10 +125,10 @@ test.describe("Evidence", () => {
     // Modelled: labelled modelled and conditional, a range per measure and the tornado with its table.
     const modelled = page.getByTestId("evidence-modelled");
     await expect(modelled.locator('[data-honesty="illustrative"]')).toHaveText(/Modelled, not measured/);
-    await expect(page.getByTestId("modelled-label")).toContainText("Conditional on navigation");
+    await expect(page.getByTestId("modelled-label")).toContainText("Only if navigators act");
     await expect(page.getByTestId("scenarios").getByTestId("scenario-row").first()).toContainText(String(scen.find((x) => x.name === "best")!.cancers_found_per_1000));
     await modelled.getByRole("button", { name: "Show as table" }).nth(1).click();
-    await expect(modelled.getByRole("table", { name: /Sensitivity/ })).toContainText("Navigation uplift");
+    await expect(modelled.getByRole("table", { name: /What moves/ })).toContainText("Navigation uplift");
 
     // Ledger: status counts as chips, then the full ledger behind a disclosure.
     for (const s of ["built", "simulated", "designed"] as const) {
@@ -198,7 +198,7 @@ for (const vp of [
     await expect(page.getByTestId("claims-list").locator("li")).toHaveCount(evidence.claims.length);
     for (const b of await page.locator("main").getByRole("button", { name: "Show as table" }).all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     for (const el of await page.locator("main summary").all()) expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    for (const b of await page.locator("main").getByRole("group", { name: "Evaluation run" }).getByRole("button").all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    for (const b of await page.locator("main").getByRole("group", { name: "Test data" }).getByRole("button").all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await page.screenshot({ path: `test-results/screens/evidence-${vp.w}.png`, fullPage: true });
     await axe(page);
   });

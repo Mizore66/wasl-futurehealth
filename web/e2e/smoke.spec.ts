@@ -24,7 +24,7 @@ test("the shell marks the current page and carries the one simulated-data chip",
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link", { name: "Pipeline" })).toHaveAttribute("aria-current", "page");
   await expect(nav.locator("[aria-current]")).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "Run metadata" }).filter({ visible: true })).toHaveText("Simulated data");
+  await expect(page.getByRole("region", { name: "About this data" }).filter({ visible: true })).toHaveText("Simulated data");
   await nav.getByRole("link", { name: "Review desk", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/review$/);
   await expect(nav.getByRole("link", { name: "Review desk", exact: true })).toHaveAttribute("aria-current", "page");

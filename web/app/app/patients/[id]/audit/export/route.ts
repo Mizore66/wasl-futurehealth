@@ -38,7 +38,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
   }
   if (exportConcealsInitialRead(doc)) {
     return Response.json(
-      { error: "The export is withheld while an initial review read is still hidden from its second reader. Try again once the second read is in." },
+      { error: "The export is not available until the second read is in. Try again then." },
       { status: 409, headers: noStore },
     );
   }
@@ -49,7 +49,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
    */
   if (containsModelOutput(doc) && !(await viewerMayReadModelNow(id))) {
     return Response.json(
-      { error: "The export is withheld until you have completed your own independent read of the evidence question. Try again afterwards." },
+      { error: "The export is not available until you finish your own read. Try again then." },
       { status: 409, headers: noStore },
     );
   }

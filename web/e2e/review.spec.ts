@@ -31,8 +31,8 @@ test.describe("review, fixtures mode", () => {
   test("the queue is rebuilt from the review_hold case and says so", async ({ page }) => {
     await page.goto("/app/review");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review desk");
-    await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
-    await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
+    await expect(page.getByText("Simulated queue: a practice case")).toBeVisible();
+    await expect(page.getByText(/No cases are waiting in this demo/)).toContainText("2 questions");
     const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
     await expect(row).toContainText("Identity · Colonoscopy report");
     await expect(row).toContainText("SKM-dr-217");
@@ -74,9 +74,9 @@ test.describe("review, fixtures mode", () => {
     const why = page.getByRole("button", { name: "Why it was held" });
     await why.click();
     await expect(page.getByRole("button", { name: "Hide why" })).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("img", { name: /Link score 1\.000/ })).toBeVisible();
-    await expect(page.getByText("This score describes the displayed link context. The original configured guard result is unavailable.")).toBeVisible();
-    await expect(page.getByRole("note", { name: "Identifier source context" })).toContainText("The original configured guard result is unavailable.");
+    await expect(page.getByRole("img", { name: /Match score 1\.000/ })).toBeVisible();
+    await expect(page.getByText("This score is for the records as they stand now.")).toBeVisible();
+    await expect(page.getByRole("note", { name: "Where these details come from" })).toContainText("Where these details came from is not known.");
     await page.screenshot({ path: "test-results/screens/review-desk.png", fullPage: true });
     await noSeriousAxe(page);
   });
@@ -88,7 +88,7 @@ test.describe("review, fixtures mode", () => {
     await expect(r.getByRole("group", { name: /colonoscopy report/ })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(r.locator('li[data-kind="current"]')).toContainText("your answers");
-    await expect(r).toContainText("nothing here is appended or saved");
+    await expect(r).toContainText("nothing here is saved");
     const bridge = page.getByRole("region", { name: "Record pair" });
     await expect(bridge.getByRole("img", { name: "Not yet confirmed as this patient" })).toHaveAttribute("data-state", "unknown");
 
@@ -105,7 +105,7 @@ test.describe("review, fixtures mode", () => {
     // #162: the complete synthetic report the evidence question judges, not only the reader's quote.
     const source = r.getByTestId("source-report");
     await expect(source).toHaveAttribute("data-source", "available");
-    await expect(source).toContainText("Source report skmc-endo/DiagnosticReport/SKM-dr-217, version 1");
+    await expect(source).toContainText("Report skmc-endo/DiagnosticReport/SKM-dr-217, version 1");
     await expect(source).toContainText("completely removed using multiple bites with cold biopsy forceps");
 
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
@@ -115,8 +115,7 @@ test.describe("review, fixtures mode", () => {
     await expect(result).toContainText("Would close the case");
     await expect(result).not.toContainText("Closed with");
     await expect(result.getByTestId("signature-squares")).toHaveCount(0);
-    await expect(result.getByText("Reconstruction: nothing was saved")).toBeVisible();
-    await expect(result).toContainText("No event was appended and no hash exists");
+    await expect(result.getByText("Practice only: nothing was saved")).toBeVisible();
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(previewNodes(page).nth(0)).toContainText("preview, not saved: same patient (as reviewer)");
     await expect(previewNodes(page).nth(1)).toContainText("preview, not saved: report adequate (as clinician)");

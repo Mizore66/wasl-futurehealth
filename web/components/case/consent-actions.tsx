@@ -23,20 +23,20 @@ const ACTIONS: { event: ConsentEventName; label: string; confirmation: string; c
   {
     event: "consent_granted",
     label: "Record consent granted",
-    confirmation: "Releases the demo consent hold. No message is sent and the canonical simulation does not change.",
+    confirmation: "Lifts the demo consent hold. No message is sent.",
     confirm: "Confirm consent granted",
   },
   {
     event: "consent_denied",
     label: "Record consent denied",
-    confirmation: "Cancels queued demo outreach. No message is sent and the canonical simulation does not change.",
+    confirmation: "Cancels queued demo messages. No message is sent.",
     confirm: "Confirm consent denied",
   },
   {
     event: "consent_opted_out",
     label: "Record opt-out",
     confirmation:
-      "Cancels queued demo outreach and blocks a later grant or denial in this demo flow; only another opt-out can follow. No message is sent and the canonical simulation does not change.",
+      "Cancels queued demo messages and blocks any later grant or denial. Only another opt-out can follow. No message is sent.",
     confirm: "Confirm opt-out",
   },
 ];
@@ -53,7 +53,7 @@ function OutreachState({ contact }: { contact: ApiContact }) {
           ? "The demo consent hold is released. No message was sent."
           : pending === "cancelled"
             ? "Queued demo outreach is cancelled. No message was sent."
-            : "No release or cancellation has been recorded in this demo overlay."}
+            : "No release or cancellation recorded yet."}
       </p>
     </div>
   );
@@ -105,11 +105,11 @@ export function ConsentActions({
               : result.status === 403
                 ? "Not saved: the coordinator role is not authorised to record consent."
                 : result.status === 404
-                  ? "Not saved: the API does not know this case. Reload the case."
+                  ? "Not saved: this case could not be found. Reload the case."
                   : stale
                     ? `Not saved: ${result.error}. Reload and review the latest case before retrying.`
                     : refused
-                      ? "Not saved: the patient has opted out of contact in this demo flow, so consent cannot be granted or denied. Only another opt-out can be recorded. Reload to see the opt-out in the history."
+                      ? "Not saved: the patient has opted out of contact, so consent cannot be granted or denied. Only another opt-out can be recorded. Reload to see the opt-out in the history."
                       : `Not saved: ${result.error}`;
           setMessage({ kind: "error", text });
           return;
@@ -119,35 +119,35 @@ export function ConsentActions({
           setUpdatedHead(result.expectedHead || "");
           setMessage({
             kind: "success",
-            text: "Consent event appended to the demo ledger. Canonical case data is unchanged and no message was sent.",
+            text: "Consent recorded. The case record is unchanged and no message was sent.",
           });
         } else {
           setUpdatedHead("");
-          setMessage({ kind: "warning", text: result.warning ?? "Consent event saved. Reload before another action." });
+          setMessage({ kind: "warning", text: result.warning ?? "Consent saved. Reload the page before doing anything else." });
         }
       } catch {
-        setMessage({ kind: "error", text: "The API did not answer. Reload before retrying; no new event is shown here." });
+        setMessage({ kind: "error", text: "We couldn't confirm the save. Reload the page before trying again." });
       }
     });
   }
 
-  if (!current) return <p className="m-0 mt-3 text-muted">No demo contact overlay was included in this case snapshot.</p>;
+  if (!current) return <p className="m-0 mt-3 text-muted">No demo contact permission is recorded for this case.</p>;
 
   return (
     <div className="mt-4">
-      <h3 className="m-0 text-body font-medium">Demo contact overlay</h3>
+      <h3 className="m-0 text-body font-medium">Demo contact permission</h3>
       <p className="m-0 mt-2">{STATUS[current.overlay.status]}</p>
       <OutreachState contact={current} />
       <p className="m-0 mt-2 text-small text-muted">
-        Canonical consent and outreach are unchanged. No message is sent and the canonical simulation does not change.
+        This does not change the case record. No message is sent.
       </p>
 
       {live && canWrite && head ? (
         <div className="mt-3 flex flex-col gap-2" aria-label="Record demo contact permission">
           {optedOut && (
             <p className="m-0 text-small text-muted">
-              The patient has opted out of contact in this demo flow. Consent can no longer be granted or denied here; only another
-              opt-out can be recorded.
+              The patient has opted out of contact. Consent can no longer be granted or denied here; only another opt-out can be
+              recorded.
             </p>
           )}
           {offered.map((action) => (
@@ -175,12 +175,12 @@ export function ConsentActions({
       ) : (
         <p className="m-0 mt-3 text-small text-muted">
           {!live
-            ? "Recording consent needs the live API. This snapshot is read-only."
+            ? "Consent can't be recorded here. This view is read-only."
             : !canWrite
-              ? "Consent actions are unavailable because the case ledger did not validate."
+              ? "Consent can't be recorded: this case's record failed its tamper check."
               : updatedHead === ""
-                ? "Consent actions are paused. Reload the latest case before recording another event."
-                : "Consent actions are unavailable because the case head signature is missing."}
+                ? "Reload the page before recording another change."
+                : "Consent can't be recorded for this case right now. Reload the page."}
         </p>
       )}
       <div className="min-h-6" aria-live="polite">
@@ -193,7 +193,7 @@ export function ConsentActions({
 
       <h4 className="m-0 mt-4 text-body font-medium">Demo consent history</h4>
       {current.history.length === 0 ? (
-        <p className="m-0 mt-2 text-muted">No demo consent events recorded.</p>
+        <p className="m-0 mt-2 text-muted">No demo consent changes recorded.</p>
       ) : (
         <ol className="m-0 mt-1 list-none p-0" aria-label="Demo consent history">
           {current.history.map((event) => {
@@ -214,7 +214,6 @@ export function ConsentActions({
                   {atWords(event.at)} · {patient ? "Patient self-service" : `${actor} · ${roleWords(role)}`}
                 </p>
                 {"note" in event && typeof event.note === "string" && event.note && <p className="m-0 mt-1">&ldquo;{event.note}&rdquo;</p>}
-                <code className="mt-1 block break-all text-small text-muted">{event.hash}</code>
               </li>
             );
           })}

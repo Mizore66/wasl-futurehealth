@@ -76,15 +76,15 @@ export function PatternLinks({ patterns, className }: { patterns: Patterns; clas
         <h2 id="patterns-h" className="m-0 text-section font-medium">
           By provider
         </h2>
-        <HonestyLabel kind="simulated">Simulated cohort</HonestyLabel>
+        <HonestyLabel kind="simulated">Simulated data</HonestyLabel>
       </div>
       <p data-testid="provider-takeaway" className="m-0 mt-1 text-body font-medium text-ink">
         Closed with evidence{range}
       </p>
       <p className="m-0 mt-1 text-small text-muted">
-        Out of each provider&apos;s cases across every programme. Closed with evidence counts closures with evidence on file only, so it is lower than the
-        programme chart&apos;s {STATUS_PART.closed.toLowerCase()}, which also counts cases that needed no follow-up. Each figure opens the filtered patient list.
-        {smallCellRule && <> Small cells are suppressed at source ({smallCellRule}) and are never shown as a number or linked.</>}
+        Each provider&apos;s cases across every programme. Only closures with evidence on file count, so this is lower than{" "}
+        {STATUS_PART.closed.toLowerCase()} above, which also counts cases that needed no follow-up. Each figure opens the patient list.
+        {smallCellRule && <> Counts under 5 are hidden to protect privacy.</>}
       </p>
       <ul aria-labelledby="patterns-h" className="m-0 mt-2 list-none p-0 text-body">
         {providers.map((r) => (

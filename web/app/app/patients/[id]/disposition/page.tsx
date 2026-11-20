@@ -65,7 +65,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
           attached
           compact
           title="Clinician disposition"
-          sub={`Case ${shortId(detail.case.id)} · ${detail.case.programme.replaceAll("_", " ")} · screening record ${detail.case.closed ? "closed by evidence" : "open"}`}
+          sub={`Case ${shortId(detail.case.id)} · ${detail.case.programme.replaceAll("_", " ")} · screening record ${detail.case.closed ? "closed" : "open"}`}
         />
         <div className="p-4 md:p-pad">
           {live && viewer.session && (
@@ -79,11 +79,11 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
               </h2>
               {ctx.open.length === 0 ? (
                 <p className="m-0 mt-3 text-muted" data-testid="disposition-none">
-                  Nothing waits on a clinician here: the case has no clinician-decision hold and no unanswered patient decline.
+                  No clinician decision is needed. The case is not on hold and the patient has not declined.
                 </p>
               ) : !live ? (
                 <p className="m-0 mt-3 text-muted" data-testid="disposition-fixtures">
-                  Fixtures mode: a disposition can be recorded only against the live API.
+                  Dispositions can&apos;t be recorded in this demo.
                 </p>
               ) : (
                 ctx.open.map((kind) => (
@@ -93,8 +93,8 @@ export default async function Page({ params, searchParams }: PageProps<"/app/pat
                     </h3>
                     <p className="m-0 text-small text-muted">
                       {kind === "clinician_disposition"
-                        ? "Saving records a plan with an owner and review date. The hold stays until qualifying evidence arrives through the pipeline."
-                        : "Saving answers the coordinator-recorded decline. It never records the procedure as done."}
+                        ? "Saving records a plan with an owner and a review date. The hold stays until the results arrive."
+                        : "Saving answers the patient's decline, as recorded by the coordinator. It never records the procedure as done."}
                     </p>
                     <DispositionForm caseId={detail.case.id} expectedHead={ctx.expectedHead} kind={kind} crc={detail.case.programme === "crc"} />
                   </div>

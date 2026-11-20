@@ -100,12 +100,12 @@ describe("diabetic retinopathy", () => {
 
   it("an urgent referral still waiting shows the clinic note and outcome as pending, and no next due yet", () => {
     const html = render(findingDetail("diabetic_retinopathy", "phc-retina/ServiceRequest/PHC-sr-1"));
-    expect(row(html, "Grade")).toBe("R2M0/urgent (coded result matched the text)");
+    expect(row(html, "Grade")).toBe("R2M0/urgent (matches the report text)");
     expect(row(html, "Urgency")).toBe("Urgent");
     expect(row(html, "Eye-clinic note")).toBe("Pending: no eye-clinic note read yet");
     expect(row(html, "Outcome")).toBe("Pending");
     expect(row(html, "Retina examined")).toBeNull();
-    expect(row(html, "Next due")).toBe("Set once the loop resolves");
+    expect(row(html, "Next due")).toBe("Set once follow-up is complete");
   });
 
   it("a rescreen grade is not a referral and carries the annual rescreen date", () => {
@@ -117,7 +117,7 @@ describe("diabetic retinopathy", () => {
     expect(row(html, "Eye-clinic note")).toBeNull();
     expect(row(html, "Outcome")).toBeNull();
     expect(row(html, "Deadline")).toBeNull();
-    expect(row(html, "Next screen")).toBe(`365 days, ${formatDayYear(dr.deadline_day!)} (routine interval, no overdue clock)`);
+    expect(row(html, "Next screen")).toBe(`365 days, ${formatDayYear(dr.deadline_day!)} (routine interval)`);
     expect(row(html, "Next due")).toBe(`Rescreen ${formatDayYear(dr.next_due!.due_day)} (doh2024dr annual rescreen)`);
   });
 
@@ -132,7 +132,7 @@ describe("diabetic retinopathy", () => {
     const { next_due: _drop, ...dr } = detail.case.dr!;
     void _drop;
     const html = render({ ...detail, case: { ...detail.case, dr }, current: { ...detail.current, dr } });
-    expect(row(html, "Next due")).toBe("Not recorded in the API data");
+    expect(row(html, "Next due")).toBe("Not recorded");
   });
 });
 
@@ -142,17 +142,17 @@ describe("breast", () => {
     const breast = servedSummary("breast", id).breast!;
     const html = render(findingDetail("breast", id));
     expect(html).toContain("Breast screening (BI-RADS)");
-    expect(row(html, "BI-RADS category")).toBe("B2 (coded assessment matched the text)");
+    expect(row(html, "BI-RADS category")).toBe("B2 (matches the report text)");
     expect(row(html, "Recall recommendation")).toBe("Routine screening, no recall");
     expect(row(html, "Deadline")).toBeNull();
-    expect(row(html, "Next screen")).toBe(`730 days, ${formatDayYear(breast.deadline_day!)} (routine interval, no overdue clock)`);
+    expect(row(html, "Next screen")).toBe(`730 days, ${formatDayYear(breast.deadline_day!)} (routine interval)`);
     expect(row(html, "Assessment document")).toBeNull();
     expect(row(html, "Outcome")).toBe("None: no recall");
   });
 
   it("an open recall shows the assessment and its outcome as pending", () => {
     const html = render(findingDetail("breast", "bsu-screen/ServiceRequest/BSU-sr-15"));
-    expect(row(html, "BI-RADS category")).toBe("B0 (coded assessment matched the text)");
+    expect(row(html, "BI-RADS category")).toBe("B0 (matches the report text)");
     expect(row(html, "Recall recommendation")).toBe("Recall for assessment, routine");
     expect(row(html, "Assessment document")).toBe("Pending: none read yet");
     expect(row(html, "Outcome")).toBe("Pending");
@@ -197,16 +197,16 @@ describe("breast", () => {
     expect(row(html, "Screening report")).toBe("Not received yet");
     expect(row(html, "BI-RADS category")).toBe("Not read yet");
     expect(row(html, "Recall recommendation")).toBe("Not decided yet");
-    expect(row(html, "Deadline")).toBe("Not recorded in the API data");
+    expect(row(html, "Deadline")).toBe("Not recorded");
     expect(row(html, "Outcome")).toBe("Not decided yet");
   });
 });
 
 describe("no finding object in the API data", () => {
   it.each([
-    ["lung_nodule", "rad-imaging/ServiceRequest/RAD-sr-1", "lung", "The API sent no lung-nodule finding for this case yet."],
-    ["diabetic_retinopathy", "phc-retina/ServiceRequest/PHC-sr-1", "dr", "The API sent no retinal screening finding for this case yet."],
-    ["breast", "bsu-screen/ServiceRequest/BSU-sr-1", "breast", "The API sent no breast screening finding for this case yet."],
+    ["lung_nodule", "rad-imaging/ServiceRequest/RAD-sr-1", "lung", "No lung-nodule finding recorded yet."],
+    ["diabetic_retinopathy", "phc-retina/ServiceRequest/PHC-sr-1", "dr", "No retinal screening finding recorded yet."],
+    ["breast", "bsu-screen/ServiceRequest/BSU-sr-1", "breast", "No breast screening finding recorded yet."],
   ] as const)("%s renders an honest empty state", (programme, id, key, words) => {
     const detail = findingDetail(programme, id);
     const html = render({ ...detail, case: { ...detail.case, [key]: undefined }, current: { ...detail.current, [key]: undefined } });

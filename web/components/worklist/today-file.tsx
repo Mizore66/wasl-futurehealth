@@ -43,12 +43,12 @@ export function useTodayRecords(id: string | undefined) {
         const body: unknown = await r.json().catch(() => null);
         if (r.ok) {
           const parsed = TodayRecords.safeParse(body);
-          return parsed.success ? { ok: true, records: parsed.data } : { ok: false, error: "the web server returned records in an unrecognised shape", missing: false };
+          return parsed.success ? { ok: true, records: parsed.data } : { ok: false, error: "the records could not be read", missing: false };
         }
         const b = body as { error?: unknown; missing?: unknown } | null;
-        return { ok: false, error: typeof b?.error === "string" ? b.error : `HTTP ${r.status}`, missing: r.status === 404 && b?.missing === true };
+        return { ok: false, error: typeof b?.error === "string" ? b.error : "the system returned an error", missing: r.status === 404 && b?.missing === true };
       })
-      .catch((): RecordsRead | null => (ac.signal.aborted ? null : { ok: false, error: "the web server did not answer", missing: false }))
+      .catch((): RecordsRead | null => (ac.signal.aborted ? null : { ok: false, error: "no response; check your connection", missing: false }))
       .then((read) => {
         if (!read || ac.signal.aborted) return;
         if (read.ok || read.missing) kept.current.add(id);
@@ -75,18 +75,18 @@ export function RecordsPanel({ read, onRetry }: { read: RecordsRead | undefined;
   if (!read) {
     return (
       <p role="status" className="m-0 mt-4 text-muted" data-testid="records-loading">
-        Reading source records…
+        Loading records…
       </p>
     );
   }
   if (!read.ok) {
     return read.missing ? (
       <p role="status" className="m-0 mt-4 text-muted" data-testid="records-missing">
-        No source records to show: {read.error}.
+        No records to show: {read.error}.
       </p>
     ) : (
       <div role="status" data-testid="records-failed" className="mt-3 flex min-h-11 flex-wrap items-center gap-x-gap">
-        <span className="text-warning">Could not read the source records: {read.error}</span>
+        <span className="text-warning">Could not load the records: {read.error}</span>
         <Button variant="quiet" size="touch" onClick={onRetry}>
           Retry
         </Button>
@@ -97,7 +97,7 @@ export function RecordsPanel({ read, onRetry }: { read: RecordsRead | undefined;
   if (sources.length === 0 && caseHeld.length === 0) {
     return (
       <p className="m-0 mt-4 text-muted" data-testid="records-empty">
-        No source records on this case yet.
+        No records on this case yet.
       </p>
     );
   }

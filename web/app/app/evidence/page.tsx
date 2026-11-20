@@ -20,7 +20,6 @@ import {
   worstRanges,
 } from "@/components/evidence/model";
 import { PageHeader } from "@/components/shell/page-header";
-import { runInfo } from "@/components/shell/run-info";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { HONESTY } from "@/lib/honesty";
 import type { Evidence, EvidenceClaim } from "@/lib/api/evidence-schema";
@@ -89,8 +88,7 @@ function Headline({ ev }: { ev: Evidence }) {
         calibration={seha}
         source={
           <p data-testid="calibration" className="m-0">
-            Reference: {seha.short}, {calibration.label} (<Ext href={calibration.url}>{calibration.source}</Ext>). A plausibility check, not a
-            validation.
+            For comparison: {seha.short}, {calibration.label} (<Ext href={calibration.url}>{calibration.source}</Ext>). A sense check, not proof.
           </p>
         }
       />
@@ -146,7 +144,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
     <Section
       id="accuracy"
       title={anyClosure ? "False closures were seen: read the counts below" : "No false closures in any programme; misses stay visible"}
-      aside={<HonestyLabel plain kind="simulated">Held-out persons, 5 seeds</HonestyLabel>}
+      aside={<HonestyLabel plain kind="simulated">Simulated patients, 5 runs</HonestyLabel>}
     >
       <Terms ev={ev} />
       <div className="mt-5 grid items-start gap-x-gap gap-y-8 lg:grid-cols-2">
@@ -168,7 +166,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
                   key={p.metric}
                   label={tileName(p.metric)}
                   value={tileValue(p.v2, p.metric)}
-                  sub={p.v1 ? `v1 ${tileValue(p.v1, p.metric)}` : undefined}
+                  sub={p.v1 ? `Tuning data ${tileValue(p.v1, p.metric)}` : undefined}
                 />
               ))}
             </dl>
@@ -177,7 +175,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
       </div>
       {(ranges.length > 0 || tiles.length > 0) && (
         <div className="mt-8">
-          <h3 className={h3}>The worst seed and stratum stay close to the mean</h3>
+          <h3 className={h3}>Even the worst run stays close to the average</h3>
           {ranges.length > 0 && (
             <div className="mt-2">
               <WorstStrip ranges={ranges} />
@@ -194,7 +192,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
                     key={name}
                     label={name}
                     value={lead.lead}
-                    sub={[lead.who, v1 && v1 !== lead ? `v1 ${v1.who ? `${v1.who} ` : ""}${v1.lead}` : null].filter(Boolean).join(" · ") || undefined}
+                    sub={[lead.who, v1 && v1 !== lead ? `Tuning data ${v1.who ? `${v1.who} ` : ""}${v1.lead}` : null].filter(Boolean).join(" · ") || undefined}
                   />
                 );
               })}
@@ -267,7 +265,7 @@ function Modelled({ ev }: { ev: Evidence }) {
       aside={<HonestyLabel plain kind="illustrative">Modelled, not measured</HonestyLabel>}
     >
       <p data-testid="modelled-label" className="m-0 mt-2 flex flex-wrap gap-2 text-small">
-        <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Conditional on navigation acting on the corrected list</span>
+        <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Only if navigators act on the corrected list</span>
         <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Worst case is the measured gap alone</span>
         <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Not Wasl&apos;s direct effect</span>
       </p>
@@ -288,7 +286,7 @@ function Modelled({ ev }: { ev: Evidence }) {
             <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
               ›
             </span>
-            Parameters and sources ({m.parameters.length})
+            Assumptions and sources ({m.parameters.length})
           </summary>
           <p className="m-0 mt-2 text-small text-ink-soft">{m.label}</p>
           <ul className="m-0 mt-2 grid list-none gap-2 p-0 text-small">
@@ -354,7 +352,7 @@ function Ledger({ ev }: { ev: Evidence }) {
         </summary>
         {/* Desktop: a table. Phone: the same rows as a list, so nothing scrolls sideways. */}
         <table data-testid="claims-table" className="mt-3 hidden w-full border-collapse text-body md:table">
-          <caption className="sr-only">Claim ledger</caption>
+          <caption className="sr-only">Claims</caption>
           <thead>
             <tr>
               <th scope="col" className={th}>
@@ -367,7 +365,7 @@ function Ledger({ ev }: { ev: Evidence }) {
                 Evidence
               </th>
               <th scope="col" className={th}>
-                Reproduce
+                How to check
               </th>
             </tr>
           </thead>
@@ -402,7 +400,7 @@ function Ledger({ ev }: { ev: Evidence }) {
                 <EvidenceLink claim={c} />
               </p>
               <p className="m-0 mt-1 text-small">
-                <span className="text-muted">Reproduce: </span>
+                <span className="text-muted">How to check: </span>
                 <Reproduce text={c.reproduce} />
               </p>
             </li>
@@ -413,8 +411,7 @@ function Ledger({ ev }: { ev: Evidence }) {
   );
 }
 
-async function Verify() {
-  const run = await runInfo();
+function Verify() {
   return (
     <Section id="verify" title="Verify it yourself in two minutes">
       <pre data-testid="verify-cmd" className="m-0 mt-3 whitespace-pre-wrap break-all rounded-control bg-raised px-3 py-2 text-small">
@@ -431,21 +428,6 @@ async function Verify() {
         </Link>
         <Ext href={HOSTED}>{HOSTED.replace(/^https:\/\//, "")}</Ext>
       </p>
-      {/* The run the workspace screens read, once in the top bar's details; one click away here for reproducibility. */}
-      {run.ok && (
-        <details data-testid="verify-run" className="mt-3 text-small">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center text-ink-soft">This workspace run: {run.when}</summary>
-          <p className="m-0 text-muted">{run.note}</p>
-          <dl className="m-0 mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-[max-content_1fr]">
-            {run.rows.map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-muted">{k}</dt>
-                <dd className="m-0 break-all font-mono text-ink-soft">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
-      )}
     </Section>
   );
 }
@@ -456,7 +438,7 @@ export default function EvidencePage() {
     <>
       <PageHeader
         title="Evidence"
-        sub={`What Wasl measured, how sure we are, and how to check it. Frozen at code ${ev.generated.revision.slice(0, 7)} on ${frozenWords(ev.generated.frozen_at)}, before the held-out runs.`}
+        sub={`What Wasl measured, how sure we are, and how to check it. Locked on ${frozenWords(ev.generated.frozen_at)}, before the final test runs.`}
       />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-gap">
         <Headline ev={ev} />

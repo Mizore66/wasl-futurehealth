@@ -15,17 +15,17 @@ export function TauPicker() {
   const n3: Format = { minimumFractionDigits: 3, maximumFractionDigits: 3 };
   const n1: Format = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
   const cells: { label: string; value: number | string; format?: Format }[] = [
-    { label: "False closures, with review", value: t.falseClosures },
-    { label: "Wrong-patient message loops", value: t.wrongPatient },
-    { label: "Certified at α 0.001", value: t.certified ? "Yes" : "No" },
-    { label: "Recall, with review", value: t.recall, format: n3 },
-    { label: "Recall, no review", value: t.recallNoReview, format: n3 },
-    { label: "Review items per 100 loops", value: t.reviewPer100, format: n1 },
+    { label: "Closed wrongly, with review", value: t.falseClosures },
+    { label: "Messages to the wrong patient", value: t.wrongPatient },
+    { label: "Passes the safety bound", value: t.certified ? "Yes" : "No" },
+    { label: "Completed checks found, with review", value: t.recall, format: n3 },
+    { label: "Completed checks found, no review", value: t.recallNoReview, format: n3 },
+    { label: "Sent to review, per 100 cases", value: t.reviewPer100, format: n1 },
   ];
 
   return (
     <>
-      <div role="group" aria-label="Closure tier" className="mt-6 flex flex-wrap gap-2">
+      <div role="group" aria-label="Certainty level" className="mt-6 flex flex-wrap gap-2">
         {LTT_TIERS.map((r) => (
           <button
             key={r.tau}
@@ -37,13 +37,13 @@ export function TauPicker() {
               r.tau === tau ? "bg-(--teal) font-semibold text-(--paper)" : "bg-(--card) font-medium text-(--ink) hover:bg-(--mint)",
             )}
           >
-            τ {r.tau}
+            {r.tau}
           </button>
         ))}
       </div>
       <div aria-live="polite" className="mt-5 rounded bg-(--card) px-[clamp(1.25rem,2.5vw,2rem)] py-7" data-testid="tau-panel">
         <div className="text-[20px] font-semibold tracking-[-0.01em]">
-          τ {t.tau}. {t.role}
+          Level {t.tau}. {t.role}
         </div>
         <dl className="m-0 mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
           {cells.map((c) => (

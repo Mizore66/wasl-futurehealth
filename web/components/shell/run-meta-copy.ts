@@ -8,7 +8,7 @@ type StripMeta = { data_mode: string; loaded_at: string };
  */
 export function runStripCopy(meta: StripMeta, mode: "live" | "fixtures"): { data: string; when: string } {
   // The API only emits "simulated" today; any other value is shown as-is rather than relabelled.
-  const data = meta.data_mode === "simulated" ? "Simulated data" : `Data mode: ${meta.data_mode}`;
+  const data = meta.data_mode === "simulated" ? "Simulated data" : `Data: ${meta.data_mode}`;
   const at = formatUtcInstant(meta.loaded_at);
-  return { data, when: mode === "live" ? `Run loaded ${at}` : `Snapshot ${at}` };
+  return { data, when: mode === "live" ? `Data loaded ${at}` : `Data as of ${at}` };
 }

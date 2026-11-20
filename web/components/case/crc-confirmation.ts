@@ -9,13 +9,13 @@ type Obligation = NonNullable<CaseDetail["case"]["crc"]>["obligations"][number];
  * confirmation until the pipeline's own sign-off, so the words never say the care pathway was activated.
  */
 export function obligationConfirmationWords(need: Obligation, detail: Pick<CaseDetail, "api_review_states">): string {
-  if (need.confirmation) return `Confirmed by ${need.reviewer}; signature ${need.confirmation}.`;
+  if (need.confirmation) return `Confirmed by ${need.reviewer}.`;
   if (need.state === "blocked" || need.blockers.length > 0) return "Confirmation waits until the holds above are resolved.";
   const st = (detail.api_review_states ?? []).find((s) => s.item === need.review_item && s.question === "evidence");
   switch (st?.state) {
     case "resolved_agreed":
     case "resolved_senior":
-      return "Independently confirmed by two clinicians on the review desk. This is a review overlay: the canonical record still shows the obligation awaiting the pipeline's sign-off.";
+      return "Confirmed by two independent clinicians on the review desk. The main record updates after final sign-off.";
     case "awaiting_r2":
       return "One of two independent clinician confirmations is in; a second clinician confirms it on the review desk.";
     case "awaiting_r3":

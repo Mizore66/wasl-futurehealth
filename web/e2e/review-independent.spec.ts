@@ -471,7 +471,7 @@ test.describe("independent double review, live mock", () => {
 
     await acquire(page, "evidence", "senior");
     await card(page, "evidence").getByRole("radio", { name: "Not adequate", exact: true }).click();
-    await card(page, "evidence").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
+    await card(page, "evidence").getByLabel("Reason for your decision (required)").fill("Synthetic senior rationale.");
     await card(page, "evidence").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(page, "evidence")).toContainText("Resolved by a senior");
     await expect(card(page, "evidence")).toContainText("Senior resolution: Report not adequate");
@@ -517,7 +517,7 @@ test.describe("independent double review, live mock", () => {
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link").getByRole("alert")).toContainText("the review changed while you were answering");
     await expect(card(page, "link")).toContainText("Second read due");
-    await expect(page.getByTestId("read-announcement")).toContainText("changed on the server");
+    await expect(page.getByTestId("read-announcement")).toContainText("changed by someone else");
     // No success claim, and no write reached the ledger.
     expect(questions[LINK].reads).toHaveLength(1);
     await noSeriousAxe(page);
@@ -536,7 +536,7 @@ test.describe("independent double review, live mock", () => {
     await expect(card(page, "link").getByRole("button", { name: /Submit/ })).toHaveCount(0);
     await expect(card(page, "link").getByRole("radio")).toHaveCount(0);
     await expect(page.getByText(/Do not submit again/)).toBeVisible();
-    await expect(page.getByTestId("read-announcement")).toContainText("was recorded");
+    await expect(page.getByTestId("read-announcement")).toContainText("was saved");
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
@@ -586,7 +586,7 @@ test.describe("independent double review, live mock", () => {
     const sr = await viewer(browser, "senior");
     await acquire(sr.page, "link", "senior");
     await card(sr.page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
-    await card(sr.page, "link").getByLabel("Rationale for the senior resolution (required)").fill("Synthetic senior rationale.");
+    await card(sr.page, "link").getByLabel("Reason for your decision (required)").fill("Synthetic senior rationale.");
     await card(sr.page, "link").getByRole("button", { name: "Submit senior resolution" }).click();
     await expect(card(sr.page, "link")).toContainText("Resolved by a senior");
     await sr.page.goto(audit);
@@ -609,7 +609,7 @@ test.describe("independent double review, live mock", () => {
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Identity review");
       const link = card(page, "link");
       await expect(link).toContainText("First read due");
-      await expect(link).toContainText("Claim to view the identifiers.");
+      await expect(link).toContainText("Claim to see the patient details.");
       await expect(page.getByText("1965-03-14", { exact: true })).toHaveCount(0);
 
       await acquire(page, "link");

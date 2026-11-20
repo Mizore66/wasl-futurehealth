@@ -41,9 +41,9 @@ export function StallsChart({ top, groups }: { top: Stall[]; groups: StallGroup[
   const allCount = groups.reduce((t, g) => t + g.stalls.length, 0);
   return (
     <ChartFigure
-      caption={all ? "Every stall the run counts, by pathway, on one scale." : "Cases at each stall."}
+      caption={all ? "Every stall, by programme, on one scale." : "Cases at each stall."}
       table={{
-        caption: "Where patients stall, every sourced stall",
+        caption: "Where patients stall, every stall",
         head: ["Stall", "Pathway", "Cases"],
         rows: groups.flatMap((g) => g.stalls.map((s) => [s.label, g.pathway, n(s.count)])),
       }}

@@ -1,12 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import replay from "../data/replay.json";
-import evidenceAudit from "../data/api/case_evidence_closure_audit.json";
 
-// The tamper demo rewrites the readers' step of the closed fixture; its hash is the one the server sealed (first 12 hex digits).
-const READERS_HASH = evidenceAudit.chain.find((e) => e.type === "evidence")!.hash.slice(0, 12);
-
-const LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
+const LINE = "Simulated patients with made-up names and faces · real report texts";
 const SHOTS = "test-results/screens/pipeline";
 
 // A missing name or case must fail within seconds, not after the 2-minute test budget: actions (click, fill) get the same 20s as expect.
@@ -89,7 +85,7 @@ test("pipeline: pause, step, play and tamper, totals within the run", async ({ p
 
   // The server switch-off is designed, not built: no control, a visible label, and the recorded run's figures.
   await expect(page.getByRole("button", { name: /switch .*server/i })).toHaveCount(0);
-  await expect(page.getByTestId("server-result")).toContainText("live failover is not built");
+  await expect(page.getByTestId("server-result")).toContainText("Switching servers live is not built");
   await expect(page.getByTestId("server-result")).toContainText("0 of");
   await expect(page.locator('[data-honesty="designed"]')).toHaveText("Designed, not built");
   const moving = await position(page);
@@ -98,8 +94,8 @@ test("pipeline: pause, step, play and tamper, totals within the run", async ({ p
 
   await page.getByRole("button", { name: "Tamper with a step" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Changed record detected at step 2" })).toBeVisible();
-  await expect(page.locator('[aria-label="Sealed chain"] [data-broken]')).toHaveCount(2);
-  await expect(page.getByText(new RegExp(`no longer matches ${READERS_HASH}`)).first()).toBeVisible();
+  await expect(page.locator('[aria-label="Decision history"] [data-broken]')).toHaveCount(2);
+  await expect(page.getByText("changed after it was saved").first()).toBeVisible();
 
   await page.getByRole("button", { name: "Pause" }).click();
   await page.clock.runFor(1000);
@@ -143,7 +139,7 @@ test("matching: the score lands against the 0.99 line, runner-ups labelled illus
   await expect(reportFace, "held for a second identifier: the face stays \"?\"").toHaveAttribute("data-state", "unknown");
 
   await page.getByRole("button", { name: "How it decides" }).click();
-  await expect(page.getByText(/R@10 0\.932/)).toBeVisible();
+  await expect(page.getByText(/top 10 for 93% of names/)).toBeVisible();
   await page.getByRole("button", { name: "Play" }).click();
   await page.clock.runFor(6 * 900);
   await page.screenshot({ path: `${SHOTS}-matching-mid-run.png`, fullPage: true });
@@ -313,7 +309,7 @@ test("matching and reading: the demo patient opens her record", async ({ page })
 const RAW = /closure_decision|needs_human|not_closed|link_decision|review_hold|evidence_closure|false_closure_trap|model_version|path_p_cal/;
 const PIPELINE_ROUTES = ["/app/pipeline", "/app/pipeline/matching", "/app/pipeline/reading"] as const;
 
-test("raw backend ids are hidden by default and revealed by a Technical detail disclosure", async ({ page }) => {
+test("raw backend ids are not shown, and there is no technical disclosure", async ({ page }) => {
   for (const route of PIPELINE_ROUTES) {
     await freezeClock(page);
     await page.goto(route);
@@ -321,18 +317,16 @@ test("raw backend ids are hidden by default and revealed by a Technical detail d
     await page.getByRole("button", { name: "Pause" }).click();
     const main = page.locator("main");
     expect(await main.innerText(), `${route}: no raw id in the visible text`).not.toMatch(RAW);
-    const details = page.getByTestId("technical-detail");
-    expect(await details.count(), `${route}: at least one disclosure`).toBeGreaterThan(0);
-    for (const d of await details.all()) await d.locator("summary").click();
-    expect(await main.innerText(), `${route}: the disclosure reveals the system's labels`).toMatch(/closure_decision|needs_human|link_decision|model_version|path_p_cal|caecum_reached/);
+    expect(await page.getByTestId("technical-detail").count(), `${route}: no technical disclosure`).toBe(0);
+    expect(await main.innerText(), `${route}: no system names`).not.toMatch(/caecum_reached|HNSW|LightGBM|Gemma|linker|ledger/i);
   }
 });
 
 test("pipeline: the flow's plain sublabels replace the system names", async ({ page }) => {
   await page.goto("/app/pipeline");
-  await expect(page.locator('[data-stage="closed"]')).toContainText("Closed with evidence");
-  await expect(page.locator('[data-stage="review"]')).toContainText("Waiting for two reviewers");
-  await expect(page.locator('[data-stage="open"]')).toContainText("Kept open");
+  await expect(page.locator('[data-stage="closed"]')).toContainText("Closed");
+  await expect(page.locator('[data-stage="review"]')).toContainText("Needs a person");
+  await expect(page.locator('[data-stage="open"]')).toContainText("Still open");
   await expect(page.locator('[data-stage="closed"] summary, [data-stage="closed"] code')).toHaveCount(0);
 });
 
@@ -344,7 +338,7 @@ test("every control is a replay control, a real toggle or labelled; none is an u
     new Set(["Pause", "Step", "Tamper with a step"]),
   );
   await expect(page.getByRole("group", { name: "Replay controls" })).toBeVisible();
-  await expect(page.locator('main [data-honesty="simulated"]:not([aria-label="Run metadata"] *)')).toHaveText("Simulated edit");
+  await expect(page.locator('main [data-honesty="simulated"]:not([aria-label="About this data"] *)')).toHaveText("Simulated edit");
 });
 
 for (const route of PIPELINE_ROUTES) {

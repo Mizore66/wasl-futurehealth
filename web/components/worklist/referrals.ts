@@ -130,7 +130,7 @@ const PACKET_STATUS: Record<HandoffStatus, string> = {
   coordinator: "Escalated to the care coordinator",
   medical_director: "Escalated to the medical director",
 };
-const UNAVAILABLE = "Not in the packet";
+const UNAVAILABLE = "Not recorded";
 const unitName = (id: string) => UNIT_NAMES[id] ?? id;
 
 /** The packet's "referring PCP, phc-retina" in words; a missing clinician stays explicitly unavailable. */
@@ -205,7 +205,7 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean, ha
     kind: "crc",
     referrer: `${providerLabel(c.provider)} GP`,
     unit: "SKMC endoscopy",
-    answerWhen: "Saved to the case ledger",
+    answerWhen: "Saved to the case record",
     short: shortId(c.id),
     name: person?.display_name ?? shortId(c.id),
     nameAr: person?.display_name_ar,
@@ -294,19 +294,19 @@ export function packetReferral(c: CaseSummary, current: CurrentDecision | null, 
     head: null,
     acknowledged: !!answered?.acknowledgement,
     answer: `Returned the referral: ${reason.toLowerCase()}`,
-    answerWhen: `Canonical packet, ${formatDay(p.decided_at)}`,
+    answerWhen: `Returned ${formatDay(p.decided_at)}`,
     details: [
       ["Recommendation", p.recommendation ?? UNAVAILABLE],
       ["Returned by", unit],
       ["Reason", reason],
       ["Advice to the referrer", p.advice_to_referrer ?? UNAVAILABLE],
       ["Information requested", p.info_requested.length ? p.info_requested.map((i) => INFO_WORDS[i] ?? i).join("; ") : "None"],
-      ["Other unit", p.suggested_alternative === undefined ? UNAVAILABLE : p.suggested_alternative ? unitName(p.suggested_alternative) : "None in the simulated network"],
+      ["Other unit", p.suggested_alternative === undefined ? UNAVAILABLE : p.suggested_alternative ? unitName(p.suggested_alternative) : "None suggested"],
       ["Priority", p.clinical_priority === "urgent" ? "Urgent" : p.clinical_priority === "routine" ? "Routine" : UNAVAILABLE],
       ["Responsible clinician", referrer],
       ["Status", PACKET_STATUS[status]],
       ["Referrer acknowledged", answered?.acknowledgement ? formatDay(answered.acknowledgement.run_day) : "Not yet"],
-      ["Referrer's answer", r ? referrerAnswerWords(r) : p.status === "referrer_acted" ? "Acted, per the canonical packet" : "None yet"],
+      ["Referrer's answer", r ? referrerAnswerWords(r) : p.status === "referrer_acted" ? "Already acted" : "None yet"],
       ["Act by", formatDay(p.act_by)],
       ["Medical director step", p.medical_director_day === undefined ? UNAVAILABLE : formatDay(p.medical_director_day)],
       ["Referred", formatDay(c.referral_day)],
@@ -341,9 +341,9 @@ export const packetReasonWords = (code: string) => PACKET_REASONS[code] ?? code;
  */
 export function referrerAnswerLabel(live: boolean, credentialConfigured: boolean, browserAcknowledge = false): { kind: "built" | "designed"; text: string } {
   if (!live && browserAcknowledge) return { kind: "designed", text: "Acknowledgement: kept in this browser only" };
-  if (!live) return { kind: "designed", text: "Referrer answers: need the live synthetic API" };
-  if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not available on this server (no referring-clinician credential configured)" };
-  return { kind: "built", text: "Referrer answers: built, saved to the synthetic case ledger" };
+  if (!live) return { kind: "designed", text: "Referrer answers: not available in this demo" };
+  if (!credentialConfigured) return { kind: "designed", text: "Referrer answers: not set up on this site" };
+  return { kind: "built", text: "Referrer answers: built, saved to the simulated case record" };
 }
 
 /** A referral's place in the inbox, as one status a filter can name. */
