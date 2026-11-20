@@ -50,7 +50,7 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await expect(page).toHaveURL(/overdue=true/);
     // Search keeps them too.
     await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("10");
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL(/owner=none/);
     await expect(page).toHaveURL(/q=10/);
   });

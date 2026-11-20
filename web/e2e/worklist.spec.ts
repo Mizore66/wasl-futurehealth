@@ -291,7 +291,7 @@ test.describe("Patients", () => {
     await expect(page.getByTestId("showing")).toHaveText("177 cases: all cases");
     await shot(page, "patients");
     await page.getByRole("searchbox", { name: "Find a case, task or owner" }).fill("AHS-sr-1001");
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL(/q=AHS-sr-1001/);
     await page.getByRole("link", { name: /^23 May 2026, 1 referral/ }).click();
     await page.locator("[data-pf-case]", { hasText: "Fatima Al Zaabi" }).click();
