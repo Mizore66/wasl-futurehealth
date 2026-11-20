@@ -20,7 +20,7 @@ export function scriptHint(row: IdentityRow): string | undefined {
   if (row.field !== "Name" || row.verdict !== "differ") return undefined;
   const arabic = [row.referral, row.report].map((v) => ARABIC.test(v) && !LATIN.test(v));
   const latin = [row.referral, row.report].map((v) => LATIN.test(v) && !ARABIC.test(v));
-  return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts; compare transliteration" : undefined;
+  return (arabic[0] && latin[1]) || (latin[0] && arabic[1]) ? "different scripts, compare transliteration" : undefined;
 }
 type Shown = { person: PersonSeed; state: AvatarState; label: string };
 
@@ -218,7 +218,7 @@ export function IdentityBridge({ view, answer, children }: { view: ReviewView; a
               This score describes the displayed link context. The original configured guard result is unavailable.
             </p>
             <p className="m-0 mt-1 text-small leading-[18px] text-muted">
-              Readers: the rules reader applies the DoH closure checklist word for word; the second reader is a language model ({view.readerModel}). Both must
+              The rules reader applies the DoH closure checklist word for word. The second reader is a language model ({view.readerModel}). Both must
               agree for a report to close a case.
             </p>
           </div>

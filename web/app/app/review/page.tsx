@@ -86,7 +86,7 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
         {queue.source === "rebuilt" && (
           <div className="mt-3 max-w-[72ch] text-muted">
             <p className="m-0">
-              The sample run has no open review items: its simulated reviewers signed them all. This queue rebuilds one from the demo case{" "}
+              The sample run has no open review items. Its simulated reviewers signed them all. This queue rebuilds one from the demo case{" "}
               <span className="font-medium">Held for human review</span>, using its {rows[0]?.detail.review_items.length ?? 0} review items as they stood before they were signed.
               {guardOnly && (
                 <>

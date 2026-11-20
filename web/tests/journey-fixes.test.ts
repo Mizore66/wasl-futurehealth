@@ -44,7 +44,7 @@ describe("B2/B3/B4 review desk wording", () => {
   it("tells an eligible senior to claim, and only an ineligible viewer that a third read is not accepted", () => {
     expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).not.toMatch(/not accepted/);
     expect(awaitingSeniorWords({ claim: true, renew: false, release: false, takeover: false })).toMatch(/Claim the senior resolution/);
-    expect(awaitingSeniorWords({ claim: false, renew: false, release: false, takeover: false })).toMatch(/a third read from you is not accepted/);
+    expect(awaitingSeniorWords({ claim: false, renew: false, release: false, takeover: false })).toMatch(/A third read from you is not accepted/);
     expect(awaitingSeniorWords(undefined)).toMatch(/not accepted/);
   });
 

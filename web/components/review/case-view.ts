@@ -214,9 +214,9 @@ export const PURPOSE_LABEL: Record<ReviewPurpose, string> = { shadow_confirm: "S
 
 const PURPOSE_SUMMARY: Record<ReviewPurpose, (closed: boolean) => string> = {
   shadow_confirm: (closed) =>
-    `Suggested automatic closure to confirm. The case is ${closed ? "closed" : "open"}. Confirming permits closure; a different answer is followed instead.`,
+    `Suggested automatic closure to confirm. The case is ${closed ? "closed" : "open"}. Confirming permits closure. A different answer is followed instead.`,
   auto_audit: (closed) =>
-    `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed; disagreeing reopens it.`,
+    `Post-closure audit of an automatic closure. The case is ${closed ? "closed" : "open"}. Agreeing leaves it closed. Disagreeing reopens it.`,
 };
 
 type RaisedItem = CaseDetail["review_items"][number];
@@ -403,13 +403,13 @@ export function reviewView(c: CaseDetail, only?: RaisedItem): ReviewView {
     add(
       "link",
       "Wasl",
-      `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}; ${noSecondId ? "no second identifier confirmed" : "held"}, needs a person`,
+      `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, ${noSecondId ? "no second identifier confirmed" : "held"}, needs a person`,
       guardEvent?.arrival_day ?? reportEvent?.day,
     );
   add("report", unit, `${reportWord} ${shortId(ev?.report ?? "")}`, reportEvent?.day);
   if (ev && !ev.agree && c.case.programme === "crc" && disputed.length)
-    add("readers", "Two readers", `could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}; needs a person`, reportEvent?.day);
-  else if (ev && !ev.agree) add("readers", "Two readers", `${reportWord} readers disagree; needs a person`, reportEvent?.day);
+    add("readers", "Two readers", `could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}, needs a person`, reportEvent?.day);
+  else if (ev && !ev.agree) add("readers", "Two readers", `${reportWord} readers disagree, needs a person`, reportEvent?.day);
 
   return {
     caseId: c.case.id,

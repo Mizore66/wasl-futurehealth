@@ -221,7 +221,7 @@ describe("blinded review desk markup", () => {
 
   it("fixtures mode stays a non-persisting preview with no sign-out or submit control", () => {
     const html = renderToStaticMarkup(createElement(ReviewDesk, { view: reviewView(open()), mode: "fixtures", next }));
-    expect(html).toContain("nothing here is appended or saved");
+    expect(html).toContain("Nothing here is appended or saved");
     expect(html).not.toContain("Sign out");
     expect(html).not.toContain("Submit first read");
   });

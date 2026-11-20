@@ -10,7 +10,7 @@ import { clearSignedOutNotice, signedOutNotice } from "./signed-out-notice";
 
 const INDEPENDENCE = {
   demo: "A token proves a configured demo identity, not that a separate person is present.",
-  oidc: "OIDC verifies a provider subject and maps it to a configured actor; it does not by itself prove that separate real-world people took part.",
+  oidc: "OIDC verifies a provider subject and maps it to a configured actor. That alone does not prove that separate real-world people took part.",
 } as const;
 
 /** Explicitly selected demo token entry or OIDC redirect. OIDC renders no token input or identity picker. */
@@ -71,8 +71,8 @@ export function ReviewerLogin({
         </h2>
         <p className="m-0 mt-1 text-muted">
           {mode === "oidc"
-            ? "Use your organisation’s OIDC sign-in. The verified provider subject selects a server-side credential; this page offers no role or credential choice. "
-            : "Enter the review token assigned to you. Your token decides who you are and what you may answer; this page never offers a choice of credential. "}
+            ? "Use your organisation’s OIDC sign-in. The verified provider subject selects a server-side credential. This page offers no role or credential choice. "
+            : "Enter the review token assigned to you. Your token decides who you are and what you may answer. This page never offers a choice of credential. "}
           {INDEPENDENCE[mode]}
         </p>
         {(notice || authError) && (

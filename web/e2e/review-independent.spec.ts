@@ -383,7 +383,7 @@ test.describe("independent double review, live mock", () => {
     await card(page, "link").getByRole("button", { name: "Submit first read" }).click();
     await expect(card(page, "link")).toContainText("Your first read is in");
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     // Only that question changed; the evidence draft area is untouched.
     await expect(card(page, "evidence")).toContainText("First read due");
@@ -395,10 +395,10 @@ test.describe("independent double review, live mock", () => {
 
     await page.reload();
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     // The desk keeps the first reader's own answer hidden until the second read is in.
-    await expect(card(page, "evidence")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "evidence")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "evidence")).toContainText("Second read due");
     await expect(card(page, "evidence")).not.toContainText("Submit second read");
     await expect(rail(page).getByTestId("progress")).toContainText("0 of 2 questions resolved");
@@ -540,7 +540,7 @@ test.describe("independent double review, live mock", () => {
     expect(questions[LINK].reads).toHaveLength(1);
     await expect(card(page, "link")).toContainText("Your first read is in");
     await page.reload();
-    await expect(card(page, "link")).toContainText("First read: submitted; the answer stays hidden until the second read");
+    await expect(card(page, "link")).toContainText("First read: submitted. The answer stays hidden until the second read");
     await expect(card(page, "link")).toContainText("Second read due");
     await expect(page.getByTestId("committed-lock")).toHaveCount(0);
     await noSeriousAxe(page);
@@ -628,7 +628,7 @@ test.describe("independent double review, live mock", () => {
       await link.getByRole("radio", { name: "Not the same patient" }).click();
       await link.getByRole("button", { name: "Submit first read" }).click();
       await expect(link).toContainText("Second read due");
-      await expect(link).toContainText("First read: submitted; the answer stays hidden until the second read");
+      await expect(link).toContainText("First read: submitted. The answer stays hidden until the second read");
       await expect(link).not.toContainText("Not the same patient");
       await expect(page.getByText("1965-03-14", { exact: true })).toHaveCount(0);
       expect(questions[LINK].reads.map((r) => r.decision)).toEqual(["different"]);

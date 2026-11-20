@@ -54,7 +54,7 @@ export async function approveOutcomeHandoff(input: unknown): Promise<OutcomeHand
   if (identityRefused(input)) return { ok: false, error: "The page cannot choose who acts. An approval is recorded only as the signed-in credential." };
   const parsed = ApproveInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Choose a next step from the list before approving." };
-  if (apiMode() !== "live") return { ok: false, error: "Approving an outcome hand-off needs the live API; fixtures cannot append events." };
+  if (apiMode() !== "live") return { ok: false, error: "Approving an outcome hand-off needs the live API. Fixtures cannot append events." };
   const token = await session.reviewerToken();
   if (!token) return { ok: false, error: "Sign in with the clinician token assigned to you. An approval is recorded only as the signed-in credential.", signIn: true };
 
@@ -69,7 +69,7 @@ export async function approveOutcomeHandoff(input: unknown): Promise<OutcomeHand
     ok: true,
     hash: result.hash,
     message: result.replayed
-      ? "This content was already approved; nothing new was recorded."
+      ? "This content was already approved. Nothing new was recorded."
       : "Content approved as your signed-in credential. Nothing is shown to the patient until a coordinator records a release.",
   };
 }
@@ -78,7 +78,7 @@ export async function releaseOutcomeHandoff(input: unknown): Promise<OutcomeHand
   if (identityRefused(input)) return { ok: false, error: "The page cannot choose who acts. A release is recorded with the server's coordinator credential." };
   const parsed = ReleaseInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "There is no approved version to release." };
-  if (apiMode() !== "live") return { ok: false, error: "Recording a release needs the live API; fixtures cannot append events." };
+  if (apiMode() !== "live") return { ok: false, error: "Recording a release needs the live API. Fixtures cannot append events." };
 
   const { caseId, version } = parsed.data;
   const result = await postOutcomeHandoffRelease(caseId, version);
@@ -88,7 +88,7 @@ export async function releaseOutcomeHandoff(input: unknown): Promise<OutcomeHand
     ok: true,
     hash: result.hash,
     message: result.replayed
-      ? "A release with the same consent result is already recorded for this version; nothing new was recorded."
-      : "Simulated release recorded with the coordinator credential. The server checked consent and recorded the result; no message was sent.",
+      ? "A release with the same consent result is already recorded for this version. Nothing new was recorded."
+      : "Simulated release recorded with the coordinator credential. The server checked consent and recorded the result. No message was sent.",
   };
 }

@@ -109,8 +109,8 @@ describe("Identity comparison across scripts", () => {
   const row = (referral: string, report: string, verdict: IdentityRow["verdict"] = "differ"): IdentityRow => ({ field: "Name", referral, report, verdict });
 
   it("hints at transliteration for an Arabic-script vs Latin-script name that differs", () => {
-    expect(scriptHint(row("فاطمة الزعابي", "Fatima Al Zaabi"))).toBe("different scripts; compare transliteration");
-    expect(scriptHint(row("Fatima Al Zaabi", "فاطمة الزعابي"))).toBe("different scripts; compare transliteration");
+    expect(scriptHint(row("فاطمة الزعابي", "Fatima Al Zaabi"))).toBe("different scripts, compare transliteration");
+    expect(scriptHint(row("Fatima Al Zaabi", "فاطمة الزعابي"))).toBe("different scripts, compare transliteration");
   });
 
   it("adds nothing for same-script names, matches, or other fields", () => {
