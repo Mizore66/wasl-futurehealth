@@ -69,7 +69,8 @@ async function placeholderContrast(input: Locator) {
 /** The whole search control shows a 2px+ outline or ring when its input is focused. */
 async function controlRing(input: Locator) {
   return input.evaluate((el) => {
-    const box = el.closest("label")!;
+    // The shared SearchField draws its ring on a wrapper; Today's queue search still wraps the input in its label.
+    const box = el.closest("[data-search-control], label")!;
     const s = getComputedStyle(box);
     return { width: parseFloat(s.outlineWidth), style: s.outlineStyle, color: s.outlineColor, border: s.borderColor };
   });
