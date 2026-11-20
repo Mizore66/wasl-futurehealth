@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PoolingChart, RegionCapacityChart } from "@/components/programme/capacity-chart";
 import { KpiChart } from "@/components/programme/kpi-chart";
-import { cellText, pct, poolingRuns, programmeView } from "@/components/programme/model";
+import { byOverdueShare, cellText, pct, poolingRuns, programmeView } from "@/components/programme/model";
 import { PatternLinks } from "@/components/programme/patterns";
 import { ProgrammeChart } from "@/components/programme/programme-chart";
 import { SourceHeading } from "@/components/programme/source-toggle";
@@ -30,6 +30,21 @@ export default async function ProgrammePage() {
   const programmeCases = view.programmes.reduce((t, p) => t + p.cases, 0);
   const crc = view.programmes.find((p) => p.key === "crc");
   const programmeCount = NUMBER_WORD[view.programmes.length] ?? String(view.programmes.length);
+  const word = (k: number) => NUMBER_WORD[k] ?? String(k);
+
+  // Takeaway lines, computed from the numbers the charts draw so they stay true for any run.
+  const { eid, wasl, truth } = view.kpi.demo.rates;
+  const kpiTakeaway =
+    eid < truth && Math.abs(wasl - truth) < Math.abs(eid - truth) ? "Wasl reads it almost as the truth does; Emirates ID alone undercounts." : null;
+  const [first, second] = byOverdueShare(view.programmes);
+  const withOnTime = view.programmes.filter((p) => p.onTime);
+  const underHalf = withOnTime.filter((p) => p.onTime!.share < 50).length;
+  const progTakeaway = first && second
+    ? `${first.name} and ${second.name.charAt(0).toLowerCase()}${second.name.slice(1)} carry the largest overdue shares${
+        view.onTimeMeasured && withOnTime.length ? `; on time is under half in ${word(underHalf)} of ${word(withOnTime.length)}` : ""
+      }.`
+    : null;
+  const stallGroup = view.allStalls[0];
 
   return (
     <>
@@ -44,7 +59,7 @@ export default async function ProgrammePage() {
         />
 
         <section aria-labelledby="kpi-h" className="p-4 @min-[701px]:p-[clamp(19px,2.65cqi,42px)]">
-          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub="Positive FIT referrals" display>
+          <SourceHeading id="kpi-h" title="Colonoscopy within 31 days" sub={<>Positive FIT referrals.{kpiTakeaway && <span data-testid="kpi-takeaway" className="font-medium text-ink"> {kpiTakeaway}</span>}</>} display>
             Simulated colorectal cohort. Emirates ID only counts a colonoscopy only when the Emirates ID on the report matches. Wasl also links
             reports by name and date of birth. Simulated truth comes from the cohort&apos;s known outcomes. The target is the DoH 31-day standard.
             It is read from the run&apos;s KPI definition. The demo run is the run this dashboard serves; the five-seed mean is the frozen evaluation in
@@ -62,9 +77,10 @@ export default async function ProgrammePage() {
 
       <div className="mt-gap grid items-start gap-gap">
         <section aria-labelledby="prog-h" className={card}>
-          <SourceHeading id="prog-h" title="By programme">
-            Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Still open is the programme&apos;s cases minus
-            those closed and those overdue.
+          <SourceHeading id="prog-h" title="By programme" sub={progTakeaway && <span data-testid="prog-takeaway" className="text-body font-medium text-ink">{progTakeaway}</span>}>
+            Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Finished counts cases closed with
+            evidence and cases that needed no follow-up (no follow-up, referral or recall needed). Still open is the programme&apos;s cases minus those
+            finished and those overdue.
             {view.onTimeMeasured && (
               <>
                 {" "}
@@ -92,7 +108,17 @@ export default async function ProgrammePage() {
 
       <div className="mt-gap grid items-start gap-gap lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <section aria-labelledby="stall-h" className={card}>
-          <SourceHeading id="stall-h" title="Where patients stall">
+          <SourceHeading
+            id="stall-h"
+            title="Where patients stall"
+            sub={
+              stallGroup && (
+                <span data-testid="stall-scope" className="text-body font-medium text-ink">
+                  {stallGroup.pathway}: the {word(view.stalls.length)} largest of {word(stallGroup.stalls.length)} stalls
+                </span>
+              )
+            }
+          >
             Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together (run {dash.meta.run}). The three largest stalls are shown.
             The run&apos;s drop-off counts cover all {programmeCount} programmes; these stall labels are the colorectal and cervical pathway&apos;s.
             &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS pathways.
@@ -179,20 +205,26 @@ export default async function ProgrammePage() {
       <PatternLinks patterns={view.patterns} />
 
       {/* Static supporting copy with no object state, so it sits on the page grid unframed (DEC-3); the chart panels above keep their surfaces. */}
-      <section aria-labelledby="safety-h" className="mt-8">
-        <h2 id="safety-h" className="m-0 flex items-center gap-2 text-section font-medium">
-          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
+      <section aria-labelledby="safety-h" className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <h2 id="safety-h" className="sr-only">
           Safety
         </h2>
-        <p className="m-0 mt-1 text-body">
-          {safety.value} false closures in {safety.denominator?.toLocaleString("en-US")} tested. Every closure has evidence or two signatures.{" "}
-          <Link href="/app/results" className="font-medium no-underline">
-            See proof
-          </Link>
+        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        <p data-testid="safety-figure" className="m-0 text-[48px] font-semibold leading-none tracking-[-0.02em] text-ink">
+          {safety.value}
         </p>
+        <div className="min-w-0">
+          <p className="m-0 text-body font-semibold">false closures</p>
+          <p className="m-0 text-small text-ink-soft">
+            in {safety.denominator?.toLocaleString("en-US")} tested · every closure has evidence or two signatures ·{" "}
+            <Link href="/app/results" className="font-medium no-underline">
+              See proof
+            </Link>
+          </p>
+        </div>
       </section>
     </>
   );

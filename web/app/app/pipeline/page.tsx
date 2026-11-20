@@ -4,9 +4,7 @@ import type { ReaderData } from "@/components/pipeline/reader-types";
 import type { RulesBySha } from "@/components/pipeline/profile";
 import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-replay";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { HealthPanel } from "@/components/pipeline/health-panel";
-import { loadOperations } from "@/components/pipeline/health";
-import { apiMode, getAudit, getFixtures, getOperations } from "@/lib/api/source";
+import { getAudit, getFixtures } from "@/lib/api/source";
 import type { ChainEntry } from "@/lib/api/schema";
 import { plain } from "@/lib/domain/terms";
 import { formatDay } from "@/lib/domain/day";
@@ -82,12 +80,9 @@ export default async function Page() {
   const audit = await getAudit(loop);
   if (!audit) notFound();
 
-  const health = await loadOperations(getOperations, apiMode());
-
   return (
     <PipelineReplay
       heading={{ title: "Pipeline", current: "/app/pipeline" }}
-      health={<HealthPanel state={health} />}
       tamper={tamperDemo(loop, audit.chain)}
       rules={rules}
     />

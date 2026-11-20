@@ -11,6 +11,20 @@ export type Rates = { eid: number; wasl: number; truth: number };
 /** One source of 31-day rates, with the extra sourced detail each bar's tooltip shows. */
 export type KpiSet = { rates: Rates; detail: Record<keyof Rates, string> };
 
+/**
+ * Names for the three parts of a programme's cases. The dashboard's `closed` (by_programme and the strip) counts every
+ * case the run finished: state closed with evidence, or a no-follow-up, no-referral or no-recall-needed outcome
+ * (pipeline/api.go apiCase.Closed). The provider table's `evidenced_closed` counts state closed only (pipeline/analyze.go),
+ * the patient list's Closed filter. So the programme figure is "Finished" and the provider figure "Closed with evidence".
+ */
+export const STATUS_PART = { overdue: "Overdue", open: "Still open", closed: "Finished" } as const;
+export const FINISHED_MEANS = "closed with evidence, or no follow-up needed";
+
+/** Largest overdue share first, so the programmes that need attention lead. */
+export function byOverdueShare(rows: ProgrammeRow[]): ProgrammeRow[] {
+  return rows.slice().sort((a, b) => b.overdue / Math.max(1, b.cases) - a.overdue / Math.max(1, a.cases));
+}
+
 export type ProgrammeRow = {
   key: Programme;
   name: string;
@@ -441,14 +455,20 @@ export function patternsView(d: Dashboard): Patterns {
 
 const num = (v: number) => v.toLocaleString("en-US");
 
+/** A provider's evidenced-closure share, as a whole percent; null when the count is suppressed or there are no cases. */
+export function closedShare(p: Pattern | undefined): number | null {
+  if (!p || p.kind !== "closed" || p.cell.kind !== "count" || p.of === 0) return null;
+  return Math.round((100 * p.cell.value) / p.of);
+}
+
 /** "523 of 1,606", or "fewer than 5 of 70" for a suppressed cell: never the suppressed value itself. */
 export function cellText(c: Cell, of: number): string {
   return c.kind === "count" ? `${num(c.value)} of ${num(of)}` : `fewer than ${c.below} of ${num(of)}`;
 }
 
-/** One pattern as its provider line prints it: "523 of 1,606 closed", "largest stall: Not booked, 195 of 1,606". */
+/** One pattern as its provider line prints it: "523 of 1,606 closed with evidence", "largest stall: Not booked, 195 of 1,606". */
 export function patternText(p: Pattern): string {
-  if (p.kind === "closed") return `${cellText(p.cell, p.of)} closed`;
+  if (p.kind === "closed") return `${cellText(p.cell, p.of)} closed with evidence`;
   if (p.what !== null) return `largest stall: ${p.what}, ${cellText(p.cell, p.of)}`;
   if (p.cell.kind === "suppressed") return `largest stall: each one ${cellText(p.cell, p.of)}`;
   return "no stall recorded";

@@ -14,7 +14,7 @@ import { MarkShape, PlaybackControls } from "./controls";
 import { PipelineHeading, type PipelineHead } from "./heading";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
 import { TechnicalDetail } from "./technical";
-import { stepAnnouncement } from "./health";
+import { stepAnnouncement } from "./announce";
 import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
 import { profileOf, type RulesBySha } from "./profile";
@@ -51,7 +51,7 @@ const FEED_PITCH = 72;
 
 type Open = (caseId: string) => void;
 
-export function PipelineReplay({ heading, tamper, rules, health }: { heading: PipelineHead; tamper: TamperDemo; rules: RulesBySha; health?: React.ReactNode }) {
+export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHead; tamper: TamperDemo; rules: RulesBySha }) {
   const profile = useProfileParam();
   const play = usePlayback(track, TICK_MS, profile.id !== null);
   const shown = useMemo(() => (profile.id ? profileOf(replay, play.frame, profile.id, rules) : null), [profile.id, play.frame, rules]);
@@ -94,24 +94,26 @@ export function PipelineReplay({ heading, tamper, rules, health }: { heading: Pi
               Case flow
             </h2>
             <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-              A report shows the name as it is written on it, and &ldquo;?&rdquo;, until it is matched to a referral. The ringed one just moved. Open
-              anyone to see their steps.
+              Left to right. A report shows the name as written, and &ldquo;?&rdquo;, until it is matched. The ringed one just moved; open anyone to
+              see their steps.
             </p>
           </div>
           <LayoutGroup>
             <div className="mt-4 border-t border-rule">
               <ol
                 aria-label={`Case flow, 8 stages. ${view.rows.map((r) => `${r.label} ${r.count}`).join(", ")}`}
-                className="m-0 grid list-none grid-cols-1 p-0 md:grid-cols-2 2xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,2fr)]"
+                className="m-0 grid list-none grid-cols-1 p-0 md:grid-cols-2 lg:grid-cols-4"
               >
-                {stages.map((r) => (
-                  <StageColumn key={r.id} row={r} reduceMotion={reduceMotion} onOpen={profile.open} />
+                {stages.map((r, i) => (
+                  <StageColumn key={r.id} row={r} last={i === stages.length - 1} reduceMotion={reduceMotion} onOpen={profile.open} />
                 ))}
-                <li className="flex min-w-0 flex-col gap-2 px-4 py-4 sm:px-5 md:col-span-2 2xl:col-span-1">
+                <li className="flex min-w-0 flex-col gap-2 px-4 py-4 sm:px-5 md:col-span-2 lg:col-span-4 lg:border-t lg:border-rule">
                   <span className="text-body font-semibold text-ink">Outcome</span>
-                  {lanes.map((r) => (
-                    <OutcomeLane key={r.id} row={r} reduceMotion={reduceMotion} onOpen={profile.open} />
-                  ))}
+                  <div className="grid gap-x-4 gap-y-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,1fr)]">
+                    {lanes.map((r) => (
+                      <OutcomeLane key={r.id} row={r} reduceMotion={reduceMotion} onOpen={profile.open} />
+                    ))}
+                  </div>
                 </li>
               </ol>
               <div data-stage="ledger" className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-rule px-4 py-3 sm:px-6">
@@ -182,16 +184,19 @@ export function PipelineReplay({ heading, tamper, rules, health }: { heading: Pi
         </section>
 
         <section aria-label="Run totals and the recorded failover result" className={CARD}>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
               <span data-testid="total-decisions" data-value={view.decisions}>
                 <NumberFlow value={view.decisions} locales="en-US" />
               </span>
             </Total>
-            <Total label="Lost · duplicated" note="each decision exactly once">
-              {facts.lost} · {facts.duplicates}
+            <Total label="Lost" note="decisions">
+              <span data-testid="total-lost">{facts.lost}</span>
             </Total>
-            <Total label="Records verified" note={`of ${fmt(totals.chainsVerified)} sealed chains`}>
+            <Total label="Duplicated" note="decisions">
+              <span data-testid="total-duplicated">{facts.duplicates}</span>
+            </Total>
+            <Total label="Records verified so far" note={`of ${fmt(totals.chainsVerified)} sealed chains`}>
               <span data-testid="total-chains" data-value={view.chains}>
                 <NumberFlow value={view.chains} locales="en-US" />
               </span>
@@ -248,7 +253,6 @@ export function PipelineReplay({ heading, tamper, rules, health }: { heading: Pi
           </TechnicalDetail>
         </section>
       </div>
-      {health}
       <PersonSheet profile={shown} onClose={profile.close} />
     </>
   );
@@ -336,15 +340,19 @@ function CaseChip({ chip, row, reduceMotion, onOpen, tint = "bg-ground" }: { chi
   );
 }
 
-function StageColumn({ row, reduceMotion, onOpen }: { row: FlowRow; reduceMotion: boolean; onOpen: Open }) {
+/** A stage in the left-to-right row: a node on the connector line (filled while the stage holds cases), then its name and count. */
+function StageColumn({ row, last, reduceMotion, onOpen }: { row: FlowRow; last: boolean; reduceMotion: boolean; onOpen: Open }) {
   return (
-    <li data-stage={row.id} className="relative flex min-w-0 flex-col border-b border-rule px-4 pb-5 pt-4 sm:px-5 md:odd:border-r 2xl:border-b-0 2xl:border-r">
-      <svg aria-hidden width="10" height="16" viewBox="0 0 10 16" className="absolute -right-[5px] top-[22px] z-10 hidden bg-surface text-control 2xl:block">
-        <path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+    <li data-stage={row.id} className="relative flex min-w-0 flex-col border-b border-rule px-4 pb-5 pt-4 sm:px-5 md:odd:border-r lg:border-b-0 lg:border-r-0 lg:odd:border-r-0">
+      <span aria-hidden className="mb-3 hidden items-center lg:flex">
+        <span
+          className={cn("block size-3 flex-none rounded-full border-2 border-jade-700", row.count ? "bg-jade-700" : "bg-surface")}
+        />
+        {!last && <span className="-mr-5 block h-0.5 flex-1 bg-jade-400" />}
+      </span>
       <LaneHead label={row.label} count={row.count} />
       <span className="text-small text-muted">{row.note}</span>
-      <div className="mt-4 flex min-h-24 flex-row flex-wrap items-start gap-2 2xl:min-h-[196px] 2xl:flex-col">
+      <div className="mt-4 flex min-h-24 flex-row flex-wrap items-start gap-2 lg:min-h-[120px] lg:flex-col">
         {row.chips.map((c) => (
           <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} onOpen={onOpen} />
         ))}

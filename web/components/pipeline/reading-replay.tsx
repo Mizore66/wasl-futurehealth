@@ -184,9 +184,16 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
               report {v.index + 1} of {reader.cases.length}
             </span>
           </div>
+          <p data-testid="checks-takeaway" className="m-0 mt-1 text-body font-medium text-ink">
+            {!v.agreed
+              ? "Waiting for both readers"
+              : v.disagree.length === 0
+                ? `Both readers agree on all ${v.compared.length} checks they both read`
+                : `The readers disagree on ${v.disagree.length} of ${v.compared.length} checks they both read`}
+          </p>
 
           <div className="@container">
-          <div className="mt-3 hidden grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-end gap-x-3 pb-2 @2xl:grid">
+          <div className="mt-3 hidden grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-end gap-x-3 pb-2 @xl:grid">
             <span className="text-body font-medium text-ink">Check</span>
             <span className="flex flex-col">
               <span className="text-body font-medium text-ink">Rules reader</span>
@@ -213,8 +220,8 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
             const downgraded = c.ai.downgraded.includes(fd.k);
             const quoted = c.segments.some((s) => s.field === fd.k);
             return (
-              <div key={fd.k} data-field={fd.k} className="mt-0 grid grid-cols-1 items-center gap-x-3 gap-y-1 border-t border-rule py-2 @lg:grid-cols-2 @2xl:min-h-16 @2xl:grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] @2xl:py-2">
-                <span className="flex min-w-0 flex-col @lg:col-span-2 @2xl:col-span-1">
+              <div key={fd.k} data-field={fd.k} className="mt-0 grid grid-cols-1 items-center gap-x-3 gap-y-1 border-t border-rule py-2 @lg:grid-cols-2 @xl:min-h-14 @xl:grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] @xl:py-2">
+                <span className="flex min-w-0 flex-col @lg:col-span-2 @xl:col-span-1">
                   <span className="text-body font-medium">{fd.name}</span>
                 </span>
                 <Cell
@@ -228,8 +235,8 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
                   word={v.aiDone ? valueWord(c.ai, fd.k) : f >= 1 ? "reading" : "queued"}
                   sub={v.aiDone ? (downgraded ? "downgraded by the reader's own check" : quoted ? "quote found in report" : "") : ""}
                 />
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap @lg:col-span-2 @2xl:col-span-1">
-                  <span className="w-24 text-small text-muted @2xl:hidden">Agreement</span>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap @lg:col-span-2 @xl:col-span-1">
+                  <span className="w-24 text-small text-muted @xl:hidden">Agreement</span>
                   <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={cn("flex-none", !settled ? "text-control" : same ? "text-positive" : "text-warning")}>
                     <path d={!settled ? "M4 8h8" : same ? "M3 8.5l3 3 7-7" : "M4 4l8 8M12 4l-8 8"} />
                   </svg>
@@ -275,8 +282,9 @@ export function ReadingReplay({ heading, standsFor }: { heading: PipelineHead; s
 function Cell({ who, mark, word, sub }: { who: string; mark: Mark; word: string; sub?: string }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <span className="w-24 flex-none text-small text-muted @2xl:hidden">{who}</span>
-      <MarkShape mark={mark} hue={mark === "working"} className="size-2.5" />
+      <span className="w-24 flex-none text-small text-muted @xl:hidden">{who}</span>
+      {/* A settled answer needs no mark; queued and working keep theirs, so the replay's progress stays visible. */}
+      {mark !== "done" && <MarkShape mark={mark} hue={mark === "working"} className="size-2.5" />}
       <span className="flex min-w-0 flex-col">
         <span className={cn("break-words text-body", mark === "done" ? "text-ink" : "text-muted")}>{word}</span>
         {sub ? <span className="break-words text-small text-muted">{sub}</span> : null}
