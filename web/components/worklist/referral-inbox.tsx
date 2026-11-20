@@ -291,7 +291,6 @@ export function ReferralInbox({
         <section aria-label="Open referral" className="rounded-card border border-line bg-surface">
           <PageHeader
             attached
-            run
            
             title={<span data-focus="heading" tabIndex={-1} className="outline-none">{url.caseId ? "Referral unavailable" : heading.title}</span>}
           />
@@ -553,7 +552,6 @@ export function ReferralInbox({
       <section aria-label="Open referral" data-case={r.id} className="overflow-hidden rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
           title={
             <span data-focus="heading" tabIndex={-1} aria-label={`${heading.title}, ${r.short}`} className="outline-none">
               {heading.title}
@@ -836,7 +834,6 @@ function Directory({
     <section id="worklist" tabIndex={-1} aria-label="Referral inbox" className="rounded-card border border-line bg-surface outline-none">
       <PageHeader
         attached
-        run
        
         title={
           <span data-focus="heading" tabIndex={-1} className="outline-none">

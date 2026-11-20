@@ -25,7 +25,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   if (c.lifecycle === "retained")
     return (
       <section aria-label="Retired case" className="overflow-hidden rounded-card border border-line bg-surface">
-        <PageHeader attached run compact title={<>Retired case {shortId(c.id)}</>} />
+        <PageHeader attached compact title={<>Retired case {shortId(c.id)}</>} />
         <div className="p-4 md:p-pad">
           <p className="m-0">This tracking request is inactive. Its original decisions, signed reviews and source history are retained, not current care or outreach work.</p>
           <p>{c.programme_availability === "unavailable" ? "No current programme was selected." : "The recorded programme does not confer active eligibility."}</p>

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { loadCaseRecord, renderEvidenceFile } from "@/components/case/evidence-file";
 import { LedgerInvalidBanner, listLedgerInvalid } from "@/components/worklist/ledger-banner";
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
@@ -154,7 +153,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           {/* Too short to clip the Run metadata drop-down, so the card does not clip and the band rounds its own corner. */}
           <PageHeader
             attached
-            run
             className="rounded-se-[6px]!"
             title={openRow?.it.name ?? shortId(view.open)}
             sub={openRow?.it.named ? shortId(view.open) : undefined}
@@ -206,7 +204,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
       <section className="pf-directory" aria-labelledby="pf-view-heading">
         <PageHeader
           attached
-          run
           className="pf-hero"
           title="Patients"
           sub={
@@ -214,7 +211,6 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               : {describe(filters)}
             </ResultCount>
           }
-          aside={<HonestyLabel kind="simulated">Simulated names and cases</HonestyLabel>}
         />
         <Toolbar label="Filter patients" className="pf-filters">
           <SegmentedFilter label="Filters" items={segments} />

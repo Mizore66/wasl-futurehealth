@@ -11,7 +11,7 @@ test.describe("Recovery fixture mode", () => {
     await page.goto("/app/recovery");
     await expect(page.getByRole("heading", { level: 1, name: "Colonoscopy" })).toBeVisible();
     await expect(page.getByText("Al Mushrif · AD-1")).toBeVisible();
-    await expect(page.locator("[data-honesty=simulated]", { hasText: "Simulated" }).first()).toBeVisible();
+    await expect(page.locator("[data-honesty=simulated]:visible", { hasText: "Simulated" }).first()).toBeVisible();
     const window = page.getByRole("list", { name: "Scheduling window" });
     await expect(window).toContainText("Requested");
     await expect(window).toContainText("Day 12");

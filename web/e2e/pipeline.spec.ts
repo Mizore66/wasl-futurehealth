@@ -45,7 +45,7 @@ test("pipeline: pause, step, play and tamper, totals within the run", async ({ p
   await page.goto("/app/pipeline");
   await expect(page.locator("h1")).toHaveText("Pipeline");
   await expect(page.getByText(LINE)).toBeVisible();
-  await expect(page.locator("[data-honesty]").first()).toBeVisible();
+  await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
   await expect(page.locator("[data-stage]")).toHaveCount(8);
 
   await page.clock.runFor(500);

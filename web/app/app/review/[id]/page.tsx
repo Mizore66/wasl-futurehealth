@@ -15,7 +15,6 @@ import { getReviewCase, reviewerPersona } from "@/lib/api/reviewer-session";
 import { apiMode, getFixtureReviewSource } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { reviewAuthMode } from "@/lib/auth/oidc-config";
-import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 import { settledWords } from "@/components/case/crc-confirmation";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
@@ -31,7 +30,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   if (!viewer.authenticated) {
     return (
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
-        <PageHeader attached run title={<span id="review-title">Review desk</span>} sub="Sign in to see the case." />
+        <PageHeader attached title={<span id="review-title">Review desk</span>} sub="Sign in to see the case." />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
           <ReviewerLogin caseId={id} mode={authMode} authError={query.oidc_error === "1"} reason={viewer.reason === "anonymous" ? undefined : viewer.reason} />
         </div>
@@ -45,7 +44,7 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
   if (detail.case.lifecycle === "retained")
     return (
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
-        <PageHeader attached run title={<span id="review-title">Retired case: review history only</span>} />
+        <PageHeader attached title={<span id="review-title">Retired case: review history only</span>} />
         <div className="p-4 sm:p-pad">
           <p className="m-0">No new claim, clinical read or review work is available from this tracking request.</p>
           <Link href={caseHref("/app/patients", id)} className="mt-2 inline-flex min-h-11 items-center underline">
@@ -86,32 +85,35 @@ export default async function Page({ params, searchParams }: PageProps<"/app/rev
       <section aria-labelledby="review-title" className="rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
          
           title={<span id="review-title">{view.items.link ? "Identity review" : view.items.evidence ? "Evidence review" : "Review"}</span>}
+          titleAside={
+            /* Fixtures only: live review shows no patient identity before the viewer claims a read. */
+            !live && (
+              <RecordAvatar id={view.caseId} name={view.name} linked>
+                <Avatar {...view.faces.referral} size={36} label="" />
+              </RecordAvatar>
+            )
+          }
           sub={
             <>
               <span className="font-semibold text-ink">{view.shortId}</span>
+              {queue && at >= 0 && (
+                <span className="text-muted">
+                  {" "}
+                  · Case {at + 1} of {total} waiting
+                </span>
+              )}
+              {queue && queue.source !== "open" && (
+                <>
+                  {" "}
+                  · <QueueLabel source={queue.source} />
+                </>
+              )}
               {view.held && <span className="mt-1 block max-w-[72ch]">{view.held}</span>}
             </>
           }
-          aside={
-            <div className="flex flex-col gap-1 sm:items-end">
-              {/* Fixtures only: live review shows no patient identity before the viewer claims a read. */}
-              {!live && (
-                <RecordAvatar id={view.caseId} name={view.name} linked>
-                  <Avatar {...view.faces.referral} size={36} label="" />
-                </RecordAvatar>
-              )}
-              {queue && at >= 0 && (
-                <span className="text-small text-muted">
-                  Case {at + 1} of {total} waiting
-                </span>
-              )}
-              {queue && <QueueLabel source={queue.source} />}
-              <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
-            </div>
-          }
+          help={["reads", "canonical", "overlay"]}
         />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
           {viewer.session && <ReviewerSessionStatus session={viewer.session} persona={viewer.session.method === "oidc" ? await reviewerPersona() : null} />}

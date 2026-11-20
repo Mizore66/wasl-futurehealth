@@ -24,7 +24,6 @@ export default async function Page({ searchParams }: PageProps<"/app/today">) {
   const head = (
     <PageHeader
       attached
-      run
       compact
       title="Today"
       sub={`${scope} · ${simulatedRunDate(now)}`}

@@ -61,7 +61,7 @@ for (const vp of WIDTHS) {
       const res = await page.goto(route.path);
       expect(res?.status()).toBe(200);
       await expect(page.locator("h1")).toHaveCount(1);
-      await expect(page.locator("[data-honesty]").first()).toBeVisible();
+      await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
       await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
 
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

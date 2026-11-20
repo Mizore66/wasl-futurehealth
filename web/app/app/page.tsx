@@ -51,10 +51,8 @@ export default async function ProgrammePage() {
       <article data-testid="programme-rail" className="@container overflow-hidden rounded-[8px] border border-rule bg-surface">
         <PageHeader
           attached
-          run
           title="Colorectal screening"
           compact
-          aside={<HonestyLabel kind="simulated" className="bg-jade-50 text-jade-800">Synthetic run</HonestyLabel>}
           className="border-rule px-4 py-[17px] @min-[701px]:px-[clamp(19px,2.65cqi,42px)] @min-[701px]:py-[clamp(17px,2.2cqi,32px)]"
         />
 
@@ -95,7 +93,7 @@ export default async function ProgrammePage() {
           </SourceHeading>
           {view.onTimeMeasured ? (
             <div className="mt-2">
-              <HonestyLabel kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
+              <HonestyLabel plain kind="simulated">On time: Wasl-measured, simulated</HonestyLabel>
             </div>
           ) : (
             <p className="m-0 mt-2 text-small text-muted">On-time follow-up by programme is not available for this run.</p>
@@ -139,7 +137,7 @@ export default async function ProgrammePage() {
               test comes from booking/sim/pool_test.json, a separate simulation of 30 draws with capacity placed in the wrong regions.
             </SourceHeading>
             <div className="mt-2">
-              <HonestyLabel kind="simulated">Simulated decision support</HonestyLabel>
+              <HonestyLabel plain kind="simulated">Simulated decision support</HonestyLabel>
             </div>
 
             <p data-testid="capacity-condition" className="m-0 mt-3 text-body font-medium">

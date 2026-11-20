@@ -12,7 +12,6 @@ import { reviewerToken } from "@/lib/api/reviewer-session";
 import { claimActionLabel, claimSummary, questionAnchor } from "@/components/review/decision";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
-import { GlossaryPopover } from "@/components/wasl/glossary-popover";
 import { PageHeader } from "@/components/shell/page-header";
 import { Pill } from "@/components/review/marks";
 import { stateHeadline } from "@/components/review/decision";
@@ -49,20 +48,19 @@ export default async function Page({ searchParams }: PageProps<"/app/review">) {
     <section aria-labelledby="review-desk-title" className="rounded-card border border-line bg-surface">
       <PageHeader
         attached
-        run
        
         title={<span id="review-desk-title">Review desk</span>}
         sub={
-          queue.source !== "incomplete" ? (
-            <>{rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer.</>
-          ) : undefined
+          <>
+            {queue.source !== "incomplete" && <>{rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer. </>}
+            {queue.source !== "open" && (
+              <>
+                <QueueLabel source={queue.source} />.
+              </>
+            )}
+          </>
         }
-        aside={
-          <div className="flex flex-col gap-1 sm:items-end">
-            <QueueLabel source={queue.source} />
-            <GlossaryPopover terms={["reads", "canonical", "overlay"]} />
-          </div>
-        }
+        help={["reads", "canonical", "overlay"]}
       />
       <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad [&>*:first-child]:mt-0">
         {query.oidc_error === "1" && (

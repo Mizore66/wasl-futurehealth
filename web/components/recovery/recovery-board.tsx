@@ -8,7 +8,6 @@ import { cancelBackfill, confirmBackfill } from "@/app/app/recovery/actions";
 import { PageHeader } from "@/components/shell/page-header";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { providerLabel } from "@/components/worklist/model";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { RecoveryCandidate, RecoveryDetail, RecoveryList, RecoverySlot } from "@/lib/api/recovery-schema";
 import { cx } from "@/lib/cx";
 import { caseHref, shortId } from "@/lib/domain/ids";
@@ -258,11 +257,9 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       <article className="rounded-[8px] border border-line bg-surface text-ink [--g:clamp(16px,2vw,28px)]">
         <PageHeader
           attached
-          run
          
           title="Recovery"
           sub="Released capacity from missed appointments"
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
         <p role="status" className="m-0 p-4">
@@ -288,7 +285,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
       >
         <PageHeader
           attached
-          run
           className="py-[clamp(13px,1.8cqi,24px)]! @max-[700px]:px-4!"
           title={<span id="rc-title">{procedureLabel(slot.procedure)}</span>}
           titleAside={
@@ -305,7 +301,6 @@ export function RecoveryBoard({ list, detail, readOnly }: { list: RecoveryList; 
             </button>
           }
           sub={`${providerLabel(slot.provider)} · ${slot.unit}`}
-          aside={<HonestyLabel kind="simulated">Simulated</HonestyLabel>}
         />
         {slotNav}
 

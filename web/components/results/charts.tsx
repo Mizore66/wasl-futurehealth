@@ -138,15 +138,19 @@ export function KpiChart({ groups }: { groups: Kpi[] }) {
 }
 
 /** A count out of a whole as a bar (meter list): the bar is the share, the figure is the count. */
-export type CountRow = { label: string; count: number; of?: number; testId?: string; color?: string; sub?: string };
+export type CountRow = { label: string; count: number; of?: number; testId?: string; color?: string; sub?: string; /** The definition: in the tooltip and the table, never under the label. */ what?: string };
 
 export function CountBars({ rows, caption, tableHead, axisMax }: { rows: CountRow[]; caption: string; tableHead: [string, string]; axisMax?: number }) {
   const shares = rows.every((r) => r.of);
   const max = axisMax ?? (shares ? 1 : Math.max(...rows.map((r) => r.count)));
   const x = scale(0, max);
   const said = (r: CountRow) => (r.of ? `${fmt(r.count)} of ${fmt(r.of)}` : fmt(r.count));
+  const defined = rows.some((r) => r.what);
   return (
-    <ChartFigure caption={caption} table={{ caption, head: tableHead, rows: rows.map((r) => [r.label, said(r)]) }}>
+    <ChartFigure
+      caption={caption}
+      table={{ caption, head: defined ? [...tableHead, "Meaning"] : tableHead, rows: rows.map((r) => (defined ? [r.label, said(r), r.what ?? ""] : [r.label, said(r)])) }}
+    >
       <div>
         {rows.map((r) => (
           <ChartRow
@@ -156,7 +160,7 @@ export function CountBars({ rows, caption, tableHead, axisMax }: { rows: CountRo
             labelWidth="10rem"
             track="h-7"
             testId={r.testId}
-            tip={<TipRows title={r.label} rows={[{ color: r.color ?? SERIES.wasl, name: r.of ? "" : "count", value: said(r) }]} />}
+            tip={<TipRows title={r.label} rows={[{ color: r.color ?? SERIES.wasl, name: r.of ? "" : "count", value: said(r) }]} note={r.what} />}
           >
             <span aria-hidden className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 rounded-[4px]" style={{ backgroundColor: CHROME.track }} />
             {r.count > 0 && <Bar to={x(r.of ? r.count / r.of : r.count)} color={r.color ?? SERIES.wasl} thick={12} />}

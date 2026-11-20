@@ -47,14 +47,23 @@ test.describe("Results", () => {
     await page.goto("/app/results");
     const section = page.getByTestId("consent-lifecycle");
     await expect(section.getByRole("heading", { name: "Consent: held, released, cancelled" })).toBeVisible();
-    await expect(section.locator('[data-honesty="simulated"]')).toBeVisible();
+    // One short muted line, no chips; the labels are one or two words and their definitions sit in the tooltip and table.
     await expect(section).toContainText("message intents, not patients");
-    await expect(section).toContainText("No message was sent to anyone");
+    await expect(section).toContainText("No message was sent");
+    await expect(section.locator("[data-dot], p .rounded-chip")).toHaveCount(0);
+    for (const label of ["Held", "Released", "Cancelled", "No consent", "After opt-out", "Before opt-out"])
+      await expect(section.getByRole("button", { name: new RegExp(`^${label}`) })).toBeVisible();
     const t = dashboard.metrics.consent_timing;
     const shown = async (key: string) => (await section.getByTestId(`consent-${key}`).innerText()).replace(/,/g, "");
     for (const key of Object.keys(t)) expect(await shown(key), key).toContain(String(t[key as keyof typeof t]));
     expect(t.intents_ever_held_for_consent).toBeGreaterThan(0);
-    await expect(section.getByTestId("consent-opted_out_loops")).toContainText("loops with an opt-out");
+    await expect(section.getByTestId("consent-opted_out_loops")).toContainText("loops had an opt-out");
+    // The safety counters are drawn as 0 against the released total, like the false-closure chart.
+    for (const key of ["released_without_granted_consent", "released_after_opt_out_on_file", "released_before_opt_out_recorded"])
+      await expect(section.getByTestId(`consent-${key}`)).toContainText(`${t[key as keyof typeof t]} of ${t.released_total.toLocaleString("en-US")}`);
+    const afterOptOut = section.getByTestId("consent-released_after_opt_out_on_file");
+    await afterOptOut.hover();
+    await expect(page.locator(`[id="${await afterOptOut.getAttribute("aria-describedby")}"]`)).toContainText("This is the violation");
     await expect(section).toContainText("counts loops");
     await expect(section.getByTestId("consent-intents_ever_held_for_consent")).toContainText(t.intents_ever_held_for_consent.toLocaleString("en-US"));
   });

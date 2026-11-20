@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SegmentedFilter } from "@/components/ui/filters/toolbar";
 import { safeInboxBack } from "@/components/worklist/inbox-url";
 import { ReferrerHandoffs, SessionReferrerHandoffs } from "@/components/worklist/referrer-handoffs";
@@ -75,11 +74,17 @@ export default async function Page({ searchParams }: PageProps<"/app/referrals/r
       <section aria-labelledby="returned-title" className="rounded-card border border-line bg-surface">
         <PageHeader
           attached
-          run
          
           title={<span id="returned-title">Returned referrals</span>}
-          sub={view ? view.returned : "No referral workflow for this programme and provider."}
-          aside={<HonestyLabel kind={label.kind}>{label.text}</HonestyLabel>}
+          sub={
+            <>
+              {view ? view.returned : "No referral workflow for this programme and provider."}{" "}
+              <span data-honesty={label.kind} className="text-muted">
+                {label.text}
+              </span>
+              .
+            </>
+          }
         />
         <div className="rounded-b-[7px] bg-limestone-100 p-4 sm:p-pad">
           <SegmentedFilter

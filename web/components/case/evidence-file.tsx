@@ -218,7 +218,6 @@ export async function renderEvidenceFile({ record, back }: { record: CaseRecord;
         {/* The card does not clip (the Run metadata drop-down hangs over it), so the band rounds the corners the folder tab leaves. */}
         <PageHeader
           attached
-          run
           className={back ? "rounded-se-[6px]!" : "rounded-t-[6px]!"}
           title={person?.display_name ?? shortId(c.id)}
           titleAside={

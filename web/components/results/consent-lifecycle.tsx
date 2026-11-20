@@ -1,4 +1,3 @@
-import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechnicalDetail } from "@/components/pipeline/technical";
 import { CountBars } from "@/components/results/charts";
 
@@ -26,64 +25,57 @@ export const LIFECYCLE = [
 export const GUARDS = [
   {
     key: "released_without_granted_consent",
-    label: "Released without granted consent",
-    what: "No contact permission granted earlier in the record.",
+    label: "No consent",
+    what: "Released without contact permission granted earlier in the record.",
   },
   {
     key: "released_after_opt_out_on_file",
-    label: "Released after an opt-out was on file",
-    what: "The patient's opt-out was already recorded. This is the violation.",
+    label: "After opt-out",
+    what: "Released after the patient's opt-out was already recorded. This is the violation.",
   },
   {
     key: "released_before_opt_out_recorded",
-    label: "Released before the opt-out was recorded",
-    what: "The patient opted out later.",
+    label: "Before opt-out",
+    what: "Released before an opt-out the patient recorded later.",
   },
 ] as const;
 
 /**
  * The consent hold, release and cancellation counts for the active run, read from `dashboard.metrics.consent_timing`.
  * Nothing is hardcoded: every figure is a field of the dashboard payload. Counts are message intents, not patients.
+ * Labels stay one or two words; what each count means is in the tooltip and the table view.
  */
 export function ConsentLifecycle({ timing }: { timing: Record<string, number> }) {
+  const released = timing.released_total ?? 0;
   return (
     <section aria-labelledby="consent-h" data-testid="consent-lifecycle" className="bg-surface px-pad py-5 lg:col-span-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 id="consent-h" className="m-0 text-section font-medium">
-          Consent: held, released, cancelled
-        </h2>
-        <HonestyLabel kind="simulated">Simulated messages</HonestyLabel>
-      </div>
-      <p className="m-0 mt-1 flex flex-wrap gap-2 text-small">
-        <span className="rounded-chip bg-raised px-2 py-0.5 text-ink-soft">No message was sent to anyone</span>
-        <span className="rounded-chip bg-raised px-2 py-0.5 text-ink-soft">Counts are message intents, not patients</span>
-      </p>
+      <h2 id="consent-h" className="m-0 text-section font-medium">
+        Consent: held, released, cancelled
+      </h2>
+      <p className="m-0 mt-1 text-small text-muted">Simulated message intents, not patients. No message was sent.</p>
 
       <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-5 lg:grid-cols-2">
         <div className="min-w-0">
           <CountBars
-            caption="Message intents by consent outcome (the counts overlap: held then released is in both)"
+            caption="Message intents by consent outcome. The counts overlap: held then released is in both."
             tableHead={["Outcome", "Message intents"]}
-            rows={LIFECYCLE.map((s) => ({ label: s.label, sub: s.what, count: timing[s.key] ?? 0, testId: `consent-${s.key}` }))}
+            rows={LIFECYCLE.map((s) => ({ label: s.label, what: s.what, count: timing[s.key] ?? 0, testId: `consent-${s.key}` }))}
           />
         </div>
         <div className="min-w-0">
           <h3 className="m-0 text-body font-medium">Safety counters, read against the counts</h3>
-          <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
-            {GUARDS.map((g) => (
-              <li key={g.key} data-testid={`consent-${g.key}`} title={g.what} className="flex items-baseline justify-between gap-3 rounded-control bg-raised px-3 py-1.5 text-small">
-                <span className="min-w-0 text-ink-soft">{g.label}</span>
-                <span className="text-section font-semibold tabular-nums text-ink">{fmt(timing[g.key])}</span>
-              </li>
-            ))}
-            <li data-testid="consent-opted_out_loops" className="flex items-baseline justify-between gap-3 rounded-control bg-raised px-3 py-1.5 text-small">
-              <span className="min-w-0 text-ink-soft">loops with an opt-out (this counts loops, not message intents)</span>
-              <span className="text-section font-semibold tabular-nums text-ink">{fmt(timing.opted_out_loops)}</span>
-            </li>
-          </ul>
+          <div className="mt-2">
+            <CountBars
+              caption="Released message intents that broke a consent rule, out of all released"
+              tableHead={["Counter", "Released intents"]}
+              rows={GUARDS.map((g) => ({ label: g.label, what: g.what, count: timing[g.key] ?? 0, of: released, testId: `consent-${g.key}` }))}
+            />
+          </div>
+          <p data-testid="consent-opted_out_loops" className="m-0 mt-2 text-small text-muted">
+            {fmt(timing.opted_out_loops)} loops had an opt-out on file (this counts loops, not message intents).
+          </p>
         </div>
       </div>
-
       <TechnicalDetail label="Technical detail: dashboard field names">
         {Object.entries(timing).map(([k, v]) => (
           <div key={k}>

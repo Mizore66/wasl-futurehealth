@@ -20,6 +20,7 @@ import {
   worstRanges,
 } from "@/components/evidence/model";
 import { PageHeader } from "@/components/shell/page-header";
+import { runInfo } from "@/components/shell/run-info";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { HONESTY } from "@/lib/honesty";
 import type { Evidence, EvidenceClaim } from "@/lib/api/evidence-schema";
@@ -82,7 +83,6 @@ function Headline({ ev }: { ev: Evidence }) {
     <Section
       id="gap"
       title="Wasl raises the measured rate toward the true rate"
-      aside={<HonestyLabel kind="simulated">Synthetic cohort, measured</HonestyLabel>}
     >
       <GapChart
         runs={gapRuns(rows)}
@@ -146,7 +146,7 @@ function Accuracy({ ev }: { ev: Evidence }) {
     <Section
       id="accuracy"
       title={anyClosure ? "False closures were seen: read the counts below" : "No false closures in any programme; misses stay visible"}
-      aside={<HonestyLabel kind="simulated">Held-out persons, 5 seeds</HonestyLabel>}
+      aside={<HonestyLabel plain kind="simulated">Held-out persons, 5 seeds</HonestyLabel>}
     >
       <Terms ev={ev} />
       <div className="mt-5 grid items-start gap-x-gap gap-y-8 lg:grid-cols-2">
@@ -221,7 +221,7 @@ function Benchmarks({ ev }: { ev: Evidence }) {
     <Section
       id="benchmarks"
       title={rows.length === 0 ? "On data the team did not generate" : wins === paired.length && paired.length > 0 ? "Ahead of the published baseline on public data" : "On data the team did not generate"}
-      aside={rows.length > 0 ? <HonestyLabel kind="built">Public datasets</HonestyLabel> : undefined}
+      aside={rows.length > 0 ? <HonestyLabel plain kind="built">Public datasets</HonestyLabel> : undefined}
     >
       {rows.length === 0 ? (
         <p data-testid="benchmarks-none" className="m-0 mt-2 text-body text-ink-soft">
@@ -264,7 +264,7 @@ function Modelled({ ev }: { ev: Evidence }) {
     <Section
       id="modelled"
       title={`If navigators act on the list: ${num(Math.min(...cancers))} to ${num(Math.max(...cancers))} more cancers found per 1,000`}
-      aside={<HonestyLabel kind="illustrative">Modelled, not measured</HonestyLabel>}
+      aside={<HonestyLabel plain kind="illustrative">Modelled, not measured</HonestyLabel>}
     >
       <p data-testid="modelled-label" className="m-0 mt-2 flex flex-wrap gap-2 text-small">
         <span className="rounded-chip bg-ochre-wash px-2 py-0.5 text-ochre-ink">Conditional on navigation acting on the corrected list</span>
@@ -413,7 +413,8 @@ function Ledger({ ev }: { ev: Evidence }) {
   );
 }
 
-function Verify() {
+async function Verify() {
+  const run = await runInfo();
   return (
     <Section id="verify" title="Verify it yourself in two minutes">
       <pre data-testid="verify-cmd" className="m-0 mt-3 whitespace-pre-wrap break-all rounded-control bg-raised px-3 py-2 text-small">
@@ -430,6 +431,21 @@ function Verify() {
         </Link>
         <Ext href={HOSTED}>{HOSTED.replace(/^https:\/\//, "")}</Ext>
       </p>
+      {/* The run the workspace screens read, once in the top bar's details; one click away here for reproducibility. */}
+      {run.ok && (
+        <details data-testid="verify-run" className="mt-3 text-small">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-ink-soft">This workspace run: {run.when}</summary>
+          <p className="m-0 text-muted">{run.note}</p>
+          <dl className="m-0 mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-[max-content_1fr]">
+            {run.rows.map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-muted">{k}</dt>
+                <dd className="m-0 break-all font-mono text-ink-soft">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      )}
     </Section>
   );
 }
@@ -441,7 +457,6 @@ export default function EvidencePage() {
       <PageHeader
         title="Evidence"
         sub={`What Wasl measured, how sure we are, and how to check it. Frozen at code ${ev.generated.revision.slice(0, 7)} on ${frozenWords(ev.generated.frozen_at)}, before the held-out runs.`}
-        aside={<HonestyLabel kind="simulated">Synthetic patients</HonestyLabel>}
       />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-gap">
         <Headline ev={ev} />

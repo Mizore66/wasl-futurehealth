@@ -6,12 +6,22 @@ import type { ReviewQueue } from "./queue";
  * Where the queue came from. A rebuilt queue is a stand-in, but against the live API its answers are real POSTs
  * appended to a case the server already shows as signed, so the label says that rather than "simulated".
  */
+export function queueWords(source: ReviewQueue["source"]): { kind: "built" | "simulated"; text: string } | null {
+  if (source === "incomplete") return { kind: "built", text: "Incomplete: some open review items could not be loaded" };
+  // The normal case says nothing: open review items from the API need no label.
+  if (source === "open") return null;
+  return apiMode() === "live"
+    ? { kind: "simulated", text: "Practice queue: an already-signed demo case, answers are saved" }
+    : { kind: "simulated", text: "Simulated queue: rebuilt from a held demo case" };
+}
+
+/** Plain muted words for the page header's subtitle line, not a chip over the header art. */
 export function QueueLabel({ source }: { source: ReviewQueue["source"] }) {
-  if (source === "incomplete") return <HonestyLabel kind="built">Incomplete: some open review items could not be loaded</HonestyLabel>;
-  if (source === "open") return <HonestyLabel kind="built">Open review items from the API</HonestyLabel>;
-  return apiMode() === "live" ? (
-    <HonestyLabel kind="simulated">Practice queue: an already-signed demo case, answers are saved</HonestyLabel>
-  ) : (
-    <HonestyLabel kind="simulated">Simulated queue: rebuilt from a held demo case</HonestyLabel>
+  const words = queueWords(source);
+  if (!words) return null;
+  return (
+    <HonestyLabel plain kind={words.kind} className="text-muted">
+      {words.text}
+    </HonestyLabel>
   );
 }

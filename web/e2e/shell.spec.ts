@@ -107,34 +107,45 @@ test.describe("sidebar (desktop)", () => {
     ).toEqual([]);
   });
 
-  test("the metadata strip shows plain words first and keeps run internals in its technical panel, and adds no h1", async ({
-    page,
-  }) => {
+  test("the top bar carries the one simulated-data notice, with no run time or details disclosure, and adds no h1", async ({ page }) => {
     await page.goto("/app/pipeline");
-    const strip = page.getByRole("region", { name: "Run metadata" });
-    const summary = strip.locator("summary");
-    // Collapsed: only the simulation label and a readable snapshot time are shown, no identifiers or ISO timestamps.
-    await expect(strip.locator("time")).toBeVisible();
-    expect(await summary.innerText()).toMatch(/^Simulated data\s*Snapshot \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} UTC\s*Details$/);
-    await expect(strip.locator("time")).toHaveAttribute("datetime", meta.loaded_at);
-    await expect(strip.getByText(meta.run)).toBeHidden();
-    await expect(strip).not.toContainText("data_mode");
-    await expect(summary).not.toContainText(/\d{4}-\d{2}-\d{2}T/);
-
-    const chevron = summary.locator("svg");
-    await expect(chevron).toBeVisible();
-    // Tailwind's rotate-* sets the CSS `rotate` property, so the open state shows as 180deg there, not in `transform`.
-    const turn = () => chevron.evaluate((el) => getComputedStyle(el).rotate);
-    expect(await turn()).toBe("none");
-    await strip.getByText("Details").click();
-    await expect(strip.locator("details")).toHaveAttribute("open", "");
-    await expect(summary).toContainText("Hide");
-    await expect(strip.getByText(meta.run)).toBeVisible();
-    await expect(strip).toContainText("Published snapshot of the API");
-    await expect(strip).toContainText("Reader model");
-    await expect(strip).toContainText(meta.reader_model);
-    await expect.poll(turn).toBe("180deg");
+    const strip = page.getByRole("region", { name: "Run metadata" }).filter({ visible: true });
+    await expect(strip).toHaveCount(1);
+    await expect(strip).toHaveText("Simulated data");
+    await expect(strip.locator("details, time")).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText(/Run loaded|Snapshot \d/);
+    // The sidebar no longer repeats it, and no page header carries a generic synthetic chip.
+    await expect(page.locator("#app-sidebar")).not.toContainText("Synthetic data");
+    // Chips carry a status dot; plain muted provenance text in a subtitle has none.
+    await expect(page.locator("main header.staff-heading [data-dot]")).toHaveCount(0);
     await expect(page.locator("h1")).toHaveCount(1);
+  });
+
+  test("the run internals moved to the Evidence page's verify section", async ({ page }) => {
+    await page.goto("/app/evidence");
+    const run = page.getByTestId("verify-run");
+    await expect(run.getByText(meta.run)).toBeHidden();
+    await run.locator("summary").click();
+    await expect(run.getByText(meta.run)).toBeVisible();
+    await expect(run).toContainText("Published snapshot of the API");
+    await expect(run).toContainText(meta.reader_model);
+  });
+
+  test("page headers hold a title and subtitle only: nothing sits over the header art", async ({ page }) => {
+    for (const route of ["/app", "/app/review", "/app/results", "/app/evidence"]) {
+      await page.goto(route);
+      const header = page.locator("main header.staff-heading").first();
+      await expect(header.locator("[data-dot]")).toHaveCount(0);
+      // Anything interactive in the band sits in the text column, left of where the art begins.
+      const box = (await header.boundingBox())!;
+      for (const b of await header.locator("button, a").all()) {
+        const r = (await b.boundingBox())!;
+        expect(r.x + r.width, route).toBeLessThanOrEqual(box.x + box.width * 0.72);
+      }
+    }
+    await page.goto("/app/review");
+    await page.getByTestId("glossary-trigger").click();
+    await expect(page.getByTestId("glossary-panel")).toBeVisible();
   });
 });
 
@@ -156,9 +167,7 @@ test.describe("mobile (390px)", () => {
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav).toBeVisible();
     await expect(nav.getByRole("link").first()).toBeFocused();
-    await expect(
-      page.locator("#mobile-menu").getByText("Synthetic data · demo"),
-    ).toBeVisible();
+    await expect(page.locator("#mobile-menu")).not.toContainText("Synthetic data");
     await expect(
       page.locator("#mobile-menu").getByText("Dr Salama Al Tamimi"),
     ).toBeVisible();
@@ -202,27 +211,12 @@ test.describe("mobile (390px)", () => {
     ).toBeLessThanOrEqual(390);
   });
 
-  test("the run strip fits, shows its time in full, and opens by touch and keyboard", async ({ page }) => {
+  test("the phone header carries the one simulated-data notice and fits", async ({ page }) => {
     await page.goto("/app");
-    const strip = page.getByRole("region", { name: "Run metadata" });
-    const summary = strip.locator("summary");
-    const details = strip.locator("details");
-    expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    const time = strip.locator("time");
-    await expect(time).toBeVisible();
-    expect(await time.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-    // The time wraps inside the 44px row, so the strip keeps the height its loading placeholder reserves.
-    expect((await summary.boundingBox())!.height).toBe(44);
-    await expect(summary.locator("svg")).toBeVisible();
-
-    await summary.tap();
-    await expect(details).toHaveAttribute("open", "");
-    await expect(strip.getByText(meta.run)).toBeVisible();
-    await summary.focus();
-    await page.keyboard.press("Enter");
-    await expect(details).not.toHaveAttribute("open", "");
-    await page.keyboard.press("Space");
-    await expect(details).toHaveAttribute("open", "");
+    const strip = page.getByRole("region", { name: "Run metadata" }).filter({ visible: true });
+    await expect(strip).toHaveCount(1);
+    await expect(strip).toHaveText("Simulated data");
+    await expect(page.locator("main header.staff-heading [data-dot]")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 });
