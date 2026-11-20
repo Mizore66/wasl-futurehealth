@@ -928,12 +928,21 @@ function Directory({
           </tbody>
         </table>
       )}
-      <div className="flex min-h-14 flex-wrap items-center justify-between gap-2.5 px-[clamp(14px,2.4vw,32px)] py-2 text-small text-muted">
-        <span data-testid="page-range" aria-live="polite" aria-atomic="true">
-          {list.length > INBOX_PAGE ? `${paging.from}–${paging.to} of ` : ""}
-          {list.length} {list.length === 1 ? "referral" : "referrals"}
-        </span>
-        <PagerLinks paging={paging} label="Inbox pages" hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })} onFollow={shallow} />
+      <div className="flex min-h-14 items-center px-[clamp(14px,2.4vw,32px)] py-2 text-small text-muted">
+        {paging.pages > 1 ? (
+          <PagerLinks
+            paging={paging}
+            label="Inbox pages"
+            testId="page-range"
+            summary={<span aria-live="polite" aria-atomic="true">{`${paging.from}–${paging.to} of ${list.length} referrals`}</span>}
+            hrefFor={(p) => href({ view: "inbox", page: p, caseId: url.caseId ?? undefined })}
+            onFollow={shallow}
+          />
+        ) : (
+          <span data-testid="page-range" aria-live="polite" aria-atomic="true">
+            {list.length} {list.length === 1 ? "referral" : "referrals"}
+          </span>
+        )}
       </div>
     </section>
   );
