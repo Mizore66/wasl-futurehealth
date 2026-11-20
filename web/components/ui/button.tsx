@@ -31,6 +31,8 @@ const buttonVariants = cva(
         cta: "cursor-pointer rounded-control bg-cta text-body font-medium text-white",
         /** Secondary action beside a primary one. */
         quiet: "cursor-pointer rounded-control bg-active text-body text-ink hover:bg-control",
+        /** A low-key action off the main flow, such as putting the task off. Text weight only, so it never competes with `cta`. */
+        tertiary: "cursor-pointer rounded-control bg-transparent text-body text-jade-800 hover:bg-jade-50",
         /** A one-tap choice among several, such as a call outcome. The caller sets the border colour. */
         chip: "cursor-pointer rounded-chip border bg-surface text-body text-ink hover:bg-ground",
       },
