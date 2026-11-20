@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { CATEGORICAL, CHROME } from "@/components/charts/palette";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
 import { TechnicalDetail } from "./technical";
@@ -93,7 +93,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
             onStep={play.step}
             reduceMotion={play.reduceMotion}
             position={`Report ${ci + 1} of ${cases.length} · step ${f + 1} of ${FRAMES}`}
-            speed="Slowed down to watch: the linker decides in well under a second."
+            speed="Slowed down to watch. The linker decides in well under a second."
           >
             <Picker
               label="Case"
@@ -173,8 +173,10 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
               })}
             </ol>
             <p className="m-0 mt-3 flex flex-wrap items-center gap-2 text-small text-ink-soft">
-              <HonestyLabel kind="illustrative" />
-              Runner-up names, ages and every similarity bar. The matched pair, its probability and the line are from the run&apos;s case files.
+              <HonestyLabel kind="illustrative" className={HONESTY_PLAIN}>
+                Runner-up names, ages and every similarity bar are illustrative.
+              </HonestyLabel>{" "}
+              The matched pair, its probability and the line are from the run&apos;s case files.
             </p>
           </section>
 
@@ -310,8 +312,8 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: Pipelin
               role="img"
               aria-label={
                 calibrated
-                  ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; the auto-close line is ${C.tau}; at or above it a link closes by itself.`
-                  : `Link probability not calibrated yet; the auto-close line is ${C.tau}.`
+                  ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00. The auto-close line is ${C.tau}. At or above it, a link closes by itself.`
+                  : `Link probability not calibrated yet. The auto-close line is ${C.tau}.`
               }
               className="relative mt-2 h-16 tabular-nums"
             >

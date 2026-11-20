@@ -110,8 +110,8 @@ export function readWords(r: ReaderRead): string {
 
 export const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
   closed_with_evidence: { text: "Closed with evidence", mark: "done" },
-  waiting_for_reviewers: { text: "Held · waiting for two reviewers", mark: "held" },
-  kept_open: { text: "Kept open · not complete yet", mark: "held" },
+  waiting_for_reviewers: { text: "Held, waiting for two reviewers", mark: "held" },
+  kept_open: { text: "Kept open, not complete yet", mark: "held" },
 };
 
 /** A decision feed line for the events that report a result. Start-of-work events stay off the feed. `note` is plain; `tech` is the system's own label. */
@@ -120,7 +120,7 @@ export function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "c
   const why = plain(c.read.reason);
   switch (e.type) {
     case "received":
-      return { text: "Received · colonoscopy report", note: "Hospital message", tech: c.source === "hl7" ? "HL7 v2" : "FHIR R4", mark: "queued" };
+      return { text: "Received a colonoscopy report", note: "Hospital message", tech: c.source === "hl7" ? "HL7 v2" : "FHIR R4", mark: "queued" };
     case "matched":
       return { text: "Matched to a referral", note: "Linker's decision", tech: "link_decision", mark: "done" };
     case "read": {
@@ -130,7 +130,7 @@ export function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "c
     case "gate":
       return e.passed
         ? { text: "Safety gate passed", note: why, tech: verdict, mark: "done" }
-        : { text: "Safety gate held · it will not guess", note: why, tech: verdict, mark: "held" };
+        : { text: "Safety gate held. It will not guess", note: why, tech: verdict, mark: "held" };
     case "outcome": {
       const closed = e.outcome === "closed_with_evidence";
       return { ...OUTCOME_LINE[e.outcome], note: closed ? "Evidence on file" : why, tech: closed ? "closure_decision" : verdict };

@@ -6,7 +6,7 @@ import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import replayJson from "@/data/replay.json";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { Replay } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
@@ -94,7 +94,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
               Case flow
             </h2>
             <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">
-              Left to right. A report shows the name as written, and &ldquo;?&rdquo;, until it is matched. The ringed one just moved; open anyone to
+              Left to right. A report shows the name as written, and &ldquo;?&rdquo;, until it is matched. The ringed one just moved. Open anyone to
               see their steps.
             </p>
           </div>
@@ -145,7 +145,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
           <h2 id="feed-h" className="m-0 text-section font-semibold text-ink">
             Decisions
           </h2>
-          <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">Newest first. Plain words; the system&apos;s own labels are under Technical detail.</p>
+          <p className="m-0 mt-1 max-w-[72ch] text-small text-muted">Newest first. The system&apos;s own labels are under Technical detail.</p>
           <ol aria-label="Decisions, newest first" className="relative m-0 mt-3 list-none overflow-hidden p-0" style={{ height: FEED_ROWS * FEED_PITCH }}>
             {view.feed.map((f, i) => {
               const latest = f.key === view.step - 1;
@@ -221,7 +221,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
                 {tamper.title}
               </h2>
               <div className="flex flex-wrap items-center gap-2">
-                <HonestyLabel kind="simulated">Simulated edit</HonestyLabel>
+                <HonestyLabel kind="simulated" className={HONESTY_PLAIN}>Simulated edit.</HonestyLabel>
                 <span
                   role="status"
                   className={cn(
@@ -243,7 +243,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: PipelineHe
           <SealedChain nodes={tampered ? tamper.tampered : tamper.intact} className="mt-4" />
           <p aria-live="polite" className="m-0 mt-3 max-w-[72ch] text-small text-muted">
             {tampered
-              ? `${tamper.changed} Simulated here; in the recorded run ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught.`
+              ? `${tamper.changed} Simulated here. In the recorded run, ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught.`
               : `In the recorded run, ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught: deleted, reordered, truncated and rewritten records.`}
           </p>
           <TechnicalDetail label="Technical detail: the system's record types">

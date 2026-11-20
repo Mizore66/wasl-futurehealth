@@ -5,7 +5,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechnicalDetail } from "./technical";
 import { cn } from "@/lib/utils";
 import type { Profile } from "./profile";
@@ -92,8 +92,8 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
           </div>
 
           <div className="flex flex-col gap-6 px-6 py-5">
-            <HonestyLabel kind="replay">
-              Replay of a recorded run · {p.person.source === "generated" ? "generated name" : "demo cast name"}
+            <HonestyLabel kind="replay" className={HONESTY_PLAIN}>
+              Replay of a recorded run. {p.person.source === "generated" ? "The name is generated." : "The name is from the demo cast."}
             </HonestyLabel>
 
             <Section title="Now">
@@ -174,7 +174,7 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
               </Button>
             ) : (
               <p className="m-0 text-small text-muted">
-                No patient record: this person was generated for the replay, which is a different run from the one the records come from.
+                No patient record. This person was generated for the replay, which is a different run from the one the records come from.
               </p>
             )}
           </div>

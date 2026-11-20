@@ -6,7 +6,7 @@ import evidenceAudit from "../data/api/case_evidence_closure_audit.json";
 // The tamper demo rewrites the readers' step of the closed fixture; its hash is the one the server sealed (first 12 hex digits).
 const READERS_HASH = evidenceAudit.chain.find((e) => e.type === "evidence")!.hash.slice(0, 12);
 
-const LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
+const LINE = "Replaying the recorded showcase run with synthetic patients. Names and faces are generated. The report texts are real.";
 const SHOTS = "test-results/screens/pipeline";
 
 // A missing name or case must fail within seconds, not after the 2-minute test budget: actions (click, fill) get the same 20s as expect.
@@ -204,7 +204,7 @@ test("pipeline: a chip opens that person's profile, pauses the replay, and Escap
   const sheet = page.getByRole("dialog");
   await expect(sheet.getByRole("heading", { name: person.name })).toBeVisible();
   await expect(sheet.getByTestId("report-name")).toHaveText(person.reportName);
-  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText(/Replay of a recorded run · (generated|demo cast) name/);
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText(/Replay of a recorded run\. The name (is generated|is from the demo cast)\./);
   await expect(sheet.getByRole("list", { name: "Steps in this run" }).getByRole("listitem").first()).toContainText("Received");
   await expect(page).toHaveURL((url) => url.searchParams.get("person") === id);
 
@@ -238,7 +238,7 @@ test("pipeline: Fatima's profile, opened from its link, leads to her patient rec
   await page.goto(`/app/pipeline?person=${fatima.id}`);
   const sheet = page.getByRole("dialog");
   await expect(sheet.getByRole("heading", { name: "Fatima Al Zaabi" })).toBeVisible();
-  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run · demo cast name");
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run. The name is from the demo cast.");
   await sheet.getByRole("link", { name: "Open full record" }).click();
   await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1001$/);
   await expect(page.locator("h1")).toContainText("Fatima");
@@ -290,7 +290,7 @@ test("pipeline: a generated person's profile says there is no record", async ({ 
   const generated = replay.cases.find((c) => c.person.source === "generated")!;
   await page.goto(`/app/pipeline?person=${generated.id}`);
   const sheet = page.getByRole("dialog");
-  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run · generated name");
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run. The name is generated.");
   await expect(sheet.getByRole("link", { name: "Open full record" })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/app\/pipeline$/);
@@ -344,7 +344,7 @@ test("every control is a replay control, a real toggle or labelled; none is an u
     new Set(["Pause", "Step", "Tamper with a step"]),
   );
   await expect(page.getByRole("group", { name: "Replay controls" })).toBeVisible();
-  await expect(page.locator('main [data-honesty="simulated"]')).toHaveText("Simulated edit");
+  await expect(page.locator('main [data-honesty="simulated"]')).toHaveText("Simulated edit.");
 });
 
 for (const route of PIPELINE_ROUTES) {

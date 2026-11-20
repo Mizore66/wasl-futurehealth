@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/shell/page-header";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HONESTY_PLAIN, HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 
 const VIEWS = [
@@ -9,7 +9,7 @@ const VIEWS = [
   { href: "/app/pipeline/reading", label: "Report reading" },
 ] as const;
 
-export const REPLAY_LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
+export const REPLAY_LINE = "Replaying the recorded showcase run with synthetic patients. Names and faces are generated. The report texts are real.";
 
 /** Shown when a live run carries no showcase fixtures and the screen replays the published snapshot instead. */
 export const SNAPSHOT_NOTE = "This live run has no showcase cases, so this view replays the published fixture snapshot, not the live ledger.";
@@ -52,8 +52,9 @@ export function PipelineHeading({ title, question, current, note, controls, chil
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-1">
           <p className="m-0 flex flex-wrap items-center gap-2 text-small text-ink-soft">
-            <HonestyLabel kind="replay" />
-            <span>{REPLAY_LINE}</span>
+            <HonestyLabel kind="replay" className={HONESTY_PLAIN}>
+              {REPLAY_LINE}
+            </HonestyLabel>
           </p>
           {note && (
             <p className="m-0 max-w-[72ch] text-small text-ink-soft" data-testid="pipeline-snapshot-note">

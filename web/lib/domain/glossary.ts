@@ -10,7 +10,7 @@ export const GLOSSARY: Record<GlossaryKey, { term: string; meaning: string }> = 
   canonical: {
     term: "Canonical",
     meaning:
-      "The clinical decision the pipeline engine recorded from source events. Staff actions on screen are saved beside it and never rewrite it; it changes only when the engine records a new decision.",
+      "The clinical decision the pipeline engine recorded from source events. Staff actions on screen are saved beside it and never rewrite it. It changes only when the engine records a new decision.",
   },
   overlay: {
     term: "Overlay",
@@ -20,7 +20,7 @@ export const GLOSSARY: Record<GlossaryKey, { term: string; meaning: string }> = 
   anchor: {
     term: "Anchor",
     meaning:
-      "A chain head (the latest hash) recorded in a store outside the ledger. Matching the recomputed chain against it would show that no earlier entry changed afterwards. Here the page shows the heads the API reports; checking the external store is designed, not built.",
+      "A chain head (the latest hash) recorded in a store outside the ledger. Matching the recomputed chain against it would show that no earlier entry changed afterwards. Here the page shows the heads the API reports. Checking the external store is designed, not built.",
   },
   comparison_hash: {
     term: "Comparison hash",
