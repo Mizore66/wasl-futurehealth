@@ -146,3 +146,8 @@ for (const vp of [
     await axe(page);
   });
 }
+
+test("the breadcrumb names the Evidence page", async ({ page }) => {
+  await page.goto("/app/evidence");
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).locator('[aria-current="page"]')).toHaveText("Evidence");
+});
