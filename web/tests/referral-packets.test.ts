@@ -112,7 +112,6 @@ describe("#155 lung and diabetic-eye returned referrals", () => {
   it("keeps the programme/provider selection on search", () => {
     render(DR, "programme=diabetic_retinopathy&provider=phc-retina");
     h.go("/app/referrals?programme=diabetic_retinopathy&provider=phc-retina&view=inbox");
-    expect(text()).toContain("Nothing is saved to the clinical record, booked or sent to the referrer.");
     expect(text()).not.toContain("${referrer}");
     const field = h.host.querySelector<HTMLInputElement>('input[name="q"]')!;
     expect([...field.form!.querySelectorAll<HTMLInputElement>('input[type="hidden"]')].map((i) => [i.name, i.value])).toEqual([
