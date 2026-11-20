@@ -285,3 +285,22 @@
 .staff .staff-rail :focus-visible {
   outline-color: var(--color-limestone-50);
 }
+
+/* Sidebar navigation in flight (components/shell/link-pending.tsx). */
+@keyframes wasl-nav-progress {
+  from {
+    transform: scaleX(0.05);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
+.wasl-nav-progress {
+  transform-origin: left;
+  transform: scaleX(0.6);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wasl-nav-progress {
+    animation: wasl-nav-progress 2.5s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+  }
+}
